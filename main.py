@@ -68,37 +68,37 @@ class TradeThread(threading.Thread):
                 try:
                     # Query trades from persistence layer
                     trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-                    if trade:
-                        # Check if there is already an open order for this pair
-                        open_orders = api_wrapper.get_open_orders(trade.pair)
-                        if open_orders:
-                            msg = 'There is already an open order for this trade. (total: {}, remaining: {}, type: {})'\
-                                .format(
-                                    round(open_orders[0]['amount'], 8),
-                                    round(open_orders[0]['remaining'], 8),
-                                    open_orders[0]['type']
-                                )
-                            logger.info(msg)
-                        elif close_trade_if_fulfilled(trade):
-                            logger.info('No open orders found and close values are set. Marking trade as closed ...')
-                        else:
-                            # Maybe sell with current rate
-                            handle_trade(trade)
-                    else:
-                        # Prepare entity and execute trade
+                    if not trade:
+                        # Create entity and execute trade
                         Session.add(create_trade(float(conf['stake_amount']), api_wrapper.exchange))
+                        continue
+
+                    # Check if there is already an open order for this pair
+                    open_orders = api_wrapper.get_open_orders(trade.pair)
+                    if open_orders:
+                        msg = 'There is already an open order for this trade. (total: {}, remaining: {}, type: {})'\
+                            .format(
+                                round(open_orders[0]['amount'], 8),
+                                round(open_orders[0]['remaining'], 8),
+                                open_orders[0]['type']
+                            )
+                        logger.info(msg)
+                    elif close_trade_if_fulfilled(trade):
+                        logger.info('No open orders found and close values are set. Marking trade as closed ...')
+                    else:
+                        # Maybe sell with current rate
+                        handle_trade(trade)
                 except ValueError:
                     logger.exception('ValueError')
-                except RuntimeError:
-                    TelegramHandler.send_msg('RuntimeError. Stopping trader ...'.format(traceback.format_exc()))
-                    logger.exception('RuntimeError. Stopping trader ...')
-                    Session.flush()
-                    return
                 finally:
                     Session.flush()
                     time.sleep(25)
+        except RuntimeError:
+            TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
+            logger.exception('RuntimeError. Stopping trader ...')
         finally:
-            TelegramHandler.send_msg('*Status:* `trader has stopped`')
+            Session.flush()
+            TelegramHandler.send_msg('*Status:* `Trader has stopped`')
 
 
 def close_trade_if_fulfilled(trade):
