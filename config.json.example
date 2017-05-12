@@ -1,0 +1,35 @@
+{
+    "stake_amount": 0.05,
+    "dry_run": false,
+    "trade_thresholds": {
+        "2880": 0.005,
+        "1440": 0.01,
+        "720":  0.03,
+        "360":  0.05,
+        "0":    0.10
+    },
+    "poloniex": {
+        "enabled": false,
+        "key": "key",
+        "secret": "secret",
+        "pair_whitelist": []
+    },
+    "bittrex": {
+        "enabled": true,
+        "key": "key",
+        "secret": "secret",
+        "pair_whitelist": [
+            "BTC_MLN",
+            "BTC_TRST",
+            "BTC_TIME",
+            "BTC_NXS",
+            "BTC_GBYTE",
+            "BTC_SNGLS"
+        ]
+    },
+    "telegram": {
+        "enabled": true,
+        "token": "token",
+        "chat_id": "chat_id"
+    }
+}

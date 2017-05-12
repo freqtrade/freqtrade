@@ -1,0 +1,6 @@
+-e git+https://github.com/s4w3d0ff/python-poloniex.git#egg=Poloniex
+-e git+https://github.com/ericsomdahl/python-bittrex.git#egg=python-bittrex
+SQLAlchemy==1.1.9
+python-telegram-bot==5.3.1
+arrow==0.10.0
+requests==2.14.2
