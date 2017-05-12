@@ -55,6 +55,9 @@ def validate_conf(conf):
             raise ValueError('poloniex.secret must be a string')
         if not isinstance(poloniex.get('pair_whitelist'), list):
             raise ValueError('poloniex.pair_whitelist must be a list')
+        if poloniex.get('enabled', False):
+            if not poloniex.get('pair_whitelist'):
+                raise ValueError('poloniex.pair_whitelist must contain some pairs')
 
     if conf.get('bittrex'):
         bittrex = conf.get('bittrex')
@@ -64,6 +67,9 @@ def validate_conf(conf):
             raise ValueError('bittrex.secret must be a string')
         if not isinstance(bittrex.get('pair_whitelist'), list):
             raise ValueError('bittrex.pair_whitelist must be a list')
+        if bittrex.get('enabled', False):
+            if not bittrex.get('pair_whitelist'):
+                raise ValueError('bittrex.pair_whitelist must contain some pairs')
 
     if conf.get('poloniex', {}).get('enabled', False) \
             and conf.get('bittrex', {}).get('enabled', False):

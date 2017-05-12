@@ -8,18 +8,9 @@ from sqlalchemy.types import Enum
 from exchange import Exchange
 
 
-def create_session(base, filename):
-    """
-    Creates sqlite database and setup tables.
-    :return: sqlalchemy Session
-    """
-    engine = create_engine(filename, echo=False)
-    base.metadata.create_all(engine)
-    return scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-
-
 Base = declarative_base()
-Session = create_session(Base, filename='sqlite:///tradesv2.sqlite')
+engine = create_engine('sqlite:///tradesv2.sqlite', echo=False)
+Session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
 
 
 class Trade(Base):
@@ -47,3 +38,5 @@ class Trade(Base):
             self.open_rate,
             'closed' if not self.is_open else round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
         )
+
+Base.metadata.create_all(engine)

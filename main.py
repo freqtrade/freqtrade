@@ -74,19 +74,14 @@ class TradeThread(threading.Thread):
                         continue
 
                     # Check if there is already an open order for this pair
-                    open_orders = api_wrapper.get_open_orders(trade.pair)
-                    if open_orders:
+                    orders = api_wrapper.get_open_orders(trade.pair)
+                    if orders:
                         msg = 'There is already an open order for this trade. (total: {}, remaining: {}, type: {})'\
-                            .format(
-                                round(open_orders[0]['amount'], 8),
-                                round(open_orders[0]['remaining'], 8),
-                                open_orders[0]['type']
-                            )
+                            .format(round(orders[0]['amount'], 8), round(orders[0]['remaining'], 8), orders[0]['type'])
                         logger.info(msg)
                     elif close_trade_if_fulfilled(trade):
                         logger.info('No open orders found and close values are set. Marking trade as closed ...')
                     else:
-                        # Maybe sell with current rate
                         handle_trade(trade)
                 except ValueError:
                     logger.exception('ValueError')
@@ -135,8 +130,7 @@ def handle_trade(trade):
         balance = api_wrapper.get_balance(currency)
 
         for duration, threshold in sorted(conf['trade_thresholds'].items()):
-            duration = float(duration)
-            threshold = float(threshold)
+            duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
             if time_diff > duration and current_rate > (1 + threshold) * trade.open_rate:
@@ -168,13 +162,19 @@ def create_trade(stake_amount: float, exchange):
     :param stake_amount: amount of btc to spend
     :param exchange: exchange to use
     """
-    # Whitelist sanity check
     whitelist = conf[exchange.name.lower()]['pair_whitelist']
-    if not whitelist or not isinstance(whitelist, list):
-        raise ValueError('No usable pair in whitelist.')
     # Check if btc_amount is fulfilled
     if api_wrapper.get_balance('BTC') < stake_amount:
-        raise ValueError('BTC amount is not fulfilled.')
+        raise ValueError('BTC amount is not fulfilled')
+
+    # Remove latest trade pair from whitelist
+    latest_trade = Trade.order_by(Trade.id.desc()).first()
+    if latest_trade and latest_trade.pair in whitelist:
+        whitelist.remove(latest_trade.pair)
+        logger.debug('Ignoring {} in pair whitelist')
+    if not whitelist:
+        raise ValueError('No pair in whitelist')
+
     # Pick random pair and execute trade
     idx = random.randint(0, len(whitelist) - 1)
     pair = whitelist[idx]

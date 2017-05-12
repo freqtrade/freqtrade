@@ -48,7 +48,7 @@ class TelegramHandler(object):
                    CommandHandler('stop', TelegramHandler._stop)]
         for handle in handles:
             TelegramHandler.get_updater(conf).dispatcher.add_handler(handle)
-        TelegramHandler.get_updater(conf).start_polling()
+        TelegramHandler.get_updater(conf).start_polling(clean=True, bootstrap_retries=3)
 
     @staticmethod
     def _is_correct_scope(update):
@@ -69,8 +69,8 @@ class TelegramHandler(object):
         :return: None
         """
         if conf['telegram'].get('enabled', False):
+            bot = bot or TelegramHandler.get_updater(conf).bot
             try:
-                bot = bot or TelegramHandler.get_updater(conf).bot
                 bot.send_message(
                     chat_id=conf['telegram']['chat_id'],
                     text=markdown_message,
@@ -111,7 +111,7 @@ class TelegramHandler(object):
 *Open Rate:* `{open_rate}`
 *Close Rate:* `{close_rate}`
 *Current Rate:* `{current_rate}`
-*Close Profit:* `{close_profit}%`
+*Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit}%`
 *Open Order:* `{open_order}`
                     """.format(
@@ -121,7 +121,7 @@ class TelegramHandler(object):
                 close_rate=trade.close_rate,
                 current_rate=current_rate,
                 amount=round(trade.amount, 8),
-                close_profit=round(trade.close_profit, 2) if trade.close_profit else 'None',
+                close_profit='{}%'.format(round(trade.close_profit, 2)) if trade.close_profit else None,
                 current_profit=round(current_profit, 2),
                 open_order='{} ({})'.format(
                     order['remaining'],

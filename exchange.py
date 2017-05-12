@@ -46,16 +46,10 @@ class ApiWrapper(object):
 
         if use_poloniex:
             self.exchange = Exchange.POLONIEX
-            self.api = Poloniex(
-                key=config['poloniex']['key'],
-                secret=config['poloniex']['secret']
-            )
+            self.api = Poloniex(key=config['poloniex']['key'], secret=config['poloniex']['secret'])
         elif use_bittrex:
             self.exchange = Exchange.BITTREX
-            self.api = Bittrex(
-                api_key=config['bittrex']['key'],
-                api_secret=config['bittrex']['secret']
-            )
+            self.api = Bittrex(api_key=config['bittrex']['key'], api_secret=config['bittrex']['secret'])
         else:
             self.api = None
 

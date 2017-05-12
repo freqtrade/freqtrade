@@ -10,3 +10,5 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ./main.py
 ```
+
+Enter your API keys and tokens in `config.json`
