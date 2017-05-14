@@ -29,6 +29,7 @@ class Trade(Base):
     amount = Column(Float, nullable=False)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
+    open_order_id = Column(String)
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={}, open_rate={}, open_since={})'.format(

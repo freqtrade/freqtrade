@@ -19,12 +19,16 @@
         "key": "key",
         "secret": "secret",
         "pair_whitelist": [
-            "BTC_MLN",
+            "BTC_RLC",
+            "BTC_TKN",
             "BTC_TRST",
+            "BTC_SWT",
+            "BTC_PIVX",
+            "BTC_MLN",
+            "BTC_XZC",
             "BTC_TIME",
             "BTC_NXS",
-            "BTC_GBYTE",
-            "BTC_SNGLS"
+            "BTC_LUN"
         ]
     },
     "telegram": {

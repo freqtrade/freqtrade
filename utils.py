@@ -1,22 +1,25 @@
 import json
 import logging
 
+from wrapt import synchronized
+
 logger = logging.getLogger(__name__)
 
-_CUR_CONF = None
+_cur_conf = None
 
 
-def get_conf():
+@synchronized
+def get_conf(filename='config.json'):
     """
     Loads the config into memory and returns the instance of it
     :return: dict
     """
-    global _CUR_CONF
-    if not _CUR_CONF:
-        with open('config.json') as fp:
-            _CUR_CONF = json.load(fp)
-            validate_conf(_CUR_CONF)
-    return _CUR_CONF
+    global _cur_conf
+    if not _cur_conf:
+        with open(filename) as fp:
+            _cur_conf = json.load(fp)
+            validate_conf(_cur_conf)
+    return _cur_conf
 
 
 def validate_conf(conf):

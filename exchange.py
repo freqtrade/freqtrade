@@ -1,24 +1,23 @@
 import enum
-import threading
-
+import logging
 from bittrex.bittrex import Bittrex
 from poloniex import Poloniex
+from wrapt import synchronized
 
+logger = logging.getLogger(__name__)
 
-_lock = threading.Condition()
 _exchange_api = None
 
 
+@synchronized
 def get_exchange_api(conf):
     """
     Returns the current exchange api or instantiates a new one
     :return: exchange.ApiWrapper
     """
     global _exchange_api
-    _lock.acquire()
     if not _exchange_api:
         _exchange_api = ApiWrapper(conf)
-    _lock.release()
     return _exchange_api
 
 
@@ -40,6 +39,8 @@ class ApiWrapper(object):
         :param config: dict
         """
         self.dry_run = config['dry_run']
+        if self.dry_run:
+            logger.info('Instance is running with dry_run enabled')
 
         use_poloniex = config.get('poloniex', {}).get('enabled', False)
         use_bittrex = config.get('bittrex', {}).get('enabled', False)
@@ -65,10 +66,12 @@ class ApiWrapper(object):
             pass
         elif self.exchange == Exchange.POLONIEX:
             self.api.buy(pair, rate, amount)
+            # TODO: return order id
         elif self.exchange == Exchange.BITTREX:
             data = self.api.buy_limit(pair.replace('_', '-'), amount, rate)
             if not data['success']:
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
+            return data['result']['uuid']
 
     def sell(self, pair, rate, amount):
         """
@@ -82,10 +85,12 @@ class ApiWrapper(object):
             pass
         elif self.exchange == Exchange.POLONIEX:
             self.api.sell(pair, rate, amount)
+            # TODO: return order id
         elif self.exchange == Exchange.BITTREX:
             data = self.api.sell_limit(pair.replace('_', '-'), amount, rate)
             if not data['success']:
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
+            return data['result']['uuid']
 
     def get_balance(self, currency):
         """
@@ -93,7 +98,9 @@ class ApiWrapper(object):
         :param currency: currency as str, format: BTC
         :return: float
         """
-        if self.exchange == Exchange.POLONIEX:
+        if self.dry_run:
+            return 999.9
+        elif self.exchange == Exchange.POLONIEX:
             data = self.api.returnBalances()
             return float(data[currency])
         elif self.exchange == Exchange.BITTREX:
@@ -125,19 +132,37 @@ class ApiWrapper(object):
                 'last': float(data['result']['Last']),
             }
 
+    def cancel_order(self, order_id):
+        """
+        Cancel order for given order_id
+        :param order_id: id as str
+        :return: None
+        """
+        if self.dry_run:
+            pass
+        elif self.exchange == Exchange.POLONIEX:
+            raise NotImplemented('Not implemented')
+        elif self.exchange == Exchange.BITTREX:
+            data = self.api.cancel(order_id)
+            if not data['success']:
+                raise RuntimeError('BITTREX: {}'.format(data['message']))
+
     def get_open_orders(self, pair):
         """
         Get all open orders for given pair.
         :param pair: Pair as str, format: BTC_ETC
         :return: list of dicts
         """
-        if self.exchange == Exchange.POLONIEX:
+        if self.dry_run:
+            return []
+        elif self.exchange == Exchange.POLONIEX:
             raise NotImplemented('Not implemented')
         elif self.exchange == Exchange.BITTREX:
             data = self.api.get_open_orders(pair.replace('_', '-'))
             if not data['success']:
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
             return [{
+                'id': entry['OrderUuid'],
                 'type': entry['OrderType'],
                 'opened': entry['Opened'],
                 'rate': entry['PricePerUnit'],
