@@ -24,6 +24,7 @@ __license__ = "custom"
 __version__ = "0.5.1"
 
 
+
 conf = get_conf()
 api_wrapper = get_exchange_api(conf)
 
