@@ -77,5 +77,6 @@ config.json
 preprocessor.py
 *.sqlite
 
+.env
 .venv
 .idea

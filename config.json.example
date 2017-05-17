@@ -1,4 +1,5 @@
 {
+    "max_open_trades": 3,
     "stake_amount": 0.05,
     "dry_run": false,
     "trade_thresholds": {

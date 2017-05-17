@@ -18,9 +18,10 @@ from exchange import get_exchange_api
 from rpc.telegram import TelegramHandler
 from utils import get_conf
 
+
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
-__license__ = "custom"
+__license__ = "GPLv3"
 __version__ = "0.5.1"
 
 
@@ -90,11 +91,13 @@ class TradeThread(threading.Thread):
             orders = api_wrapper.get_open_orders(trade.pair)
             orders = [o for o in orders if o['id'] == trade.open_order_id]
             if orders:
-                msg = 'There exists an open order for this trade: (total: {}, remaining: {}, type: {}, id: {})' \
-                    .format(round(orders[0]['amount'], 8),
-                            round(orders[0]['remaining'], 8),
-                            orders[0]['type'],
-                            orders[0]['id'])
+                msg = 'There exists an open order for {}: Order(total={}, remaining={}, type={}, id={})' \
+                    .format(
+                        trade,
+                        round(orders[0]['amount'], 8),
+                        round(orders[0]['remaining'], 8),
+                        orders[0]['type'],
+                        orders[0]['id'])
                 logger.info(msg)
                 continue
 
@@ -102,7 +105,7 @@ class TradeThread(threading.Thread):
             trade.open_order_id = None
             # Check if this trade can be marked as closed
             if close_trade_if_fulfilled(trade):
-                logger.info('No open orders found and trade is fulfilled. Marking as closed ...')
+                logger.info('No open orders found and trade is fulfilled. Marking {} as closed ...'.format(trade))
                 continue
 
             # Check if we can sell our current pair
@@ -187,11 +190,9 @@ def create_trade(stake_amount: float, exchange):
 
     # Remove currently opened and latest pairs from whitelist
     latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
-    open_trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    if latest_trade and latest_trade.pair in whitelist:
-        whitelist.remove(latest_trade.pair)
-        logger.debug('Ignoring {} in pair whitelist'.format(latest_trade.pair))
-    for trade in open_trades:
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    trades.append(latest_trade)
+    for trade in trades:
         if trade.pair not in whitelist:
             continue
         whitelist.remove(trade.pair)
@@ -220,7 +221,7 @@ def create_trade(stake_amount: float, exchange):
 
 
 if __name__ == '__main__':
-    logger.info('Starting marginbot {}'.format(__version__))
+    logger.info('Starting freqtrade {}'.format(__version__))
     TelegramHandler.listen()
     while True:
         time.sleep(0.5)
