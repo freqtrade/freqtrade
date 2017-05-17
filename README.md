@@ -16,6 +16,7 @@ Persistence is achieved through sqlite.
 * /stop: Stops the trader
 * /status: Lists all open trades
 * /profit: Lists cumulative profit from all finished trades
+* /cancel: cancels open order for given trade (currently disabled)
 
 ##### Config
 `trade_thresholds` is a JSON object where the key is a duration

@@ -22,7 +22,7 @@ from utils import get_conf
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
 __license__ = "GPLv3"
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 
 
 conf = get_conf()
