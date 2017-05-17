@@ -69,6 +69,7 @@ class TelegramHandler(object):
                 orders = [o for o in orders if o['id'] == trade.open_order_id]
                 order = orders[0] if orders else None
                 message = """
+*Trade ID:* `{trade_id}`
 *Current Pair:* [{pair}](https://bittrex.com/Market/Index?MarketName={pair})
 *Open Since:* `{date}`
 *Amount:* `{amount}`
@@ -79,6 +80,7 @@ class TelegramHandler(object):
 *Current Profit:* `{current_profit}%`
 *Open Order:* `{open_order}`
                         """.format(
+                    trade_id=trade.id,
                     pair=trade.pair.replace('_', '-'),
                     date=arrow.get(trade.open_date).humanize(),
                     open_rate=trade.open_rate,

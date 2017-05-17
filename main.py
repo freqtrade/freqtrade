@@ -192,6 +192,8 @@ def create_trade(stake_amount: float, exchange):
         whitelist.remove(latest_trade.pair)
         logger.debug('Ignoring {} in pair whitelist'.format(latest_trade.pair))
     for trade in open_trades:
+        if trade.pair not in whitelist:
+            continue
         whitelist.remove(trade.pair)
         logger.debug('Ignoring {} in pair whitelist'.format(trade.pair))
     if not whitelist:
