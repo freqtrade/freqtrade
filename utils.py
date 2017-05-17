@@ -28,6 +28,8 @@ def validate_conf(conf):
     :param conf: config as dict
     :return: None, raises ValueError if something is wrong
     """
+    if not isinstance(conf.get('max_open_trades'), int):
+        raise ValueError('max_open_trades must be a int')
     if not isinstance(conf.get('stake_amount'), float):
         raise ValueError('stake_amount  must be a float')
     if not isinstance(conf.get('dry_run'), bool):

@@ -24,7 +24,6 @@ __license__ = "custom"
 __version__ = "0.5.1"
 
 
-
 conf = get_conf()
 api_wrapper = get_exchange_api(conf)
 
@@ -79,33 +78,35 @@ class TradeThread(threading.Thread):
         :return: None
         """
         # Query trades from persistence layer
-        trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-        if not trade:
+        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+        if len(trades) < conf['max_open_trades']:
             # Create entity and execute trade
-            Session.add(create_trade(float(conf['stake_amount']), api_wrapper.exchange))
-            return
+            try:
+                Session.add(create_trade(float(conf['stake_amount']), api_wrapper.exchange))
+            except ValueError:
+                logger.exception('ValueError during trade creation')
+        for trade in trades:
+            # Check if there is already an open order for this trade
+            orders = api_wrapper.get_open_orders(trade.pair)
+            orders = [o for o in orders if o['id'] == trade.open_order_id]
+            if orders:
+                msg = 'There exists an open order for this trade: (total: {}, remaining: {}, type: {}, id: {})' \
+                    .format(round(orders[0]['amount'], 8),
+                            round(orders[0]['remaining'], 8),
+                            orders[0]['type'],
+                            orders[0]['id'])
+                logger.info(msg)
+                continue
 
-        # Check if there is already an open order for this trade
-        orders = api_wrapper.get_open_orders(trade.pair)
-        orders = [o for o in orders if o['id'] == trade.open_order_id]
-        if orders:
-            msg = 'There exists an open order for this trade: (total: {}, remaining: {}, type: {}, id: {})' \
-                .format(round(orders[0]['amount'], 8),
-                        round(orders[0]['remaining'], 8),
-                        orders[0]['type'],
-                        orders[0]['id'])
-            logger.info(msg)
-            return
+            # Update state
+            trade.open_order_id = None
+            # Check if this trade can be marked as closed
+            if close_trade_if_fulfilled(trade):
+                logger.info('No open orders found and trade is fulfilled. Marking as closed ...')
+                continue
 
-        # Update state
-        trade.open_order_id = None
-        # Check if this trade can be marked as closed
-        if close_trade_if_fulfilled(trade):
-            logger.info('No open orders found and trade is fulfilled. Marking as closed ...')
-            return
-
-        # Check if we can sell our current pair
-        handle_trade(trade)
+            # Check if we can sell our current pair
+            handle_trade(trade)
 
 # Initial stopped TradeThread instance
 _instance = TradeThread()
@@ -178,16 +179,21 @@ def create_trade(stake_amount: float, exchange):
     :param stake_amount: amount of btc to spend
     :param exchange: exchange to use
     """
+    logger.info('Creating new trade with stake_amount: {} ...'.format(stake_amount))
     whitelist = conf[exchange.name.lower()]['pair_whitelist']
     # Check if btc_amount is fulfilled
     if api_wrapper.get_balance('BTC') < stake_amount:
         raise ValueError('BTC amount is not fulfilled')
 
-    # Remove latest trade pair from whitelist
-    latest_trade = Trade.query.order_by(Trade.id.desc()).first()
+    # Remove currently opened and latest pairs from whitelist
+    latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
+    open_trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     if latest_trade and latest_trade.pair in whitelist:
         whitelist.remove(latest_trade.pair)
         logger.debug('Ignoring {} in pair whitelist'.format(latest_trade.pair))
+    for trade in open_trades:
+        whitelist.remove(trade.pair)
+        logger.debug('Ignoring {} in pair whitelist'.format(trade.pair))
     if not whitelist:
         raise ValueError('No pair in whitelist')
 

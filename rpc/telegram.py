@@ -54,19 +54,21 @@ class TelegramHandler(object):
         :return: None
         """
         # Fetch open trade
-        trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         from main import get_instance
         if not get_instance().is_alive():
-            message = '*Status:* `trader stopped`'
-        elif not trade:
-            message = '*Status:* `no active order`'
+            TelegramHandler.send_msg('*Status:* `trader stopped`', bot=bot)
+        elif not trades:
+            TelegramHandler.send_msg('*Status:* `no active order`', bot=bot)
         else:
-            # calculate profit and send message to user
-            current_rate = api_wrapper.get_ticker(trade.pair)['bid']
-            current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
-            open_orders = api_wrapper.get_open_orders(trade.pair)
-            order = open_orders[0] if open_orders else None
-            message = """
+            for trade in trades:
+                # calculate profit and send message to user
+                current_rate = api_wrapper.get_ticker(trade.pair)['bid']
+                current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
+                orders = api_wrapper.get_open_orders(trade.pair)
+                orders = [o for o in orders if o['id'] == trade.open_order_id]
+                order = orders[0] if orders else None
+                message = """
 *Current Pair:* [{pair}](https://bittrex.com/Market/Index?MarketName={pair})
 *Open Since:* `{date}`
 *Amount:* `{amount}`
@@ -76,18 +78,18 @@ class TelegramHandler(object):
 *Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit}%`
 *Open Order:* `{open_order}`
-                    """.format(
-                pair=trade.pair.replace('_', '-'),
-                date=arrow.get(trade.open_date).humanize(),
-                open_rate=trade.open_rate,
-                close_rate=trade.close_rate,
-                current_rate=current_rate,
-                amount=round(trade.amount, 8),
-                close_profit='{}%'.format(round(trade.close_profit, 2)) if trade.close_profit else None,
-                current_profit=round(current_profit, 2),
-                open_order='{} ({})'.format(order['remaining'], order['type']) if order else None,
-            )
-        TelegramHandler.send_msg(message, bot=bot)
+                        """.format(
+                    pair=trade.pair.replace('_', '-'),
+                    date=arrow.get(trade.open_date).humanize(),
+                    open_rate=trade.open_rate,
+                    close_rate=trade.close_rate,
+                    current_rate=current_rate,
+                    amount=round(trade.amount, 8),
+                    close_profit='{}%'.format(round(trade.close_profit, 2)) if trade.close_profit else None,
+                    current_profit=round(current_profit, 2),
+                    open_order='{} ({})'.format(order['remaining'], order['type']) if order else None,
+                )
+                TelegramHandler.send_msg(message, bot=bot)
 
     @staticmethod
     @authorized_only
@@ -167,6 +169,10 @@ class TelegramHandler(object):
         :param update: message update
         :return: None
         """
+        # TODO: make compatible with max_open_orders
+        TelegramHandler.send_msg('`Currently not implemented`')
+        return
+
         trade = Trade.query.filter(Trade.is_open.is_(True)).first()
         if not trade:
             TelegramHandler.send_msg('`There is no open trade`')
