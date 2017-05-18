@@ -30,6 +30,8 @@ def validate_conf(conf):
     """
     if not isinstance(conf.get('max_open_trades'), int):
         raise ValueError('max_open_trades must be a int')
+    if not isinstance(conf.get('stake_currency'), str):
+        raise ValueError('stake_currency must be a str')
     if not isinstance(conf.get('stake_amount'), float):
         raise ValueError('stake_amount  must be a float')
     if not isinstance(conf.get('dry_run'), bool):

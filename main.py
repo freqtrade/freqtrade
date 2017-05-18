@@ -185,8 +185,8 @@ def create_trade(stake_amount: float, exchange):
     logger.info('Creating new trade with stake_amount: {} ...'.format(stake_amount))
     whitelist = conf[exchange.name.lower()]['pair_whitelist']
     # Check if btc_amount is fulfilled
-    if api_wrapper.get_balance('BTC') < stake_amount:
-        raise ValueError('BTC amount is not fulfilled')
+    if api_wrapper.get_balance(conf['stake_currency']) < stake_amount:
+        raise ValueError('stake amount is not fulfilled (currency={}'.format(conf['stake_currency']))
 
     # Remove currently opened and latest pairs from whitelist
     latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
