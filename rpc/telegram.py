@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 import arrow
-from telegram.error import NetworkError
+from telegram.error import NetworkError, BadRequest
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
 from wrapt import synchronized
@@ -111,10 +111,10 @@ class TelegramHandler(object):
         durations_hours = [(t.close_date - t.open_date).total_seconds() / 3600.0 for t in trades]
         avg_duration = sum(durations_hours) / float(len(durations_hours))
         markdown_msg = """
-*Total Profit:* `{profit_btc} BTC ({profit}%)`
+*ROI:* `{profit_btc} BTC ({profit}%)`
 *Trade Count:* `{trade_count}`
-*First Action:* `{first_trade_date}`
-*Latest Action:* `{latest_trade_date}`
+*First Trade completed:* `{first_trade_date}`
+*Latest Trade completed:* `{latest_trade_date}`
 *Avg. Stake Amount:* `{avg_open_amount} BTC`
 *Avg. Duration:* `{avg_duration}` 
     """.format(
@@ -228,19 +228,20 @@ class TelegramHandler(object):
                     .format([h.command for h in handles]))
 
     @staticmethod
-    def send_msg(msg, bot=None):
+    def send_msg(msg, bot=None, parse_mode=ParseMode.MARKDOWN):
         """
         Send given markdown message
         :param msg: message
         :param bot: alternative bot
+        :param parse_mode: telegram parse mode
         :return: None
         """
         if conf['telegram'].get('enabled', False):
             bot = bot or TelegramHandler.get_updater(conf).bot
             try:
-                bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=ParseMode.MARKDOWN)
+                bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except NetworkError as e:
                 logger.warning('Got Telegram NetworkError: {}! trying one more time'.format(e.message))
-                bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=ParseMode.MARKDOWN)
+                bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except Exception:
                 logger.exception('Exception occurred within Telegram API')

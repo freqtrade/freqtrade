@@ -6,6 +6,8 @@ import threading
 import time
 import traceback
 from datetime import datetime
+from json import JSONDecodeError
+from requests import ConnectionError
 
 from wrapt import synchronized
 
@@ -22,7 +24,7 @@ from utils import get_conf
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
 __license__ = "GPLv3"
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 
 conf = get_conf()
@@ -61,8 +63,9 @@ class TradeThread(threading.Thread):
             while not _should_stop:
                 try:
                     self._process()
-                except ValueError:
-                    logger.exception('ValueError')
+                except (ConnectionError, JSONDecodeError, ValueError) as e:
+                    msg = 'Got {} during _process()'.format(e.__class__.__name__)
+                    logger.exception(msg)
                 finally:
                     Session.flush()
                     time.sleep(25)
