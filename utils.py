@@ -36,16 +36,14 @@ def validate_conf(conf):
         raise ValueError('stake_amount  must be a float')
     if not isinstance(conf.get('dry_run'), bool):
         raise ValueError('dry_run must be a boolean')
-    if not isinstance(conf.get('trade_thresholds'), dict):
-        raise ValueError('trade_thresholds must be a dict')
-    if not isinstance(conf.get('trade_thresholds'), dict):
-        raise ValueError('trade_thresholds must be a dict')
+    if not isinstance(conf.get('minimal_roi'), dict):
+        raise ValueError('minimal_roi must be a dict')
 
-    for i, (minutes, threshold) in enumerate(conf.get('trade_thresholds').items()):
+    for i, (minutes, threshold) in enumerate(conf.get('minimal_roi').items()):
         if not isinstance(minutes, str):
-            raise ValueError('trade_thresholds[{}].key must be a string'.format(i))
+            raise ValueError('minimal_roi[{}].key must be a string'.format(i))
         if not isinstance(threshold, float):
-            raise ValueError('trade_thresholds[{}].value must be a float'.format(i))
+            raise ValueError('minimal_roi[{}].value must be a float'.format(i))
 
     if conf.get('telegram'):
         telegram = conf.get('telegram')

@@ -151,7 +151,7 @@ def handle_trade(trade):
         currency = trade.pair.split('_')[1]
         balance = api_wrapper.get_balance(currency)
 
-        for duration, threshold in sorted(conf['trade_thresholds'].items()):
+        for duration, threshold in sorted(conf['minimal_roi'].items()):
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60

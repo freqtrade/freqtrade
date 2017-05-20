@@ -19,12 +19,11 @@ Persistence is achieved through sqlite.
 * /cancel: cancels open order for given trade (currently disabled)
 
 ##### Config
-`trade_thresholds` is a JSON object where the key is a duration
-in minutes and the value is the minimum profit threshold in
-percent whether the bot should sell. See the example below:
-
+`minimal_roi` is a JSON object where the key is a duration
+in minutes and the value is the minimum ROI in percent.
+See the example below:
 ```
-"trade_thresholds": {
+"minimal_roi": {
     "2880": 0.005, # Sell after 48 hours if there is at least 0.5% profit
     "1440": 0.01,  # Sell after 24 hours if there is at least 1% profit
     "720":  0.02,  # Sell after 12 hours if there is at least 2% profit

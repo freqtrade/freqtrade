@@ -3,12 +3,10 @@
     "stake_currency": "BTC",
     "stake_amount": 0.05,
     "dry_run": false,
-    "trade_thresholds": {
+    "minimal_roi": {
         "2880": 0.005,
-        "1440": 0.01,
-        "720":  0.03,
-        "360":  0.05,
-        "0":    0.10
+        "720":  0.01,
+        "0":  0.02
     },
     "poloniex": {
         "enabled": false,
