@@ -6,11 +6,16 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.types import Enum
 
 from exchange import Exchange
+from utils import get_conf
 
+if get_conf().get('dry_run', False):
+    db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
+else:
+    db_handle = 'sqlite:///tradesv2.sqlite'
 
-Base = declarative_base()
-engine = create_engine('sqlite:///tradesv2.sqlite', echo=False)
+engine = create_engine(db_handle, echo=False)
 Session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+Base = declarative_base()
 
 
 class Trade(Base):
