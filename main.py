@@ -192,9 +192,10 @@ def create_trade(stake_amount: float, exchange):
         raise ValueError('stake amount is not fulfilled (currency={}'.format(conf['stake_currency']))
 
     # Remove currently opened and latest pairs from whitelist
-    latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    trades.append(latest_trade)
+    latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
+    if latest_trade:
+        trades.append(latest_trade)
     for trade in trades:
         if trade.pair in whitelist:
             whitelist.remove(trade.pair)
