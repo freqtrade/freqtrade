@@ -107,7 +107,10 @@ class TelegramHandler(object):
         trade_count = len(trades)
         profit_amount = sum((t.close_profit / 100) * t.btc_amount for t in trades)
         profit = sum(t.close_profit for t in trades)
-        avg_stake_amount = sum(t.btc_amount for t in trades) / float(trade_count)
+        if trades:
+            avg_stake_amount = round(sum(t.btc_amount for t in trades) / float(trade_count), 8)
+        else:
+            avg_stake_amount = None
         durations_hours = [(t.close_date - t.open_date).total_seconds() / 3600.0 for t in trades]
         avg_duration = sum(durations_hours) / float(len(durations_hours))
         markdown_msg = """
@@ -115,7 +118,7 @@ class TelegramHandler(object):
 *Trade Count:* `{trade_count}`
 *First Trade completed:* `{first_trade_date}`
 *Latest Trade completed:* `{latest_trade_date}`
-*Avg. Stake Amount:* `{avg_open_amount} BTC`
+*Avg. Stake Amount:* `{avg_stake_amount} BTC`
 *Avg. Duration:* `{avg_duration}` 
     """.format(
             profit_btc=round(profit_amount, 8),
@@ -123,7 +126,7 @@ class TelegramHandler(object):
             trade_count=trade_count,
             first_trade_date=arrow.get(trades[0].open_date).humanize(),
             latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
-            avg_open_amount=round(avg_stake_amount, 8),
+            avg_stake_amount=avg_stake_amount,
             avg_duration=str(timedelta(hours=avg_duration)).split('.')[0],
         )
         TelegramHandler.send_msg(markdown_msg, bot=bot)
