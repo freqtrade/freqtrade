@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 import arrow
-from telegram.error import NetworkError, BadRequest
+from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
 from wrapt import synchronized

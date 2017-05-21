@@ -196,10 +196,9 @@ def create_trade(stake_amount: float, exchange):
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     trades.append(latest_trade)
     for trade in trades:
-        if trade.pair not in whitelist:
-            continue
-        whitelist.remove(trade.pair)
-        logger.debug('Ignoring {} in pair whitelist'.format(trade.pair))
+        if trade.pair in whitelist:
+            whitelist.remove(trade.pair)
+            logger.debug('Ignoring {} in pair whitelist'.format(trade.pair))
     if not whitelist:
         raise ValueError('No pair in whitelist')
 
