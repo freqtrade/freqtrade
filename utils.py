@@ -87,7 +87,15 @@ def validate_conf(conf):
 
 
 def validate_bittrex_pairs(pairs):
-    available_markets = [m['MarketName'].replace('-', '_')for m in Bittrex(None, None).get_markets()['result']]
+    """
+    Validates if all given pairs exist on bittrex
+    :param pairs: list of str
+    :return: None
+    """
+    data = Bittrex(None, None).get_markets()
+    if not data['success']:
+        raise RuntimeError('BITTREX: {}'.format(data['message']))
+    available_markets = [m['MarketName'].replace('-', '_')for m in data['result']]
     for p in pairs:
         if p not in available_markets:
-            raise ValueError('Invalid pair: {}'.format(m))
+            raise ValueError('Invalid pair: {}'.format(p))
