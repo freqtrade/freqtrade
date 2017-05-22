@@ -2,6 +2,7 @@ import json
 import logging
 
 from wrapt import synchronized
+from bittrex.bittrex import Bittrex
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +62,9 @@ def validate_conf(conf):
         if not isinstance(poloniex.get('pair_whitelist'), list):
             raise ValueError('poloniex.pair_whitelist must be a list')
         if poloniex.get('enabled', False):
-            if not poloniex.get('pair_whitelist'):
-                raise ValueError('poloniex.pair_whitelist must contain some pairs')
+            raise ValueError('poloniex is currently not implemented')
+            #if not poloniex.get('pair_whitelist'):
+            #    raise ValueError('poloniex.pair_whitelist must contain some pairs')
 
     if conf.get('bittrex'):
         bittrex = conf.get('bittrex')
@@ -75,9 +77,17 @@ def validate_conf(conf):
         if bittrex.get('enabled', False):
             if not bittrex.get('pair_whitelist'):
                 raise ValueError('bittrex.pair_whitelist must contain some pairs')
+            validate_bittrex_pairs(bittrex.get('pair_whitelist'))
 
     if conf.get('poloniex', {}).get('enabled', False) \
             and conf.get('bittrex', {}).get('enabled', False):
         raise ValueError('Cannot use poloniex and bittrex at the same time')
 
     logger.info('Config is valid ...')
+
+
+def validate_bittrex_pairs(pairs):
+    available_markets = [m['MarketName'].replace('-', '_')for m in Bittrex(None, None).get_markets()['result']]
+    for p in pairs:
+        if p not in available_markets:
+            raise ValueError('Invalid pair: {}'.format(m))
