@@ -11,6 +11,8 @@ from requests import ConnectionError
 
 from wrapt import synchronized
 
+from analyze import get_buy_signal
+
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -203,9 +205,18 @@ def create_trade(stake_amount: float, exchange):
     if not whitelist:
         raise ValueError('No pair in whitelist')
 
-    # Pick random pair and execute trade
-    idx = random.randint(0, len(whitelist) - 1)
-    pair = whitelist[idx]
+    ## Pick random pair and execute trade
+    #idx = random.randint(0, len(whitelist) - 1)
+    #pair = whitelist[idx]
+    pair = None
+    # Pick pair based on StochRSI buy signals
+    for p in whitelist:
+        if get_buy_signal(p):
+            pair = p
+            break
+    else:
+        raise ValueError('No buy signal from pairs: {}'.format(','.join(whitelist)))
+
     open_rate = api_wrapper.get_ticker(pair)['ask']
     amount = stake_amount / open_rate
     exchange = exchange

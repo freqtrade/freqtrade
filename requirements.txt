@@ -6,3 +6,9 @@ arrow==0.10.0
 requests==2.14.2
 urllib3==1.20
 wrapt==1.10.10
+pandas==0.20.1
+matplotlib==2.0.0
+PYQT5==5.8
+scikit-learn==0.18.1
+scipy==0.18.1
+stockstats==0.2.0
