@@ -21,7 +21,7 @@ def get_ticker_dataframe(pair):
     :param pair: pair as str in format BTC_ETH or BTC-ETH
     :return: StockDataFrame
     """
-    minimum_date = arrow.now() - timedelta(hours=2)
+    minimum_date = arrow.now() - timedelta(hours=12)
     url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
@@ -61,7 +61,9 @@ def populate_trends(dataframe):
     :return: StockDataFrame with populated trends
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20), 'underpriced'
+        (dataframe['stochrsi'] < 0.20)
+        & (dataframe['close_60_ema'] > (1 + 0.005) * dataframe['close_120_ema']),
+        'underpriced'
     ] = 1
     dataframe.loc[dataframe['underpriced'] == 1, 'buy'] = dataframe['close']
     return dataframe
@@ -90,25 +92,25 @@ def plot_dataframe(dataframe, pair):
     """
 
     # Three subplots sharing x axe
-    f, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
+    f, (ax1, ax2) = plt.subplots(2, sharex=True)
     f.suptitle(pair, fontsize=14, fontweight='bold')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
-    ax1.plot(dataframe.index.values, dataframe['close_12_ema'], label='EMA(12)')
-    ax1.plot(dataframe.index.values, dataframe['close_26_ema'], label='EMA(26)')
+    ax1.plot(dataframe.index.values, dataframe['close_60_ema'], label='EMA(60)')
+    ax1.plot(dataframe.index.values, dataframe['close_120_ema'], label='EMA(120)')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
     ax1.legend()
 
-    ax2.plot(dataframe.index.values, dataframe['macd'], label='MACD')
-    ax2.plot(dataframe.index.values, dataframe['macds'], label='MACDS')
-    ax2.plot(dataframe.index.values, dataframe['macdh'], label='MACD Histogram')
-    ax2.plot(dataframe.index.values, [0] * len(dataframe.index.values))
-    ax2.legend()
+    #ax2.plot(dataframe.index.values, dataframe['macd'], label='MACD')
+    #ax2.plot(dataframe.index.values, dataframe['macds'], label='MACDS')
+    #ax2.plot(dataframe.index.values, dataframe['macdh'], label='MACD Histogram')
+    #ax2.plot(dataframe.index.values, [0] * len(dataframe.index.values))
+    #ax2.legend()
 
-    ax3.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
-    ax3.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
-    ax3.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
-    ax3.legend()
+    ax2.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
+    ax2.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
+    ax2.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
+    ax2.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
     # all but bottom plot.
@@ -120,6 +122,10 @@ def plot_dataframe(dataframe, pair):
 if __name__ == '__main__':
     while True:
         pair = 'BTC_ANT'
-        for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
-            get_buy_signal(pair)
+        #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
+            #get_buy_signal(pair)
+        dataframe = get_ticker_dataframe(pair)
+        dataframe = populate_trends(dataframe)
+        plot_dataframe(dataframe, pair)
         time.sleep(60)
+

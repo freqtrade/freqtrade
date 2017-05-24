@@ -80,7 +80,8 @@ class TradeThread(threading.Thread):
     @staticmethod
     def _process():
         """
-        Queries the persistence layer for new trades and handles them
+        Queries the persistence layer for open trades and handles them,
+        otherwise a new trade is created.
         :return: None
         """
         # Query trades from persistence layer
@@ -214,7 +215,7 @@ def create_trade(stake_amount: float, exchange):
             pair = p
             break
     else:
-        raise ValueError('No buy signal from pairs: {}'.format(','.join(whitelist)))
+        raise ValueError('No buy signal from pairs: {}'.format(', '.join(whitelist)))
 
     open_rate = api_wrapper.get_ticker(pair)['ask']
     amount = stake_amount / open_rate
