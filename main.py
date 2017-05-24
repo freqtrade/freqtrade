@@ -208,7 +208,6 @@ def create_trade(stake_amount: float, exchange):
     ## Pick random pair and execute trade
     #idx = random.randint(0, len(whitelist) - 1)
     #pair = whitelist[idx]
-    pair = None
     # Pick pair based on StochRSI buy signals
     for p in whitelist:
         if get_buy_signal(p):

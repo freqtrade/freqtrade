@@ -23,12 +23,15 @@ def get_ticker_dataframe(pair):
     """
     minimum_date = arrow.now() - timedelta(hours=2)
     url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+    }
     params = {
         'marketName': pair.replace('_', '-'),
         'tickInterval': 'OneMin',
         '_': minimum_date.timestamp * 1000
     }
-    data = requests.get(url, params).json()
+    data = requests.get(url, params=params, headers=headers).json()
     if not data['success']:
         raise RuntimeError('BITTREX: {}'.format(data['message']))
 
@@ -57,11 +60,6 @@ def populate_trends(dataframe):
     :param dataframe: StockDataFrame
     :return: StockDataFrame with populated trends
     """
-    #dataframe.loc[
-    #    (dataframe['stochrsi'] < 0.20)
-    #    & (dataframe['close_12_ema'] <= dataframe['close_26_ema']),
-    #    'bullish'
-    #] = 1
     dataframe.loc[
         (dataframe['stochrsi'] < 0.20), 'underpriced'
     ] = 1
