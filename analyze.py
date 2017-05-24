@@ -21,7 +21,7 @@ def get_ticker_dataframe(pair):
     :param pair: pair as str in format BTC_ETH or BTC-ETH
     :return: StockDataFrame
     """
-    minimum_date = arrow.now() - timedelta(hours=12)
+    minimum_date = arrow.now() - timedelta(hours=6)
     url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
@@ -42,12 +42,13 @@ def get_ticker_dataframe(pair):
         'high': t['H'],
         'low': t['L'],
         'date': t['T'],
-    } for t in data['result'] if arrow.get(t['T']) > minimum_date]
+    } for t in sorted(data['result'], key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
     dataframe = StockDataFrame(json_normalize(data))
 
     # calculate StochRSI
-    rsi = dataframe['rsi_{}'.format(14)]
-    rolling = rsi.rolling(window=14, center=False)
+    window = 14
+    rsi = dataframe['rsi_{}'.format(window)]
+    rolling = rsi.rolling(window=window, center=False)
     low = rolling.min()
     high = rolling.max()
     dataframe['stochrsi'] = (rsi - low) / (high - low)
@@ -60,9 +61,15 @@ def populate_trends(dataframe):
     :param dataframe: StockDataFrame
     :return: StockDataFrame with populated trends
     """
+    """
     dataframe.loc[
         (dataframe['stochrsi'] < 0.20)
-        & (dataframe['close_60_ema'] > (1 + 0.005) * dataframe['close_120_ema']),
+        & (dataframe['close_30_ema'] > (1 + 0.0025) * dataframe['close_60_ema']),
+        'underpriced'
+    ] = 1
+    """
+    dataframe.loc[
+        dataframe['stochrsi'] < 0.20,
         'underpriced'
     ] = 1
     dataframe.loc[dataframe['underpriced'] == 1, 'buy'] = dataframe['close']
@@ -78,6 +85,12 @@ def get_buy_signal(pair):
     dataframe = get_ticker_dataframe(pair)
     dataframe = populate_trends(dataframe)
     latest = dataframe.iloc[-1]
+
+    # Check if dataframe is out of date
+    signal_date = arrow.get(latest['date'])
+    if signal_date < arrow.now() - timedelta(minutes=10):
+        return False
+
     signal = latest['underpriced'] == 1
     logger.debug('buy_trigger: {} (pair={}, signal={})'.format(latest['date'], pair, signal))
     return signal
@@ -122,10 +135,10 @@ def plot_dataframe(dataframe, pair):
 if __name__ == '__main__':
     while True:
         pair = 'BTC_ANT'
-        #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
-            #get_buy_signal(pair)
-        dataframe = get_ticker_dataframe(pair)
-        dataframe = populate_trends(dataframe)
-        plot_dataframe(dataframe, pair)
-        time.sleep(60)
+        for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
+            get_buy_signal(pair)
+        #dataframe = get_ticker_dataframe(pair)
+        #dataframe = populate_trends(dataframe)
+        #plot_dataframe(dataframe, pair)
+        #time.sleep(60)
 
