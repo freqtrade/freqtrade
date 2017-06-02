@@ -1,5 +1,4 @@
 from datetime import timedelta
-import time
 import arrow
 import matplotlib
 import logging
