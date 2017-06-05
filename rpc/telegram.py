@@ -70,7 +70,7 @@ class TelegramHandler(object):
                 order = orders[0] if orders else None
                 message = """
 *Trade ID:* `{trade_id}`
-*Current Pair:* [{pair}](https://bittrex.com/Market/Index?MarketName={pair})
+*Current Pair:* [{pair}]({market_url})
 *Open Since:* `{date}`
 *Amount:* `{amount}`
 *Open Rate:* `{open_rate}`
@@ -81,7 +81,8 @@ class TelegramHandler(object):
 *Open Order:* `{open_order}`
                         """.format(
                     trade_id=trade.id,
-                    pair=trade.pair.replace('_', '-'),
+                    pair=trade.pair,
+                    market_url=api_wrapper.get_pair_detail_url(trade.pair),
                     date=arrow.get(trade.open_date).humanize(),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
@@ -114,11 +115,11 @@ class TelegramHandler(object):
         durations_hours = [(t.close_date - t.open_date).total_seconds() / 3600.0 for t in trades]
         avg_duration = sum(durations_hours) / float(len(durations_hours))
         markdown_msg = """
-*ROI:* `{profit_btc} BTC ({profit}%)`
+*ROI:* `{profit_btc} ({profit}%)`
 *Trade Count:* `{trade_count}`
 *First Trade completed:* `{first_trade_date}`
 *Latest Trade completed:* `{latest_trade_date}`
-*Avg. Stake Amount:* `{avg_stake_amount} BTC`
+*Avg. Stake Amount:* `{avg_stake_amount}`
 *Avg. Duration:* `{avg_duration}` 
     """.format(
             profit_btc=round(profit_amount, 8),

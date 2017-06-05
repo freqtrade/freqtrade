@@ -1,10 +1,7 @@
+import time
 from datetime import timedelta
 import arrow
-import matplotlib
 import logging
-
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
 import requests
 from pandas.io.json import json_normalize
 from stockstats import StockDataFrame
@@ -68,7 +65,8 @@ def populate_trends(dataframe):
     ] = 1
     """
     dataframe.loc[
-        dataframe['stochrsi'] < 0.20,
+        (dataframe['stochrsi'] < 0.20)
+        & (dataframe['macd'] > dataframe['macds']),
         'underpriced'
     ] = 1
     dataframe.loc[dataframe['underpriced'] == 1, 'buy'] = dataframe['close']
@@ -103,26 +101,31 @@ def plot_dataframe(dataframe, pair):
     :return: None
     """
 
+    import matplotlib
+
+    matplotlib.use("Qt5Agg")
+    import matplotlib.pyplot as plt
+
     # Three subplots sharing x axe
-    f, (ax1, ax2) = plt.subplots(2, sharex=True)
+    f, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
     f.suptitle(pair, fontsize=14, fontweight='bold')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
-    ax1.plot(dataframe.index.values, dataframe['close_60_ema'], label='EMA(60)')
-    ax1.plot(dataframe.index.values, dataframe['close_120_ema'], label='EMA(120)')
+    ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(60)')
+    ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(120)')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
     ax1.legend()
 
-    #ax2.plot(dataframe.index.values, dataframe['macd'], label='MACD')
-    #ax2.plot(dataframe.index.values, dataframe['macds'], label='MACDS')
-    #ax2.plot(dataframe.index.values, dataframe['macdh'], label='MACD Histogram')
-    #ax2.plot(dataframe.index.values, [0] * len(dataframe.index.values))
-    #ax2.legend()
-
-    ax2.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
-    ax2.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
-    ax2.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
+    ax2.plot(dataframe.index.values, dataframe['macd'], label='MACD')
+    ax2.plot(dataframe.index.values, dataframe['macds'], label='MACDS')
+    ax2.plot(dataframe.index.values, dataframe['macdh'], label='MACD Histogram')
+    ax2.plot(dataframe.index.values, [0] * len(dataframe.index.values))
     ax2.legend()
+
+    ax3.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
+    ax3.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
+    ax3.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
     # all but bottom plot.
@@ -134,10 +137,9 @@ def plot_dataframe(dataframe, pair):
 if __name__ == '__main__':
     while True:
         pair = 'BTC_ANT'
-        for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
-            get_buy_signal(pair)
-        #dataframe = get_ticker_dataframe(pair)
-        #dataframe = populate_trends(dataframe)
-        #plot_dataframe(dataframe, pair)
-        #time.sleep(60)
-
+        #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
+        #   get_buy_signal(pair)
+        dataframe = get_ticker_dataframe(pair)
+        dataframe = populate_trends(dataframe)
+        plot_dataframe(dataframe, pair)
+        time.sleep(60)

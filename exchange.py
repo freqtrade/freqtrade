@@ -169,3 +169,14 @@ class ApiWrapper(object):
                 'amount': entry['Quantity'],
                 'remaining': entry['QuantityRemaining'],
             } for entry in data['result']]
+
+    def get_pair_detail_url(self, pair):
+        """
+        Returns the market detail url for the given pair
+        :param pair: pair as str, format: BTC_ANT
+        :return: url as str
+        """
+        if self.exchange == Exchange.POLONIEX:
+            raise NotImplemented('Not implemented')
+        elif self.exchange == Exchange.BITTREX:
+            return 'https://bittrex.com/Market/Index?MarketName={}'.format(pair.replace('_', '-'))

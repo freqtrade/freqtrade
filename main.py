@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import json
 import logging
-import random
 import threading
 import time
 import traceback
@@ -167,9 +166,10 @@ def handle_trade(trade):
                 trade.close_date = datetime.utcnow()
                 trade.open_order_id = order_id
 
-                message = '*{}:* Selling {} at rate `{:f} (profit: {}%)`'.format(
+                message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
                     trade.exchange.name,
                     trade.pair.replace('_', '/'),
+                    api_wrapper.get_pair_detail_url(trade.pair),
                     trade.close_rate,
                     round(current_profit, 2)
                 )
@@ -206,9 +206,6 @@ def create_trade(stake_amount: float, exchange):
     if not whitelist:
         raise ValueError('No pair in whitelist')
 
-    ## Pick random pair and execute trade
-    #idx = random.randint(0, len(whitelist) - 1)
-    #pair = whitelist[idx]
     # Pick pair based on StochRSI buy signals
     for p in whitelist:
         if get_buy_signal(p):
@@ -223,7 +220,12 @@ def create_trade(stake_amount: float, exchange):
     order_id = api_wrapper.buy(pair, open_rate, amount)
 
     # Create trade entity and return
-    message = '*{}:* Buying {} at rate `{:f}`'.format(exchange.name, pair.replace('_', '/'), open_rate)
+    message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
+        exchange.name,
+        pair.replace('_', '/'),
+        api_wrapper.get_pair_detail_url(pair),
+        open_rate
+    )
     logger.info(message)
     TelegramHandler.send_msg(message)
     return Trade(pair=pair,
