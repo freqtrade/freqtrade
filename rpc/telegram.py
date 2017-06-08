@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 
 import arrow
+from sqlalchemy import and_
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
@@ -57,7 +58,7 @@ class TelegramHandler(object):
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         from main import get_instance
         if not get_instance().is_alive():
-            TelegramHandler.send_msg('*Status:* `trader stopped`', bot=bot)
+            TelegramHandler.send_msg('*Status:* `trader is not running`', bot=bot)
         elif not trades:
             TelegramHandler.send_msg('*Status:* `no active order`', bot=bot)
         else:
@@ -199,6 +200,54 @@ class TelegramHandler(object):
         logger.info('Order cancelled: (order_id: {})'.format(order_id))
 
     @staticmethod
+    @authorized_only
+    def _forcesell(bot, update):
+        """
+        Handler for /forcesell <id>.
+        Sells the given trade at current price
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        from main import get_instance
+        if not get_instance().is_alive():
+            TelegramHandler.send_msg('`trader is not running`', bot=bot)
+            return
+
+        try:
+            trade_id = int(update.message.text
+                           .replace('/forcesell', '')
+                           .strip())
+            # Query for trade
+            trade = Trade.query.filter(and_(
+                Trade.id == trade_id,
+                Trade.is_open.is_(True)
+            )).first()
+            if not trade:
+                TelegramHandler.send_msg('There is no open trade with ID: `{}`'.format(trade_id))
+                return
+            # Get current rate
+            current_rate = api_wrapper.get_ticker(trade.pair)['bid']
+            # Get available balance
+            currency = trade.pair.split('_')[1]
+            balance = api_wrapper.get_balance(currency)
+            # Execute sell
+            profit = trade.exec_sell_order(current_rate, balance)
+            message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
+                trade.exchange.name,
+                trade.pair.replace('_', '/'),
+                api_wrapper.get_pair_detail_url(trade.pair),
+                trade.close_rate,
+                round(profit, 2)
+            )
+            logger.info(message)
+            TelegramHandler.send_msg(message)
+
+        except ValueError:
+            TelegramHandler.send_msg('Invalid argument. Usage: `/forcesell <trade_id>`')
+            logger.warning('/forcesell: Invalid argument received')
+
+    @staticmethod
     @synchronized
     def get_updater(conf):
         """
@@ -224,6 +273,7 @@ class TelegramHandler(object):
             CommandHandler('start', TelegramHandler._start),
             CommandHandler('stop', TelegramHandler._stop),
             CommandHandler('cancel', TelegramHandler._cancel),
+            CommandHandler('forcesell', TelegramHandler._forcesell),
         ]
         for handle in handles:
             TelegramHandler.get_updater(conf).dispatcher.add_handler(handle)

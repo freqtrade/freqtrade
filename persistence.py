@@ -5,10 +5,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.types import Enum
 
-from exchange import Exchange
+from exchange import Exchange, get_exchange_api
 from utils import get_conf
 
-if get_conf().get('dry_run', False):
+conf = get_conf()
+if conf.get('dry_run', False):
     db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
 else:
     db_handle = 'sqlite:///tradesv2.sqlite'
@@ -44,5 +45,23 @@ class Trade(Base):
             self.open_rate,
             'closed' if not self.is_open else round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
         )
+
+    def exec_sell_order(self, rate, amount):
+        """
+        Executes a sell for the given trade and updated the entity.
+        :param rate: rate to sell for
+        :param amount: amount to sell
+        :return: current profit as percentage
+        """
+        profit = 100 * ((rate - self.open_rate) / self.open_rate)
+
+        # Execute sell and update trade record
+        order_id = get_exchange_api(conf).sell(self.pair, rate, amount)
+        self.close_rate = rate
+        self.close_profit = profit
+        self.close_date = datetime.utcnow()
+        self.open_order_id = order_id
+        Session.flush()
+        return profit
 
 Base.metadata.create_all(engine)

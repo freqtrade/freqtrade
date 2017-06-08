@@ -158,20 +158,14 @@ def handle_trade(trade):
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
             if time_diff > duration and current_rate > (1 + threshold) * trade.open_rate:
-
-                # Execute sell and update trade record
-                order_id = api_wrapper.sell(trade.pair, current_rate, balance)
-                trade.close_rate = current_rate
-                trade.close_profit = current_profit
-                trade.close_date = datetime.utcnow()
-                trade.open_order_id = order_id
-
+                # Execute sell
+                profit = trade.exec_sell_order(current_rate, balance)
                 message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
                     trade.exchange.name,
                     trade.pair.replace('_', '/'),
                     api_wrapper.get_pair_detail_url(trade.pair),
                     trade.close_rate,
-                    round(current_profit, 2)
+                    round(profit, 2)
                 )
                 logger.info(message)
                 TelegramHandler.send_msg(message)
