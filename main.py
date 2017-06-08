@@ -25,7 +25,7 @@ from utils import get_conf
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
 __license__ = "GPLv3"
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 
 conf = get_conf()
@@ -131,6 +131,7 @@ def close_trade_if_fulfilled(trade):
     # we can close this trade.
     if trade.close_profit and trade.close_date and trade.close_rate and not trade.open_order_id:
         trade.is_open = False
+        Session.flush()
         return True
     return False
 

@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 import arrow
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
@@ -105,31 +105,46 @@ class TelegramHandler(object):
         :param update: message update
         :return: None
         """
-        trades = Trade.query.filter(Trade.is_open.is_(False)).all()
-        trade_count = len(trades)
-        profit_amount = sum((t.close_profit / 100) * t.btc_amount for t in trades)
-        profit = sum(t.close_profit for t in trades)
-        if trades:
-            avg_stake_amount = round(sum(t.btc_amount for t in trades) / float(trade_count), 8)
-        else:
-            avg_stake_amount = None
-        durations_hours = [(t.close_date - t.open_date).total_seconds() / 3600.0 for t in trades]
-        avg_duration = sum(durations_hours) / float(len(durations_hours))
+        trades = Trade.query.order_by(Trade.id).all()
+
+        profit_amounts = []
+        profits = []
+        durations = []
+        for trade in trades:
+            if trade.close_date:
+                durations.append((trade.close_date - trade.open_date).total_seconds())
+            if trade.close_profit:
+                profit = trade.close_profit
+            else:
+                # Get current rate
+                current_rate = api_wrapper.get_ticker(trade.pair)['bid']
+                profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
+
+            profit_amounts.append((profit / 100) * trade.btc_amount)
+            profits.append(profit)
+
+        bp_pair, bp_rate = Session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+            .filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
+            .order_by('profit_sum DESC') \
+            .first()
+
         markdown_msg = """
 *ROI:* `{profit_btc} ({profit}%)`
 *Trade Count:* `{trade_count}`
-*First Trade completed:* `{first_trade_date}`
-*Latest Trade completed:* `{latest_trade_date}`
-*Avg. Stake Amount:* `{avg_stake_amount}`
-*Avg. Duration:* `{avg_duration}` 
+*First Trade opened:* `{first_trade_date}`
+*Latest Trade opened:* `{latest_trade_date}`
+*Avg. Duration:* `{avg_duration}`
+*Best Performing:* `{best_pair}: {best_rate}%`
     """.format(
-            profit_btc=round(profit_amount, 8),
-            profit=round(profit, 2),
-            trade_count=trade_count,
+            profit_btc=round(sum(profit_amounts), 8),
+            profit=round(sum(profits), 2),
+            trade_count=len(trades),
             first_trade_date=arrow.get(trades[0].open_date).humanize(),
             latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
-            avg_stake_amount=avg_stake_amount,
-            avg_duration=str(timedelta(hours=avg_duration)).split('.')[0],
+            avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
+            best_pair=bp_pair,
+            best_rate=round(bp_rate, 2),
         )
         TelegramHandler.send_msg(markdown_msg, bot=bot)
 
@@ -215,6 +230,33 @@ class TelegramHandler(object):
             logger.warning('/forcesell: Invalid argument received')
 
     @staticmethod
+    @authorized_only
+    def _performance(bot, update):
+        """
+        Handler for /performance.
+        Shows a performance statistic from finished trades
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        from main import get_instance
+        if not get_instance().is_alive():
+            TelegramHandler.send_msg('`trader is not running`', bot=bot)
+            return
+
+        pair_rates = Session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+            .filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
+            .order_by('profit_sum DESC') \
+            .all()
+
+        stats = '\n'.join('{}. <code>{}\t{}%</code>'.format(i + 1, pair, round(rate, 2)) for i, (pair, rate) in enumerate(pair_rates))
+
+        message = '<b>Performance:</b>\n{}\n'.format(stats)
+        logger.debug(message)
+        TelegramHandler.send_msg(message, parse_mode=ParseMode.HTML)
+
+    @staticmethod
     @synchronized
     def get_updater(conf):
         """
@@ -240,6 +282,7 @@ class TelegramHandler(object):
             CommandHandler('start', TelegramHandler._start),
             CommandHandler('stop', TelegramHandler._stop),
             CommandHandler('forcesell', TelegramHandler._forcesell),
+            CommandHandler('performance', TelegramHandler._performance),
         ]
         for handle in handles:
             TelegramHandler.get_updater(conf).dispatcher.add_handler(handle)
