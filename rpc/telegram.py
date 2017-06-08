@@ -286,7 +286,12 @@ class TelegramHandler(object):
         ]
         for handle in handles:
             TelegramHandler.get_updater(conf).dispatcher.add_handler(handle)
-        TelegramHandler.get_updater(conf).start_polling(clean=True, bootstrap_retries=3)
+        TelegramHandler.get_updater(conf).start_polling(
+            clean=True,
+            bootstrap_retries=3,
+            timeout=30,
+            read_latency=60,
+        )
         logger.info('TelegramHandler is listening for following commands: {}'
                     .format([h.command for h in handles]))
 
