@@ -16,7 +16,7 @@ Persistence is achieved through sqlite.
 * /stop: Stops the trader
 * /status: Lists all open trades
 * /profit: Lists cumulative profit from all finished trades
-* /cancel: cancels open order for given trade (currently disabled)
+* /forcesell <trade_id>: Instantly sells the given trade (Ignoring `minimum_roi`).
 
 ##### Config
 `minimal_roi` is a JSON object where the key is a duration

@@ -168,39 +168,6 @@ class TelegramHandler(object):
 
     @staticmethod
     @authorized_only
-    def _cancel(bot, update):
-        """
-        Handler for /cancel.
-        Cancels the open order for the current Trade.
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        # TODO: make compatible with max_open_orders
-        TelegramHandler.send_msg('`Currently not implemented`')
-        return
-
-        trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-        if not trade:
-            TelegramHandler.send_msg('`There is no open trade`')
-            return
-
-        order_id = trade.open_order_id
-        if not order_id:
-            TelegramHandler.send_msg('`There is no open order`')
-            return
-
-        api_wrapper.cancel_order(order_id)
-        trade.open_order_id = None
-        trade.close_rate = None
-        trade.close_date = None
-        trade.close_profit = None
-        Session.flush()
-        TelegramHandler.send_msg('*Order cancelled:* `{}`'.format(order_id), bot=bot)
-        logger.info('Order cancelled: (order_id: {})'.format(order_id))
-
-    @staticmethod
-    @authorized_only
     def _forcesell(bot, update):
         """
         Handler for /forcesell <id>.
@@ -272,7 +239,6 @@ class TelegramHandler(object):
             CommandHandler('profit', TelegramHandler._profit),
             CommandHandler('start', TelegramHandler._start),
             CommandHandler('stop', TelegramHandler._stop),
-            CommandHandler('cancel', TelegramHandler._cancel),
             CommandHandler('forcesell', TelegramHandler._forcesell),
         ]
         for handle in handles:
