@@ -304,10 +304,10 @@ class TelegramHandler(object):
                 bot = bot or TelegramHandler.get_updater(conf).bot
                 try:
                     bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
-                except NetworkError as e:
+                except NetworkError as error:
                     # Sometimes the telegram server resets the current connection,
                     # if this is the case we send the message again.
-                    logger.warning('Got Telegram NetworkError: {}! trying one more time'.format(e.message))
+                    logger.warning('Got Telegram NetworkError: {}! trying one more time'.format(error.message))
                     bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except Exception:
                 logger.exception('Exception occurred within Telegram API')

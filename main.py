@@ -63,8 +63,8 @@ class TradeThread(threading.Thread):
             while not _should_stop:
                 try:
                     self._process()
-                except (ConnectionError, JSONDecodeError, ValueError) as e:
-                    msg = 'Got {} during _process()'.format(e.__class__.__name__)
+                except (ConnectionError, JSONDecodeError, ValueError) as error:
+                    msg = 'Got {} during _process()'.format(error.__class__.__name__)
                     logger.exception(msg)
                 finally:
                     Session.flush()
