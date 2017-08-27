@@ -80,7 +80,7 @@ class TelegramHandler(object):
 *Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit}%`
 *Open Order:* `{open_order}`
-                        """.format(
+                """.format(
                     trade_id=trade.id,
                     pair=trade.pair,
                     market_url=api_wrapper.get_pair_detail_url(trade.pair),
@@ -136,7 +136,7 @@ class TelegramHandler(object):
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate}%`
-    """.format(
+        """.format(
             profit_btc=round(sum(profit_amounts), 8),
             profit=round(sum(profits), 2),
             trade_count=len(trades),
