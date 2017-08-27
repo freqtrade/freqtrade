@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import json
 import logging
 import threading
 import time
@@ -70,7 +69,7 @@ class TradeThread(threading.Thread):
                 finally:
                     Session.flush()
                     time.sleep(25)
-        except (RuntimeError, json.decoder.JSONDecodeError) as e:
+        except (RuntimeError, JSONDecodeError) as e:
             TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
             logger.exception('RuntimeError. Stopping trader ...')
         finally:
