@@ -109,7 +109,7 @@ class TradeThread(threading.Thread):
             trade.open_order_id = None
             # Check if this trade can be marked as closed
             if close_trade_if_fulfilled(trade):
-                logger.info('No open orders found and trade is fulfilled. Marking {} as closed ...'.format(trade))
+                logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
                 continue
 
             # Check if we can sell our current pair
@@ -144,7 +144,7 @@ def handle_trade(trade):
         if not trade.is_open:
             raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
-        logger.debug('Handling open trade {} ...'.format(trade))
+        logger.debug('Handling open trade %s ...', trade)
         # Get current rate
         current_rate = api_wrapper.get_ticker(trade.pair)['bid']
         current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
@@ -171,7 +171,7 @@ def handle_trade(trade):
                 TelegramHandler.send_msg(message)
                 return
         else:
-            logger.debug('Threshold not reached. (cur_profit: {}%)'.format(round(current_profit, 2)))
+            logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit)
     except ValueError:
         logger.exception('Unable to handle open order')
 
@@ -182,7 +182,7 @@ def create_trade(stake_amount: float, exchange):
     :param stake_amount: amount of btc to spend
     :param exchange: exchange to use
     """
-    logger.info('Creating new trade with stake_amount: {} ...'.format(stake_amount))
+    logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
     whitelist = CONFIG[exchange.name.lower()]['pair_whitelist']
     # Check if btc_amount is fulfilled
     if api_wrapper.get_balance(CONFIG['stake_currency']) < stake_amount:
@@ -196,7 +196,7 @@ def create_trade(stake_amount: float, exchange):
     for trade in trades:
         if trade.pair in whitelist:
             whitelist.remove(trade.pair)
-            logger.debug('Ignoring {} in pair whitelist'.format(trade.pair))
+            logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
         raise ValueError('No pair in whitelist')
 
@@ -231,7 +231,7 @@ def create_trade(stake_amount: float, exchange):
 
 
 if __name__ == '__main__':
-    logger.info('Starting freqtrade {}'.format(__version__))
+    logger.info('Starting freqtrade %s', __version__)
     TelegramHandler.listen()
     while True:
         time.sleep(0.5)

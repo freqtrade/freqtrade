@@ -89,7 +89,7 @@ def get_buy_signal(pair):
         return False
 
     signal = latest['underpriced'] == 1
-    logger.debug('buy_trigger: {} (pair={}, signal={})'.format(latest['date'], pair, signal))
+    logger.debug('buy_trigger: %s (pair=%s, signal=%s)', latest['date'], pair, signal)
     return signal
 
 

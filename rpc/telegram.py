@@ -36,10 +36,10 @@ def authorized_only(command_handler):
 
         chat_id = int(conf['telegram']['chat_id'])
         if int(update.message.chat_id) == chat_id:
-            logger.info('Executing handler: {} for chat_id: {}'.format(command_handler.__name__, chat_id))
+            logger.info('Executing handler: %s for chat_id: %s', command_handler.__name__, chat_id)
             return command_handler(*args, **kwargs)
         else:
-            logger.info('Rejected unauthorized message from: {}'.format(update.message.chat_id))
+            logger.info('Rejected unauthorized message from: %s', update.message.chat_id)
     return wrapper
 
 
@@ -307,7 +307,7 @@ class TelegramHandler(object):
                 except NetworkError as error:
                     # Sometimes the telegram server resets the current connection,
                     # if this is the case we send the message again.
-                    logger.warning('Got Telegram NetworkError: {}! trying one more time'.format(error.message))
+                    logger.warning('Got Telegram NetworkError: %s! Trying one more time.', error.message)
                     bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except Exception:
                 logger.exception('Exception occurred within Telegram API')
