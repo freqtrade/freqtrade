@@ -6,20 +6,16 @@ import traceback
 from datetime import datetime
 from json import JSONDecodeError
 from requests import ConnectionError
-
 from wrapt import synchronized
-
 from analyze import get_buy_signal
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 from persistence import Trade, Session
 from exchange import get_exchange_api
 from rpc.telegram import TelegramHandler
 from utils import get_conf
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
