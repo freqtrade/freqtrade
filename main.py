@@ -28,8 +28,8 @@ __license__ = "GPLv3"
 __version__ = "0.8.0"
 
 
-conf = get_conf()
-api_wrapper = get_exchange_api(conf)
+CONFIG = get_conf()
+api_wrapper = get_exchange_api(CONFIG)
 
 
 @synchronized
@@ -85,10 +85,10 @@ class TradeThread(threading.Thread):
         """
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if len(trades) < conf['max_open_trades']:
+        if len(trades) < CONFIG['max_open_trades']:
             # Create entity and execute trade
             try:
-                Session.add(create_trade(float(conf['stake_amount']), api_wrapper.exchange))
+                Session.add(create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange))
             except ValueError:
                 logger.exception('ValueError during trade creation')
         for trade in trades:
@@ -154,7 +154,7 @@ def handle_trade(trade):
         currency = trade.pair.split('_')[1]
         balance = api_wrapper.get_balance(currency)
 
-        for duration, threshold in sorted(conf['minimal_roi'].items()):
+        for duration, threshold in sorted(CONFIG['minimal_roi'].items()):
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
@@ -184,10 +184,10 @@ def create_trade(stake_amount: float, exchange):
     :param exchange: exchange to use
     """
     logger.info('Creating new trade with stake_amount: {} ...'.format(stake_amount))
-    whitelist = conf[exchange.name.lower()]['pair_whitelist']
+    whitelist = CONFIG[exchange.name.lower()]['pair_whitelist']
     # Check if btc_amount is fulfilled
-    if api_wrapper.get_balance(conf['stake_currency']) < stake_amount:
-        raise ValueError('stake amount is not fulfilled (currency={}'.format(conf['stake_currency']))
+    if api_wrapper.get_balance(CONFIG['stake_currency']) < stake_amount:
+        raise ValueError('stake amount is not fulfilled (currency={}'.format(CONFIG['stake_currency']))
 
     # Remove currently opened and latest pairs from whitelist
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
