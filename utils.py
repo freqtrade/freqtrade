@@ -17,8 +17,8 @@ def get_conf(filename='config.json'):
     """
     global _cur_conf
     if not _cur_conf:
-        with open(filename) as fp:
-            _cur_conf = json.load(fp)
+        with open(filename) as file:
+            _cur_conf = json.load(file)
             validate_conf(_cur_conf)
     return _cur_conf
 
@@ -40,11 +40,11 @@ def validate_conf(conf):
     if not isinstance(conf.get('minimal_roi'), dict):
         raise ValueError('minimal_roi must be a dict')
 
-    for i, (minutes, threshold) in enumerate(conf.get('minimal_roi').items()):
+    for index, (minutes, threshold) in enumerate(conf.get('minimal_roi').items()):
         if not isinstance(minutes, str):
-            raise ValueError('minimal_roi[{}].key must be a string'.format(i))
+            raise ValueError('minimal_roi[{}].key must be a string'.format(index))
         if not isinstance(threshold, float):
-            raise ValueError('minimal_roi[{}].value must be a float'.format(i))
+            raise ValueError('minimal_roi[{}].value must be a float'.format(index))
 
     if conf.get('telegram'):
         telegram = conf.get('telegram')
@@ -95,7 +95,7 @@ def validate_bittrex_pairs(pairs):
     data = Bittrex(None, None).get_markets()
     if not data['success']:
         raise RuntimeError('BITTREX: {}'.format(data['message']))
-    available_markets = [m['MarketName'].replace('-', '_')for m in data['result']]
-    for p in pairs:
-        if p not in available_markets:
-            raise ValueError('Invalid pair: {}'.format(p))
+    available_markets = [market['MarketName'].replace('-', '_')for market in data['result']]
+    for pair in pairs:
+        if pair not in available_markets:
+            raise ValueError('Invalid pair: {}'.format(pair))

@@ -1,7 +1,7 @@
 import time
 from datetime import timedelta
-import arrow
 import logging
+import arrow
 import requests
 from pandas.io.json import json_normalize
 from stockstats import StockDataFrame
@@ -89,7 +89,7 @@ def get_buy_signal(pair):
         return False
 
     signal = latest['underpriced'] == 1
-    logger.debug('buy_trigger: {} (pair={}, signal={})'.format(latest['date'], pair, signal))
+    logger.debug('buy_trigger: %s (pair=%s, signal=%s)', latest['date'], pair, signal)
     return signal
 
 
@@ -107,8 +107,8 @@ def plot_dataframe(dataframe, pair):
     import matplotlib.pyplot as plt
 
     # Three subplots sharing x axe
-    f, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-    f.suptitle(pair, fontsize=14, fontweight='bold')
+    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
+    fig.suptitle(pair, fontsize=14, fontweight='bold')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
     ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(60)')
     ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(120)')
@@ -129,8 +129,8 @@ def plot_dataframe(dataframe, pair):
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
     # all but bottom plot.
-    f.subplots_adjust(hspace=0)
-    plt.setp([a.get_xticklabels() for a in f.axes[:-1]], visible=False)
+    fig.subplots_adjust(hspace=0)
+    plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
     plt.show()
 
 
