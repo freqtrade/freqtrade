@@ -12,3 +12,4 @@ PYQT5==5.9
 scikit-learn==0.19.0
 scipy==0.19.1
 stockstats==0.2.0
+jsonschema==2.6.0
