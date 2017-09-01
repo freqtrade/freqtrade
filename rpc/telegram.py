@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from typing import Callable, Any
 
 import arrow
 from sqlalchemy import and_, func
@@ -23,7 +24,7 @@ conf = get_conf()
 api_wrapper = get_exchange_api(conf)
 
 
-def authorized_only(command_handler):
+def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
     """
     Decorator to check if the message comes from the correct chat_id
     :param command_handler: Telegram CommandHandler
@@ -46,7 +47,7 @@ def authorized_only(command_handler):
 class TelegramHandler(object):
     @staticmethod
     @authorized_only
-    def _status(bot, update):
+    def _status(bot: Bot, update: Update) -> None:
         """
         Handler for /status.
         Returns the current TradeThread status
@@ -97,7 +98,7 @@ class TelegramHandler(object):
 
     @staticmethod
     @authorized_only
-    def _profit(bot, update):
+    def _profit(bot: Bot, update: Update) -> None:
         """
         Handler for /profit.
         Returns a cumulative profit statistics.
@@ -150,7 +151,7 @@ class TelegramHandler(object):
 
     @staticmethod
     @authorized_only
-    def _start(bot, update):
+    def _start(bot: Bot, update: Update) -> None:
         """
         Handler for /start.
         Starts TradeThread
@@ -166,7 +167,7 @@ class TelegramHandler(object):
 
     @staticmethod
     @authorized_only
-    def _stop(bot, update):
+    def _stop(bot: Bot, update: Update) -> None:
         """
         Handler for /stop.
         Stops TradeThread
@@ -183,7 +184,7 @@ class TelegramHandler(object):
 
     @staticmethod
     @authorized_only
-    def _forcesell(bot, update):
+    def _forcesell(bot: Bot, update: Update) -> None:
         """
         Handler for /forcesell <id>.
         Sells the given trade at current price
@@ -231,7 +232,7 @@ class TelegramHandler(object):
 
     @staticmethod
     @authorized_only
-    def _performance(bot, update):
+    def _performance(bot: Bot, update: Update) -> None:
         """
         Handler for /performance.
         Shows a performance statistic from finished trades
@@ -258,19 +259,19 @@ class TelegramHandler(object):
 
     @staticmethod
     @synchronized
-    def get_updater(conf):
+    def get_updater(config: dict) -> Updater:
         """
-        Returns the current telegram updater instantiates a new one
-        :param conf:
+        Returns the current telegram updater or instantiates a new one
+        :param config: dict
         :return: telegram.ext.Updater
         """
         global _updater
         if not _updater:
-            _updater = Updater(token=conf['telegram']['token'], workers=0)
+            _updater = Updater(token=config['telegram']['token'], workers=0)
         return _updater
 
     @staticmethod
-    def listen():
+    def listen() -> None:
         """
         Registers all known command handlers and starts polling for message updates
         :return: None
@@ -296,7 +297,7 @@ class TelegramHandler(object):
                     .format([h.command for h in handles]))
 
     @staticmethod
-    def send_msg(msg, bot=None, parse_mode=ParseMode.MARKDOWN):
+    def send_msg(msg: str, bot: Bot=None, parse_mode: ParseMode=ParseMode.MARKDOWN) -> None:
         """
         Send given markdown message
         :param msg: message
