@@ -29,7 +29,7 @@ See the example below:
     "1440": 0.01,  # Sell after 24 hours if there is at least 1% profit
     "720":  0.02,  # Sell after 12 hours if there is at least 2% profit
     "360":  0.02,  # Sell after 6 hours if there is at least 2% profit
-    "0":    0.025  # Sell immediatly if there is at least 2.5% profit
+    "0":    0.025  # Sell immediately if there is at least 2.5% profit
 },
 ```
 
