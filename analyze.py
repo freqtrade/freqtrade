@@ -5,6 +5,8 @@ import arrow
 import requests
 from pandas.io.json import json_normalize
 from stockstats import StockDataFrame
+import talib.abstract as ta
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -41,6 +43,8 @@ def get_ticker_dataframe(pair):
     } for t in sorted(data['result'], key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
     dataframe = StockDataFrame(json_normalize(data))
 
+    dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.2)
+
     # calculate StochRSI
     window = 14
     rsi = dataframe['rsi_{}'.format(window)]
@@ -66,7 +70,8 @@ def populate_trends(dataframe):
     """
     dataframe.loc[
         (dataframe['stochrsi'] < 0.20)
-        & (dataframe['macd'] > dataframe['macds']),
+        & (dataframe['macd'] > dataframe['macds']) 
+        & (dataframe['close'] > dataframe['sar']),
         'underpriced'
     ] = 1
     dataframe.loc[dataframe['underpriced'] == 1, 'buy'] = dataframe['close']
@@ -110,8 +115,9 @@ def plot_dataframe(dataframe, pair):
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
     fig.suptitle(pair, fontsize=14, fontweight='bold')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
-    ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(60)')
-    ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(120)')
+    # ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(60)')
+    # ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(120)')
+    ax1.plot(dataframe.index.values, dataframe['sar'], 'rx', label='SAR')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
     ax1.legend()
