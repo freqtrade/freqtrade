@@ -40,6 +40,7 @@ if not feel free to raise a github issue.
 ##### Prerequisites
 * python3
 * sqlite
+* [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
 
 ##### Install
 ```
