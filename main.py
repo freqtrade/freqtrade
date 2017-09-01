@@ -69,11 +69,16 @@ class TradeThread(threading.Thread):
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < CONFIG['max_open_trades']:
-            # Create entity and execute trade
             try:
-                Session.add(create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange))
+                # Create entity and execute trade
+                trade = create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange)
+                if trade:
+                    Session.add(trade)
+                else:
+                    logging.info('Got no buy signal...')
             except ValueError:
-                logger.exception('ValueError during trade creation')
+                logger.exception('Unable to create trade')
+
         for trade in trades:
             # Check if there is already an open order for this trade
             orders = api_wrapper.get_open_orders(trade.pair)
@@ -175,7 +180,8 @@ def handle_trade(trade):
 
 def create_trade(stake_amount: float, exchange):
     """
-    Creates a new trade record with a random pair
+    Checks the implemented trading indicator(s) for a randomly picked pair,
+    if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
     :param exchange: exchange to use
     """
@@ -203,7 +209,7 @@ def create_trade(stake_amount: float, exchange):
             pair = p
             break
     else:
-        raise ValueError('No buy signal from pairs: {}'.format(', '.join(whitelist)))
+        return None
 
     open_rate = api_wrapper.get_ticker(pair)['ask']
     amount = stake_amount / open_rate
