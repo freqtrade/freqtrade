@@ -25,7 +25,9 @@ class ApiWrapper(object):
     """
     def __init__(self, config: dict):
         """
-        Initializes the ApiWrapper with the given config, it does not validate those values.
+        Initializes the ApiWrapper with the given config,
+        it does basic validation whether the specified
+        exchange and pairs are valid.
         :param config: dict
         """
         self.dry_run = config['dry_run']
@@ -43,6 +45,13 @@ class ApiWrapper(object):
             self.api = Bittrex(api_key=config['bittrex']['key'], api_secret=config['bittrex']['secret'])
         else:
             self.api = None
+            raise RuntimeError('No exchange specified. Aborting!')
+
+        # Check if all pairs are available
+        markets = self.get_markets()
+        for pair in config[self.exchange.name.lower()]['pair_whitelist']:
+            if pair not in markets:
+                raise RuntimeError('Pair {} is not available at Poloniex'.format(pair))
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
         """
@@ -170,6 +179,20 @@ class ApiWrapper(object):
             raise NotImplemented('Not implemented')
         elif self.exchange == Exchange.BITTREX:
             return 'https://bittrex.com/Market/Index?MarketName={}'.format(pair.replace('_', '-'))
+
+    def get_markets(self) -> List[str]:
+        """
+        Returns all available markets
+        :return: list of all available pairs
+        """
+        if self.exchange == Exchange.POLONIEX:
+            # TODO: implement
+            raise NotImplemented('Not implemented')
+        elif self.exchange == Exchange. BITTREX:
+            data = self.api.get_markets()
+            if not data['success']:
+                raise RuntimeError('BITTREX: {}'.format(data['message']))
+            return [m['MarketName'].replace('-', '_') for m in data['result']]
 
 
 @synchronized
