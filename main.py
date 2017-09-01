@@ -55,7 +55,7 @@ class TradeThread(threading.Thread):
                 finally:
                     Session.flush()
                     time.sleep(25)
-        except (RuntimeError, JSONDecodeError) as e:
+        except (RuntimeError, JSONDecodeError):
             TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
             logger.exception('RuntimeError. Stopping trader ...')
         finally:
@@ -119,8 +119,7 @@ def get_instance(recreate: bool=False) -> TradeThread:
     """
     global _instance
     if recreate and not _instance.is_alive():
-        logger.debug('Creating TradeThread instance')
-        _should_stop = False
+        logger.debug('Creating thread instance...')
         _instance = TradeThread()
     return _instance
 
