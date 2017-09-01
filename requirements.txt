@@ -1,14 +1,14 @@
 -e git+https://github.com/s4w3d0ff/python-poloniex.git#egg=Poloniex
 -e git+https://github.com/ericsomdahl/python-bittrex.git#egg=python-bittrex
-SQLAlchemy==1.1.9
+SQLAlchemy==1.1.13
 python-telegram-bot==7.0.1
 arrow==0.10.0
 requests==2.18.4
 urllib3==1.22
-wrapt==1.10.10
-pandas==0.20.1
-matplotlib==2.0.0
-PYQT5==5.8
-scikit-learn==0.18.1
-scipy==0.18.1
+wrapt==1.10.11
+pandas==0.20.3
+matplotlib==2.0.2
+PYQT5==5.9
+scikit-learn==0.19.0
+scipy==0.19.1
 stockstats==0.2.0

@@ -174,10 +174,10 @@ class TelegramHandler(object):
         :param update: message update
         :return: None
         """
-        from main import get_instance, stop_instance
+        from main import get_instance
         if get_instance().is_alive():
             TelegramHandler.send_msg('`Stopping trader ...`', bot=bot)
-            stop_instance()
+            get_instance().stop()
         else:
             TelegramHandler.send_msg('*Status:* `already stopped`', bot=bot)
 

@@ -27,27 +27,15 @@ CONFIG = get_conf()
 api_wrapper = get_exchange_api(CONFIG)
 
 
-@synchronized
-def get_instance(recreate=False):
-    """
-    Get the current instance of this thread. This is a singleton.
-    :param recreate: Must be True if you want to start the instance
-    :return: TradeThread instance
-    """
-    global _instance, _should_stop
-    if recreate and not _instance.is_alive():
-        logger.debug('Creating TradeThread instance')
-        _should_stop = False
-        _instance = TradeThread()
-    return _instance
-
-
-def stop_instance():
-    global _should_stop
-    _should_stop = True
-
-
 class TradeThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self._should_stop = False
+
+    def stop(self):
+        """ stops the trader thread """
+        self._should_stop = True
+
     def run(self):
         """
         Threaded main function
@@ -56,7 +44,7 @@ class TradeThread(threading.Thread):
         try:
             TelegramHandler.send_msg('*Status:* `trader started`')
             logger.info('Trader started')
-            while not _should_stop:
+            while not self._should_stop:
                 try:
                     self._process()
                 except (ConnectionError, JSONDecodeError, ValueError) as error:
@@ -113,7 +101,20 @@ class TradeThread(threading.Thread):
 
 # Initial stopped TradeThread instance
 _instance = TradeThread()
-_should_stop = False
+
+@synchronized
+def get_instance(recreate=False):
+    """
+    Get the current instance of this thread. This is a singleton.
+    :param recreate: Must be True if you want to start the instance
+    :return: TradeThread instance
+    """
+    global _instance
+    if recreate and not _instance.is_alive():
+        logger.debug('Creating TradeThread instance')
+        _should_stop = False
+        _instance = TradeThread()
+    return _instance
 
 
 def close_trade_if_fulfilled(trade):
