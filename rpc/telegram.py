@@ -36,10 +36,10 @@ def authorized_only(command_handler):
 
         chat_id = int(conf['telegram']['chat_id'])
         if int(update.message.chat_id) == chat_id:
-            logger.info('Executing handler: {} for chat_id: {}'.format(command_handler.__name__, chat_id))
+            logger.info('Executing handler: %s for chat_id: %s', command_handler.__name__, chat_id)
             return command_handler(*args, **kwargs)
         else:
-            logger.info('Rejected unauthorized message from: {}'.format(update.message.chat_id))
+            logger.info('Rejected unauthorized message from: %s', update.message.chat_id)
     return wrapper
 
 
@@ -80,7 +80,7 @@ class TelegramHandler(object):
 *Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit}%`
 *Open Order:* `{open_order}`
-                        """.format(
+                """.format(
                     trade_id=trade.id,
                     pair=trade.pair,
                     market_url=api_wrapper.get_pair_detail_url(trade.pair),
@@ -136,7 +136,7 @@ class TelegramHandler(object):
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate}%`
-    """.format(
+        """.format(
             profit_btc=round(sum(profit_amounts), 8),
             profit=round(sum(profits), 2),
             trade_count=len(trades),
@@ -309,10 +309,10 @@ class TelegramHandler(object):
                 bot = bot or TelegramHandler.get_updater(conf).bot
                 try:
                     bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
-                except NetworkError as e:
+                except NetworkError as error:
                     # Sometimes the telegram server resets the current connection,
                     # if this is the case we send the message again.
-                    logger.warning('Got Telegram NetworkError: {}! trying one more time'.format(e.message))
+                    logger.warning('Got Telegram NetworkError: %s! Trying one more time.', error.message)
                     bot.send_message(conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except Exception:
                 logger.exception('Exception occurred within Telegram API')

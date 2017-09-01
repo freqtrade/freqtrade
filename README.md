@@ -51,3 +51,11 @@ $ source .env/bin/activate
 $ pip install -r requirements.txt
 $ ./main.py
 ```
+
+
+#### Docker
+```
+$ cd freqtrade
+$ docker build -t freqtrade .
+$ docker run --rm -it freqtrade
+```

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import json
 import logging
 import threading
 import time
@@ -7,20 +6,16 @@ import traceback
 from datetime import datetime
 from json import JSONDecodeError
 from requests import ConnectionError
-
 from wrapt import synchronized
-
 from analyze import get_buy_signal
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 from persistence import Trade, Session
 from exchange import get_exchange_api
 from rpc.telegram import TelegramHandler
 from utils import get_conf
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
@@ -28,8 +23,8 @@ __license__ = "GPLv3"
 __version__ = "0.8.0"
 
 
-conf = get_conf()
-api_wrapper = get_exchange_api(conf)
+CONFIG = get_conf()
+api_wrapper = get_exchange_api(CONFIG)
 
 
 @synchronized
@@ -64,13 +59,13 @@ class TradeThread(threading.Thread):
             while not _should_stop:
                 try:
                     self._process()
-                except (ConnectionError, JSONDecodeError, ValueError) as e:
-                    msg = 'Got {} during _process()'.format(e.__class__.__name__)
+                except (ConnectionError, JSONDecodeError, ValueError) as error:
+                    msg = 'Got {} during _process()'.format(error.__class__.__name__)
                     logger.exception(msg)
                 finally:
                     Session.flush()
                     time.sleep(25)
-        except (RuntimeError, json.decoder.JSONDecodeError) as e:
+        except (RuntimeError, JSONDecodeError) as e:
             TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
             logger.exception('RuntimeError. Stopping trader ...')
         finally:
@@ -85,10 +80,10 @@ class TradeThread(threading.Thread):
         """
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if len(trades) < conf['max_open_trades']:
+        if len(trades) < CONFIG['max_open_trades']:
             # Create entity and execute trade
             try:
-                Session.add(create_trade(float(conf['stake_amount']), api_wrapper.exchange))
+                Session.add(create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange))
             except ValueError:
                 logger.exception('ValueError during trade creation')
         for trade in trades:
@@ -110,7 +105,7 @@ class TradeThread(threading.Thread):
             trade.open_order_id = None
             # Check if this trade can be marked as closed
             if close_trade_if_fulfilled(trade):
-                logger.info('No open orders found and trade is fulfilled. Marking {} as closed ...'.format(trade))
+                logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
                 continue
 
             # Check if we can sell our current pair
@@ -145,7 +140,7 @@ def handle_trade(trade):
         if not trade.is_open:
             raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
-        logger.debug('Handling open trade {} ...'.format(trade))
+        logger.debug('Handling open trade %s ...', trade)
         # Get current rate
         current_rate = api_wrapper.get_ticker(trade.pair)['bid']
         current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
@@ -154,7 +149,7 @@ def handle_trade(trade):
         currency = trade.pair.split('_')[1]
         balance = api_wrapper.get_balance(currency)
 
-        for duration, threshold in sorted(conf['minimal_roi'].items()):
+        for duration, threshold in sorted(CONFIG['minimal_roi'].items()):
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
@@ -172,7 +167,7 @@ def handle_trade(trade):
                 TelegramHandler.send_msg(message)
                 return
         else:
-            logger.debug('Threshold not reached. (cur_profit: {}%)'.format(round(current_profit, 2)))
+            logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit)
     except ValueError:
         logger.exception('Unable to handle open order')
 
@@ -183,11 +178,11 @@ def create_trade(stake_amount: float, exchange):
     :param stake_amount: amount of btc to spend
     :param exchange: exchange to use
     """
-    logger.info('Creating new trade with stake_amount: {} ...'.format(stake_amount))
-    whitelist = conf[exchange.name.lower()]['pair_whitelist']
+    logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
+    whitelist = CONFIG[exchange.name.lower()]['pair_whitelist']
     # Check if btc_amount is fulfilled
-    if api_wrapper.get_balance(conf['stake_currency']) < stake_amount:
-        raise ValueError('stake amount is not fulfilled (currency={}'.format(conf['stake_currency']))
+    if api_wrapper.get_balance(CONFIG['stake_currency']) < stake_amount:
+        raise ValueError('stake amount is not fulfilled (currency={}'.format(CONFIG['stake_currency']))
 
     # Remove currently opened and latest pairs from whitelist
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -197,7 +192,7 @@ def create_trade(stake_amount: float, exchange):
     for trade in trades:
         if trade.pair in whitelist:
             whitelist.remove(trade.pair)
-            logger.debug('Ignoring {} in pair whitelist'.format(trade.pair))
+            logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
         raise ValueError('No pair in whitelist')
 
@@ -232,7 +227,7 @@ def create_trade(stake_amount: float, exchange):
 
 
 if __name__ == '__main__':
-    logger.info('Starting freqtrade {}'.format(__version__))
+    logger.info('Starting freqtrade %s', __version__)
     TelegramHandler.listen()
     while True:
         time.sleep(0.5)
