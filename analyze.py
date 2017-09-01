@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-def get_ticker_dataframe(pair):
+def get_ticker_dataframe(pair: str) -> StockDataFrame:
     """
     Analyses the trend for the given pair
     :param pair: pair as str in format BTC_ETH or BTC-ETH
@@ -51,7 +51,7 @@ def get_ticker_dataframe(pair):
     return dataframe
 
 
-def populate_trends(dataframe):
+def populate_trends(dataframe: StockDataFrame) -> StockDataFrame:
     """
     Populates the trends for the given dataframe
     :param dataframe: StockDataFrame
@@ -73,7 +73,7 @@ def populate_trends(dataframe):
     return dataframe
 
 
-def get_buy_signal(pair):
+def get_buy_signal(pair: str) -> bool:
     """
     Calculates a buy signal based on StochRSI indicator
     :param pair: pair in format BTC_ANT or BTC-ANT
@@ -93,7 +93,7 @@ def get_buy_signal(pair):
     return signal
 
 
-def plot_dataframe(dataframe, pair):
+def plot_dataframe(dataframe: StockDataFrame, pair: str) -> None:
     """
     Plots the given dataframe
     :param dataframe: StockDataFrame

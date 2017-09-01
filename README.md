@@ -38,7 +38,7 @@ The other values should be self-explanatory,
 if not feel free to raise a github issue.
 
 ##### Prerequisites
-* python3
+* python3.6
 * sqlite
 
 ##### Install

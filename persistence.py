@@ -46,7 +46,7 @@ class Trade(Base):
             'closed' if not self.is_open else round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
         )
 
-    def exec_sell_order(self, rate, amount):
+    def exec_sell_order(self, rate: float, amount: float) -> float:
         """
         Executes a sell for the given trade and updated the entity.
         :param rate: rate to sell for

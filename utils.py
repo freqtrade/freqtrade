@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import List
 
 from wrapt import synchronized
 from bittrex.bittrex import Bittrex
@@ -10,7 +11,7 @@ _cur_conf = None
 
 
 @synchronized
-def get_conf(filename='config.json'):
+def get_conf(filename: str='config.json') -> dict:
     """
     Loads the config into memory and returns the instance of it
     :return: dict
@@ -23,7 +24,7 @@ def get_conf(filename='config.json'):
     return _cur_conf
 
 
-def validate_conf(conf):
+def validate_conf(conf: dict) -> None:
     """
     Validates if the minimal possible config is provided
     :param conf: config as dict
@@ -86,7 +87,7 @@ def validate_conf(conf):
     logger.info('Config is valid ...')
 
 
-def validate_bittrex_pairs(pairs):
+def validate_bittrex_pairs(pairs: List[str]) -> None:
     """
     Validates if all given pairs exist on bittrex
     :param pairs: list of str
