@@ -5,6 +5,7 @@ import arrow
 import requests
 from pandas.io.json import json_normalize
 from stockstats import StockDataFrame
+import talib.abstract as ta
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -42,12 +43,9 @@ def get_ticker_dataframe(pair: str) -> StockDataFrame:
     dataframe = StockDataFrame(json_normalize(data))
 
     # calculate StochRSI
-    window = 14
-    rsi = dataframe['rsi_{}'.format(window)]
-    rolling = rsi.rolling(window=window, center=False)
-    low = rolling.min()
-    high = rolling.max()
-    dataframe['stochrsi'] = (rsi - low) / (high - low)
+    stochrsi = ta.STOCHRSI(dataframe)
+    dataframe['stochrsi'] = stochrsi['fastd'] # values between 0-100, not 0-1
+
     return dataframe
 
 
@@ -59,13 +57,13 @@ def populate_trends(dataframe: StockDataFrame) -> StockDataFrame:
     """
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20)
+        (dataframe['stochrsi'] < 20)
         & (dataframe['close_30_ema'] > (1 + 0.0025) * dataframe['close_60_ema']),
         'underpriced'
     ] = 1
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20)
+        (dataframe['stochrsi'] < 20)
         & (dataframe['macd'] > dataframe['macds']),
         'underpriced'
     ] = 1
@@ -123,8 +121,8 @@ def plot_dataframe(dataframe: StockDataFrame, pair: str) -> None:
     ax2.legend()
 
     ax3.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
-    ax3.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
-    ax3.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [80] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
     ax3.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
