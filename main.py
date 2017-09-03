@@ -5,11 +5,13 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
+from typing import Optional
+
 from requests import ConnectionError
 from wrapt import synchronized
 from analyze import get_buy_signal
 from persistence import Trade, Session
-from exchange import get_exchange_api
+from exchange import get_exchange_api, Exchange
 from rpc.telegram import TelegramHandler
 from utils import get_conf
 
@@ -32,11 +34,11 @@ class TradeThread(threading.Thread):
         super().__init__()
         self._should_stop = False
 
-    def stop(self):
+    def stop(self) -> None:
         """ stops the trader thread """
         self._should_stop = True
 
-    def run(self):
+    def run(self) -> None:
         """
         Threaded main function
         :return: None
@@ -53,14 +55,14 @@ class TradeThread(threading.Thread):
                 finally:
                     Session.flush()
                     time.sleep(25)
-        except (RuntimeError, JSONDecodeError) as e:
+        except (RuntimeError, JSONDecodeError):
             TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
             logger.exception('RuntimeError. Stopping trader ...')
         finally:
             TelegramHandler.send_msg('*Status:* `Trader has stopped`')
 
     @staticmethod
-    def _process():
+    def _process() -> None:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
@@ -69,11 +71,16 @@ class TradeThread(threading.Thread):
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < CONFIG['max_open_trades']:
-            # Create entity and execute trade
             try:
-                Session.add(create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange))
+                # Create entity and execute trade
+                trade = create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange)
+                if trade:
+                    Session.add(trade)
+                else:
+                    logging.info('Got no buy signal...')
             except ValueError:
-                logger.exception('ValueError during trade creation')
+                logger.exception('Unable to create trade')
+
         for trade in trades:
             # Check if there is already an open order for this trade
             orders = api_wrapper.get_open_orders(trade.pair)
@@ -102,8 +109,9 @@ class TradeThread(threading.Thread):
 # Initial stopped TradeThread instance
 _instance = TradeThread()
 
+
 @synchronized
-def get_instance(recreate=False):
+def get_instance(recreate: bool=False) -> TradeThread:
     """
     Get the current instance of this thread. This is a singleton.
     :param recreate: Must be True if you want to start the instance
@@ -111,13 +119,12 @@ def get_instance(recreate=False):
     """
     global _instance
     if recreate and not _instance.is_alive():
-        logger.debug('Creating TradeThread instance')
-        _should_stop = False
+        logger.debug('Creating thread instance...')
         _instance = TradeThread()
     return _instance
 
 
-def close_trade_if_fulfilled(trade):
+def close_trade_if_fulfilled(trade: Trade) -> bool:
     """
     Checks if the trade is closable, and if so it is being closed.
     :param trade: Trade
@@ -132,7 +139,7 @@ def close_trade_if_fulfilled(trade):
     return False
 
 
-def handle_trade(trade):
+def handle_trade(trade: Trade) -> None:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
     :return: None
@@ -173,9 +180,10 @@ def handle_trade(trade):
         logger.exception('Unable to handle open order')
 
 
-def create_trade(stake_amount: float, exchange):
+def create_trade(stake_amount: float, exchange: Exchange) -> Optional[Trade]:
     """
-    Creates a new trade record with a random pair
+    Checks the implemented trading indicator(s) for a randomly picked pair,
+    if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
     :param exchange: exchange to use
     """
@@ -203,7 +211,7 @@ def create_trade(stake_amount: float, exchange):
             pair = p
             break
     else:
-        raise ValueError('No buy signal from pairs: {}'.format(', '.join(whitelist)))
+        return None
 
     open_rate = api_wrapper.get_ticker(pair)['ask']
     amount = stake_amount / open_rate

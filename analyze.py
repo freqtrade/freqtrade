@@ -4,7 +4,7 @@ import logging
 import arrow
 import requests
 from pandas.io.json import json_normalize
-from stockstats import StockDataFrame
+from pandas import DataFrame
 import talib.abstract as ta
 
 
@@ -13,11 +13,11 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-def get_ticker_dataframe(pair):
+def get_ticker_dataframe(pair: str) -> DataFrame:
     """
     Analyses the trend for the given pair
     :param pair: pair as str in format BTC_ETH or BTC-ETH
-    :return: StockDataFrame
+    :return: DataFrame
     """
     minimum_date = arrow.now() - timedelta(hours=6)
     url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
@@ -41,35 +41,37 @@ def get_ticker_dataframe(pair):
         'low': t['L'],
         'date': t['T'],
     } for t in sorted(data['result'], key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
-    dataframe = StockDataFrame(json_normalize(data))
+    dataframe = DataFrame(json_normalize(data))
 
     dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.2)
 
     # calculate StochRSI
-    window = 14
-    rsi = dataframe['rsi_{}'.format(window)]
-    rolling = rsi.rolling(window=window, center=False)
-    low = rolling.min()
-    high = rolling.max()
-    dataframe['stochrsi'] = (rsi - low) / (high - low)
+    stochrsi = ta.STOCHRSI(dataframe)
+    dataframe['stochrsi'] = stochrsi['fastd'] # values between 0-100, not 0-1
+
+    macd = ta.MACD(dataframe)
+    dataframe['macd'] = macd['macd']
+    dataframe['macds'] = macd['macdsignal']
+    dataframe['macdh'] = macd['macdhist']
+
     return dataframe
 
 
-def populate_trends(dataframe):
+def populate_trends(dataframe: DataFrame) -> DataFrame:
     """
     Populates the trends for the given dataframe
-    :param dataframe: StockDataFrame
-    :return: StockDataFrame with populated trends
+    :param dataframe: DataFrame
+    :return: DataFrame with populated trends
     """
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20)
+        (dataframe['stochrsi'] < 20)
         & (dataframe['close_30_ema'] > (1 + 0.0025) * dataframe['close_60_ema']),
         'underpriced'
     ] = 1
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20)
+        (dataframe['stochrsi'] < 20)
         & (dataframe['macd'] > dataframe['macds']) 
         & (dataframe['close'] > dataframe['sar']),
         'underpriced'
@@ -78,7 +80,7 @@ def populate_trends(dataframe):
     return dataframe
 
 
-def get_buy_signal(pair):
+def get_buy_signal(pair: str) -> bool:
     """
     Calculates a buy signal based on StochRSI indicator
     :param pair: pair in format BTC_ANT or BTC-ANT
@@ -98,10 +100,10 @@ def get_buy_signal(pair):
     return signal
 
 
-def plot_dataframe(dataframe, pair):
+def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     """
     Plots the given dataframe
-    :param dataframe: StockDataFrame
+    :param dataframe: DataFrame
     :param pair: pair as str
     :return: None
     """
@@ -129,8 +131,8 @@ def plot_dataframe(dataframe, pair):
     ax2.legend()
 
     ax3.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
-    ax3.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
-    ax3.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [80] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
     ax3.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for

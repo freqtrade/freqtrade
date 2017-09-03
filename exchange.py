@@ -1,5 +1,7 @@
 import enum
 import logging
+from typing import List
+
 from bittrex.bittrex import Bittrex
 from poloniex import Poloniex
 from wrapt import synchronized
@@ -7,18 +9,6 @@ from wrapt import synchronized
 logger = logging.getLogger(__name__)
 
 _exchange_api = None
-
-
-@synchronized
-def get_exchange_api(conf):
-    """
-    Returns the current exchange api or instantiates a new one
-    :return: exchange.ApiWrapper
-    """
-    global _exchange_api
-    if not _exchange_api:
-        _exchange_api = ApiWrapper(conf)
-    return _exchange_api
 
 
 class Exchange(enum.Enum):
@@ -33,9 +23,11 @@ class ApiWrapper(object):
         * Bittrex
         * Poloniex (partly)
     """
-    def __init__(self, config):
+    def __init__(self, config: dict):
         """
-        Initializes the ApiWrapper with the given config, it does not validate those values.
+        Initializes the ApiWrapper with the given config,
+        it does basic validation whether the specified
+        exchange and pairs are valid.
         :param config: dict
         """
         self.dry_run = config['dry_run']
@@ -53,14 +45,21 @@ class ApiWrapper(object):
             self.api = Bittrex(api_key=config['bittrex']['key'], api_secret=config['bittrex']['secret'])
         else:
             self.api = None
+            raise RuntimeError('No exchange specified. Aborting!')
 
-    def buy(self, pair, rate, amount):
+        # Check if all pairs are available
+        markets = self.get_markets()
+        for pair in config[self.exchange.name.lower()]['pair_whitelist']:
+            if pair not in markets:
+                raise RuntimeError('Pair {} is not available at Poloniex'.format(pair))
+
+    def buy(self, pair: str, rate: float, amount: float) -> str:
         """
         Places a limit buy order.
         :param pair: Pair as str, format: BTC_ETH
         :param rate: Rate limit for order
         :param amount: The amount to purchase
-        :return: None
+        :return: order_id of the placed buy order
         """
         if self.dry_run:
             pass
@@ -73,7 +72,7 @@ class ApiWrapper(object):
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
             return data['result']['uuid']
 
-    def sell(self, pair, rate, amount):
+    def sell(self, pair: str, rate: float, amount: float) -> str:
         """
         Places a limit sell order.
         :param pair: Pair as str, format: BTC_ETH
@@ -92,7 +91,7 @@ class ApiWrapper(object):
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
             return data['result']['uuid']
 
-    def get_balance(self, currency):
+    def get_balance(self, currency: str) -> float:
         """
         Get account balance.
         :param currency: currency as str, format: BTC
@@ -109,7 +108,7 @@ class ApiWrapper(object):
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
             return float(data['result']['Balance'] or 0.0)
 
-    def get_ticker(self, pair):
+    def get_ticker(self, pair: str) -> dict:
         """
         Get Ticker for given pair.
         :param pair: Pair as str, format: BTC_ETC
@@ -132,7 +131,7 @@ class ApiWrapper(object):
                 'last': float(data['result']['Last']),
             }
 
-    def cancel_order(self, order_id):
+    def cancel_order(self, order_id: str) -> None:
         """
         Cancel order for given order_id
         :param order_id: id as str
@@ -147,7 +146,7 @@ class ApiWrapper(object):
             if not data['success']:
                 raise RuntimeError('BITTREX: {}'.format(data['message']))
 
-    def get_open_orders(self, pair):
+    def get_open_orders(self, pair: str) -> List[dict]:
         """
         Get all open orders for given pair.
         :param pair: Pair as str, format: BTC_ETC
@@ -170,7 +169,7 @@ class ApiWrapper(object):
                 'remaining': entry['QuantityRemaining'],
             } for entry in data['result']]
 
-    def get_pair_detail_url(self, pair):
+    def get_pair_detail_url(self, pair: str) -> str:
         """
         Returns the market detail url for the given pair
         :param pair: pair as str, format: BTC_ANT
@@ -180,3 +179,29 @@ class ApiWrapper(object):
             raise NotImplemented('Not implemented')
         elif self.exchange == Exchange.BITTREX:
             return 'https://bittrex.com/Market/Index?MarketName={}'.format(pair.replace('_', '-'))
+
+    def get_markets(self) -> List[str]:
+        """
+        Returns all available markets
+        :return: list of all available pairs
+        """
+        if self.exchange == Exchange.POLONIEX:
+            # TODO: implement
+            raise NotImplemented('Not implemented')
+        elif self.exchange == Exchange. BITTREX:
+            data = self.api.get_markets()
+            if not data['success']:
+                raise RuntimeError('BITTREX: {}'.format(data['message']))
+            return [m['MarketName'].replace('-', '_') for m in data['result']]
+
+
+@synchronized
+def get_exchange_api(conf: dict) -> ApiWrapper:
+    """
+    Returns the current exchange api or instantiates a new one
+    :return: exchange.ApiWrapper
+    """
+    global _exchange_api
+    if not _exchange_api:
+        _exchange_api = ApiWrapper(conf)
+    return _exchange_api
