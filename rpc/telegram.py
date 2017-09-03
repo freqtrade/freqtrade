@@ -124,7 +124,7 @@ class TelegramHandler(object):
             profit_amounts.append((profit / 100) * trade.btc_amount)
             profits.append(profit)
 
-        bp_pair, bp_rate = Session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+        bp_pair, bp_rate = Session().query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
             .filter(Trade.is_open.is_(False)) \
             .group_by(Trade.pair) \
             .order_by('profit_sum DESC') \
@@ -245,7 +245,7 @@ class TelegramHandler(object):
             TelegramHandler.send_msg('`trader is not running`', bot=bot)
             return
 
-        pair_rates = Session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+        pair_rates = Session().query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
             .filter(Trade.is_open.is_(False)) \
             .group_by(Trade.pair) \
             .order_by('profit_sum DESC') \
