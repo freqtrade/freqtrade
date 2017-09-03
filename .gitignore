@@ -80,3 +80,4 @@ preprocessor.py
 .env
 .venv
 .idea
+.vscode

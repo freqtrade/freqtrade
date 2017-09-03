@@ -53,7 +53,7 @@ class TradeThread(threading.Thread):
                     msg = 'Got {} during _process()'.format(error.__class__.__name__)
                     logger.exception(msg)
                 finally:
-                    Session.flush()
+                    Session().flush()
                     time.sleep(25)
         except (RuntimeError, JSONDecodeError):
             TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
@@ -75,7 +75,7 @@ class TradeThread(threading.Thread):
                 # Create entity and execute trade
                 trade = create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange)
                 if trade:
-                    Session.add(trade)
+                    Session().add(trade)
                 else:
                     logging.info('Got no buy signal...')
             except ValueError:
@@ -134,7 +134,7 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
     # we can close this trade.
     if trade.close_profit and trade.close_date and trade.close_rate and not trade.open_order_id:
         trade.is_open = False
-        Session.flush()
+        Session().flush()
         return True
     return False
 

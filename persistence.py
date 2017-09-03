@@ -2,7 +2,9 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm.scoping import scoped_session
+from sqlalchemy.orm.session import sessionmaker
+
 from sqlalchemy.types import Enum
 
 from exchange import Exchange, get_exchange_api
@@ -18,10 +20,8 @@ engine = create_engine(db_handle, echo=False)
 Session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
 Base = declarative_base()
 
-
 class Trade(Base):
     __tablename__ = 'trades'
-
     query = Session.query_property()
 
     id = Column(Integer, primary_key=True)
@@ -61,7 +61,7 @@ class Trade(Base):
         self.close_profit = profit
         self.close_date = datetime.utcnow()
         self.open_order_id = order_id
-        Session.flush()
+        Session().flush()
         return profit
 
 Base.metadata.create_all(engine)
