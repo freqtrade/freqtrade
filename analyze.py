@@ -4,18 +4,20 @@ import logging
 import arrow
 import requests
 from pandas.io.json import json_normalize
-from stockstats import StockDataFrame
+from pandas import DataFrame
+# from stockstats import StockDataFrame
+import talib.abstract as ta
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-def get_ticker_dataframe(pair: str) -> StockDataFrame:
+def get_ticker_dataframe(pair: str) -> DataFrame:
     """
     Analyses the trend for the given pair
     :param pair: pair as str in format BTC_ETH or BTC-ETH
-    :return: StockDataFrame
+    :return: DataFrame
     """
     minimum_date = arrow.now() - timedelta(hours=6)
     url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
@@ -39,33 +41,35 @@ def get_ticker_dataframe(pair: str) -> StockDataFrame:
         'low': t['L'],
         'date': t['T'],
     } for t in sorted(data['result'], key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
-    dataframe = StockDataFrame(json_normalize(data))
+    dataframe = DataFrame(json_normalize(data))
 
     # calculate StochRSI
-    window = 14
-    rsi = dataframe['rsi_{}'.format(window)]
-    rolling = rsi.rolling(window=window, center=False)
-    low = rolling.min()
-    high = rolling.max()
-    dataframe['stochrsi'] = (rsi - low) / (high - low)
+    stochrsi = ta.STOCHRSI(dataframe)
+    dataframe['stochrsi'] = stochrsi['fastd'] # values between 0-100, not 0-1
+
+    macd = ta.MACD(dataframe)
+    dataframe['macd'] = macd['macd']
+    dataframe['macds'] = macd['macdsignal']
+    dataframe['macdh'] = macd['macdhist']
+
     return dataframe
 
 
-def populate_trends(dataframe: StockDataFrame) -> StockDataFrame:
+def populate_trends(dataframe: DataFrame) -> DataFrame:
     """
     Populates the trends for the given dataframe
-    :param dataframe: StockDataFrame
-    :return: StockDataFrame with populated trends
+    :param dataframe: DataFrame
+    :return: DataFrame with populated trends
     """
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20)
+        (dataframe['stochrsi'] < 20)
         & (dataframe['close_30_ema'] > (1 + 0.0025) * dataframe['close_60_ema']),
         'underpriced'
     ] = 1
     """
     dataframe.loc[
-        (dataframe['stochrsi'] < 0.20)
+        (dataframe['stochrsi'] < 20)
         & (dataframe['macd'] > dataframe['macds']),
         'underpriced'
     ] = 1
@@ -93,10 +97,10 @@ def get_buy_signal(pair: str) -> bool:
     return signal
 
 
-def plot_dataframe(dataframe: StockDataFrame, pair: str) -> None:
+def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     """
     Plots the given dataframe
-    :param dataframe: StockDataFrame
+    :param dataframe: DataFrame
     :param pair: pair as str
     :return: None
     """
@@ -110,8 +114,8 @@ def plot_dataframe(dataframe: StockDataFrame, pair: str) -> None:
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
     fig.suptitle(pair, fontsize=14, fontweight='bold')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
-    ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(60)')
-    ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(120)')
+    # ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(60)')
+    # ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(120)')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
     ax1.legend()
@@ -123,8 +127,8 @@ def plot_dataframe(dataframe: StockDataFrame, pair: str) -> None:
     ax2.legend()
 
     ax3.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
-    ax3.plot(dataframe.index.values, [0.80] * len(dataframe.index.values))
-    ax3.plot(dataframe.index.values, [0.20] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [80] * len(dataframe.index.values))
+    ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
     ax3.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
