@@ -5,8 +5,8 @@ import arrow
 import requests
 from pandas.io.json import json_normalize
 from pandas import DataFrame
-# from stockstats import StockDataFrame
 import talib.abstract as ta
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -46,6 +46,8 @@ def get_ticker_dataframe(pair: str) -> DataFrame:
     dataframe['close_30_ema'] = ta.EMA(dataframe, timeperiod=30)
     dataframe['close_90_ema'] = ta.EMA(dataframe, timeperiod=90)
 
+    dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.2)
+
     # calculate StochRSI
     stochrsi = ta.STOCHRSI(dataframe)
     dataframe['stochrsi'] = stochrsi['fastd'] # values between 0-100, not 0-1
@@ -73,7 +75,8 @@ def populate_trends(dataframe: DataFrame) -> DataFrame:
     """
     dataframe.loc[
         (dataframe['stochrsi'] < 20)
-        & (dataframe['macd'] > dataframe['macds']),
+        & (dataframe['macd'] > dataframe['macds']) 
+        & (dataframe['close'] > dataframe['sar']),
         'underpriced'
     ] = 1
     dataframe.loc[dataframe['underpriced'] == 1, 'buy'] = dataframe['close']
