@@ -17,12 +17,13 @@ else:
     db_handle = 'sqlite:///tradesv2.sqlite'
 
 engine = create_engine(db_handle, echo=False)
-Session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+Session = session()
 Base = declarative_base()
 
 class Trade(Base):
     __tablename__ = 'trades'
-    query = Session.query_property()
+    query = session.query_property()
 
     id = Column(Integer, primary_key=True)
     exchange = Column(Enum(Exchange), nullable=False)
@@ -61,7 +62,7 @@ class Trade(Base):
         self.close_profit = profit
         self.close_date = datetime.utcnow()
         self.open_order_id = order_id
-        Session().flush()
+        Session.flush()
         return profit
 
 Base.metadata.create_all(engine)
