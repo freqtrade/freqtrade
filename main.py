@@ -169,6 +169,11 @@ def handle_trade(trade: Trade) -> None:
         current_rate = api_wrapper.get_ticker(trade.pair)['bid']
         current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
 
+        if ('stoploss' in CONFIG) & (current_profit < float(CONFIG['stoploss'])*100):
+            logger.debug('Stop loss hit.')
+            execute_sell(trade, current_rate)
+            return
+
         for duration, threshold in sorted(CONFIG['minimal_roi'].items()):
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
