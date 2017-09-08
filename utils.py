@@ -15,7 +15,7 @@ _conf_schema = {
     'properties': {
         'max_open_trades': {'type': 'integer'},
         'stake_currency': {'type': 'string'},
-        'stake_amount': {'type': 'number'},
+        'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
