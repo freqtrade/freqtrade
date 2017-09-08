@@ -1,16 +1,6 @@
-import json
-import logging
-
-from jsonschema import validate
-from wrapt import synchronized
-
-logger = logging.getLogger(__name__)
-
-_cur_conf = None
-
 
 # Required json-schema for user specified config
-_conf_schema = {
+conf_schema = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer'},
@@ -65,18 +55,3 @@ _conf_schema = {
         'telegram'
     ]
 }
-
-
-@synchronized
-def get_conf(filename: str='config.json') -> dict:
-    """
-    Loads the config into memory validates it
-    and returns the singleton instance
-    :return: dict
-    """
-    global _cur_conf
-    if not _cur_conf:
-        with open(filename) as file:
-            _cur_conf = json.load(file)
-            validate(_cur_conf, _conf_schema)
-    return _cur_conf

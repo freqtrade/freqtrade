@@ -5,27 +5,48 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.types import Enum
 
-from exchange import Exchange, get_exchange_api
-from utils import get_conf
+import exchange
 
-conf = get_conf()
-if conf.get('dry_run', False):
-    db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
-else:
-    db_handle = 'sqlite:///tradesv2.sqlite'
 
-engine = create_engine(db_handle, echo=False)
-Session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+_db_handle = None
+_session = None
+_conf = {}
+
+
 Base = declarative_base()
+
+
+def init(config: dict) -> None:
+    """
+    Initializes this module with the given config,
+    registers all known command handlers
+    and starts polling for message updates
+    :param config: config to use
+    :return: None
+    """
+    global _db_handle, _session
+    _conf.update(config)
+    if _conf.get('dry_run', False):
+        _db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
+    else:
+        _db_handle = 'sqlite:///tradesv2.sqlite'
+
+    engine = create_engine(_db_handle, echo=False)
+    _session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.session = _session
+    Trade.query = _session.query_property()
+    Base.metadata.create_all(engine)
+
+
+def get_session():
+    return _session
 
 
 class Trade(Base):
     __tablename__ = 'trades'
 
-    query = Session.query_property()
-
     id = Column(Integer, primary_key=True)
-    exchange = Column(Enum(Exchange), nullable=False)
+    exchange = Column(Enum(exchange.Exchange), nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
     open_rate = Column(Float, nullable=False)
@@ -56,12 +77,10 @@ class Trade(Base):
         profit = 100 * ((rate - self.open_rate) / self.open_rate)
 
         # Execute sell and update trade record
-        order_id = get_exchange_api(conf).sell(self.pair, rate, amount)
+        order_id = exchange.sell(str(self.pair), rate, amount)
         self.close_rate = rate
         self.close_profit = profit
         self.close_date = datetime.utcnow()
         self.open_order_id = order_id
-        Session.flush()
         return profit
 
-Base.metadata.create_all(engine)
