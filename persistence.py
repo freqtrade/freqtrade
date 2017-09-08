@@ -11,12 +11,12 @@ from sqlalchemy.types import Enum
 import exchange
 
 
-_conf = {}
+_CONF = {}
 
 Base = declarative_base()
 
 
-def init(config: dict, db_url: Optional[str]=None) -> None:
+def init(config: dict, db_url: Optional[str] = None) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -25,9 +25,9 @@ def init(config: dict, db_url: Optional[str]=None) -> None:
     :param db_url: database connector string for sqlalchemy (Optional)
     :return: None
     """
-    _conf.update(config)
+    _CONF.update(config)
     if not db_url:
-        if _conf.get('dry_run', False):
+        if _CONF.get('dry_run', False):
             db_url = 'sqlite:///tradesv2.dry_run.sqlite'
         else:
             db_url = 'sqlite:///tradesv2.sqlite'
@@ -56,12 +56,16 @@ class Trade(Base):
     open_order_id = Column(String)
 
     def __repr__(self):
+        if self.is_open:
+            open_since = 'closed'
+        else:
+            open_since = round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
         return 'Trade(id={}, pair={}, amount={}, open_rate={}, open_since={})'.format(
             self.id,
             self.pair,
             self.amount,
             self.open_rate,
-            'closed' if not self.is_open else round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
+            open_since
         )
 
     def exec_sell_order(self, rate: float, amount: float) -> float:
@@ -83,4 +87,3 @@ class Trade(Base):
         # Flush changes
         Trade.session.flush()
         return profit
-

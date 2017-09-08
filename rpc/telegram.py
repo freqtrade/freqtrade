@@ -18,7 +18,7 @@ logging.getLogger('telegram').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 _updater = None
-_conf = {}
+_CONF = {}
 
 
 def init(config: dict) -> None:
@@ -32,7 +32,7 @@ def init(config: dict) -> None:
     global _updater
     _updater = Updater(token=config['telegram']['token'], workers=0)
 
-    _conf.update(config)
+    _CONF.update(config)
 
     # Register command handler and start telegram message polling
     handles = [
@@ -51,8 +51,10 @@ def init(config: dict) -> None:
         timeout=30,
         read_latency=60,
     )
-    logger.info('rpc.telegram is listening for following commands: {}'
-                .format([h.command for h in handles]))
+    logger.info(
+        'rpc.telegram is listening for following commands: %s',
+        [h.command for h in handles]
+    )
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
@@ -62,12 +64,12 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     :return: decorated function
     """
     def wrapper(*args, **kwargs):
-        bot, update = (args[0], args[1]) if args else (kwargs['bot'], kwargs['update'])
+        bot, update = kwargs.get('bot') or args[0], kwargs.get('update') or args[1]
 
         if not isinstance(bot, Bot) or not isinstance(update, Update):
             raise ValueError('Received invalid Arguments: {}'.format(*args))
 
-        chat_id = int(_conf['telegram']['chat_id'])
+        chat_id = int(_CONF['telegram']['chat_id'])
         if int(update.message.chat_id) == chat_id:
             logger.info('Executing handler: %s for chat_id: %s', command_handler.__name__, chat_id)
             return command_handler(*args, **kwargs)
@@ -88,7 +90,7 @@ def _status(bot: Bot, update: Update) -> None:
     # Fetch open trade
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     from main import get_state, State
-    if not get_state() == State.RUNNING:
+    if get_state() != State.RUNNING:
         send_msg('*Status:* `trader is not running`', bot=bot)
     elif not trades:
         send_msg('*Status:* `no active order`', bot=bot)
@@ -100,6 +102,10 @@ def _status(bot: Bot, update: Update) -> None:
             orders = exchange.get_open_orders(trade.pair)
             orders = [o for o in orders if o['id'] == trade.open_order_id]
             order = orders[0] if orders else None
+
+            fmt_close_profit = '{:.2f}%'.format(
+                round(trade.close_profit, 2)
+            ) if trade.close_profit else None
             message = """
 *Trade ID:* `{trade_id}`
 *Current Pair:* [{pair}]({market_url})
@@ -120,7 +126,7 @@ def _status(bot: Bot, update: Update) -> None:
                 close_rate=trade.close_rate,
                 current_rate=current_rate,
                 amount=round(trade.amount, 8),
-                close_profit='{}%'.format(round(trade.close_profit, 2)) if trade.close_profit else None,
+                close_profit=fmt_close_profit,
                 current_profit=round(current_profit, 2),
                 open_order='{} ({})'.format(order['remaining'], order['type']) if order else None,
             )
@@ -297,7 +303,7 @@ def _performance(bot: Bot, update: Update) -> None:
     send_msg(message, parse_mode=ParseMode.HTML)
 
 
-def send_msg(msg: str, bot: Bot=None, parse_mode: ParseMode=ParseMode.MARKDOWN) -> None:
+def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
     """
     Send given markdown message
     :param msg: message
@@ -305,15 +311,18 @@ def send_msg(msg: str, bot: Bot=None, parse_mode: ParseMode=ParseMode.MARKDOWN) 
     :param parse_mode: telegram parse mode
     :return: None
     """
-    if _conf['telegram'].get('enabled', False):
+    if _CONF['telegram'].get('enabled', False):
         try:
             bot = bot or _updater.bot
             try:
-                bot.send_message(_conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
+                bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except NetworkError as error:
                 # Sometimes the telegram server resets the current connection,
                 # if this is the case we send the message again.
-                logger.warning('Got Telegram NetworkError: %s! Trying one more time.', error.message)
-                bot.send_message(_conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
+                logger.warning(
+                    'Got Telegram NetworkError: %s! Trying one more time.',
+                    error.message
+                )
+                bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
         except Exception:
             logger.exception('Exception occurred within Telegram API')

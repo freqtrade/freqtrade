@@ -1,6 +1,6 @@
 
 # Required json-schema for user specified config
-conf_schema = {
+CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},

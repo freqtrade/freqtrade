@@ -1,14 +1,13 @@
 import unittest
-from datetime import datetime
 from unittest.mock import patch, MagicMock
+from datetime import datetime
 
-import os
 from jsonschema import validate
 from telegram import Bot, Update, Message, Chat
 
 import exchange
 from main import init, create_trade, update_state, State, get_state
-from misc import conf_schema
+from misc import CONF_SCHEMA
 from persistence import Trade
 from rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop
 
@@ -51,10 +50,10 @@ class TestTelegram(unittest.TestCase):
     }
 
     def test_1_status_handle(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             with patch('main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
+                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                     with patch.multiple('main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
@@ -75,10 +74,10 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('[BTC_ETH]', msg_mock.call_args_list[-1][0][0])
 
     def test_2_profit_handle(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             with patch('main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
+                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                     with patch.multiple('main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
@@ -104,10 +103,10 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('(100.00%)', msg_mock.call_args_list[-1][0][0])
 
     def test_3_forcesell_handle(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             with patch('main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
+                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                     with patch.multiple('main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
@@ -131,10 +130,10 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('0.072561', msg_mock.call_args_list[-1][0][0])
 
     def test_4_performance_handle(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             with patch('main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
+                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                     with patch.multiple('main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
@@ -161,9 +160,9 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('BTC_ETH	100.00%', msg_mock.call_args_list[-1][0][0])
 
     def test_5_start_handle(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             msg_mock = MagicMock()
-            with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
+            with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                 init(self.conf, 'sqlite://')
 
                 update_state(State.PAUSED)
@@ -173,9 +172,9 @@ class TestTelegram(unittest.TestCase):
                 self.assertEqual(msg_mock.call_count, 0)
 
     def test_6_stop_handle(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             msg_mock = MagicMock()
-            with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
+            with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                 init(self.conf, 'sqlite://')
 
                 update_state(State.RUNNING)
@@ -191,7 +190,7 @@ class TestTelegram(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        validate(cls.conf, conf_schema)
+        validate(cls.conf, CONF_SCHEMA)
 
 
 if __name__ == '__main__':

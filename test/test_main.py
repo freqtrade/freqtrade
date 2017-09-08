@@ -1,12 +1,11 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-import os
 from jsonschema import validate
 
 import exchange
 from main import create_trade, handle_trade, close_trade_if_fulfilled, init
-from misc import conf_schema
+from misc import CONF_SCHEMA
 from persistence import Trade
 
 
@@ -43,7 +42,7 @@ class TestMain(unittest.TestCase):
     }
 
     def test_1_create_trade(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             with patch('main.get_buy_signal', side_effect=lambda _: True) as buy_signal:
                 with patch.multiple('main.telegram', init=MagicMock(), send_msg=MagicMock()):
                     with patch.multiple('main.exchange',
@@ -68,7 +67,7 @@ class TestMain(unittest.TestCase):
                         buy_signal.assert_called_once_with('BTC_ETH')
 
     def test_2_handle_trade(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             with patch.multiple('main.telegram', init=MagicMock(), send_msg=MagicMock()):
                 with patch.multiple('main.exchange',
                                     get_ticker=MagicMock(return_value={
@@ -86,7 +85,7 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(trade.open_order_id, 'dry_run')
 
     def test_3_close_trade(self):
-        with patch.dict('main._conf', self.conf):
+        with patch.dict('main._CONF', self.conf):
             trade = Trade.query.filter(Trade.is_open.is_(True)).first()
             self.assertTrue(trade)
 
@@ -99,7 +98,7 @@ class TestMain(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        validate(cls.conf, conf_schema)
+        validate(cls.conf, CONF_SCHEMA)
 
 
 if __name__ == '__main__':
