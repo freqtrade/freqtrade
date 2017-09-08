@@ -1,4 +1,7 @@
 # freqtrade
+
+[![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
+
 Simple High frequency trading bot for crypto currencies.
 Currently supported exchanges: bittrex, poloniex (partly implemented)
 
