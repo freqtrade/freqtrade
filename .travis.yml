@@ -1,0 +1,27 @@
+sudo: false
+os:
+  - linux
+
+language: python
+python:
+    - 3.6
+    - nightly
+matrix:
+  allow_failures:
+    - python: nightly
+
+addons:
+  apt:
+    packages:
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+
+install:
+  - wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+  - tar zxvf ta-lib-0.4.0-src.tar.gz
+  - cd ta-lib && ./configure && make && make install
+  - pip install -r requirements.txt
+
+script:
+  - python -m unittest
