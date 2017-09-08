@@ -14,7 +14,7 @@ and enter the telegram `token` and your `chat_id` in `config.json`
 
 Persistence is achieved through sqlite.
 
-##### Telegram RPC commands:
+#### Telegram RPC commands:
 * /start: Starts the trader
 * /stop: Stops the trader
 * /status: Lists all open trades
@@ -22,7 +22,7 @@ Persistence is achieved through sqlite.
 * /forcesell <trade_id>: Instantly sells the given trade (Ignoring `minimum_roi`).
 * /performance: Show performance of each finished trade grouped by pair
 
-##### Config
+#### Config
 `minimal_roi` is a JSON object where the key is a duration
 in minutes and the value is the minimum ROI in percent.
 See the example below:
@@ -48,7 +48,7 @@ if not feel free to raise a github issue.
 * sqlite
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
 
-##### Install
+#### Install
 ```
 $ cd freqtrade/
 # copy example config. Dont forget to insert your api keys
@@ -59,6 +59,11 @@ $ pip install -r requirements.txt
 $ ./main.py
 ```
 
+#### Execute tests
+
+```
+$ python -m unittest
+```
 
 #### Docker
 ```
