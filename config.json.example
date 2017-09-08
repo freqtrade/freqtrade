@@ -8,6 +8,7 @@
         "720":  0.01,
         "0":  0.02
     },
+    "stoploss": -0.10,
     "poloniex": {
         "enabled": false,
         "key": "key",

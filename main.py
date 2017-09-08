@@ -138,6 +138,22 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
         return True
     return False
 
+def execute_sell(trade: Trade, current_rate: float) -> None:
+    # Get available balance
+    currency = trade.pair.split('_')[1]
+    balance = api_wrapper.get_balance(currency)
+
+    profit = trade.exec_sell_order(current_rate, balance)
+    message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
+        trade.exchange.name,
+        trade.pair.replace('_', '/'),
+        api_wrapper.get_pair_detail_url(trade.pair),
+        trade.close_rate,
+        round(profit, 2)
+    )
+    logger.info(message)
+    TelegramHandler.send_msg(message)
+
 
 def handle_trade(trade: Trade) -> None:
     """
@@ -153,26 +169,17 @@ def handle_trade(trade: Trade) -> None:
         current_rate = api_wrapper.get_ticker(trade.pair)['bid']
         current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
 
-        # Get available balance
-        currency = trade.pair.split('_')[1]
-        balance = api_wrapper.get_balance(currency)
+        if 'stoploss' in CONFIG & current_profit < float(CONFIG['stoploss'])*100:
+            logger.debug('Stop loss hit.')
+            execute_sell(trade, current_rate)
+            return
 
         for duration, threshold in sorted(CONFIG['minimal_roi'].items()):
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
             if time_diff > duration and current_rate > (1 + threshold) * trade.open_rate:
-                # Execute sell
-                profit = trade.exec_sell_order(current_rate, balance)
-                message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
-                    trade.exchange.name,
-                    trade.pair.replace('_', '/'),
-                    api_wrapper.get_pair_detail_url(trade.pair),
-                    trade.close_rate,
-                    round(profit, 2)
-                )
-                logger.info(message)
-                TelegramHandler.send_msg(message)
+                execute_sell(trade, current_rate)
                 return
         else:
             logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit)
