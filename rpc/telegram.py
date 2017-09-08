@@ -284,7 +284,11 @@ def _performance(bot: Bot, update: Update) -> None:
         .order_by('profit_sum DESC') \
         .all()
 
-    stats = '\n'.join('{}. <code>{}\t{}%</code>'.format(i + 1, pair, round(rate, 2)) for i, (pair, rate) in enumerate(pair_rates))
+    stats = '\n'.join('{index}. <code>{pair}\t{profit:.2f}%</code>'.format(
+        index=i + 1,
+        pair=pair,
+        profit=round(rate, 2)
+    ) for i, (pair, rate) in enumerate(pair_rates))
 
     message = '<b>Performance:</b>\n{}\n'.format(stats)
     logger.debug(message)
