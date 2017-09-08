@@ -6,7 +6,6 @@ RUN apt-get -y install build-essential
 RUN  wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
 RUN tar zxvf ta-lib-0.4.0-src.tar.gz
 RUN cd ta-lib && ./configure && make && make install
-RUN pip install TA-Lib
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 RUN     mkdir -p /freqtrade
