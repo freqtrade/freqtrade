@@ -79,6 +79,10 @@ def _process() -> None:
             logger.exception('Unable to create trade')
 
     for trade in trades:
+        if close_trade_if_fulfilled(trade):
+            logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
+
+    for trade in filter(lambda t: t.is_open, trades):
         # Check if there is already an open order for this trade
         orders = exchange.get_open_orders(trade.pair)
         orders = [o for o in orders if o['id'] == trade.open_order_id]
@@ -91,17 +95,11 @@ def _process() -> None:
                     orders[0]['type'],
                     orders[0]['id'])
             logger.info(msg)
-            continue
-
-        # Update state
-        trade.open_order_id = None
-        # Check if this trade can be marked as closed
-        if close_trade_if_fulfilled(trade):
-            logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
-            continue
-
-        # Check if we can sell our current pair
-        handle_trade(trade)
+        else:
+            # Update state
+            trade.open_order_id = None
+            # Check if we can sell our current pair
+            handle_trade(trade)
 
 
 def close_trade_if_fulfilled(trade: Trade) -> bool:
@@ -112,7 +110,10 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
     """
     # If we don't have an open order and the close rate is already set,
     # we can close this trade.
-    if trade.close_profit and trade.close_date and trade.close_rate and not trade.open_order_id:
+    if trade.close_profit is not None \
+            and trade.close_date is not None \
+            and trade.close_rate is not None \
+            and trade.open_order_id is None:
         trade.is_open = False
         return True
     return False
@@ -261,6 +262,7 @@ def app(config: dict) -> None:
             elif state == State.RUNNING:
                 try:
                     _process()
+                    Trade.session.flush()
                 except (ConnectionError, JSONDecodeError, ValueError) as error:
                     msg = 'Got {} during _process()'.format(error.__class__.__name__)
                     logger.exception(msg)

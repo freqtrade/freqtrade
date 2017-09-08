@@ -11,7 +11,6 @@ import exchange
 
 
 _db_handle = None
-_session = None
 _conf = {}
 
 
@@ -26,7 +25,7 @@ def init(config: dict) -> None:
     :param config: config to use
     :return: None
     """
-    global _db_handle, _session
+    global _db_handle
     _conf.update(config)
     if _conf.get('dry_run', False):
         _db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
@@ -34,14 +33,10 @@ def init(config: dict) -> None:
         _db_handle = 'sqlite:///tradesv2.sqlite'
 
     engine = create_engine(_db_handle, echo=False)
-    _session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.session = _session()
-    Trade.query = _session.query_property()
+    session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.session = session()
+    Trade.query = session.query_property()
     Base.metadata.create_all(engine)
-
-
-def get_session():
-    return _session
 
 
 class Trade(Base):
@@ -84,5 +79,8 @@ class Trade(Base):
         self.close_profit = profit
         self.close_date = datetime.utcnow()
         self.open_order_id = order_id
+
+        # Flush changes
+        Trade.session.flush()
         return profit
 
