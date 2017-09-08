@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Callable, Any
 
 import arrow
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, text
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
@@ -60,7 +60,8 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     :return: decorated function
     """
     def wrapper(*args, **kwargs):
-        bot, update = args[0], args[1]
+        bot, update = (args[0], args[1]) if args else (kwargs['bot'], kwargs['update'])
+
         if not isinstance(bot, Bot) or not isinstance(update, Update):
             raise ValueError('Received invalid Arguments: {}'.format(*args))
 
@@ -151,12 +152,17 @@ def _profit(bot: Bot, update: Update) -> None:
         profit_amounts.append((profit / 100) * trade.btc_amount)
         profits.append(profit)
 
-    bp_pair, bp_rate = Trade.session().query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+    best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
         .group_by(Trade.pair) \
-        .order_by('profit_sum DESC') \
+        .order_by(text('profit_sum DESC')) \
         .first()
 
+    if not best_pair:
+        send_msg('*Status:* `no closed trade`', bot=bot)
+        return
+
+    bp_pair, bp_rate = best_pair
     markdown_msg = """
 *ROI:* `{profit_btc} ({profit}%)`
 *Trade Count:* `{trade_count}`
@@ -272,7 +278,7 @@ def _performance(bot: Bot, update: Update) -> None:
         send_msg('`trader is not running`', bot=bot)
         return
 
-    pair_rates = Trade.session().query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+    pair_rates = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
         .group_by(Trade.pair) \
         .order_by('profit_sum DESC') \
