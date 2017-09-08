@@ -167,9 +167,9 @@ def handle_trade(trade: Trade) -> None:
         logger.debug('Handling open trade %s ...', trade)
         # Get current rate
         current_rate = api_wrapper.get_ticker(trade.pair)['bid']
-        current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
+        current_profit = 100.0 * ((current_rate - trade.open_rate) / trade.open_rate)
 
-        if 'stoploss' in CONFIG & current_profit < float(CONFIG['stoploss'])*100:
+        if 'stoploss' in CONFIG and current_profit < float(CONFIG['stoploss']) * 100.0:
             logger.debug('Stop loss hit.')
             execute_sell(trade, current_rate)
             return
