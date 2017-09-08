@@ -99,14 +99,12 @@ class TestMain(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        validate(cls.conf, conf_schema)
-
-    @classmethod
-    def tearDownClass(cls):
         try:
             os.remove('./tradesv2.dry_run.sqlite')
         except FileNotFoundError:
             pass
+        validate(cls.conf, conf_schema)
+
 
 if __name__ == '__main__':
     unittest.main()
