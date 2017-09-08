@@ -281,7 +281,7 @@ def _performance(bot: Bot, update: Update) -> None:
     pair_rates = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
         .group_by(Trade.pair) \
-        .order_by('profit_sum DESC') \
+        .order_by(text('profit_sum DESC')) \
         .all()
 
     stats = '\n'.join('{index}. <code>{pair}\t{profit:.2f}%</code>'.format(
