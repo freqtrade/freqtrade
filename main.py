@@ -230,17 +230,18 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
                  is_open=True)
 
 
-def init(config: dict) -> None:
+def init(config: dict, db_url: Optional[str]=None) -> None:
     """
     Initializes all modules and updates the config
     :param config: config as dict
+    :param db_url: database connector string for sqlalchemy (Optional)
     :return: None
     """
     global _conf
 
     # Initialize all modules
     telegram.init(config)
-    persistence.init(config)
+    persistence.init(config, db_url)
     exchange.init(config)
     _conf.update(config)
 

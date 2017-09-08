@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -10,29 +11,28 @@ from sqlalchemy.types import Enum
 import exchange
 
 
-_db_handle = None
 _conf = {}
-
 
 Base = declarative_base()
 
 
-def init(config: dict) -> None:
+def init(config: dict, db_url: Optional[str]=None) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
     :param config: config to use
+    :param db_url: database connector string for sqlalchemy (Optional)
     :return: None
     """
-    global _db_handle
     _conf.update(config)
-    if _conf.get('dry_run', False):
-        _db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
-    else:
-        _db_handle = 'sqlite:///tradesv2.sqlite'
+    if not db_url:
+        if _conf.get('dry_run', False):
+            db_url = 'sqlite:///tradesv2.dry_run.sqlite'
+        else:
+            db_url = 'sqlite:///tradesv2.sqlite'
 
-    engine = create_engine(_db_handle, echo=False)
+    engine = create_engine(db_url, echo=False)
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
     Trade.query = session.query_property()

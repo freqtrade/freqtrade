@@ -62,7 +62,7 @@ class TestTelegram(unittest.TestCase):
                                             'last': 0.07256061
                                         }),
                                         buy=MagicMock(return_value='mocked_order_id')):
-                        init(self.conf)
+                        init(self.conf, 'sqlite://')
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
@@ -86,7 +86,7 @@ class TestTelegram(unittest.TestCase):
                                             'last': 0.07256061
                                         }),
                                         buy=MagicMock(return_value='mocked_order_id')):
-                        init(self.conf)
+                        init(self.conf, 'sqlite://')
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
@@ -115,7 +115,7 @@ class TestTelegram(unittest.TestCase):
                                             'last': 0.07256061
                                         }),
                                         buy=MagicMock(return_value='mocked_order_id')):
-                        init(self.conf)
+                        init(self.conf, 'sqlite://')
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
@@ -142,7 +142,7 @@ class TestTelegram(unittest.TestCase):
                                             'last': 0.07256061
                                         }),
                                         buy=MagicMock(return_value='mocked_order_id')):
-                        init(self.conf)
+                        init(self.conf, 'sqlite://')
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
@@ -164,7 +164,7 @@ class TestTelegram(unittest.TestCase):
         with patch.dict('main._conf', self.conf):
             msg_mock = MagicMock()
             with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
-                init(self.conf)
+                init(self.conf, 'sqlite://')
 
                 update_state(State.PAUSED)
                 self.assertEqual(get_state(), State.PAUSED)
@@ -176,7 +176,7 @@ class TestTelegram(unittest.TestCase):
         with patch.dict('main._conf', self.conf):
             msg_mock = MagicMock()
             with patch.multiple('main.telegram', _conf=self.conf, init=MagicMock(), send_msg=msg_mock):
-                init(self.conf)
+                init(self.conf, 'sqlite://')
 
                 update_state(State.RUNNING)
                 self.assertEqual(get_state(), State.RUNNING)
@@ -186,10 +186,6 @@ class TestTelegram(unittest.TestCase):
                 self.assertIn('Stopping trader', msg_mock.call_args_list[0][0][0])
 
     def setUp(self):
-        try:
-            os.remove('./tradesv2.dry_run.sqlite')
-        except FileNotFoundError:
-            pass
         self.update = Update(0)
         self.update.message = Message(0, 0, datetime.utcnow(), Chat(0, 0))
 

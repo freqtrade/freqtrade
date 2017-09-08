@@ -53,7 +53,7 @@ class TestMain(unittest.TestCase):
                                             'last': 0.07256061
                                         }),
                                         buy=MagicMock(return_value='mocked_order_id')):
-                        init(self.conf)
+                        init(self.conf, 'sqlite://')
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
                         Trade.session.add(trade)
                         Trade.session.flush()
@@ -99,10 +99,6 @@ class TestMain(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        try:
-            os.remove('./tradesv2.dry_run.sqlite')
-        except FileNotFoundError:
-            pass
         validate(cls.conf, conf_schema)
 
 
