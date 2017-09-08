@@ -7,7 +7,6 @@ from sqlalchemy import and_, func, text
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
-from wrapt import synchronized
 
 from persistence import Trade
 
@@ -30,6 +29,9 @@ def init(config: dict) -> None:
     :param config: config to use
     :return: None
     """
+    global _updater
+    _updater = Updater(token=config['telegram']['token'], workers=0)
+
     _conf.update(config)
 
     # Register command handler and start telegram message polling
@@ -42,8 +44,8 @@ def init(config: dict) -> None:
         CommandHandler('performance', _performance),
     ]
     for handle in handles:
-        get_updater(_conf).dispatcher.add_handler(handle)
-    get_updater(_conf).start_polling(
+        _updater.dispatcher.add_handler(handle)
+    _updater.start_polling(
         clean=True,
         bootstrap_retries=3,
         timeout=30,
@@ -295,19 +297,6 @@ def _performance(bot: Bot, update: Update) -> None:
     send_msg(message, parse_mode=ParseMode.HTML)
 
 
-@synchronized
-def get_updater(config: dict) -> Updater:
-    """
-    Returns the current telegram updater or instantiates a new one
-    :param config: dict
-    :return: telegram.ext.Updater
-    """
-    global _updater
-    if not _updater:
-        _updater = Updater(token=config['telegram']['token'], workers=0)
-    return _updater
-
-
 def send_msg(msg: str, bot: Bot=None, parse_mode: ParseMode=ParseMode.MARKDOWN) -> None:
     """
     Send given markdown message
@@ -318,7 +307,7 @@ def send_msg(msg: str, bot: Bot=None, parse_mode: ParseMode=ParseMode.MARKDOWN) 
     """
     if _conf['telegram'].get('enabled', False):
         try:
-            bot = bot or get_updater(_conf).bot
+            bot = bot or _updater.bot
             try:
                 bot.send_message(_conf['telegram']['chat_id'], msg, parse_mode=parse_mode)
             except NetworkError as error:
