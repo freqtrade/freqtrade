@@ -1,3 +1,36 @@
+import enum
+
+from wrapt import synchronized
+
+
+class State(enum.Enum):
+    RUNNING = 0
+    STOPPED = 1
+
+
+# Current application state
+_STATE = State.STOPPED
+
+
+@synchronized
+def update_state(state: State) -> None:
+    """
+    Updates the application state
+    :param state: new state
+    :return: None
+    """
+    global _STATE
+    _STATE = state
+
+
+@synchronized
+def get_state() -> State:
+    """
+    Gets the current application state
+    :return:
+    """
+    return _STATE
+
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
@@ -25,7 +58,8 @@ CONF_SCHEMA = {
                 'chat_id': {'type': 'string'},
             },
             'required': ['enabled', 'token', 'chat_id']
-        }
+        },
+        'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
     },
     'definitions': {
         'exchange': {

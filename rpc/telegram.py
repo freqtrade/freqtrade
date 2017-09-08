@@ -8,6 +8,7 @@ from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 from telegram import ParseMode, Bot, Update
 
+from misc import get_state, State, update_state
 from persistence import Trade
 
 import exchange
@@ -89,7 +90,6 @@ def _status(bot: Bot, update: Update) -> None:
     """
     # Fetch open trade
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    from main import get_state, State
     if get_state() != State.RUNNING:
         send_msg('*Status:* `trader is not running`', bot=bot)
     elif not trades:
@@ -200,7 +200,6 @@ def _start(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    from main import get_state, State, update_state
     if get_state() == State.RUNNING:
         send_msg('*Status:* `already running`', bot=bot)
     else:
@@ -216,10 +215,9 @@ def _stop(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    from main import get_state, State, update_state
     if get_state() == State.RUNNING:
         send_msg('`Stopping trader ...`', bot=bot)
-        update_state(State.PAUSED)
+        update_state(State.STOPPED)
     else:
         send_msg('*Status:* `already stopped`', bot=bot)
 
@@ -233,7 +231,6 @@ def _forcesell(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    from main import get_state, State
     if get_state() != State.RUNNING:
         send_msg('`trader is not running`', bot=bot)
         return
@@ -281,7 +278,6 @@ def _performance(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    from main import get_state, State
     if get_state() != State.RUNNING:
         send_msg('`trader is not running`', bot=bot)
         return

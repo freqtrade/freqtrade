@@ -40,10 +40,14 @@ See the example below:
 For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
 
+`initial_state` is an optional field that defines the initial application state.
+Possible values are `running` or `stopped`. (default=`running`)
+If the value is `stopped` the bot has to be started with `/start` first.
+
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
 
-##### Prerequisites
+#### Prerequisites
 * python3.6
 * sqlite
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries

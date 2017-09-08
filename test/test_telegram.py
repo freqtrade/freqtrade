@@ -6,8 +6,8 @@ from jsonschema import validate
 from telegram import Bot, Update, Message, Chat
 
 import exchange
-from main import init, create_trade, update_state, State, get_state
-from misc import CONF_SCHEMA
+from main import init, create_trade
+from misc import CONF_SCHEMA, update_state, State, get_state
 from persistence import Trade
 from rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop
 
@@ -46,7 +46,8 @@ class TestTelegram(unittest.TestCase):
             "enabled": True,
             "token": "token",
             "chat_id": "0"
-        }
+        },
+        "initial_state": "running"
     }
 
     def test_1_status_handle(self):
@@ -165,8 +166,8 @@ class TestTelegram(unittest.TestCase):
             with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                 init(self.conf, 'sqlite://')
 
-                update_state(State.PAUSED)
-                self.assertEqual(get_state(), State.PAUSED)
+                update_state(State.STOPPED)
+                self.assertEqual(get_state(), State.STOPPED)
                 _start(bot=MagicBot(), update=self.update)
                 self.assertEqual(get_state(), State.RUNNING)
                 self.assertEqual(msg_mock.call_count, 0)
@@ -180,7 +181,7 @@ class TestTelegram(unittest.TestCase):
                 update_state(State.RUNNING)
                 self.assertEqual(get_state(), State.RUNNING)
                 _stop(bot=MagicBot(), update=self.update)
-                self.assertEqual(get_state(), State.PAUSED)
+                self.assertEqual(get_state(), State.STOPPED)
                 self.assertEqual(msg_mock.call_count, 1)
                 self.assertIn('Stopping trader', msg_mock.call_args_list[0][0][0])
 
