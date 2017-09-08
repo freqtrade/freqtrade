@@ -2,7 +2,9 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm.scoping import scoped_session
+from sqlalchemy.orm.session import sessionmaker
+
 from sqlalchemy.types import Enum
 
 import exchange
@@ -33,7 +35,7 @@ def init(config: dict) -> None:
 
     engine = create_engine(_db_handle, echo=False)
     _session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.session = _session
+    Trade.session = _session()
     Trade.query = _session.query_property()
     Base.metadata.create_all(engine)
 

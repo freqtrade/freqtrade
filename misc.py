@@ -3,9 +3,9 @@
 conf_schema = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer'},
-        'stake_currency': {'type': 'string'},
-        'stake_amount': {'type': 'number'},
+        'max_open_trades': {'type': 'integer', 'minimum': 1},
+        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
+        'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -14,6 +14,7 @@ conf_schema = {
             },
             'minProperties': 1
         },
+        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'poloniex': {'$ref': '#/definitions/exchange'},
         'bittrex': {'$ref': '#/definitions/exchange'},
         'telegram': {

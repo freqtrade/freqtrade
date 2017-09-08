@@ -33,6 +33,9 @@ See the example below:
 },
 ```
 
+`stoploss` is loss in percentage that should trigger a sale. 
+For example value `-0.10` will cause immediate sell if the
+profit dips below -10% for a given trade. This parameter is optional.
 
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
