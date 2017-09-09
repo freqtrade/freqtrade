@@ -48,14 +48,6 @@ def _process() -> None:
                 logger.exception('Unable to create trade')
 
         for trade in trades:
-            if close_trade_if_fulfilled(trade):
-                logger.info(
-                    'No open orders found and trade is fulfilled. Marking %s as closed ...',
-                    trade
-                )
-                Trade.session.flush()
-
-        for trade in filter(lambda t: t.is_open, trades):
             # Check if there is already an open order for this trade
             orders = exchange.get_open_orders(trade.pair)
             orders = [o for o in orders if o['id'] == trade.open_order_id]
@@ -64,9 +56,11 @@ def _process() -> None:
             else:
                 # Update state
                 trade.open_order_id = None
-                # Check if we can sell our current pair
-                handle_trade(trade)
-                Trade.session.flush()
+                # Check if this trade can be closed
+                if not close_trade_if_fulfilled(trade):
+                    # Check if we can sell our current pair
+                    handle_trade(trade)
+        Trade.session.flush()
     except (ConnectionError, json.JSONDecodeError) as error:
         msg = 'Got {} in _process()'.format(error.__class__.__name__)
         logger.exception(msg)
@@ -85,6 +79,7 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
             and trade.close_rate is not None \
             and trade.open_order_id is None:
         trade.is_open = False
+        logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
         return True
     return False
 
