@@ -13,13 +13,10 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-def get_ticker_dataframe(pair: str) -> DataFrame:
+def get_ticker(pair: str, minimum_date: arrow.Arrow) -> dict:
     """
-    Analyses the trend for the given pair
-    :param pair: pair as str in format BTC_ETH or BTC-ETH
-    :return: DataFrame
+    Request ticker data from Bittrex for a given currency pair
     """
-    minimum_date = arrow.now() - timedelta(hours=6)
     url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
@@ -32,6 +29,15 @@ def get_ticker_dataframe(pair: str) -> DataFrame:
     data = requests.get(url, params=params, headers=headers).json()
     if not data['success']:
         raise RuntimeError('BITTREX: {}'.format(data['message']))
+    return data
+
+
+def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame:
+    """
+    Analyses the trend for the given pair
+    :param pair: pair as str in format BTC_ETH or BTC-ETH
+    :return: DataFrame
+    """
 
     data = [{
         'close': t['C'],
@@ -40,7 +46,7 @@ def get_ticker_dataframe(pair: str) -> DataFrame:
         'high': t['H'],
         'low': t['L'],
         'date': t['T'],
-    } for t in sorted(data['result'], key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
+    } for t in sorted(ticker, key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
     dataframe = DataFrame(json_normalize(data))
 
     dataframe['close_30_ema'] = ta.EMA(dataframe, timeperiod=30)
@@ -89,7 +95,9 @@ def get_buy_signal(pair: str) -> bool:
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is underpriced, False otherwise
     """
-    dataframe = get_ticker_dataframe(pair)
+    minimum_date = arrow.now() - timedelta(hours=6)
+    data = get_ticker(pair, minimum_date)
+    dataframe = parse_ticker_dataframe(data['result'], minimum_date)
     dataframe = populate_trends(dataframe)
     latest = dataframe.iloc[-1]
 
@@ -150,7 +158,9 @@ if __name__ == '__main__':
         pair = 'BTC_ANT'
         #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #   get_buy_signal(pair)
-        dataframe = get_ticker_dataframe(pair)
+        minimum_date = arrow.now() - timedelta(hours=6)
+        data = get_ticker(pair, minimum_date)
+        dataframe = parse_ticker_dataframe(data['result'], minimum_date)
         dataframe = populate_trends(dataframe)
         plot_dataframe(dataframe, pair)
         time.sleep(60)
