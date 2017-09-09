@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring
 import unittest
 import arrow
-from analyze import parse_ticker_dataframe
+from analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators
 
 RESULT_BITTREX = {
     'success': True,
@@ -29,6 +29,10 @@ class TestAnalyze(unittest.TestCase):
                           '2017-08-30T10:40:00',
                           '2017-08-30T10:42:00'])
 
+    def test_3_populates_buy_trend(self):
+        dataframe = populate_buy_trend(populate_indicators(self.result))
+        self.assertTrue('buy' in dataframe.columns)
+        self.assertTrue('buy_price' in dataframe.columns)
 
 if __name__ == '__main__':
     unittest.main()

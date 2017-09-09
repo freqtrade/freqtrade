@@ -71,42 +71,40 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     return dataframe
 
 
-def populate_trends(dataframe: DataFrame) -> DataFrame:
+def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     """
-    Populates the trends for the given dataframe
+    Based on TA indicators, populates the buy trend for the given dataframe
     :param dataframe: DataFrame
-    :return: DataFrame with populated trends
-    """
-    """
-    dataframe.loc[
-        (dataframe['stochrsi'] < 20)
-        & (dataframe['close_30_ema'] > (1 + 0.0025) * dataframe['close_60_ema']),
-        'underpriced'
-    ] = 1
+    :return: DataFrame with buy column
     """
     dataframe.loc[
         (dataframe['stochrsi'] < 20)
         & (dataframe['macd'] > dataframe['macds'])
         & (dataframe['close'] > dataframe['sar']),
-        'underpriced'
+        'buy'
     ] = 1
-    dataframe.loc[dataframe['underpriced'] == 1, 'buy'] = dataframe['close']
+    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
     return dataframe
 
 
 def analyze_ticker(pair: str) -> DataFrame:
+    """
+    Get ticker data for given currency pair, push it to a DataFrame and
+    add several TA indicators and buy signal to it
+    :return DataFrame with ticker data and indicator data
+    """
     minimum_date = arrow.now() - timedelta(hours=6)
     data = get_ticker(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
     dataframe = populate_indicators(dataframe)
-    dataframe = populate_trends(dataframe)
+    dataframe = populate_buy_trend(dataframe)
     return dataframe
 
 def get_buy_signal(pair: str) -> bool:
     """
-    Calculates a buy signal based on StochRSI indicator
+    Calculates a buy signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
-    :return: True if pair is underpriced, False otherwise
+    :return: True if pair is good for buying, False otherwise
     """
     dataframe = analyze_ticker(pair)
     latest = dataframe.iloc[-1]
@@ -116,7 +114,7 @@ def get_buy_signal(pair: str) -> bool:
     if signal_date < arrow.now() - timedelta(minutes=10):
         return False
 
-    signal = latest['underpriced'] == 1
+    signal = latest['buy'] == 1
     logger.debug('buy_trigger: %s (pair=%s, signal=%s)', latest['date'], pair, signal)
     return signal
 
@@ -141,7 +139,7 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(30)')
     ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(90)')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
-    ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
+    ax1.plot(dataframe.index.values, dataframe['buy_price'], 'bo', label='buy')
     ax1.legend()
 
     ax2.plot(dataframe.index.values, dataframe['macd'], label='MACD')
