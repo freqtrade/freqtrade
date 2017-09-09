@@ -38,7 +38,6 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
     :param pair: pair as str in format BTC_ETH or BTC-ETH
     :return: DataFrame
     """
-
     data = [{
         'close': t['C'],
         'volume': t['V'],
@@ -47,8 +46,14 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
         'low': t['L'],
         'date': t['T'],
     } for t in sorted(ticker, key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
-    dataframe = DataFrame(json_normalize(data))
 
+    return DataFrame(json_normalize(data))
+
+
+def populate_indicators(dataframe: DataFrame) -> DataFrame:
+    """
+    Adds several different TA indicators to the given DataFrame
+    """
     dataframe['close_30_ema'] = ta.EMA(dataframe, timeperiod=30)
     dataframe['close_90_ema'] = ta.EMA(dataframe, timeperiod=90)
 
@@ -81,7 +86,7 @@ def populate_trends(dataframe: DataFrame) -> DataFrame:
     """
     dataframe.loc[
         (dataframe['stochrsi'] < 20)
-        & (dataframe['macd'] > dataframe['macds']) 
+        & (dataframe['macd'] > dataframe['macds'])
         & (dataframe['close'] > dataframe['sar']),
         'underpriced'
     ] = 1
@@ -98,6 +103,7 @@ def get_buy_signal(pair: str) -> bool:
     minimum_date = arrow.now() - timedelta(hours=6)
     data = get_ticker(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+    dataframe = populate_indicators(dataframe)
     dataframe = populate_trends(dataframe)
     latest = dataframe.iloc[-1]
 
@@ -161,6 +167,7 @@ if __name__ == '__main__':
         minimum_date = arrow.now() - timedelta(hours=6)
         data = get_ticker(pair, minimum_date)
         dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+        dataframe = populate_indicators(dataframe)
         dataframe = populate_trends(dataframe)
         plot_dataframe(dataframe, pair)
         time.sleep(60)
