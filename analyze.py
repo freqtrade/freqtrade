@@ -94,17 +94,21 @@ def populate_trends(dataframe: DataFrame) -> DataFrame:
     return dataframe
 
 
+def analyze_ticker(pair: str) -> DataFrame:
+    minimum_date = arrow.now() - timedelta(hours=6)
+    data = get_ticker(pair, minimum_date)
+    dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+    dataframe = populate_indicators(dataframe)
+    dataframe = populate_trends(dataframe)
+    return dataframe
+
 def get_buy_signal(pair: str) -> bool:
     """
     Calculates a buy signal based on StochRSI indicator
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is underpriced, False otherwise
     """
-    minimum_date = arrow.now() - timedelta(hours=6)
-    data = get_ticker(pair, minimum_date)
-    dataframe = parse_ticker_dataframe(data['result'], minimum_date)
-    dataframe = populate_indicators(dataframe)
-    dataframe = populate_trends(dataframe)
+    dataframe = analyze_ticker(pair)
     latest = dataframe.iloc[-1]
 
     # Check if dataframe is out of date
@@ -164,10 +168,5 @@ if __name__ == '__main__':
         pair = 'BTC_ANT'
         #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #   get_buy_signal(pair)
-        minimum_date = arrow.now() - timedelta(hours=6)
-        data = get_ticker(pair, minimum_date)
-        dataframe = parse_ticker_dataframe(data['result'], minimum_date)
-        dataframe = populate_indicators(dataframe)
-        dataframe = populate_trends(dataframe)
-        plot_dataframe(dataframe, pair)
+        plot_dataframe(analyze_ticker(pair), pair)
         time.sleep(60)
