@@ -38,16 +38,11 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
     :param pair: pair as str in format BTC_ETH or BTC-ETH
     :return: DataFrame
     """
-    data = [{
-        'close': t['C'],
-        'volume': t['V'],
-        'open': t['O'],
-        'high': t['H'],
-        'low': t['L'],
-        'date': t['T'],
-    } for t in sorted(ticker, key=lambda k: k['T']) if arrow.get(t['T']) > minimum_date]
-
-    return DataFrame(json_normalize(data))
+    df = DataFrame(ticker) \
+        .drop('BV', 1) \
+        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'}) \
+        .sort_values('date')
+    return df[df['date'].map(arrow.get) > minimum_date]
 
 
 def populate_indicators(dataframe: DataFrame) -> DataFrame:
@@ -93,7 +88,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    minimum_date = arrow.now() - timedelta(hours=6)
+    minimum_date = arrow.utcnow().shift(hours=-6)
     data = get_ticker(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
     dataframe = populate_indicators(dataframe)

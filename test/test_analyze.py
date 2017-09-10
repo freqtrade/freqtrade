@@ -22,7 +22,7 @@ class TestAnalyze(unittest.TestCase):
 
     def test_1_dataframe_has_correct_columns(self):
         self.assertEqual(self.result.columns.tolist(),
-                         ['close', 'date', 'high', 'low', 'open', 'volume'])
+                         ['close', 'high', 'low', 'open', 'date', 'volume'])
 
     def test_2_orders_by_date(self):
         self.assertEqual(self.result['date'].tolist(),
