@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -7,26 +8,42 @@ from sqlalchemy.orm.session import sessionmaker
 
 from sqlalchemy.types import Enum
 
-from exchange import Exchange, get_exchange_api
-from utils import get_conf
+import exchange
 
-conf = get_conf()
-if conf.get('dry_run', False):
-    db_handle = 'sqlite:///tradesv2.dry_run.sqlite'
-else:
-    db_handle = 'sqlite:///tradesv2.sqlite'
 
-engine = create_engine(db_handle, echo=False)
-session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-Session = session()
+_CONF = {}
+
 Base = declarative_base()
+
+
+def init(config: dict, db_url: Optional[str] = None) -> None:
+    """
+    Initializes this module with the given config,
+    registers all known command handlers
+    and starts polling for message updates
+    :param config: config to use
+    :param db_url: database connector string for sqlalchemy (Optional)
+    :return: None
+    """
+    _CONF.update(config)
+    if not db_url:
+        if _CONF.get('dry_run', False):
+            db_url = 'sqlite:///tradesv2.dry_run.sqlite'
+        else:
+            db_url = 'sqlite:///tradesv2.sqlite'
+
+    engine = create_engine(db_url, echo=False)
+    session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.session = session()
+    Trade.query = session.query_property()
+    Base.metadata.create_all(engine)
+
 
 class Trade(Base):
     __tablename__ = 'trades'
-    query = session.query_property()
 
     id = Column(Integer, primary_key=True)
-    exchange = Column(Enum(Exchange), nullable=False)
+    exchange = Column(Enum(exchange.Exchange), nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
     open_rate = Column(Float, nullable=False)
@@ -39,12 +56,16 @@ class Trade(Base):
     open_order_id = Column(String)
 
     def __repr__(self):
+        if self.is_open:
+            open_since = 'closed'
+        else:
+            open_since = round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
         return 'Trade(id={}, pair={}, amount={}, open_rate={}, open_since={})'.format(
             self.id,
             self.pair,
             self.amount,
             self.open_rate,
-            'closed' if not self.is_open else round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
+            open_since
         )
 
     def exec_sell_order(self, rate: float, amount: float) -> float:
@@ -57,12 +78,12 @@ class Trade(Base):
         profit = 100 * ((rate - self.open_rate) / self.open_rate)
 
         # Execute sell and update trade record
-        order_id = get_exchange_api(conf).sell(self.pair, rate, amount)
+        order_id = exchange.sell(str(self.pair), rate, amount)
         self.close_rate = rate
         self.close_profit = profit
         self.close_date = datetime.utcnow()
         self.open_order_id = order_id
-        Session.flush()
-        return profit
 
-Base.metadata.create_all(engine)
+        # Flush changes
+        Trade.session.flush()
+        return profit

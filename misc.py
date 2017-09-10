@@ -1,16 +1,39 @@
-import json
-import logging
+import enum
 
-from jsonschema import validate
 from wrapt import synchronized
 
-logger = logging.getLogger(__name__)
 
-_cur_conf = None
+class State(enum.Enum):
+    RUNNING = 0
+    STOPPED = 1
+
+
+# Current application state
+_STATE = State.STOPPED
+
+
+@synchronized
+def update_state(state: State) -> None:
+    """
+    Updates the application state
+    :param state: new state
+    :return: None
+    """
+    global _STATE
+    _STATE = state
+
+
+@synchronized
+def get_state() -> State:
+    """
+    Gets the current application state
+    :return:
+    """
+    return _STATE
 
 
 # Required json-schema for user specified config
-_conf_schema = {
+CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
@@ -35,7 +58,8 @@ _conf_schema = {
                 'chat_id': {'type': 'string'},
             },
             'required': ['enabled', 'token', 'chat_id']
-        }
+        },
+        'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
     },
     'definitions': {
         'exchange': {
@@ -66,18 +90,3 @@ _conf_schema = {
         'telegram'
     ]
 }
-
-
-@synchronized
-def get_conf(filename: str='config.json') -> dict:
-    """
-    Loads the config into memory validates it
-    and returns the singleton instance
-    :return: dict
-    """
-    global _cur_conf
-    if not _cur_conf:
-        with open(filename) as file:
-            _cur_conf = json.load(file)
-            validate(_cur_conf, _conf_schema)
-    return _cur_conf

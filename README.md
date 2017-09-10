@@ -1,4 +1,7 @@
 # freqtrade
+
+[![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
+
 Simple High frequency trading bot for crypto currencies.
 Currently supported exchanges: bittrex, poloniex (partly implemented)
 
@@ -11,7 +14,7 @@ and enter the telegram `token` and your `chat_id` in `config.json`
 
 Persistence is achieved through sqlite.
 
-##### Telegram RPC commands:
+#### Telegram RPC commands:
 * /start: Starts the trader
 * /stop: Stops the trader
 * /status: Lists all open trades
@@ -19,7 +22,7 @@ Persistence is achieved through sqlite.
 * /forcesell <trade_id>: Instantly sells the given trade (Ignoring `minimum_roi`).
 * /performance: Show performance of each finished trade grouped by pair
 
-##### Config
+#### Config
 `minimal_roi` is a JSON object where the key is a duration
 in minutes and the value is the minimum ROI in percent.
 See the example below:
@@ -37,15 +40,19 @@ See the example below:
 For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
 
+`initial_state` is an optional field that defines the initial application state.
+Possible values are `running` or `stopped`. (default=`running`)
+If the value is `stopped` the bot has to be started with `/start` first.
+
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
 
-##### Prerequisites
+#### Prerequisites
 * python3.6
 * sqlite
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
 
-##### Install
+#### Install
 ```
 $ cd freqtrade/
 # copy example config. Dont forget to insert your api keys
@@ -56,6 +63,11 @@ $ pip install -r requirements.txt
 $ ./main.py
 ```
 
+#### Execute tests
+
+```
+$ python -m unittest
+```
 
 #### Docker
 ```

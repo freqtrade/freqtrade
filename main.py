@@ -1,19 +1,19 @@
 #!/usr/bin/env python
+import json
 import logging
-import threading
 import time
 import traceback
 from datetime import datetime
-from json import JSONDecodeError
 from typing import Optional
 
-from requests import ConnectionError
-from wrapt import synchronized
+from jsonschema import validate
+
+import exchange
+import persistence
+from persistence import Trade
 from analyze import get_buy_signal
-from persistence import Trade, Session
-from exchange import get_exchange_api, Exchange
-from rpc.telegram import TelegramHandler
-from utils import get_conf
+from misc import CONF_SCHEMA, get_state, State, update_state
+from rpc import telegram
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -22,60 +22,26 @@ logger = logging.getLogger(__name__)
 __author__ = "gcarq"
 __copyright__ = "gcarq 2017"
 __license__ = "GPLv3"
-__version__ = "0.8.0"
+__version__ = "0.9.0"
+
+_CONF = {}
 
 
-CONFIG = get_conf()
-api_wrapper = get_exchange_api(CONFIG)
-
-
-class TradeThread(threading.Thread):
-    def __init__(self):
-        super().__init__()
-        self._should_stop = False
-
-    def stop(self) -> None:
-        """ stops the trader thread """
-        self._should_stop = True
-
-    def run(self) -> None:
-        """
-        Threaded main function
-        :return: None
-        """
-        try:
-            TelegramHandler.send_msg('*Status:* `trader started`')
-            logger.info('Trader started')
-            while not self._should_stop:
-                try:
-                    self._process()
-                except (ConnectionError, JSONDecodeError, ValueError) as error:
-                    msg = 'Got {} during _process()'.format(error.__class__.__name__)
-                    logger.exception(msg)
-                finally:
-                    Session.flush()
-                    time.sleep(25)
-        except (RuntimeError, JSONDecodeError):
-            TelegramHandler.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
-            logger.exception('RuntimeError. Stopping trader ...')
-        finally:
-            TelegramHandler.send_msg('*Status:* `Trader has stopped`')
-
-    @staticmethod
-    def _process() -> None:
-        """
-        Queries the persistence layer for open trades and handles them,
-        otherwise a new trade is created.
-        :return: None
-        """
+def _process() -> None:
+    """
+    Queries the persistence layer for open trades and handles them,
+    otherwise a new trade is created.
+    :return: None
+    """
+    try:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if len(trades) < CONFIG['max_open_trades']:
+        if len(trades) < _CONF['max_open_trades']:
             try:
                 # Create entity and execute trade
-                trade = create_trade(float(CONFIG['stake_amount']), api_wrapper.exchange)
+                trade = create_trade(float(_CONF['stake_amount']), exchange.EXCHANGE)
                 if trade:
-                    Session.add(trade)
+                    Trade.session.add(trade)
                 else:
                     logging.info('Got no buy signal...')
             except ValueError:
@@ -83,45 +49,21 @@ class TradeThread(threading.Thread):
 
         for trade in trades:
             # Check if there is already an open order for this trade
-            orders = api_wrapper.get_open_orders(trade.pair)
+            orders = exchange.get_open_orders(trade.pair)
             orders = [o for o in orders if o['id'] == trade.open_order_id]
             if orders:
-                msg = 'There exists an open order for {}: Order(total={}, remaining={}, type={}, id={})' \
-                    .format(
-                        trade,
-                        round(orders[0]['amount'], 8),
-                        round(orders[0]['remaining'], 8),
-                        orders[0]['type'],
-                        orders[0]['id'])
-                logger.info(msg)
-                continue
-
-            # Update state
-            trade.open_order_id = None
-            # Check if this trade can be marked as closed
-            if close_trade_if_fulfilled(trade):
-                logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
-                continue
-
-            # Check if we can sell our current pair
-            handle_trade(trade)
-
-# Initial stopped TradeThread instance
-_instance = TradeThread()
-
-
-@synchronized
-def get_instance(recreate: bool=False) -> TradeThread:
-    """
-    Get the current instance of this thread. This is a singleton.
-    :param recreate: Must be True if you want to start the instance
-    :return: TradeThread instance
-    """
-    global _instance
-    if recreate and not _instance.is_alive():
-        logger.debug('Creating thread instance...')
-        _instance = TradeThread()
-    return _instance
+                logger.info('There is an open order for: %s', orders[0])
+            else:
+                # Update state
+                trade.open_order_id = None
+                # Check if this trade can be closed
+                if not close_trade_if_fulfilled(trade):
+                    # Check if we can sell our current pair
+                    handle_trade(trade)
+        Trade.session.flush()
+    except (ConnectionError, json.JSONDecodeError) as error:
+        msg = 'Got {} in _process()'.format(error.__class__.__name__)
+        logger.exception(msg)
 
 
 def close_trade_if_fulfilled(trade: Trade) -> bool:
@@ -132,27 +74,37 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
     """
     # If we don't have an open order and the close rate is already set,
     # we can close this trade.
-    if trade.close_profit and trade.close_date and trade.close_rate and not trade.open_order_id:
+    if trade.close_profit is not None \
+            and trade.close_date is not None \
+            and trade.close_rate is not None \
+            and trade.open_order_id is None:
         trade.is_open = False
-        Session.flush()
+        logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
         return True
     return False
 
+
 def execute_sell(trade: Trade, current_rate: float) -> None:
+    """
+    Executes a sell for the given trade and current rate
+    :param trade: Trade instance
+    :param current_rate: current rate
+    :return: None
+    """
     # Get available balance
     currency = trade.pair.split('_')[1]
-    balance = api_wrapper.get_balance(currency)
+    balance = exchange.get_balance(currency)
 
     profit = trade.exec_sell_order(current_rate, balance)
     message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
         trade.exchange.name,
         trade.pair.replace('_', '/'),
-        api_wrapper.get_pair_detail_url(trade.pair),
+        exchange.get_pair_detail_url(trade.pair),
         trade.close_rate,
         round(profit, 2)
     )
     logger.info(message)
-    TelegramHandler.send_msg(message)
+    telegram.send_msg(message)
 
 
 def handle_trade(trade: Trade) -> None:
@@ -166,39 +118,41 @@ def handle_trade(trade: Trade) -> None:
 
         logger.debug('Handling open trade %s ...', trade)
         # Get current rate
-        current_rate = api_wrapper.get_ticker(trade.pair)['bid']
+        current_rate = exchange.get_ticker(trade.pair)['bid']
         current_profit = 100.0 * ((current_rate - trade.open_rate) / trade.open_rate)
 
-        if 'stoploss' in CONFIG and current_profit < float(CONFIG['stoploss']) * 100.0:
+        if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']) * 100.0:
             logger.debug('Stop loss hit.')
             execute_sell(trade, current_rate)
             return
 
-        for duration, threshold in sorted(CONFIG['minimal_roi'].items()):
+        for duration, threshold in sorted(_CONF['minimal_roi'].items()):
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
             if time_diff > duration and current_rate > (1 + threshold) * trade.open_rate:
                 execute_sell(trade, current_rate)
                 return
-        else:
-            logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit)
+
+        logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit)
     except ValueError:
         logger.exception('Unable to handle open order')
 
 
-def create_trade(stake_amount: float, exchange: Exchange) -> Optional[Trade]:
+def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[Trade]:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
-    :param exchange: exchange to use
+    :param _exchange: exchange to use
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
-    whitelist = CONFIG[exchange.name.lower()]['pair_whitelist']
+    whitelist = _CONF[_exchange.name.lower()]['pair_whitelist']
     # Check if btc_amount is fulfilled
-    if api_wrapper.get_balance(CONFIG['stake_currency']) < stake_amount:
-        raise ValueError('stake amount is not fulfilled (currency={}'.format(CONFIG['stake_currency']))
+    if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
+        raise ValueError(
+            'stake amount is not fulfilled (currency={}'.format(_CONF['stake_currency'])
+        )
 
     # Remove currently opened and latest pairs from whitelist
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -213,37 +167,91 @@ def create_trade(stake_amount: float, exchange: Exchange) -> Optional[Trade]:
         raise ValueError('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
-    for p in whitelist:
-        if get_buy_signal(p):
-            pair = p
+    for _pair in whitelist:
+        if get_buy_signal(_pair):
+            pair = _pair
             break
     else:
         return None
 
-    open_rate = api_wrapper.get_ticker(pair)['ask']
+    open_rate = exchange.get_ticker(pair)['ask']
     amount = stake_amount / open_rate
-    exchange = exchange
-    order_id = api_wrapper.buy(pair, open_rate, amount)
+    order_id = exchange.buy(pair, open_rate, amount)
 
     # Create trade entity and return
     message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
-        exchange.name,
+        _exchange.name,
         pair.replace('_', '/'),
-        api_wrapper.get_pair_detail_url(pair),
+        exchange.get_pair_detail_url(pair),
         open_rate
     )
     logger.info(message)
-    TelegramHandler.send_msg(message)
+    telegram.send_msg(message)
     return Trade(pair=pair,
                  btc_amount=stake_amount,
                  open_rate=open_rate,
+                 open_date=datetime.utcnow(),
                  amount=amount,
-                 exchange=exchange,
-                 open_order_id=order_id)
+                 exchange=_exchange,
+                 open_order_id=order_id,
+                 is_open=True)
+
+
+def init(config: dict, db_url: Optional[str] = None) -> None:
+    """
+    Initializes all modules and updates the config
+    :param config: config as dict
+    :param db_url: database connector string for sqlalchemy (Optional)
+    :return: None
+    """
+    # Initialize all modules
+    telegram.init(config)
+    persistence.init(config, db_url)
+    exchange.init(config)
+
+    # Set initial application state
+    initial_state = config.get('initial_state')
+    if initial_state:
+        update_state(State[initial_state.upper()])
+    else:
+        update_state(State.STOPPED)
+
+
+def app(config: dict) -> None:
+    """
+    Main function which handles the application state
+    :param config: config as dict
+    :return: None
+    """
+    logger.info('Starting freqtrade %s', __version__)
+    init(config)
+    try:
+        old_state = get_state()
+        logger.info('Initial State: %s', old_state)
+        telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
+        while True:
+            new_state = get_state()
+            # Log state transition
+            if new_state != old_state:
+                telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
+                logging.info('Changing state to: %s', new_state.name)
+
+            if new_state == State.STOPPED:
+                time.sleep(1)
+            elif new_state == State.RUNNING:
+                _process()
+                # We need to sleep here because otherwise we would run into bittrex rate limit
+                time.sleep(25)
+            old_state = new_state
+    except RuntimeError:
+        telegram.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
+        logger.exception('RuntimeError. Trader stopped!')
+    finally:
+        telegram.send_msg('*Status:* `Trader has stopped`')
 
 
 if __name__ == '__main__':
-    logger.info('Starting freqtrade %s', __version__)
-    TelegramHandler.listen()
-    while True:
-        time.sleep(0.5)
+    with open('config.json') as file:
+        _CONF = json.load(file)
+        validate(_CONF, CONF_SCHEMA)
+        app(_CONF)
