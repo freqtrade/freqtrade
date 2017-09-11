@@ -61,7 +61,7 @@ class TestMain(unittest.TestCase):
                         self.assertEqual(trade.pair, 'BTC_ETH')
                         self.assertEqual(trade.exchange, exchange.Exchange.BITTREX)
                         self.assertEqual(trade.amount, 206.43811673387373)
-                        self.assertEqual(trade.btc_amount, 15.0)
+                        self.assertEqual(trade.stake_amount, 15.0)
                         self.assertEqual(trade.is_open, True)
                         self.assertIsNotNone(trade.open_date)
                         buy_signal.assert_called_once_with('BTC_ETH')

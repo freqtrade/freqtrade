@@ -49,7 +49,7 @@ class Trade(Base):
     open_rate = Column(Float, nullable=False)
     close_rate = Column(Float)
     close_profit = Column(Float)
-    btc_amount = Column(Float, nullable=False)
+    stake_amount = Column(Float, name='btc_amount', nullable=False)
     amount = Column(Float, nullable=False)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)

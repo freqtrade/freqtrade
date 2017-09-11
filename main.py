@@ -148,7 +148,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
     whitelist = _CONF[_exchange.name.lower()]['pair_whitelist']
-    # Check if btc_amount is fulfilled
+    # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
             'stake amount is not fulfilled (currency={}'.format(_CONF['stake_currency'])
@@ -188,7 +188,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     logger.info(message)
     telegram.send_msg(message)
     return Trade(pair=pair,
-                 btc_amount=stake_amount,
+                 stake_amount=stake_amount,
                  open_rate=open_rate,
                  open_date=datetime.utcnow(),
                  amount=amount,
