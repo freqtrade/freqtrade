@@ -48,7 +48,6 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'poloniex': {'$ref': '#/definitions/exchange'},
         'bittrex': {'$ref': '#/definitions/exchange'},
         'telegram': {
             'type': 'object',
