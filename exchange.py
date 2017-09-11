@@ -3,7 +3,6 @@ import logging
 from typing import List
 
 from bittrex.bittrex import Bittrex
-from poloniex import Poloniex
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,6 @@ _CONF = {}
 
 
 class Exchange(enum.Enum):
-    POLONIEX = 0
     BITTREX = 1
 
 
@@ -33,13 +31,8 @@ def init(config: dict) -> None:
     if config['dry_run']:
         logger.info('Instance is running with dry_run enabled')
 
-    use_poloniex = config.get('poloniex', {}).get('enabled', False)
     use_bittrex = config.get('bittrex', {}).get('enabled', False)
-
-    if use_poloniex:
-        EXCHANGE = Exchange.POLONIEX
-        _API = Poloniex(key=config['poloniex']['key'], secret=config['poloniex']['secret'])
-    elif use_bittrex:
+    if use_bittrex:
         EXCHANGE = Exchange.BITTREX
         _API = Bittrex(api_key=config['bittrex']['key'], api_secret=config['bittrex']['secret'])
     else:
@@ -47,9 +40,10 @@ def init(config: dict) -> None:
 
     # Check if all pairs are available
     markets = get_markets()
-    for pair in config[EXCHANGE.name.lower()]['pair_whitelist']:
+    exchange_name = EXCHANGE.name.lower()
+    for pair in config[exchange_name]['pair_whitelist']:
         if pair not in markets:
-            raise RuntimeError('Pair {} is not available at Poloniex'.format(pair))
+            raise RuntimeError('Pair {} is not available at {}'.format(pair, exchange_name))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:
@@ -62,9 +56,6 @@ def buy(pair: str, rate: float, amount: float) -> str:
     """
     if _CONF['dry_run']:
         return 'dry_run'
-    elif EXCHANGE == Exchange.POLONIEX:
-        _API.buy(pair, rate, amount)
-        # TODO: return order id
     elif EXCHANGE == Exchange.BITTREX:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
@@ -82,9 +73,6 @@ def sell(pair: str, rate: float, amount: float) -> str:
     """
     if _CONF['dry_run']:
         return 'dry_run'
-    elif EXCHANGE == Exchange.POLONIEX:
-        _API.sell(pair, rate, amount)
-        # TODO: return order id
     elif EXCHANGE == Exchange.BITTREX:
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
@@ -100,9 +88,6 @@ def get_balance(currency: str) -> float:
     """
     if _CONF['dry_run']:
         return 999.9
-    elif EXCHANGE == Exchange.POLONIEX:
-        data = _API.returnBalances()
-        return float(data[currency])
     elif EXCHANGE == Exchange.BITTREX:
         data = _API.get_balance(currency)
         if not data['success']:
@@ -116,14 +101,7 @@ def get_ticker(pair: str) -> dict:
     :param pair: Pair as str, format: BTC_ETC
     :return: dict
     """
-    if EXCHANGE == Exchange.POLONIEX:
-        data = _API.returnTicker()
-        return {
-            'bid': float(data[pair]['highestBid']),
-            'ask': float(data[pair]['lowestAsk']),
-            'last': float(data[pair]['last'])
-        }
-    elif EXCHANGE == Exchange.BITTREX:
+    if EXCHANGE == Exchange.BITTREX:
         data = _API.get_ticker(pair.replace('_', '-'))
         if not data['success']:
             raise RuntimeError('BITTREX: {}'.format(data['message']))
@@ -142,8 +120,6 @@ def cancel_order(order_id: str) -> None:
     """
     if _CONF['dry_run']:
         pass
-    elif EXCHANGE == Exchange.POLONIEX:
-        raise NotImplemented('Not implemented')
     elif EXCHANGE == Exchange.BITTREX:
         data = _API.cancel(order_id)
         if not data['success']:
@@ -158,8 +134,6 @@ def get_open_orders(pair: str) -> List[dict]:
     """
     if _CONF['dry_run']:
         return []
-    elif EXCHANGE == Exchange.POLONIEX:
-        raise NotImplemented('Not implemented')
     elif EXCHANGE == Exchange.BITTREX:
         data = _API.get_open_orders(pair.replace('_', '-'))
         if not data['success']:
@@ -180,9 +154,7 @@ def get_pair_detail_url(pair: str) -> str:
     :param pair: pair as str, format: BTC_ANT
     :return: url as str
     """
-    if EXCHANGE == Exchange.POLONIEX:
-        raise NotImplemented('Not implemented')
-    elif EXCHANGE == Exchange.BITTREX:
+    if EXCHANGE == Exchange.BITTREX:
         return 'https://bittrex.com/Market/Index?MarketName={}'.format(pair.replace('_', '-'))
 
 
@@ -191,10 +163,7 @@ def get_markets() -> List[str]:
     Returns all available markets
     :return: list of all available pairs
     """
-    if EXCHANGE == Exchange.POLONIEX:
-        # TODO: implement
-        raise NotImplemented('Not implemented')
-    elif EXCHANGE == Exchange. BITTREX:
+    if EXCHANGE == Exchange. BITTREX:
         data = _API.get_markets()
         if not data['success']:
             raise RuntimeError('BITTREX: {}'.format(data['message']))

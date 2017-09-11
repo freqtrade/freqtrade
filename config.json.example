@@ -9,12 +9,6 @@
         "0":  0.02
     },
     "stoploss": -0.10,
-    "poloniex": {
-        "enabled": false,
-        "key": "key",
-        "secret": "secret",
-        "pair_whitelist": []
-    },
     "bittrex": {
         "enabled": true,
         "key": "key",

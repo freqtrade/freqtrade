@@ -78,7 +78,6 @@ CONF_SCHEMA = {
         }
     },
     'anyOf': [
-        {'required': ['poloniex']},
         {'required': ['bittrex']}
     ],
     'required': [

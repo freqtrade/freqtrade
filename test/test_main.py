@@ -20,12 +20,6 @@ class TestMain(unittest.TestCase):
             "720": 0.01,
             "0": 0.02
         },
-        "poloniex": {
-            "enabled": False,
-            "key": "key",
-            "secret": "secret",
-            "pair_whitelist": []
-        },
         "bittrex": {
             "enabled": True,
             "key": "key",
