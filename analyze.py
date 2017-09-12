@@ -22,7 +22,7 @@ def get_ticker(pair: str, minimum_date: arrow.Arrow) -> dict:
     }
     params = {
         'marketName': pair.replace('_', '-'),
-        'tickInterval': 'OneMin',
+        'tickInterval': 'fiveMin',
         '_': minimum_date.timestamp * 1000
     }
     data = requests.get(url, params=params, headers=headers).json()
