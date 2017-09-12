@@ -3,7 +3,6 @@ from datetime import timedelta
 import logging
 import arrow
 import requests
-from pandas.io.json import json_normalize
 from pandas import DataFrame
 import talib.abstract as ta
 
@@ -23,7 +22,7 @@ def get_ticker(pair: str, minimum_date: arrow.Arrow) -> dict:
     }
     params = {
         'marketName': pair.replace('_', '-'),
-        'tickInterval': 'OneMin',
+        'tickInterval': 'fiveMin',
         '_': minimum_date.timestamp * 1000
     }
     data = requests.get(url, params=params, headers=headers).json()
@@ -49,19 +48,9 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
-    dataframe['close_30_ema'] = ta.EMA(dataframe, timeperiod=30)
-    dataframe['close_90_ema'] = ta.EMA(dataframe, timeperiod=90)
-
-    dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.2)
-
-    # calculate StochRSI
-    stochrsi = ta.STOCHRSI(dataframe)
-    dataframe['stochrsi'] = stochrsi['fastd'] # values between 0-100, not 0-1
-
-    macd = ta.MACD(dataframe)
-    dataframe['macd'] = macd['macd']
-    dataframe['macds'] = macd['macdsignal']
-    dataframe['macdh'] = macd['macdhist']
+    dataframe['ema'] = ta.EMA(dataframe, timeperiod=33)
+    dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.22)
+    dataframe['adx'] = ta.ADX(dataframe)
 
     return dataframe
 
@@ -72,13 +61,29 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
+    prev_sar = dataframe['sar'].shift(1)
+    prev_close = dataframe['close'].shift(1)
+    prev_sar2 = dataframe['sar'].shift(2)
+    prev_close2 = dataframe['close'].shift(2)
+
+    # wait for stable turn from bearish to bullish market
     dataframe.loc[
-        (dataframe['stochrsi'] < 20)
-        & (dataframe['macd'] > dataframe['macds'])
-        & (dataframe['close'] > dataframe['sar']),
-        'buy'
+        (dataframe['close'] > dataframe['sar']) &
+        (prev_close > prev_sar) &
+        (prev_close2 < prev_sar2),
+        'swap'
     ] = 1
+
+    # consider prices above ema to be in upswing
+    dataframe.loc[dataframe['ema'] <= dataframe['close'], 'upswing'] = 1
+
+    dataframe.loc[
+        (dataframe['upswing'] == 1) &
+        (dataframe['swap'] == 1) &
+        (dataframe['adx'] > 25), # adx over 25 tells there's enough momentum
+        'buy'] = 1
     dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+
     return dataframe
 
 
@@ -127,26 +132,19 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     matplotlib.use("Qt5Agg")
     import matplotlib.pyplot as plt
 
-    # Three subplots sharing x axe
-    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
+    # Two subplots sharing x axis
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True)
     fig.suptitle(pair, fontsize=14, fontweight='bold')
+    ax1.plot(dataframe.index.values, dataframe['sar'], 'g_', label='pSAR')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
-    ax1.plot(dataframe.index.values, dataframe['close_30_ema'], label='EMA(30)')
-    ax1.plot(dataframe.index.values, dataframe['close_90_ema'], label='EMA(90)')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
-    ax1.plot(dataframe.index.values, dataframe['buy_price'], 'bo', label='buy')
+    ax1.plot(dataframe.index.values, dataframe['ema'], '--', label='EMA(20)')
+    ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
     ax1.legend()
 
-    ax2.plot(dataframe.index.values, dataframe['macd'], label='MACD')
-    ax2.plot(dataframe.index.values, dataframe['macds'], label='MACDS')
-    ax2.plot(dataframe.index.values, dataframe['macdh'], label='MACD Histogram')
-    ax2.plot(dataframe.index.values, [0] * len(dataframe.index.values))
+    ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
+    ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
     ax2.legend()
-
-    ax3.plot(dataframe.index.values, dataframe['stochrsi'], label='StochRSI')
-    ax3.plot(dataframe.index.values, [80] * len(dataframe.index.values))
-    ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
-    ax3.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
     # all but bottom plot.
@@ -158,8 +156,8 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
-        pair = 'BTC_ANT'
+        test_pair = 'BTC_ANT'
         #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #   get_buy_signal(pair)
-        plot_dataframe(analyze_ticker(pair), pair)
+        plot_dataframe(analyze_ticker(test_pair), test_pair)
         time.sleep(60)
