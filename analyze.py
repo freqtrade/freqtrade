@@ -3,7 +3,6 @@ from datetime import timedelta
 import logging
 import arrow
 import requests
-from pandas.io.json import json_normalize
 from pandas import DataFrame
 import talib.abstract as ta
 
