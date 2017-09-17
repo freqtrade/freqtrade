@@ -94,8 +94,10 @@ def execute_sell(trade: Trade, current_rate: float) -> None:
     # Get available balance
     currency = trade.pair.split('_')[1]
     balance = exchange.get_balance(currency)
+    whitelist = _CONF[trade.exchange.name.lower()]['pair_whitelist']
 
     profit = trade.exec_sell_order(current_rate, balance)
+    whitelist.append(trade.pair)
     message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
         trade.exchange.name,
         trade.pair.replace('_', '/'),
