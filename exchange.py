@@ -49,7 +49,7 @@ def init(config: dict) -> None:
     markets = get_markets()
     for pair in config[EXCHANGE.name.lower()]['pair_whitelist']:
         if pair not in markets:
-            raise RuntimeError('Pair {} is not available at Poloniex'.format(pair))
+            raise RuntimeError('Pair {} is not available at {}'.format(pair,EXCHANGE.name.lower()))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:
