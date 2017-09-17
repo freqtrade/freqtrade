@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from jsonschema import validate
 
 import exchange
-from main import create_trade, handle_trade, close_trade_if_fulfilled, init
+from main import create_trade, handle_trade, close_trade_if_fulfilled, init, get_target_bid
 from misc import CONF_SCHEMA
 from persistence import Trade
 
@@ -19,6 +19,9 @@ class TestMain(unittest.TestCase):
             "2880": 0.005,
             "720": 0.01,
             "0": 0.02
+        },
+        "bid_strategy": {
+            "ask_last_balance": 0.0
         },
         "bittrex": {
             "enabled": True,
@@ -89,6 +92,18 @@ class TestMain(unittest.TestCase):
             closed = close_trade_if_fulfilled(trade)
             self.assertTrue(closed)
             self.assertEqual(trade.is_open, False)
+
+    def test_balance_fully_ask_side(self):
+        with patch.dict('main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}}):
+            self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 20)
+
+    def test_balance_fully_last_side(self):
+        with patch.dict('main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
+            self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 10)
+
+    def test_balance_when_last_bigger_than_ask(self):
+        with patch.dict('main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
+            self.assertEqual(get_target_bid({'ask': 5, 'last': 10}), 5)
 
     @classmethod
     def setUpClass(cls):

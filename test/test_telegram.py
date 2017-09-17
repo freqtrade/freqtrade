@@ -28,6 +28,9 @@ class TestTelegram(unittest.TestCase):
             "720": 0.01,
             "0": 0.02
         },
+        "bid_strategy": {
+            "ask_last_balance": 0.0
+        },
         "bittrex": {
             "enabled": True,
             "key": "key",

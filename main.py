@@ -138,6 +138,13 @@ def handle_trade(trade: Trade) -> None:
     except ValueError:
         logger.exception('Unable to handle open order')
 
+def get_target_bid(ticker) -> float:
+    """ Calculates bid target between current ask price and last price """
+    if ticker['ask'] < ticker['last']:
+        return ticker['ask']
+    balance = _CONF['bid_strategy']['ask_last_balance']
+    return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
 
 def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[Trade]:
     """
@@ -174,7 +181,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     else:
         return None
 
-    open_rate = exchange.get_ticker(pair)['ask']
+    open_rate = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / open_rate
     order_id = exchange.buy(pair, open_rate, amount)
 
