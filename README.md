@@ -45,7 +45,7 @@ Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
 `ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last price.
+use the `last` price and values between those interpolate between ask and last price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
 
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
