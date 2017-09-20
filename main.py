@@ -4,7 +4,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 from jsonschema import validate
 
@@ -138,7 +138,7 @@ def handle_trade(trade: Trade) -> None:
     except ValueError:
         logger.exception('Unable to handle open order')
 
-def get_target_bid(ticker) -> float:
+def get_target_bid(ticker: Dict[str, float]) -> float:
     """ Calculates bid target between current ask price and last price """
     if ticker['ask'] < ticker['last']:
         return ticker['ask']
