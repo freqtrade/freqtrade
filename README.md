@@ -82,4 +82,4 @@ Feel like our bot is missing a feature? We welcome your pull requests! Few point
 
 - Create your PR against the `develop` branch, not `master`.
 - New features need to contain unit tests.
-- If you are unsure, discuss the feature in a (issue)[https://github.com/gcarq/freqtrade/issues] before a PR.
+- If you are unsure, discuss the feature in a [issue](https://github.com/gcarq/freqtrade/issues) before a PR.
