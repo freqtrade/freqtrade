@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
 
 Simple High frequency trading bot for crypto currencies.
-Currently supported exchanges: bittrex, poloniex (partly implemented)
+Currently supports trading on Bittrex exchange.
 
 This software is for educational purposes only.
 Don't risk money which you are afraid to lose.
@@ -75,3 +75,11 @@ $ cd freqtrade
 $ docker build -t freqtrade .
 $ docker run --rm -it freqtrade
 ```
+
+#### Contributing
+
+Feel like our bot is missing a feature? We welcome your pull requests! Few pointers for contributions:
+
+- Create your PR against the `develop` branch, not `master`.
+- New features need to contain unit tests.
+- If you are unsure, discuss the feature in a (issue)[https://github.com/gcarq/freqtrade/issues] before a PR.
