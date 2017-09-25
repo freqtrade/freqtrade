@@ -107,6 +107,28 @@ def execute_sell(trade: Trade, current_rate: float) -> None:
     telegram.send_msg(message)
 
 
+def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bool:
+    """
+    Based an earlier trade and current price and configuration, decides whether bot should sell
+    :return True if bot should sell at current rate
+    """
+    current_profit = (current_rate - trade.open_rate) / trade.open_rate
+
+    if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
+        logger.debug('Stop loss hit.')
+        return True
+
+    for duration, threshold in sorted(_CONF['minimal_roi'].items()):
+        duration, threshold = float(duration), float(threshold)
+        # Check if time matches and current rate is above threshold
+        time_diff = (current_time - trade.open_date).total_seconds() / 60
+        if time_diff > duration and current_profit > threshold:
+            return True
+
+    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
+    return False
+
+
 def handle_trade(trade: Trade) -> None:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
@@ -119,22 +141,10 @@ def handle_trade(trade: Trade) -> None:
         logger.debug('Handling open trade %s ...', trade)
 
         current_rate = exchange.get_ticker(trade.pair)['bid']
-        current_profit = (current_rate - trade.open_rate) / trade.open_rate
-
-        if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
-            logger.debug('Stop loss hit.')
+        if should_sell(trade, current_rate, datetime.utcnow()):
             execute_sell(trade, current_rate)
             return
 
-        for duration, threshold in sorted(_CONF['minimal_roi'].items()):
-            duration, threshold = float(duration), float(threshold)
-            # Check if time matches and current rate is above threshold
-            time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
-            if time_diff > duration and current_profit > threshold:
-                execute_sell(trade, current_rate)
-                return
-
-        logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     except ValueError:
         logger.exception('Unable to handle open order')
 
