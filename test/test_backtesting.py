@@ -18,7 +18,7 @@ def print_results(results):
     ))
 
 class TestMain(unittest.TestCase):
-    pairs = ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay', 'btc-pivx', 'btc-qtum']
+    pairs = ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay', 'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
     conf = {
         "minimal_roi": {
             "2880": 0.005,
