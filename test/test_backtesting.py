@@ -9,7 +9,7 @@ from persistence import Trade
 from main import should_sell
 
 def print_results(results):
-    print('Made {} buys. Average profit of a deal was {:.1f}%. Total profit was {:.3f}. Average trade lasted {:.1f} minutes.'.format(
+    print('Made {} buys. Average profit {:.1f}%. Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
         len(results.index),
         results.profit.mean() * 100.0,
         results.profit.sum(),
