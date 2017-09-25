@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring
 import unittest
 from unittest.mock import patch
+import os
 import json
 import arrow
 from pandas import DataFrame
@@ -27,6 +28,7 @@ class TestMain(unittest.TestCase):
         "stoploss": -0.10
     }
 
+    @unittest.skipIf(not os.environ.get('BACKTEST', False), "slow, should be run manually")
     def test_backtest(self):
         trades = []
         with patch.dict('main._CONF', self.conf):
