@@ -117,11 +117,11 @@ def handle_trade(trade: Trade) -> None:
             raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
         logger.debug('Handling open trade %s ...', trade)
-        # Get current rate
-        current_rate = exchange.get_ticker(trade.pair)['bid']
-        current_profit = 100.0 * ((current_rate - trade.open_rate) / trade.open_rate)
 
-        if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']) * 100.0:
+        current_rate = exchange.get_ticker(trade.pair)['bid']
+        current_profit = (current_rate - trade.open_rate) / trade.open_rate
+
+        if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
             logger.debug('Stop loss hit.')
             execute_sell(trade, current_rate)
             return
@@ -130,11 +130,11 @@ def handle_trade(trade: Trade) -> None:
             duration, threshold = float(duration), float(threshold)
             # Check if time matches and current rate is above threshold
             time_diff = (datetime.utcnow() - trade.open_date).total_seconds() / 60
-            if time_diff > duration and current_rate > (1 + threshold) * trade.open_rate:
+            if time_diff > duration and current_profit > threshold:
                 execute_sell(trade, current_rate)
                 return
 
-        logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit)
+        logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     except ValueError:
         logger.exception('Unable to handle open order')
 
