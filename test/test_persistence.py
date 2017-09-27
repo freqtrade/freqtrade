@@ -22,6 +22,7 @@ class TestTrade(unittest.TestCase):
             self.assertEqual(trade.close_rate, 1.0)
             self.assertEqual(trade.close_profit, profit)
             self.assertIsNotNone(trade.close_date)
+            self.assertFalse(trade.is_open)
 
 
 if __name__ == '__main__':
