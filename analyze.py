@@ -98,7 +98,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
 
     if dataframe.empty:
-        logger.debug('Empty dataframe for pair %s', pair)
+        logger.warning('Empty dataframe for pair %s', pair)
         return dataframe
     
     dataframe = populate_indicators(dataframe)
