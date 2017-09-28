@@ -31,9 +31,12 @@ def init(config: dict) -> None:
     :return: None
     """
     global _updater
-    _updater = Updater(token=config['telegram']['token'], workers=0)
 
     _CONF.update(config)
+    if not _CONF['telegram']['enabled']:
+        return
+
+    _updater = Updater(token=config['telegram']['token'], workers=0)
 
     # Register command handler and start telegram message polling
     handles = [
