@@ -12,5 +12,7 @@ setup(name='freqtrade',
       license='GPLv3',
       packages=['freqtrade'],
       scripts=['bin/freqtrade'],
+      test_suite='nose.collector',
+      tests_require=['nose'],
       include_package_data=True,
       zip_safe=False)
