@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch
 
-from exchange import Exchange
-from persistence import Trade
+from freqtrade.exchange import Exchange
+from freqtrade.persistence import Trade
 
 
 class TestTrade(unittest.TestCase):
     def test_1_exec_sell_order(self):
-        with patch('main.exchange.sell', side_effect='mocked_order_id') as api_mock:
+        with patch('freqtrade.main.exchange.sell', side_effect='mocked_order_id') as api_mock:
             trade = Trade(
                 pair='BTC_ETH',
                 stake_amount=1.00,

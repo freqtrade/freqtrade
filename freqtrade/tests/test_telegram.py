@@ -1,15 +1,15 @@
 import unittest
-from unittest.mock import patch, MagicMock
 from datetime import datetime
+from unittest.mock import patch, MagicMock
 
 from jsonschema import validate
 from telegram import Bot, Update, Message, Chat
 
-import exchange
-from main import init, create_trade
-from misc import CONF_SCHEMA, update_state, State, get_state
-from persistence import Trade
-from rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop
+from freqtrade import exchange
+from freqtrade.main import init, create_trade
+from freqtrade.misc import update_state, State, get_state, CONF_SCHEMA
+from freqtrade.persistence import Trade
+from freqtrade.rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop
 
 
 class MagicBot(MagicMock, Bot):
@@ -48,11 +48,11 @@ class TestTelegram(unittest.TestCase):
     }
 
     def test_1_status_handle(self):
-        with patch.dict('main._CONF', self.conf):
-            with patch('main.get_buy_signal', side_effect=lambda _: True):
+        with patch.dict('freqtrade.main._CONF', self.conf):
+            with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
-                    with patch.multiple('main.exchange',
+                with patch.multiple('freqtrade.main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
+                    with patch.multiple('freqtrade.main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
                                             'ask': 0.072661,
@@ -72,11 +72,11 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('[BTC_ETH]', msg_mock.call_args_list[-1][0][0])
 
     def test_2_profit_handle(self):
-        with patch.dict('main._CONF', self.conf):
-            with patch('main.get_buy_signal', side_effect=lambda _: True):
+        with patch.dict('freqtrade.main._CONF', self.conf):
+            with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
-                    with patch.multiple('main.exchange',
+                with patch.multiple('freqtrade.main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
+                    with patch.multiple('freqtrade.main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
                                             'ask': 0.072661,
@@ -101,11 +101,11 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('(100.00%)', msg_mock.call_args_list[-1][0][0])
 
     def test_3_forcesell_handle(self):
-        with patch.dict('main._CONF', self.conf):
-            with patch('main.get_buy_signal', side_effect=lambda _: True):
+        with patch.dict('freqtrade.main._CONF', self.conf):
+            with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
-                    with patch.multiple('main.exchange',
+                with patch.multiple('freqtrade.main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
+                    with patch.multiple('freqtrade.main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
                                             'ask': 0.072661,
@@ -128,11 +128,11 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('0.072561', msg_mock.call_args_list[-1][0][0])
 
     def test_4_performance_handle(self):
-        with patch.dict('main._CONF', self.conf):
-            with patch('main.get_buy_signal', side_effect=lambda _: True):
+        with patch.dict('freqtrade.main._CONF', self.conf):
+            with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True):
                 msg_mock = MagicMock()
-                with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
-                    with patch.multiple('main.exchange',
+                with patch.multiple('freqtrade.main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
+                    with patch.multiple('freqtrade.main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
                                             'ask': 0.072661,
@@ -158,9 +158,9 @@ class TestTelegram(unittest.TestCase):
                         self.assertIn('BTC_ETH	100.00%', msg_mock.call_args_list[-1][0][0])
 
     def test_5_start_handle(self):
-        with patch.dict('main._CONF', self.conf):
+        with patch.dict('freqtrade.main._CONF', self.conf):
             msg_mock = MagicMock()
-            with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
+            with patch.multiple('freqtrade.main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                 init(self.conf, 'sqlite://')
 
                 update_state(State.STOPPED)
@@ -170,9 +170,9 @@ class TestTelegram(unittest.TestCase):
                 self.assertEqual(msg_mock.call_count, 0)
 
     def test_6_stop_handle(self):
-        with patch.dict('main._CONF', self.conf):
+        with patch.dict('freqtrade.main._CONF', self.conf):
             msg_mock = MagicMock()
-            with patch.multiple('main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
+            with patch.multiple('freqtrade.main.telegram', _CONF=self.conf, init=MagicMock(), send_msg=msg_mock):
                 init(self.conf, 'sqlite://')
 
                 update_state(State.RUNNING)

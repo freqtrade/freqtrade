@@ -3,10 +3,11 @@ from unittest.mock import patch, MagicMock
 
 from jsonschema import validate
 
-import exchange
-from main import create_trade, handle_trade, close_trade_if_fulfilled, init, get_target_bid
-from misc import CONF_SCHEMA
-from persistence import Trade
+from freqtrade import exchange
+from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
+    get_target_bid
+from freqtrade.misc import CONF_SCHEMA
+from freqtrade.persistence import Trade
 
 
 class TestMain(unittest.TestCase):
@@ -39,10 +40,10 @@ class TestMain(unittest.TestCase):
     }
 
     def test_1_create_trade(self):
-        with patch.dict('main._CONF', self.conf):
-            with patch('main.get_buy_signal', side_effect=lambda _: True) as buy_signal:
-                with patch.multiple('main.telegram', init=MagicMock(), send_msg=MagicMock()):
-                    with patch.multiple('main.exchange',
+        with patch.dict('freqtrade.main._CONF', self.conf):
+            with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True) as buy_signal:
+                with patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock()):
+                    with patch.multiple('freqtrade.main.exchange',
                                         get_ticker=MagicMock(return_value={
                                             'bid': 0.07256061,
                                             'ask': 0.072661,
@@ -64,9 +65,9 @@ class TestMain(unittest.TestCase):
                         buy_signal.assert_called_once_with('BTC_ETH')
 
     def test_2_handle_trade(self):
-        with patch.dict('main._CONF', self.conf):
-            with patch.multiple('main.telegram', init=MagicMock(), send_msg=MagicMock()):
-                with patch.multiple('main.exchange',
+        with patch.dict('freqtrade.main._CONF', self.conf):
+            with patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock()):
+                with patch.multiple('freqtrade.main.exchange',
                                     get_ticker=MagicMock(return_value={
                                         'bid': 0.17256061,
                                         'ask': 0.172661,
@@ -82,7 +83,7 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(trade.open_order_id, 'dry_run')
 
     def test_3_close_trade(self):
-        with patch.dict('main._CONF', self.conf):
+        with patch.dict('freqtrade.main._CONF', self.conf):
             trade = Trade.query.filter(Trade.is_open.is_(True)).first()
             self.assertTrue(trade)
 
@@ -94,15 +95,15 @@ class TestMain(unittest.TestCase):
             self.assertEqual(trade.is_open, False)
 
     def test_balance_fully_ask_side(self):
-        with patch.dict('main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}}):
+        with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}}):
             self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 20)
 
     def test_balance_fully_last_side(self):
-        with patch.dict('main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
+        with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
             self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 10)
 
     def test_balance_when_last_bigger_than_ask(self):
-        with patch.dict('main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
+        with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
             self.assertEqual(get_target_bid({'ask': 5, 'last': 10}), 5)
 
     @classmethod

@@ -8,21 +8,15 @@ from typing import Dict, Optional
 
 from jsonschema import validate
 
-import exchange
-import persistence
-from persistence import Trade
-from analyze import get_buy_signal
-from misc import CONF_SCHEMA, get_state, State, update_state
-from rpc import telegram
+from freqtrade import exchange, persistence, __version__
+from freqtrade.analyze import get_buy_signal
+from freqtrade.misc import State, update_state, get_state, CONF_SCHEMA
+from freqtrade.persistence import Trade
+from freqtrade.rpc import telegram
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-__author__ = "gcarq"
-__copyright__ = "gcarq 2017"
-__license__ = "GPLv3"
-__version__ = "0.10.0"
 
 _CONF = {}
 
