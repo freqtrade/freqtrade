@@ -10,7 +10,7 @@ class TestTrade(unittest.TestCase):
         with patch('main.exchange.sell', side_effect='mocked_order_id') as api_mock:
             trade = Trade(
                 pair='BTC_ETH',
-                btc_amount=1.00,
+                stake_amount=1.00,
                 open_rate=0.50,
                 amount=10.00,
                 exchange=Exchange.BITTREX,

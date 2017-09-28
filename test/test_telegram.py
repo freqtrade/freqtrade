@@ -28,11 +28,8 @@ class TestTelegram(unittest.TestCase):
             "720": 0.01,
             "0": 0.02
         },
-        "poloniex": {
-            "enabled": False,
-            "key": "key",
-            "secret": "secret",
-            "pair_whitelist": []
+        "bid_strategy": {
+            "ask_last_balance": 0.0
         },
         "bittrex": {
             "enabled": True,

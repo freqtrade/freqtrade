@@ -157,7 +157,7 @@ def _profit(bot: Bot, update: Update) -> None:
             current_rate = exchange.get_ticker(trade.pair)['bid']
             profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
 
-        profit_amounts.append((profit / 100) * trade.btc_amount)
+        profit_amounts.append((profit / 100) * trade.stake_amount)
         profits.append(profit)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \

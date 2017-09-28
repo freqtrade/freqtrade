@@ -48,7 +48,18 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'poloniex': {'$ref': '#/definitions/exchange'},
+        'bid_strategy': {
+            'type': 'object',
+            'properties': {
+                'ask_last_balance': {
+                    'type': 'number',
+                    'minimum': 0,
+                    'maximum': 1,
+                    'exclusiveMaximum': False
+                },
+            },
+            'required': ['ask_last_balance']
+        },
         'bittrex': {'$ref': '#/definitions/exchange'},
         'telegram': {
             'type': 'object',
@@ -78,7 +89,6 @@ CONF_SCHEMA = {
         }
     },
     'anyOf': [
-        {'required': ['poloniex']},
         {'required': ['bittrex']}
     ],
     'required': [
@@ -87,6 +97,7 @@ CONF_SCHEMA = {
         'stake_amount',
         'dry_run',
         'minimal_roi',
+        'bid_strategy',
         'telegram'
     ]
 }
