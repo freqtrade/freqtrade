@@ -12,4 +12,5 @@ setup(name='freqtrade',
       license='GPLv3',
       packages=['freqtrade'],
       scripts=['bin/freqtrade'],
+      include_package_data=True,
       zip_safe=False)
