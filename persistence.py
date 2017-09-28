@@ -83,6 +83,7 @@ class Trade(Base):
         self.close_profit = profit
         self.close_date = datetime.utcnow()
         self.open_order_id = order_id
+        self.is_open = False
 
         # Flush changes
         Trade.session.flush()
