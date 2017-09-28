@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 import os
 import json
+import logging
 import arrow
 from pandas import DataFrame
 from analyze import analyze_ticker
@@ -27,6 +28,10 @@ class TestMain(unittest.TestCase):
         },
         "stoploss": -0.10
     }
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
 
     @unittest.skipIf(not os.environ.get('BACKTEST', False), "slow, should be run manually")
     def test_backtest(self):
