@@ -63,6 +63,8 @@ $ pip install -r requirements.txt
 $ ./main.py
 ```
 
+There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).
+
 #### Execute tests
 
 ```
