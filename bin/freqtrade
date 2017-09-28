@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+import freqtrade
+freqtrade.main()

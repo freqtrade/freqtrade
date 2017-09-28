@@ -11,4 +11,5 @@ setup(name='freqtrade',
       author_email='michael.egger@tsn.at',
       license='GPLv3',
       packages=['freqtrade'],
+      scripts=['bin/freqtrade'],
       zip_safe=False)

@@ -232,7 +232,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 def app(config: dict) -> None:
     """
-    Main function which handles the application state
+    Main loop which handles the application state
     :param config: config as dict
     :return: None
     """
@@ -263,8 +263,17 @@ def app(config: dict) -> None:
         telegram.send_msg('*Status:* `Trader has stopped`')
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Loads and validates the config and starts the main loop
+    :return: None
+    """
+    global _CONF
     with open('config.json') as file:
         _CONF = json.load(file)
         validate(_CONF, CONF_SCHEMA)
         app(_CONF)
+
+
+if __name__ == '__main__':
+    main()
