@@ -96,6 +96,11 @@ def analyze_ticker(pair: str) -> DataFrame:
     minimum_date = arrow.utcnow().shift(hours=-6)
     data = get_ticker(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+
+    if dataframe.empty:
+        logger.warning('Empty dataframe for pair %s', pair)
+        return dataframe
+    
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     return dataframe
@@ -107,6 +112,10 @@ def get_buy_signal(pair: str) -> bool:
     :return: True if pair is good for buying, False otherwise
     """
     dataframe = analyze_ticker(pair)
+
+    if dataframe.empty:
+        return False
+
     latest = dataframe.iloc[-1]
 
     # Check if dataframe is out of date
