@@ -4,10 +4,6 @@ os:
 language: python
 python:
 - 3.6
-- nightly
-matrix:
-  allow_failures:
-  - python: nightly
 addons:
   apt:
     packages:
