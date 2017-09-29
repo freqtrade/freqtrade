@@ -93,7 +93,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    minimum_date = arrow.utcnow().shift(hours=-6)
+    minimum_date = arrow.utcnow().shift(hours=-24)
     data = get_ticker(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
 
