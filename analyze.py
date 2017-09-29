@@ -165,7 +165,7 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
-        test_pair = 'BTC_ANT'
+        test_pair = 'BTC_ETH'
         #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #   get_buy_signal(pair)
         plot_dataframe(analyze_ticker(test_pair), test_pair)
