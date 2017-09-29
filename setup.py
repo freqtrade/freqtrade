@@ -32,4 +32,10 @@ setup(name='freqtrade',
           "git+https://github.com/ericsomdahl/python-bittrex.git@d7033d0#egg=python-bittrex-0.1.3"
       ],
       include_package_data=True,
-      zip_safe=False)
+      zip_safe=False,
+      classifiers=[
+          'Programming Language :: Python :: 3.6',
+          'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+          'Topic :: Office/Business :: Financial :: Investment',
+          'Intended Audience :: Science/Research',
+      ])
