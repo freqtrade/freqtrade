@@ -43,15 +43,20 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
         .sort_values('date')
     return df[df['date'].map(arrow.get) > minimum_date]
 
-
 def populate_indicators(dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
-    dataframe['ema'] = ta.EMA(dataframe, timeperiod=33)
     dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.22)
     dataframe['adx'] = ta.ADX(dataframe)
-
+    stoch = ta.STOCHF(dataframe)
+    dataframe['fastd'] = stoch['fastd']
+    dataframe['fastk'] = stoch['fastk']
+    dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
+    dataframe['cci'] = ta.CCI(dataframe, timeperiod=5)
+    dataframe['sma'] = ta.SMA(dataframe, timeperiod=100)
+    dataframe['tema'] = ta.TEMA(dataframe, timeperiod=4)
+    dataframe['mfi'] = ta.MFI(dataframe)
     return dataframe
 
 
@@ -61,26 +66,14 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-    prev_sar = dataframe['sar'].shift(1)
-    prev_close = dataframe['close'].shift(1)
-    prev_sar2 = dataframe['sar'].shift(2)
-    prev_close2 = dataframe['close'].shift(2)
-
-    # wait for stable turn from bearish to bullish market
-    dataframe.loc[
-        (dataframe['close'] > dataframe['sar']) &
-        (prev_close > prev_sar) &
-        (prev_close2 < prev_sar2),
-        'swap'
-    ] = 1
-
-    # consider prices above ema to be in upswing
-    dataframe.loc[dataframe['ema'] <= dataframe['close'], 'upswing'] = 1
 
     dataframe.loc[
-        (dataframe['upswing'] == 1) &
-        (dataframe['swap'] == 1) &
-        (dataframe['adx'] > 25), # adx over 25 tells there's enough momentum
+        (dataframe['close'] < dataframe['sma']) &
+        (dataframe['cci'] < -100) &
+        (dataframe['tema'] <= dataframe['blower']) &
+        (dataframe['mfi'] < 30) &
+        (dataframe['fastd'] < 20) &
+        (dataframe['adx'] > 20),
         'buy'] = 1
     dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
@@ -147,12 +140,13 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     ax1.plot(dataframe.index.values, dataframe['sar'], 'g_', label='pSAR')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
-    ax1.plot(dataframe.index.values, dataframe['ema'], '--', label='EMA(20)')
-    ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
+    ax1.plot(dataframe.index.values, dataframe['sma'], '--', label='SMA')
+    ax1.plot(dataframe.index.values, dataframe['buy_price'], 'bo', label='buy')
     ax1.legend()
 
-    ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
-    ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
+#    ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
+    ax2.plot(dataframe.index.values, dataframe['mfi'], label='MFI')
+#    ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
     ax2.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for

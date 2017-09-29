@@ -22,11 +22,12 @@ class TestMain(unittest.TestCase):
     pairs = ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay', 'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
     conf = {
         "minimal_roi": {
-            "2880": 0.005,
-            "720":  0.01,
-            "0":  0.02
+            "60":  0.0,
+            "40":  0.01,
+            "20":  0.02,
+            "0":  0.03
         },
-        "stoploss": -0.10
+        "stoploss": -0.40
     }
 
     @classmethod
