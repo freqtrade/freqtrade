@@ -1,6 +1,6 @@
 -e git+https://github.com/ericsomdahl/python-bittrex.git#egg=python-bittrex
 SQLAlchemy==1.1.13
-python-telegram-bot==7.0.1
+python-telegram-bot==8.0
 arrow==0.10.0
 requests==2.18.4
 urllib3==1.22
