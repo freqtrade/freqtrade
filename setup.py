@@ -14,5 +14,22 @@ setup(name='freqtrade',
       scripts=['bin/freqtrade'],
       test_suite='nose.collector',
       tests_require=['nose'],
+      install_requires=[
+          'python-bittrex==0.1.3',
+          'SQLAlchemy==1.1.13',
+          'python-telegram-bot==8.0',
+          'arrow==0.10.0',
+          'requests==2.18.4',
+          'urllib3==1.22',
+          'wrapt==1.10.11',
+          'pandas==0.20.3',
+          'scikit-learn==0.19.0',
+          'scipy==0.19.1',
+          'jsonschema==2.6.0',
+          'TA-Lib==0.4.10',
+      ],
+      dependency_links=[
+          "git+https://github.com/ericsomdahl/python-bittrex.git@d7033d0#egg=python-bittrex-0.1.3"
+      ],
       include_package_data=True,
       zip_safe=False)

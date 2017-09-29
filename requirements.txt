@@ -1,4 +1,4 @@
--e git+https://github.com/ericsomdahl/python-bittrex.git#egg=python-bittrex
+-e git+https://github.com/ericsomdahl/python-bittrex.git@d7033d0#egg=python-bittrex
 SQLAlchemy==1.1.13
 python-telegram-bot==8.0
 arrow==0.10.0
@@ -6,9 +6,11 @@ requests==2.18.4
 urllib3==1.22
 wrapt==1.10.11
 pandas==0.20.3
-matplotlib==2.0.2
 scikit-learn==0.19.0
 scipy==0.19.1
 jsonschema==2.6.0
 TA-Lib==0.4.10
+
+# Required for plotting data
+#matplotlib==2.0.2
 #PYQT5==5.9
