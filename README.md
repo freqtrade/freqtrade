@@ -65,7 +65,8 @@ $ cp config.json.example config.json
 $ python -m venv .env
 $ source .env/bin/activate
 $ pip install -r requirements.txt
-$ ./main.py
+$ pip install -e .
+$ ./freqtrade/main.py
 ```
 
 There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).
@@ -73,7 +74,7 @@ There is also an [article](https://www.sales4k.com/blockchain/high-frequency-tra
 #### Execute tests
 
 ```
-$ python -m unittest
+$ python setup.py test
 ```
 
 #### Docker
