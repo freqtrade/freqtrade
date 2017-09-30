@@ -1,6 +1,7 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
+import copy
 from jsonschema import validate
 
 from freqtrade import exchange
@@ -29,7 +30,10 @@ class TestMain(unittest.TestCase):
             "key": "key",
             "secret": "secret",
             "pair_whitelist": [
-                "BTC_ETH"
+                "BTC_ETH",
+                "BTC_TKN",
+                "BTC_TRST",
+                "BTC_SWT",
             ]
         },
         "telegram": {
@@ -50,19 +54,27 @@ class TestMain(unittest.TestCase):
                                             'last': 0.07256061
                                         }),
                                         buy=MagicMock(return_value='mocked_order_id')):
+                        # Save state of current whitelist
+                        whitelist = copy.deepcopy(self.conf['bittrex']['pair_whitelist'])
+
                         init(self.conf, 'sqlite://')
-                        trade = create_trade(15.0, exchange.Exchange.BITTREX)
-                        Trade.session.add(trade)
-                        Trade.session.flush()
-                        self.assertIsNotNone(trade)
-                        self.assertEqual(trade.open_rate, 0.072661)
-                        self.assertEqual(trade.pair, 'BTC_ETH')
-                        self.assertEqual(trade.exchange, exchange.Exchange.BITTREX)
-                        self.assertEqual(trade.amount, 206.43811673387373)
-                        self.assertEqual(trade.stake_amount, 15.0)
-                        self.assertEqual(trade.is_open, True)
-                        self.assertIsNotNone(trade.open_date)
-                        buy_signal.assert_called_once_with('BTC_ETH')
+                        for pair in ['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT']:
+                            trade = create_trade(15.0, exchange.Exchange.BITTREX)
+                            Trade.session.add(trade)
+                            Trade.session.flush()
+                            self.assertIsNotNone(trade)
+                            self.assertEqual(trade.open_rate, 0.072661)
+                            self.assertEqual(trade.pair, pair)
+                            self.assertEqual(trade.exchange, exchange.Exchange.BITTREX)
+                            self.assertEqual(trade.amount, 206.43811673387373)
+                            self.assertEqual(trade.stake_amount, 15.0)
+                            self.assertEqual(trade.is_open, True)
+                            self.assertIsNotNone(trade.open_date)
+                            self.assertEqual(whitelist, self.conf['bittrex']['pair_whitelist'])
+
+                        buy_signal.assert_has_calls(
+                            [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]
+                        )
 
     def test_2_handle_trade(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
