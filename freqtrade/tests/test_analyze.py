@@ -1,9 +1,12 @@
 # pragma pylint: disable=missing-docstring
 import unittest
 from unittest.mock import patch
-from pandas import DataFrame
+
 import arrow
-from analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, analyze_ticker, get_buy_signal
+from pandas import DataFrame
+
+from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, \
+    get_buy_signal
 
 RESULT_BITTREX = {
     'success': True,
@@ -38,10 +41,10 @@ class TestAnalyze(unittest.TestCase):
 
     def test_4_returns_latest_buy_signal(self):
         buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
-        with patch('analyze.analyze_ticker', return_value=buydf):
+        with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
             self.assertEqual(get_buy_signal('BTC-ETH'), True)
         buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
-        with patch('analyze.analyze_ticker', return_value=buydf):
+        with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
             self.assertEqual(get_buy_signal('BTC-ETH'), False)
 
 

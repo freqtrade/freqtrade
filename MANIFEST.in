@@ -1,0 +1,3 @@
+include LICENSE
+include README.md
+include config.json.example

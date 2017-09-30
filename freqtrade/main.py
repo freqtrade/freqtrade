@@ -8,21 +8,15 @@ from typing import Dict, Optional
 
 from jsonschema import validate
 
-import exchange
-import persistence
-from persistence import Trade
-from analyze import get_buy_signal
-from misc import CONF_SCHEMA, get_state, State, update_state
-from rpc import telegram
+from freqtrade import exchange, persistence, __version__
+from freqtrade.analyze import get_buy_signal
+from freqtrade.misc import State, update_state, get_state, CONF_SCHEMA
+from freqtrade.persistence import Trade
+from freqtrade.rpc import telegram
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-__author__ = "gcarq"
-__copyright__ = "gcarq 2017"
-__license__ = "GPLv3"
-__version__ = "0.10.0"
 
 _CONF = {}
 
@@ -97,7 +91,8 @@ def execute_sell(trade: Trade, current_rate: float) -> None:
     whitelist = _CONF[trade.exchange.name.lower()]['pair_whitelist']
 
     profit = trade.exec_sell_order(current_rate, balance)
-    whitelist.append(trade.pair)
+    if trade.pair not in whitelist:
+        whitelist.append(trade.pair)
     message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
         trade.exchange.name,
         trade.pair.replace('_', '/'),
@@ -238,7 +233,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 def app(config: dict) -> None:
     """
-    Main function which handles the application state
+    Main loop which handles the application state
     :param config: config as dict
     :return: None
     """
@@ -269,8 +264,17 @@ def app(config: dict) -> None:
         telegram.send_msg('*Status:* `Trader has stopped`')
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Loads and validates the config and starts the main loop
+    :return: None
+    """
+    global _CONF
     with open('config.json') as file:
         _CONF = json.load(file)
         validate(_CONF, CONF_SCHEMA)
         app(_CONF)
+
+
+if __name__ == '__main__':
+    main()
