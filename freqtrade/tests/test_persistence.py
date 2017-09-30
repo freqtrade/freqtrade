@@ -18,10 +18,10 @@ class TestTrade(unittest.TestCase):
             )
             profit = trade.exec_sell_order(1.00, 10.00)
             api_mock.assert_called_once_with('BTC_ETH', 1.0, 10.0)
-            self.assertEqual(profit, 100.0)
-            self.assertEqual(trade.close_rate, 1.0)
-            self.assertEqual(trade.close_profit, profit)
-            self.assertIsNotNone(trade.close_date)
+            assert profit == 100.0
+            assert trade.close_rate == 1.0
+            assert trade.close_profit == profit
+            assert trade.close_date is not None
 
 
 if __name__ == '__main__':

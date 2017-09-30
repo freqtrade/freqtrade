@@ -62,15 +62,15 @@ class TestMain(unittest.TestCase):
                             trade = create_trade(15.0, exchange.Exchange.BITTREX)
                             Trade.session.add(trade)
                             Trade.session.flush()
-                            self.assertIsNotNone(trade)
-                            self.assertEqual(trade.open_rate, 0.072661)
-                            self.assertEqual(trade.pair, pair)
-                            self.assertEqual(trade.exchange, exchange.Exchange.BITTREX)
-                            self.assertEqual(trade.amount, 206.43811673387373)
-                            self.assertEqual(trade.stake_amount, 15.0)
-                            self.assertEqual(trade.is_open, True)
-                            self.assertIsNotNone(trade.open_date)
-                            self.assertEqual(whitelist, self.conf['bittrex']['pair_whitelist'])
+                            assert trade is not None
+                            assert trade.open_rate == 0.072661
+                            assert trade.pair == pair
+                            assert trade.exchange == exchange.Exchange.BITTREX
+                            assert trade.amount == 206.43811673387373
+                            assert trade.stake_amount == 15.0
+                            assert trade.is_open == True
+                            assert trade.open_date is not None
+                            assert whitelist == self.conf['bittrex']['pair_whitelist']
 
                         buy_signal.assert_has_calls(
                             [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]
@@ -87,36 +87,36 @@ class TestMain(unittest.TestCase):
                                     }),
                                     buy=MagicMock(return_value='mocked_order_id')):
                     trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-                    self.assertTrue(trade)
+                    assert trade
                     handle_trade(trade)
-                    self.assertEqual(trade.close_rate, 0.17256061)
-                    self.assertEqual(trade.close_profit, 137.4872490056564)
-                    self.assertIsNotNone(trade.close_date)
-                    self.assertEqual(trade.open_order_id, 'dry_run')
+                    assert trade.close_rate == 0.17256061
+                    assert trade.close_profit == 137.4872490056564
+                    assert trade.close_date is not None
+                    assert trade.open_order_id == 'dry_run'
 
     def test_3_close_trade(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
             trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-            self.assertTrue(trade)
+            assert trade
 
             # Simulate that there is no open order
             trade.open_order_id = None
 
             closed = close_trade_if_fulfilled(trade)
-            self.assertTrue(closed)
-            self.assertEqual(trade.is_open, False)
+            assert closed
+            assert trade.is_open == False
 
     def test_balance_fully_ask_side(self):
         with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}}):
-            self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 20)
+            assert get_target_bid({'ask': 20, 'last': 10}) == 20
 
     def test_balance_fully_last_side(self):
         with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
-            self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 10)
+            assert get_target_bid({'ask': 20, 'last': 10}) == 10
 
     def test_balance_when_last_bigger_than_ask(self):
         with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
-            self.assertEqual(get_target_bid({'ask': 5, 'last': 10}), 5)
+            assert get_target_bid({'ask': 5, 'last': 10}) == 5
 
     @classmethod
     def setUpClass(cls):

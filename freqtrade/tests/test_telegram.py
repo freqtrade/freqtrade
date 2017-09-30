@@ -63,13 +63,13 @@ class TestTelegram(unittest.TestCase):
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
-                        self.assertTrue(trade)
+                        assert trade
                         Trade.session.add(trade)
                         Trade.session.flush()
 
                         _status(bot=MagicBot(), update=self.update)
-                        self.assertEqual(msg_mock.call_count, 2)
-                        self.assertIn('[BTC_ETH]', msg_mock.call_args_list[-1][0][0])
+                        assert msg_mock.call_count == 2
+                        assert '[BTC_ETH]' in msg_mock.call_args_list[-1][0][0]
 
     def test_2_profit_handle(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
@@ -87,7 +87,7 @@ class TestTelegram(unittest.TestCase):
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
-                        self.assertTrue(trade)
+                        assert trade
                         trade.close_rate = 0.07256061
                         trade.close_profit = 100.00
                         trade.close_date = datetime.utcnow()
@@ -97,8 +97,8 @@ class TestTelegram(unittest.TestCase):
                         Trade.session.flush()
 
                         _profit(bot=MagicBot(), update=self.update)
-                        self.assertEqual(msg_mock.call_count, 2)
-                        self.assertIn('(100.00%)', msg_mock.call_args_list[-1][0][0])
+                        assert msg_mock.call_count == 2
+                        assert '(100.00%)' in msg_mock.call_args_list[-1][0][0]
 
     def test_3_forcesell_handle(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
@@ -116,16 +116,16 @@ class TestTelegram(unittest.TestCase):
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
-                        self.assertTrue(trade)
+                        assert trade
                         Trade.session.add(trade)
                         Trade.session.flush()
 
                         self.update.message.text = '/forcesell 1'
                         _forcesell(bot=MagicBot(), update=self.update)
 
-                        self.assertEqual(msg_mock.call_count, 2)
-                        self.assertIn('Selling [BTC/ETH]', msg_mock.call_args_list[-1][0][0])
-                        self.assertIn('0.072561', msg_mock.call_args_list[-1][0][0])
+                        assert msg_mock.call_count == 2
+                        assert 'Selling [BTC/ETH]' in msg_mock.call_args_list[-1][0][0]
+                        assert '0.072561' in msg_mock.call_args_list[-1][0][0]
 
     def test_4_performance_handle(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
@@ -143,7 +143,7 @@ class TestTelegram(unittest.TestCase):
 
                         # Create some test data
                         trade = create_trade(15.0, exchange.Exchange.BITTREX)
-                        self.assertTrue(trade)
+                        assert trade
                         trade.close_rate = 0.07256061
                         trade.close_profit = 100.00
                         trade.close_date = datetime.utcnow()
@@ -153,9 +153,9 @@ class TestTelegram(unittest.TestCase):
                         Trade.session.flush()
 
                         _performance(bot=MagicBot(), update=self.update)
-                        self.assertEqual(msg_mock.call_count, 2)
-                        self.assertIn('Performance', msg_mock.call_args_list[-1][0][0])
-                        self.assertIn('BTC_ETH	100.00%', msg_mock.call_args_list[-1][0][0])
+                        assert msg_mock.call_count == 2
+                        assert 'Performance' in msg_mock.call_args_list[-1][0][0]
+                        assert 'BTC_ETH	100.00%' in msg_mock.call_args_list[-1][0][0]
 
     def test_5_start_handle(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
@@ -164,10 +164,10 @@ class TestTelegram(unittest.TestCase):
                 init(self.conf, 'sqlite://')
 
                 update_state(State.STOPPED)
-                self.assertEqual(get_state(), State.STOPPED)
+                assert get_state() == State.STOPPED
                 _start(bot=MagicBot(), update=self.update)
-                self.assertEqual(get_state(), State.RUNNING)
-                self.assertEqual(msg_mock.call_count, 0)
+                assert get_state() == State.RUNNING
+                assert msg_mock.call_count == 0
 
     def test_6_stop_handle(self):
         with patch.dict('freqtrade.main._CONF', self.conf):
@@ -176,11 +176,11 @@ class TestTelegram(unittest.TestCase):
                 init(self.conf, 'sqlite://')
 
                 update_state(State.RUNNING)
-                self.assertEqual(get_state(), State.RUNNING)
+                assert get_state() == State.RUNNING
                 _stop(bot=MagicBot(), update=self.update)
-                self.assertEqual(get_state(), State.STOPPED)
-                self.assertEqual(msg_mock.call_count, 1)
-                self.assertIn('Stopping trader', msg_mock.call_args_list[0][0][0])
+                assert get_state() == State.STOPPED
+                assert msg_mock.call_count == 1
+                assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
 
     def setUp(self):
         self.update = Update(0)
