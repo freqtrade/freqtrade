@@ -1,6 +1,8 @@
 # freqtrade
 
 [![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
+[![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
+
 
 Simple High frequency trading bot for crypto currencies.
 Currently supports trading on Bittrex exchange.
