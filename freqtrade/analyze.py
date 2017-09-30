@@ -6,7 +6,8 @@ import arrow
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.exchange import get_ticker_history
+from freqtrade.exchange import backtesting, get_ticker_history
+from freqtrade.misc import State, get_state
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -23,6 +24,10 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
         .drop('BV', 1) \
         .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'}) \
         .sort_values('date')
+
+    if get_state() == State.BACKTESTING:
+        return df
+
     return df[df['date'].map(arrow.get) > minimum_date]
 
 
@@ -69,16 +74,20 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    minimum_date = arrow.utcnow().shift(hours=-24)
+    if get_state() == State.BACKTESTING:
+        minimum_date = backtesting.get_minimum_date(pair)
+    else:
+        minimum_date = arrow.utcnow().shift(hours=-24)
+
     data = get_ticker_history(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
-
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)
         return dataframe
 
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
+
     return dataframe
 
 
@@ -95,10 +104,11 @@ def get_buy_signal(pair: str) -> bool:
 
     latest = dataframe.iloc[-1]
 
-    # Check if dataframe is out of date
-    signal_date = arrow.get(latest['date'])
-    if signal_date < arrow.now() - timedelta(minutes=10):
-        return False
+    if get_state() != State.BACKTESTING:
+        # Check if dataframe is out of date
+        signal_date = arrow.get(latest['date'])
+        if signal_date < arrow.now() - timedelta(minutes=10):
+            return False
 
     signal = latest['buy'] == 1
     logger.debug('buy_trigger: %s (pair=%s, signal=%s)', latest['date'], pair, signal)

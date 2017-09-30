@@ -4,8 +4,10 @@ from typing import List
 
 import arrow
 
+from freqtrade.exchange.backtesting import Backtesting
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.interface import Exchange
+from freqtrade.misc import State, get_state
 
 logger = logging.getLogger(__name__)
 
@@ -33,22 +35,24 @@ def init(config: dict) -> None:
 
     _CONF.update(config)
 
-    if config['dry_run']:
+    if get_state() == State.BACKTESTING:
+        logger.info('Instance is running with backtesting enabled')
+        EXCHANGE = Backtesting(config['exchange'])
+        return
+    elif config['dry_run']:
         logger.info('Instance is running with dry_run enabled')
 
-    exchange_config = config['exchange']
-
     # Find matching class for the given exchange name
-    name = exchange_config['name']
+    name = _CONF['exchange']['name']
     try:
         exchange_class = Exchanges[name.upper()].value
     except KeyError:
         raise RuntimeError('Exchange {} is not supported'.format(name))
 
-    EXCHANGE = exchange_class(exchange_config)
+    EXCHANGE = exchange_class(_CONF['exchange'])
 
     # Check if all pairs are available
-    validate_pairs(config['exchange']['pair_whitelist'])
+    validate_pairs(_CONF['exchange']['pair_whitelist'])
 
 
 def validate_pairs(pairs: List[str]) -> None:

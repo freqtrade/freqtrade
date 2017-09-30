@@ -2,6 +2,7 @@
 import copy
 import json
 import logging
+import sys
 import time
 import traceback
 from datetime import datetime
@@ -11,7 +12,8 @@ from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state
+from freqtrade.exchange import backtesting
+from freqtrade.misc import CONF_SCHEMA, State, get_args, get_state, parse_args, update_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -106,6 +108,9 @@ def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bo
     Based an earlier trade and current price and configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
+    if get_state() == State.BACKTESTING:
+        current_time = backtesting.current_time(trade.pair)
+
     current_profit = (current_rate - trade.open_rate) / trade.open_rate
 
     if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
@@ -186,6 +191,10 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     order_id = exchange.buy(pair, open_rate, amount)
 
     # Create trade entity and return
+    if get_state() == State.BACKTESTING:
+        current_time = backtesting.current_time(pair)
+    else:
+        current_time = datetime.utcnow()
     message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
         exchange.EXCHANGE.name.upper(),
         pair.replace('_', '/'),
@@ -197,41 +206,48 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     return Trade(pair=pair,
                  stake_amount=stake_amount,
                  open_rate=open_rate,
-                 open_date=datetime.utcnow(),
+                 open_date=current_time,
                  amount=amount,
                  exchange=exchange.EXCHANGE.name.upper(),
                  open_order_id=order_id,
                  is_open=True)
 
 
-def init(config: dict, db_url: Optional[str] = None) -> None:
+def init(config: dict, db_url: Optional[str] = None, argv: Optional[list] = None) -> None:
     """
     Initializes all modules and updates the config
     :param config: config as dict
     :param db_url: database connector string for sqlalchemy (Optional)
+    :param argv: (optional) command-line arguments
     :return: None
     """
+    # Parse command-line arguments
+    parse_args(argv)
+
+    # Set initial application state
+    if get_args().backtesting:
+        initial_state = State.BACKTESTING
+        _CONF['telegram']['enabled'] = False
+    else:
+        initial_state = config.get('initial_state', State.STOPPED.name.lower())
+        initial_state = State[initial_state.upper()]
+    update_state(initial_state)
+
     # Initialize all modules
     telegram.init(config)
     persistence.init(config, db_url)
     exchange.init(config)
 
-    # Set initial application state
-    initial_state = config.get('initial_state')
-    if initial_state:
-        update_state(State[initial_state.upper()])
-    else:
-        update_state(State.STOPPED)
 
-
-def app(config: dict) -> None:
+def app(config: dict, argv: Optional[list] = None) -> None:
     """
     Main loop which handles the application state
     :param config: config as dict
+    :param argv: (optional) command-line arguments
     :return: None
     """
     logger.info('Starting freqtrade %s', __version__)
-    init(config)
+    init(config, argv=argv)
     try:
         old_state = get_state()
         logger.info('Initial State: %s', old_state)
@@ -249,6 +265,12 @@ def app(config: dict) -> None:
                 _process()
                 # We need to sleep here because otherwise we would run into bittrex rate limit
                 time.sleep(exchange.EXCHANGE.sleep_time)
+            elif new_state == State.BACKTESTING:
+                _process()
+                # Advance in time without sleeping
+                if not backtesting.time_step():
+                    backtesting.print_results()
+                    break
             old_state = new_state
     except RuntimeError:
         telegram.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
@@ -266,7 +288,7 @@ def main():
     with open('config.json') as file:
         _CONF = json.load(file)
         validate(_CONF, CONF_SCHEMA)
-        app(_CONF)
+        app(_CONF, sys.argv)
 
 
 if __name__ == '__main__':
