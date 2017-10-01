@@ -3,14 +3,14 @@
     "stake_currency": "BTC",
     "stake_amount": 0.05,
     "dry_run": false,
-        "minimal_roi": {
-            "60":  0.0,
-            "40":  0.01,
-            "20":  0.02,
-            "0":  0.03
-        },
-        "stoploss": -0.40,
-        "bid_strategy": {
+    "minimal_roi": {
+        "60":  0.0,
+        "40":  0.01,
+        "20":  0.02,
+        "0":  0.03
+    },
+    "stoploss": -0.40,
+    "bid_strategy": {
         "ask_last_balance": 0.0
     },
     "bittrex": {
