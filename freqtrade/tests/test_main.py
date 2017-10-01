@@ -1,3 +1,4 @@
+# pragma pylint: disable=missing-docstring
 import copy
 from unittest.mock import MagicMock, call
 

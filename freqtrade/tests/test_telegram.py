@@ -1,3 +1,4 @@
+# pragma pylint: disable=missing-docstring
 from datetime import datetime
 from unittest.mock import MagicMock
 
