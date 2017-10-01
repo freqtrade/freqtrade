@@ -46,7 +46,7 @@ def conf():
     validate(configuration, CONF_SCHEMA)
     return configuration
 
-def test_1_create_trade(conf):
+def test_create_trade(conf):
     with patch.dict('freqtrade.main._CONF', conf):
         with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True) as buy_signal:
             with patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock()):
@@ -79,7 +79,7 @@ def test_1_create_trade(conf):
                         [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]
                     )
 
-def test_2_handle_trade(conf):
+def test_handle_trade(conf):
     with patch.dict('freqtrade.main._CONF', conf):
         with patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock()):
             with patch.multiple('freqtrade.main.exchange',
@@ -97,7 +97,7 @@ def test_2_handle_trade(conf):
                 assert trade.close_date is not None
                 assert trade.open_order_id == 'dry_run'
 
-def test_3_close_trade(conf):
+def test_close_trade(conf):
     with patch.dict('freqtrade.main._CONF', conf):
         trade = Trade.query.filter(Trade.is_open.is_(True)).first()
         assert trade

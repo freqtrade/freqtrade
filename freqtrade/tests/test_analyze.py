@@ -23,23 +23,23 @@ RESULT_BITTREX = {
 def result():
     return parse_ticker_dataframe(RESULT_BITTREX['result'], arrow.get('2017-08-30T10:00:00'))
 
-def test_1_dataframe_has_correct_columns(result):
+def test_dataframe_has_correct_columns(result):
     assert result.columns.tolist() == \
                         ['close', 'high', 'low', 'open', 'date', 'volume']
 
-def test_2_orders_by_date(result):
+def test_orders_by_date(result):
     assert result['date'].tolist() == \
                         ['2017-08-30T10:34:00',
                         '2017-08-30T10:37:00',
                         '2017-08-30T10:40:00',
                         '2017-08-30T10:42:00']
 
-def test_3_populates_buy_trend(result):
+def test_populates_buy_trend(result):
     dataframe = populate_buy_trend(populate_indicators(result))
     assert 'buy' in dataframe.columns
     assert 'buy_price' in dataframe.columns
 
-def test_4_returns_latest_buy_signal():
+def test_returns_latest_buy_signal():
     buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
     with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
         assert get_buy_signal('BTC-ETH') == True

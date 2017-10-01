@@ -4,7 +4,7 @@ from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 
 
-def test_1_exec_sell_order():
+def test_exec_sell_order():
     with patch('freqtrade.main.exchange.sell', side_effect='mocked_order_id') as api_mock:
         trade = Trade(
             pair='BTC_ETH',
