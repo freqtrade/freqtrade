@@ -40,8 +40,8 @@ def test_populates_buy_trend(result):
 def test_returns_latest_buy_signal(mocker):
     buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
-    assert get_buy_signal('BTC-ETH') == True
+    assert get_buy_signal('BTC-ETH')
 
     buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
-    assert get_buy_signal('BTC-ETH') == False
+    assert not get_buy_signal('BTC-ETH')

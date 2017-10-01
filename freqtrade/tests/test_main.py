@@ -72,7 +72,7 @@ def test_create_trade(conf, mocker):
         assert trade.exchange == exchange.Exchange.BITTREX
         assert trade.amount == 206.43811673387373
         assert trade.stake_amount == 15.0
-        assert trade.is_open == True
+        assert trade.is_open
         assert trade.open_date is not None
         assert whitelist == conf['bittrex']['pair_whitelist']
 
@@ -108,7 +108,7 @@ def test_close_trade(conf, mocker):
 
     closed = close_trade_if_fulfilled(trade)
     assert closed
-    assert trade.is_open == False
+    assert not trade.is_open
 
 def test_balance_fully_ask_side(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}})
