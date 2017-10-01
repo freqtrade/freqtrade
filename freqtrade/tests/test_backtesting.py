@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-from unittest.mock import patch
 
 import pytest
 import arrow
@@ -41,30 +40,30 @@ def conf():
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_backtest(conf, pairs):
+def test_backtest(conf, pairs, mocker):
     trades = []
-    with patch.dict('freqtrade.main._CONF', conf):
-        for pair in pairs:
-            with open('tests/testdata/'+pair+'.json') as data_file:
-                data = json.load(data_file)
+    mocker.patch.dict('freqtrade.main._CONF', conf)
+    for pair in pairs:
+        with open('tests/testdata/'+pair+'.json') as data_file:
+            data = json.load(data_file)
 
-                with patch('freqtrade.analyze.get_ticker', return_value=data):
-                    with patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00')):
-                        ticker = analyze_ticker(pair)
-                        # for each buy point
-                        for index, row in ticker[ticker.buy == 1].iterrows():
-                            trade = Trade(
-                                open_rate=row['close'],
-                                open_date=arrow.get(row['date']).datetime,
-                                amount=1,
-                            )
-                            # calculate win/lose forwards from buy point
-                            for index2, row2 in ticker[index:].iterrows():
-                                if should_sell(trade, row2['close'], arrow.get(row2['date']).datetime):
-                                    current_profit = (row2['close'] - trade.open_rate) / trade.open_rate
+            mocker.patch('freqtrade.analyze.get_ticker', return_value=data)
+            mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
+            ticker = analyze_ticker(pair)
+            # for each buy point
+            for index, row in ticker[ticker.buy == 1].iterrows():
+                trade = Trade(
+                    open_rate=row['close'],
+                    open_date=arrow.get(row['date']).datetime,
+                    amount=1,
+                )
+                # calculate win/lose forwards from buy point
+                for index2, row2 in ticker[index:].iterrows():
+                    if should_sell(trade, row2['close'], arrow.get(row2['date']).datetime):
+                        current_profit = (row2['close'] - trade.open_rate) / trade.open_rate
 
-                                    trades.append((pair, current_profit, index2 - index))
-                                    break
+                        trades.append((pair, current_profit, index2 - index))
+                        break
         
     labels = ['currency', 'profit', 'duration']
     results = DataFrame.from_records(trades, columns=labels)

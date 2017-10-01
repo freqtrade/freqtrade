@@ -1,6 +1,4 @@
 # pragma pylint: disable=missing-docstring
-from unittest.mock import patch
-
 import pytest
 import arrow
 from pandas import DataFrame
@@ -39,10 +37,11 @@ def test_populates_buy_trend(result):
     assert 'buy' in dataframe.columns
     assert 'buy_price' in dataframe.columns
 
-def test_returns_latest_buy_signal():
+def test_returns_latest_buy_signal(mocker):
     buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
-    with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
-        assert get_buy_signal('BTC-ETH') == True
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
+    assert get_buy_signal('BTC-ETH') == True
+
     buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
-    with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
-        assert get_buy_signal('BTC-ETH') == False
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
+    assert get_buy_signal('BTC-ETH') == False
