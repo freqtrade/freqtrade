@@ -39,11 +39,20 @@ def init(config: dict) -> None:
         raise RuntimeError('No exchange specified. Aborting!')
 
     # Check if all pairs are available
+    validate_pairs(config[EXCHANGE.name.lower()]['pair_whitelist'])
+
+
+def validate_pairs(pairs: List[str]) -> None:
+    """
+    Checks if all given pairs are tradable on the current exchange.
+    Raises RuntimeError if one pair is not available.
+    :param pairs: list of pairs
+    :return: None
+    """
     markets = get_markets()
-    exchange_name = EXCHANGE.name.lower()
-    for pair in config[exchange_name]['pair_whitelist']:
+    for pair in pairs:
         if pair not in markets:
-            raise RuntimeError('Pair {} is not available at {}'.format(pair, exchange_name))
+            raise RuntimeError('Pair {} is not available at {}'.format(pair, EXCHANGE.name.lower()))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:
