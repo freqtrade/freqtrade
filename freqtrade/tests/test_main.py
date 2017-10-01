@@ -1,7 +1,8 @@
-import unittest
-from unittest.mock import patch, MagicMock, call
-
+# pragma pylint: disable=missing-docstring
 import copy
+from unittest.mock import MagicMock, call
+
+import pytest
 from jsonschema import validate
 
 from freqtrade import exchange
@@ -11,8 +12,9 @@ from freqtrade.misc import CONF_SCHEMA
 from freqtrade.persistence import Trade
 
 
-class TestMain(unittest.TestCase):
-    conf = {
+@pytest.fixture
+def conf():
+    configuration = {
         "max_open_trades": 3,
         "stake_currency": "BTC",
         "stake_amount": 0.05,
@@ -42,86 +44,80 @@ class TestMain(unittest.TestCase):
             "chat_id": "chat_id"
         }
     }
+    validate(configuration, CONF_SCHEMA)
+    return configuration
 
-    def test_1_create_trade(self):
-        with patch.dict('freqtrade.main._CONF', self.conf):
-            with patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True) as buy_signal:
-                with patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock()):
-                    with patch.multiple('freqtrade.main.exchange',
-                                        get_ticker=MagicMock(return_value={
-                                            'bid': 0.07256061,
-                                            'ask': 0.072661,
-                                            'last': 0.07256061
-                                        }),
-                                        buy=MagicMock(return_value='mocked_order_id')):
-                        # Save state of current whitelist
-                        whitelist = copy.deepcopy(self.conf['bittrex']['pair_whitelist'])
+def test_create_trade(conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', conf)
+    buy_signal = mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.07256061,
+                              'ask': 0.072661,
+                              'last': 0.07256061
+                          }),
+                          buy=MagicMock(return_value='mocked_order_id'))
+    # Save state of current whitelist
+    whitelist = copy.deepcopy(conf['bittrex']['pair_whitelist'])
 
-                        init(self.conf, 'sqlite://')
-                        for pair in ['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT']:
-                            trade = create_trade(15.0, exchange.Exchange.BITTREX)
-                            Trade.session.add(trade)
-                            Trade.session.flush()
-                            self.assertIsNotNone(trade)
-                            self.assertEqual(trade.open_rate, 0.072661)
-                            self.assertEqual(trade.pair, pair)
-                            self.assertEqual(trade.exchange, exchange.Exchange.BITTREX)
-                            self.assertEqual(trade.amount, 206.43811673387373)
-                            self.assertEqual(trade.stake_amount, 15.0)
-                            self.assertEqual(trade.is_open, True)
-                            self.assertIsNotNone(trade.open_date)
-                            self.assertEqual(whitelist, self.conf['bittrex']['pair_whitelist'])
+    init(conf, 'sqlite://')
+    for pair in ['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT']:
+        trade = create_trade(15.0, exchange.Exchange.BITTREX)
+        Trade.session.add(trade)
+        Trade.session.flush()
+        assert trade is not None
+        assert trade.open_rate == 0.072661
+        assert trade.pair == pair
+        assert trade.exchange == exchange.Exchange.BITTREX
+        assert trade.amount == 206.43811673387373
+        assert trade.stake_amount == 15.0
+        assert trade.is_open
+        assert trade.open_date is not None
+        assert whitelist == conf['bittrex']['pair_whitelist']
 
-                        buy_signal.assert_has_calls(
-                            [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]
-                        )
+    buy_signal.assert_has_calls(
+        [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]
+    )
 
-    def test_2_handle_trade(self):
-        with patch.dict('freqtrade.main._CONF', self.conf):
-            with patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock()):
-                with patch.multiple('freqtrade.main.exchange',
-                                    get_ticker=MagicMock(return_value={
-                                        'bid': 0.17256061,
-                                        'ask': 0.172661,
-                                        'last': 0.17256061
-                                    }),
-                                    buy=MagicMock(return_value='mocked_order_id')):
-                    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-                    self.assertTrue(trade)
-                    handle_trade(trade)
-                    self.assertEqual(trade.close_rate, 0.17256061)
-                    self.assertEqual(trade.close_profit, 137.4872490056564)
-                    self.assertIsNotNone(trade.close_date)
-                    self.assertEqual(trade.open_order_id, 'dry_run')
+def test_handle_trade(conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', conf)
+    mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.17256061,
+                              'ask': 0.172661,
+                              'last': 0.17256061
+                          }),
+                          buy=MagicMock(return_value='mocked_order_id'))
+    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+    assert trade
+    handle_trade(trade)
+    assert trade.close_rate == 0.17256061
+    assert trade.close_profit == 137.4872490056564
+    assert trade.close_date is not None
+    assert trade.open_order_id == 'dry_run'
 
-    def test_3_close_trade(self):
-        with patch.dict('freqtrade.main._CONF', self.conf):
-            trade = Trade.query.filter(Trade.is_open.is_(True)).first()
-            self.assertTrue(trade)
+def test_close_trade(conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', conf)
+    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+    assert trade
 
-            # Simulate that there is no open order
-            trade.open_order_id = None
+    # Simulate that there is no open order
+    trade.open_order_id = None
 
-            closed = close_trade_if_fulfilled(trade)
-            self.assertTrue(closed)
-            self.assertEqual(trade.is_open, False)
+    closed = close_trade_if_fulfilled(trade)
+    assert closed
+    assert not trade.is_open
 
-    def test_balance_fully_ask_side(self):
-        with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}}):
-            self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 20)
+def test_balance_fully_ask_side(mocker):
+    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}})
+    assert get_target_bid({'ask': 20, 'last': 10}) == 20
 
-    def test_balance_fully_last_side(self):
-        with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
-            self.assertEqual(get_target_bid({'ask': 20, 'last': 10}), 10)
+def test_balance_fully_last_side(mocker):
+    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
+    assert get_target_bid({'ask': 20, 'last': 10}) == 10
 
-    def test_balance_when_last_bigger_than_ask(self):
-        with patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}}):
-            self.assertEqual(get_target_bid({'ask': 5, 'last': 10}), 5)
-
-    @classmethod
-    def setUpClass(cls):
-        validate(cls.conf, CONF_SCHEMA)
-
-
-if __name__ == '__main__':
-    unittest.main()
+def test_balance_when_last_bigger_than_ask(mocker):
+    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
+    assert get_target_bid({'ask': 5, 'last': 10}) == 5

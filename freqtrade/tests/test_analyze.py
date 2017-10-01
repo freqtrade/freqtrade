@@ -1,7 +1,5 @@
 # pragma pylint: disable=missing-docstring
-import unittest
-from unittest.mock import patch
-
+import pytest
 import arrow
 from pandas import DataFrame
 
@@ -19,34 +17,31 @@ RESULT_BITTREX = {
     ]
 }
 
-class TestAnalyze(unittest.TestCase):
-    def setUp(self):
-        self.result = parse_ticker_dataframe(RESULT_BITTREX['result'], arrow.get('2017-08-30T10:00:00'))
+@pytest.fixture
+def result():
+    return parse_ticker_dataframe(RESULT_BITTREX['result'], arrow.get('2017-08-30T10:00:00'))
 
-    def test_1_dataframe_has_correct_columns(self):
-        self.assertEqual(self.result.columns.tolist(),
-                         ['close', 'high', 'low', 'open', 'date', 'volume'])
+def test_dataframe_has_correct_columns(result):
+    assert result.columns.tolist() == \
+                        ['close', 'high', 'low', 'open', 'date', 'volume']
 
-    def test_2_orders_by_date(self):
-        self.assertEqual(self.result['date'].tolist(),
-                         ['2017-08-30T10:34:00',
-                          '2017-08-30T10:37:00',
-                          '2017-08-30T10:40:00',
-                          '2017-08-30T10:42:00'])
+def test_orders_by_date(result):
+    assert result['date'].tolist() == \
+                        ['2017-08-30T10:34:00',
+                        '2017-08-30T10:37:00',
+                        '2017-08-30T10:40:00',
+                        '2017-08-30T10:42:00']
 
-    def test_3_populates_buy_trend(self):
-        dataframe = populate_buy_trend(populate_indicators(self.result))
-        self.assertTrue('buy' in dataframe.columns)
-        self.assertTrue('buy_price' in dataframe.columns)
+def test_populates_buy_trend(result):
+    dataframe = populate_buy_trend(populate_indicators(result))
+    assert 'buy' in dataframe.columns
+    assert 'buy_price' in dataframe.columns
 
-    def test_4_returns_latest_buy_signal(self):
-        buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
-        with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
-            self.assertEqual(get_buy_signal('BTC-ETH'), True)
-        buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
-        with patch('freqtrade.analyze.analyze_ticker', return_value=buydf):
-            self.assertEqual(get_buy_signal('BTC-ETH'), False)
+def test_returns_latest_buy_signal(mocker):
+    buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
+    assert get_buy_signal('BTC-ETH')
 
-
-if __name__ == '__main__':
-    unittest.main()
+    buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
+    assert not get_buy_signal('BTC-ETH')
