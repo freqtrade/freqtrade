@@ -13,7 +13,7 @@ setup(name='freqtrade',
       packages=['freqtrade'],
       scripts=['bin/freqtrade'],
       setup_requires=['pytest-runner'],
-      tests_require=['pytest'],
+      tests_require=['pytest', 'pytest-mock'],
       install_requires=[
           'python-bittrex==0.1.3',
           'SQLAlchemy==1.1.13',
