@@ -18,7 +18,7 @@ install:
 - pip install coveralls
 - pip install -r requirements.txt
 script:
-- coverage run --source=freqtrade setup.py test
+- python setup.py test
 after_success:
 - coveralls
 notifications:
