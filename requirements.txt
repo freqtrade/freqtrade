@@ -13,6 +13,7 @@ numpy==1.13.3
 TA-Lib==0.4.10
 pytest==3.2.2
 pytest-mock==1.6.3
+pytest-cov==2.5.1
 
 # Required for plotting data
 #matplotlib==2.0.2
