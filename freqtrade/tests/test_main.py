@@ -6,6 +6,7 @@ import pytest
 from jsonschema import validate
 
 from freqtrade import exchange
+from freqtrade.exchange import validate_pairs
 from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
     get_target_bid
 from freqtrade.misc import CONF_SCHEMA
@@ -52,6 +53,7 @@ def test_create_trade(conf, mocker):
     buy_signal = mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
                               'bid': 0.07256061,
                               'ask': 0.072661,
@@ -84,6 +86,7 @@ def test_handle_trade(conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
                               'bid': 0.17256061,
                               'ask': 0.172661,
