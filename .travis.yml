@@ -18,7 +18,7 @@ install:
 - pip install coveralls
 - pip install -r requirements.txt
 script:
-- python setup.py test
+- pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
 after_success:
 - coveralls
 notifications:
