@@ -74,7 +74,12 @@ There is also an [article](https://www.sales4k.com/blockchain/high-frequency-tra
 #### Execute tests
 
 ```
-$ python setup.py test
+$ pytest
+```
+This will by default skip the slow running backtest set. To run backtest set:
+
+```
+$ BACKTEST=true pytest
 ```
 
 #### Docker
