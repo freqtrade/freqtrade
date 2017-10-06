@@ -44,7 +44,7 @@ def test_backtest(conf, pairs, mocker):
     trades = []
     mocker.patch.dict('freqtrade.main._CONF', conf)
     for pair in pairs:
-        with open('tests/testdata/'+pair+'.json') as data_file:
+        with open('freqtrade/tests/testdata/'+pair+'.json') as data_file:
             data = json.load(data_file)
 
             mocker.patch('freqtrade.analyze.get_ticker', return_value=data)
