@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import copy
 import json
 import logging
 import time
@@ -6,12 +7,11 @@ import traceback
 from datetime import datetime
 from typing import Dict, Optional
 
-import copy
 from jsonschema import validate
 
-from freqtrade import exchange, persistence, __version__
+from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import State, update_state, get_state, CONF_SCHEMA
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -34,7 +34,7 @@ def _process() -> None:
         if len(trades) < _CONF['max_open_trades']:
             try:
                 # Create entity and execute trade
-                trade = create_trade(float(_CONF['stake_amount']), exchange.EXCHANGE)
+                trade = create_trade(float(_CONF['stake_amount']))
                 if trade:
                     Trade.session.add(trade)
                 else:
@@ -91,7 +91,7 @@ def execute_sell(trade: Trade, current_rate: float) -> None:
     balance = exchange.get_balance(currency)
     profit = trade.exec_sell_order(current_rate, balance)
     message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
-        trade.exchange.name,
+        trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         trade.close_rate,
@@ -142,6 +142,7 @@ def handle_trade(trade: Trade) -> None:
     except ValueError:
         logger.exception('Unable to handle open order')
 
+
 def get_target_bid(ticker: Dict[str, float]) -> float:
     """ Calculates bid target between current ask price and last price """
     if ticker['ask'] < ticker['last']:
@@ -150,15 +151,15 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[Trade]:
+def create_trade(stake_amount: float) -> Optional[Trade]:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
-    :param _exchange: exchange to use
+    :param _exchange:
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
-    whitelist = copy.deepcopy(_CONF[_exchange.name.lower()]['pair_whitelist'])
+    whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
@@ -187,7 +188,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
 
     # Create trade entity and return
     message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
-        _exchange.name,
+        exchange.EXCHANGE.name.upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
         open_rate
@@ -199,7 +200,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
                  open_rate=open_rate,
                  open_date=datetime.utcnow(),
                  amount=amount,
-                 exchange=_exchange,
+                 exchange=exchange.EXCHANGE.name.upper(),
                  open_order_id=order_id,
                  is_open=True)
 
@@ -248,7 +249,7 @@ def app(config: dict) -> None:
             elif new_state == State.RUNNING:
                 _process()
                 # We need to sleep here because otherwise we would run into bittrex rate limit
-                time.sleep(25)
+                time.sleep(exchange.EXCHANGE.sleep_time)
             old_state = new_state
     except RuntimeError:
         telegram.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))

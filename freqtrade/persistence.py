@@ -41,7 +41,7 @@ class Trade(Base):
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
-    exchange = Column(Enum(exchange.Exchange), nullable=False)
+    exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
     open_rate = Column(Float, nullable=False)

@@ -1,5 +1,5 @@
 # pragma pylint: disable=missing-docstring
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade
 
 def test_exec_sell_order(mocker):
@@ -9,7 +9,7 @@ def test_exec_sell_order(mocker):
         stake_amount=1.00,
         open_rate=0.50,
         amount=10.00,
-        exchange=Exchange.BITTREX,
+        exchange=Exchanges.BITTREX,
         open_order_id='mocked'
     )
     profit = trade.exec_sell_order(1.00, 10.00)

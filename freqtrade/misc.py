@@ -60,7 +60,7 @@ CONF_SCHEMA = {
             },
             'required': ['ask_last_balance']
         },
-        'bittrex': {'$ref': '#/definitions/exchange'},
+        'exchange': {'$ref': '#/definitions/exchange'},
         'telegram': {
             'type': 'object',
             'properties': {
@@ -76,6 +76,7 @@ CONF_SCHEMA = {
         'exchange': {
             'type': 'object',
             'properties': {
+                'name': {'type': 'string'},
                 'enabled': {'type': 'boolean'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
@@ -85,11 +86,11 @@ CONF_SCHEMA = {
                     'uniqueItems': True
                 }
             },
-            'required': ['enabled', 'key', 'secret', 'pair_whitelist']
+            'required': ['name', 'enabled', 'key', 'secret', 'pair_whitelist']
         }
     },
     'anyOf': [
-        {'required': ['bittrex']}
+        {'required': ['exchange']}
     ],
     'required': [
         'max_open_trades',

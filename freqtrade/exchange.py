@@ -2,18 +2,23 @@ import enum
 import logging
 from typing import List
 
-from bittrex.bittrex import Bittrex
+import arrow
+
+from freqtrade.exchanges import Exchange
+from freqtrade.exchanges.bittrex import Bittrex
 
 logger = logging.getLogger(__name__)
 
 # Current selected exchange
-EXCHANGE = None
-_API = None
-_CONF = {}
+EXCHANGE: Exchange = None
+_CONF: dict = {}
 
 
-class Exchange(enum.Enum):
-    BITTREX = 1
+class Exchanges(enum.Enum):
+    """
+    Maps supported exchange names to correspondent classes.
+    """
+    BITTREX = Bittrex
 
 
 def init(config: dict) -> None:
@@ -24,22 +29,32 @@ def init(config: dict) -> None:
     :param config: config to use
     :return: None
     """
-    global _API, EXCHANGE
+    global _CONF, EXCHANGE
 
     _CONF.update(config)
 
     if config['dry_run']:
         logger.info('Instance is running with dry_run enabled')
 
-    use_bittrex = config.get('bittrex', {}).get('enabled', False)
-    if use_bittrex:
-        EXCHANGE = Exchange.BITTREX
-        _API = Bittrex(api_key=config['bittrex']['key'], api_secret=config['bittrex']['secret'])
-    else:
-        raise RuntimeError('No exchange specified. Aborting!')
+    exchange_config = config['exchange']
+    name = exchange_config['name']
+
+    # Find matching class for the given exchange name
+    exchange_class = None
+    for exchange in Exchanges:
+        if name.upper() == exchange.name:
+            exchange_class = exchange.value
+            break
+    if not exchange_class:
+        raise RuntimeError('Exchange {} is not supported'.format(name))
+
+    if not exchange_config.get('enabled', False):
+        raise RuntimeError('Exchange {} is disabled'.format(name))
+
+    EXCHANGE = exchange_class(exchange_config)
 
     # Check if all pairs are available
-    validate_pairs(config[EXCHANGE.name.lower()]['pair_whitelist'])
+    validate_pairs(config['exchange']['pair_whitelist'])
 
 
 def validate_pairs(pairs: List[str]) -> None:
@@ -49,131 +64,58 @@ def validate_pairs(pairs: List[str]) -> None:
     :param pairs: list of pairs
     :return: None
     """
-    markets = get_markets()
+    markets = EXCHANGE.get_markets()
     for pair in pairs:
         if pair not in markets:
             raise RuntimeError('Pair {} is not available at {}'.format(pair, EXCHANGE.name.lower()))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:
-    """
-    Places a limit buy order.
-    :param pair: Pair as str, format: BTC_ETH
-    :param rate: Rate limit for order
-    :param amount: The amount to purchase
-    :return: order_id of the placed buy order
-    """
     if _CONF['dry_run']:
         return 'dry_run'
-    elif EXCHANGE == Exchange.BITTREX:
-        data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
-        return data['result']['uuid']
+
+    return EXCHANGE.buy(pair, rate, amount)
 
 
 def sell(pair: str, rate: float, amount: float) -> str:
-    """
-    Places a limit sell order.
-    :param pair: Pair as str, format: BTC_ETH
-    :param rate: Rate limit for order
-    :param amount: The amount to sell
-    :return: None
-    """
     if _CONF['dry_run']:
         return 'dry_run'
-    elif EXCHANGE == Exchange.BITTREX:
-        data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
-        return data['result']['uuid']
+
+    return EXCHANGE.sell(pair, rate, amount)
 
 
 def get_balance(currency: str) -> float:
-    """
-    Get account balance.
-    :param currency: currency as str, format: BTC
-    :return: float
-    """
     if _CONF['dry_run']:
         return 999.9
-    elif EXCHANGE == Exchange.BITTREX:
-        data = _API.get_balance(currency)
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
-        return float(data['result']['Balance'] or 0.0)
+
+    return EXCHANGE.get_balance(currency)
 
 
 def get_ticker(pair: str) -> dict:
-    """
-    Get Ticker for given pair.
-    :param pair: Pair as str, format: BTC_ETC
-    :return: dict
-    """
-    if EXCHANGE == Exchange.BITTREX:
-        data = _API.get_ticker(pair.replace('_', '-'))
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
-        return {
-            'bid': float(data['result']['Bid']),
-            'ask': float(data['result']['Ask']),
-            'last': float(data['result']['Last']),
-        }
+    return EXCHANGE.get_ticker(pair)
+
+
+def get_ticker_history(pair: str, minimum_date: arrow.Arrow):
+    return EXCHANGE.get_ticker_history(pair, minimum_date)
 
 
 def cancel_order(order_id: str) -> None:
-    """
-    Cancel order for given order_id
-    :param order_id: id as str
-    :return: None
-    """
     if _CONF['dry_run']:
-        pass
-    elif EXCHANGE == Exchange.BITTREX:
-        data = _API.cancel(order_id)
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
+        return
+
+    return EXCHANGE.cancel_order(order_id)
 
 
 def get_open_orders(pair: str) -> List[dict]:
-    """
-    Get all open orders for given pair.
-    :param pair: Pair as str, format: BTC_ETC
-    :return: list of dicts
-    """
     if _CONF['dry_run']:
         return []
-    elif EXCHANGE == Exchange.BITTREX:
-        data = _API.get_open_orders(pair.replace('_', '-'))
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
-        return [{
-            'id': entry['OrderUuid'],
-            'type': entry['OrderType'],
-            'opened': entry['Opened'],
-            'rate': entry['PricePerUnit'],
-            'amount': entry['Quantity'],
-            'remaining': entry['QuantityRemaining'],
-        } for entry in data['result']]
+
+    return EXCHANGE.get_open_orders(pair)
 
 
 def get_pair_detail_url(pair: str) -> str:
-    """
-    Returns the market detail url for the given pair
-    :param pair: pair as str, format: BTC_ANT
-    :return: url as str
-    """
-    if EXCHANGE == Exchange.BITTREX:
-        return 'https://bittrex.com/Market/Index?MarketName={}'.format(pair.replace('_', '-'))
+    return EXCHANGE.get_pair_detail_url(pair)
 
 
 def get_markets() -> List[str]:
-    """
-    Returns all available markets
-    :return: list of all available pairs
-    """
-    if EXCHANGE == Exchange. BITTREX:
-        data = _API.get_markets()
-        if not data['success']:
-            raise RuntimeError('BITTREX: {}'.format(data['message']))
-        return [m['MarketName'].replace('-', '_') for m in data['result']]
+    return EXCHANGE.get_markets()
