@@ -156,7 +156,6 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
-    :param _exchange:
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
