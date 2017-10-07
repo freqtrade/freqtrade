@@ -6,23 +6,18 @@ import traceback
 from datetime import datetime
 from typing import Dict, Optional
 
+import copy
 from jsonschema import validate
 
-import exchange
-import persistence
-from persistence import Trade
-from analyze import get_buy_signal
-from misc import CONF_SCHEMA, get_state, State, update_state
-from rpc import telegram
+from freqtrade import exchange, persistence, __version__
+from freqtrade.analyze import get_buy_signal
+from freqtrade.misc import State, update_state, get_state, CONF_SCHEMA
+from freqtrade.persistence import Trade
+from freqtrade.rpc import telegram
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-__author__ = "gcarq"
-__copyright__ = "gcarq 2017"
-__license__ = "GPLv3"
-__version__ = "0.10.0"
 
 _CONF = {}
 
@@ -94,10 +89,7 @@ def execute_sell(trade: Trade, current_rate: float) -> None:
     # Get available balance
     currency = trade.pair.split('_')[1]
     balance = exchange.get_balance(currency)
-    whitelist = _CONF[trade.exchange.name.lower()]['pair_whitelist']
-
     profit = trade.exec_sell_order(current_rate, balance)
-    whitelist.append(trade.pair)
     message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
         trade.exchange.name,
         trade.pair.replace('_', '/'),
@@ -166,7 +158,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
     :param _exchange: exchange to use
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
-    whitelist = _CONF[_exchange.name.lower()]['pair_whitelist']
+    whitelist = copy.deepcopy(_CONF[_exchange.name.lower()]['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
@@ -174,11 +166,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
         )
 
     # Remove currently opened and latest pairs from whitelist
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
-    if latest_trade:
-        trades.append(latest_trade)
-    for trade in trades:
+    for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
         if trade.pair in whitelist:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
@@ -238,7 +226,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 def app(config: dict) -> None:
     """
-    Main function which handles the application state
+    Main loop which handles the application state
     :param config: config as dict
     :return: None
     """
@@ -269,8 +257,17 @@ def app(config: dict) -> None:
         telegram.send_msg('*Status:* `Trader has stopped`')
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Loads and validates the config and starts the main loop
+    :return: None
+    """
+    global _CONF
     with open('config.json') as file:
         _CONF = json.load(file)
         validate(_CONF, CONF_SCHEMA)
         app(_CONF)
+
+
+if __name__ == '__main__':
+    main()

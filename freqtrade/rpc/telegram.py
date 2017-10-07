@@ -4,14 +4,13 @@ from typing import Callable, Any
 
 import arrow
 from sqlalchemy import and_, func, text
+from telegram import ParseMode, Bot, Update
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
-from telegram import ParseMode, Bot, Update
 
-from misc import get_state, State, update_state
-from persistence import Trade
-
-import exchange
+from freqtrade import exchange
+from freqtrade.misc import get_state, State, update_state
+from freqtrade.persistence import Trade
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -31,9 +30,12 @@ def init(config: dict) -> None:
     :return: None
     """
     global _updater
-    _updater = Updater(token=config['telegram']['token'], workers=0)
 
     _CONF.update(config)
+    if not _CONF['telegram']['enabled']:
+        return
+
+    _updater = Updater(token=config['telegram']['token'], workers=0)
 
     # Register command handler and start telegram message polling
     handles = [
