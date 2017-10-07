@@ -48,9 +48,6 @@ def init(config: dict) -> None:
     if not exchange_class:
         raise RuntimeError('Exchange {} is not supported'.format(name))
 
-    if not exchange_config.get('enabled', False):
-        raise RuntimeError('Exchange {} is disabled'.format(name))
-
     EXCHANGE = exchange_class(exchange_config)
 
     # Check if all pairs are available

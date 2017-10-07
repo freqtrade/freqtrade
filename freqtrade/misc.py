@@ -77,7 +77,6 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
-                'enabled': {'type': 'boolean'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
                 'pair_whitelist': {
@@ -86,7 +85,7 @@ CONF_SCHEMA = {
                     'uniqueItems': True
                 }
             },
-            'required': ['name', 'enabled', 'key', 'secret', 'pair_whitelist']
+            'required': ['name', 'key', 'secret', 'pair_whitelist']
         }
     },
     'anyOf': [

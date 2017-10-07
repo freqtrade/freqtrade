@@ -15,7 +15,6 @@
     },
     "exchange": {
         "name": "bittrex",
-        "enabled": true,
         "key": "key",
         "secret": "secret",
         "pair_whitelist": [
