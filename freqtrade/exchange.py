@@ -37,15 +37,12 @@ def init(config: dict) -> None:
         logger.info('Instance is running with dry_run enabled')
 
     exchange_config = config['exchange']
-    name = exchange_config['name']
 
     # Find matching class for the given exchange name
-    exchange_class = None
-    for exchange in Exchanges:
-        if name.upper() == exchange.name:
-            exchange_class = exchange.value
-            break
-    if not exchange_class:
+    name = exchange_config['name']
+    try:
+        exchange_class = Exchanges[name.upper()].value
+    except KeyError:
         raise RuntimeError('Exchange {} is not supported'.format(name))
 
     EXCHANGE = exchange_class(exchange_config)
