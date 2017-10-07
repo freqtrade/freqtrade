@@ -4,8 +4,8 @@ from typing import List
 
 import arrow
 
-from freqtrade.exchanges import Exchange
-from freqtrade.exchanges.bittrex import Bittrex
+from freqtrade.exchange.bittrex import Bittrex
+from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 

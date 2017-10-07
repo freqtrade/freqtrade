@@ -5,7 +5,7 @@ import arrow
 import requests
 from bittrex.bittrex import Bittrex as _Bittrex
 
-from freqtrade.exchanges import Exchange
+from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 
