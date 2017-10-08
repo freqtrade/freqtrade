@@ -6,7 +6,6 @@ import pytest
 from jsonschema import validate
 from telegram import Bot, Update, Message, Chat
 
-from freqtrade import exchange
 from freqtrade.main import init, create_trade
 from freqtrade.misc import update_state, State, get_state, CONF_SCHEMA
 from freqtrade.persistence import Trade
@@ -28,7 +27,8 @@ def conf():
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
-        "bittrex": {
+        "exchange": {
+            "name": "bittrex",
             "enabled": True,
             "key": "key",
             "secret": "secret",
@@ -73,7 +73,7 @@ def test_status_handle(conf, update, mocker):
     init(conf, 'sqlite://')
 
     # Create some test data
-    trade = create_trade(15.0, exchange.Exchange.BITTREX)
+    trade = create_trade(15.0)
     assert trade
     Trade.session.add(trade)
     Trade.session.flush()
@@ -98,7 +98,7 @@ def test_profit_handle(conf, update, mocker):
     init(conf, 'sqlite://')
 
     # Create some test data
-    trade = create_trade(15.0, exchange.Exchange.BITTREX)
+    trade = create_trade(15.0)
     assert trade
     trade.close_rate = 0.07256061
     trade.close_profit = 100.00
@@ -128,7 +128,7 @@ def test_forcesell_handle(conf, update, mocker):
     init(conf, 'sqlite://')
 
     # Create some test data
-    trade = create_trade(15.0, exchange.Exchange.BITTREX)
+    trade = create_trade(15.0)
     assert trade
     Trade.session.add(trade)
     Trade.session.flush()
@@ -156,7 +156,7 @@ def test_performance_handle(conf, update, mocker):
     init(conf, 'sqlite://')
 
     # Create some test data
-    trade = create_trade(15.0, exchange.Exchange.BITTREX)
+    trade = create_trade(15.0)
     assert trade
     trade.close_rate = 0.07256061
     trade.close_profit = 100.00

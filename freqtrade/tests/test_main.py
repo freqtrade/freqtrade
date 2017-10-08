@@ -5,8 +5,7 @@ from unittest.mock import MagicMock, call
 import pytest
 from jsonschema import validate
 
-from freqtrade import exchange
-from freqtrade.exchange import validate_pairs
+from freqtrade.exchange import Exchanges
 from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
     get_target_bid
 from freqtrade.misc import CONF_SCHEMA
@@ -28,7 +27,8 @@ def conf():
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
-        "bittrex": {
+        "exchange": {
+            "name": "bittrex",
             "enabled": True,
             "key": "key",
             "secret": "secret",
@@ -61,22 +61,22 @@ def test_create_trade(conf, mocker):
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     # Save state of current whitelist
-    whitelist = copy.deepcopy(conf['bittrex']['pair_whitelist'])
+    whitelist = copy.deepcopy(conf['exchange']['pair_whitelist'])
 
     init(conf, 'sqlite://')
     for pair in ['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT']:
-        trade = create_trade(15.0, exchange.Exchange.BITTREX)
+        trade = create_trade(15.0)
         Trade.session.add(trade)
         Trade.session.flush()
         assert trade is not None
         assert trade.open_rate == 0.072661
         assert trade.pair == pair
-        assert trade.exchange == exchange.Exchange.BITTREX
+        assert trade.exchange == Exchanges.BITTREX.name
         assert trade.amount == 206.43811673387373
         assert trade.stake_amount == 15.0
         assert trade.is_open
         assert trade.open_date is not None
-        assert whitelist == conf['bittrex']['pair_whitelist']
+        assert whitelist == conf['exchange']['pair_whitelist']
 
     buy_signal.assert_has_calls(
         [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]

@@ -257,7 +257,7 @@ def _forcesell(bot: Bot, update: Update) -> None:
         # Execute sell
         profit = trade.exec_sell_order(current_rate, balance)
         message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
-            trade.exchange.name,
+            trade.exchange,
             trade.pair.replace('_', '/'),
             exchange.get_pair_detail_url(trade.pair),
             trade.close_rate,

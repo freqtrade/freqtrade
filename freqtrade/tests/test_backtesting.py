@@ -47,7 +47,7 @@ def test_backtest(conf, pairs, mocker):
         with open('freqtrade/tests/testdata/'+pair+'.json') as data_file:
             data = json.load(data_file)
 
-            mocker.patch('freqtrade.analyze.get_ticker', return_value=data)
+            mocker.patch('freqtrade.analyze.get_ticker_history', return_value=data)
             mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
             ticker = analyze_ticker(pair)
             # for each buy point
