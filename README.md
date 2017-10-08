@@ -58,6 +58,11 @@ if not feel free to raise a github issue.
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
 
 #### Install
+
+`master` branch contains the latest stable release.
+
+`develop` branch has often new features, but might also cause breaking changes. To use it, you are encouraged to join our [slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
+
 ```
 $ cd freqtrade/
 # copy example config. Dont forget to insert your api keys
