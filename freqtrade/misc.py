@@ -1,4 +1,6 @@
+import argparse
 import enum
+from typing import Optional
 
 from wrapt import synchronized
 
@@ -6,7 +8,11 @@ from wrapt import synchronized
 class State(enum.Enum):
     RUNNING = 0
     STOPPED = 1
+    BACKTESTING = 2
 
+
+# Command-line arguments
+_ARGS: argparse.Namespace = None
 
 # Current application state
 _STATE = State.STOPPED
@@ -30,6 +36,29 @@ def get_state() -> State:
     :return:
     """
     return _STATE
+
+
+def parse_args(argv: Optional[list] = None) -> None:
+    """
+    Parses and stores command-line arguments.
+    :param argv: (optional) command-line arguments
+    :return: None
+    """
+    global _ARGS
+
+    parser = argparse.ArgumentParser(
+        description='Simple High Frequency Trading Bot for crypto currencies')
+    parser.add_argument('-b', '--backtesting', action='store_true',
+                        help='test bot performance on offline data and print results')
+    _ARGS = parser.parse_args(argv[1:] if argv else [])
+
+
+def get_args():
+    """
+    Gets the current command-line arguments.
+    :return: arguments
+    """
+    return _ARGS
 
 
 # Required json-schema for user specified config

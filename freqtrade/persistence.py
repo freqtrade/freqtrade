@@ -8,6 +8,7 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.types import Enum
 
 from freqtrade import exchange
+from freqtrade.misc import State, get_state
 
 _CONF = {}
 
@@ -25,7 +26,9 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     """
     _CONF.update(config)
     if not db_url:
-        if _CONF.get('dry_run', False):
+        if get_state() == State.BACKTESTING:
+            db_url = 'sqlite://'
+        elif _CONF.get('dry_run', False):
             db_url = 'sqlite:///tradesv2.dry_run.sqlite'
         else:
             db_url = 'sqlite:///tradesv2.sqlite'
