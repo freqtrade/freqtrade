@@ -1,34 +1,16 @@
+import logging
 import time
 from datetime import timedelta
-import logging
-import arrow
-import requests
-from pandas import DataFrame
-import talib.abstract as ta
 
+import arrow
+import talib.abstract as ta
+from pandas import DataFrame
+
+from freqtrade.exchange import get_ticker_history
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-
-def get_ticker(pair: str, minimum_date: arrow.Arrow) -> dict:
-    """
-    Request ticker data from Bittrex for a given currency pair
-    """
-    url = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-    }
-    params = {
-        'marketName': pair.replace('_', '-'),
-        'tickInterval': 'fiveMin',
-        '_': minimum_date.timestamp * 1000
-    }
-    data = requests.get(url, params=params, headers=headers).json()
-    if not data['success']:
-        raise RuntimeError('BITTREX: {}'.format(data['message']))
-    return data
 
 
 def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame:
@@ -48,10 +30,16 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
-    dataframe['ema'] = ta.EMA(dataframe, timeperiod=33)
     dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.22)
     dataframe['adx'] = ta.ADX(dataframe)
-
+    stoch = ta.STOCHF(dataframe)
+    dataframe['fastd'] = stoch['fastd']
+    dataframe['fastk'] = stoch['fastk']
+    dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
+    dataframe['cci'] = ta.CCI(dataframe, timeperiod=5)
+    dataframe['sma'] = ta.SMA(dataframe, timeperiod=100)
+    dataframe['tema'] = ta.TEMA(dataframe, timeperiod=4)
+    dataframe['mfi'] = ta.MFI(dataframe)
     return dataframe
 
 
@@ -61,26 +49,14 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-    prev_sar = dataframe['sar'].shift(1)
-    prev_close = dataframe['close'].shift(1)
-    prev_sar2 = dataframe['sar'].shift(2)
-    prev_close2 = dataframe['close'].shift(2)
-
-    # wait for stable turn from bearish to bullish market
-    dataframe.loc[
-        (dataframe['close'] > dataframe['sar']) &
-        (prev_close > prev_sar) &
-        (prev_close2 < prev_sar2),
-        'swap'
-    ] = 1
-
-    # consider prices above ema to be in upswing
-    dataframe.loc[dataframe['ema'] <= dataframe['close'], 'upswing'] = 1
 
     dataframe.loc[
-        (dataframe['upswing'] == 1) &
-        (dataframe['swap'] == 1) &
-        (dataframe['adx'] > 25), # adx over 25 tells there's enough momentum
+        (dataframe['close'] < dataframe['sma']) &
+        (dataframe['cci'] < -100) &
+        (dataframe['tema'] <= dataframe['blower']) &
+        (dataframe['mfi'] < 30) &
+        (dataframe['fastd'] < 20) &
+        (dataframe['adx'] > 20),
         'buy'] = 1
     dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
@@ -93,12 +69,18 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    minimum_date = arrow.utcnow().shift(hours=-6)
-    data = get_ticker(pair, minimum_date)
+    minimum_date = arrow.utcnow().shift(hours=-24)
+    data = get_ticker_history(pair, minimum_date)
     dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+
+    if dataframe.empty:
+        logger.warning('Empty dataframe for pair %s', pair)
+        return dataframe
+
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     return dataframe
+
 
 def get_buy_signal(pair: str) -> bool:
     """
@@ -107,6 +89,10 @@ def get_buy_signal(pair: str) -> bool:
     :return: True if pair is good for buying, False otherwise
     """
     dataframe = analyze_ticker(pair)
+
+    if dataframe.empty:
+        return False
+
     latest = dataframe.iloc[-1]
 
     # Check if dataframe is out of date
@@ -138,12 +124,13 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     ax1.plot(dataframe.index.values, dataframe['sar'], 'g_', label='pSAR')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
-    ax1.plot(dataframe.index.values, dataframe['ema'], '--', label='EMA(20)')
-    ax1.plot(dataframe.index.values, dataframe['buy'], 'bo', label='buy')
+    ax1.plot(dataframe.index.values, dataframe['sma'], '--', label='SMA')
+    ax1.plot(dataframe.index.values, dataframe['buy_price'], 'bo', label='buy')
     ax1.legend()
 
-    ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
-    ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
+    # ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
+    ax2.plot(dataframe.index.values, dataframe['mfi'], label='MFI')
+    # ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
     ax2.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
@@ -156,8 +143,8 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
-        test_pair = 'BTC_ANT'
-        #for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
-        #   get_buy_signal(pair)
+        test_pair = 'BTC_ETH'
+        # for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
+        #     get_buy_signal(pair)
         plot_dataframe(analyze_ticker(test_pair), test_pair)
         time.sleep(60)

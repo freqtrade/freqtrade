@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import copy
 import json
 import logging
 import time
@@ -8,21 +9,15 @@ from typing import Dict, Optional
 
 from jsonschema import validate
 
-import exchange
-import persistence
-from persistence import Trade
-from analyze import get_buy_signal
-from misc import CONF_SCHEMA, get_state, State, update_state
-from rpc import telegram
+from freqtrade import __version__, exchange, persistence
+from freqtrade.analyze import get_buy_signal
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state
+from freqtrade.persistence import Trade
+from freqtrade.rpc import telegram
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-__author__ = "gcarq"
-__copyright__ = "gcarq 2017"
-__license__ = "GPLv3"
-__version__ = "0.10.0"
 
 _CONF = {}
 
@@ -39,7 +34,7 @@ def _process() -> None:
         if len(trades) < _CONF['max_open_trades']:
             try:
                 # Create entity and execute trade
-                trade = create_trade(float(_CONF['stake_amount']), exchange.EXCHANGE)
+                trade = create_trade(float(_CONF['stake_amount']))
                 if trade:
                     Trade.session.add(trade)
                 else:
@@ -94,12 +89,9 @@ def execute_sell(trade: Trade, current_rate: float) -> None:
     # Get available balance
     currency = trade.pair.split('_')[1]
     balance = exchange.get_balance(currency)
-    whitelist = _CONF[trade.exchange.name.lower()]['pair_whitelist']
-
     profit = trade.exec_sell_order(current_rate, balance)
-    whitelist.append(trade.pair)
     message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
-        trade.exchange.name,
+        trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         trade.close_rate,
@@ -150,6 +142,7 @@ def handle_trade(trade: Trade) -> None:
     except ValueError:
         logger.exception('Unable to handle open order')
 
+
 def get_target_bid(ticker: Dict[str, float]) -> float:
     """ Calculates bid target between current ask price and last price """
     if ticker['ask'] < ticker['last']:
@@ -158,15 +151,14 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[Trade]:
+def create_trade(stake_amount: float) -> Optional[Trade]:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
-    :param _exchange: exchange to use
     """
     logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
-    whitelist = _CONF[_exchange.name.lower()]['pair_whitelist']
+    whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
@@ -174,11 +166,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
         )
 
     # Remove currently opened and latest pairs from whitelist
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    latest_trade = Trade.query.filter(Trade.is_open.is_(False)).order_by(Trade.id.desc()).first()
-    if latest_trade:
-        trades.append(latest_trade)
-    for trade in trades:
+    for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
         if trade.pair in whitelist:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
@@ -199,7 +187,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
 
     # Create trade entity and return
     message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
-        _exchange.name,
+        exchange.EXCHANGE.name.upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
         open_rate
@@ -211,7 +199,7 @@ def create_trade(stake_amount: float, _exchange: exchange.Exchange) -> Optional[
                  open_rate=open_rate,
                  open_date=datetime.utcnow(),
                  amount=amount,
-                 exchange=_exchange,
+                 exchange=exchange.EXCHANGE.name.upper(),
                  open_order_id=order_id,
                  is_open=True)
 
@@ -238,7 +226,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 def app(config: dict) -> None:
     """
-    Main function which handles the application state
+    Main loop which handles the application state
     :param config: config as dict
     :return: None
     """
@@ -260,7 +248,7 @@ def app(config: dict) -> None:
             elif new_state == State.RUNNING:
                 _process()
                 # We need to sleep here because otherwise we would run into bittrex rate limit
-                time.sleep(25)
+                time.sleep(exchange.EXCHANGE.sleep_time)
             old_state = new_state
     except RuntimeError:
         telegram.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
@@ -269,8 +257,17 @@ def app(config: dict) -> None:
         telegram.send_msg('*Status:* `Trader has stopped`')
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Loads and validates the config and starts the main loop
+    :return: None
+    """
+    global _CONF
     with open('config.json') as file:
         _CONF = json.load(file)
         validate(_CONF, CONF_SCHEMA)
         app(_CONF)
+
+
+if __name__ == '__main__':
+    main()

@@ -5,11 +5,9 @@ from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
-
 from sqlalchemy.types import Enum
 
-import exchange
-
+from freqtrade import exchange
 
 _CONF = {}
 
@@ -43,7 +41,7 @@ class Trade(Base):
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
-    exchange = Column(Enum(exchange.Exchange), nullable=False)
+    exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
     open_rate = Column(Float, nullable=False)

@@ -4,16 +4,17 @@
     "stake_amount": 0.05,
     "dry_run": false,
     "minimal_roi": {
-        "2880": 0.005,
-        "720":  0.01,
-        "0":  0.02
+        "60": 0.0,
+        "40": 0.01,
+        "20": 0.02,
+        "0": 0.03
     },
-    "stoploss": -0.10,
+    "stoploss": -0.40,
     "bid_strategy": {
         "ask_last_balance": 0.0
     },
-    "bittrex": {
-        "enabled": true,
+    "exchange": {
+        "name": "bittrex",
         "key": "key",
         "secret": "secret",
         "pair_whitelist": [

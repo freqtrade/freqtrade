@@ -1,6 +1,8 @@
 # freqtrade
 
 [![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
+[![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
+
 
 Simple High frequency trading bot for crypto currencies.
 Currently supports trading on Bittrex exchange.
@@ -68,7 +70,8 @@ $ cp config.json.example config.json
 $ python -m venv .env
 $ source .env/bin/activate
 $ pip install -r requirements.txt
-$ ./main.py
+$ pip install -e .
+$ ./freqtrade/main.py
 ```
 
 There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).
@@ -76,7 +79,12 @@ There is also an [article](https://www.sales4k.com/blockchain/high-frequency-tra
 #### Execute tests
 
 ```
-$ python -m unittest
+$ pytest
+```
+This will by default skip the slow running backtest set. To run backtest set:
+
+```
+$ BACKTEST=true pytest
 ```
 
 #### Docker
