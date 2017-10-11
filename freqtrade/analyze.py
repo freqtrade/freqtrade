@@ -6,7 +6,8 @@ import arrow
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.exchange import get_ticker_history
+from freqtrade import exchange
+from freqtrade.exchange import Bittrex, get_ticker_history
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -143,6 +144,7 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
+        exchange.EXCHANGE = Bittrex({'key': '', 'secret': ''})
         test_pair = 'BTC_ETH'
         # for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #     get_buy_signal(pair)
