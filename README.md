@@ -84,7 +84,7 @@ $ pytest
 This will by default skip the slow running backtest set. To run backtest set:
 
 ```
-$ BACKTEST=true pytest
+$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
 ```
 
 #### Docker
