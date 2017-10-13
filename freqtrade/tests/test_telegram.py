@@ -25,7 +25,7 @@ def conf():
             "0": 0.02
         },
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "bid_ask_balance": 1.0,
         },
         "exchange": {
             "name": "bittrex",
@@ -46,6 +46,7 @@ def conf():
     validate(configuration, CONF_SCHEMA)
     return configuration
 
+
 @pytest.fixture
 def update():
     _update = Update(0)
@@ -64,10 +65,15 @@ def test_status_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
+                          get_orderbook=MagicMock(return_value={
+                              'bid': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.07256061
+                              }],
+                              'ask': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.072661
+                              }]
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -82,6 +88,7 @@ def test_status_handle(conf, update, mocker):
     assert msg_mock.call_count == 2
     assert '[BTC_ETH]' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_profit_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -89,10 +96,15 @@ def test_profit_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
+                          get_orderbook=MagicMock(return_value={
+                              'bid': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.07256061
+                              }],
+                              'ask': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.072661
+                              }]
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -112,6 +124,7 @@ def test_profit_handle(conf, update, mocker):
     assert msg_mock.call_count == 2
     assert '(100.00%)' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_forcesell_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -119,10 +132,15 @@ def test_forcesell_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
+                          get_orderbook=MagicMock(return_value={
+                              'bid': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.07256061
+                              }],
+                              'ask': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.072661
+                              }]
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -140,6 +158,7 @@ def test_forcesell_handle(conf, update, mocker):
     assert 'Selling [BTC/ETH]' in msg_mock.call_args_list[-1][0][0]
     assert '0.072561' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_performance_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -147,10 +166,15 @@ def test_performance_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
+                          get_orderbook=MagicMock(return_value={
+                              'bid': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.07256061
+                              }],
+                              'ask': [{
+                                  'Quantity': 1,
+                                  'Rate': 0.072661
+                              }]
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -171,6 +195,7 @@ def test_performance_handle(conf, update, mocker):
     assert 'Performance' in msg_mock.call_args_list[-1][0][0]
     assert 'BTC_ETH	100.00%' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_start_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     msg_mock = MagicMock()
@@ -183,6 +208,7 @@ def test_start_handle(conf, update, mocker):
     _start(bot=MagicBot(), update=update)
     assert get_state() == State.RUNNING
     assert msg_mock.call_count == 0
+
 
 def test_stop_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)

@@ -143,13 +143,18 @@ def handle_trade(trade: Trade) -> None:
         logger.exception('Unable to handle open order')
 
 
-def get_target_bid(ticker: Dict[str, List[Dict]]) -> float:
-    """ Calculates bid target between current ask price and last price """
-    # TODO: refactor this
-    ask = ticker['ask'][0]['Rate']
-    bid = ticker['bid'][0]['Rate']
-    balance = _CONF['bid_strategy']['ask_last_balance']
-    return ask + balance * (bid - ask)
+def get_target_bid(orderbook: Dict[str, List[Dict]]) -> float:
+    """
+    Calculates bid target between
+    bid and ask prices from the given orderbook
+    :param orderbook:
+    :return: target bit as float
+    """
+    default_target = 1.0  # Use ask price as default
+    ask = orderbook['ask'][0]['Rate']  # Get lowest ask
+    bid = orderbook['bid'][0]['Rate']  # Get highest bid
+    balance = _CONF['bid_strategy'].get('bid_ask_balance', default_target)
+    return bid + balance * (ask - bid)
 
 
 def create_trade(stake_amount: float) -> Optional[Trade]:
