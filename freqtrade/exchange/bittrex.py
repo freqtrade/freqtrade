@@ -2,7 +2,8 @@ import logging
 from typing import List, Optional, Dict
 
 import arrow
-from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0
+from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, TICKINTERVAL_FIVEMIN, ORDERTYPE_LIMIT, \
+    TIMEINEFFECT_GOOD_TIL_CANCELLED
 
 from freqtrade.exchange.interface import Exchange
 
@@ -20,7 +21,7 @@ class Bittrex(Exchange):
     BASE_URL: str = 'https://www.bittrex.com'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
     # Ticker inveral
-    TICKER_INTERVAL: str = 'fiveMin'
+    TICKER_INTERVAL: str = TICKINTERVAL_FIVEMIN
     # Sleep time to avoid rate limits, used in the main loop
     SLEEP_TIME: float = 25
 
@@ -39,10 +40,16 @@ class Bittrex(Exchange):
         )
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
-        data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
+        data = _API.trade_buy(
+            market=pair.replace('_', '-'),
+            order_type=ORDERTYPE_LIMIT,
+            quantity=amount,
+            rate=rate,
+            time_in_effect=TIMEINEFFECT_GOOD_TIL_CANCELLED,
+        )
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
-        return data['result']['uuid']
+        return data['result']['OrderId']
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
