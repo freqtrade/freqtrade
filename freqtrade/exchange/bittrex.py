@@ -2,7 +2,6 @@ import logging
 from typing import List, Optional
 
 import arrow
-import requests
 from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0
 
 from freqtrade.exchange.interface import Exchange
@@ -19,7 +18,6 @@ class Bittrex(Exchange):
     """
     # Base URL and API endpoints
     BASE_URL: str = 'https://www.bittrex.com'
-    TICKER_METHOD: str = BASE_URL + '/Api/v2.0/pub/market/GetTicks'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
     # Ticker inveral
     TICKER_INTERVAL: str = 'fiveMin'
@@ -69,18 +67,7 @@ class Bittrex(Exchange):
         }
 
     def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None):
-        url = self.TICKER_METHOD
-        headers = {
-            # TODO: Set as global setting
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
-        }
-        params = {
-            'marketName': pair.replace('_', '-'),
-            'tickInterval': self.TICKER_INTERVAL,
-            # TODO: Timestamp has no effect on API response
-            '_': minimum_date.timestamp * 1000
-        }
-        data = requests.get(url, params=params, headers=headers).json()
+        data = _API.get_candles(pair.replace('_', '-'), self.TICKER_INTERVAL)
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return data
