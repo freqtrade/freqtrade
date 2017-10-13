@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import arrow
 import requests
-from bittrex.bittrex import Bittrex as _Bittrex
+from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0
 
 from freqtrade.exchange.interface import Exchange
 
@@ -34,7 +34,11 @@ class Bittrex(Exchange):
         global _API, _EXCHANGE_CONF
 
         _EXCHANGE_CONF.update(config)
-        _API = _Bittrex(api_key=_EXCHANGE_CONF['key'], api_secret=_EXCHANGE_CONF['secret'])
+        _API = _Bittrex(
+            api_key=_EXCHANGE_CONF['key'],
+            api_secret=_EXCHANGE_CONF['secret'],
+            api_version=API_V2_0,
+        )
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
