@@ -52,10 +52,16 @@ class Bittrex(Exchange):
         return data['result']['OrderId']
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
-        data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
+        data = _API.trade_sell(
+            market=pair.replace('_', '-'),
+            order_type=ORDERTYPE_LIMIT,
+            quantity=amount,
+            rate=rate,
+            time_in_effect=TIMEINEFFECT_GOOD_TIL_CANCELLED,
+        )
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
-        return data['result']['uuid']
+        return data['result']['OrderId']
 
     def get_balance(self, currency: str) -> float:
         data = _API.get_balance(currency)
