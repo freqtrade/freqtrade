@@ -5,7 +5,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from jsonschema import validate
 
@@ -134,7 +134,7 @@ def handle_trade(trade: Trade) -> None:
 
         logger.debug('Handling open trade %s ...', trade)
 
-        current_rate = exchange.get_ticker(trade.pair)['bid']
+        current_rate = exchange.get_orderbook(trade.pair, top_most=1)['bid'][0]['Rate']
         if should_sell(trade, current_rate, datetime.utcnow()):
             execute_sell(trade, current_rate)
             return
@@ -143,12 +143,13 @@ def handle_trade(trade: Trade) -> None:
         logger.exception('Unable to handle open order')
 
 
-def get_target_bid(ticker: Dict[str, float]) -> float:
+def get_target_bid(ticker: Dict[str, List[Dict]]) -> float:
     """ Calculates bid target between current ask price and last price """
-    if ticker['ask'] < ticker['last']:
-        return ticker['ask']
+    # TODO: refactor this
+    ask = ticker['ask'][0]['Rate']
+    bid = ticker['bid'][0]['Rate']
     balance = _CONF['bid_strategy']['ask_last_balance']
-    return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+    return ask + balance * (bid - ask)
 
 
 def create_trade(stake_amount: float) -> Optional[Trade]:
@@ -181,7 +182,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     else:
         return None
 
-    open_rate = get_target_bid(exchange.get_ticker(pair))
+    open_rate = get_target_bid(exchange.get_orderbook(pair, top_most=1))
     amount = stake_amount / open_rate
     order_id = exchange.buy(pair, open_rate, amount)
 

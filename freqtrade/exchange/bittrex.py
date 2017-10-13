@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import arrow
 from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0
@@ -56,14 +56,13 @@ class Bittrex(Exchange):
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return float(data['result']['Balance'] or 0.0)
 
-    def get_ticker(self, pair: str) -> dict:
-        data = _API.get_ticker(pair.replace('_', '-'))
+    def get_orderbook(self, pair: str, top_most: Optional[int] = None) -> Dict[str, List[Dict]]:
+        data = _API.get_orderbook(pair.replace('_', '-'))
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return {
-            'bid': float(data['result']['Bid']),
-            'ask': float(data['result']['Ask']),
-            'last': float(data['result']['Last']),
+            'bid': data['result']['buy'][:top_most],
+            'ask': data['result']['sell'][:top_most],
         }
 
     def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None):

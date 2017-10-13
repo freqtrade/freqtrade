@@ -99,7 +99,7 @@ def _status(bot: Bot, update: Update) -> None:
     else:
         for trade in trades:
             # calculate profit and send message to user
-            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_rate = exchange.get_orderbook(trade.pair, top_most=1)['bid'][0]['Rate']
             current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
             orders = exchange.get_open_orders(trade.pair)
             orders = [o for o in orders if o['id'] == trade.open_order_id]
@@ -156,7 +156,7 @@ def _profit(bot: Bot, update: Update) -> None:
             profit = trade.close_profit
         else:
             # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_rate = exchange.get_orderbook(trade.pair, top_most=1)['bid'][0]['Rate']
             profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
 
         profit_amounts.append((profit / 100) * trade.stake_amount)
@@ -250,7 +250,7 @@ def _forcesell(bot: Bot, update: Update) -> None:
             send_msg('There is no open trade with ID: `{}`'.format(trade_id))
             return
         # Get current rate
-        current_rate = exchange.get_ticker(trade.pair)['bid']
+        current_rate = exchange.get_orderbook(trade.pair, top_most=1)['bid'][0]['Rate']
         # Get available balance
         currency = trade.pair.split('_')[1]
         balance = exchange.get_balance(currency)
