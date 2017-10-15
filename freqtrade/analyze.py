@@ -31,15 +31,13 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
-    dataframe['sar'] = ta.SAR(dataframe, 0.02, 0.22)
     dataframe['adx'] = ta.ADX(dataframe)
     stoch = ta.STOCHF(dataframe)
     dataframe['fastd'] = stoch['fastd']
     dataframe['fastk'] = stoch['fastk']
     dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
-    dataframe['cci'] = ta.CCI(dataframe, timeperiod=5)
-    dataframe['sma'] = ta.SMA(dataframe, timeperiod=100)
-    dataframe['tema'] = ta.TEMA(dataframe, timeperiod=4)
+    dataframe['sma'] = ta.SMA(dataframe, timeperiod=30)
+    dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
     return dataframe
 
@@ -50,14 +48,12 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-
     dataframe.loc[
         (dataframe['close'] < dataframe['sma']) &
-        (dataframe['cci'] < -100) &
         (dataframe['tema'] <= dataframe['blower']) &
-        (dataframe['mfi'] < 30) &
-        (dataframe['fastd'] < 20) &
-        (dataframe['adx'] > 20),
+        (dataframe['mfi'] < 25) &
+        (dataframe['fastd'] < 25) &
+        (dataframe['adx'] > 30),
         'buy'] = 1
     dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
@@ -120,19 +116,25 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
     import matplotlib.pyplot as plt
 
     # Two subplots sharing x axis
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
     fig.suptitle(pair, fontsize=14, fontweight='bold')
-    ax1.plot(dataframe.index.values, dataframe['sar'], 'g_', label='pSAR')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dataframe.index.values, dataframe['sma'], '--', label='SMA')
+    ax1.plot(dataframe.index.values, dataframe['tema'], ':', label='TEMA')
+    ax1.plot(dataframe.index.values, dataframe['blower'], '-.', label='BB low')
     ax1.plot(dataframe.index.values, dataframe['buy_price'], 'bo', label='buy')
     ax1.legend()
 
-    # ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
+    ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
     ax2.plot(dataframe.index.values, dataframe['mfi'], label='MFI')
     # ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
     ax2.legend()
+
+    ax3.plot(dataframe.index.values, dataframe['fastk'], label='k')
+    ax3.plot(dataframe.index.values, dataframe['fastd'], label='d')
+    ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
+    ax3.legend()
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
     # all but bottom plot.
