@@ -5,7 +5,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 
 from jsonschema import validate
 
