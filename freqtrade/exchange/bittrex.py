@@ -37,6 +37,7 @@ class Bittrex(Exchange):
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
             api_version=API_V2_0,
+            calls_per_second=10,
         )
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
