@@ -65,15 +65,9 @@ def test_status_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_orderbook=MagicMock(return_value={
-                              'bid': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.07256061
-                              }],
-                              'ask': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.072661
-                              }]
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.07256061,
+                              'ask': 0.072661,
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -96,15 +90,9 @@ def test_profit_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_orderbook=MagicMock(return_value={
-                              'bid': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.07256061
-                              }],
-                              'ask': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.072661
-                              }]
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.07256061,
+                              'ask': 0.072661,
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -132,15 +120,9 @@ def test_forcesell_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_orderbook=MagicMock(return_value={
-                              'bid': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.07256061
-                              }],
-                              'ask': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.072661
-                              }]
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.07256061,
+                              'ask': 0.072661,
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')
@@ -166,15 +148,9 @@ def test_performance_handle(conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_orderbook=MagicMock(return_value={
-                              'bid': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.07256061
-                              }],
-                              'ask': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.072661
-                              }]
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.07256061,
+                              'ask': 0.072661,
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     init(conf, 'sqlite://')

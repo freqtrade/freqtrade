@@ -69,6 +69,13 @@ class Bittrex(Exchange):
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return float(data['result']['Balance'] or 0.0)
 
+    def get_ticker(self, pair: str) -> Dict[str, float]:
+        data = self.get_orderbook(pair, top_most=1)
+        return {
+            'bid': data['bid'][0]['Rate'],
+            'ask': data['ask'][0]['Rate'],
+        }
+
     def get_orderbook(self, pair: str, top_most: Optional[int] = None) -> Dict[str, List[Dict]]:
         data = _API.get_orderbook(pair.replace('_', '-'))
         if not data['success']:

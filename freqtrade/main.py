@@ -134,7 +134,7 @@ def handle_trade(trade: Trade) -> None:
 
         logger.debug('Handling open trade %s ...', trade)
 
-        current_rate = exchange.get_orderbook(trade.pair, top_most=1)['bid'][0]['Rate']
+        current_rate = exchange.get_ticker(trade.pair)['bid']
         if should_sell(trade, current_rate, datetime.utcnow()):
             execute_sell(trade, current_rate)
             return
@@ -143,15 +143,14 @@ def handle_trade(trade: Trade) -> None:
         logger.exception('Unable to handle open order')
 
 
-def get_target_bid(orderbook: Dict[str, List[Dict]]) -> float:
+def get_target_bid(ticker: Dict[str, float]) -> float:
     """
     Calculates bid target between
     bid and ask prices from the given orderbook
-    :param orderbook:
+    :param ticker: ticker data
     :return: target bit as float
     """
-    ask = orderbook['ask'][0]['Rate']  # Get lowest ask
-    bid = orderbook['bid'][0]['Rate']  # Get highest bid
+    ask, bid = ticker['ask'], ticker['bid']
     balance = _CONF['bid_strategy']['bid_ask_balance']
     return bid + balance * (ask - bid)
 
@@ -186,7 +185,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     else:
         return None
 
-    open_rate = get_target_bid(exchange.get_orderbook(pair, top_most=1))
+    open_rate = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / open_rate
     order_id = exchange.buy(pair, open_rate, amount)
 

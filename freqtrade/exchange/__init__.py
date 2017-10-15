@@ -85,6 +85,10 @@ def get_balance(currency: str) -> float:
     return EXCHANGE.get_balance(currency)
 
 
+def get_ticker(pair: str) -> Dict[str, float]:
+    return EXCHANGE.get_ticker(pair)
+
+
 def get_orderbook(pair: str, top_most: Optional[int] = None) -> Dict[str, List[Dict]]:
     return EXCHANGE.get_orderbook(pair, top_most)
 

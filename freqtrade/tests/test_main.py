@@ -55,15 +55,9 @@ def test_create_trade(conf, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_orderbook=MagicMock(return_value={
-                              'bid': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.07256061
-                              }],
-                              'ask': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.072661
-                              }]
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.07256061,
+                              'ask': 0.072661,
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     # Save state of current whitelist
@@ -94,15 +88,9 @@ def test_handle_trade(conf, mocker):
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_orderbook=MagicMock(return_value={
-                              'bid': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.17256061
-                              }],
-                              'ask': [{
-                                  'Quantity': 1,
-                                  'Rate': 0.172661
-                              }]
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.17256061,
+                              'ask': 0.172661,
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     trade = Trade.query.filter(Trade.is_open.is_(True)).first()
@@ -129,44 +117,14 @@ def test_close_trade(conf, mocker):
 
 def test_balance_fully_bid_side(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'bid_ask_balance': 0.0}})
-    orderbook = {
-        'bid': [{
-            'Quantity': 10,
-            'Rate': 10
-        }],
-        'ask': [{
-            'Quantity': 20,
-            'Rate': 20
-        }]
-    }
-    assert get_target_bid(orderbook) == 10
+    assert get_target_bid({'bid': 10, 'ask': 20}) == 10
 
 
 def test_balance_fully_ask_side(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'bid_ask_balance': 1.0}})
-    orderbook = {
-        'bid': [{
-            'Quantity': 10,
-            'Rate': 10
-        }],
-        'ask': [{
-            'Quantity': 20,
-            'Rate': 20
-        }]
-    }
-    assert get_target_bid(orderbook) == 20
+    assert get_target_bid({'bid': 10, 'ask': 20}) == 20
 
 
 def test_balance_half(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'bid_ask_balance': 0.5}})
-    orderbook = {
-        'bid': [{
-            'Quantity': 10,
-            'Rate': 10
-        }],
-        'ask': [{
-            'Quantity': 20,
-            'Rate': 20
-        }]
-    }
-    assert get_target_bid(orderbook) == 15
+    assert get_target_bid({'bid': 10, 'ask': 20}) == 15

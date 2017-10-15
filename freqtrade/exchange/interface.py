@@ -50,6 +50,17 @@ class Exchange(ABC):
         """
 
     @abstractmethod
+    def get_ticker(self, pair: str) -> Dict[str, float]:
+        """
+        Gets ticker for given pair.
+        :param pair: Pair as str, format: BTC_ETC
+        :return: dict, format: {
+            'bid': float,
+            'ask': float
+        }
+        """
+
+    @abstractmethod
     def get_orderbook(self, pair: str, top_most: Optional[int] = None) -> Dict[str, List[Dict]]:
         """
         Gets orderbook for given pair.
