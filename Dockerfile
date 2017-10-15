@@ -1,20 +1,23 @@
-FROM    python:3.6.2
-
-RUN apt-get update
-RUN apt-get -y install build-essential
+FROM python:3.6.2
 
 # Install TA-lib
-RUN  wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-RUN tar zxvf ta-lib-0.4.0-src.tar.gz
-RUN cd ta-lib && ./configure && make && make install
+RUN apt-get update && apt-get -y install build-essential && apt-get clean
+RUN curl -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz | \
+  tar xzvf - && \
+  cd ta-lib && \
+  ./configure && make && make install && \
+  cd .. && rm -rf ta-lib
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Prepare environment
 RUN mkdir /freqtrade
-COPY . /freqtrade/
 WORKDIR /freqtrade
 
-# Install dependencies and execute
+# Install dependencies
+COPY requirements.txt /freqtrade/
 RUN pip install -r requirements.txt
+
+# Install and execute
+COPY . /freqtrade/
 RUN pip install -e .
 CMD ["freqtrade"]

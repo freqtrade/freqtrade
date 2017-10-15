@@ -38,7 +38,7 @@ See the example below:
 },
 ```
 
-`stoploss` is loss in percentage that should trigger a sale. 
+`stoploss` is loss in percentage that should trigger a sale.
 For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
 
@@ -47,7 +47,9 @@ Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
 `ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
+use the `last` price and values between those interpolate between ask and last
+price. Using `ask` price will guarantee quick success in bid, but bot will also
+end up paying more then would probably have been necessary.
 
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
@@ -88,11 +90,52 @@ $ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
 ```
 
 #### Docker
+
+Building the image:
+
 ```
 $ cd freqtrade
 $ docker build -t freqtrade .
-$ docker run --rm -it freqtrade
 ```
+
+For security reasons, your configuration file will not be included in the
+image, you will need to bind mount it. It is also advised to bind mount
+a SQLite database file (see second example) to keep it between updates.
+
+You can run a one-off container that is immediately deleted upon exiting with
+the following command (config.json must be in the current working directory):
+
+```
+$ docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+```
+
+To run a restartable instance in the background (feel free to place your
+configuration and database files wherever it feels comfortable on your
+filesystem):
+
+```
+$ cd ~/.freq
+$ touch tradesv2.sqlite
+$ docker run -d \
+  --name freqtrade \
+  -v ~/.freq/config.json:/freqtrade/config.json \
+  -v ~/.freq/tradesv2.sqlite:/freqtrade/tradesv2.sqlite \
+  freqtrade
+```
+If you are using `dry_run=True` you need to bind `tradesv2.dry_run.sqlite` instead of `tradesv2.sqlite`.
+
+You can then use the following commands to monitor and manage your container:
+
+```
+$ docker logs freqtrade
+$ docker logs -f freqtrade
+$ docker restart freqtrade
+$ docker stop freqtrade
+$ docker start freqtrade
+```
+
+You do not need to rebuild the image for configuration
+changes, it will suffice to edit `config.json` and restart the container.
 
 #### Contributing
 
