@@ -122,6 +122,7 @@ $ docker run -d \
   -v ~/.freq/tradesv2.sqlite:/freqtrade/tradesv2.sqlite \
   freqtrade
 ```
+If you are using `dry_run=True` you need to bind `tradesv2.dry_run.sqlite` instead of `tradesv2.sqlite`.
 
 You can then use the following commands to monitor and manage your container:
 
@@ -133,7 +134,7 @@ $ docker stop freqtrade
 $ docker start freqtrade
 ```
 
-With the above setup you do not need to rebuild the image for configuration
+You do not need to rebuild the image for configuration
 changes, it will suffice to edit `config.json` and restart the container.
 
 #### Contributing
