@@ -150,10 +150,9 @@ def get_target_bid(orderbook: Dict[str, List[Dict]]) -> float:
     :param orderbook:
     :return: target bit as float
     """
-    default_target = 1.0  # Use ask price as default
     ask = orderbook['ask'][0]['Rate']  # Get lowest ask
     bid = orderbook['bid'][0]['Rate']  # Get highest bid
-    balance = _CONF['bid_strategy'].get('bid_ask_balance', default_target)
+    balance = _CONF['bid_strategy']['bid_ask_balance']
     return bid + balance * (ask - bid)
 
 
