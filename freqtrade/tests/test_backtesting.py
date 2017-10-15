@@ -18,7 +18,7 @@ def print_results(results):
         len(results.index),
         results.profit.mean() * 100.0,
         results.profit.sum(),
-        results.duration.mean()*5
+        results.duration.mean() * 5
     ))
 
 @pytest.fixture
@@ -30,10 +30,10 @@ def pairs():
 def conf():
     return {
         "minimal_roi": {
-            "60":  0.0,
+            "50":  0.0,
             "40":  0.01,
-            "20":  0.02,
-            "0":  0.03
+            "30":  0.02,
+            "0":  0.045
         },
         "stoploss": -0.40
     }
