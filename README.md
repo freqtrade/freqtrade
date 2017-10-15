@@ -30,11 +30,10 @@ in minutes and the value is the minimum ROI in percent.
 See the example below:
 ```
 "minimal_roi": {
-    "2880": 0.005, # Sell after 48 hours if there is at least 0.5% profit
-    "1440": 0.01,  # Sell after 24 hours if there is at least 1% profit
-    "720":  0.02,  # Sell after 12 hours if there is at least 2% profit
-    "360":  0.02,  # Sell after 6 hours if there is at least 2% profit
-    "0":    0.025  # Sell immediately if there is at least 2.5% profit
+    "50": 0.0,    # Sell after 30 minutes if the profit is not negative
+    "40": 0.01,   # Sell after 25 minutes if there is at least 1% profit
+    "30": 0.02,   # Sell after 15 minutes if there is at least 2% profit
+    "0":  0.045  # Sell immediately if there is at least 4.5% profit
 },
 ```
 
