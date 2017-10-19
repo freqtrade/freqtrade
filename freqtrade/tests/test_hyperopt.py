@@ -74,9 +74,9 @@ def backtest(conf, pairs, mocker, buy_strategy):
     results = DataFrame.from_records(trades, columns=labels)
 
     print_results(results)
-    if len(results.index) < 800: 
-        return 0
-    return results.profit.sum() / results.duration.mean()
+    if len(results.index) < 800:
+        return 100000 # return large number to "ignore" this result
+    return results.duration.mean() / results.profit.sum() # the smaller the better
 
 def buy_strategy_generator(params):
     print(params)
@@ -121,4 +121,4 @@ def test_hyperopt(conf, pairs, mocker):
     }
 
     # print(hyperopt.pyll.stochastic.sample(space))
-    print(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=2))
+    print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=10)))
