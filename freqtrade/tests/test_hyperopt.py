@@ -82,7 +82,8 @@ def buy_strategy_generator(params):
     print(params)
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         conditions = []
-        conditions.append(dataframe['close'] < dataframe['sma'])
+        if params['below_sma']['enabled']:
+            conditions.append(dataframe['close'] < dataframe['sma'])
         conditions.append(dataframe['tema'] <= dataframe['blower'])
         if params['mfi']['enabled']:
             conditions.append(dataframe['mfi'] < params['mfi']['value'])
@@ -108,15 +109,19 @@ def test_hyperopt(conf, pairs, mocker):
     space = {
         'mfi': hp.choice('mfi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('mfi-value', 10, 50)}
+            {'enabled': True, 'value': hp.uniform('mfi-value', 2, 40)}
         ]),
         'fastd': hp.choice('fastd', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('fastd-value', 10, 50)}
+            {'enabled': True, 'value': hp.uniform('fastd-value', 2, 40)}
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('adx-value', 10, 50)}
+            {'enabled': True, 'value': hp.uniform('adx-value', 2, 40)}
+        ]),
+        'below_sma': hp.choice('below_sma', [
+            {'enabled': False},
+            {'enabled': True}
         ]),
     }
 
