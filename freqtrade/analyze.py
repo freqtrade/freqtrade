@@ -40,6 +40,7 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
+    dataframe['cci'] = ta.CCI(dataframe)
     return dataframe
 
 
