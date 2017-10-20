@@ -31,12 +31,13 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
+    dataframe['sar'] = ta.SAR(dataframe)
     dataframe['adx'] = ta.ADX(dataframe)
     stoch = ta.STOCHF(dataframe)
     dataframe['fastd'] = stoch['fastd']
     dataframe['fastk'] = stoch['fastk']
     dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
-    dataframe['sma'] = ta.SMA(dataframe, timeperiod=30)
+    dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
     return dataframe

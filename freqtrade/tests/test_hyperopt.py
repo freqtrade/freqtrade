@@ -84,6 +84,8 @@ def buy_strategy_generator(params):
         conditions = []
         if params['below_sma']['enabled']:
             conditions.append(dataframe['close'] < dataframe['sma'])
+        if params['over_sma']['enabled']:
+            conditions.append(dataframe['close'] > dataframe['sma'])
         conditions.append(dataframe['tema'] <= dataframe['blower'])
         if params['mfi']['enabled']:
             conditions.append(dataframe['mfi'] < params['mfi']['value'])
@@ -91,7 +93,8 @@ def buy_strategy_generator(params):
             conditions.append(dataframe['fastd'] < params['fastd']['value'])
         if params['adx']['enabled']:
             conditions.append(dataframe['adx'] > params['adx']['value'])
-
+        if params['over_sar']['enabled']:
+            conditions.append(dataframe['close'] > dataframe['sar'])
         dataframe.loc[
             reduce(lambda x, y: x & y, conditions),
             'buy'] = 1
@@ -120,6 +123,14 @@ def test_hyperopt(conf, pairs, mocker):
             {'enabled': True, 'value': hp.uniform('adx-value', 2, 40)}
         ]),
         'below_sma': hp.choice('below_sma', [
+            {'enabled': False},
+            {'enabled': True}
+        ]),
+        'over_sma': hp.choice('over_sma', [
+            {'enabled': False},
+            {'enabled': True}
+        ]),
+        'over_sar': hp.choice('over_sar', [
             {'enabled': False},
             {'enabled': True}
         ]),
