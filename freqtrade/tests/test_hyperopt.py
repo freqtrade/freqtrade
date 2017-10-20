@@ -76,7 +76,7 @@ def backtest(conf, pairs, mocker, buy_strategy):
     print_results(results)
     if len(results.index) < 800:
         return 100000 # return large number to "ignore" this result
-    return results.duration.mean() / results.profit.sum() # the smaller the better
+    return results.duration.mean() * results.duration.mean() / results.profit.sum() / results.profit.mean() # the smaller the better
 
 def buy_strategy_generator(params):
     print(params)
