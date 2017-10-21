@@ -163,4 +163,4 @@ def test_hyperopt(conf, pairs, mocker):
     }
 
     # print(hyperopt.pyll.stochastic.sample(space))
-    print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=10)))
+    print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40)))
