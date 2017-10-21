@@ -74,9 +74,9 @@ def backtest(conf, pairs, mocker, buy_strategy):
     results = DataFrame.from_records(trades, columns=labels)
 
     print_results(results)
-    if len(results.index) < 800:
+    if len(results.index) < 800: # require at least 800 trades
         return 100000 # return large number to "ignore" this result
-    return results.duration.mean() * results.duration.mean() / results.profit.sum() / results.profit.mean() # the smaller the better
+    return results.duration.mean() ** 3 / results.profit.sum() / results.profit.mean() # the smaller the better
 
 def buy_strategy_generator(params):
     print(params)
