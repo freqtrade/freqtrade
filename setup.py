@@ -17,7 +17,7 @@ setup(name='freqtrade',
       install_requires=[
           'python-bittrex==0.1.3',
           'SQLAlchemy==1.1.13',
-          'python-telegram-bot==8.0',
+          'python-telegram-bot==8.1.1',
           'arrow==0.10.0',
           'requests==2.18.4',
           'urllib3==1.22',
