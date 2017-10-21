@@ -82,11 +82,11 @@ def buy_strategy_generator(params):
     print(params)
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         conditions = []
+        # GUARDS AND TRENDS
         if params['below_sma']['enabled']:
             conditions.append(dataframe['close'] < dataframe['sma'])
         if params['over_sma']['enabled']:
             conditions.append(dataframe['close'] > dataframe['sma'])
-        conditions.append(dataframe['tema'] <= dataframe['blower'])
         if params['mfi']['enabled']:
             conditions.append(dataframe['mfi'] < params['mfi']['value'])
         if params['fastd']['enabled']:
@@ -100,6 +100,15 @@ def buy_strategy_generator(params):
         if params['uptrend_sma']['enabled']:
             prevsma = dataframe['sma'].shift(1)
             conditions.append(dataframe['sma'] > prevsma)
+
+        prev_fastd = dataframe['fastd'].shift(1)
+        # TRIGGERS
+        triggers = {
+            'lower_bb': dataframe['tema'] <= dataframe['blower'],
+            'faststoch10': (dataframe['fastd'] >= 10) & (prev_fastd < 10),
+        }
+        conditions.append(triggers.get(params['trigger']['type']))
+
         dataframe.loc[
             reduce(lambda x, y: x & y, conditions),
             'buy'] = 1
@@ -146,6 +155,10 @@ def test_hyperopt(conf, pairs, mocker):
         'uptrend_sma': hp.choice('uptrend_sma', [
             {'enabled': False},
             {'enabled': True}
+        ]),
+        'trigger': hp.choice('trigger', [
+            {'type': 'lower_bb'},
+            {'type': 'faststoch10'}
         ]),
     }
 
