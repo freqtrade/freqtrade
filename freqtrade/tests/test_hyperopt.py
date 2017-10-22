@@ -74,9 +74,12 @@ def backtest(conf, pairs, mocker, buy_strategy):
     results = DataFrame.from_records(trades, columns=labels)
 
     print_results(results)
-    if len(results.index) < 800: # require at least 800 trades
-        return 100000 # return large number to "ignore" this result
-    return results.duration.mean() ** 3 / results.profit.sum() / results.profit.mean() # the smaller the better
+
+    # set the value below to suit your number concurrent trades so its realistic to 20days of data
+    TARGET_TRADES = 1200
+    if results.profit.sum() == 0 or results.profit.mean() == 0:
+        return 49999999999 # avoid division by zero, return huge value to discard result
+    return abs(len(results.index) - 1200.1) / (results.profit.sum() ** 2) * results.duration.mean() # the smaller the better
 
 def buy_strategy_generator(params):
     print(params)
