@@ -24,7 +24,7 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
         .drop('BV', 1) \
         .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'}) \
         .sort_values('date')
-    return df[df['date'].map(arrow.get) > minimum_date]
+    return df
 
 
 def populate_indicators(dataframe: DataFrame) -> DataFrame:
