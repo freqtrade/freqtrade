@@ -8,8 +8,6 @@ import pytest
 import arrow
 from pandas import DataFrame
 
-import hyperopt.pyll.stochastic
-
 from hyperopt import fmin, tpe, hp
 
 from freqtrade.analyze import analyze_ticker
@@ -165,5 +163,4 @@ def test_hyperopt(conf, pairs, mocker):
         ]),
     }
 
-    # print(hyperopt.pyll.stochastic.sample(space))
     print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40)))
