@@ -45,6 +45,7 @@ def init(config: dict) -> None:
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
         CommandHandler('performance', _performance),
+        CommandHandler('count', _count),
         CommandHandler('help', _help),
     ]
     for handle in handles:
@@ -306,6 +307,29 @@ def _performance(bot: Bot, update: Update) -> None:
     ) for i, (pair, rate) in enumerate(pair_rates))
 
     message = '<b>Performance:</b>\n{}\n'.format(stats)
+    logger.debug(message)
+    send_msg(message, parse_mode=ParseMode.HTML)
+
+
+@authorized_only
+def _count(bot: Bot, update: Update) -> None:
+    """
+    Handler for /count.
+    Returns the number of trades running
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    if get_state() != State.RUNNING:
+        send_msg('`trader is not running`', bot=bot)
+        return
+
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+
+    current_trades_count = len(trades)
+    max_trades_count = _CONF['max_open_trades']
+
+    message = '<b>Count:</b>\ncurrent/max\n{}/{}\n'.format(current_trades_count, max_trades_count)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
