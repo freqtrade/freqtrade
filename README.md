@@ -30,15 +30,14 @@ in minutes and the value is the minimum ROI in percent.
 See the example below:
 ```
 "minimal_roi": {
-    "2880": 0.005, # Sell after 48 hours if there is at least 0.5% profit
-    "1440": 0.01,  # Sell after 24 hours if there is at least 1% profit
-    "720":  0.02,  # Sell after 12 hours if there is at least 2% profit
-    "360":  0.02,  # Sell after 6 hours if there is at least 2% profit
-    "0":    0.025  # Sell immediately if there is at least 2.5% profit
+    "50": 0.0,    # Sell after 30 minutes if the profit is not negative
+    "40": 0.01,   # Sell after 25 minutes if there is at least 1% profit
+    "30": 0.02,   # Sell after 15 minutes if there is at least 2% profit
+    "0":  0.045  # Sell immediately if there is at least 4.5% profit
 },
 ```
 
-`stoploss` is loss in percentage that should trigger a sale. 
+`stoploss` is loss in percentage that should trigger a sale.
 For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
 
@@ -47,7 +46,9 @@ Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
 `ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
+use the `last` price and values between those interpolate between ask and last
+price. Using `ask` price will guarantee quick success in bid, but bot will also
+end up paying more then would probably have been necessary.
 
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
@@ -84,15 +85,56 @@ $ pytest
 This will by default skip the slow running backtest set. To run backtest set:
 
 ```
-$ BACKTEST=true pytest
+$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
 ```
 
 #### Docker
+
+Building the image:
+
 ```
 $ cd freqtrade
 $ docker build -t freqtrade .
-$ docker run --rm -it freqtrade
 ```
+
+For security reasons, your configuration file will not be included in the
+image, you will need to bind mount it. It is also advised to bind mount
+a SQLite database file (see second example) to keep it between updates.
+
+You can run a one-off container that is immediately deleted upon exiting with
+the following command (config.json must be in the current working directory):
+
+```
+$ docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+```
+
+To run a restartable instance in the background (feel free to place your
+configuration and database files wherever it feels comfortable on your
+filesystem):
+
+```
+$ cd ~/.freq
+$ touch tradesv2.sqlite
+$ docker run -d \
+  --name freqtrade \
+  -v ~/.freq/config.json:/freqtrade/config.json \
+  -v ~/.freq/tradesv2.sqlite:/freqtrade/tradesv2.sqlite \
+  freqtrade
+```
+If you are using `dry_run=True` you need to bind `tradesv2.dry_run.sqlite` instead of `tradesv2.sqlite`.
+
+You can then use the following commands to monitor and manage your container:
+
+```
+$ docker logs freqtrade
+$ docker logs -f freqtrade
+$ docker restart freqtrade
+$ docker stop freqtrade
+$ docker start freqtrade
+```
+
+You do not need to rebuild the image for configuration
+changes, it will suffice to edit `config.json` and restart the container.
 
 #### Contributing
 

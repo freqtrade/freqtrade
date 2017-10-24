@@ -27,10 +27,6 @@ class Bittrex(Exchange):
     SLEEP_TIME: float = 25
 
     @property
-    def name(self) -> str:
-        return self.__class__.__name__
-
-    @property
     def sleep_time(self) -> float:
         return self.SLEEP_TIME
 
@@ -39,13 +35,6 @@ class Bittrex(Exchange):
 
         _EXCHANGE_CONF.update(config)
         _API = _Bittrex(api_key=_EXCHANGE_CONF['key'], api_secret=_EXCHANGE_CONF['secret'])
-
-        # Check if all pairs are available
-        markets = self.get_markets()
-        exchange_name = self.name
-        for pair in _EXCHANGE_CONF['pair_whitelist']:
-            if pair not in markets:
-                raise RuntimeError('Pair {} is not available at {}'.format(pair, exchange_name))
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)

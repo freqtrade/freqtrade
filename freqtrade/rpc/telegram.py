@@ -45,6 +45,7 @@ def init(config: dict) -> None:
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
         CommandHandler('performance', _performance),
+        CommandHandler('help', _help),
     ]
     for handle in handles:
         _updater.dispatcher.add_handler(handle)
@@ -299,6 +300,27 @@ def _performance(bot: Bot, update: Update) -> None:
     message = '<b>Performance:</b>\n{}\n'.format(stats)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
+
+
+@authorized_only
+def _help(bot: Bot, update: Update) -> None:
+    """
+    Handler for /help.
+    Show commands of the bot
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    message = """
+*/start:* `Starts the trader`
+*/stop:* `Stops the trader`
+*/status:* `Lists all open trades`
+*/profit:* `Lists cumulative profit from all finished trades`
+*/forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
+*/performance:* `Show performance of each finished trade grouped by pair`
+*/help:* `This help message`
+    """
+    send_msg(message, bot=bot)
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
