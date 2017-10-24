@@ -14,15 +14,9 @@ from freqtrade.analyze import analyze_ticker
 from freqtrade.main import should_sell
 from freqtrade.persistence import Trade
 
-logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
+from freqtrade.tests.test_backtesting import backtest, print_results
 
-def print_results(results):
-    print('Made {} buys. Average profit {:.2f}%. Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
-        len(results.index),
-        results.profit.mean() * 100.0,
-        results.profit.sum(),
-        results.duration.mean() * 5
-    ))
+logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
 
 @pytest.fixture
 def pairs():
@@ -42,7 +36,7 @@ def conf():
     }
 
 
-def backtest(conf, pairs, mocker, buy_strategy):
+def backtest2(conf, pairs, mocker, buy_strategy):
     trades = []
     mocker.patch.dict('freqtrade.main._CONF', conf)
     for pair in pairs:
@@ -121,8 +115,18 @@ def buy_strategy_generator(params):
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
 def test_hyperopt(conf, pairs, mocker):
 
+    # def optimizer(params):
+        # return backtest2(conf, pairs, mocker, buy_strategy_generator(params))
+
     def optimizer(params):
-        return backtest(conf, pairs, mocker, buy_strategy_generator(params))
+        buy_strategy = buy_strategy_generator(params)
+        mocker.patch('freqtrade.analyze.populate_buy_trend', side_effect=buy_strategy)
+        results = backtest(conf, pairs, mocker)
+
+        print_results(results)
+        if len(results.index) < 800: # require at least 800 trades
+            return 100000 # return large number to "ignore" this result
+        return results.duration.mean() ** 3 / results.profit.sum() / results.profit.mean() # the smaller the better
 
     space = {
         'mfi': hp.choice('mfi', [
@@ -162,5 +166,4 @@ def test_hyperopt(conf, pairs, mocker):
             {'type': 'faststoch10'}
         ]),
     }
-
     print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40)))
