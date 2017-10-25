@@ -7,6 +7,7 @@ from functools import reduce
 import pytest
 import arrow
 from pandas import DataFrame
+from qtpylib.indicators import crossed_above
 
 from hyperopt import fmin, tpe, hp
 
@@ -63,6 +64,7 @@ def buy_strategy_generator(params):
         triggers = {
             'lower_bb': dataframe['tema'] <= dataframe['blower'],
             'faststoch10': (dataframe['fastd'] >= 10) & (prev_fastd < 10),
+            'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -124,7 +126,8 @@ def test_hyperopt(conf, pairs, mocker):
         ]),
         'trigger': hp.choice('trigger', [
             {'type': 'lower_bb'},
-            {'type': 'faststoch10'}
+            {'type': 'faststoch10'},
+            {'type': 'ao_cross_zero'}
         ]),
     }
     print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40)))

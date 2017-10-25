@@ -5,6 +5,7 @@ from datetime import timedelta
 import arrow
 import talib.abstract as ta
 from pandas import DataFrame
+from qtpylib.indicators import awesome_oscillator, crossed_above
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex, get_ticker_history
@@ -41,6 +42,8 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
     dataframe['cci'] = ta.CCI(dataframe)
+    dataframe['ao'] = awesome_oscillator(dataframe)
+
     return dataframe
 
 
