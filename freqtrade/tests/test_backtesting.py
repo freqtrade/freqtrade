@@ -21,6 +21,10 @@ def print_results(results):
         results.duration.mean() * 5
     ))
 
+def print_pair_results(pair, results):
+    print('For currency {}:'.format(pair))
+    print_results(results[results.currency == pair])
+
 @pytest.fixture
 def pairs():
     return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
@@ -38,9 +42,7 @@ def conf():
         "stoploss": -0.40
     }
 
-
-@pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_backtest(conf, pairs, mocker):
+def backtest(conf, pairs, mocker):
     trades = []
     mocker.patch.dict('freqtrade.main._CONF', conf)
     for pair in pairs:
@@ -64,14 +66,15 @@ def test_backtest(conf, pairs, mocker):
 
                         trades.append((pair, current_profit, index2 - index))
                         break
-        
     labels = ['currency', 'profit', 'duration']
     results = DataFrame.from_records(trades, columns=labels)
+    return results
+
+@pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
+def test_backtest(conf, pairs, mocker, report=True):
+    results = backtest(conf, pairs, mocker)
 
     print('====================== BACKTESTING REPORT ================================')
-
-    for pair in pairs:
-        print('For currency {}:'.format(pair))
-        print_results(results[results.currency == pair])
+    [print_pair_results(pair, results) for pair in pairs]
     print('TOTAL OVER ALL TRADES:')
     print_results(results)
