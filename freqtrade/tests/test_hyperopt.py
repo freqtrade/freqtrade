@@ -15,7 +15,7 @@ from freqtrade.analyze import analyze_ticker
 from freqtrade.main import should_sell
 from freqtrade.persistence import Trade
 
-from freqtrade.tests.test_backtesting import backtest, print_results
+from freqtrade.tests.test_backtesting import backtest, format_results
 
 logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
 
@@ -83,9 +83,10 @@ def test_hyperopt(conf, pairs, mocker):
         mocker.patch('freqtrade.analyze.populate_buy_trend', side_effect=buy_strategy)
         results = backtest(conf, pairs, mocker)
 
-        print_results(results)
-
-        # set the value below to suit your number concurrent trades so its realistic to 20days of data
+        result = format_results(results)
+        print(result)
+        
+        # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
         TARGET_TRADES = 1200
         if results.profit.sum() == 0 or results.profit.mean() == 0:
             return 49999999999 # avoid division by zero, return huge value to discard result

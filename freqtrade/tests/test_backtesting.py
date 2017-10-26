@@ -13,17 +13,17 @@ from freqtrade.persistence import Trade
 
 logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
 
-def print_results(results):
-    print('Made {} buys. Average profit {:.2f}%. Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
+def format_results(results):
+    return 'Made {} buys. Average profit {:.2f}%. Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
         len(results.index),
         results.profit.mean() * 100.0,
         results.profit.sum(),
         results.duration.mean() * 5
-    ))
+    )
 
 def print_pair_results(pair, results):
     print('For currency {}:'.format(pair))
-    print_results(results[results.currency == pair])
+    print(format_results(results[results.currency == pair]))
 
 @pytest.fixture
 def pairs():
@@ -77,4 +77,4 @@ def test_backtest(conf, pairs, mocker, report=True):
     print('====================== BACKTESTING REPORT ================================')
     [print_pair_results(pair, results) for pair in pairs]
     print('TOTAL OVER ALL TRADES:')
-    print_results(results)
+    print(format_results(results))
