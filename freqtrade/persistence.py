@@ -37,6 +37,14 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     Base.metadata.create_all(engine)
 
 
+def cleanup() -> None:
+    """
+    Flushes all pending operations to disk.
+    :return: None
+    """
+    Trade.session.flush()
+
+
 class Trade(Base):
     __tablename__ = 'trades'
 
