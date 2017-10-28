@@ -84,6 +84,8 @@ def get_balance(currency: str) -> float:
 
     return EXCHANGE.get_balance(currency)
 
+def get_balances():
+    return EXCHANGE.get_balances()
 
 def get_ticker(pair: str) -> dict:
     return EXCHANGE.get_ticker(pair)

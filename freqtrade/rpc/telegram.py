@@ -41,6 +41,7 @@ def init(config: dict) -> None:
     handles = [
         CommandHandler('status', _status),
         CommandHandler('profit', _profit),
+        CommandHandler('balance', _balance),
         CommandHandler('start', _start),
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
@@ -201,6 +202,26 @@ def _profit(bot: Bot, update: Update) -> None:
     )
     send_msg(markdown_msg, bot=bot)
 
+@authorized_only
+def _balance(bot: Bot, update: Update) -> None:
+    """
+    Hander for /balance
+    Returns current account balance per crypto
+    """
+    filter = {'Currency', 'CryptoAddress'}
+    output = ""
+
+    balances = exchange.get_balances()
+
+    for c in balances:
+        # output[c['Currency']] = {k: c[k] for k in c.keys() & {*set(c) - set(filter)}}
+        output += """*Currency*: {Currency}
+*Available*: {Available}
+*Balance*: {Balance}
+*Pending*: {Pending}
+
+""".format(**c)
+    send_msg(output)
 
 @authorized_only
 def _start(bot: Bot, update: Update) -> None:
