@@ -66,6 +66,7 @@ def buy_strategy_generator(params):
             'lower_bb': dataframe['tema'] <= dataframe['blower'],
             'faststoch10': (dataframe['fastd'] >= 10) & (prev_fastd < 10),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
+            'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -139,7 +140,8 @@ def test_hyperopt(conf, pairs, mocker):
         'trigger': hp.choice('trigger', [
             {'type': 'lower_bb'},
             {'type': 'faststoch10'},
-            {'type': 'ao_cross_zero'}
+            {'type': 'ao_cross_zero'},
+            {'type': 'ema5_cross_ema10'},
         ]),
     }
     trials = Trials()
