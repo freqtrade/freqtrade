@@ -1,21 +1,14 @@
 # pragma pylint: disable=missing-docstring
 from operator import itemgetter
-import json
 import logging
 import os
 from functools import reduce
 from math import exp
-
 import pytest
-import arrow
 from pandas import DataFrame
 from qtpylib.indicators import crossed_above
 
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
-
-from freqtrade.analyze import analyze_ticker
-from freqtrade.main import should_sell
-from freqtrade.persistence import Trade
 
 from freqtrade.tests.test_backtesting import backtest, format_results
 
@@ -94,7 +87,7 @@ def test_hyperopt(conf, pairs, mocker):
 
         total_profit = results.profit.sum() * 1000
         trade_count = len(results.index)
-        
+
         trade_loss = 1 - 0.8 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5)
         profit_loss = exp(-total_profit**3 / 10**11)
 
