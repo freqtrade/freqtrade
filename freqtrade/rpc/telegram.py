@@ -17,7 +17,7 @@ logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
 logging.getLogger('telegram').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-_updater = None
+_updater: Updater = None
 _CONF = {}
 
 
@@ -59,6 +59,14 @@ def init(config: dict) -> None:
         'rpc.telegram is listening for following commands: %s',
         [h.command for h in handles]
     )
+
+
+def cleanup() -> None:
+    """
+    Stops all running telegram threads.
+    :return: None
+    """
+    _updater.stop()
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
