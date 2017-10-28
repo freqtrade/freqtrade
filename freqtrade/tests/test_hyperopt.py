@@ -44,6 +44,8 @@ def buy_strategy_generator(params):
             conditions.append(dataframe['close'] < dataframe['sma'])
         if params['over_sma']['enabled']:
             conditions.append(dataframe['close'] > dataframe['sma'])
+        if params['uptrend_long_ema']['enabled']:
+            conditions.append(dataframe['ema50'] > dataframe['ema100'])
         if params['mfi']['enabled']:
             conditions.append(dataframe['mfi'] < params['mfi']['value'])
         if params['fastd']['enabled']:
@@ -126,6 +128,10 @@ def test_hyperopt(conf, pairs, mocker):
             {'enabled': True}
         ]),
         'over_sma': hp.choice('over_sma', [
+            {'enabled': False},
+            {'enabled': True}
+        ]),
+        'uptrend_long_ema': hp.choice('uptrend_long_ema', [
             {'enabled': False},
             {'enabled': True}
         ]),
