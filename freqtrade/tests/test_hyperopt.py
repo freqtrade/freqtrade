@@ -69,6 +69,7 @@ def buy_strategy_generator(params):
             'faststoch10': (dataframe['fastd'] >= 10) & (prev_fastd < 10),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
             'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
+            'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -148,6 +149,7 @@ def test_hyperopt(conf, pairs, mocker):
             {'type': 'faststoch10'},
             {'type': 'ao_cross_zero'},
             {'type': 'ema5_cross_ema10'},
+            {'type': 'macd_cross_signal'},
         ]),
     }
     trials = Trials()
