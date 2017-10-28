@@ -102,19 +102,19 @@ def test_hyperopt(conf, pairs, mocker):
     space = {
         'mfi': hp.choice('mfi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('mfi-value', 2, 40)}
+            {'enabled': True, 'value': hp.uniform('mfi-value', 5, 15)}
         ]),
         'fastd': hp.choice('fastd', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('fastd-value', 2, 40)}
+            {'enabled': True, 'value': hp.uniform('fastd-value', 5, 40)}
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('adx-value', 2, 40)}
+            {'enabled': True, 'value': hp.uniform('adx-value', 10, 30)}
         ]),
         'cci': hp.choice('cci', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('cci-value', -200, -100)}
+            {'enabled': True, 'value': hp.uniform('cci-value', -150, -100)}
         ]),
         'rsi': hp.choice('rsi', [
             {'enabled': False},
