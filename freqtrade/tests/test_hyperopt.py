@@ -52,6 +52,8 @@ def buy_strategy_generator(params):
             conditions.append(dataframe['adx'] > params['adx']['value'])
         if params['cci']['enabled']:
             conditions.append(dataframe['cci'] < params['cci']['value'])
+        if params['rsi']['enabled']:
+            conditions.append(dataframe['rsi'] < params['rsi']['value'])
         if params['over_sar']['enabled']:
             conditions.append(dataframe['close'] > dataframe['sar'])
         if params['uptrend_sma']['enabled']:
@@ -113,6 +115,10 @@ def test_hyperopt(conf, pairs, mocker):
         'cci': hp.choice('cci', [
             {'enabled': False},
             {'enabled': True, 'value': hp.uniform('cci-value', -200, -100)}
+        ]),
+        'rsi': hp.choice('rsi', [
+            {'enabled': False},
+            {'enabled': True, 'value': hp.uniform('rsi-value', 20, 30)}
         ]),
         'below_sma': hp.choice('below_sma', [
             {'enabled': False},
