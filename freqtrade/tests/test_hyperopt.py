@@ -40,10 +40,6 @@ def buy_strategy_generator(params):
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
-        if params['below_sma']['enabled']:
-            conditions.append(dataframe['close'] < dataframe['sma'])
-        if params['over_sma']['enabled']:
-            conditions.append(dataframe['close'] > dataframe['sma'])
         if params['uptrend_long_ema']['enabled']:
             conditions.append(dataframe['ema50'] > dataframe['ema100'])
         if params['mfi']['enabled']:
@@ -123,14 +119,6 @@ def test_hyperopt(conf, pairs, mocker):
         'rsi': hp.choice('rsi', [
             {'enabled': False},
             {'enabled': True, 'value': hp.uniform('rsi-value', 20, 30)}
-        ]),
-        'below_sma': hp.choice('below_sma', [
-            {'enabled': False},
-            {'enabled': True}
-        ]),
-        'over_sma': hp.choice('over_sma', [
-            {'enabled': False},
-            {'enabled': True}
         ]),
         'uptrend_long_ema': hp.choice('uptrend_long_ema', [
             {'enabled': False},
