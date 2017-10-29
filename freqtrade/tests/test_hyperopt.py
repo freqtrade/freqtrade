@@ -1,23 +1,22 @@
 # pragma pylint: disable=missing-docstring
-import json
+from operator import itemgetter
 import logging
 import os
 from functools import reduce
-
+from math import exp
 import pytest
-import arrow
 from pandas import DataFrame
 from qtpylib.indicators import crossed_above
 
-from hyperopt import fmin, tpe, hp
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 
-from freqtrade.analyze import analyze_ticker
-from freqtrade.main import should_sell
-from freqtrade.persistence import Trade
-
-from freqtrade.tests.test_backtesting import backtest, print_results
+from freqtrade.tests.test_backtesting import backtest, format_results
 
 logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
+
+# set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
+TARGET_TRADES = 1200
+
 
 @pytest.fixture
 def pairs():
@@ -83,13 +82,20 @@ def test_hyperopt(conf, pairs, mocker):
         mocker.patch('freqtrade.analyze.populate_buy_trend', side_effect=buy_strategy)
         results = backtest(conf, pairs, mocker)
 
-        print_results(results)
+        result = format_results(results)
+        print(result)
 
-        # set the value below to suit your number concurrent trades so its realistic to 20days of data
-        TARGET_TRADES = 1200
-        if results.profit.sum() == 0 or results.profit.mean() == 0:
-            return 49999999999 # avoid division by zero, return huge value to discard result
-        return abs(len(results.index) - 1200.1) / (results.profit.sum() ** 2) * results.duration.mean() # the smaller the better
+        total_profit = results.profit.sum() * 1000
+        trade_count = len(results.index)
+
+        trade_loss = 1 - 0.8 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5)
+        profit_loss = exp(-total_profit**3 / 10**11)
+
+        return {
+            'loss': trade_loss + profit_loss,
+            'status': STATUS_OK,
+            'result': result
+        }
 
     space = {
         'mfi': hp.choice('mfi', [
@@ -130,4 +136,9 @@ def test_hyperopt(conf, pairs, mocker):
             {'type': 'ao_cross_zero'}
         ]),
     }
-    print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40)))
+    trials = Trials()
+    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40, trials=trials)
+    print('\n\n\n\n====================== HYPEROPT BACKTESTING REPORT ================================')
+    print('Best parameters {}'.format(best))
+    newlist = sorted(trials.results, key=itemgetter('loss'))
+    print('Result: {}'.format(newlist[0]['result']))
