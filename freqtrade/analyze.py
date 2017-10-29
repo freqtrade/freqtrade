@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame:
+def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
     Analyses the trend for the given pair
     :param pair: pair as str in format BTC_ETH or BTC-ETH
@@ -73,7 +73,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     """
     minimum_date = arrow.utcnow().shift(hours=-24)
     data = get_ticker_history(pair, minimum_date)
-    dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+    dataframe = parse_ticker_dataframe(data['result'])
 
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)
