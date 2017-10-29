@@ -145,11 +145,15 @@ def handle_trade(trade: Trade) -> None:
 
 
 def get_target_bid(ticker: Dict[str, float]) -> float:
-    """ Calculates bid target between current ask price and last price """
-    if ticker['ask'] < ticker['last']:
-        return ticker['ask']
-    balance = _CONF['bid_strategy']['ask_last_balance']
-    return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+    """
+    Calculates bid target between
+    bid and ask prices from the given orderbook
+    :param ticker: ticker data
+    :return: target bit as float
+    """
+    ask, bid = ticker['ask'], ticker['bid']
+    balance = _CONF['bid_strategy']['bid_ask_balance']
+    return bid + balance * (ask - bid)
 
 
 def create_trade(stake_amount: float) -> Optional[Trade]:

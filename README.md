@@ -45,8 +45,8 @@ profit dips below -10% for a given trade. This parameter is optional.
 Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
-`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last
+`bid_ask_balance` sets the bidding price. Value `0.0` will use `bid` price, `1.0` will
+use the `ask` price and values between those interpolate between bid and ask
 price. Using `ask` price will guarantee quick success in bid, but bot will also
 end up paying more then would probably have been necessary.
 

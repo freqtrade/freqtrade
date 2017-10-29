@@ -1,9 +1,9 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import arrow
-import requests
-from bittrex.bittrex import Bittrex as _Bittrex
+from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, TICKINTERVAL_FIVEMIN, ORDERTYPE_LIMIT, \
+    TIMEINEFFECT_GOOD_TIL_CANCELLED
 
 from freqtrade.exchange.interface import Exchange
 
@@ -19,10 +19,9 @@ class Bittrex(Exchange):
     """
     # Base URL and API endpoints
     BASE_URL: str = 'https://www.bittrex.com'
-    TICKER_METHOD: str = BASE_URL + '/Api/v2.0/pub/market/GetTicks'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
     # Ticker inveral
-    TICKER_INTERVAL: str = 'fiveMin'
+    TICKER_INTERVAL: str = TICKINTERVAL_FIVEMIN
     # Sleep time to avoid rate limits, used in the main loop
     SLEEP_TIME: float = 25
 
@@ -34,19 +33,36 @@ class Bittrex(Exchange):
         global _API, _EXCHANGE_CONF
 
         _EXCHANGE_CONF.update(config)
-        _API = _Bittrex(api_key=_EXCHANGE_CONF['key'], api_secret=_EXCHANGE_CONF['secret'])
+        _API = _Bittrex(
+            api_key=_EXCHANGE_CONF['key'],
+            api_secret=_EXCHANGE_CONF['secret'],
+            api_version=API_V2_0,
+            calls_per_second=10,
+        )
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
-        data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
+        data = _API.trade_buy(
+            market=pair.replace('_', '-'),
+            order_type=ORDERTYPE_LIMIT,
+            quantity=amount,
+            rate=rate,
+            time_in_effect=TIMEINEFFECT_GOOD_TIL_CANCELLED,
+        )
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
-        return data['result']['uuid']
+        return data['result']['OrderId']
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
-        data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
+        data = _API.trade_sell(
+            market=pair.replace('_', '-'),
+            order_type=ORDERTYPE_LIMIT,
+            quantity=amount,
+            rate=rate,
+            time_in_effect=TIMEINEFFECT_GOOD_TIL_CANCELLED,
+        )
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
-        return data['result']['uuid']
+        return data['result']['OrderId']
 
     def get_balance(self, currency: str) -> float:
         data = _API.get_balance(currency)
@@ -54,29 +70,24 @@ class Bittrex(Exchange):
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return float(data['result']['Balance'] or 0.0)
 
-    def get_ticker(self, pair: str) -> dict:
-        data = _API.get_ticker(pair.replace('_', '-'))
+    def get_ticker(self, pair: str) -> Dict[str, float]:
+        data = self.get_orderbook(pair, top_most=1)
+        return {
+            'bid': data['bid'][0]['Rate'],
+            'ask': data['ask'][0]['Rate'],
+        }
+
+    def get_orderbook(self, pair: str, top_most: Optional[int] = None) -> Dict[str, List[Dict]]:
+        data = _API.get_orderbook(pair.replace('_', '-'))
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return {
-            'bid': float(data['result']['Bid']),
-            'ask': float(data['result']['Ask']),
-            'last': float(data['result']['Last']),
+            'bid': data['result']['buy'][:top_most],
+            'ask': data['result']['sell'][:top_most],
         }
 
     def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None):
-        url = self.TICKER_METHOD
-        headers = {
-            # TODO: Set as global setting
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
-        }
-        params = {
-            'marketName': pair.replace('_', '-'),
-            'tickInterval': self.TICKER_INTERVAL,
-            # TODO: Timestamp has no effect on API response
-            '_': minimum_date.timestamp * 1000
-        }
-        data = requests.get(url, params=params, headers=headers).json()
+        data = _API.get_candles(pair.replace('_', '-'), self.TICKER_INTERVAL)
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return data

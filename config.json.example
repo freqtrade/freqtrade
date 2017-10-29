@@ -11,7 +11,7 @@
     },
     "stoploss": -0.40,
     "bid_strategy": {
-        "ask_last_balance": 0.0
+        "bid_ask_balance": 1.0
     },
     "exchange": {
         "name": "bittrex",

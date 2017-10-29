@@ -25,7 +25,7 @@ def conf():
             "0": 0.02
         },
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "bid_ask_balance": 1.0
         },
         "exchange": {
             "name": "bittrex",
@@ -48,6 +48,7 @@ def conf():
     validate(configuration, CONF_SCHEMA)
     return configuration
 
+
 def test_create_trade(conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     buy_signal = mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -57,7 +58,6 @@ def test_create_trade(conf, mocker):
                           get_ticker=MagicMock(return_value={
                               'bid': 0.07256061,
                               'ask': 0.072661,
-                              'last': 0.07256061
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     # Save state of current whitelist
@@ -82,6 +82,7 @@ def test_create_trade(conf, mocker):
         [call('BTC_ETH'), call('BTC_TKN'), call('BTC_TRST'), call('BTC_SWT')]
     )
 
+
 def test_handle_trade(conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
@@ -90,7 +91,6 @@ def test_handle_trade(conf, mocker):
                           get_ticker=MagicMock(return_value={
                               'bid': 0.17256061,
                               'ask': 0.172661,
-                              'last': 0.17256061
                           }),
                           buy=MagicMock(return_value='mocked_order_id'))
     trade = Trade.query.filter(Trade.is_open.is_(True)).first()
@@ -100,6 +100,7 @@ def test_handle_trade(conf, mocker):
     assert trade.close_profit == 137.4872490056564
     assert trade.close_date is not None
     assert trade.open_order_id == 'dry_run'
+
 
 def test_close_trade(conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
@@ -113,14 +114,17 @@ def test_close_trade(conf, mocker):
     assert closed
     assert not trade.is_open
 
+
+def test_balance_fully_bid_side(mocker):
+    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'bid_ask_balance': 0.0}})
+    assert get_target_bid({'bid': 10, 'ask': 20}) == 10
+
+
 def test_balance_fully_ask_side(mocker):
-    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}})
-    assert get_target_bid({'ask': 20, 'last': 10}) == 20
+    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'bid_ask_balance': 1.0}})
+    assert get_target_bid({'bid': 10, 'ask': 20}) == 20
 
-def test_balance_fully_last_side(mocker):
-    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
-    assert get_target_bid({'ask': 20, 'last': 10}) == 10
 
-def test_balance_when_last_bigger_than_ask(mocker):
-    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
-    assert get_target_bid({'ask': 5, 'last': 10}) == 5
+def test_balance_half(mocker):
+    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'bid_ask_balance': 0.5}})
+    assert get_target_bid({'bid': 10, 'ask': 20}) == 15

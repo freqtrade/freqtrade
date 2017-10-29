@@ -51,14 +51,14 @@ CONF_SCHEMA = {
         'bid_strategy': {
             'type': 'object',
             'properties': {
-                'ask_last_balance': {
+                'bid_ask_balance': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1,
                     'exclusiveMaximum': False
                 },
             },
-            'required': ['ask_last_balance']
+            'required': ['bid_ask_balance']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'telegram': {

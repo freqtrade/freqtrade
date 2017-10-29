@@ -1,6 +1,6 @@
 import enum
 import logging
-from typing import List
+from typing import List, Optional, Dict
 
 import arrow
 
@@ -85,8 +85,12 @@ def get_balance(currency: str) -> float:
     return EXCHANGE.get_balance(currency)
 
 
-def get_ticker(pair: str) -> dict:
+def get_ticker(pair: str) -> Dict[str, float]:
     return EXCHANGE.get_ticker(pair)
+
+
+def get_orderbook(pair: str, top_most: Optional[int] = None) -> Dict[str, List[Dict]]:
+    return EXCHANGE.get_orderbook(pair, top_most)
 
 
 def get_ticker_history(pair: str, minimum_date: arrow.Arrow):
