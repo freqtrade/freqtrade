@@ -17,6 +17,7 @@ pytest-cov==2.5.1
 hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
 networkx==1.11
+tabulate==0.8.1
 
 # Required for plotting data
 #matplotlib==2.1.0

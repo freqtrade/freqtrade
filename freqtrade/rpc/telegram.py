@@ -1,6 +1,8 @@
 import logging
 from datetime import timedelta
 from typing import Callable, Any
+from pandas import DataFrame
+from tabulate import tabulate
 
 import arrow
 from sqlalchemy import and_, func, text
@@ -100,6 +102,14 @@ def _status(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
+
+    # Check if additional parameters are passed
+    params = update.message.text.replace('/status', '').split(' ') \
+        if update.message.text else []
+    if 'table' in params:
+        _status_table(bot, update)
+        return
+
     # Fetch open trade
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     if get_state() != State.RUNNING:
@@ -144,6 +154,71 @@ def _status(bot: Bot, update: Update) -> None:
             )
             send_msg(message, bot=bot)
 
+
+@authorized_only
+def _status_table(bot: Bot, update: Update) -> None:
+    """
+    Handler for /status table.
+    Returns the current TradeThread status in table format
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    short_version = False
+    params = update.message.text.replace('/status', '').split(' ')
+    if 'short' in params:
+        short_version = True
+
+    # Fetch open trade
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    if get_state() != State.RUNNING:
+        send_msg('*Status:* `trader is not running`', bot=bot)
+    elif not trades:
+        send_msg('*Status:* `no active order`', bot=bot)
+    else:
+        trades_list = []
+        for trade in trades:
+            # calculate profit and send message to user
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
+            orders = exchange.get_open_orders(trade.pair)
+            orders = [o for o in orders if o['id'] == trade.open_order_id]
+            order = orders[0] if orders else None
+
+            fmt_close_profit = '{:.2f}'.format(trade.close_profit) if trade.close_profit else 'No'
+            fmt_current_profit = '{:.2f}'.format(current_profit)
+
+            row = [
+                trade.id,
+                trade.pair,
+                shorten_date(arrow.get(trade.open_date).humanize()),
+                round(trade.amount, 8),
+                trade.open_rate,
+                trade.close_rate,
+                current_rate,
+                fmt_close_profit,
+                fmt_current_profit,
+                '{} ({})'.format(order['remaining'], order['type']) if order else 'No'
+            ]
+
+            trades_list.append(row)
+
+        columns = ['ID', 'Pair', 'Since', 'Amount', 'Open Rate',
+            'Close Rate', 'Cur. Rate', 'Close Profit', 'Profit',
+            'Open Order']
+
+        df = DataFrame.from_records(trades_list, columns=columns)
+        df = df.set_index(columns[0])
+
+        columns_short = ['Pair', 'Since', 'Profit']
+
+        if short_version == True:
+            df = df[columns_short]
+
+        message = tabulate(df, headers='keys', tablefmt='simple')
+        message = "<pre>{}</pre>".format(message)
+
+        send_msg(message, parse_mode=ParseMode.HTML)
 
 @authorized_only
 def _profit(bot: Bot, update: Update) -> None:
@@ -346,13 +421,30 @@ def _help(bot: Bot, update: Update) -> None:
     message = """
 */start:* `Starts the trader`
 */stop:* `Stops the trader`
-*/status:* `Lists all open trades`
+*/status [table [short]]:* `Lists all open trades`
+            *table :* `will display trades in a table`
+            *short :* `condensed output`
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/count:* `Show number of trades running compared to allowed number of trades`
 */help:* `This help message`
     """
     send_msg(message, bot=bot)
+
+
+def shorten_date(date):
+    return date.replace('ago', '') \
+               .replace('seconds', 's') \
+               .replace('minutes', 'm') \
+               .replace('minute', 'm') \
+               .replace('hours', 'h') \
+               .replace('hour', 'h') \
+               .replace('days', 'd') \
+               .replace('day', 'd') \
+               .replace('an', '1') \
+               .replace('a', '1') \
+               .replace(' ', '')
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
