@@ -51,20 +51,16 @@ def backtest(conf, pairs, mocker):
 
             mocker.patch('freqtrade.analyze.get_ticker_history', return_value=data)
             mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
-            ticker = analyze_ticker(pair)
+            ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
             # for each buy point
-            for index, row in ticker[ticker.buy == 1].iterrows():
-                trade = Trade(
-                    open_rate=row['close'],
-                    open_date=arrow.get(row['date']).datetime,
-                    amount=1,
-                )
+            for row in ticker[ticker.buy == 1].itertuples(index=True):
+                trade = Trade(open_rate=row.close, open_date=row.date, amount=1)
                 # calculate win/lose forwards from buy point
-                for index2, row2 in ticker[index:].iterrows():
-                    if should_sell(trade, row2['close'], arrow.get(row2['date']).datetime):
-                        current_profit = (row2['close'] - trade.open_rate) / trade.open_rate
+                for row2 in ticker[row.Index:].itertuples(index=True):
+                    if should_sell(trade, row2.close, row2.date):
+                        current_profit = (row2.close - trade.open_rate) / trade.open_rate
 
-                        trades.append((pair, current_profit, index2 - index))
+                        trades.append((pair, current_profit, row2.Index - row.Index))
                         break
     labels = ['currency', 'profit', 'duration']
     results = DataFrame.from_records(trades, columns=labels)
