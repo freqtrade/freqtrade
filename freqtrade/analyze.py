@@ -54,14 +54,14 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-    dataframe.loc[
+    dataframe.ix[
         (dataframe['close'] < dataframe['sma']) &
         (dataframe['tema'] <= dataframe['blower']) &
         (dataframe['mfi'] < 25) &
         (dataframe['fastd'] < 25) &
         (dataframe['adx'] > 30),
         'buy'] = 1
-    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+    dataframe.ix[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
     return dataframe
 
