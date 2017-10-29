@@ -208,19 +208,18 @@ def _balance(bot: Bot, update: Update) -> None:
     Hander for /balance
     Returns current account balance per crypto
     """
-    filter = {'Currency', 'CryptoAddress'}
     output = ""
 
     balances = exchange.get_balances()
 
-    for c in balances:
-        # output[c['Currency']] = {k: c[k] for k in c.keys() & {*set(c) - set(filter)}}
+    for currency in balances:
         output += """*Currency*: {Currency}
 *Available*: {Available}
 *Balance*: {Balance}
 *Pending*: {Pending}
 
-""".format(**c)
+""".format(**currency)
+
     send_msg(output)
 
 @authorized_only
@@ -347,6 +346,7 @@ def _help(bot: Bot, update: Update) -> None:
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/balance:* `Show account balance per currency`
 */help:* `This help message`
     """
     send_msg(message, bot=bot)
