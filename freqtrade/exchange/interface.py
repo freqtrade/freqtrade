@@ -50,6 +50,21 @@ class Exchange(ABC):
         """
 
     @abstractmethod
+    def get_balances(self) -> List[dict]:
+        """
+        Gets account balances across currencies
+        :return: List of dicts, format: [
+          {
+            'Currency': str,
+            'Balance': float,
+            'Available': float,
+            'Pending': float,
+          }
+          ...
+        ]
+        """
+
+    @abstractmethod
     def get_ticker(self, pair: str) -> dict:
         """
         Gets ticker for given pair.

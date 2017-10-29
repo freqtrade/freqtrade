@@ -9,7 +9,7 @@ from telegram import Bot, Update, Message, Chat
 from freqtrade.main import init, create_trade
 from freqtrade.misc import update_state, State, get_state, CONF_SCHEMA
 from freqtrade.persistence import Trade
-from freqtrade.rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop
+from freqtrade.rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop, _balance
 
 
 @pytest.fixture
@@ -197,3 +197,21 @@ def test_stop_handle(conf, update, mocker):
     assert get_state() == State.STOPPED
     assert msg_mock.call_count == 1
     assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
+
+def test_balance_handle(conf, update, mocker):
+    mock_balance = [{
+        'Currency': 'BTC',
+        'Balance': 10.0,
+        'Available': 12.0,
+        'Pending': 0.0,
+        'CryptoAddress': 'XXXX'}]
+    mocker.patch.dict('freqtrade.main._CONF', conf)
+    msg_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_balances=MagicMock(return_value=mock_balance))
+
+    _balance(bot=MagicBot(), update=update)
+    assert msg_mock.call_count == 1
+    assert '*Currency*: BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'Balance' in msg_mock.call_args_list[0][0][0]

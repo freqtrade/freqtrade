@@ -54,6 +54,12 @@ class Bittrex(Exchange):
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return float(data['result']['Balance'] or 0.0)
 
+    def get_balances(self):
+        data = _API.get_balances()
+        if not data['success']:
+            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+        return data['result']
+    
     def get_ticker(self, pair: str) -> dict:
         data = _API.get_ticker(pair.replace('_', '-'))
         if not data['success']:

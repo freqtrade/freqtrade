@@ -41,6 +41,7 @@ def init(config: dict) -> None:
     handles = [
         CommandHandler('status', _status),
         CommandHandler('profit', _profit),
+        CommandHandler('balance', _balance),
         CommandHandler('start', _start),
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
@@ -201,6 +202,25 @@ def _profit(bot: Bot, update: Update) -> None:
     )
     send_msg(markdown_msg, bot=bot)
 
+@authorized_only
+def _balance(bot: Bot, update: Update) -> None:
+    """
+    Hander for /balance
+    Returns current account balance per crypto
+    """
+    output = ""
+
+    balances = exchange.get_balances()
+
+    for currency in balances:
+        output += """*Currency*: {Currency}
+*Available*: {Available}
+*Balance*: {Balance}
+*Pending*: {Pending}
+
+""".format(**currency)
+
+    send_msg(output)
 
 @authorized_only
 def _start(bot: Bot, update: Update) -> None:
@@ -326,6 +346,7 @@ def _help(bot: Bot, update: Update) -> None:
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/balance:* `Show account balance per currency`
 */help:* `This help message`
     """
     send_msg(message, bot=bot)
