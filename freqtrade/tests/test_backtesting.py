@@ -56,12 +56,12 @@ def backtest(conf, pairs, mocker):
             for index, row in ticker[ticker.buy == 1].iterrows():
                 trade = Trade(
                     open_rate=row['close'],
-                    open_date=arrow.get(row['date']).datetime,
+                    open_date=row['date'],
                     amount=1,
                 )
                 # calculate win/lose forwards from buy point
                 for index2, row2 in ticker[index:].iterrows():
-                    if should_sell(trade, row2['close'], arrow.get(row2['date']).datetime):
+                    if should_sell(trade, row2['close'], row2['date']):
                         current_profit = (row2['close'] - trade.open_rate) / trade.open_rate
 
                         trades.append((pair, current_profit, index2 - index))

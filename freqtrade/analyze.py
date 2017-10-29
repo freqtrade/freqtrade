@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import arrow
 import talib.abstract as ta
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 from qtpylib.indicators import awesome_oscillator, crossed_above
 
 from freqtrade import exchange
@@ -23,8 +23,9 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
     df = DataFrame(ticker) \
         .drop('BV', 1) \
-        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'}) \
-        .sort_values('date')
+        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'})
+    df['date'] = to_datetime(df['date'], utc=True, infer_datetime_format=True)
+    df.sort_values('date', inplace=True)
     return df
 
 
