@@ -51,7 +51,7 @@ def backtest(conf, pairs, mocker):
 
             mocker.patch('freqtrade.analyze.get_ticker_history', return_value=data)
             mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
-            ticker = analyze_ticker(pair)
+            ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
             # for each buy point
             for index, row in ticker[ticker.buy == 1].iterrows():
                 trade = Trade(
