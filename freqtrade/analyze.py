@@ -5,10 +5,10 @@ from datetime import timedelta
 import arrow
 import talib.abstract as ta
 from pandas import DataFrame, to_datetime
-from qtpylib.indicators import awesome_oscillator, crossed_above
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex, get_ticker_history
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

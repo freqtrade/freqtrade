@@ -1,16 +1,16 @@
 # pragma pylint: disable=missing-docstring
-from operator import itemgetter
 import logging
 import os
 from functools import reduce
 from math import exp
-import pytest
-from pandas import DataFrame
-from qtpylib.indicators import crossed_above
+from operator import itemgetter
 
+import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from pandas import DataFrame
 
 from freqtrade.tests.test_backtesting import backtest, format_results
+from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
 
