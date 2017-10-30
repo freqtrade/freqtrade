@@ -45,12 +45,12 @@ def conf():
 def backtest(conf, pairs, mocker):
     trades = []
     mocker.patch.dict('freqtrade.main._CONF', conf)
+    mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
     for pair in pairs:
         with open('freqtrade/tests/testdata/'+pair+'.json') as data_file:
             data = json.load(data_file)
 
             mocker.patch('freqtrade.analyze.get_ticker_history', return_value=data)
-            mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
             ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
             # for each buy point
             for row in ticker[ticker.buy == 1].itertuples(index=True):
