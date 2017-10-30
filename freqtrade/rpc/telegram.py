@@ -202,6 +202,7 @@ def _profit(bot: Bot, update: Update) -> None:
     )
     send_msg(markdown_msg, bot=bot)
 
+
 @authorized_only
 def _balance(bot: Bot, update: Update) -> None:
     """
@@ -221,6 +222,7 @@ def _balance(bot: Bot, update: Update) -> None:
 """.format(**currency)
 
     send_msg(output)
+
 
 @authorized_only
 def _start(bot: Bot, update: Update) -> None:

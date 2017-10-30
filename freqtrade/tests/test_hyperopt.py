@@ -23,6 +23,7 @@ def pairs():
     return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
             'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
 
+
 @pytest.fixture
 def conf():
     return {
@@ -35,8 +36,10 @@ def conf():
         "stoploss": -0.05
     }
 
+
 def buy_strategy_generator(params):
     print(params)
+
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
@@ -77,9 +80,11 @@ def buy_strategy_generator(params):
         return dataframe
     return populate_buy_trend
 
+
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
 def test_hyperopt(conf, pairs, mocker):
     mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
+
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)
 

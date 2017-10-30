@@ -82,6 +82,7 @@ def test_status_handle(conf, update, mocker):
     assert msg_mock.call_count == 2
     assert '[BTC_ETH]' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_profit_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -112,6 +113,7 @@ def test_profit_handle(conf, update, mocker):
     assert msg_mock.call_count == 2
     assert '(100.00%)' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_forcesell_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -139,6 +141,7 @@ def test_forcesell_handle(conf, update, mocker):
     assert msg_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in msg_mock.call_args_list[-1][0][0]
     assert '0.072561' in msg_mock.call_args_list[-1][0][0]
+
 
 def test_performance_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
@@ -171,6 +174,7 @@ def test_performance_handle(conf, update, mocker):
     assert 'Performance' in msg_mock.call_args_list[-1][0][0]
     assert 'BTC_ETH	100.00%' in msg_mock.call_args_list[-1][0][0]
 
+
 def test_start_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     msg_mock = MagicMock()
@@ -183,6 +187,7 @@ def test_start_handle(conf, update, mocker):
     _start(bot=MagicBot(), update=update)
     assert get_state() == State.RUNNING
     assert msg_mock.call_count == 0
+
 
 def test_stop_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
@@ -197,6 +202,7 @@ def test_stop_handle(conf, update, mocker):
     assert get_state() == State.STOPPED
     assert msg_mock.call_count == 1
     assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
+
 
 def test_balance_handle(conf, update, mocker):
     mock_balance = [{

@@ -2,6 +2,7 @@
 from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade
 
+
 def test_exec_sell_order(mocker):
     api_mock = mocker.patch('freqtrade.main.exchange.sell', side_effect='mocked_order_id')
     trade = Trade(
