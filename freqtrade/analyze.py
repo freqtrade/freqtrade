@@ -43,8 +43,17 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
     dataframe['cci'] = ta.CCI(dataframe)
+    dataframe['rsi'] = ta.RSI(dataframe)
+    dataframe['mom'] = ta.MOM(dataframe)
+    dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
+    dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
+    dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
     dataframe['ao'] = awesome_oscillator(dataframe)
-
+    macd = ta.MACD(dataframe)
+    dataframe['macd'] = macd['macd']
+    dataframe['macdsignal'] = macd['macdsignal']
+    dataframe['macdhist'] = macd['macdhist']
     return dataframe
 
 
