@@ -5,3 +5,4 @@ include freqtrade/exchange/*.py
 include freqtrade/rpc/*.py
 include freqtrade/tests/*.py
 include freqtrade/tests/testdata/*.json
+include qtpylib/*.py
