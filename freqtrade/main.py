@@ -51,7 +51,7 @@ def _process() -> None:
                 logger.info('Got open order for %s', trade)
                 trade.update(exchange.get_order(trade.open_order_id))
 
-            if not close_trade_if_fulfilled(trade) and trade.open_rate:
+            if not close_trade_if_fulfilled(trade):
                 # Check if we can sell our current pair
                 handle_trade(trade)
 
@@ -198,6 +198,8 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     telegram.send_msg(message)
     return Trade(pair=pair,
                  stake_amount=stake_amount,
+                 amount=amount,
+                 open_rate=buy_limit,
                  open_date=datetime.utcnow(),
                  exchange=exchange.get_name().upper(),
                  open_order_id=order_id,

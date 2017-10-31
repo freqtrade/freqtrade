@@ -118,14 +118,13 @@ def _status(bot: Bot, update: Update) -> None:
     else:
         for trade in trades:
             order = exchange.get_order(trade.open_order_id)
-            if trade.open_rate:
-                # calculate profit and send message to user
-                current_rate = exchange.get_ticker(trade.pair)['bid']
-                current_profit = trade.calc_profit(current_rate)
-                fmt_close_profit = '{:.2f}%'.format(
-                    round(trade.close_profit * 100, 2)
-                ) if trade.close_profit else None
-                message = """
+            # calculate profit and send message to user
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_profit = trade.calc_profit(current_rate)
+            fmt_close_profit = '{:.2f}%'.format(
+                round(trade.close_profit * 100, 2)
+            ) if trade.close_profit else None
+            message = """
 *Trade ID:* `{trade_id}`
 *Current Pair:* [{pair}]({market_url})
 *Open Since:* `{date}`
@@ -136,38 +135,21 @@ def _status(bot: Bot, update: Update) -> None:
 *Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit:.2f}%`
 *Open Order:* `{open_order}`
-                """.format(
-                    trade_id=trade.id,
-                    pair=trade.pair,
-                    market_url=exchange.get_pair_detail_url(trade.pair),
-                    date=arrow.get(trade.open_date).humanize(),
-                    open_rate=trade.open_rate,
-                    close_rate=trade.close_rate,
-                    current_rate=current_rate,
-                    amount=round(trade.amount, 8),
-                    close_profit=fmt_close_profit,
-                    current_profit=round(current_profit * 100, 2),
-                    open_order='{} ({})'.format(
-                        order['remaining'], order['type']
-                    ) if order else None,
-                )
-            else:
-                message = """
-*Trade ID:* `{trade_id}`
-*Current Pair:* [{pair}]({market_url})
-*Open Since:* `{date}`
-*Open Order:* `{open_order}`
-
-`Waiting until order is fulfilled.`
-                """.format(
-                    trade_id=trade.id,
-                    pair=trade.pair,
-                    market_url=exchange.get_pair_detail_url(trade.pair),
-                    date=arrow.get(trade.open_date).humanize(),
-                    open_order='{} ({})'.format(
-                        order['remaining'], order['type']
-                    ) if order else None,
-                )
+            """.format(
+                trade_id=trade.id,
+                pair=trade.pair,
+                market_url=exchange.get_pair_detail_url(trade.pair),
+                date=arrow.get(trade.open_date).humanize(),
+                open_rate=trade.open_rate,
+                close_rate=trade.close_rate,
+                current_rate=current_rate,
+                amount=round(trade.amount, 8),
+                close_profit=fmt_close_profit,
+                current_profit=round(current_profit * 100, 2),
+                open_order='{} ({})'.format(
+                    order['remaining'], order['type']
+                ) if order else None,
+            )
             send_msg(message, bot=bot)
 
 

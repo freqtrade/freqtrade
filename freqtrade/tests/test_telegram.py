@@ -99,7 +99,6 @@ def test_status_handle(conf, update, mocker):
     _status(bot=MagicBot(), update=update)
 
     assert msg_mock.call_count == 3
-    assert 'Waiting until order is fulfilled' in msg_mock.call_args_list[-2][0][0]
     assert '[BTC_ETH]' in msg_mock.call_args_list[-1][0][0]
 
 

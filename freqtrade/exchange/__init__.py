@@ -106,9 +106,7 @@ def cancel_order(order_id: str) -> None:
 
 def get_order(order_id: str) -> Dict:
     if _CONF['dry_run']:
-        return {
-
-        }
+        return {}
 
     return _API.get_order(order_id)
 

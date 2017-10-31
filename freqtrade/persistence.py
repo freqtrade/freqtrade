@@ -78,12 +78,12 @@ class Trade(Base):
         :param order: order retrieved by exchange.get_order()
         :return: None
         """
-        if not order['closed']:
+        if not order.get('closed'):
             return
 
         logger.debug('Updating trade (id=%d) ...', self.id)
         if order['type'] == 'LIMIT_BUY':
-            # Set open rate and actual amount
+            # Update open rate and actual amount
             self.open_rate = order['rate']
             self.amount = order['amount']
         elif order['type'] == 'LIMIT_SELL':
