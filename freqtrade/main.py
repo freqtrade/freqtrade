@@ -80,23 +80,25 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
     return False
 
 
-def execute_sell(trade: Trade, current_rate: float) -> None:
+def execute_sell(trade: Trade, limit: float) -> None:
     """
-    Executes a sell for the given trade and current rate
+    Executes a limit sell for the given trade and limit
     :param trade: Trade instance
-    :param current_rate: current rate
+    :param limit: limit rate for the sell order
     :return: None
     """
-    # Get available balance
-    currency = trade.pair.split('_')[1]
-    balance = exchange.get_balance(currency)
-    profit = trade.exec_sell_order(current_rate, balance)
-    message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
+    # Execute sell and update trade record
+    order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+    trade.open_order_id = order_id
+    trade.close_date = datetime.utcnow()
+
+    exp_profit = round(trade.calc_profit(limit), 2)
+    message = '*{}:* Selling [{}]({}) with limit `{:f} (profit: ~{}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
-        trade.close_rate,
-        round(profit, 2)
+        limit,
+        exp_profit
     )
     logger.info(message)
     telegram.send_msg(message)
@@ -107,17 +109,15 @@ def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bo
     Based an earlier trade and current price and configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
-    current_profit = (current_rate - trade.open_rate) / trade.open_rate
-
+    current_profit = trade.calc_profit(current_rate)
     if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
         logger.debug('Stop loss hit.')
         return True
 
     for duration, threshold in sorted(_CONF['minimal_roi'].items()):
-        duration, threshold = float(duration), float(threshold)
         # Check if time matches and current rate is above threshold
         time_diff = (current_time - trade.open_date).total_seconds() / 60
-        if time_diff > duration and current_profit > threshold:
+        if time_diff > float(duration) and current_profit > threshold:
             return True
 
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
@@ -182,25 +182,24 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     else:
         return None
 
-    open_rate = get_target_bid(exchange.get_ticker(pair))
-    amount = stake_amount / open_rate
-    order_id = exchange.buy(pair, open_rate, amount)
+    buy_limit = get_target_bid(exchange.get_ticker(pair))
+    # TODO: apply fee to amount and also consider it for profit calculations
+    amount = stake_amount / buy_limit
+    order_id = exchange.buy(pair, buy_limit, amount)
 
     # Create trade entity and return
-    message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
-        exchange.EXCHANGE.name.upper(),
+    message = '*{}:* Buying [{}]({}) with limit `{:f}`'.format(
+        exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
-        open_rate
+        buy_limit
     )
     logger.info(message)
     telegram.send_msg(message)
     return Trade(pair=pair,
                  stake_amount=stake_amount,
-                 open_rate=open_rate,
                  open_date=datetime.utcnow(),
-                 amount=amount,
-                 exchange=exchange.EXCHANGE.name.upper(),
+                 exchange=exchange.get_name().upper(),
                  open_order_id=order_id,
                  is_open=True)
 
