@@ -11,7 +11,7 @@ from freqtrade.analyze import analyze_ticker
 from freqtrade.main import should_sell
 from freqtrade.persistence import Trade
 
-logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
+logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 
 def format_results(results):
@@ -63,7 +63,7 @@ def backtest(conf, pairs, mocker):
                 # calculate win/lose forwards from buy point
                 for row2 in ticker[row.Index:].itertuples(index=True):
                     if should_sell(trade, row2.close, row2.date):
-                        current_profit = (row2.close - trade.open_rate) / trade.open_rate
+                        current_profit = trade.calc_profit(row2.close)
 
                         trades.append((pair, current_profit, row2.Index - row.Index))
                         break

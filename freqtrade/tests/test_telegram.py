@@ -46,6 +46,7 @@ def conf():
     validate(configuration, CONF_SCHEMA)
     return configuration
 
+
 @pytest.fixture
 def update():
     _update = Update(0)
@@ -78,8 +79,27 @@ def test_status_handle(conf, update, mocker):
     Trade.session.add(trade)
     Trade.session.flush()
 
+    # Trigger status while we don't know the open_rate yet
     _status(bot=MagicBot(), update=update)
-    assert msg_mock.call_count == 2
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update({
+        'id': 'mocked_limit_buy',
+        'type': 'LIMIT_BUY',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.07256060,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+    Trade.session.flush()
+
+    # Trigger status while we have a fulfilled order for the open trade
+    _status(bot=MagicBot(), update=update)
+
+    assert msg_mock.call_count == 3
+    assert 'Waiting until order is fulfilled' in msg_mock.call_args_list[-2][0][0]
     assert '[BTC_ETH]' in msg_mock.call_args_list[-1][0][0]
 
 
@@ -95,14 +115,36 @@ def test_profit_handle(conf, update, mocker):
                               'ask': 0.072661,
                               'last': 0.07256061
                           }),
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          buy=MagicMock(return_value='mocked_limit_buy'))
     init(conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
     assert trade
-    trade.close_rate = 0.07256061
-    trade.close_profit = 100.00
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update({
+        'id': 'mocked_limit_buy',
+        'type': 'LIMIT_BUY',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.07256061,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update({
+        'id': 'mocked_limit_sell',
+        'type': 'LIMIT_SELL',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.0802134,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+
     trade.close_date = datetime.utcnow()
     trade.open_order_id = None
     trade.is_open = False
@@ -111,7 +153,8 @@ def test_profit_handle(conf, update, mocker):
 
     _profit(bot=MagicBot(), update=update)
     assert msg_mock.call_count == 2
-    assert '(100.00%)' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* `1.582013 (10.55%)`' in msg_mock.call_args_list[-1][0][0]
+    assert 'Best Performing:* `BTC_ETH: 10.55%`' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_forcesell_handle(conf, update, mocker):
@@ -132,6 +175,19 @@ def test_forcesell_handle(conf, update, mocker):
     # Create some test data
     trade = create_trade(15.0)
     assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update({
+        'id': 'mocked_limit_buy',
+        'type': 'LIMIT_BUY',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.07256060,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+
     Trade.session.add(trade)
     Trade.session.flush()
 
@@ -161,10 +217,32 @@ def test_performance_handle(conf, update, mocker):
     # Create some test data
     trade = create_trade(15.0)
     assert trade
-    trade.close_rate = 0.07256061
-    trade.close_profit = 100.00
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update({
+        'id': 'mocked_limit_buy',
+        'type': 'LIMIT_BUY',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.07256061,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update({
+        'id': 'mocked_limit_sell',
+        'type': 'LIMIT_SELL',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.0802134,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+
     trade.close_date = datetime.utcnow()
-    trade.open_order_id = None
     trade.is_open = False
     Trade.session.add(trade)
     Trade.session.flush()
@@ -172,7 +250,7 @@ def test_performance_handle(conf, update, mocker):
     _performance(bot=MagicBot(), update=update)
     assert msg_mock.call_count == 2
     assert 'Performance' in msg_mock.call_args_list[-1][0][0]
-    assert 'BTC_ETH	100.00%' in msg_mock.call_args_list[-1][0][0]
+    assert '<code>BTC_ETH\t10.55%</code>' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_start_handle(conf, update, mocker):

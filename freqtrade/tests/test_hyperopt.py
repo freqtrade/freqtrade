@@ -12,7 +12,7 @@ from pandas import DataFrame
 from freqtrade.tests.test_backtesting import backtest, format_results
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
-logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
+logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1200
