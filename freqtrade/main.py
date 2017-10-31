@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, Optional
 from signal import signal, SIGINT, SIGABRT, SIGTERM
 
+import requests
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
@@ -44,22 +45,21 @@ def _process() -> None:
                 logger.exception('Unable to create trade')
 
         for trade in trades:
-            # Check if there is already an open order for this trade
-            orders = exchange.get_open_orders(trade.pair)
-            orders = [o for o in orders if o['id'] == trade.open_order_id]
-            if orders:
-                logger.info('There is an open order for: %s', orders[0])
-            else:
-                # Update state
-                trade.open_order_id = None
-                # Check if this trade can be closed
-                if not close_trade_if_fulfilled(trade):
-                    # Check if we can sell our current pair
-                    handle_trade(trade)
-        Trade.session.flush()
-    except (ConnectionError, json.JSONDecodeError) as error:
-        msg = 'Got {} in _process()'.format(error.__class__.__name__)
+            # Get order details for actual price per unit
+            if trade.open_order_id:
+                # Update trade with order values
+                logger.info('Got open order for %s', trade)
+                trade.update(exchange.get_order(trade.open_order_id))
+
+            if not close_trade_if_fulfilled(trade) and trade.open_rate:
+                # Check if we can sell our current pair
+                handle_trade(trade)
+
+            Trade.session.flush()
+    except (requests.exceptions.ConnectionError, json.JSONDecodeError) as error:
+        msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
         logger.exception(msg)
+        time.sleep(30)
 
 
 def close_trade_if_fulfilled(trade: Trade) -> bool:
@@ -133,7 +133,7 @@ def handle_trade(trade: Trade) -> None:
         if not trade.is_open:
             raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
-        logger.debug('Handling open trade %s ...', trade)
+        logger.debug('Handling %s ...', trade)
 
         current_rate = exchange.get_ticker(trade.pair)['bid']
         if should_sell(trade, current_rate, datetime.utcnow()):
