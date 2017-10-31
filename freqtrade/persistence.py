@@ -28,9 +28,9 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     _CONF.update(config)
     if not db_url:
         if _CONF.get('dry_run', False):
-            db_url = 'sqlite:///tradesv2.dry_run.sqlite'
+            db_url = 'sqlite:///tradesv3.dry_run.sqlite'
         else:
-            db_url = 'sqlite:///tradesv2.sqlite'
+            db_url = 'sqlite:///tradesv3.sqlite'
 
     engine = create_engine(db_url, echo=False)
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
