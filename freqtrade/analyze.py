@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
-    Analyses the trend for the given pair
-    :param pair: pair as str in format BTC_ETH or BTC-ETH
+    Analyses the trend for the given ticker history
+    :param ticker: See exchange.get_ticker_history
     :return: DataFrame
     """
     df = DataFrame(ticker) \
@@ -161,7 +161,7 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
-        exchange.EXCHANGE = Bittrex({'key': '', 'secret': ''})
+        exchange._API = Bittrex({'key': '', 'secret': ''})
         test_pair = 'BTC_ETH'
         # for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #     get_buy_signal(pair)
