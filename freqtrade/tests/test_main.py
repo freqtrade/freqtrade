@@ -128,7 +128,7 @@ def test_handle_trade(conf, mocker):
     })
 
     assert trade.close_rate == 0.17256061
-    assert trade.close_profit == 1.3748724900565639
+    assert trade.close_profit == 1.369872490056564
     assert trade.close_date is not None
 
 

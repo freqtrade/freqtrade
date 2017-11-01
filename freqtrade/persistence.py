@@ -54,10 +54,11 @@ class Trade(Base):
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
+    fee = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     close_rate = Column(Float)
     close_profit = Column(Float)
-    stake_amount = Column(Float, name='btc_amount', nullable=False)
+    stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
@@ -95,14 +96,11 @@ class Trade(Base):
 
         self.open_order_id = None
 
-        # Flush changes
-        Trade.session.flush()
-
     def calc_profit(self, rate: float=None) -> float:
         """
-        Calculates the profit in percentage.
+        Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).
         If rate is not set self.close_rate will be used
         :return: profit in percentage as float
         """
-        return (rate or self.close_rate - self.open_rate) / self.open_rate
+        return (rate or self.close_rate - self.open_rate) / self.open_rate - self.fee

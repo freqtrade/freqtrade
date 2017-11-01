@@ -182,11 +182,12 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     else:
         return None
 
+    # Calculate amount and subtract fee
+    fee = exchange.get_fee()
     buy_limit = get_target_bid(exchange.get_ticker(pair))
-    # TODO: apply fee to amount and also consider it for profit calculations
-    amount = stake_amount / buy_limit
-    order_id = exchange.buy(pair, buy_limit, amount)
+    amount = (1 - fee) * stake_amount / buy_limit
 
+    order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
     message = '*{}:* Buying [{}]({}) with limit `{:f}`'.format(
         exchange.get_name().upper(),
@@ -196,9 +197,11 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     )
     logger.info(message)
     telegram.send_msg(message)
+    # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
     return Trade(pair=pair,
                  stake_amount=stake_amount,
                  amount=amount,
+                 fee=fee * 2,
                  open_rate=buy_limit,
                  open_date=datetime.utcnow(),
                  exchange=exchange.get_name().upper(),
