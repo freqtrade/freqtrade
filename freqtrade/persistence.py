@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, Dict
 
 import arrow
+from decimal import Decimal, getcontext
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
@@ -103,4 +104,6 @@ class Trade(Base):
         If rate is not set self.close_rate will be used
         :return: profit in percentage as float
         """
-        return (rate or self.close_rate - self.open_rate) / self.open_rate - self.fee
+        getcontext().prec = 8
+        return float((Decimal(rate or self.close_rate) - Decimal(self.open_rate))
+                     / Decimal(self.open_rate) - Decimal(self.fee))
