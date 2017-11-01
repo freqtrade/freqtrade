@@ -60,6 +60,12 @@ if not feel free to raise a github issue.
 
 #### Install
 
+##### Arch Linux
+
+Use your favorite AUR helper and install `python-freqtrade-git`.
+
+##### Manually
+
 `master` branch contains the latest stable release.
 
 `develop` branch has often new features, but might also cause breaking changes. To use it, you are encouraged to join our [slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
@@ -75,20 +81,11 @@ $ pip install -e .
 $ ./freqtrade/main.py
 ```
 
-There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).
+There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).*
 
-#### Execute tests
+\* *Note:* that article was written for an earlier version, so it may be outdated
 
-```
-$ pytest
-```
-This will by default skip the slow running backtest set. To run backtest set:
-
-```
-$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
-```
-
-#### Docker
+##### Docker
 
 Building the image:
 
@@ -135,6 +132,17 @@ $ docker start freqtrade
 
 You do not need to rebuild the image for configuration
 changes, it will suffice to edit `config.json` and restart the container.
+
+#### Execute tests
+
+```
+$ pytest
+```
+This will by default skip the slow running backtest set. To run backtest set:
+
+```
+$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
+```
 
 #### Contributing
 
