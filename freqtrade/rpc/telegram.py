@@ -17,7 +17,7 @@ logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
 logging.getLogger('telegram').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-_updater = None
+_updater: Updater = None
 _CONF = {}
 
 
@@ -41,6 +41,7 @@ def init(config: dict) -> None:
     handles = [
         CommandHandler('status', _status),
         CommandHandler('profit', _profit),
+        CommandHandler('balance', _balance),
         CommandHandler('start', _start),
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
@@ -59,6 +60,14 @@ def init(config: dict) -> None:
         'rpc.telegram is listening for following commands: %s',
         [h.command for h in handles]
     )
+
+
+def cleanup() -> None:
+    """
+    Stops all running telegram threads.
+    :return: None
+    """
+    _updater.stop()
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
@@ -195,6 +204,27 @@ def _profit(bot: Bot, update: Update) -> None:
 
 
 @authorized_only
+def _balance(bot: Bot, update: Update) -> None:
+    """
+    Handler for /balance
+    Returns current account balance per crypto
+    """
+    output = ""
+    balances = exchange.get_balances()
+    for currency in balances:
+        if not currency['Balance'] and not currency['Available'] and not currency['Pending']:
+            continue
+        output += """*Currency*: {Currency}
+*Available*: {Available}
+*Balance*: {Balance}
+*Pending*: {Pending}
+
+""".format(**currency)
+
+    send_msg(output)
+
+
+@authorized_only
 def _start(bot: Bot, update: Update) -> None:
     """
     Handler for /start.
@@ -318,6 +348,7 @@ def _help(bot: Bot, update: Update) -> None:
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/balance:* `Show account balance per currency`
 */help:* `This help message`
     """
     send_msg(message, bot=bot)

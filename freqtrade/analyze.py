@@ -4,17 +4,18 @@ from datetime import timedelta
 
 import arrow
 import talib.abstract as ta
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex, get_ticker_history
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame:
+def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
     Analyses the trend for the given pair
     :param pair: pair as str in format BTC_ETH or BTC-ETH
@@ -22,8 +23,9 @@ def parse_ticker_dataframe(ticker: list, minimum_date: arrow.Arrow) -> DataFrame
     """
     df = DataFrame(ticker) \
         .drop('BV', 1) \
-        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'}) \
-        .sort_values('date')
+        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'})
+    df['date'] = to_datetime(df['date'], utc=True, infer_datetime_format=True)
+    df.sort_values('date', inplace=True)
     return df
 
 
@@ -41,6 +43,17 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
     dataframe['cci'] = ta.CCI(dataframe)
+    dataframe['rsi'] = ta.RSI(dataframe)
+    dataframe['mom'] = ta.MOM(dataframe)
+    dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
+    dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
+    dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
+    dataframe['ao'] = awesome_oscillator(dataframe)
+    macd = ta.MACD(dataframe)
+    dataframe['macd'] = macd['macd']
+    dataframe['macdsignal'] = macd['macdsignal']
+    dataframe['macdhist'] = macd['macdhist']
     return dataframe
 
 
@@ -50,14 +63,14 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-    dataframe.loc[
+    dataframe.ix[
         (dataframe['close'] < dataframe['sma']) &
         (dataframe['tema'] <= dataframe['blower']) &
         (dataframe['mfi'] < 25) &
         (dataframe['fastd'] < 25) &
         (dataframe['adx'] > 30),
         'buy'] = 1
-    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+    dataframe.ix[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
     return dataframe
 
@@ -70,7 +83,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     """
     minimum_date = arrow.utcnow().shift(hours=-24)
     data = get_ticker_history(pair, minimum_date)
-    dataframe = parse_ticker_dataframe(data['result'], minimum_date)
+    dataframe = parse_ticker_dataframe(data['result'])
 
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)

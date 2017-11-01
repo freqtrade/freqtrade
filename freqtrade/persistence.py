@@ -5,7 +5,6 @@ from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.types import Enum
 
 from freqtrade import exchange
 
@@ -35,6 +34,14 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     Trade.session = session()
     Trade.query = session.query_property()
     Base.metadata.create_all(engine)
+
+
+def cleanup() -> None:
+    """
+    Flushes all pending operations to disk.
+    :return: None
+    """
+    Trade.session.flush()
 
 
 class Trade(Base):

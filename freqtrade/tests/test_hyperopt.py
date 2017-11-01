@@ -1,33 +1,28 @@
 # pragma pylint: disable=missing-docstring
-import json
 import logging
 import os
 from functools import reduce
+from math import exp
+from operator import itemgetter
 
 import pytest
-import arrow
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
-from hyperopt import fmin, tpe, hp
-
-from freqtrade.analyze import analyze_ticker
-from freqtrade.main import should_sell
-from freqtrade.persistence import Trade
+from freqtrade.tests.test_backtesting import backtest, format_results
+from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
 
-def print_results(results):
-    print('Made {} buys. Average profit {:.2f}%. Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
-        len(results.index),
-        results.profit.mean() * 100.0,
-        results.profit.sum(),
-        results.duration.mean() * 5
-    ))
+# set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
+TARGET_TRADES = 1200
+
 
 @pytest.fixture
 def pairs():
     return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
             'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
+
 
 @pytest.fixture
 def conf():
@@ -42,52 +37,14 @@ def conf():
     }
 
 
-def backtest(conf, pairs, mocker, buy_strategy):
-    trades = []
-    mocker.patch.dict('freqtrade.main._CONF', conf)
-    for pair in pairs:
-        with open('freqtrade/tests/testdata/'+pair+'.json') as data_file:
-            data = json.load(data_file)
-
-            mocker.patch('freqtrade.analyze.get_ticker_history', return_value=data)
-            mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
-            mocker.patch('freqtrade.analyze.populate_buy_trend', side_effect=buy_strategy)
-            ticker = analyze_ticker(pair)
-            # for each buy point
-            for index, row in ticker[ticker.buy == 1].iterrows():
-                trade = Trade(
-                    open_rate=row['close'],
-                    open_date=arrow.get(row['date']).datetime,
-                    amount=1,
-                )
-                # calculate win/lose forwards from buy point
-                for index2, row2 in ticker[index:].iterrows():
-                    if should_sell(trade, row2['close'], arrow.get(row2['date']).datetime):
-                        current_profit = (row2['close'] - trade.open_rate) / trade.open_rate
-
-                        trades.append((pair, current_profit, index2 - index))
-                        break
-
-    labels = ['currency', 'profit', 'duration']
-    results = DataFrame.from_records(trades, columns=labels)
-
-    print_results(results)
-
-    # set the value below to suit your number concurrent trades so its realistic to 20days of data
-    TARGET_TRADES = 1200
-    if results.profit.sum() == 0 or results.profit.mean() == 0:
-        return 49999999999 # avoid division by zero, return huge value to discard result
-    return abs(len(results.index) - 1200.1) / (results.profit.sum() ** 2) * results.duration.mean() # the smaller the better
-
 def buy_strategy_generator(params):
     print(params)
+
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
-        if params['below_sma']['enabled']:
-            conditions.append(dataframe['close'] < dataframe['sma'])
-        if params['over_sma']['enabled']:
-            conditions.append(dataframe['close'] > dataframe['sma'])
+        if params['uptrend_long_ema']['enabled']:
+            conditions.append(dataframe['ema50'] > dataframe['ema100'])
         if params['mfi']['enabled']:
             conditions.append(dataframe['mfi'] < params['mfi']['value'])
         if params['fastd']['enabled']:
@@ -96,6 +53,8 @@ def buy_strategy_generator(params):
             conditions.append(dataframe['adx'] > params['adx']['value'])
         if params['cci']['enabled']:
             conditions.append(dataframe['cci'] < params['cci']['value'])
+        if params['rsi']['enabled']:
+            conditions.append(dataframe['rsi'] < params['rsi']['value'])
         if params['over_sar']['enabled']:
             conditions.append(dataframe['close'] > dataframe['sar'])
         if params['uptrend_sma']['enabled']:
@@ -107,6 +66,9 @@ def buy_strategy_generator(params):
         triggers = {
             'lower_bb': dataframe['tema'] <= dataframe['blower'],
             'faststoch10': (dataframe['fastd'] >= 10) & (prev_fastd < 10),
+            'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
+            'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
+            'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -118,34 +80,53 @@ def buy_strategy_generator(params):
         return dataframe
     return populate_buy_trend
 
+
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
 def test_hyperopt(conf, pairs, mocker):
+    mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
 
     def optimizer(params):
-        return backtest(conf, pairs, mocker, buy_strategy_generator(params))
+        mocked_buy_trend.side_effect = buy_strategy_generator(params)
+
+        results = backtest(conf, pairs, mocker)
+
+        result = format_results(results)
+        print(result)
+
+        total_profit = results.profit.sum() * 1000
+        trade_count = len(results.index)
+
+        trade_loss = 1 - 0.8 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5)
+        profit_loss = exp(-total_profit**3 / 10**11)
+
+        return {
+            'loss': trade_loss + profit_loss,
+            'status': STATUS_OK,
+            'result': result
+        }
 
     space = {
         'mfi': hp.choice('mfi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('mfi-value', 2, 40)}
+            {'enabled': True, 'value': hp.uniform('mfi-value', 5, 15)}
         ]),
         'fastd': hp.choice('fastd', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('fastd-value', 2, 40)}
+            {'enabled': True, 'value': hp.uniform('fastd-value', 5, 40)}
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('adx-value', 2, 40)}
+            {'enabled': True, 'value': hp.uniform('adx-value', 10, 30)}
         ]),
         'cci': hp.choice('cci', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('cci-value', -200, -100)}
+            {'enabled': True, 'value': hp.uniform('cci-value', -150, -100)}
         ]),
-        'below_sma': hp.choice('below_sma', [
+        'rsi': hp.choice('rsi', [
             {'enabled': False},
-            {'enabled': True}
+            {'enabled': True, 'value': hp.uniform('rsi-value', 20, 30)}
         ]),
-        'over_sma': hp.choice('over_sma', [
+        'uptrend_long_ema': hp.choice('uptrend_long_ema', [
             {'enabled': False},
             {'enabled': True}
         ]),
@@ -159,8 +140,15 @@ def test_hyperopt(conf, pairs, mocker):
         ]),
         'trigger': hp.choice('trigger', [
             {'type': 'lower_bb'},
-            {'type': 'faststoch10'}
+            {'type': 'faststoch10'},
+            {'type': 'ao_cross_zero'},
+            {'type': 'ema5_cross_ema10'},
+            {'type': 'macd_cross_signal'},
         ]),
     }
-
-    print('Best parameters {}'.format(fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40)))
+    trials = Trials()
+    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40, trials=trials)
+    print('\n\n\n\n====================== HYPEROPT BACKTESTING REPORT ================================')
+    print('Best parameters {}'.format(best))
+    newlist = sorted(trials.results, key=itemgetter('loss'))
+    print('Result: {}'.format(newlist[0]['result']))

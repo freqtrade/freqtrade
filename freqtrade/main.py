@@ -6,6 +6,7 @@ import time
 import traceback
 from datetime import datetime
 from typing import Dict, Optional
+from signal import signal, SIGINT, SIGABRT, SIGTERM
 
 from jsonschema import validate
 
@@ -223,6 +224,23 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     else:
         update_state(State.STOPPED)
 
+    # Register signal handlers
+    for sig in (SIGINT, SIGTERM, SIGABRT):
+        signal(sig, cleanup)
+
+
+def cleanup(*args, **kwargs) -> None:
+    """
+    Cleanup the application state und finish all pending tasks
+    :return: None
+    """
+    telegram.send_msg('*Status:* `Stopping trader...`')
+    logger.info('Stopping trader and cleaning up modules...')
+    update_state(State.STOPPED)
+    persistence.cleanup()
+    telegram.cleanup()
+    exit(0)
+
 
 def app(config: dict) -> None:
     """
@@ -251,10 +269,10 @@ def app(config: dict) -> None:
                 time.sleep(exchange.EXCHANGE.sleep_time)
             old_state = new_state
     except RuntimeError:
-        telegram.send_msg('*Status:* Got RuntimeError: ```\n{}\n```'.format(traceback.format_exc()))
+        telegram.send_msg(
+            '*Status:* Got RuntimeError:\n```\n{}\n```'.format(traceback.format_exc())
+        )
         logger.exception('RuntimeError. Trader stopped!')
-    finally:
-        telegram.send_msg('*Status:* `Trader has stopped`')
 
 
 def main():
