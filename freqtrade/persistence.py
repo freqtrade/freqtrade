@@ -1,9 +1,9 @@
 import logging
 from datetime import datetime
+from decimal import Decimal, getcontext
 from typing import Optional, Dict
 
 import arrow
-from decimal import Decimal, getcontext
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
@@ -97,7 +97,7 @@ class Trade(Base):
 
         self.open_order_id = None
 
-    def calc_profit(self, rate: float=None) -> float:
+    def calc_profit(self, rate: Optional[float] = None) -> float:
         """
         Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).
