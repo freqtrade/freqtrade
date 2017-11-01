@@ -78,7 +78,7 @@ class Trade(Base):
         :param order: order retrieved by exchange.get_order()
         :return: None
         """
-        if not order.get('closed'):
+        if not order['closed']:
             return
 
         logger.debug('Updating trade (id=%d) ...', self.id)

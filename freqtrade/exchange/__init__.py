@@ -66,14 +66,14 @@ def validate_pairs(pairs: List[str]) -> None:
 
 def buy(pair: str, rate: float, amount: float) -> str:
     if _CONF['dry_run']:
-        return 'dry_run'
+        return 'dry_run_buy'
 
     return _API.buy(pair, rate, amount)
 
 
 def sell(pair: str, rate: float, amount: float) -> str:
     if _CONF['dry_run']:
-        return 'dry_run'
+        return 'dry_run_sell'
 
     return _API.sell(pair, rate, amount)
 
@@ -106,7 +106,16 @@ def cancel_order(order_id: str) -> None:
 
 def get_order(order_id: str) -> Dict:
     if _CONF['dry_run']:
-        return {}
+        return {
+            'id': 'dry_run_sell',
+            'type': 'LIMIT_SELL',
+            'pair': 'mocked',
+            'opened': arrow.utcnow().datetime,
+            'rate': 0.07256060,
+            'amount': 206.43811673387373,
+            'remaining': 0.0,
+            'closed': arrow.utcnow().datetime,
+        }
 
     return _API.get_order(order_id)
 
