@@ -86,6 +86,9 @@ def get_balance(currency: str) -> float:
 
 
 def get_balances():
+    if _CONF['dry_run']:
+        return []
+
     return _API.get_balances()
 
 
