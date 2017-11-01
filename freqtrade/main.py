@@ -92,13 +92,13 @@ def execute_sell(trade: Trade, limit: float) -> None:
     trade.open_order_id = order_id
     trade.close_date = datetime.utcnow()
 
-    exp_profit = round(trade.calc_profit(limit), 2)
+    fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
     message = '*{}:* Selling [{}]({}) with limit `{:f} (profit: ~{}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         limit,
-        exp_profit
+        fmt_exp_profit
     )
     logger.info(message)
     telegram.send_msg(message)

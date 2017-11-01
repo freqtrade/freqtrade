@@ -195,7 +195,7 @@ def test_forcesell_handle(conf, update, mocker):
 
     assert msg_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in msg_mock.call_args_list[-1][0][0]
-    assert '0.072561' in msg_mock.call_args_list[-1][0][0]
+    assert '0.072561 (profit: ~-0.5%)' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_performance_handle(conf, update, mocker):
