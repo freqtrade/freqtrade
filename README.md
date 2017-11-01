@@ -16,7 +16,7 @@ and enter the telegram `token` and your `chat_id` in `config.json`
 
 Persistence is achieved through sqlite.
 
-#### Telegram RPC commands:
+### Telegram RPC commands:
 * /start: Starts the trader
 * /stop: Stops the trader
 * /status: Lists all open trades
@@ -24,7 +24,7 @@ Persistence is achieved through sqlite.
 * /forcesell <trade_id>: Instantly sells the given trade (Ignoring `minimum_roi`).
 * /performance: Show performance of each finished trade grouped by pair
 
-#### Config
+### Config
 `minimal_roi` is a JSON object where the key is a duration
 in minutes and the value is the minimum ROI in percent.
 See the example below:
@@ -53,12 +53,18 @@ end up paying more then would probably have been necessary.
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
 
-#### Prerequisites
+### Prerequisites
 * python3.6
 * sqlite
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
 
-#### Install
+### Install
+
+#### Arch Linux
+
+Use your favorite AUR helper and install `python-freqtrade-git`.
+
+#### Manually
 
 `master` branch contains the latest stable release.
 
@@ -75,18 +81,9 @@ $ pip install -e .
 $ ./freqtrade/main.py
 ```
 
-There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).
+There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).*
 
-#### Execute tests
-
-```
-$ pytest
-```
-This will by default skip the slow running backtest set. To run backtest set:
-
-```
-$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
-```
+\* *Note:* that article was written for an earlier version, so it may be outdated
 
 #### Docker
 
@@ -136,7 +133,18 @@ $ docker start freqtrade
 You do not need to rebuild the image for configuration
 changes, it will suffice to edit `config.json` and restart the container.
 
-#### Contributing
+### Execute tests
+
+```
+$ pytest
+```
+This will by default skip the slow running backtest set. To run backtest set:
+
+```
+$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
+```
+
+### Contributing
 
 Feel like our bot is missing a feature? We welcome your pull requests! Few pointers for contributions:
 
