@@ -32,7 +32,7 @@ def init(config: dict) -> None:
     global _updater
 
     _CONF.update(config)
-    if not _CONF['telegram']['enabled']:
+    if not is_enabled():
         return
 
     _updater = Updater(token=config['telegram']['token'], workers=0)
@@ -67,7 +67,16 @@ def cleanup() -> None:
     Stops all running telegram threads.
     :return: None
     """
+    if not is_enabled():
+        return
     _updater.stop()
+
+
+def is_enabled() -> bool:
+    """
+    Returns True if the telegram module is activated, False otherwise
+    """
+    return bool(_CONF['telegram'].get('enabled', False))
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
@@ -362,18 +371,19 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
     :param parse_mode: telegram parse mode
     :return: None
     """
-    if _CONF['telegram'].get('enabled', False):
+    if not is_enabled():
+        return
+    try:
+        bot = bot or _updater.bot
         try:
-            bot = bot or _updater.bot
-            try:
-                bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-            except NetworkError as error:
-                # Sometimes the telegram server resets the current connection,
-                # if this is the case we send the message again.
-                logger.warning(
-                    'Got Telegram NetworkError: %s! Trying one more time.',
-                    error.message
-                )
-                bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-        except Exception:
-            logger.exception('Exception occurred within Telegram API')
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+        except NetworkError as error:
+            # Sometimes the telegram server resets the current connection,
+            # if this is the case we send the message again.
+            logger.warning(
+                'Got Telegram NetworkError: %s! Trying one more time.',
+                error.message
+            )
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+    except Exception:
+        logger.exception('Exception occurred within Telegram API')
