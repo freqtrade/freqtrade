@@ -19,7 +19,7 @@ Persistence is achieved through sqlite.
 #### Telegram RPC commands:
 * /start: Starts the trader
 * /stop: Stops the trader
-* /status [table [short]]: Lists all open trades
+* /status [table]: Lists all open trades
 * /count: Displays number of open trades
 * /profit: Lists cumulative profit from all finished trades
 * /forcesell <trade_id>: Instantly sells the given trade (Ignoring `minimum_roi`).

@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import timedelta
 from typing import Callable, Any
 from pandas import DataFrame
@@ -164,11 +165,6 @@ def _status_table(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    short_version = False
-    params = update.message.text.replace('/status', '').split(' ')
-    if 'short' in params:
-        short_version = True
-
     # Fetch open trade
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     if get_state() != State.RUNNING:
@@ -180,45 +176,28 @@ def _status_table(bot: Bot, update: Update) -> None:
         for trade in trades:
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
-            orders = exchange.get_open_orders(trade.pair)
-            orders = [o for o in orders if o['id'] == trade.open_order_id]
-            order = orders[0] if orders else None
-
-            fmt_close_profit = '{:.2f}'.format(trade.close_profit) if trade.close_profit else 'No'
-            fmt_current_profit = '{:.2f}'.format(current_profit)
+            current_profit = '{:.2f}'.format(100 * ((current_rate \
+                - trade.open_rate) / trade.open_rate))
 
             row = [
                 trade.id,
                 trade.pair,
-                shorten_date(arrow.get(trade.open_date).humanize()),
-                round(trade.amount, 8),
-                trade.open_rate,
-                trade.close_rate,
-                current_rate,
-                fmt_close_profit,
-                fmt_current_profit,
-                '{} ({})'.format(order['remaining'], order['type']) if order else 'No'
+                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
+                current_profit
             ]
 
             trades_list.append(row)
 
-        columns = ['ID', 'Pair', 'Since', 'Amount', 'Open Rate',
-            'Close Rate', 'Cur. Rate', 'Close Profit', 'Profit',
-            'Open Order']
+        columns = ['ID', 'Pair', 'Since', 'Profit']
 
-        df = DataFrame.from_records(trades_list, columns=columns)
-        df = df.set_index(columns[0])
+        df_statuses = DataFrame.from_records(trades_list, columns=columns)
+        df_statuses = df_statuses.set_index(columns[0])
 
-        columns_short = ['Pair', 'Since', 'Profit']
-
-        if short_version == True:
-            df = df[columns_short]
-
-        message = tabulate(df, headers='keys', tablefmt='simple')
+        message = tabulate(df_statuses, headers='keys', tablefmt='simple')
         message = "<pre>{}</pre>".format(message)
 
         send_msg(message, parse_mode=ParseMode.HTML)
+
 
 @authorized_only
 def _profit(bot: Bot, update: Update) -> None:
@@ -387,7 +366,7 @@ def _performance(bot: Bot, update: Update) -> None:
 
 
 @authorized_only
-def _count(bot: Bot, update: Update) -> None:
+def _count(bot: Bot) -> None:
     """
     Handler for /count.
     Returns the number of trades running
@@ -400,11 +379,8 @@ def _count(bot: Bot, update: Update) -> None:
         return
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    message = '<b>Count:</b>\ncurrent/max\n{}/{}\n'.format(len(trades), _CONF['max_open_trades'])
 
-    current_trades_count = len(trades)
-    max_trades_count = _CONF['max_open_trades']
-
-    message = '<b>Count:</b>\ncurrent/max\n{}/{}\n'.format(current_trades_count, max_trades_count)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
@@ -421,9 +397,8 @@ def _help(bot: Bot, update: Update) -> None:
     message = """
 */start:* `Starts the trader`
 */stop:* `Stops the trader`
-*/status [table [short]]:* `Lists all open trades`
+*/status [table]:* `Lists all open trades`
             *table :* `will display trades in a table`
-            *short :* `condensed output`
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
@@ -434,17 +409,15 @@ def _help(bot: Bot, update: Update) -> None:
 
 
 def shorten_date(date):
-    return date.replace('ago', '') \
-               .replace('seconds', 's') \
-               .replace('minutes', 'm') \
-               .replace('minute', 'm') \
-               .replace('hours', 'h') \
-               .replace('hour', 'h') \
-               .replace('days', 'd') \
-               .replace('day', 'd') \
-               .replace('an', '1') \
-               .replace('a', '1') \
-               .replace(' ', '')
+    """
+    Trim the date so it fits on small screens
+    """
+    new_date = re.sub('seconds?', 'sec', date)
+    new_date = re.sub('minutes?', 'min', new_date)
+    new_date = re.sub('hours?', 'h', new_date)
+    new_date = re.sub('days?', 'd', new_date)
+    new_date = re.sub('^an?', '1', new_date)
+    return new_date
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
