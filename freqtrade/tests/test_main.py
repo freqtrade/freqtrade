@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring
 import copy
+from datetime import datetime
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -60,23 +61,36 @@ def test_create_trade(conf, mocker):
                               'ask': 0.072661,
                               'last': 0.07256061
                           }),
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          buy=MagicMock(return_value='mocked_limit_buy'))
     # Save state of current whitelist
     whitelist = copy.deepcopy(conf['exchange']['pair_whitelist'])
 
     init(conf, 'sqlite://')
-    for pair in ['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT']:
+    for _ in ['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT']:
         trade = create_trade(15.0)
         Trade.session.add(trade)
         Trade.session.flush()
         assert trade is not None
-        assert trade.open_rate == 0.072661
-        assert trade.pair == pair
-        assert trade.exchange == Exchanges.BITTREX.name
-        assert trade.amount == 206.43811673387373
         assert trade.stake_amount == 15.0
         assert trade.is_open
         assert trade.open_date is not None
+        assert trade.exchange == Exchanges.BITTREX.name
+
+        # Simulate fulfilled LIMIT_BUY order for trade
+        trade.update({
+            'id': 'mocked_limit_buy',
+            'type': 'LIMIT_BUY',
+            'pair': 'mocked',
+            'opened': datetime.utcnow(),
+            'rate': 0.072661,
+            'amount': 206.43811673387373,
+            'remaining': 0.0,
+            'closed': datetime.utcnow(),
+        })
+
+        assert trade.open_rate == 0.072661
+        assert trade.amount == 206.43811673387373
+
         assert whitelist == conf['exchange']['pair_whitelist']
 
     buy_signal.assert_has_calls(
@@ -94,14 +108,28 @@ def test_handle_trade(conf, mocker):
                               'ask': 0.172661,
                               'last': 0.17256061
                           }),
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          sell=MagicMock(return_value='mocked_limit_sell'))
     trade = Trade.query.filter(Trade.is_open.is_(True)).first()
     assert trade
+
     handle_trade(trade)
+    assert trade.open_order_id == 'mocked_limit_sell'
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update({
+        'id': 'mocked_sell_limit',
+        'type': 'LIMIT_SELL',
+        'pair': 'mocked',
+        'opened': datetime.utcnow(),
+        'rate': 0.17256061,
+        'amount': 206.43811673387373,
+        'remaining': 0.0,
+        'closed': datetime.utcnow(),
+    })
+
     assert trade.close_rate == 0.17256061
-    assert trade.close_profit == 137.4872490056564
+    assert trade.close_profit == 1.3698725
     assert trade.close_date is not None
-    assert trade.open_order_id == 'dry_run'
 
 
 def test_close_trade(conf, mocker):
