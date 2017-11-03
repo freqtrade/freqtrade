@@ -163,7 +163,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
-            'stake amount is not fulfilled (currency={}'.format(_CONF['stake_currency'])
+            'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
         )
 
     # Remove currently opened and latest pairs from whitelist
