@@ -7,7 +7,9 @@ import pytest
 import arrow
 from pandas import DataFrame
 
+from freqtrade import exchange
 from freqtrade.analyze import analyze_ticker
+from freqtrade.exchange import Bittrex
 from freqtrade.main import should_sell
 from freqtrade.persistence import Trade
 
@@ -49,17 +51,22 @@ def conf():
 
 def backtest(conf, pairs, mocker):
     trades = []
+    exchange._API = Bittrex({'key': '', 'secret': ''})
     mocked_history = mocker.patch('freqtrade.analyze.get_ticker_history')
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
     for pair in pairs:
         with open('freqtrade/tests/testdata/'+pair+'.json') as data_file:
-            data = json.load(data_file)
-            mocked_history.return_value = data
+            mocked_history.return_value = json.load(data_file)
             ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
             # for each buy point
             for row in ticker[ticker.buy == 1].itertuples(index=True):
-                trade = Trade(open_rate=row.close, open_date=row.date, amount=1)
+                trade = Trade(
+                    open_rate=row.close,
+                    open_date=row.date,
+                    amount=1,
+                    fee=exchange.get_fee()*2
+                )
                 # calculate win/lose forwards from buy point
                 for row2 in ticker[row.Index:].itertuples(index=True):
                     if should_sell(trade, row2.close, row2.date):
