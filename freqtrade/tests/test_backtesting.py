@@ -84,6 +84,7 @@ def test_backtest(conf, pairs, mocker, report=True):
     results = backtest(conf, pairs, mocker)
 
     print('====================== BACKTESTING REPORT ================================')
-    [print_pair_results(pair, results) for pair in pairs]
+    for pair in pairs:
+        print_pair_results(pair, results)
     print('TOTAL OVER ALL TRADES:')
     print(format_results(results))

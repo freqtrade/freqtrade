@@ -9,7 +9,9 @@ from telegram import Bot, Update, Message, Chat
 from freqtrade.main import init, create_trade
 from freqtrade.misc import update_state, State, get_state, CONF_SCHEMA
 from freqtrade.persistence import Trade
-from freqtrade.rpc.telegram import _status, _profit, _forcesell, _performance, _start, _stop, _balance
+from freqtrade.rpc.telegram import (
+    _status, _profit, _forcesell, _performance, _start, _stop, _balance
+)
 
 
 @pytest.fixture
@@ -62,7 +64,10 @@ def test_status_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
@@ -106,7 +111,10 @@ def test_profit_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
@@ -160,7 +168,10 @@ def test_forcesell_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
@@ -202,7 +213,10 @@ def test_performance_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
@@ -255,8 +269,13 @@ def test_performance_handle(conf, update, mocker):
 def test_start_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
-    mocker.patch.multiple('freqtrade.main.exchange', _CONF=conf, init=MagicMock())
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          _CONF=conf,
+                          init=MagicMock())
     init(conf, 'sqlite://')
 
     update_state(State.STOPPED)
@@ -269,8 +288,13 @@ def test_start_handle(conf, update, mocker):
 def test_stop_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
-    mocker.patch.multiple('freqtrade.main.exchange', _CONF=conf, init=MagicMock())
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          _CONF=conf,
+                          init=MagicMock())
     init(conf, 'sqlite://')
 
     update_state(State.RUNNING)
@@ -290,7 +314,10 @@ def test_balance_handle(conf, update, mocker):
         'CryptoAddress': 'XXXX'}]
     mocker.patch.dict('freqtrade.main._CONF', conf)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_balances=MagicMock(return_value=mock_balance))
 
