@@ -201,12 +201,11 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     return Trade(pair=pair,
                  stake_amount=stake_amount,
                  amount=amount,
-                 fee=fee * 2,
+                 fee=fee*2,
                  open_rate=buy_limit,
                  open_date=datetime.utcnow(),
                  exchange=exchange.get_name().upper(),
-                 open_order_id=order_id,
-                 is_open=True)
+                 open_order_id=order_id)
 
 
 def init(config: dict, db_url: Optional[str] = None) -> None:

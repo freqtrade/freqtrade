@@ -1,5 +1,6 @@
 import enum
 import logging
+from random import randint
 from typing import List, Dict
 
 import arrow
@@ -12,6 +13,9 @@ logger = logging.getLogger(__name__)
 # Current selected exchange
 _API: Exchange = None
 _CONF: dict = {}
+
+# Holds all open sell orders for dry_run
+_DRY_RUN_OPEN_ORDERS: Dict[str, Dict] = {}
 
 
 class Exchanges(enum.Enum):
@@ -66,14 +70,36 @@ def validate_pairs(pairs: List[str]) -> None:
 
 def buy(pair: str, rate: float, amount: float) -> str:
     if _CONF['dry_run']:
-        return 'dry_run_buy'
+        global _DRY_RUN_OPEN_ORDERS
+        order_id = 'dry_run_buy_{}'.format(randint(0, 1e6))
+        _DRY_RUN_OPEN_ORDERS[order_id] = {
+            'pair': pair,
+            'rate': rate,
+            'amount': amount,
+            'type': 'LIMIT_BUY',
+            'remaining': 0.0,
+            'opened': arrow.utcnow().datetime,
+            'closed': arrow.utcnow().datetime,
+        }
+        return order_id
 
     return _API.buy(pair, rate, amount)
 
 
 def sell(pair: str, rate: float, amount: float) -> str:
     if _CONF['dry_run']:
-        return 'dry_run_sell'
+        global _DRY_RUN_OPEN_ORDERS
+        order_id = 'dry_run_sell_{}'.format(randint(0, 1e6))
+        _DRY_RUN_OPEN_ORDERS[order_id] = {
+            'pair': pair,
+            'rate': rate,
+            'amount': amount,
+            'type': 'LIMIT_SELL',
+            'remaining': 0.0,
+            'opened': arrow.utcnow().datetime,
+            'closed': arrow.utcnow().datetime,
+        }
+        return order_id
 
     return _API.sell(pair, rate, amount)
 
@@ -109,16 +135,11 @@ def cancel_order(order_id: str) -> None:
 
 def get_order(order_id: str) -> Dict:
     if _CONF['dry_run']:
-        return {
-            'id': 'dry_run_sell',
-            'type': 'LIMIT_SELL',
-            'pair': 'mocked',
-            'opened': arrow.utcnow().datetime,
-            'rate': 0.07256060,
-            'amount': 206.43811673387373,
-            'remaining': 0.0,
-            'closed': arrow.utcnow().datetime,
-        }
+        order = _DRY_RUN_OPEN_ORDERS.pop(order_id)
+        order.update({
+            'id': order_id
+        })
+        return order
 
     return _API.get_order(order_id)
 
