@@ -1,6 +1,9 @@
 import logging
+import re
 from datetime import timedelta
 from typing import Callable, Any
+from pandas import DataFrame
+from tabulate import tabulate
 
 import arrow
 from sqlalchemy import and_, func, text
@@ -46,6 +49,7 @@ def init(config: dict) -> None:
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
         CommandHandler('performance', _performance),
+        CommandHandler('count', _count),
         CommandHandler('help', _help),
     ]
     for handle in handles:
@@ -109,6 +113,14 @@ def _status(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
+
+    # Check if additional parameters are passed
+    params = update.message.text.replace('/status', '').split(' ') \
+        if update.message.text else []
+    if 'table' in params:
+        _status_table(bot, update)
+        return
+
     # Fetch open trade
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     if get_state() != State.RUNNING:
@@ -151,6 +163,49 @@ def _status(bot: Bot, update: Update) -> None:
                 ) if order else None,
             )
             send_msg(message, bot=bot)
+
+
+@authorized_only
+def _status_table(bot: Bot, update: Update) -> None:
+    """
+    Handler for /status table.
+    Returns the current TradeThread status in table format
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    # Fetch open trade
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    if get_state() != State.RUNNING:
+        send_msg('*Status:* `trader is not running`', bot=bot)
+    elif not trades:
+        send_msg('*Status:* `no active order`', bot=bot)
+    else:
+        trades_list = []
+        for trade in trades:
+            # calculate profit and send message to user
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_profit = '{:.2f}'.format(100 * ((current_rate \
+                - trade.open_rate) / trade.open_rate))
+
+            row = [
+                trade.id,
+                trade.pair,
+                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
+                current_profit
+            ]
+
+            trades_list.append(row)
+
+        columns = ['ID', 'Pair', 'Since', 'Profit']
+
+        df_statuses = DataFrame.from_records(trades_list, columns=columns)
+        df_statuses = df_statuses.set_index(columns[0])
+
+        message = tabulate(df_statuses, headers='keys', tablefmt='simple')
+        message = "<pre>{}</pre>".format(message)
+
+        send_msg(message, parse_mode=ParseMode.HTML)
 
 
 @authorized_only
@@ -338,6 +393,26 @@ def _performance(bot: Bot, update: Update) -> None:
 
 
 @authorized_only
+def _count(bot: Bot, update: Update) -> None:
+    """
+    Handler for /count.
+    Returns the number of trades running
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    if get_state() != State.RUNNING:
+        send_msg('`trader is not running`', bot=bot)
+        return
+
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    message = '<b>Count:</b>\ncurrent/max\n{}/{}\n'.format(len(trades), _CONF['max_open_trades'])
+
+    logger.debug(message)
+    send_msg(message, parse_mode=ParseMode.HTML)
+
+
+@authorized_only
 def _help(bot: Bot, update: Update) -> None:
     """
     Handler for /help.
@@ -349,14 +424,28 @@ def _help(bot: Bot, update: Update) -> None:
     message = """
 */start:* `Starts the trader`
 */stop:* `Stops the trader`
-*/status:* `Lists all open trades`
+*/status [table]:* `Lists all open trades`
+            *table :* `will display trades in a table`
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/count:* `Show number of trades running compared to allowed number of trades`
 */balance:* `Show account balance per currency`
 */help:* `This help message`
     """
     send_msg(message, bot=bot)
+
+
+def shorten_date(date):
+    """
+    Trim the date so it fits on small screens
+    """
+    new_date = re.sub('seconds?', 'sec', date)
+    new_date = re.sub('minutes?', 'min', new_date)
+    new_date = re.sub('hours?', 'h', new_date)
+    new_date = re.sub('days?', 'd', new_date)
+    new_date = re.sub('^an?', '1', new_date)
+    return new_date
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
