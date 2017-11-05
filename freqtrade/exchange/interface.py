@@ -85,27 +85,23 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None) -> dict:
+    def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None) -> List:
         """
         Gets ticker history for given pair.
         :param pair: Pair as str, format: BTC_ETC
         :param minimum_date: Minimum date (optional)
-        :return: dict, format: {
-            'success': bool,
-            'message': str,
-            'result': [
-                {
-                    'O': float,       (Open)
-                    'H': float,       (High)
-                    'L': float,       (Low)
-                    'C': float,       (Close)
-                    'V': float,       (Volume)
-                    'T': datetime,    (Time)
-                    'BV': float,      (Base Volume)
-                },
-                ...
-            ]
-        }
+        :return: list, format: [
+            {
+                'O': float,       (Open)
+                'H': float,       (High)
+                'L': float,       (Low)
+                'C': float,       (Close)
+                'V': float,       (Volume)
+                'T': datetime,    (Time)
+                'BV': float,      (Base Volume)
+            },
+            ...
+        ]
         """
 
     def get_order(self, order_id: str) -> Dict:

@@ -11,9 +11,7 @@ from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, popula
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/btc-eth.json') as data_file:
-        data = json.load(data_file)
-
-    return parse_ticker_dataframe(data['result'])
+        return parse_ticker_dataframe(json.load(data_file))
 
 
 def test_dataframe_has_correct_columns(result):

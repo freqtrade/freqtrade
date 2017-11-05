@@ -96,7 +96,7 @@ def get_ticker(pair: str) -> dict:
     return _API.get_ticker(pair)
 
 
-def get_ticker_history(pair: str, minimum_date: arrow.Arrow):
+def get_ticker_history(pair: str, minimum_date: arrow.Arrow) -> List:
     return _API.get_ticker_history(pair, minimum_date)
 
 

@@ -105,7 +105,7 @@ class Bittrex(Exchange):
                 message=data['message'],
                 pair=pair,
                 minimum_date=minimum_date))
-        return data
+        return data['result']
 
     def get_order(self, order_id: str) -> Dict:
         data = _API.get_order(order_id)

@@ -83,7 +83,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     """
     minimum_date = arrow.utcnow().shift(hours=-24)
     data = get_ticker_history(pair, minimum_date)
-    dataframe = parse_ticker_dataframe(data['result'])
+    dataframe = parse_ticker_dataframe(data)
 
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)
