@@ -200,7 +200,6 @@ def _profit(bot: Bot, update: Update) -> None:
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
-{dry_run_info}
     """.format(
         profit_btc=round(sum(profit_amounts), 8),
         profit=round(sum(profits) * 100, 2),
@@ -210,8 +209,6 @@ def _profit(bot: Bot, update: Update) -> None:
         avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
         best_pair=bp_pair,
         best_rate=round(bp_rate * 100, 2),
-        dry_run_info='\n*NOTE:* These values are mocked because *dry_run* is enabled!'
-        if _CONF['dry_run'] else ''
     )
     send_msg(markdown_msg, bot=bot)
 
@@ -328,11 +325,7 @@ def _performance(bot: Bot, update: Update) -> None:
         profit=round(rate * 100, 2)
     ) for i, (pair, rate) in enumerate(pair_rates))
 
-    message = '<b>Performance:</b>\n{}\n{}'.format(
-        stats,
-        '<b>NOTE:</b> These values are mocked because <b>dry_run</b> is enabled.'
-        if _CONF['dry_run'] else ''
-    )
+    message = '<b>Performance:</b>\n{}'.format(stats)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
