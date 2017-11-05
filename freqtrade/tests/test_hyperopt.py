@@ -147,7 +147,7 @@ def test_hyperopt(conf, pairs, mocker):
         ]),
     }
     trials = Trials()
-    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40, trials=trials)
+    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=4, trials=trials)
     print('\n\n\n\n====================== HYPEROPT BACKTESTING REPORT ================================')
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
