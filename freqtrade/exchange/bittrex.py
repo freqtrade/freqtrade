@@ -1,7 +1,6 @@
 import logging
-from typing import List, Optional, Dict
+from typing import List, Dict
 
-import arrow
 import requests
 from bittrex.bittrex import Bittrex as _Bittrex
 
@@ -87,7 +86,7 @@ class Bittrex(Exchange):
             'last': float(data['result']['Last']),
         }
 
-    def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None):
+    def get_ticker_history(self, pair: str):
         url = self.TICKER_METHOD
         headers = {
             # TODO: Set as global setting
@@ -96,15 +95,12 @@ class Bittrex(Exchange):
         params = {
             'marketName': pair.replace('_', '-'),
             'tickInterval': self.TICKER_INTERVAL,
-            # TODO: Timestamp has no effect on API response
-            '_': minimum_date.timestamp * 1000
         }
         data = requests.get(url, params=params, headers=headers).json()
         if not data['success']:
-            raise RuntimeError('{message} params=({pair}, {minimum_date})'.format(
+            raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
-                pair=pair,
-                minimum_date=minimum_date))
+                pair=pair))
         return data['result']
 
     def get_order(self, order_id: str) -> Dict:

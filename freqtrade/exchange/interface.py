@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict
-
-import arrow
+from typing import List, Dict
 
 
 class Exchange(ABC):
@@ -85,11 +83,10 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None) -> List:
+    def get_ticker_history(self, pair: str) -> List:
         """
         Gets ticker history for given pair.
         :param pair: Pair as str, format: BTC_ETC
-        :param minimum_date: Minimum date (optional)
         :return: list, format: [
             {
                 'O': float,       (Open)
