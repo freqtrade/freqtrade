@@ -44,31 +44,43 @@ class Bittrex(Exchange):
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({pair}, {rate}, {amount})'.format(
+                message=data['message'],
+                pair=pair,
+                rate=rate,
+                amount=amount))
         return data['result']['uuid']
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({pair}, {rate}, {amount})'.format(
+                message=data['message'],
+                pair=pair,
+                rate=rate,
+                amount=amount))
         return data['result']['uuid']
 
     def get_balance(self, currency: str) -> float:
         data = _API.get_balance(currency)
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({currency})'.format(
+                message=data['message'],
+                currency=currency))
         return float(data['result']['Balance'] or 0.0)
 
     def get_balances(self):
         data = _API.get_balances()
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message}'.format(message=data['message']))
         return data['result']
 
     def get_ticker(self, pair: str) -> dict:
         data = _API.get_ticker(pair.replace('_', '-'))
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({pair})'.format(
+                message=data['message'],
+                pair=pair))
         return {
             'bid': float(data['result']['Bid']),
             'ask': float(data['result']['Ask']),
@@ -89,13 +101,18 @@ class Bittrex(Exchange):
         }
         data = requests.get(url, params=params, headers=headers).json()
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({pair}, {minimum_date})'.format(
+                message=data['message'],
+                pair=pair,
+                minimum_date=minimum_date))
         return data
 
     def get_order(self, order_id: str) -> Dict:
         data = _API.get_order(order_id)
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({order_id})'.format(
+                message=data['message'],
+                order_id=order_id))
         data = data['result']
         return {
             'id': data['OrderUuid'],
@@ -111,7 +128,9 @@ class Bittrex(Exchange):
     def cancel_order(self, order_id: str) -> None:
         data = _API.cancel(order_id)
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message} params=({order_id})'.format(
+                message=data['message'],
+                order_id=order_id))
 
     def get_pair_detail_url(self, pair: str) -> str:
         return self.PAIR_DETAIL_METHOD + '?MarketName={}'.format(pair.replace('_', '-'))
@@ -119,5 +138,5 @@ class Bittrex(Exchange):
     def get_markets(self) -> List[str]:
         data = _API.get_markets()
         if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+            raise RuntimeError('{message}'.format(message=data['message']))
         return [m['MarketName'].replace('-', '_') for m in data['result']]
