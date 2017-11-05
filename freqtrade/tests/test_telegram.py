@@ -142,7 +142,7 @@ def test_profit_handle(conf, update, mocker):
 
     _profit(bot=MagicBot(), update=update)
     assert msg_mock.call_count == 2
-    assert '*ROI:* `1.507013 (10.05%)`' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* `1.50701325 (10.05%)`' in msg_mock.call_args_list[-1][0][0]
     assert 'Best Performing:* `BTC_ETH: 10.05%`' in msg_mock.call_args_list[-1][0][0]
 
 
@@ -175,7 +175,7 @@ def test_forcesell_handle(conf, update, mocker):
 
     assert msg_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in msg_mock.call_args_list[-1][0][0]
-    assert '0.072561 (profit: ~-0.64%)' in msg_mock.call_args_list[-1][0][0]
+    assert '0.07256061 (profit: ~-0.64%)' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_performance_handle(conf, update, mocker):
