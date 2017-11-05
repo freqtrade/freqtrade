@@ -27,6 +27,7 @@ setup(name='freqtrade',
           'scipy==0.19.1',
           'jsonschema==2.6.0',
           'TA-Lib==0.4.10',
+          'tabulate==0.8.1',
       ],
       dependency_links=[
           "git+https://github.com/ericsomdahl/python-bittrex.git@d7033d0#egg=python-bittrex-0.1.3"
