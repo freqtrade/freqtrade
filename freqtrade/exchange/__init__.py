@@ -1,7 +1,7 @@
 import enum
 import logging
 from random import randint
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import arrow
 
@@ -15,7 +15,7 @@ _API: Exchange = None
 _CONF: dict = {}
 
 # Holds all open sell orders for dry_run
-_DRY_RUN_OPEN_ORDERS: Dict[str, Dict] = {}
+_DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
 
 class Exchanges(enum.Enum):
