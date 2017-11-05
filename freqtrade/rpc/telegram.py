@@ -129,9 +129,9 @@ def _status(bot: Bot, update: Update) -> None:
 *Current Pair:* [{pair}]({market_url})
 *Open Since:* `{date}`
 *Amount:* `{amount}`
-*Open Rate:* `{open_rate}`
+*Open Rate:* `{open_rate:.8f}`
 *Close Rate:* `{close_rate}`
-*Current Rate:* `{current_rate}`
+*Current Rate:* `{current_rate:.8f}`
 *Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit:.2f}%`
 *Open Order:* `{open_order}`
@@ -194,7 +194,7 @@ def _profit(bot: Bot, update: Update) -> None:
 
     bp_pair, bp_rate = best_pair
     markdown_msg = """
-*ROI:* `{profit_btc:.6f} ({profit:.2f}%)`
+*ROI:* `{profit_btc:.8f} ({profit:.2f}%)`
 *Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
