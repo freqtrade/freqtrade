@@ -366,7 +366,7 @@ def _performance(bot: Bot, update: Update) -> None:
 
 
 @authorized_only
-def _count(bot: Bot) -> None:
+def _count(bot: Bot, update: Update) -> None:
     """
     Handler for /count.
     Returns the number of trades running
