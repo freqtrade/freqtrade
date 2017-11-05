@@ -1,16 +1,19 @@
+import logging
 from datetime import datetime
-from typing import Optional
+from decimal import Decimal, getcontext
+from typing import Optional, Dict
 
+import arrow
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.types import Enum
 
-from freqtrade import exchange
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 _CONF = {}
-
 Base = declarative_base()
 
 
@@ -26,9 +29,9 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     _CONF.update(config)
     if not db_url:
         if _CONF.get('dry_run', False):
-            db_url = 'sqlite:///tradesv2.dry_run.sqlite'
+            db_url = 'sqlite:///tradesv3.dry_run.sqlite'
         else:
-            db_url = 'sqlite:///tradesv2.sqlite'
+            db_url = 'sqlite:///tradesv3.sqlite'
 
     engine = create_engine(db_url, echo=False)
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
@@ -52,44 +55,55 @@ class Trade(Base):
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
-    open_rate = Column(Float, nullable=False)
+    fee = Column(Float, nullable=False, default=0.0)
+    open_rate = Column(Float)
     close_rate = Column(Float)
     close_profit = Column(Float)
-    stake_amount = Column(Float, name='btc_amount', nullable=False)
-    amount = Column(Float, nullable=False)
+    stake_amount = Column(Float, nullable=False)
+    amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
     open_order_id = Column(String)
 
     def __repr__(self):
-        if self.is_open:
-            open_since = 'closed'
-        else:
-            open_since = round((datetime.utcnow() - self.open_date).total_seconds() / 60, 2)
         return 'Trade(id={}, pair={}, amount={}, open_rate={}, open_since={})'.format(
             self.id,
             self.pair,
             self.amount,
             self.open_rate,
-            open_since
+            arrow.get(self.open_date).humanize() if self.is_open else 'closed'
         )
 
-    def exec_sell_order(self, rate: float, amount: float) -> float:
+    def update(self, order: Dict) -> None:
         """
-        Executes a sell for the given trade and updated the entity.
-        :param rate: rate to sell for
-        :param amount: amount to sell
-        :return: current profit as percentage
+        Updates this entity with amount and actual open/close rates.
+        :param order: order retrieved by exchange.get_order()
+        :return: None
         """
-        profit = 100 * ((rate - self.open_rate) / self.open_rate)
+        if not order['closed']:
+            return
 
-        # Execute sell and update trade record
-        order_id = exchange.sell(str(self.pair), rate, amount)
-        self.close_rate = rate
-        self.close_profit = profit
-        self.close_date = datetime.utcnow()
-        self.open_order_id = order_id
+        logger.debug('Updating trade (id=%d) ...', self.id)
+        if order['type'] == 'LIMIT_BUY':
+            # Update open rate and actual amount
+            self.open_rate = order['rate']
+            self.amount = order['amount']
+        elif order['type'] == 'LIMIT_SELL':
+            # Set close rate and set actual profit
+            self.close_rate = order['rate']
+            self.close_profit = self.calc_profit()
+        else:
+            raise ValueError('Unknown order type: {}'.format(order['type']))
 
-        # Flush changes
-        Trade.session.flush()
-        return profit
+        self.open_order_id = None
+
+    def calc_profit(self, rate: Optional[float] = None) -> float:
+        """
+        Calculates the profit in percentage (including fee).
+        :param rate: rate to compare with (optional).
+        If rate is not set self.close_rate will be used
+        :return: profit in percentage as float
+        """
+        getcontext().prec = 8
+        return float((Decimal(rate or self.close_rate) - Decimal(self.open_rate))
+                     / Decimal(self.open_rate) - Decimal(self.fee))

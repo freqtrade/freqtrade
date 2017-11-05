@@ -5,10 +5,10 @@ from datetime import timedelta
 import arrow
 import talib.abstract as ta
 from pandas import DataFrame, to_datetime
-from qtpylib.indicators import awesome_oscillator, crossed_above
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex, get_ticker_history
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
-    Analyses the trend for the given pair
-    :param pair: pair as str in format BTC_ETH or BTC-ETH
+    Analyses the trend for the given ticker history
+    :param ticker: See exchange.get_ticker_history
     :return: DataFrame
     """
     df = DataFrame(ticker) \
@@ -43,8 +43,17 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
     dataframe['cci'] = ta.CCI(dataframe)
+    dataframe['rsi'] = ta.RSI(dataframe)
+    dataframe['mom'] = ta.MOM(dataframe)
+    dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
+    dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
+    dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
     dataframe['ao'] = awesome_oscillator(dataframe)
-
+    macd = ta.MACD(dataframe)
+    dataframe['macd'] = macd['macd']
+    dataframe['macdsignal'] = macd['macdsignal']
+    dataframe['macdhist'] = macd['macdhist']
     return dataframe
 
 
@@ -152,7 +161,7 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
-        exchange.EXCHANGE = Bittrex({'key': '', 'secret': ''})
+        exchange._API = Bittrex({'key': '', 'secret': ''})
         test_pair = 'BTC_ETH'
         # for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
         #     get_buy_signal(pair)

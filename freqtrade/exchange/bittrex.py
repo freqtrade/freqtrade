@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import arrow
 import requests
@@ -36,6 +36,11 @@ class Bittrex(Exchange):
         _EXCHANGE_CONF.update(config)
         _API = _Bittrex(api_key=_EXCHANGE_CONF['key'], api_secret=_EXCHANGE_CONF['secret'])
 
+    @property
+    def fee(self) -> float:
+        # See https://bittrex.com/fees
+        return 0.0025
+
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
@@ -53,6 +58,12 @@ class Bittrex(Exchange):
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return float(data['result']['Balance'] or 0.0)
+
+    def get_balances(self):
+        data = _API.get_balances()
+        if not data['success']:
+            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+        return data['result']
 
     def get_ticker(self, pair: str) -> dict:
         data = _API.get_ticker(pair.replace('_', '-'))
@@ -81,23 +92,26 @@ class Bittrex(Exchange):
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
         return data
 
+    def get_order(self, order_id: str) -> Dict:
+        data = _API.get_order(order_id)
+        if not data['success']:
+            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
+        data = data['result']
+        return {
+            'id': data['OrderUuid'],
+            'type': data['Type'],
+            'pair': data['Exchange'].replace('-', '_'),
+            'opened': data['Opened'],
+            'rate': data['PricePerUnit'],
+            'amount': data['Quantity'],
+            'remaining': data['QuantityRemaining'],
+            'closed': data['Closed'],
+        }
+
     def cancel_order(self, order_id: str) -> None:
         data = _API.cancel(order_id)
         if not data['success']:
             raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
-
-    def get_open_orders(self, pair: str) -> List[dict]:
-        data = _API.get_open_orders(pair.replace('_', '-'))
-        if not data['success']:
-            raise RuntimeError('{}: {}'.format(self.name.upper(), data['message']))
-        return [{
-            'id': entry['OrderUuid'],
-            'type': entry['OrderType'],
-            'opened': entry['Opened'],
-            'rate': entry['PricePerUnit'],
-            'amount': entry['Quantity'],
-            'remaining': entry['QuantityRemaining'],
-        } for entry in data['result']]
 
     def get_pair_detail_url(self, pair: str) -> str:
         return self.PAIR_DETAIL_METHOD + '?MarketName={}'.format(pair.replace('_', '-'))

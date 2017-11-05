@@ -35,7 +35,7 @@ def init(config: dict) -> None:
     global _updater
 
     _CONF.update(config)
-    if not _CONF['telegram']['enabled']:
+    if not is_enabled():
         return
 
     _updater = Updater(token=config['telegram']['token'], workers=0)
@@ -44,6 +44,7 @@ def init(config: dict) -> None:
     handles = [
         CommandHandler('status', _status),
         CommandHandler('profit', _profit),
+        CommandHandler('balance', _balance),
         CommandHandler('start', _start),
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
@@ -70,7 +71,16 @@ def cleanup() -> None:
     Stops all running telegram threads.
     :return: None
     """
+    if not is_enabled():
+        return
     _updater.stop()
+
+
+def is_enabled() -> bool:
+    """
+    Returns True if the telegram module is activated, False otherwise
+    """
+    return bool(_CONF['telegram'].get('enabled', False))
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
@@ -116,18 +126,15 @@ def _status(bot: Bot, update: Update) -> None:
     if get_state() != State.RUNNING:
         send_msg('*Status:* `trader is not running`', bot=bot)
     elif not trades:
-        send_msg('*Status:* `no active order`', bot=bot)
+        send_msg('*Status:* `no active trade`', bot=bot)
     else:
         for trade in trades:
+            order = exchange.get_order(trade.open_order_id)
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            current_profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
-            orders = exchange.get_open_orders(trade.pair)
-            orders = [o for o in orders if o['id'] == trade.open_order_id]
-            order = orders[0] if orders else None
-
+            current_profit = trade.calc_profit(current_rate)
             fmt_close_profit = '{:.2f}%'.format(
-                round(trade.close_profit, 2)
+                round(trade.close_profit * 100, 2)
             ) if trade.close_profit else None
             message = """
 *Trade ID:* `{trade_id}`
@@ -150,8 +157,10 @@ def _status(bot: Bot, update: Update) -> None:
                 current_rate=current_rate,
                 amount=round(trade.amount, 8),
                 close_profit=fmt_close_profit,
-                current_profit=round(current_profit, 2),
-                open_order='{} ({})'.format(order['remaining'], order['type']) if order else None,
+                current_profit=round(current_profit * 100, 2),
+                open_order='{} ({})'.format(
+                    order['remaining'], order['type']
+                ) if order else None,
             )
             send_msg(message, bot=bot)
 
@@ -214,6 +223,8 @@ def _profit(bot: Bot, update: Update) -> None:
     profits = []
     durations = []
     for trade in trades:
+        if not trade.open_rate:
+            continue
         if trade.close_date:
             durations.append((trade.close_date - trade.open_date).total_seconds())
         if trade.close_profit:
@@ -221,9 +232,9 @@ def _profit(bot: Bot, update: Update) -> None:
         else:
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            profit = 100 * ((current_rate - trade.open_rate) / trade.open_rate)
+            profit = trade.calc_profit(current_rate)
 
-        profit_amounts.append((profit / 100) * trade.stake_amount)
+        profit_amounts.append(profit * trade.stake_amount)
         profits.append(profit)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
@@ -238,23 +249,47 @@ def _profit(bot: Bot, update: Update) -> None:
 
     bp_pair, bp_rate = best_pair
     markdown_msg = """
-*ROI:* `{profit_btc:.2f} ({profit:.2f}%)`
+*ROI:* `{profit_btc:.6f} ({profit:.2f}%)`
 *Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
+{dry_run_info}
     """.format(
         profit_btc=round(sum(profit_amounts), 8),
-        profit=round(sum(profits), 2),
+        profit=round(sum(profits) * 100, 2),
         trade_count=len(trades),
         first_trade_date=arrow.get(trades[0].open_date).humanize(),
         latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
         avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
         best_pair=bp_pair,
-        best_rate=round(bp_rate, 2),
+        best_rate=round(bp_rate * 100, 2),
+        dry_run_info='\n*NOTE:* These values are mocked because *dry_run* is enabled!'
+        if _CONF['dry_run'] else ''
     )
     send_msg(markdown_msg, bot=bot)
+
+
+@authorized_only
+def _balance(bot: Bot, update: Update) -> None:
+    """
+    Handler for /balance
+    Returns current account balance per crypto
+    """
+    output = ""
+    balances = exchange.get_balances()
+    for currency in balances:
+        if not currency['Balance'] and not currency['Available'] and not currency['Pending']:
+            continue
+        output += """*Currency*: {Currency}
+*Available*: {Available}
+*Balance*: {Balance}
+*Pending*: {Pending}
+
+""".format(**currency)
+
+    send_msg(output)
 
 
 @authorized_only
@@ -315,20 +350,8 @@ def _forcesell(bot: Bot, update: Update) -> None:
             return
         # Get current rate
         current_rate = exchange.get_ticker(trade.pair)['bid']
-        # Get available balance
-        currency = trade.pair.split('_')[1]
-        balance = exchange.get_balance(currency)
-        # Execute sell
-        profit = trade.exec_sell_order(current_rate, balance)
-        message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
-            trade.exchange,
-            trade.pair.replace('_', '/'),
-            exchange.get_pair_detail_url(trade.pair),
-            trade.close_rate,
-            round(profit, 2)
-        )
-        logger.info(message)
-        send_msg(message)
+        from freqtrade.main import execute_sell
+        execute_sell(trade, current_rate)
 
     except ValueError:
         send_msg('Invalid argument. Usage: `/forcesell <trade_id>`')
@@ -357,10 +380,14 @@ def _performance(bot: Bot, update: Update) -> None:
     stats = '\n'.join('{index}. <code>{pair}\t{profit:.2f}%</code>'.format(
         index=i + 1,
         pair=pair,
-        profit=round(rate, 2)
+        profit=round(rate * 100, 2)
     ) for i, (pair, rate) in enumerate(pair_rates))
 
-    message = '<b>Performance:</b>\n{}\n'.format(stats)
+    message = '<b>Performance:</b>\n{}\n{}'.format(
+        stats,
+        '<b>NOTE:</b> These values are mocked because <b>dry_run</b> is enabled.'
+        if _CONF['dry_run'] else ''
+    )
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
@@ -403,6 +430,7 @@ def _help(bot: Bot, update: Update) -> None:
 */forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
 */count:* `Show number of trades running compared to allowed number of trades`
+*/balance:* `Show account balance per currency`
 */help:* `This help message`
     """
     send_msg(message, bot=bot)
@@ -428,18 +456,19 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
     :param parse_mode: telegram parse mode
     :return: None
     """
-    if _CONF['telegram'].get('enabled', False):
+    if not is_enabled():
+        return
+    try:
+        bot = bot or _updater.bot
         try:
-            bot = bot or _updater.bot
-            try:
-                bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-            except NetworkError as error:
-                # Sometimes the telegram server resets the current connection,
-                # if this is the case we send the message again.
-                logger.warning(
-                    'Got Telegram NetworkError: %s! Trying one more time.',
-                    error.message
-                )
-                bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-        except Exception:
-            logger.exception('Exception occurred within Telegram API')
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+        except NetworkError as error:
+            # Sometimes the telegram server resets the current connection,
+            # if this is the case we send the message again.
+            logger.warning(
+                'Got Telegram NetworkError: %s! Trying one more time.',
+                error.message
+            )
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+    except Exception:
+        logger.exception('Exception occurred within Telegram API')
