@@ -135,7 +135,7 @@ def cancel_order(order_id: str) -> None:
 
 def get_order(order_id: str) -> Dict:
     if _CONF['dry_run']:
-        order = _DRY_RUN_OPEN_ORDERS.pop(order_id)
+        order = _DRY_RUN_OPEN_ORDERS[order_id]
         order.update({
             'id': order_id
         })
