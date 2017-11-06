@@ -63,7 +63,7 @@ def _process() -> None:
     except RuntimeError:
         telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
             traceback=traceback.format_exc(),
-            hint='Issue `/start` if you think it is save to restart.'
+            hint='Issue `/start` if you think it is safe to restart.'
         ))
         logger.exception('Got RuntimeError. Stopping trader ...')
         update_state(State.STOPPED)
