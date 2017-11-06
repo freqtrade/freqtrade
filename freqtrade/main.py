@@ -100,7 +100,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
     trade.close_date = datetime.utcnow()
 
     fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
-    message = '*{}:* Selling [{}]({}) with limit `{:f} (profit: ~{}%)`'.format(
+    message = '*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
@@ -196,7 +196,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
-    message = '*{}:* Buying [{}]({}) with limit `{:f}`'.format(
+    message = '*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
@@ -208,12 +208,11 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     return Trade(pair=pair,
                  stake_amount=stake_amount,
                  amount=amount,
-                 fee=fee * 2,
+                 fee=fee*2,
                  open_rate=buy_limit,
                  open_date=datetime.utcnow(),
                  exchange=exchange.get_name().upper(),
-                 open_order_id=order_id,
-                 is_open=True)
+                 open_order_id=order_id)
 
 
 def init(config: dict, db_url: Optional[str] = None) -> None:
