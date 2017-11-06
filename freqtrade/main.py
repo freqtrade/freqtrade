@@ -60,6 +60,13 @@ def _process() -> None:
         msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
         logger.exception(msg)
         time.sleep(30)
+    except RuntimeError:
+        telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
+            traceback=traceback.format_exc(),
+            hint='Issue `/start` if you think it is save to restart.'
+        ))
+        logger.exception('Got RuntimeError. Stopping trader ...')
+        update_state(State.STOPPED)
 
 
 def close_trade_if_fulfilled(trade: Trade) -> bool:
@@ -254,29 +261,24 @@ def app(config: dict) -> None:
     """
     logger.info('Starting freqtrade %s', __version__)
     init(config)
-    try:
-        old_state = get_state()
-        logger.info('Initial State: %s', old_state)
-        telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
-        while True:
-            new_state = get_state()
-            # Log state transition
-            if new_state != old_state:
-                telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
-                logging.info('Changing state to: %s', new_state.name)
 
-            if new_state == State.STOPPED:
-                time.sleep(1)
-            elif new_state == State.RUNNING:
-                _process()
-                # We need to sleep here because otherwise we would run into bittrex rate limit
-                time.sleep(exchange.get_sleep_time())
-            old_state = new_state
-    except RuntimeError:
-        telegram.send_msg(
-            '*Status:* Got RuntimeError:\n```\n{}\n```'.format(traceback.format_exc())
-        )
-        logger.exception('RuntimeError. Trader stopped!')
+    old_state = get_state()
+    logger.info('Initial State: %s', old_state)
+    telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
+    while True:
+        new_state = get_state()
+        # Log state transition
+        if new_state != old_state:
+            telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
+            logging.info('Changing state to: %s', new_state.name)
+
+        if new_state == State.STOPPED:
+            time.sleep(1)
+        elif new_state == State.RUNNING:
+            _process()
+            # We need to sleep here because otherwise we would run into bittrex rate limit
+            time.sleep(exchange.get_sleep_time())
+        old_state = new_state
 
 
 def main():
