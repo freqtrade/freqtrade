@@ -23,7 +23,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
     df = DataFrame(ticker) \
         .drop('BV', 1) \
-        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'})
+        .rename(columns={'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'})
     df['date'] = to_datetime(df['date'], utc=True, infer_datetime_format=True)
     df.sort_values('date', inplace=True)
     return df
