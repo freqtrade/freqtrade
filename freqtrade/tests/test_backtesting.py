@@ -18,11 +18,7 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 def format_results(results):
     return 'Made {} buys. Average profit {:.2f}%. Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
-        len(results.index),
-        results.profit.mean() * 100.0,
-        results.profit.sum(),
-        results.duration.mean() * 5
-    )
+        len(results.index), results.profit.mean() * 100.0, results.profit.sum(), results.duration.mean() * 5)
 
 
 def print_pair_results(pair, results):
@@ -40,10 +36,10 @@ def pairs():
 def conf():
     return {
         "minimal_roi": {
-            "50":  0.0,
-            "40":  0.01,
-            "30":  0.02,
-            "0":  0.045
+            "50": 0.0,
+            "40": 0.01,
+            "30": 0.02,
+            "0": 0.045
         },
         "stoploss": -0.40
     }
@@ -56,7 +52,7 @@ def backtest(conf, pairs, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
     for pair in pairs:
-        with open('freqtrade/tests/testdata/'+pair+'.json') as data_file:
+        with open('freqtrade/tests/testdata/' + pair + '.json') as data_file:
             mocked_history.return_value = json.load(data_file)
             ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
             # for each buy point
@@ -65,7 +61,7 @@ def backtest(conf, pairs, mocker):
                     open_rate=row.close,
                     open_date=row.date,
                     amount=1,
-                    fee=exchange.get_fee()*2
+                    fee=exchange.get_fee() * 2
                 )
                 # calculate win/lose forwards from buy point
                 for row2 in ticker[row.Index:].itertuples(index=True):

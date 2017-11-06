@@ -91,7 +91,7 @@ def session(df, start='17:00', end='16:00'):
     curr = prev = df[-1:].index[0].strftime('%Y-%m-%d')
 
     # globex/forex session
-    if is_same_day == False:
+    if not is_same_day:
         prev = (datetime.strptime(curr, '%Y-%m-%d') -
                 timedelta(1)).strftime('%Y-%m-%d')
 
@@ -117,13 +117,19 @@ def heikinashi(bars):
     bars['ha_high'] = bars.loc[:, ['high', 'ha_open', 'ha_close']].max(axis=1)
     bars['ha_low'] = bars.loc[:, ['low', 'ha_open', 'ha_close']].min(axis=1)
 
-    return pd.DataFrame(index=bars.index, data={'open': bars['ha_open'],
-                                                'high': bars['ha_high'], 'low': bars['ha_low'], 'close': bars['ha_close']})
+    return pd.DataFrame(
+        index=bars.index,
+        data={
+            'open': bars['ha_open'],
+            'high': bars['ha_high'],
+            'low': bars['ha_low'],
+            'close': bars['ha_close']})
 
 
 # ---------------------------------------------
 
-def tdi(series, rsi_len=13, bollinger_len=34, rsi_smoothing=2, rsi_signal_len=7, bollinger_std=1.6185):
+def tdi(series, rsi_len=13, bollinger_len=34, rsi_smoothing=2,
+        rsi_signal_len=7, bollinger_std=1.6185):
     rsi_series = rsi(series, rsi_len)
     bb_series = bollinger_bands(rsi_series, bollinger_len, bollinger_std)
     signal = sma(rsi_series, rsi_signal_len)
@@ -248,9 +254,9 @@ def rolling_std(series, window=200, min_periods=None):
         else:
             try:
                 return series.rolling(window=window, min_periods=min_periods).std()
-            except:
+            except BaseException:
                 return pd.Series(series).rolling(window=window, min_periods=min_periods).std()
-    except:
+    except BaseException:
         return pd.rolling_std(series, window=window, min_periods=min_periods)
 
 
@@ -264,9 +270,9 @@ def rolling_mean(series, window=200, min_periods=None):
         else:
             try:
                 return series.rolling(window=window, min_periods=min_periods).mean()
-            except:
+            except BaseException:
                 return pd.Series(series).rolling(window=window, min_periods=min_periods).mean()
-    except:
+    except BaseException:
         return pd.rolling_mean(series, window=window, min_periods=min_periods)
 
 
@@ -277,9 +283,9 @@ def rolling_min(series, window=14, min_periods=None):
     try:
         try:
             return series.rolling(window=window, min_periods=min_periods).min()
-        except:
+        except BaseException:
             return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
-    except:
+    except BaseException:
         return pd.rolling_min(series, window=window, min_periods=min_periods)
 
 
@@ -290,9 +296,9 @@ def rolling_max(series, window=14, min_periods=None):
     try:
         try:
             return series.rolling(window=window, min_periods=min_periods).min()
-        except:
+        except BaseException:
             return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
-    except:
+    except BaseException:
         return pd.rolling_min(series, window=window, min_periods=min_periods)
 
 
@@ -302,7 +308,7 @@ def rolling_weighted_mean(series, window=200, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
         return series.ewm(span=window, min_periods=min_periods).mean()
-    except:
+    except BaseException:
         return pd.ewma(series, span=window, min_periods=min_periods)
 
 
@@ -457,7 +463,7 @@ def returns(series):
     try:
         res = (series / series.shift(1) -
                1).replace([np.inf, -np.inf], float('NaN'))
-    except:
+    except BaseException:
         res = nans(len(series))
 
     return pd.Series(index=series.index, data=res)
@@ -469,7 +475,7 @@ def log_returns(series):
     try:
         res = np.log(series / series.shift(1)
                      ).replace([np.inf, -np.inf], float('NaN'))
-    except:
+    except BaseException:
         res = nans(len(series))
 
     return pd.Series(index=series.index, data=res)
@@ -482,7 +488,7 @@ def implied_volatility(series, window=252):
         logret = np.log(series / series.shift(1)
                         ).replace([np.inf, -np.inf], float('NaN'))
         res = numpy_rolling_std(logret, window) * np.sqrt(window)
-    except:
+    except BaseException:
         res = nans(len(series))
 
     return pd.Series(index=series.index, data=res)

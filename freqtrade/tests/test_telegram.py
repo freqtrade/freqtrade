@@ -98,7 +98,11 @@ def test_status_table_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple(
+        'freqtrade.main.telegram',
+        _CONF=conf,
+        init=MagicMock(),
+        send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
@@ -269,12 +273,15 @@ def test_performance_handle(conf, update, mocker):
     assert '<code>BTC_ETH\t10.05%</code>' in msg_mock.call_args_list[-1][0][0]
 
 
-
 def test_count_handle(conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.telegram', _CONF=conf, init=MagicMock(), send_msg=msg_mock)
+    mocker.patch.multiple(
+        'freqtrade.main.telegram',
+        _CONF=conf,
+        init=MagicMock(),
+        send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
