@@ -20,7 +20,7 @@ logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
 logging.getLogger('telegram').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-_updater: Updater = None
+_UPDATER: Updater = None
 _CONF = {}
 
 
@@ -32,13 +32,13 @@ def init(config: dict) -> None:
     :param config: config to use
     :return: None
     """
-    global _updater
+    global _UPDATER
 
     _CONF.update(config)
     if not is_enabled():
         return
 
-    _updater = Updater(token=config['telegram']['token'], workers=0)
+    _UPDATER = Updater(token=config['telegram']['token'], workers=0)
 
     # Register command handler and start telegram message polling
     handles = [
@@ -53,8 +53,8 @@ def init(config: dict) -> None:
         CommandHandler('help', _help),
     ]
     for handle in handles:
-        _updater.dispatcher.add_handler(handle)
-    _updater.start_polling(
+        _UPDATER.dispatcher.add_handler(handle)
+    _UPDATER.start_polling(
         clean=True,
         bootstrap_retries=3,
         timeout=30,
@@ -73,7 +73,7 @@ def cleanup() -> None:
     """
     if not is_enabled():
         return
-    _updater.stop()
+    _UPDATER.stop()
 
 
 def is_enabled() -> bool:
@@ -448,7 +448,7 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
     if not is_enabled():
         return
     try:
-        bot = bot or _updater.bot
+        bot = bot or _UPDATER.bot
         try:
             bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
         except NetworkError as error:
@@ -459,5 +459,5 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
                 error.message
             )
             bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-    except Exception:
+    except BaseException:
         logger.exception('Exception occurred within Telegram API')

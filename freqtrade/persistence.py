@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 _CONF = {}
-Base = declarative_base()
+_DECL_BASE = declarative_base()
 
 
 def init(config: dict, db_url: Optional[str] = None) -> None:
@@ -37,7 +37,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
     Trade.query = session.query_property()
-    Base.metadata.create_all(engine)
+    _DECL_BASE.metadata.create_all(engine)
 
 
 def cleanup() -> None:
@@ -48,7 +48,7 @@ def cleanup() -> None:
     Trade.session.flush()
 
 
-class Trade(Base):
+class Trade(_DECL_BASE):
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
