@@ -92,15 +92,17 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     def wrapper(*args, **kwargs):
         bot, update = kwargs.get('bot') or args[0], kwargs.get('update') or args[1]
 
-        if not isinstance(bot, Bot) or not isinstance(update, Update):
-            raise ValueError('Received invalid Arguments: {}'.format(*args))
-
+        # Reject unauthorized messages
         chat_id = int(_CONF['telegram']['chat_id'])
-        if int(update.message.chat_id) == chat_id:
-            logger.info('Executing handler: %s for chat_id: %s', command_handler.__name__, chat_id)
-            return command_handler(*args, **kwargs)
-        else:
+        if int(update.message.chat_id) != chat_id:
             logger.info('Rejected unauthorized message from: %s', update.message.chat_id)
+            return wrapper
+
+        logger.info('Executing handler: %s for chat_id: %s', command_handler.__name__, chat_id)
+        try:
+            return command_handler(*args, **kwargs)
+        except BaseException:
+            logger.exception('Exception occurred within Telegram module')
     return wrapper
 
 
@@ -447,17 +449,15 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
     """
     if not is_enabled():
         return
+
+    bot = bot or _UPDATER.bot
     try:
-        bot = bot or _UPDATER.bot
-        try:
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-        except NetworkError as error:
-            # Sometimes the telegram server resets the current connection,
-            # if this is the case we send the message again.
-            logger.warning(
-                'Got Telegram NetworkError: %s! Trying one more time.',
-                error.message
-            )
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-    except BaseException:
-        logger.exception('Exception occurred within Telegram API')
+        bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+    except NetworkError as error:
+        # Sometimes the telegram server resets the current connection,
+        # if this is the case we send the message again.
+        logger.warning(
+            'Got Telegram NetworkError: %s! Trying one more time.',
+            error.message
+        )
+        bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
