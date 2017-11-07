@@ -83,10 +83,11 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker_history(self, pair: str) -> List:
+    def get_ticker_history(self, pair: str, tick_interval: int) -> List:
         """
         Gets ticker history for given pair.
         :param pair: Pair as str, format: BTC_ETC
+        :param tick_interval: ticker interval in minutes
         :return: list, format: [
             {
                 'O': float,       (Open)

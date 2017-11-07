@@ -1,7 +1,7 @@
 import enum
 import logging
 from random import randint
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import arrow
 
@@ -122,8 +122,8 @@ def get_ticker(pair: str) -> dict:
     return _API.get_ticker(pair)
 
 
-def get_ticker_history(pair: str) -> List:
-    return _API.get_ticker_history(pair)
+def get_ticker_history(pair: str, tick_interval: Optional[int] = 5) -> List:
+    return _API.get_ticker_history(pair, tick_interval)
 
 
 def cancel_order(order_id: str) -> None:
