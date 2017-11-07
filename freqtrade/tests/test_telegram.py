@@ -1,85 +1,34 @@
-# pragma pylint: disable=missing-docstring
-import logging
+# pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors
 import re
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
-from jsonschema import validate
-from telegram import Bot, Update, Message, Chat
+from telegram import Bot
 
-from freqtrade import exchange
 from freqtrade.main import init, create_trade
-from freqtrade.misc import update_state, State, get_state, CONF_SCHEMA
+from freqtrade.misc import update_state, State, get_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc.telegram import (
     _status, _status_table, _profit, _forcesell, _performance, _count, _start, _stop, _balance
 )
 
 
-@pytest.fixture
-def conf():
-    configuration = {
-        "max_open_trades": 3,
-        "stake_currency": "BTC",
-        "stake_amount": 0.05,
-        "dry_run": True,
-        "minimal_roi": {
-            "2880": 0.005,
-            "720": 0.01,
-            "0": 0.02
-        },
-        "bid_strategy": {
-            "ask_last_balance": 0.0
-        },
-        "exchange": {
-            "name": "bittrex",
-            "enabled": True,
-            "key": "key",
-            "secret": "secret",
-            "pair_whitelist": [
-                "BTC_ETH",
-                "BTC_ETC"
-            ]
-        },
-        "telegram": {
-            "enabled": True,
-            "token": "token",
-            "chat_id": "0"
-        },
-        "initial_state": "running"
-    }
-    validate(configuration, CONF_SCHEMA)
-    return configuration
-
-
-@pytest.fixture
-def update():
-    _update = Update(0)
-    _update.message = Message(0, 0, datetime.utcnow(), Chat(0, 0))
-    return _update
-
-
 class MagicBot(MagicMock, Bot):
     pass
 
 
-def test_status_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_status_handle(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
-                          }))
-    init(conf, 'sqlite://')
+                          get_ticker=ticker)
+    init(default_conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
@@ -94,24 +43,20 @@ def test_status_handle(conf, update, mocker):
     assert '[BTC_ETH]' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_status_table_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_status_table_handle(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.main.telegram',
-        _CONF=conf,
+        _CONF=default_conf,
         init=MagicMock(),
         send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
-                          }),
+                          get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_order_id'))
-    init(conf, 'sqlite://')
+    init(default_conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
@@ -121,7 +66,7 @@ def test_status_table_handle(conf, update, mocker):
 
     _status_table(bot=MagicBot(), update=update)
 
-    text = re.sub('<\/?pre>', '', msg_mock.call_args_list[-1][0][0])
+    text = re.sub('</?pre>', '', msg_mock.call_args_list[-1][0][0])
     line = text.split("\n")
     fields = re.sub('[ ]+', ' ', line[2].strip()).split(' ')
 
@@ -130,49 +75,27 @@ def test_status_table_handle(conf, update, mocker):
     assert msg_mock.call_count == 2
 
 
-def test_profit_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
-                          }))
-    init(conf, 'sqlite://')
+                          get_ticker=ticker)
+    init(default_conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
     assert trade
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update({
-        'id': 'mocked_limit_buy',
-        'type': 'LIMIT_BUY',
-        'pair': 'mocked',
-        'opened': datetime.utcnow(),
-        'rate': 0.07256061,
-        'amount': 206.43811673387373,
-        'remaining': 0.0,
-        'closed': datetime.utcnow(),
-    })
+    trade.update(limit_buy_order)
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update({
-        'id': 'mocked_limit_sell',
-        'type': 'LIMIT_SELL',
-        'pair': 'mocked',
-        'opened': datetime.utcnow(),
-        'rate': 0.0802134,
-        'amount': 206.43811673387373,
-        'remaining': 0.0,
-        'closed': datetime.utcnow(),
-    })
+    trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -185,22 +108,18 @@ def test_profit_handle(conf, update, mocker):
     assert 'Best Performing:* `BTC_ETH: 10.05%`' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_forcesell_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_forcesell_handle(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
-                          }))
-    init(conf, 'sqlite://')
+                          get_ticker=ticker)
+    init(default_conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
@@ -217,50 +136,28 @@ def test_forcesell_handle(conf, update, mocker):
     assert '0.07256061 (profit: ~-0.64%)' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_performance_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_performance_handle(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
-                          }))
-    init(conf, 'sqlite://')
+                          get_ticker=ticker)
+    init(default_conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
     assert trade
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update({
-        'id': 'mocked_limit_buy',
-        'type': 'LIMIT_BUY',
-        'pair': 'mocked',
-        'opened': datetime.utcnow(),
-        'rate': 0.07256061,
-        'amount': 206.43811673387373,
-        'remaining': 0.0,
-        'closed': datetime.utcnow(),
-    })
+    trade.update(limit_buy_order)
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update({
-        'id': 'mocked_limit_sell',
-        'type': 'LIMIT_SELL',
-        'pair': 'mocked',
-        'opened': datetime.utcnow(),
-        'rate': 0.0802134,
-        'amount': 206.43811673387373,
-        'remaining': 0.0,
-        'closed': datetime.utcnow(),
-    })
+    trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -273,24 +170,20 @@ def test_performance_handle(conf, update, mocker):
     assert '<code>BTC_ETH\t10.05%</code>' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_count_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_count_handle(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.main.telegram',
-        _CONF=conf,
+        _CONF=default_conf,
         init=MagicMock(),
         send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.07256061,
-                              'ask': 0.072661,
-                              'last': 0.07256061
-                          }),
+                          get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_order_id'))
-    init(conf, 'sqlite://')
+    init(default_conf, 'sqlite://')
 
     # Create some test data
     trade = create_trade(15.0)
@@ -303,20 +196,20 @@ def test_count_handle(conf, update, mocker):
 
     _count(bot=MagicBot(), update=update)
     line = msg_mock.call_args_list[-1][0][0].split("\n")
-    assert line[2] == '{}/{}'.format(2, conf['max_open_trades'])
+    assert line[2] == '{}/{}'.format(2, default_conf['max_open_trades'])
 
 
-def test_start_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_start_handle(default_conf, update, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock())
-    init(conf, 'sqlite://')
+    init(default_conf, 'sqlite://')
 
     update_state(State.STOPPED)
     assert get_state() == State.STOPPED
@@ -325,17 +218,17 @@ def test_start_handle(conf, update, mocker):
     assert msg_mock.call_count == 0
 
 
-def test_stop_handle(conf, update, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+def test_stop_handle(default_conf, update, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock())
-    init(conf, 'sqlite://')
+    init(default_conf, 'sqlite://')
 
     update_state(State.RUNNING)
     assert get_state() == State.RUNNING
@@ -345,17 +238,17 @@ def test_stop_handle(conf, update, mocker):
     assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
 
 
-def test_balance_handle(conf, update, mocker):
+def test_balance_handle(default_conf, update, mocker):
     mock_balance = [{
         'Currency': 'BTC',
         'Balance': 10.0,
         'Available': 12.0,
         'Pending': 0.0,
         'CryptoAddress': 'XXXX'}]
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.main.telegram',
-                          _CONF=conf,
+                          _CONF=default_conf,
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',

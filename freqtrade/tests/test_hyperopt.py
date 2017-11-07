@@ -63,13 +63,13 @@ def buy_strategy_generator(params):
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_hyperopt(conf, backdata, mocker):
+def test_hyperopt(backtest_conf, backdata, mocker):
     mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)
 
-        results = backtest(conf, backdata, mocker)
+        results = backtest(backtest_conf, backdata, mocker)
 
         result = format_results(results)
         print(result)

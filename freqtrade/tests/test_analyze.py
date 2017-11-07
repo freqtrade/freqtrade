@@ -14,12 +14,12 @@ def result():
         return parse_ticker_dataframe(json.load(data_file))
 
 
-def test_dataframe_has_correct_columns(result):
+def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == \
         ['close', 'high', 'low', 'open', 'date', 'volume']
 
 
-def test_dataframe_has_correct_length(result):
+def test_dataframe_correct_length(result):
     assert len(result.index) == 5751
 
 

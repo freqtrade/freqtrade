@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring
-import json
 import logging
 import os
 
@@ -26,11 +25,11 @@ def print_pair_results(pair, results):
     print(format_results(results[results.currency == pair]))
 
 
-def backtest(conf, backdata, mocker):
+def backtest(backtest_conf, backdata, mocker):
     trades = []
     exchange._API = Bittrex({'key': '', 'secret': ''})
     mocked_history = mocker.patch('freqtrade.analyze.get_ticker_history')
-    mocker.patch.dict('freqtrade.main._CONF', conf)
+    mocker.patch.dict('freqtrade.main._CONF', backtest_conf)
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
     for pair, pair_data in backdata.items():
         mocked_history.return_value = pair_data
@@ -56,8 +55,8 @@ def backtest(conf, backdata, mocker):
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_backtest(conf, backdata, mocker, report=True):
-    results = backtest(conf, backdata, mocker)
+def test_backtest(backtest_conf, backdata, mocker, report=True):
+    results = backtest(backtest_conf, backdata, mocker)
 
     print('====================== BACKTESTING REPORT ================================')
     for pair in backdata:
