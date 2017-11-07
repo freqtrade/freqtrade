@@ -26,42 +26,41 @@ def print_pair_results(pair, results):
     print(format_results(results[results.currency == pair]))
 
 
-def backtest(conf, pairs, mocker):
+def backtest(conf, backdata, mocker):
     trades = []
     exchange._API = Bittrex({'key': '', 'secret': ''})
     mocked_history = mocker.patch('freqtrade.analyze.get_ticker_history')
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
-    for pair in pairs:
-        with open('freqtrade/tests/testdata/' + pair + '.json') as data_file:
-            mocked_history.return_value = json.load(data_file)
-            ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
-            # for each buy point
-            for row in ticker[ticker.buy == 1].itertuples(index=True):
-                trade = Trade(
-                    open_rate=row.close,
-                    open_date=row.date,
-                    amount=1,
-                    fee=exchange.get_fee() * 2
-                )
-                # calculate win/lose forwards from buy point
-                for row2 in ticker[row.Index:].itertuples(index=True):
-                    if should_sell(trade, row2.close, row2.date):
-                        current_profit = trade.calc_profit(row2.close)
+    for pair, pair_data in backdata.items():
+        mocked_history.return_value = pair_data
+        ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
+        # for each buy point
+        for row in ticker[ticker.buy == 1].itertuples(index=True):
+            trade = Trade(
+                open_rate=row.close,
+                open_date=row.date,
+                amount=1,
+                fee=exchange.get_fee() * 2
+            )
+            # calculate win/lose forwards from buy point
+            for row2 in ticker[row.Index:].itertuples(index=True):
+                if should_sell(trade, row2.close, row2.date):
+                    current_profit = trade.calc_profit(row2.close)
 
-                        trades.append((pair, current_profit, row2.Index - row.Index))
-                        break
+                    trades.append((pair, current_profit, row2.Index - row.Index))
+                    break
     labels = ['currency', 'profit', 'duration']
     results = DataFrame.from_records(trades, columns=labels)
     return results
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_backtest(conf, pairs, mocker, report=True):
-    results = backtest(conf, pairs, mocker)
+def test_backtest(conf, backdata, mocker, report=True):
+    results = backtest(conf, backdata, mocker)
 
     print('====================== BACKTESTING REPORT ================================')
-    for pair in pairs:
+    for pair in backdata:
         print_pair_results(pair, results)
     print('TOTAL OVER ALL TRADES:')
     print(format_results(results))

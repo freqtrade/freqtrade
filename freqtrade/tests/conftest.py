@@ -1,9 +1,7 @@
+# pragma pylint: disable=missing-docstring
+import json
 import pytest
 
-@pytest.fixture(scope="module")
-def pairs():
-    return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-            'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
 
 @pytest.fixture(scope="module")
 def conf():
@@ -16,3 +14,13 @@ def conf():
         },
         "stoploss": -0.05
     }
+
+
+@pytest.fixture(scope="module")
+def backdata():
+    result = {}
+    for pair in ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
+                 'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']:
+        with open('freqtrade/tests/testdata/' + pair + '.json') as data_file:
+            result[pair] = json.load(data_file)
+    return result
