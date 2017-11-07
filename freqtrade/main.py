@@ -24,12 +24,13 @@ logger = logging.getLogger(__name__)
 _CONF = {}
 
 
-def _process() -> None:
+def _process() -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
-    :return: None
+    :return: True if a trade has been created or closed, False otherwise
     """
+    state_changed = False
     try:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -39,6 +40,7 @@ def _process() -> None:
                 trade = create_trade(float(_CONF['stake_amount']))
                 if trade:
                     Trade.session.add(trade)
+                    state_changed = True
                 else:
                     logging.info('Got no buy signal...')
             except ValueError:
@@ -53,7 +55,7 @@ def _process() -> None:
 
             if not close_trade_if_fulfilled(trade):
                 # Check if we can sell our current pair
-                handle_trade(trade)
+                state_changed = handle_trade(trade) or state_changed
 
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
@@ -67,6 +69,7 @@ def _process() -> None:
         ))
         logger.exception('Got RuntimeError. Stopping trader ...')
         update_state(State.STOPPED)
+    return state_changed
 
 
 def close_trade_if_fulfilled(trade: Trade) -> bool:
@@ -97,7 +100,6 @@ def execute_sell(trade: Trade, limit: float) -> None:
     # Execute sell and update trade record
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
     trade.open_order_id = order_id
-    trade.close_date = datetime.utcnow()
 
     fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
     message = '*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
@@ -131,24 +133,20 @@ def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bo
     return False
 
 
-def handle_trade(trade: Trade) -> None:
+def handle_trade(trade: Trade) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
-    :return: None
+    :return: True if trade has been sold, False otherwise
     """
-    try:
-        if not trade.is_open:
-            raise ValueError('attempt to handle closed trade: {}'.format(trade))
+    if not trade.is_open:
+        raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
-        logger.debug('Handling %s ...', trade)
-
-        current_rate = exchange.get_ticker(trade.pair)['bid']
-        if should_sell(trade, current_rate, datetime.utcnow()):
-            execute_sell(trade, current_rate)
-            return
-
-    except ValueError:
-        logger.exception('Unable to handle open order')
+    logger.debug('Handling %s ...', trade)
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    if should_sell(trade, current_rate, datetime.utcnow()):
+        execute_sell(trade, current_rate)
+        return True
+    return False
 
 
 def get_target_bid(ticker: Dict[str, float]) -> float:

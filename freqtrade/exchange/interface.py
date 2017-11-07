@@ -17,7 +17,6 @@ class Exchange(ABC):
         Fee for placing an order
         :return: percentage in float
         """
-        return 0.0
 
     @property
     @abstractmethod
