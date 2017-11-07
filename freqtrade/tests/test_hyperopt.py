@@ -18,25 +18,6 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 TARGET_TRADES = 1200
 
 
-@pytest.fixture
-def pairs():
-    return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-            'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
-
-
-@pytest.fixture
-def conf():
-    return {
-        "minimal_roi": {
-            "40": 0.0,
-            "30": 0.01,
-            "20": 0.02,
-            "0": 0.04
-        },
-        "stoploss": -0.05
-    }
-
-
 def buy_strategy_generator(params):
     print(params)
 
@@ -82,13 +63,13 @@ def buy_strategy_generator(params):
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_hyperopt(conf, pairs, mocker):
+def test_hyperopt(conf, backdata, mocker):
     mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)
 
-        results = backtest(conf, pairs, mocker)
+        results = backtest(conf, backdata, mocker)
 
         result = format_results(results)
         print(result)
@@ -148,7 +129,7 @@ def test_hyperopt(conf, pairs, mocker):
     }
     trials = Trials()
     best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=4, trials=trials)
-    print('\n\n\n\n====================== HYPEROPT BACKTESTING REPORT ================================')
+    print('\n\n\n\n==================== HYPEROPT BACKTESTING REPORT ==============================')
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
     print('Result: {}'.format(newlist[0]['result']))
