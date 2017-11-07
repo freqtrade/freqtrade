@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 import requests
 from bittrex.bittrex import Bittrex as _Bittrex
@@ -84,11 +84,6 @@ class Bittrex(Exchange):
         }
 
     def get_ticker_history(self, pair: str, tick_interval: int):
-        headers = {
-            # TODO: Set as global setting
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
-        }
-
         if tick_interval == 1:
             interval = 'oneMin'
         elif tick_interval == 5:
@@ -96,15 +91,15 @@ class Bittrex(Exchange):
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 
-        params = {
+        data = requests.get(self.TICKER_METHOD, params={
             'marketName': pair.replace('_', '-'),
             'tickInterval': interval,
-        }
-        data = requests.get(self.TICKER_METHOD, params=params, headers=headers).json()
+        }).json()
         if not data['success']:
             raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
+
         return data['result']
 
     def get_order(self, order_id: str) -> Dict:
