@@ -92,6 +92,7 @@ class Trade(_DECL_BASE):
             # Set close rate and set actual profit
             self.close_rate = order['rate']
             self.close_profit = self.calc_profit()
+            self.close_date = datetime.utcnow()
         else:
             raise ValueError('Unknown order type: {}'.format(order['type']))
 
