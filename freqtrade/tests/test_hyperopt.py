@@ -18,25 +18,6 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 TARGET_TRADES = 1200
 
 
-@pytest.fixture
-def pairs():
-    return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-            'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
-
-
-@pytest.fixture
-def conf():
-    return {
-        "minimal_roi": {
-            "40": 0.0,
-            "30": 0.01,
-            "20": 0.02,
-            "0": 0.04
-        },
-        "stoploss": -0.05
-    }
-
-
 def buy_strategy_generator(params):
     print(params)
 

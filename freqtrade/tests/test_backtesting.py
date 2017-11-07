@@ -26,25 +26,6 @@ def print_pair_results(pair, results):
     print(format_results(results[results.currency == pair]))
 
 
-@pytest.fixture
-def pairs():
-    return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-            'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
-
-
-@pytest.fixture
-def conf():
-    return {
-        "minimal_roi": {
-            "50": 0.0,
-            "40": 0.01,
-            "30": 0.02,
-            "0": 0.045
-        },
-        "stoploss": -0.40
-    }
-
-
 def backtest(conf, pairs, mocker):
     trades = []
     exchange._API = Bittrex({'key': '', 'secret': ''})
