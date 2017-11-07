@@ -1,20 +1,53 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors
 import re
 from datetime import datetime
+from random import randint
 from unittest.mock import MagicMock
 
-from telegram import Bot
+from telegram import Bot, Update, Message, Chat
 
 from freqtrade.main import init, create_trade
 from freqtrade.misc import update_state, State, get_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc.telegram import (
-    _status, _status_table, _profit, _forcesell, _performance, _count, _start, _stop, _balance
-)
+    _status, _status_table, _profit, _forcesell, _performance, _count, _start, _stop, _balance,
+    authorized_only)
 
 
 class MagicBot(MagicMock, Bot):
     pass
+
+
+def test_authorized_only(default_conf, mocker):
+    mocker.patch.dict('freqtrade.rpc.telegram._CONF', default_conf)
+
+    chat = Chat(0, 0)
+    update = Update(randint(1, 100))
+    update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
+    state = {'called': False}
+
+    @authorized_only
+    def dummy_handler(*args, **kwargs) -> None:
+        state['called'] = True
+
+    dummy_handler(MagicMock(), update)
+    assert state['called'] is True
+
+
+def test_authorized_only_unauthorized(default_conf, mocker):
+    mocker.patch.dict('freqtrade.rpc.telegram._CONF', default_conf)
+
+    chat = Chat(0xdeadbeef, 0)
+    update = Update(randint(1, 100))
+    update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
+    state = {'called': False}
+
+    @authorized_only
+    def dummy_handler(*args, **kwargs) -> None:
+        state['called'] = True
+
+    dummy_handler(MagicMock(), update)
+    assert state['called'] is False
 
 
 def test_status_handle(default_conf, update, ticker, mocker):

@@ -14,7 +14,7 @@ from freqtrade.misc import CONF_SCHEMA
 def default_conf():
     """ Returns validated configuration suitable for most tests """
     configuration = {
-        "max_open_trades": 3,
+        "max_open_trades": 1,
         "stake_currency": "BTC",
         "stake_amount": 0.05,
         "dry_run": True,
