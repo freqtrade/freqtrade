@@ -56,7 +56,7 @@ def _process() -> None:
                 handle_trade(trade)
 
             Trade.session.flush()
-    except (requests.exceptions.ConnectionError, json.JSONDecodeError) as error:
+    except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
         logger.exception(msg)
         time.sleep(30)
