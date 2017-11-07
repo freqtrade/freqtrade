@@ -129,7 +129,9 @@ def _status(bot: Bot, update: Update) -> None:
         send_msg('*Status:* `no active trade`', bot=bot)
     else:
         for trade in trades:
-            order = exchange.get_order(trade.open_order_id)
+            order = None
+            if trade.open_order_id:
+                order = exchange.get_order(trade.open_order_id)
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair)['bid']
             current_profit = trade.calc_profit(current_rate)
