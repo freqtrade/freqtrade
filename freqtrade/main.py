@@ -250,15 +250,21 @@ def cleanup(*args, **kwargs) -> None:
     exit(0)
 
 
-def app(config: dict) -> None:
+def main():
     """
-    Main loop which handles the application state
-    :param config: config as dict
+    Loads and validates the config and handles the main loop
     :return: None
     """
     logger.info('Starting freqtrade %s', __version__)
-    init(config)
 
+    global _CONF
+    with open('config.json') as file:
+        _CONF = json.load(file)
+
+    logger.info('Validating configuration ...')
+    validate(_CONF, CONF_SCHEMA)
+
+    init(_CONF)
     old_state = get_state()
     logger.info('Initial State: %s', old_state)
     telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
@@ -276,18 +282,6 @@ def app(config: dict) -> None:
             # We need to sleep here because otherwise we would run into bittrex rate limit
             time.sleep(exchange.get_sleep_time())
         old_state = new_state
-
-
-def main():
-    """
-    Loads and validates the config and starts the main loop
-    :return: None
-    """
-    global _CONF
-    with open('config.json') as file:
-        _CONF = json.load(file)
-        validate(_CONF, CONF_SCHEMA)
-        app(_CONF)
 
 
 if __name__ == '__main__':
