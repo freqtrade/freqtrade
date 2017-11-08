@@ -5,21 +5,19 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, Optional
 from signal import signal, SIGINT, SIGABRT, SIGTERM
+from typing import Dict, Optional
 
 import requests
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('freqtrade')
 
 _CONF = {}
 
@@ -42,7 +40,7 @@ def _process() -> bool:
                     Trade.session.add(trade)
                     state_changed = True
                 else:
-                    logging.info('Got no buy signal...')
+                    logger.info('Got no buy signal...')
             except ValueError:
                 logger.exception('Unable to create trade')
 
@@ -163,7 +161,10 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
     """
-    logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
+    logger.info(
+        'Checking buy signals to create a new trade with stake_amount: %f ...',
+        stake_amount
+    )
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
@@ -255,15 +256,28 @@ def main():
     Loads and validates the config and handles the main loop
     :return: None
     """
-    logger.info('Starting freqtrade %s', __version__)
-
     global _CONF
-    with open('config.json') as file:
-        _CONF = json.load(file)
+    args = build_arg_parser().parse_args()
 
+    # Initialize logger
+    logging.basicConfig(
+        level=args.loglevel,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
+
+    logger.info(
+        'Starting freqtrade %s (loglevel=%s)',
+        __version__,
+        logging.getLevelName(args.loglevel)
+    )
+
+    # Load and validate configuration
+    with open(args.config) as file:
+        _CONF = json.load(file)
     logger.info('Validating configuration ...')
     validate(_CONF, CONF_SCHEMA)
 
+    # Initialize all modules and start main loop
     init(_CONF)
     old_state = get_state()
     logger.info('Initial State: %s', old_state)
@@ -273,7 +287,7 @@ def main():
         # Log state transition
         if new_state != old_state:
             telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
-            logging.info('Changing state to: %s', new_state.name)
+            logger.info('Changing state to: %s', new_state.name)
 
         if new_state == State.STOPPED:
             time.sleep(1)
