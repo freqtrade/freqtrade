@@ -21,7 +21,7 @@ setup(name='freqtrade',
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
       install_requires=[
-          'python-bittrex==0.1.3',
+          'python-bittrex==0.2.0',
           'SQLAlchemy==1.1.13',
           'python-telegram-bot==8.1.1',
           'arrow==0.10.0',
@@ -36,7 +36,7 @@ setup(name='freqtrade',
           'tabulate==0.8.1',
       ],
       dependency_links=[
-          "git+https://github.com/ericsomdahl/python-bittrex.git@d7033d0#egg=python-bittrex-0.1.3"
+          "git+https://github.com/ericsomdahl/python-bittrex.git@0.2.0#egg=python-bittrex-0.2.0"
       ],
       include_package_data=True,
       zip_safe=False,

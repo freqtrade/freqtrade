@@ -30,7 +30,11 @@ class Bittrex(Exchange):
         global _API, _EXCHANGE_CONF
 
         _EXCHANGE_CONF.update(config)
-        _API = _Bittrex(api_key=_EXCHANGE_CONF['key'], api_secret=_EXCHANGE_CONF['secret'])
+        _API = _Bittrex(
+            api_key=_EXCHANGE_CONF['key'],
+            api_secret=_EXCHANGE_CONF['secret'],
+            calls_per_second=5,
+        )
 
     @property
     def fee(self) -> float:
