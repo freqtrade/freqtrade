@@ -81,13 +81,15 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
-                          get_order=MagicMock(return_value=limit_buy_order)),
+                          get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, 'sqlite://')
 
-    assert len(Trade.query.filter(Trade.is_open.is_(True)).all()) == 0
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    assert len(trades) == 0
     result = _process()
     assert result is True
-    assert len(Trade.query.filter(Trade.is_open.is_(True)).all()) == 1
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    assert len(trades) == 1
 
     result = _process()
     assert result is False
