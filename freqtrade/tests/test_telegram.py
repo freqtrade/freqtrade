@@ -5,6 +5,7 @@ from random import randint
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import create_engine
 from telegram import Update, Message, Chat
 from telegram.error import NetworkError
 
@@ -86,7 +87,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     update_state(State.STOPPED)
     _status(bot=MagicMock(), update=update)
@@ -126,7 +127,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_order_id'))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _status_table(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -167,7 +168,7 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     _profit(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -211,7 +212,7 @@ def test_forcesell_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
     trade = create_trade(15.0)
@@ -239,7 +240,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
     for _ in range(4):
@@ -266,7 +267,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker):
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock())
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     # Trader is not running
     update_state(State.STOPPED)
@@ -304,7 +305,7 @@ def test_performance_handle(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
     trade = create_trade(15.0)
@@ -340,7 +341,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_order_id'))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _count(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -349,17 +350,16 @@ def test_count_handle(default_conf, update, ticker, mocker):
     update_state(State.RUNNING)
 
     # Create some test data
-    trade = create_trade(15.0)
-    trade2 = create_trade(15.0)
-    assert trade
-    assert trade2
-    Trade.session.add(trade)
-    Trade.session.add(trade2)
+    Trade.session.add(create_trade(15.0))
     Trade.session.flush()
 
+    msg_mock.reset_mock()
     _count(bot=MagicMock(), update=update)
-    line = msg_mock.call_args_list[-1][0][0].split("\n")
-    assert line[2] == '{}/{}'.format(2, default_conf['max_open_trades'])
+
+    msg = '<pre>  current    max\n---------  -----\n        1      {}</pre>'.format(
+        default_conf['max_open_trades']
+    )
+    assert msg in msg_mock.call_args_list[0][0][0]
 
 
 def test_performance_handle_invalid(default_conf, update, mocker):
@@ -372,7 +372,7 @@ def test_performance_handle_invalid(default_conf, update, mocker):
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock())
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     # Trader is not running
     update_state(State.STOPPED)
@@ -391,7 +391,7 @@ def test_start_handle(default_conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           _CONF=default_conf,
                           init=MagicMock())
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     assert get_state() == State.STOPPED
     _start(bot=MagicMock(), update=update)
@@ -409,7 +409,7 @@ def test_start_handle_already_running(default_conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           _CONF=default_conf,
                           init=MagicMock())
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     update_state(State.RUNNING)
     assert get_state() == State.RUNNING
     _start(bot=MagicMock(), update=update)
@@ -428,7 +428,7 @@ def test_stop_handle(default_conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           _CONF=default_conf,
                           init=MagicMock())
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     update_state(State.RUNNING)
     assert get_state() == State.RUNNING
     _stop(bot=MagicMock(), update=update)
@@ -447,7 +447,7 @@ def test_stop_handle_already_stopped(default_conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           _CONF=default_conf,
                           init=MagicMock())
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     assert get_state() == State.STOPPED
     _stop(bot=MagicMock(), update=update)

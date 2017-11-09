@@ -347,7 +347,7 @@ def _forcesell(bot: Bot, update: Update) -> None:
         Trade.is_open.is_(True)
     )).first()
     if not trade:
-        send_msg('Invalid argument. Usage: `/forcesell <trade_id>`')
+        send_msg('Invalid argument. See `/help` to view usage')
         logger.warning('/forcesell: Invalid argument received')
         return
     # Get current rate
@@ -400,8 +400,12 @@ def _count(bot: Bot, update: Update) -> None:
         return
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    message = '<b>Count:</b>\ncurrent/max\n{}/{}\n'.format(len(trades), _CONF['max_open_trades'])
 
+    message = tabulate({
+        'current': [len(trades)],
+        'max': [_CONF['max_open_trades']]
+    }, headers=['current', 'max'], tablefmt='simple')
+    message = "<pre>{}</pre>".format(message)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
