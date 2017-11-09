@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
+from sqlalchemy import create_engine
 
 from freqtrade.exchange import Exchanges
 from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
@@ -20,7 +21,7 @@ def test_process_trade_creation(default_conf, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 0
@@ -49,7 +50,7 @@ def test_process_exchange_failures(default_conf, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(side_effect=requests.exceptions.RequestException))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     result = _process()
     assert result is False
     assert sleep_mock.has_calls()
@@ -64,7 +65,7 @@ def test_process_runtime_error(default_conf, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(side_effect=RuntimeError))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
 
     result = _process()
@@ -82,7 +83,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 0
@@ -106,7 +107,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     # Save state of current whitelist
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     trade = create_trade(15.0)
     Trade.session.add(trade)
     Trade.session.flush()
@@ -167,7 +168,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                           }),
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           sell=MagicMock(return_value='mocked_limit_sell'))
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     trade = create_trade(15.0)
     trade.update(limit_buy_order)
     Trade.session.add(trade)
@@ -197,7 +198,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     # Create trade and sell it
-    init(default_conf, 'sqlite://')
+    init(default_conf, create_engine('sqlite://'))
     trade = create_trade(15.0)
     trade.update(limit_buy_order)
     trade.update(limit_sell_order)

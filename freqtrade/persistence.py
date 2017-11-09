@@ -5,9 +5,11 @@ from typing import Optional, Dict
 
 import arrow
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -17,23 +19,25 @@ _CONF = {}
 _DECL_BASE = declarative_base()
 
 
-def init(config: dict, db_url: Optional[str] = None) -> None:
+def init(config: dict, engine: Optional[Engine] = None) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
     :param config: config to use
-    :param db_url: database connector string for sqlalchemy (Optional)
+    :param engine: database engine for sqlalchemy (Optional)
     :return: None
     """
     _CONF.update(config)
-    if not db_url:
+    if not engine:
         if _CONF.get('dry_run', False):
-            db_url = 'sqlite://'
+            engine = create_engine('sqlite://',
+                                   connect_args={'check_same_thread': False},
+                                   poolclass=StaticPool,
+                                   echo=False)
         else:
-            db_url = 'sqlite:///tradesv3.sqlite'
+            engine = create_engine('sqlite:///tradesv3.sqlite')
 
-    engine = create_engine(db_url, echo=False)
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
     Trade.query = session.query_property()

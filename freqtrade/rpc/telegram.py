@@ -11,7 +11,7 @@ from telegram import ParseMode, Bot, Update
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 
-from freqtrade import exchange
+from freqtrade import exchange, __version__
 from freqtrade.misc import get_state, State, update_state
 from freqtrade.persistence import Trade
 
@@ -51,6 +51,7 @@ def init(config: dict) -> None:
         CommandHandler('performance', _performance),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
+        CommandHandler('version', _version),
     ]
     for handle in handles:
         _UPDATER.dispatcher.add_handler(handle)
@@ -331,26 +332,29 @@ def _forcesell(bot: Bot, update: Update) -> None:
         send_msg('`trader is not running`', bot=bot)
         return
 
-    try:
-        trade_id = int(update.message.text
-                       .replace('/forcesell', '')
-                       .strip())
-        # Query for trade
-        trade = Trade.query.filter(and_(
-            Trade.id == trade_id,
-            Trade.is_open.is_(True)
-        )).first()
-        if not trade:
-            send_msg('There is no open trade with ID: `{}`'.format(trade_id))
-            return
-        # Get current rate
-        current_rate = exchange.get_ticker(trade.pair)['bid']
-        from freqtrade.main import execute_sell
-        execute_sell(trade, current_rate)
+    trade_id = update.message.text.replace('/forcesell', '').strip()
+    if trade_id == 'all':
+        # Execute sell for all open orders
+        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+            # Get current rate
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            from freqtrade.main import execute_sell
+            execute_sell(trade, current_rate)
+        return
 
-    except ValueError:
-        send_msg('Invalid argument. Usage: `/forcesell <trade_id>`')
+    # Query for trade
+    trade = Trade.query.filter(and_(
+        Trade.id == trade_id,
+        Trade.is_open.is_(True)
+    )).first()
+    if not trade:
+        send_msg('Invalid argument. See `/help` to view usage')
         logger.warning('/forcesell: Invalid argument received')
+        return
+    # Get current rate
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
 
 
 @authorized_only
@@ -397,8 +401,12 @@ def _count(bot: Bot, update: Update) -> None:
         return
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    message = '<b>Count:</b>\ncurrent/max\n{}/{}\n'.format(len(trades), _CONF['max_open_trades'])
 
+    message = tabulate({
+        'current': [len(trades)],
+        'max': [_CONF['max_open_trades']]
+    }, headers=['current', 'max'], tablefmt='simple')
+    message = "<pre>{}</pre>".format(message)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
@@ -418,13 +426,26 @@ def _help(bot: Bot, update: Update) -> None:
 */status [table]:* `Lists all open trades`
             *table :* `will display trades in a table`
 */profit:* `Lists cumulative profit from all finished trades`
-*/forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
+*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
 */count:* `Show number of trades running compared to allowed number of trades`
 */balance:* `Show account balance per currency`
 */help:* `This help message`
+*/version:* `Show version`
     """
     send_msg(message, bot=bot)
+
+
+@authorized_only
+def _version(bot: Bot, update: Update) -> None:
+    """
+    Handler for /version.
+    Show version information
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
 
 def shorten_date(date):

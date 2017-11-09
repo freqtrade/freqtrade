@@ -63,7 +63,12 @@ def validate_pairs(pairs: List[str]) -> None:
     :return: None
     """
     markets = _API.get_markets()
+    stake_cur = _CONF['stake_currency']
     for pair in pairs:
+        if not pair.startswith(stake_cur):
+            raise RuntimeError(
+                'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
+            )
         if pair not in markets:
             raise RuntimeError('Pair {} is not available at {}'.format(pair, _API.name.lower()))
 
