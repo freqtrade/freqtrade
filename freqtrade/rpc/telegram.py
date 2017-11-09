@@ -48,7 +48,6 @@ def init(config: dict) -> None:
         CommandHandler('start', _start),
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
-        CommandHandler('forcesellall', _forcesellall),
         CommandHandler('performance', _performance),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
@@ -332,26 +331,29 @@ def _forcesell(bot: Bot, update: Update) -> None:
         send_msg('`trader is not running`', bot=bot)
         return
 
-    try:
-        trade_id = int(update.message.text
-                       .replace('/forcesell', '')
-                       .strip())
-        # Query for trade
-        trade = Trade.query.filter(and_(
-            Trade.id == trade_id,
-            Trade.is_open.is_(True)
-        )).first()
-        if not trade:
-            send_msg('There is no open trade with ID: `{}`'.format(trade_id))
-            return
-        # Get current rate
-        current_rate = exchange.get_ticker(trade.pair)['bid']
-        from freqtrade.main import execute_sell
-        execute_sell(trade, current_rate)
+    trade_id = update.message.text.replace('/forcesell', '').strip()
+    if trade_id == 'all':
+        # Execute sell for all open orders
+        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+            # Get current rate
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            from freqtrade.main import execute_sell
+            execute_sell(trade, current_rate)
+        return
 
-    except ValueError:
+    # Query for trade
+    trade = Trade.query.filter(and_(
+        Trade.id == trade_id,
+        Trade.is_open.is_(True)
+    )).first()
+    if not trade:
         send_msg('Invalid argument. Usage: `/forcesell <trade_id>`')
         logger.warning('/forcesell: Invalid argument received')
+        return
+    # Get current rate
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
 
 
 @authorized_only
@@ -403,39 +405,6 @@ def _count(bot: Bot, update: Update) -> None:
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
-@authorized_only
-def _forcesellall(bot: Bot, update: Update) -> None:
-    """
-    Handler for /forcesellall.
-    Sells all currently active trades
-    :param bot: telegram bot
-    :param update: message update
-    :return: None
-    """
-    # Fetch open trade
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    if get_state() != State.RUNNING:
-        send_msg('*Status:* `trader is not running`', bot=bot)
-    elif not trades:
-        send_msg('*Status:* `no active order`', bot=bot)
-    else:
-        for trade in trades:
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
-            # Get available balance
-            currency = trade.pair.split('_')[1]
-            balance = exchange.get_balance(currency)
-            # Execute sell
-            profit = trade.exec_sell_order(current_rate, balance)
-            message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
-                trade.exchange.name,
-                trade.pair.replace('_', '/'),
-                exchange.get_pair_detail_url(trade.pair),
-                trade.close_rate,
-                round(profit, 2)
-            )
-            logger.info(message)
-            send_msg(message)
 
 @authorized_only
 def _help(bot: Bot, update: Update) -> None:
@@ -452,7 +421,7 @@ def _help(bot: Bot, update: Update) -> None:
 */status [table]:* `Lists all open trades`
             *table :* `will display trades in a table`
 */profit:* `Lists cumulative profit from all finished trades`
-*/forcesell <trade_id>:* `Instantly sells the given trade, regardless of profit`
+*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
 */count:* `Show number of trades running compared to allowed number of trades`
 */balance:* `Show account balance per currency`
