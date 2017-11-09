@@ -29,7 +29,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     _CONF.update(config)
     if not db_url:
         if _CONF.get('dry_run', False):
-            db_url = 'sqlite:///tradesv3.dry_run.sqlite'
+            db_url = 'sqlite://'
         else:
             db_url = 'sqlite:///tradesv3.sqlite'
 
