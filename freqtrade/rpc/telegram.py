@@ -372,7 +372,7 @@ def _performance(bot: Bot, update: Update) -> None:
         .order_by(text('profit_sum DESC')) \
         .all()
 
-    stats = '\n'.join('{index}. <code>{pair}\t{profit:.2f}%</code>'.format(
+    stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}%</code>'.format(
         index=i + 1,
         pair=pair,
         profit=round(rate * 100, 2)
