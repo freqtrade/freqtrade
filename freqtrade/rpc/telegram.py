@@ -11,7 +11,7 @@ from telegram import ParseMode, Bot, Update
 from telegram.error import NetworkError
 from telegram.ext import CommandHandler, Updater
 
-from freqtrade import exchange
+from freqtrade import exchange, __version__
 from freqtrade.misc import get_state, State, update_state
 from freqtrade.persistence import Trade
 
@@ -51,6 +51,7 @@ def init(config: dict) -> None:
         CommandHandler('performance', _performance),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
+        CommandHandler('version', _version),
     ]
     for handle in handles:
         _UPDATER.dispatcher.add_handler(handle)
@@ -430,8 +431,21 @@ def _help(bot: Bot, update: Update) -> None:
 */count:* `Show number of trades running compared to allowed number of trades`
 */balance:* `Show account balance per currency`
 */help:* `This help message`
+*/version:* `Show version`
     """
     send_msg(message, bot=bot)
+
+
+@authorized_only
+def _version(bot: Bot, update: Update) -> None:
+    """
+    Handler for /version.
+    Show version information
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
 
 def shorten_date(date):

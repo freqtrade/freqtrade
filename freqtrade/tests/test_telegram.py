@@ -9,14 +9,15 @@ from sqlalchemy import create_engine
 from telegram import Update, Message, Chat
 from telegram.error import NetworkError
 
+from freqtrade import __version__
 from freqtrade.main import init, create_trade
 from freqtrade.misc import update_state, State, get_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 from freqtrade.rpc.telegram import (
     _status, _status_table, _profit, _forcesell, _performance, _count, _start, _stop, _balance,
-    authorized_only, _help, is_enabled, send_msg
-)
+    authorized_only, _help, is_enabled, send_msg,
+    _version)
 
 
 def test_is_enabled(default_conf, mocker):
@@ -496,6 +497,19 @@ def test_help_handle(default_conf, update, mocker):
     _help(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert '*/help:* `This help message`' in msg_mock.call_args_list[0][0][0]
+
+
+def test_version_handle(default_conf, update, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    msg_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+
+    _version(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
 
 
 def test_send_msg(default_conf, mocker):
