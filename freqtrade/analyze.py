@@ -17,16 +17,17 @@ logger = logging.getLogger(__name__)
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
-    Analyses the trend for the given pair
-    :param pair: pair as str in format BTC_ETH or BTC-ETH
+    Analyses the trend for the given ticker history
+    :param ticker: See exchange.get_ticker_history
     :return: DataFrame
     """
-    df = DataFrame(ticker) \
+    columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
+    frame = DataFrame(ticker) \
         .drop('BV', 1) \
-        .rename(columns={'C':'close', 'V':'volume', 'O':'open', 'H':'high', 'L':'low', 'T':'date'})
-    df['date'] = to_datetime(df['date'], utc=True, infer_datetime_format=True)
-    df.sort_values('date', inplace=True)
-    return df
+        .rename(columns=columns)
+    frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+    frame.sort_values('date', inplace=True)
+    return frame
 
 
 def populate_indicators(dataframe: DataFrame) -> DataFrame:
@@ -81,9 +82,8 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    minimum_date = arrow.utcnow().shift(hours=-24)
-    data = get_ticker_history(pair, minimum_date)
-    dataframe = parse_ticker_dataframe(data['result'])
+    data = get_ticker_history(pair)
+    dataframe = parse_ticker_dataframe(data)
 
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)
@@ -117,18 +117,19 @@ def get_buy_signal(pair: str) -> bool:
     return signal
 
 
-def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
+def plot_analyzed_dataframe(pair: str) -> None:
     """
-    Plots the given dataframe
-    :param dataframe: DataFrame
+    Calls analyze() and plots the returned dataframe
     :param pair: pair as str
     :return: None
     """
-
     import matplotlib
-
     matplotlib.use("Qt5Agg")
     import matplotlib.pyplot as plt
+
+    # Init Bittrex to use public API
+    exchange._API = Bittrex({'key': '', 'secret': ''})
+    dataframe = analyze_ticker(pair)
 
     # Two subplots sharing x axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
@@ -161,9 +162,6 @@ def plot_dataframe(dataframe: DataFrame, pair: str) -> None:
 if __name__ == '__main__':
     # Install PYQT5==5.9 manually if you want to test this helper function
     while True:
-        exchange.EXCHANGE = Bittrex({'key': '', 'secret': ''})
-        test_pair = 'BTC_ETH'
-        # for pair in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
-        #     get_buy_signal(pair)
-        plot_dataframe(analyze_ticker(test_pair), test_pair)
+        for p in ['BTC_ANT', 'BTC_ETH', 'BTC_GNT', 'BTC_ETC']:
+            plot_analyzed_dataframe(p)
         time.sleep(60)

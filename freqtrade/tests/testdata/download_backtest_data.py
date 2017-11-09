@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 
 """This script generate json data from bittrex"""
+import json
+from os import path
 
-from urllib.request import urlopen
+from freqtrade import exchange
+from freqtrade.exchange import Bittrex
 
-CURRENCIES = ["ok", "neo", "dash", "etc", "eth", "snt"]
-OUTPUT_DIR = 'freqtrade/tests/testdata/'
+PAIRS = ['BTC-OK', 'BTC-NEO', 'BTC-DASH', 'BTC-ETC', 'BTC-ETH', 'BTC-SNT']
+TICKER_INTERVAL = 1  # ticker interval in minutes (currently implemented: 1 and 5)
+OUTPUT_DIR = path.dirname(path.realpath(__file__))
 
-for cur in CURRENCIES:
-    url1 = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks?marketName=BTC-'
-    url = url1+cur+'&tickInterval=fiveMin'
-    x = urlopen(url)
-    json_data = x.read()
-    json_str = str(json_data, 'utf-8')
-    output = OUTPUT_DIR + 'btc-'+cur+'.json'
-    with open(output, 'w') as file:
-        file.write(json_str)
+# Init Bittrex exchange
+exchange._API = Bittrex({'key': '', 'secret': ''})
+
+for pair in PAIRS:
+    data = exchange.get_ticker_history(pair, TICKER_INTERVAL)
+    filename = path.join(OUTPUT_DIR, '{}-{}m.json'.format(
+        pair.lower(),
+        TICKER_INTERVAL,
+    ))
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)

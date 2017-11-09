@@ -12,29 +12,10 @@ from pandas import DataFrame
 from freqtrade.tests.test_backtesting import backtest, format_results
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
-logging.disable(logging.DEBUG) # disable debug logs that slow backtesting a lot
+logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1200
-
-
-@pytest.fixture
-def pairs():
-    return ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-            'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']
-
-
-@pytest.fixture
-def conf():
-    return {
-        "minimal_roi": {
-            "40":  0.0,
-            "30":  0.01,
-            "20":  0.02,
-            "0":  0.04
-        },
-        "stoploss": -0.05
-    }
 
 
 def buy_strategy_generator(params):
@@ -82,13 +63,13 @@ def buy_strategy_generator(params):
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_hyperopt(conf, pairs, mocker):
+def test_hyperopt(backtest_conf, backdata, mocker):
     mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)
 
-        results = backtest(conf, pairs, mocker)
+        results = backtest(backtest_conf, backdata, mocker)
 
         result = format_results(results)
         print(result)
@@ -147,8 +128,8 @@ def test_hyperopt(conf, pairs, mocker):
         ]),
     }
     trials = Trials()
-    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=40, trials=trials)
-    print('\n\n\n\n====================== HYPEROPT BACKTESTING REPORT ================================')
+    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=4, trials=trials)
+    print('\n\n\n\n==================== HYPEROPT BACKTESTING REPORT ==============================')
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
     print('Result: {}'.format(newlist[0]['result']))

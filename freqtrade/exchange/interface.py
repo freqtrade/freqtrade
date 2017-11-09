@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
-
-import arrow
+from typing import List, Dict
 
 
 class Exchange(ABC):
@@ -12,6 +10,13 @@ class Exchange(ABC):
         :return: str representation of the class name
         """
         return self.__class__.__name__
+
+    @property
+    def fee(self) -> float:
+        """
+        Fee for placing an order
+        :return: percentage in float
+        """
 
     @property
     @abstractmethod
@@ -77,26 +82,38 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker_history(self, pair: str, minimum_date: Optional[arrow.Arrow] = None) -> dict:
+    def get_ticker_history(self, pair: str, tick_interval: int) -> List:
         """
         Gets ticker history for given pair.
         :param pair: Pair as str, format: BTC_ETC
-        :param minimum_date: Minimum date (optional)
+        :param tick_interval: ticker interval in minutes
+        :return: list, format: [
+            {
+                'O': float,       (Open)
+                'H': float,       (High)
+                'L': float,       (Low)
+                'C': float,       (Close)
+                'V': float,       (Volume)
+                'T': datetime,    (Time)
+                'BV': float,      (Base Volume)
+            },
+            ...
+        ]
+        """
+
+    def get_order(self, order_id: str) -> Dict:
+        """
+        Get order details for the given order_id.
+        :param order_id: ID as str
         :return: dict, format: {
-            'success': bool,
-            'message': str,
-            'result': [
-                {
-                    'O': float,       (Open)
-                    'H': float,       (High)
-                    'L': float,       (Low)
-                    'C': float,       (Close)
-                    'V': float,       (Volume)
-                    'T': datetime,    (Time)
-                    'BV': float,      (Base Volume)
-                },
-                ...
-            ]
+            'id': str,
+            'type': str,
+            'pair': str,
+            'opened': str ISO 8601 datetime,
+            'closed': str ISO 8601 datetime,
+            'rate': float,
+            'amount': float,
+            'remaining': int
         }
         """
 
@@ -106,24 +123,6 @@ class Exchange(ABC):
         Cancels order for given order_id.
         :param order_id: ID as str
         :return: None
-        """
-
-    @abstractmethod
-    def get_open_orders(self, pair: str) -> List[dict]:
-        """
-        Gets all open orders for given pair.
-        :param pair: Pair as str, format: BTC_ETC
-        :return: List of dicts, format: [
-            {
-                'id': str,
-                'type': str,
-                'opened': datetime,
-                'rate': float,
-                'amount': float,
-                'remaining': int,
-            },
-            ...
-        ]
         """
 
     @abstractmethod

@@ -1,2 +1,4 @@
 [run]
-omit = freqtrade/tests/*
+omit =
+    freqtrade/tests/*
+    freqtrade/vendor/*

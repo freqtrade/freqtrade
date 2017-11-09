@@ -1,6 +1,7 @@
 import enum
 import logging
-from typing import List
+from random import randint
+from typing import List, Dict, Any, Optional
 
 import arrow
 
@@ -10,8 +11,11 @@ from freqtrade.exchange.interface import Exchange
 logger = logging.getLogger(__name__)
 
 # Current selected exchange
-EXCHANGE: Exchange = None
+_API: Exchange = None
 _CONF: dict = {}
+
+# Holds all open sell orders for dry_run
+_DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
 
 class Exchanges(enum.Enum):
@@ -29,7 +33,7 @@ def init(config: dict) -> None:
     :param config: config to use
     :return: None
     """
-    global _CONF, EXCHANGE
+    global _CONF, _API
 
     _CONF.update(config)
 
@@ -45,7 +49,7 @@ def init(config: dict) -> None:
     except KeyError:
         raise RuntimeError('Exchange {} is not supported'.format(name))
 
-    EXCHANGE = exchange_class(exchange_config)
+    _API = exchange_class(exchange_config)
 
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
@@ -58,62 +62,103 @@ def validate_pairs(pairs: List[str]) -> None:
     :param pairs: list of pairs
     :return: None
     """
-    markets = EXCHANGE.get_markets()
+    markets = _API.get_markets()
     for pair in pairs:
         if pair not in markets:
-            raise RuntimeError('Pair {} is not available at {}'.format(pair, EXCHANGE.name.lower()))
+            raise RuntimeError('Pair {} is not available at {}'.format(pair, _API.name.lower()))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:
     if _CONF['dry_run']:
-        return 'dry_run'
+        global _DRY_RUN_OPEN_ORDERS
+        order_id = 'dry_run_buy_{}'.format(randint(0, 1e6))
+        _DRY_RUN_OPEN_ORDERS[order_id] = {
+            'pair': pair,
+            'rate': rate,
+            'amount': amount,
+            'type': 'LIMIT_BUY',
+            'remaining': 0.0,
+            'opened': arrow.utcnow().datetime,
+            'closed': arrow.utcnow().datetime,
+        }
+        return order_id
 
-    return EXCHANGE.buy(pair, rate, amount)
+    return _API.buy(pair, rate, amount)
 
 
 def sell(pair: str, rate: float, amount: float) -> str:
     if _CONF['dry_run']:
-        return 'dry_run'
+        global _DRY_RUN_OPEN_ORDERS
+        order_id = 'dry_run_sell_{}'.format(randint(0, 1e6))
+        _DRY_RUN_OPEN_ORDERS[order_id] = {
+            'pair': pair,
+            'rate': rate,
+            'amount': amount,
+            'type': 'LIMIT_SELL',
+            'remaining': 0.0,
+            'opened': arrow.utcnow().datetime,
+            'closed': arrow.utcnow().datetime,
+        }
+        return order_id
 
-    return EXCHANGE.sell(pair, rate, amount)
+    return _API.sell(pair, rate, amount)
 
 
 def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
-    return EXCHANGE.get_balance(currency)
+    return _API.get_balance(currency)
 
 
 def get_balances():
-    return EXCHANGE.get_balances()
+    if _CONF['dry_run']:
+        return []
+
+    return _API.get_balances()
 
 
 def get_ticker(pair: str) -> dict:
-    return EXCHANGE.get_ticker(pair)
+    return _API.get_ticker(pair)
 
 
-def get_ticker_history(pair: str, minimum_date: arrow.Arrow):
-    return EXCHANGE.get_ticker_history(pair, minimum_date)
+def get_ticker_history(pair: str, tick_interval: Optional[int] = 5) -> List:
+    return _API.get_ticker_history(pair, tick_interval)
 
 
 def cancel_order(order_id: str) -> None:
     if _CONF['dry_run']:
         return
 
-    return EXCHANGE.cancel_order(order_id)
+    return _API.cancel_order(order_id)
 
 
-def get_open_orders(pair: str) -> List[dict]:
+def get_order(order_id: str) -> Dict:
     if _CONF['dry_run']:
-        return []
+        order = _DRY_RUN_OPEN_ORDERS[order_id]
+        order.update({
+            'id': order_id
+        })
+        return order
 
-    return EXCHANGE.get_open_orders(pair)
+    return _API.get_order(order_id)
 
 
 def get_pair_detail_url(pair: str) -> str:
-    return EXCHANGE.get_pair_detail_url(pair)
+    return _API.get_pair_detail_url(pair)
 
 
 def get_markets() -> List[str]:
-    return EXCHANGE.get_markets()
+    return _API.get_markets()
+
+
+def get_name() -> str:
+    return _API.name
+
+
+def get_sleep_time() -> float:
+    return _API.sleep_time
+
+
+def get_fee() -> float:
+    return _API.fee

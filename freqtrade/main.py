@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import copy
 import json
 import logging
@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, Optional
 from signal import signal, SIGINT, SIGABRT, SIGTERM
 
+import requests
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
@@ -23,12 +24,13 @@ logger = logging.getLogger(__name__)
 _CONF = {}
 
 
-def _process() -> None:
+def _process() -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
-    :return: None
+    :return: True if a trade has been created or closed, False otherwise
     """
+    state_changed = False
     try:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -38,28 +40,36 @@ def _process() -> None:
                 trade = create_trade(float(_CONF['stake_amount']))
                 if trade:
                     Trade.session.add(trade)
+                    state_changed = True
                 else:
                     logging.info('Got no buy signal...')
             except ValueError:
                 logger.exception('Unable to create trade')
 
         for trade in trades:
-            # Check if there is already an open order for this trade
-            orders = exchange.get_open_orders(trade.pair)
-            orders = [o for o in orders if o['id'] == trade.open_order_id]
-            if orders:
-                logger.info('There is an open order for: %s', orders[0])
-            else:
-                # Update state
-                trade.open_order_id = None
-                # Check if this trade can be closed
-                if not close_trade_if_fulfilled(trade):
-                    # Check if we can sell our current pair
-                    handle_trade(trade)
-        Trade.session.flush()
-    except (ConnectionError, json.JSONDecodeError) as error:
-        msg = 'Got {} in _process()'.format(error.__class__.__name__)
+            # Get order details for actual price per unit
+            if trade.open_order_id:
+                # Update trade with order values
+                logger.info('Got open order for %s', trade)
+                trade.update(exchange.get_order(trade.open_order_id))
+
+            if not close_trade_if_fulfilled(trade):
+                # Check if we can sell our current pair
+                state_changed = handle_trade(trade) or state_changed
+
+            Trade.session.flush()
+    except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+        msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
         logger.exception(msg)
+        time.sleep(30)
+    except RuntimeError:
+        telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
+            traceback=traceback.format_exc(),
+            hint='Issue `/start` if you think it is safe to restart.'
+        ))
+        logger.exception('Got RuntimeError. Stopping trader ...')
+        update_state(State.STOPPED)
+    return state_changed
 
 
 def close_trade_if_fulfilled(trade: Trade) -> bool:
@@ -80,23 +90,24 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
     return False
 
 
-def execute_sell(trade: Trade, current_rate: float) -> None:
+def execute_sell(trade: Trade, limit: float) -> None:
     """
-    Executes a sell for the given trade and current rate
+    Executes a limit sell for the given trade and limit
     :param trade: Trade instance
-    :param current_rate: current rate
+    :param limit: limit rate for the sell order
     :return: None
     """
-    # Get available balance
-    currency = trade.pair.split('_')[1]
-    balance = exchange.get_balance(currency)
-    profit = trade.exec_sell_order(current_rate, balance)
-    message = '*{}:* Selling [{}]({}) at rate `{:f} (profit: {}%)`'.format(
+    # Execute sell and update trade record
+    order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+    trade.open_order_id = order_id
+
+    fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
+    message = '*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
-        trade.close_rate,
-        round(profit, 2)
+        limit,
+        fmt_exp_profit
     )
     logger.info(message)
     telegram.send_msg(message)
@@ -107,41 +118,35 @@ def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bo
     Based an earlier trade and current price and configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
-    current_profit = (current_rate - trade.open_rate) / trade.open_rate
-
+    current_profit = trade.calc_profit(current_rate)
     if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
         logger.debug('Stop loss hit.')
         return True
 
     for duration, threshold in sorted(_CONF['minimal_roi'].items()):
-        duration, threshold = float(duration), float(threshold)
         # Check if time matches and current rate is above threshold
         time_diff = (current_time - trade.open_date).total_seconds() / 60
-        if time_diff > duration and current_profit > threshold:
+        if time_diff > float(duration) and current_profit > threshold:
             return True
 
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     return False
 
 
-def handle_trade(trade: Trade) -> None:
+def handle_trade(trade: Trade) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
-    :return: None
+    :return: True if trade has been sold, False otherwise
     """
-    try:
-        if not trade.is_open:
-            raise ValueError('attempt to handle closed trade: {}'.format(trade))
+    if not trade.is_open:
+        raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
-        logger.debug('Handling open trade %s ...', trade)
-
-        current_rate = exchange.get_ticker(trade.pair)['bid']
-        if should_sell(trade, current_rate, datetime.utcnow()):
-            execute_sell(trade, current_rate)
-            return
-
-    except ValueError:
-        logger.exception('Unable to handle open order')
+    logger.debug('Handling %s ...', trade)
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    if should_sell(trade, current_rate, datetime.utcnow()):
+        execute_sell(trade, current_rate)
+        return True
+    return False
 
 
 def get_target_bid(ticker: Dict[str, float]) -> float:
@@ -163,7 +168,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise ValueError(
-            'stake amount is not fulfilled (currency={}'.format(_CONF['stake_currency'])
+            'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
         )
 
     # Remove currently opened and latest pairs from whitelist
@@ -182,27 +187,30 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     else:
         return None
 
-    open_rate = get_target_bid(exchange.get_ticker(pair))
-    amount = stake_amount / open_rate
-    order_id = exchange.buy(pair, open_rate, amount)
+    # Calculate amount and subtract fee
+    fee = exchange.get_fee()
+    buy_limit = get_target_bid(exchange.get_ticker(pair))
+    amount = (1 - fee) * stake_amount / buy_limit
 
+    order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
-    message = '*{}:* Buying [{}]({}) at rate `{:f}`'.format(
-        exchange.EXCHANGE.name.upper(),
+    message = '*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
+        exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
-        open_rate
+        buy_limit
     )
     logger.info(message)
     telegram.send_msg(message)
+    # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
     return Trade(pair=pair,
                  stake_amount=stake_amount,
-                 open_rate=open_rate,
-                 open_date=datetime.utcnow(),
                  amount=amount,
-                 exchange=exchange.EXCHANGE.name.upper(),
-                 open_order_id=order_id,
-                 is_open=True)
+                 fee=fee * 2,
+                 open_rate=buy_limit,
+                 open_date=datetime.utcnow(),
+                 exchange=exchange.get_name().upper(),
+                 open_order_id=order_id)
 
 
 def init(config: dict, db_url: Optional[str] = None) -> None:
@@ -242,49 +250,38 @@ def cleanup(*args, **kwargs) -> None:
     exit(0)
 
 
-def app(config: dict) -> None:
+def main():
     """
-    Main loop which handles the application state
-    :param config: config as dict
+    Loads and validates the config and handles the main loop
     :return: None
     """
     logger.info('Starting freqtrade %s', __version__)
-    init(config)
-    try:
-        old_state = get_state()
-        logger.info('Initial State: %s', old_state)
-        telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
-        while True:
-            new_state = get_state()
-            # Log state transition
-            if new_state != old_state:
-                telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
-                logging.info('Changing state to: %s', new_state.name)
 
-            if new_state == State.STOPPED:
-                time.sleep(1)
-            elif new_state == State.RUNNING:
-                _process()
-                # We need to sleep here because otherwise we would run into bittrex rate limit
-                time.sleep(exchange.EXCHANGE.sleep_time)
-            old_state = new_state
-    except RuntimeError:
-        telegram.send_msg(
-            '*Status:* Got RuntimeError:\n```\n{}\n```'.format(traceback.format_exc())
-        )
-        logger.exception('RuntimeError. Trader stopped!')
-
-
-def main():
-    """
-    Loads and validates the config and starts the main loop
-    :return: None
-    """
     global _CONF
     with open('config.json') as file:
         _CONF = json.load(file)
-        validate(_CONF, CONF_SCHEMA)
-        app(_CONF)
+
+    logger.info('Validating configuration ...')
+    validate(_CONF, CONF_SCHEMA)
+
+    init(_CONF)
+    old_state = get_state()
+    logger.info('Initial State: %s', old_state)
+    telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
+    while True:
+        new_state = get_state()
+        # Log state transition
+        if new_state != old_state:
+            telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
+            logging.info('Changing state to: %s', new_state.name)
+
+        if new_state == State.STOPPED:
+            time.sleep(1)
+        elif new_state == State.RUNNING:
+            _process()
+            # We need to sleep here because otherwise we would run into bittrex rate limit
+            time.sleep(exchange.get_sleep_time())
+        old_state = new_state
 
 
 if __name__ == '__main__':
