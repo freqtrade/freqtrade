@@ -268,7 +268,8 @@ def test_forcesell_handle_invalid(default_conf, update, mocker):
     assert 'no open trade' in msg_mock.call_args_list[0][0][0]
 
 
-def test_performance_handle(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+def test_performance_handle(
+        default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     msg_mock = MagicMock()
