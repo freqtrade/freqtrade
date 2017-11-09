@@ -232,6 +232,34 @@ def test_forcesell_handle(default_conf, update, ticker, mocker):
     assert '0.07256061 (profit: ~-0.64%)' in msg_mock.call_args_list[-1][0][0]
 
 
+def test_forcesell_all_handle(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    msg_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.main.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, 'sqlite://')
+
+    # Create some test data
+    for _ in range(4):
+        Trade.session.add(create_trade(15.0))
+    Trade.session.flush()
+
+    msg_mock.reset_mock()
+
+    update.message.text = '/forcesell all'
+    _forcesell(bot=MagicBot(), update=update)
+
+    assert msg_mock.call_count == 4
+    for args in msg_mock.call_args_list:
+        assert '0.07256061 (profit: ~-0.64%)' in args[0][0]
+
+
 def test_forcesell_handle_invalid(default_conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -265,7 +293,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker):
     update.message.text = '/forcesell 123456'
     _forcesell(bot=MagicBot(), update=update)
     assert msg_mock.call_count == 1
-    assert 'no open trade' in msg_mock.call_args_list[0][0][0]
+    assert 'Invalid argument.' in msg_mock.call_args_list[0][0][0]
 
 
 def test_performance_handle(
