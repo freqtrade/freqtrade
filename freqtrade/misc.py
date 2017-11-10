@@ -1,6 +1,10 @@
+import argparse
 import enum
+import logging
 
 from wrapt import synchronized
+
+from freqtrade import __version__
 
 
 class State(enum.Enum):
@@ -30,6 +34,35 @@ def get_state() -> State:
     :return:
     """
     return _STATE
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    """ Builds and returns an ArgumentParser instance """
+    parser = argparse.ArgumentParser(
+        description='Simple High Frequency Trading Bot for crypto currencies'
+    )
+    parser.add_argument(
+        '-c', '--config',
+        help='specify configuration file (default: config.json)',
+        dest='config',
+        default='config.json',
+        type=str,
+        metavar='PATH',
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        help='be verbose',
+        action='store_const',
+        dest='loglevel',
+        const=logging.DEBUG,
+        default=logging.INFO,
+    )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s {}'.format(__version__),
+    )
+    return parser
 
 
 # Required json-schema for user specified config
