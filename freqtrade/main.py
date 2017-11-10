@@ -299,8 +299,6 @@ def main():
             time.sleep(1)
         elif new_state == State.RUNNING:
             _process()
-            # We need to sleep here because otherwise we would run into bittrex rate limit
-            time.sleep(exchange.get_sleep_time())
         old_state = new_state
 
 

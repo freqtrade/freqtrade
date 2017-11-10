@@ -21,11 +21,6 @@ class Bittrex(Exchange):
     TICKER_METHOD: str = BASE_URL + '/Api/v2.0/pub/market/GetTicks'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
 
-    @property
-    def sleep_time(self) -> float:
-        """ Sleep time to avoid rate limits, used in the main loop """
-        return 25
-
     def __init__(self, config: dict) -> None:
         global _API, _EXCHANGE_CONF
 

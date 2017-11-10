@@ -161,9 +161,5 @@ def get_name() -> str:
     return _API.name
 
 
-def get_sleep_time() -> float:
-    return _API.sleep_time
-
-
 def get_fee() -> float:
     return _API.fee

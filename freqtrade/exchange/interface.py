@@ -18,14 +18,6 @@ class Exchange(ABC):
         :return: percentage in float
         """
 
-    @property
-    @abstractmethod
-    def sleep_time(self) -> float:
-        """
-        Sleep time in seconds for the main loop to avoid API rate limits.
-        :return: float
-        """
-
     @abstractmethod
     def buy(self, pair: str, rate: float, amount: float) -> str:
         """
