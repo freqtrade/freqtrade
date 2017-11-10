@@ -40,7 +40,10 @@ def _process() -> bool:
                     Trade.session.add(trade)
                     state_changed = True
                 else:
-                    logger.info('Got no buy signal...')
+                    logger.info(
+                        'Checked all whitelisted currencies. '
+                        'Found no suitable entry positions for buying. Will keep looking ...'
+                    )
             except ValueError:
                 logger.exception('Unable to create trade')
 
@@ -83,7 +86,10 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
             and trade.close_rate is not None \
             and trade.open_order_id is None:
         trade.is_open = False
-        logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
+        logger.info(
+            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+            trade
+        )
         return True
     return False
 
