@@ -22,8 +22,11 @@ Persistence is achieved through sqlite.
 * /status [table]: Lists all open trades
 * /count: Displays number of open trades
 * /profit: Lists cumulative profit from all finished trades
-* /forcesell <trade_id>: Instantly sells the given trade (Ignoring `minimum_roi`).
+* /forcesell <trade_id>|all: Instantly sells the given trade (Ignoring `minimum_roi`).
 * /performance: Show performance of each finished trade grouped by pair
+* /balance: Show account balance per currency
+* /help: Show help message
+* /version: Show version
 
 ### Config
 `minimal_roi` is a JSON object where the key is a duration
