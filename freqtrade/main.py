@@ -6,9 +6,10 @@ import time
 import traceback
 from datetime import datetime
 from signal import signal, SIGINT, SIGABRT, SIGTERM
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import requests
+from cachetools import cached, TTLCache
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
@@ -244,6 +245,25 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
         signal(sig, cleanup)
 
 
+@cached(TTLCache(maxsize=1, ttl=1800))
+def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume') -> List[str]:
+    """
+    Updates the whitelist with with a dynamically generated list
+    :param base_currency: base currency as str
+    :param topn: maximum number of returned results
+    :param key: sort key (defaults to 'BaseVolume')
+    :return: List of pairs
+    """
+    summaries = sorted(
+        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
+        key=lambda s: s[key],
+        reverse=True
+    )
+    pairs = [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
+    logger.debug('Generated pair whitelist: %s ...', pairs)
+    return pairs
+
+
 def cleanup(*args, **kwargs) -> None:
     """
     Cleanup the application state und finish all pending tasks
@@ -286,6 +306,8 @@ def main():
     validate(_CONF, CONF_SCHEMA)
 
     # Initialize all modules and start main loop
+    if args.dynamic_whitelist:
+        logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
     init(_CONF)
     old_state = None
     while True:
@@ -298,6 +320,8 @@ def main():
         if new_state == State.STOPPED:
             time.sleep(1)
         elif new_state == State.RUNNING:
+            if args.dynamic_whitelist:
+                _CONF['exchange']['pair_whitelist'] = gen_pair_whitelist(_CONF['stake_currency'])
             throttle(_process, min_secs=_CONF['internals'].get('process_throttle_secs', 5))
         old_state = new_state
 

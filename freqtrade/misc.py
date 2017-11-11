@@ -83,6 +83,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action='version',
         version='%(prog)s {}'.format(__version__),
     )
+    parser.add_argument(
+        '--dynamic-whitelist',
+        help='dynamically generate and update whitelist based on 24h BaseVolume',
+        action='store_true',
+    )
     return parser
 
 
