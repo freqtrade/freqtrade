@@ -4,6 +4,7 @@ from random import randint
 from typing import List, Dict, Any, Optional
 
 import arrow
+from cachetools import cached, TTLCache
 
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.interface import Exchange
@@ -127,6 +128,7 @@ def get_ticker(pair: str) -> dict:
     return _API.get_ticker(pair)
 
 
+@cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval: Optional[int] = 5) -> List:
     return _API.get_ticker_history(pair, tick_interval)
 

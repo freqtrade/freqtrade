@@ -28,7 +28,7 @@ class Bittrex(Exchange):
         _API = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
-            calls_per_second=5,
+            calls_per_second=3,
         )
 
     @property

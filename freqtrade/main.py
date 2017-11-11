@@ -299,6 +299,7 @@ def main():
             time.sleep(1)
         elif new_state == State.RUNNING:
             _process()
+            time.sleep(5)
         old_state = new_state
 
 
