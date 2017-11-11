@@ -322,7 +322,7 @@ def main():
         elif new_state == State.RUNNING:
             if args.dynamic_whitelist:
                 _CONF['exchange']['pair_whitelist'] = gen_pair_whitelist(_CONF['stake_currency'])
-            throttle(_process, min_secs=_CONF['internals'].get('process_throttle_secs', 5))
+            throttle(_process, min_secs=_CONF['internals'].get('process_throttle_secs', 10))
         old_state = new_state
 
 
