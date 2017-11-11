@@ -32,8 +32,6 @@ def buy_strategy_generator(params):
             conditions.append(dataframe['fastd'] < params['fastd']['value'])
         if params['adx']['enabled']:
             conditions.append(dataframe['adx'] > params['adx']['value'])
-        if params['cci']['enabled']:
-            conditions.append(dataframe['cci'] < params['cci']['value'])
         if params['rsi']['enabled']:
             conditions.append(dataframe['rsi'] < params['rsi']['value'])
         if params['over_sar']['enabled']:
@@ -99,11 +97,7 @@ def test_hyperopt(backtest_conf, backdata, mocker):
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('adx-value', 10, 30)}
-        ]),
-        'cci': hp.choice('cci', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('cci-value', -150, -100)}
+            {'enabled': True, 'value': hp.uniform('adx-value', 10, 50)}
         ]),
         'rsi': hp.choice('rsi', [
             {'enabled': False},
