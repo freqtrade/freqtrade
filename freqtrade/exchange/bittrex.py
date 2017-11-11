@@ -1,14 +1,14 @@
 import logging
 from typing import List, Dict
 
-import requests
-from bittrex.bittrex import Bittrex as _Bittrex
+from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
 
 from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 
 _API: _Bittrex = None
+_API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
 
 
@@ -18,17 +18,23 @@ class Bittrex(Exchange):
     """
     # Base URL and API endpoints
     BASE_URL: str = 'https://www.bittrex.com'
-    TICKER_METHOD: str = BASE_URL + '/Api/v2.0/pub/market/GetTicks'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
 
     def __init__(self, config: dict) -> None:
-        global _API, _EXCHANGE_CONF
+        global _API, _API_V2, _EXCHANGE_CONF
 
         _EXCHANGE_CONF.update(config)
         _API = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
             calls_per_second=3,
+            api_version=API_V1_1,
+        )
+        _API_V2 = _Bittrex(
+            api_key=_EXCHANGE_CONF['key'],
+            api_secret=_EXCHANGE_CONF['secret'],
+            calls_per_second=3,
+            api_version=API_V2_0,
         )
 
     @property
@@ -90,10 +96,7 @@ class Bittrex(Exchange):
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 
-        data = requests.get(self.TICKER_METHOD, params={
-            'marketName': pair.replace('_', '-'),
-            'tickInterval': interval,
-        }).json()
+        data = _API_V2.get_candles(pair.replace('_', '-'), interval)
         if not data['success']:
             raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
