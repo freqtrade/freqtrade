@@ -137,3 +137,9 @@ class Bittrex(Exchange):
         if not data['success']:
             raise RuntimeError('{message}'.format(message=data['message']))
         return [m['MarketName'].replace('-', '_') for m in data['result']]
+
+    def get_market_summaries(self) -> List[Dict]:
+        data = _API.get_market_summaries()
+        if not data['success']:
+            raise RuntimeError('{message}'.format(message=data['message']))
+        return data['result']

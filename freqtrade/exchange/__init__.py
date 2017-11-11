@@ -159,6 +159,10 @@ def get_markets() -> List[str]:
     return _API.get_markets()
 
 
+def get_market_summaries() -> List[Dict]:
+    return _API.get_market_summaries()
+
+
 def get_name() -> str:
     return _API.name
 

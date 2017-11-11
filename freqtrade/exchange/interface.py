@@ -131,3 +131,27 @@ class Exchange(ABC):
         Returns all available markets.
         :return: List of all available pairs
         """
+
+    @abstractmethod
+    def get_market_summaries(self) -> List[Dict]:
+        """
+        Returns a 24h market summary for all available markets
+        :return: list, format: [
+            {
+                'MarketName': str,
+                'High': float,
+                'Low': float,
+                'Volume': float,
+                'Last': float,
+                'TimeStamp': datetime,
+                'BaseVolume': float,
+                'Bid': float,
+                'Ask': float,
+                'OpenBuyOrders': int,
+                'OpenSellOrders': int,
+                'PrevDay': float,
+                'Created': datetime
+            },
+            ...
+        ]
+        """
