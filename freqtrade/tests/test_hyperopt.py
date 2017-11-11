@@ -42,11 +42,10 @@ def buy_strategy_generator(params):
             prevsma = dataframe['sma'].shift(1)
             conditions.append(dataframe['sma'] > prevsma)
 
-        prev_fastd = dataframe['fastd'].shift(1)
         # TRIGGERS
         triggers = {
             'lower_bb': dataframe['tema'] <= dataframe['blower'],
-            'faststoch10': (dataframe['fastd'] >= 10) & (prev_fastd < 10),
+            'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
             'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
