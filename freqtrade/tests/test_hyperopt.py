@@ -111,7 +111,7 @@ def test_hyperopt(backtest_conf, backdata, mocker):
             {'enabled': False},
             {'enabled': True}
         ]),
-        'over_sar': hp.choice('green_candle', [
+        'green_candle': hp.choice('green_candle', [
             {'enabled': False},
             {'enabled': True}
         ]),
