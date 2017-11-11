@@ -89,19 +89,19 @@ def test_hyperopt(backtest_conf, backdata, mocker):
     space = {
         'mfi': hp.choice('mfi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('mfi-value', 5, 15)}
+            {'enabled': True, 'value': hp.quniform('mfi-value', 5, 15, 1)}
         ]),
         'fastd': hp.choice('fastd', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('fastd-value', 5, 40)}
+            {'enabled': True, 'value': hp.quniform('fastd-value', 5, 40, 1)}
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('adx-value', 10, 50)}
+            {'enabled': True, 'value': hp.quniform('adx-value', 10, 50, 1)}
         ]),
         'rsi': hp.choice('rsi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.uniform('rsi-value', 20, 30)}
+            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 30, 1)}
         ]),
         'uptrend_long_ema': hp.choice('uptrend_long_ema', [
             {'enabled': False},
