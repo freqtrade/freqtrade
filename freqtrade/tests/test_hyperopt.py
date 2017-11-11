@@ -50,6 +50,7 @@ def buy_strategy_generator(params):
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
             'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
+            'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -125,6 +126,7 @@ def test_hyperopt(backtest_conf, backdata, mocker):
             {'type': 'ao_cross_zero'},
             {'type': 'ema5_cross_ema10'},
             {'type': 'macd_cross_signal'},
+            {'type': 'sar_reversal'},
         ]),
     }
     trials = Trials()
