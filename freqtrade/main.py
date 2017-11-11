@@ -13,7 +13,7 @@ from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -280,14 +280,14 @@ def main():
     # Load and validate configuration
     with open(args.config) as file:
         _CONF = json.load(file)
+    if 'internals' not in _CONF:
+        _CONF['internals'] = {}
     logger.info('Validating configuration ...')
     validate(_CONF, CONF_SCHEMA)
 
     # Initialize all modules and start main loop
     init(_CONF)
-    old_state = get_state()
-    logger.info('Initial State: %s', old_state)
-    telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
+    old_state = None
     while True:
         new_state = get_state()
         # Log state transition
@@ -298,8 +298,7 @@ def main():
         if new_state == State.STOPPED:
             time.sleep(1)
         elif new_state == State.RUNNING:
-            _process()
-            time.sleep(5)
+            throttle(_process, min_secs=_CONF['internals'].get('process_throttle_secs', 5))
         old_state = new_state
 
 

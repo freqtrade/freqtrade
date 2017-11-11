@@ -34,5 +34,8 @@
         "token": "token",
         "chat_id": "chat_id"
     },
-    "initial_state": "running"
+    "initial_state": "running",
+    "internals": {
+        "process_throttle_secs": 5
+    }
 }
