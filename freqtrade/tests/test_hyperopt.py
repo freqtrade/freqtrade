@@ -16,11 +16,10 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1300
-
+TOTAL_TRIES = 4
+current_tries = 0
 
 def buy_strategy_generator(params):
-    print(params)
-
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
@@ -76,13 +75,16 @@ def test_hyperopt(backtest_conf, backdata, mocker):
         results = backtest(backtest_conf, backdata, mocker)
 
         result = format_results(results)
-        print(result)
 
         total_profit = results.profit.sum() * 1000
         trade_count = len(results.index)
 
         trade_loss = 1 - 0.4 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
         profit_loss = max(0, 1 - total_profit / 15000)  # max profit 15000
+
+        global current_tries
+        current_tries += 1
+        print('{}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
 
         return {
             'loss': trade_loss + profit_loss,
@@ -139,7 +141,7 @@ def test_hyperopt(backtest_conf, backdata, mocker):
         ]),
     }
     trials = Trials()
-    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=4, trials=trials)
+    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     print('\n\n\n\n==================== HYPEROPT BACKTESTING REPORT ==============================')
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
