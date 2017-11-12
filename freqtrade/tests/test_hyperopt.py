@@ -15,7 +15,7 @@ from freqtrade.vendor.qtpylib.indicators import crossed_above
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
-TARGET_TRADES = 1200
+TARGET_TRADES = 1300
 
 
 def buy_strategy_generator(params):
@@ -77,8 +77,8 @@ def test_hyperopt(backtest_conf, backdata, mocker):
         total_profit = results.profit.sum() * 1000
         trade_count = len(results.index)
 
-        trade_loss = 1 - 0.8 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5)
-        profit_loss = exp(-total_profit**3 / 10**11)
+        trade_loss = 1 - 0.4 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+        profit_loss = max(0, 1 - total_profit / 15000)  # max profit 15000
 
         return {
             'loss': trade_loss + profit_loss,
