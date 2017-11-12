@@ -26,6 +26,8 @@ def buy_strategy_generator(params):
         # GUARDS AND TRENDS
         if params['uptrend_long_ema']['enabled']:
             conditions.append(dataframe['ema50'] > dataframe['ema100'])
+        if params['uptrend_short_ema']['enabled']:
+            conditions.append(dataframe['ema5'] > dataframe['ema10'])
         if params['mfi']['enabled']:
             conditions.append(dataframe['mfi'] < params['mfi']['value'])
         if params['fastd']['enabled']:
@@ -105,6 +107,10 @@ def test_hyperopt(backtest_conf, backdata, mocker):
             {'enabled': True, 'value': hp.quniform('rsi-value', 20, 30, 1)}
         ]),
         'uptrend_long_ema': hp.choice('uptrend_long_ema', [
+            {'enabled': False},
+            {'enabled': True}
+        ]),
+        'uptrend_short_ema': hp.choice('uptrend_short_ema', [
             {'enabled': False},
             {'enabled': True}
         ]),
