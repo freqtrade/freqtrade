@@ -53,6 +53,7 @@ def buy_strategy_generator(params):
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
             'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
             'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
+            'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -134,6 +135,7 @@ def test_hyperopt(backtest_conf, backdata, mocker):
             {'type': 'macd_cross_signal'},
             {'type': 'sar_reversal'},
             {'type': 'stochf_cross'},
+            {'type': 'ht_sine'},
         ]),
     }
     trials = Trials()

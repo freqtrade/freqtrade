@@ -49,6 +49,9 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['macd'] = macd['macd']
     dataframe['macdsignal'] = macd['macdsignal']
     dataframe['macdhist'] = macd['macdhist']
+    hilbert = ta.HT_SINE(dataframe)
+    dataframe['htsine'] = hilbert['sine']
+    dataframe['htleadsine'] = hilbert['leadsine']
     return dataframe
 
 
