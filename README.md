@@ -115,14 +115,14 @@ filesystem):
 
 ```
 $ cd ~/.freq
-$ touch tradesv3.sqlite
+$ touch trades.sqlite
 $ docker run -d \
   --name freqtrade \
   -v ~/.freq/config.json:/freqtrade/config.json \
-  -v ~/.freq/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
+  -v ~/.freq/trades.sqlite:/freqtrade/trades.sqlite \
   freqtrade
 ```
-If you are using `dry_run=True` it's not necessary to mount `tradesv3.sqlite`.
+If you are using `dry_run=True` it's not necessary to mount `trades.sqlite`.
 
 You can then use the following commands to monitor and manage your container:
 

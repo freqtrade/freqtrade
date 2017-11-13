@@ -1,12 +1,20 @@
 from sys import version_info
 from setuptools import setup
+from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 if version_info.major == 3 and version_info.minor < 6 or \
         version_info.major < 3:
     print('Your Python interpreter must be 3.6 or greater!')
     exit(1)
 
-from freqtrade import __version__
+from freqtrade import __version__, migrate
+
+class PostDevelopCommand(develop):
+    """Post-installation for development mode."""
+    def run(self):
+        migrate.run()
+        develop.run(self)
 
 
 setup(name='freqtrade',
@@ -35,6 +43,7 @@ setup(name='freqtrade',
           'TA-Lib',
           'tabulate',
           'cachetools',
+          'caribou',
       ],
       dependency_links=[
           "git+https://github.com/ericsomdahl/python-bittrex.git@0.2.0#egg=python-bittrex"
@@ -46,4 +55,7 @@ setup(name='freqtrade',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
           'Topic :: Office/Business :: Financial :: Investment',
           'Intended Audience :: Science/Research',
-      ])
+      ],
+      cmdclass={
+          'develop': PostDevelopCommand,
+      })
