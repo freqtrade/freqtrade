@@ -82,6 +82,10 @@ class Bittrex(Exchange):
             raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
+        if not data['result']['Bid'] or not data['result']['Ask'] or not data['result']['Last']:
+            raise RuntimeError('{message} params=({pair})'.format(
+                message=data['message'],
+                pair=pair))
         return {
             'bid': float(data['result']['Bid']),
             'ask': float(data['result']['Ask']),
@@ -101,7 +105,7 @@ class Bittrex(Exchange):
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
             for tick in data['result']:
                 if prop not in tick.keys():
-                    logger.warning('Required property {} not present in response'.format(prop))
+                    logger.warning('Required property %s not present in response', prop)
                     return []
 
         if not data['success']:
@@ -150,3 +154,14 @@ class Bittrex(Exchange):
         if not data['success']:
             raise RuntimeError('{message}'.format(message=data['message']))
         return data['result']
+
+    def get_wallet_health(self) -> List[Dict]:
+        data = _API_V2.get_wallet_health()
+        if not data['success']:
+            raise RuntimeError('{message}'.format(message=data['message']))
+        return [{
+            'Currency': entry['Health']['Currency'],
+            'IsActive': entry['Health']['IsActive'],
+            'LastChecked': entry['Health']['LastChecked'],
+            'Notice': entry['Currency'].get('Notice'),
+        } for entry in data['result']]

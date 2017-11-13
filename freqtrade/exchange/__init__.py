@@ -169,3 +169,7 @@ def get_name() -> str:
 
 def get_fee() -> float:
     return _API.fee
+
+
+def get_wallet_health() -> List[Dict]:
+    return _API.get_wallet_health()

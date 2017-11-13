@@ -23,14 +23,45 @@ logger = logging.getLogger('freqtrade')
 _CONF = {}
 
 
-def _process() -> bool:
+def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
+    """
+    Check wallet health and remove pair from whitelist if necessary
+    :param whitelist: a new whitelist (optional)
+    :return: None
+    """
+    whitelist = whitelist or _CONF['exchange']['pair_whitelist']
+
+    sanitized_whitelist = []
+    health = exchange.get_wallet_health()
+    for status in health:
+        pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+        if pair not in whitelist:
+            continue
+        if status['IsActive']:
+            sanitized_whitelist.append(pair)
+        else:
+            logger.info(
+                'Ignoring %s from whitelist (reason: %s).',
+                pair, status.get('Notice') or 'wallet is not active'
+            )
+    if _CONF['exchange']['pair_whitelist'] != sanitized_whitelist:
+        logger.debug('Using refreshed pair whitelist: %s ...', sanitized_whitelist)
+        _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
+
+
+def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
+    :param: dynamic_whitelist: True is a dynamic whitelist should be generated (optional)
     :return: True if a trade has been created or closed, False otherwise
     """
     state_changed = False
     try:
+        # Refresh whitelist based on wallet maintenance
+        refresh_whitelist(
+            gen_pair_whitelist(_CONF['stake_currency']) if dynamic_whitelist else None
+        )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
@@ -259,9 +290,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
         key=lambda s: s[key],
         reverse=True
     )
-    pairs = [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
-    logger.debug('Generated pair whitelist: %s ...', pairs)
-    return pairs
+    return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
 
 
 def cleanup(*args, **kwargs) -> None:
@@ -320,9 +349,11 @@ def main():
         if new_state == State.STOPPED:
             time.sleep(1)
         elif new_state == State.RUNNING:
-            if args.dynamic_whitelist:
-                _CONF['exchange']['pair_whitelist'] = gen_pair_whitelist(_CONF['stake_currency'])
-            throttle(_process, min_secs=_CONF['internals'].get('process_throttle_secs', 10))
+            throttle(
+                _process,
+                min_secs=_CONF['internals'].get('process_throttle_secs', 10),
+                dynamic_whitelist=args.dynamic_whitelist,
+            )
         old_state = new_state
 
 
