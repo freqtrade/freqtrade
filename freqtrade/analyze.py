@@ -39,9 +39,7 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
-    dataframe['cci'] = ta.CCI(dataframe)
     dataframe['rsi'] = ta.RSI(dataframe)
-    dataframe['mom'] = ta.MOM(dataframe)
     dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
     dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
     dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
@@ -51,6 +49,9 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['macd'] = macd['macd']
     dataframe['macdsignal'] = macd['macdsignal']
     dataframe['macdhist'] = macd['macdhist']
+    hilbert = ta.HT_SINE(dataframe)
+    dataframe['htsine'] = hilbert['sine']
+    dataframe['htleadsine'] = hilbert['leadsine']
     return dataframe
 
 
