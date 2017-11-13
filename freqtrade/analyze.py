@@ -79,13 +79,12 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    data = get_ticker_history(pair)
-    dataframe = parse_ticker_dataframe(data)
+    ticker_hist = get_ticker_history(pair)
+    if not ticker_hist:
+        logger.warning('Empty ticker history for pair %s', pair)
+        return DataFrame()
 
-    if dataframe.empty:
-        logger.warning('Empty dataframe for pair %s', pair)
-        return dataframe
-
+    dataframe = parse_ticker_dataframe(ticker_hist)
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     return dataframe
@@ -98,7 +97,6 @@ def get_buy_signal(pair: str) -> bool:
     :return: True if pair is good for buying, False otherwise
     """
     dataframe = analyze_ticker(pair)
-
     if dataframe.empty:
         return False
 

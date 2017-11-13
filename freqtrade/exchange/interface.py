@@ -74,7 +74,7 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker_history(self, pair: str, tick_interval: int) -> List:
+    def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         """
         Gets ticker history for given pair.
         :param pair: Pair as str, format: BTC_ETC
