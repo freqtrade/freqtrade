@@ -318,6 +318,11 @@ def main():
     global _CONF
     args = build_arg_parser().parse_args()
 
+    # Check if subcommand has been selected
+    if hasattr(args, 'func'):
+        args.func(args)
+        exit(0)
+
     # Initialize logger
     logging.basicConfig(
         level=args.loglevel,

@@ -1,6 +1,7 @@
 import argparse
 import enum
 import logging
+import os
 import time
 from typing import Any, Callable
 
@@ -92,7 +93,38 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help='dynamically generate and update whitelist based on 24h BaseVolume',
         action='store_true',
     )
+    build_subcommands(parser)
     return parser
+
+
+def build_subcommands(parser: argparse.ArgumentParser) -> None:
+    """ Builds and attaches all subcommands """
+    subparsers = parser.add_subparsers(dest='subparser')
+    backtest = subparsers.add_parser('backtest', help='backtesting module')
+    backtest.set_defaults(func=start_backtesting)
+    backtest.add_argument(
+        '-l', '--live',
+        action='store_true',
+        dest='live',
+        help='using live data',
+    )
+
+
+def start_backtesting(args) -> None:
+    """
+    Exports all args as environment variables and starts backtesting via pytest.
+    :param args: arguments namespace
+    :return:
+    """
+    import pytest
+
+    os.environ.update({
+        'BACKTEST': 'true',
+        'BACKTEST_LIVE': 'true' if args.live else '',
+        'BACKTEST_CONFIG': args.config,
+    })
+    path = os.path.join(os.path.dirname(__file__), 'tests', 'test_backtesting.py')
+    pytest.main(['-s', path])
 
 
 # Required json-schema for user specified config

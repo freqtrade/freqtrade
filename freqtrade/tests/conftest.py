@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from unittest.mock import MagicMock
 
+import os
 import pytest
 from jsonschema import validate
 from telegram import Message, Chat, Update
@@ -67,11 +68,12 @@ def backtest_conf():
 
 @pytest.fixture(scope="module")
 def backdata():
+    path = os.path.abspath(os.path.dirname(__file__))
     result = {}
     for pair in ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
                  'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']:
-        with open('freqtrade/tests/testdata/' + pair + '.json') as data_file:
-            result[pair] = json.load(data_file)
+        with open('{abspath}/testdata/{pair}.json'.format(abspath=path, pair=pair)) as fp:
+            result[pair] = json.load(fp)
     return result
 
 
