@@ -59,7 +59,7 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[Arrow, Arrow]:
     return arrow.get(min_date), arrow.get(max_date)
 
 
-def generate_text_table(data: Dict[str, Dict], results: DataFrame) -> str:
+def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currency) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
@@ -72,7 +72,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame) -> str:
             pair,
             len(result.index),
             '{:.2f}%'.format(result.profit.mean() * 100.0),
-            '{:.8f}'.format(result.profit.sum()),
+            '{:.08f} {}'.format(result.profit.sum(), stake_currency),
             '{:.2f}'.format(result.duration.mean() * 5),
         ])
 
@@ -81,7 +81,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame) -> str:
         'TOTAL',
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.8f}'.format(results.profit.sum()),
+        '{:.08f} {}'.format(results.profit.sum(), stake_currency),
         '{:.2f}'.format(results.duration.mean() * 5),
     ])
     return tabulate(tabular_data, headers=headers)
@@ -100,7 +100,7 @@ def backtest(backtest_conf, processed, mocker):
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                amount=1,
+                amount=backtest_conf['stake_amount'],
                 fee=exchange.get_fee() * 2
             )
             # calculate win/lose forwards from buy point
@@ -138,12 +138,17 @@ def test_backtest(backtest_conf, backdata, mocker):
     config = config or backtest_conf
     data = livedata or backdata
 
+    print('Using stake_currency: {} ...\nUsing stake_amount: {} ...'.format(
+        config['stake_currency'], config['stake_amount']
+    ))
+
     min_date, max_date = get_timeframe(data)
     print('Measuring data from {} up to {} ...'.format(
         min_date.isoformat(), max_date.isoformat()
     ))
 
     results = backtest(config, preprocess(data), mocker)
-    print('====================== BACKTESTING REPORT ======================================\n')
-    print(generate_text_table(data, results))
-
+    print('====================== BACKTESTING REPORT ======================================\n\n'
+          'NOTE: This Report doesn\'t respect the limits of max_open_trades, \n'
+          '      so the projected values should be taken with a grain of salt.\n')
+    print(generate_text_table(data, results, config['stake_currency']))

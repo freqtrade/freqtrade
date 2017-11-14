@@ -56,6 +56,8 @@ def default_conf():
 @pytest.fixture(scope="module")
 def backtest_conf():
     return {
+        "stake_currency": "BTC",
+        "stake_amount": 0.01,
         "minimal_roi": {
             "40":  0.0,
             "30":  0.01,
