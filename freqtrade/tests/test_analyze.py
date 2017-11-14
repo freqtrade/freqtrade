@@ -10,7 +10,7 @@ from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, popula
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/btc-eth.json') as data_file:
+    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
         return parse_ticker_dataframe(json.load(data_file))
 
 
@@ -20,7 +20,7 @@ def test_dataframe_correct_columns(result):
 
 
 def test_dataframe_correct_length(result):
-    assert len(result.index) == 5751
+    assert len(result.index) == 14382
 
 
 def test_populates_buy_trend(result):
