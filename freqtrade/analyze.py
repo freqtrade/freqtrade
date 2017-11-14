@@ -7,7 +7,7 @@ import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above, crossed_below
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
 def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     """
-    Based on TA indicators, populates the buy trend for the given dataframe
+    Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
@@ -74,6 +74,19 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         (dataframe['adx'] > 30),
         'buy'] = 1
     dataframe.ix[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+
+    return dataframe
+
+def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
+    """
+    Based on TA indicators, populates the sell signal for the given dataframe
+    :param dataframe: DataFrame
+    :return: DataFrame with buy column
+    """
+    dataframe.ix[
+        (crossed_above(dataframe['rsi'], 70)),
+        'sell'] = 1
+    dataframe.ix[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
 
     return dataframe
 
@@ -92,6 +105,7 @@ def analyze_ticker(pair: str) -> DataFrame:
     dataframe = parse_ticker_dataframe(ticker_hist)
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
+    dataframe = populate_sell_trend(dataframe)
     return dataframe
 
 

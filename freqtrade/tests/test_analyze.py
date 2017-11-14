@@ -37,3 +37,13 @@ def test_returns_latest_buy_signal(mocker):
     buydf = DataFrame([{'buy': 0, 'date': datetime.today()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
     assert not get_signal('BTC-ETH', SignalType.BUY)
+
+
+def test_returns_latest_sell_signal(mocker):
+    selldf = DataFrame([{'sell': 1, 'date': datetime.today()}])
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=selldf)
+    assert get_signal('BTC-ETH', SignalType.SELL)
+
+    selldf = DataFrame([{'sell': 0, 'date': datetime.today()}])
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=selldf)
+    assert not get_signal('BTC-ETH', SignalType.SELL)
