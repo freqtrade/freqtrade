@@ -100,7 +100,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
     """ Builds and attaches all subcommands """
     subparsers = parser.add_subparsers(dest='subparser')
-    backtest = subparsers.add_parser('backtest', help='backtesting module')
+    backtest = subparsers.add_parser('backtesting', help='backtesting module')
     backtest.set_defaults(func=start_backtesting)
     backtest.add_argument(
         '-l', '--live',
