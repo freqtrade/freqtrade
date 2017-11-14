@@ -287,7 +287,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
     """
     summaries = sorted(
         (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
-        key=lambda s: s[key],
+        key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
     return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
