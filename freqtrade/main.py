@@ -13,9 +13,10 @@ from cachetools import cached, TTLCache
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
-from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, \
-    FreqtradeException
+from freqtrade.analyze import get_signal, SignalType
+from freqtrade.misc import (
+    CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, FreqtradeException
+)
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -223,7 +224,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_buy_signal(_pair):
+        if get_signal(_pair, SignalType.BUY):
             pair = _pair
             break
     else:

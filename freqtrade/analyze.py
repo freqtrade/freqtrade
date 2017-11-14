@@ -1,3 +1,4 @@
+from enum import Enum
 import logging
 from datetime import timedelta
 
@@ -9,6 +10,10 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
 
 logger = logging.getLogger(__name__)
+
+class SignalType(Enum):
+    BUY = "buy"
+    SELL = "sell"
 
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
@@ -90,9 +95,9 @@ def analyze_ticker(pair: str) -> DataFrame:
     return dataframe
 
 
-def get_buy_signal(pair: str) -> bool:
+def get_signal(pair: str, signal: SignalType) -> bool:
     """
-    Calculates a buy signal based several technical analysis indicators
+    Calculates current signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is good for buying, False otherwise
     """
@@ -107,6 +112,6 @@ def get_buy_signal(pair: str) -> bool:
     if signal_date < arrow.now() - timedelta(minutes=10):
         return False
 
-    signal = latest['buy'] == 1
-    logger.debug('buy_trigger: %s (pair=%s, signal=%s)', latest['date'], pair, signal)
-    return signal
+    result = latest[signal.value] == 1
+    logger.debug('%s_trigger: %s (pair=%s, signal=%s)', signal.value, latest['date'], pair, result)
+    return result
