@@ -17,6 +17,7 @@ from freqtrade.analyze import parse_ticker_dataframe, populate_indicators, \
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 from freqtrade.persistence import Trade
+from freqtrade.tests import load_backtesting_data
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ def backtest(backtest_conf, processed, mocker):
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST'), reason="BACKTEST not set")
-def test_backtest(backtest_conf, backdata, mocker):
+def test_backtest(backtest_conf, mocker):
     print('')
 
     config = None
@@ -128,15 +129,17 @@ def test_backtest(backtest_conf, backdata, mocker):
     ticker_interval = int(os.environ.get('BACKTEST_TICKER_INTERVAL') or 5)
     print('Using ticker_interval: {} ...'.format(ticker_interval))
 
-    livedata = {}
+    data = {}
     if os.environ.get('BACKTEST_LIVE'):
         print('Downloading data for all pairs in whitelist ...')
         exchange._API = Bittrex({'key': '', 'secret': ''})
         for pair in config['exchange']['pair_whitelist']:
-            livedata[pair] = exchange.get_ticker_history(pair, ticker_interval)
+            data[pair] = exchange.get_ticker_history(pair, ticker_interval)
+    else:
+        print('Using local backtesting data (ignoring whitelist in given config)...')
+        data = load_backtesting_data(ticker_interval)
 
     config = config or backtest_conf
-    data = livedata or backdata
 
     print('Using stake_currency: {} ...\nUsing stake_amount: {} ...'.format(
         config['stake_currency'], config['stake_amount']

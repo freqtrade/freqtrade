@@ -1,9 +1,7 @@
 # pragma pylint: disable=missing-docstring
-import json
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import os
 import pytest
 from jsonschema import validate
 from telegram import Message, Chat, Update
@@ -66,17 +64,6 @@ def backtest_conf():
         },
         "stoploss": -0.05
     }
-
-
-@pytest.fixture(scope="module")
-def backdata():
-    path = os.path.abspath(os.path.dirname(__file__))
-    result = {}
-    for pair in ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-                 'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']:
-        with open('{abspath}/testdata/{pair}.json'.format(abspath=path, pair=pair)) as fp:
-            result[pair] = json.load(fp)
-    return result
 
 
 @pytest.fixture

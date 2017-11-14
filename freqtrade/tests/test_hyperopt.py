@@ -9,7 +9,8 @@ import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
-from freqtrade.tests.test_backtesting import backtest, format_results, preprocess
+from freqtrade.tests.test_backtesting import backtest, format_results
+from freqtrade.tests.test_backtesting import preprocess
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
@@ -18,6 +19,7 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 TARGET_TRADES = 1300
 TOTAL_TRIES = 4
 current_tries = 0
+
 
 def buy_strategy_generator(params):
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
