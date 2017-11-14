@@ -91,12 +91,15 @@ def test_backtest(backtest_conf, backdata, mocker):
         with open(conf_path, 'r') as fp:
             config = json.load(fp)
 
+    ticker_interval = int(os.environ.get('BACKTEST_TICKER_INTERVAL') or 5)
+    print('Using ticker_interval: {}'.format(ticker_interval))
+
     livedata = {}
     if os.environ.get('BACKTEST_LIVE'):
         print('Downloading data for all pairs in whitelist ...'.format(conf_path))
         exchange._API = Bittrex({'key': '', 'secret': ''})
         for pair in config['exchange']['pair_whitelist']:
-            livedata[pair] = exchange.get_ticker_history(pair)
+            livedata[pair] = exchange.get_ticker_history(pair, ticker_interval)
 
     config = config or backtest_conf
     data = livedata or backdata

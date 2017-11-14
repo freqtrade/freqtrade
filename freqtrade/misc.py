@@ -108,6 +108,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='live',
         help='using live data',
     )
+    backtest.add_argument(
+        '-i', '--ticker-interval',
+        help='specify ticker interval in minutes (default: 5)',
+        dest='ticker_interval',
+        default=5,
+        type=int,
+        metavar='INT',
+    )
 
 
 def start_backtesting(args) -> None:
@@ -122,6 +130,7 @@ def start_backtesting(args) -> None:
         'BACKTEST': 'true',
         'BACKTEST_LIVE': 'true' if args.live else '',
         'BACKTEST_CONFIG': args.config,
+        'BACKTEST_TICKER_INTERVAL': str(args.ticker_interval),
     })
     path = os.path.join(os.path.dirname(__file__), 'tests', 'test_backtesting.py')
     pytest.main(['-s', path])
