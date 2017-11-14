@@ -9,6 +9,7 @@ import arrow
 import pytest
 from arrow import Arrow
 from pandas import DataFrame
+from tabulate import tabulate
 
 from freqtrade import exchange
 from freqtrade.analyze import parse_ticker_dataframe, populate_indicators, \
@@ -42,15 +43,48 @@ def preprocess(backdata) -> Dict[str, DataFrame]:
     return processed
 
 
-def get_timeframe(backdata: Dict[str, Dict]) -> Tuple[Arrow, Arrow]:
+def get_timeframe(data: Dict[str, Dict]) -> Tuple[Arrow, Arrow]:
+    """
+    Get the maximum timeframe for the given backtest data
+    :param data: dictionary with backtesting data
+    :return: tuple containing min_date, max_date
+    """
     min_date, max_date = None, None
-    for values in backdata.values():
+    for values in data.values():
         values = sorted(values, key=lambda d: arrow.get(d['T']))
         if not min_date or values[0]['T'] < min_date:
             min_date = values[0]['T']
         if not max_date or values[-1]['T'] > max_date:
             max_date = values[-1]['T']
     return arrow.get(min_date), arrow.get(max_date)
+
+
+def generate_text_table(data: Dict[str, Dict], results: DataFrame) -> str:
+    """
+    Generates and returns a text table for the given backtest data and the results dataframe
+    :return: pretty printed table with tabulate as str
+    """
+    tabular_data = []
+    headers = ['pair', 'buy count', 'avg profit', 'total profit', 'avg duration']
+    for pair in data:
+        result = results[results.currency == pair]
+        tabular_data.append([
+            pair,
+            len(result.index),
+            '{:.2f}%'.format(result.profit.mean() * 100.0),
+            '{:.8f}'.format(result.profit.sum()),
+            '{:.2f}'.format(result.duration.mean() * 5),
+        ])
+
+    # Append Total
+    tabular_data.append([
+        'TOTAL',
+        len(results.index),
+        '{:.2f}%'.format(results.profit.mean() * 100.0),
+        '{:.8f}'.format(results.profit.sum()),
+        '{:.2f}'.format(results.duration.mean() * 5),
+    ])
+    return tabulate(tabular_data, headers=headers)
 
 
 def backtest(backtest_conf, processed, mocker):
@@ -88,15 +122,15 @@ def test_backtest(backtest_conf, backdata, mocker):
     conf_path = os.environ.get('BACKTEST_CONFIG')
     if conf_path:
         print('Using config: {} ...'.format(conf_path))
-        with open(conf_path, 'r') as fp:
-            config = json.load(fp)
+        with open(conf_path, 'r') as conf_file:
+            config = json.load(conf_file)
 
     ticker_interval = int(os.environ.get('BACKTEST_TICKER_INTERVAL') or 5)
-    print('Using ticker_interval: {}'.format(ticker_interval))
+    print('Using ticker_interval: {} ...'.format(ticker_interval))
 
     livedata = {}
     if os.environ.get('BACKTEST_LIVE'):
-        print('Downloading data for all pairs in whitelist ...'.format(conf_path))
+        print('Downloading data for all pairs in whitelist ...')
         exchange._API = Bittrex({'key': '', 'secret': ''})
         for pair in config['exchange']['pair_whitelist']:
             livedata[pair] = exchange.get_ticker_history(pair, ticker_interval)
@@ -110,8 +144,6 @@ def test_backtest(backtest_conf, backdata, mocker):
     ))
 
     results = backtest(config, preprocess(data), mocker)
-    print('====================== BACKTESTING REPORT ================================')
-    for pair in data:
-        print_pair_results(pair, results)
-    print('TOTAL OVER ALL TRADES:')
-    print(format_results(results))
+    print('====================== BACKTESTING REPORT ======================================\n')
+    print(generate_text_table(data, results))
+
