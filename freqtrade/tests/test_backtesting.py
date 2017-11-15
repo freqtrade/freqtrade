@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring
+from typing import Dict
 import logging
 import os
 
@@ -7,7 +8,8 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import exchange
-from freqtrade.analyze import analyze_ticker
+from freqtrade.analyze import parse_ticker_dataframe, populate_indicators, \
+    populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 from freqtrade.persistence import Trade
@@ -25,15 +27,21 @@ def print_pair_results(pair, results):
     print(format_results(results[results.currency == pair]))
 
 
-def backtest(backtest_conf, backdata, mocker):
+def preprocess(backdata) -> Dict[str, DataFrame]:
+    processed = {}
+    for pair, pair_data in backdata.items():
+        processed[pair] = populate_indicators(parse_ticker_dataframe(pair_data))
+    return processed
+
+
+def backtest(backtest_conf, processed, mocker):
     trades = []
     exchange._API = Bittrex({'key': '', 'secret': ''})
-    mocked_history = mocker.patch('freqtrade.analyze.get_ticker_history')
     mocker.patch.dict('freqtrade.main._CONF', backtest_conf)
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
-    for pair, pair_data in backdata.items():
-        mocked_history.return_value = pair_data
-        ticker = analyze_ticker(pair)[['close', 'date', 'buy', 'sell']].copy()
+    for pair, pair_data in processed.items():
+        ticker = populate_sell_trend(populate_buy_trend(pair_data))[['close', 'date', 'buy', 'sell']].copy()
+
         # for each buy point
         for row in ticker[ticker.buy == 1].itertuples(index=True):
             trade = Trade(
@@ -56,7 +64,7 @@ def backtest(backtest_conf, backdata, mocker):
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
 def test_backtest(backtest_conf, backdata, mocker, report=True):
-    results = backtest(backtest_conf, backdata, mocker)
+    results = backtest(backtest_conf, preprocess(backdata), mocker)
 
     print('====================== BACKTESTING REPORT ================================')
     for pair in backdata:
