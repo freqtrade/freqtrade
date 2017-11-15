@@ -101,7 +101,11 @@ class Bittrex(Exchange):
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 
         data = _API_V2.get_candles(pair.replace('_', '-'), interval)
-        # This sanity check is necessary because bittrex returns nonsense sometimes
+
+        # These sanity check are necessary because bittrex cannot keep their API stable.
+        if not data.get('result'):
+            return []
+
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
             for tick in data['result']:
                 if prop not in tick.keys():
