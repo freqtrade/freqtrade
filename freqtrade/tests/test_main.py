@@ -7,6 +7,7 @@ import requests
 from sqlalchemy import create_engine
 
 from freqtrade.exchange import Exchanges
+from freqtrade.analyze import SignalType
 from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
     get_target_bid, _process
 from freqtrade.misc import get_state, State, FreqtradeException
@@ -80,7 +81,7 @@ def test_process_runtime_error(default_conf, ticker, health, mocker):
 def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    signal = mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: False if args[1] == SignalType.SELL else True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
