@@ -27,13 +27,13 @@ class Bittrex(Exchange):
         _API = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
-            calls_per_second=2,
+            calls_per_second=1,
             api_version=API_V1_1,
         )
         _API_V2 = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
-            calls_per_second=2,
+            calls_per_second=1,
             api_version=API_V2_0,
         )
 
