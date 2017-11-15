@@ -59,7 +59,6 @@ def buy_strategy_generator(params):
         dataframe.loc[
             reduce(lambda x, y: x & y, conditions),
             'buy'] = 1
-        dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
         return dataframe
     return populate_buy_trend
