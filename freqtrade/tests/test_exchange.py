@@ -8,7 +8,9 @@ from freqtrade.exchange import validate_pairs
 
 def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.get_markets = MagicMock(return_value=['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT'])
+    api_mock.get_markets = MagicMock(return_value=[
+        'BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT', 'BTC_BCC',
+    ])
     mocker.patch('freqtrade.exchange._API', api_mock)
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
     validate_pairs(default_conf['exchange']['pair_whitelist'])

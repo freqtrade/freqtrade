@@ -37,7 +37,8 @@ def default_conf():
                 "BTC_ETH",
                 "BTC_TKN",
                 "BTC_TRST",
-                "BTC_SWT"
+                "BTC_SWT",
+                "BTC_BCC"
             ]
         },
         "telegram": {
@@ -88,6 +89,36 @@ def ticker():
         'ask': 0.072661,
         'last': 0.07256061,
     })
+
+
+@pytest.fixture
+def health():
+    return MagicMock(return_value=[{
+        'Currency': 'BTC',
+        'IsActive': True,
+        'LastChecked': '2017-11-13T20:15:00.00',
+        'Notice': None
+    }, {
+        'Currency': 'ETH',
+        'IsActive': True,
+        'LastChecked': '2017-11-13T20:15:00.00',
+        'Notice': None
+    }, {
+        'Currency': 'TRST',
+        'IsActive': True,
+        'LastChecked': '2017-11-13T20:15:00.00',
+        'Notice': None
+    }, {
+        'Currency': 'SWT',
+        'IsActive': True,
+        'LastChecked': '2017-11-13T20:15:00.00',
+        'Notice': None
+    }, {
+        'Currency': 'BCC',
+        'IsActive': False,
+        'LastChecked': '2017-11-13T20:15:00.00',
+        'Notice': None
+    }])
 
 
 @pytest.fixture

@@ -18,14 +18,6 @@ class Exchange(ABC):
         :return: percentage in float
         """
 
-    @property
-    @abstractmethod
-    def sleep_time(self) -> float:
-        """
-        Sleep time in seconds for the main loop to avoid API rate limits.
-        :return: float
-        """
-
     @abstractmethod
     def buy(self, pair: str, rate: float, amount: float) -> str:
         """
@@ -82,7 +74,7 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker_history(self, pair: str, tick_interval: int) -> List:
+    def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         """
         Gets ticker history for given pair.
         :param pair: Pair as str, format: BTC_ETC
@@ -138,4 +130,42 @@ class Exchange(ABC):
         """
         Returns all available markets.
         :return: List of all available pairs
+        """
+
+    @abstractmethod
+    def get_market_summaries(self) -> List[Dict]:
+        """
+        Returns a 24h market summary for all available markets
+        :return: list, format: [
+            {
+                'MarketName': str,
+                'High': float,
+                'Low': float,
+                'Volume': float,
+                'Last': float,
+                'TimeStamp': datetime,
+                'BaseVolume': float,
+                'Bid': float,
+                'Ask': float,
+                'OpenBuyOrders': int,
+                'OpenSellOrders': int,
+                'PrevDay': float,
+                'Created': datetime
+            },
+            ...
+        ]
+        """
+
+    @abstractmethod
+    def get_wallet_health(self) -> List[Dict]:
+        """
+        Returns a list of all wallet health information
+        :return: list, format: [
+            {
+                'Currency': str,
+                'IsActive': bool,
+                'LastChecked': str,
+                'Notice': str
+            },
+            ...
         """

@@ -1,14 +1,14 @@
 import logging
 from typing import List, Dict
 
-import requests
-from bittrex.bittrex import Bittrex as _Bittrex
+from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
 
 from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 
 _API: _Bittrex = None
+_API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
 
 
@@ -18,22 +18,23 @@ class Bittrex(Exchange):
     """
     # Base URL and API endpoints
     BASE_URL: str = 'https://www.bittrex.com'
-    TICKER_METHOD: str = BASE_URL + '/Api/v2.0/pub/market/GetTicks'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
 
-    @property
-    def sleep_time(self) -> float:
-        """ Sleep time to avoid rate limits, used in the main loop """
-        return 25
-
     def __init__(self, config: dict) -> None:
-        global _API, _EXCHANGE_CONF
+        global _API, _API_V2, _EXCHANGE_CONF
 
         _EXCHANGE_CONF.update(config)
         _API = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
-            calls_per_second=5,
+            calls_per_second=1,
+            api_version=API_V1_1,
+        )
+        _API_V2 = _Bittrex(
+            api_key=_EXCHANGE_CONF['key'],
+            api_secret=_EXCHANGE_CONF['secret'],
+            calls_per_second=1,
+            api_version=API_V2_0,
         )
 
     @property
@@ -81,13 +82,17 @@ class Bittrex(Exchange):
             raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
+        if not data['result']['Bid'] or not data['result']['Ask'] or not data['result']['Last']:
+            raise RuntimeError('{message} params=({pair})'.format(
+                message=data['message'],
+                pair=pair))
         return {
             'bid': float(data['result']['Bid']),
             'ask': float(data['result']['Ask']),
             'last': float(data['result']['Last']),
         }
 
-    def get_ticker_history(self, pair: str, tick_interval: int):
+    def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         if tick_interval == 1:
             interval = 'oneMin'
         elif tick_interval == 5:
@@ -95,10 +100,18 @@ class Bittrex(Exchange):
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 
-        data = requests.get(self.TICKER_METHOD, params={
-            'marketName': pair.replace('_', '-'),
-            'tickInterval': interval,
-        }).json()
+        data = _API_V2.get_candles(pair.replace('_', '-'), interval)
+
+        # These sanity check are necessary because bittrex cannot keep their API stable.
+        if not data.get('result'):
+            return []
+
+        for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
+            for tick in data['result']:
+                if prop not in tick.keys():
+                    logger.warning('Required property %s not present in response', prop)
+                    return []
+
         if not data['success']:
             raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
@@ -139,3 +152,20 @@ class Bittrex(Exchange):
         if not data['success']:
             raise RuntimeError('{message}'.format(message=data['message']))
         return [m['MarketName'].replace('-', '_') for m in data['result']]
+
+    def get_market_summaries(self) -> List[Dict]:
+        data = _API.get_market_summaries()
+        if not data['success']:
+            raise RuntimeError('{message}'.format(message=data['message']))
+        return data['result']
+
+    def get_wallet_health(self) -> List[Dict]:
+        data = _API_V2.get_wallet_health()
+        if not data['success']:
+            raise RuntimeError('{message}'.format(message=data['message']))
+        return [{
+            'Currency': entry['Health']['Currency'],
+            'IsActive': entry['Health']['IsActive'],
+            'LastChecked': entry['Health']['LastChecked'],
+            'Notice': entry['Currency'].get('Notice'),
+        } for entry in data['result']]

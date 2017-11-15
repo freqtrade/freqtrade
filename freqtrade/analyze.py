@@ -8,8 +8,6 @@ from pandas import DataFrame, to_datetime
 from freqtrade.exchange import get_ticker_history
 from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -41,9 +39,7 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
-    dataframe['cci'] = ta.CCI(dataframe)
     dataframe['rsi'] = ta.RSI(dataframe)
-    dataframe['mom'] = ta.MOM(dataframe)
     dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
     dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
     dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
@@ -53,6 +49,9 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['macd'] = macd['macd']
     dataframe['macdsignal'] = macd['macdsignal']
     dataframe['macdhist'] = macd['macdhist']
+    hilbert = ta.HT_SINE(dataframe)
+    dataframe['htsine'] = hilbert['sine']
+    dataframe['htleadsine'] = hilbert['leadsine']
     return dataframe
 
 
@@ -80,13 +79,12 @@ def analyze_ticker(pair: str) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    data = get_ticker_history(pair)
-    dataframe = parse_ticker_dataframe(data)
+    ticker_hist = get_ticker_history(pair)
+    if not ticker_hist:
+        logger.warning('Empty ticker history for pair %s', pair)
+        return DataFrame()
 
-    if dataframe.empty:
-        logger.warning('Empty dataframe for pair %s', pair)
-        return dataframe
-
+    dataframe = parse_ticker_dataframe(ticker_hist)
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     return dataframe
@@ -99,7 +97,6 @@ def get_buy_signal(pair: str) -> bool:
     :return: True if pair is good for buying, False otherwise
     """
     dataframe = analyze_ticker(pair)
-
     if dataframe.empty:
         return False
 

@@ -273,18 +273,21 @@ def _balance(bot: Bot, update: Update) -> None:
     Handler for /balance
     Returns current account balance per crypto
     """
-    output = ""
-    balances = exchange.get_balances()
+    output = ''
+    balances = [
+        c for c in exchange.get_balances()
+        if c['Balance'] or c['Available'] or c['Pending']
+    ]
+    if not balances:
+        output = '`All balances are zero.`'
+
     for currency in balances:
-        if not currency['Balance'] and not currency['Available'] and not currency['Pending']:
-            continue
         output += """*Currency*: {Currency}
 *Available*: {Available}
 *Balance*: {Balance}
 *Pending*: {Pending}
 
 """.format(**currency)
-
     send_msg(output)
 
 

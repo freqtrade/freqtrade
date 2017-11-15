@@ -13,13 +13,14 @@ from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 
 
-def test_process_trade_creation(default_conf, ticker, mocker):
+def test_process_trade_creation(default_conf, ticker, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
+                          get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'))
     init(default_conf, create_engine('sqlite://'))
 
@@ -41,7 +42,7 @@ def test_process_trade_creation(default_conf, ticker, mocker):
     assert trade.amount == 0.6864067381401302
 
 
-def test_process_exchange_failures(default_conf, ticker, mocker):
+def test_process_exchange_failures(default_conf, ticker, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
@@ -49,6 +50,7 @@ def test_process_exchange_failures(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
+                          get_wallet_health=health,
                           buy=MagicMock(side_effect=requests.exceptions.RequestException))
     init(default_conf, create_engine('sqlite://'))
     result = _process()
@@ -56,7 +58,7 @@ def test_process_exchange_failures(default_conf, ticker, mocker):
     assert sleep_mock.has_calls()
 
 
-def test_process_runtime_error(default_conf, ticker, mocker):
+def test_process_runtime_error(default_conf, ticker, health, mocker):
     msg_mock = MagicMock()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=msg_mock)
@@ -64,6 +66,7 @@ def test_process_runtime_error(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
+                          get_wallet_health=health,
                           buy=MagicMock(side_effect=RuntimeError))
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
@@ -74,13 +77,14 @@ def test_process_runtime_error(default_conf, ticker, mocker):
     assert 'RuntimeError' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_process_trade_handling(default_conf, ticker, limit_buy_order, mocker):
+def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
+                          get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))

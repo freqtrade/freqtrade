@@ -5,33 +5,63 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, Optional
 from signal import signal, SIGINT, SIGABRT, SIGTERM
+from typing import Dict, Optional, List
 
 import requests
+from cachetools import cached, TTLCache
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('freqtrade')
 
 _CONF = {}
 
 
-def _process() -> bool:
+def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
+    """
+    Check wallet health and remove pair from whitelist if necessary
+    :param whitelist: a new whitelist (optional)
+    :return: None
+    """
+    whitelist = whitelist or _CONF['exchange']['pair_whitelist']
+
+    sanitized_whitelist = []
+    health = exchange.get_wallet_health()
+    for status in health:
+        pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+        if pair not in whitelist:
+            continue
+        if status['IsActive']:
+            sanitized_whitelist.append(pair)
+        else:
+            logger.info(
+                'Ignoring %s from whitelist (reason: %s).',
+                pair, status.get('Notice') or 'wallet is not active'
+            )
+    if _CONF['exchange']['pair_whitelist'] != sanitized_whitelist:
+        logger.debug('Using refreshed pair whitelist: %s ...', sanitized_whitelist)
+        _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
+
+
+def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
+    :param: dynamic_whitelist: True is a dynamic whitelist should be generated (optional)
     :return: True if a trade has been created or closed, False otherwise
     """
     state_changed = False
     try:
+        # Refresh whitelist based on wallet maintenance
+        refresh_whitelist(
+            gen_pair_whitelist(_CONF['stake_currency']) if dynamic_whitelist else None
+        )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
@@ -42,7 +72,10 @@ def _process() -> bool:
                     Trade.session.add(trade)
                     state_changed = True
                 else:
-                    logging.info('Got no buy signal...')
+                    logger.info(
+                        'Checked all whitelisted currencies. '
+                        'Found no suitable entry positions for buying. Will keep looking ...'
+                    )
             except ValueError:
                 logger.exception('Unable to create trade')
 
@@ -85,7 +118,10 @@ def close_trade_if_fulfilled(trade: Trade) -> bool:
             and trade.close_rate is not None \
             and trade.open_order_id is None:
         trade.is_open = False
-        logger.info('No open orders found and trade is fulfilled. Marking %s as closed ...', trade)
+        logger.info(
+            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+            trade
+        )
         return True
     return False
 
@@ -163,7 +199,10 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
     """
-    logger.info('Creating new trade with stake_amount: %f ...', stake_amount)
+    logger.info(
+        'Checking buy signals to create a new trade with stake_amount: %f ...',
+        stake_amount
+    )
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
@@ -237,6 +276,23 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
         signal(sig, cleanup)
 
 
+@cached(TTLCache(maxsize=1, ttl=1800))
+def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume') -> List[str]:
+    """
+    Updates the whitelist with with a dynamically generated list
+    :param base_currency: base currency as str
+    :param topn: maximum number of returned results
+    :param key: sort key (defaults to 'BaseVolume')
+    :return: List of pairs
+    """
+    summaries = sorted(
+        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
+        key=lambda s: s.get(key) or 0.0,
+        reverse=True
+    )
+    return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
+
+
 def cleanup(*args, **kwargs) -> None:
     """
     Cleanup the application state und finish all pending tasks
@@ -255,32 +311,49 @@ def main():
     Loads and validates the config and handles the main loop
     :return: None
     """
-    logger.info('Starting freqtrade %s', __version__)
-
     global _CONF
-    with open('config.json') as file:
-        _CONF = json.load(file)
+    args = build_arg_parser().parse_args()
 
+    # Initialize logger
+    logging.basicConfig(
+        level=args.loglevel,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
+
+    logger.info(
+        'Starting freqtrade %s (loglevel=%s)',
+        __version__,
+        logging.getLevelName(args.loglevel)
+    )
+
+    # Load and validate configuration
+    with open(args.config) as file:
+        _CONF = json.load(file)
+    if 'internals' not in _CONF:
+        _CONF['internals'] = {}
     logger.info('Validating configuration ...')
     validate(_CONF, CONF_SCHEMA)
 
+    # Initialize all modules and start main loop
+    if args.dynamic_whitelist:
+        logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
     init(_CONF)
-    old_state = get_state()
-    logger.info('Initial State: %s', old_state)
-    telegram.send_msg('*Status:* `{}`'.format(old_state.name.lower()))
+    old_state = None
     while True:
         new_state = get_state()
         # Log state transition
         if new_state != old_state:
             telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
-            logging.info('Changing state to: %s', new_state.name)
+            logger.info('Changing state to: %s', new_state.name)
 
         if new_state == State.STOPPED:
             time.sleep(1)
         elif new_state == State.RUNNING:
-            _process()
-            # We need to sleep here because otherwise we would run into bittrex rate limit
-            time.sleep(exchange.get_sleep_time())
+            throttle(
+                _process,
+                min_secs=_CONF['internals'].get('process_throttle_secs', 10),
+                dynamic_whitelist=args.dynamic_whitelist,
+            )
         old_state = new_state
 
 
