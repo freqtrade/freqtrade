@@ -7,6 +7,7 @@ import requests
 from sqlalchemy import create_engine
 
 from freqtrade.exchange import Exchanges
+from freqtrade.analyze import SignalType
 from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
     get_target_bid, _process
 from freqtrade.misc import get_state, State, FreqtradeException
@@ -16,7 +17,7 @@ from freqtrade.persistence import Trade
 def test_process_trade_creation(default_conf, ticker, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -45,7 +46,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
@@ -62,7 +63,7 @@ def test_process_runtime_error(default_conf, ticker, health, mocker):
     msg_mock = MagicMock()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=msg_mock)
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -80,7 +81,7 @@ def test_process_runtime_error(default_conf, ticker, health, mocker):
 def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    signal = mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: False if args[1] == SignalType.SELL else True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -102,7 +103,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
 
 def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
@@ -132,7 +133,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
 
 def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
@@ -145,7 +146,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
@@ -161,7 +162,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
@@ -194,7 +195,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_buy_signal', side_effect=lambda _: True)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),

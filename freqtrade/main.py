@@ -13,9 +13,10 @@ from cachetools import cached, TTLCache
 from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
-from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, \
-    FreqtradeException
+from freqtrade.analyze import get_signal, SignalType
+from freqtrade.misc import (
+    CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, FreqtradeException
+)
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -152,9 +153,9 @@ def execute_sell(trade: Trade, limit: float) -> None:
     telegram.send_msg(message)
 
 
-def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bool:
+def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
     """
-    Based an earlier trade and current price and configuration, decides whether bot should sell
+    Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
     current_profit = trade.calc_profit(current_rate)
@@ -182,7 +183,7 @@ def handle_trade(trade: Trade) -> bool:
 
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
-    if should_sell(trade, current_rate, datetime.utcnow()):
+    if min_roi_reached(trade, current_rate, datetime.utcnow()) or get_signal(trade.pair, SignalType.SELL):
         execute_sell(trade, current_rate)
         return True
     return False
@@ -223,7 +224,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_buy_signal(_pair):
+        if get_signal(_pair, SignalType.BUY):
             pair = _pair
             break
     else:

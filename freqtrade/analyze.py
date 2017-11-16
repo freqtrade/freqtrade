@@ -1,3 +1,4 @@
+from enum import Enum
 import logging
 from datetime import timedelta
 
@@ -6,9 +7,13 @@ import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.vendor.qtpylib.indicators import awesome_oscillator
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above, crossed_below
 
 logger = logging.getLogger(__name__)
+
+class SignalType(Enum):
+    BUY = "buy"
+    SELL = "sell"
 
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
@@ -57,7 +62,7 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
 def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     """
-    Based on TA indicators, populates the buy trend for the given dataframe
+    Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
@@ -69,6 +74,19 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         (dataframe['adx'] > 30),
         'buy'] = 1
     dataframe.ix[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+
+    return dataframe
+
+def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
+    """
+    Based on TA indicators, populates the sell signal for the given dataframe
+    :param dataframe: DataFrame
+    :return: DataFrame with buy column
+    """
+    dataframe.ix[
+        (crossed_above(dataframe['rsi'], 70)),
+        'sell'] = 1
+    dataframe.ix[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
 
     return dataframe
 
@@ -87,12 +105,13 @@ def analyze_ticker(pair: str) -> DataFrame:
     dataframe = parse_ticker_dataframe(ticker_hist)
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
+    dataframe = populate_sell_trend(dataframe)
     return dataframe
 
 
-def get_buy_signal(pair: str) -> bool:
+def get_signal(pair: str, signal: SignalType) -> bool:
     """
-    Calculates a buy signal based several technical analysis indicators
+    Calculates current signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is good for buying, False otherwise
     """
@@ -107,6 +126,6 @@ def get_buy_signal(pair: str) -> bool:
     if signal_date < arrow.now() - timedelta(minutes=10):
         return False
 
-    signal = latest['buy'] == 1
-    logger.debug('buy_trigger: %s (pair=%s, signal=%s)', latest['date'], pair, signal)
-    return signal
+    result = latest[signal.value] == 1
+    logger.debug('%s_trigger: %s (pair=%s, signal=%s)', signal.value, latest['date'], pair, result)
+    return result
