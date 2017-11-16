@@ -9,7 +9,7 @@ from pandas import DataFrame
 from freqtrade import exchange
 from freqtrade.analyze import analyze_ticker
 from freqtrade.exchange import Bittrex
-from freqtrade.main import should_sell
+from freqtrade.main import min_roi_reached
 from freqtrade.persistence import Trade
 
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
@@ -44,7 +44,7 @@ def backtest(backtest_conf, backdata, mocker):
             )
             # calculate win/lose forwards from buy point
             for row2 in ticker[row.Index:].itertuples(index=True):
-                if should_sell(trade, row2.close, row2.date) or row2.sell == 1:
+                if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
 
                     trades.append((pair, current_profit, row2.Index - row.Index))

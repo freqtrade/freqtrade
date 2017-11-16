@@ -153,9 +153,9 @@ def execute_sell(trade: Trade, limit: float) -> None:
     telegram.send_msg(message)
 
 
-def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bool:
+def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
     """
-    Based an earlier trade and current price and configuration, decides whether bot should sell
+    Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
     current_profit = trade.calc_profit(current_rate)
@@ -183,7 +183,7 @@ def handle_trade(trade: Trade) -> bool:
 
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
-    if should_sell(trade, current_rate, datetime.utcnow()) or get_signal(trade.pair, SignalType.SELL):
+    if min_roi_reached(trade, current_rate, datetime.utcnow()) or get_signal(trade.pair, SignalType.SELL):
         execute_sell(trade, current_rate)
         return True
     return False
