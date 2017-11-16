@@ -146,3 +146,8 @@ def test_hyperopt(backtest_conf, backdata, mocker):
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
     print('Result: {}'.format(newlist[0]['result']))
+
+
+if __name__ == '__main__':
+    # for profiling with cProfile and line_profiler
+    pytest.main([__file__, '-s'])
