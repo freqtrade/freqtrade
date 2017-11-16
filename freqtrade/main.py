@@ -14,7 +14,8 @@ from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, \
+    FreqtradeException
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -76,8 +77,8 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
                     )
-            except ValueError:
-                logger.exception('Unable to create trade')
+            except FreqtradeException as e:
+                logger.warning('Unable to create trade: %s', e)
 
         for trade in trades:
             # Get order details for actual price per unit
@@ -93,7 +94,7 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
-        logger.exception(msg)
+        logger.warning(msg)
         time.sleep(30)
     except RuntimeError:
         telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
@@ -206,7 +207,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
-        raise ValueError(
+        raise FreqtradeException(
             'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
         )
 
@@ -216,7 +217,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
-        raise ValueError('No pair in whitelist')
+        raise FreqtradeException('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
