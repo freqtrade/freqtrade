@@ -66,14 +66,14 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-    dataframe.ix[
+    dataframe.loc[
         (dataframe['close'] < dataframe['sma']) &
         (dataframe['tema'] <= dataframe['blower']) &
         (dataframe['mfi'] < 25) &
         (dataframe['fastd'] < 25) &
         (dataframe['adx'] > 30),
         'buy'] = 1
-    dataframe.ix[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
     return dataframe
 
@@ -83,10 +83,10 @@ def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
-    dataframe.ix[
+    dataframe.loc[
         (crossed_above(dataframe['rsi'], 70)),
         'sell'] = 1
-    dataframe.ix[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
+    dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
 
     return dataframe
 
