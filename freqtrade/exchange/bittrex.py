@@ -2,6 +2,7 @@ import logging
 from typing import List, Dict
 
 from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
+from requests.exceptions import ContentDecodingError
 
 from freqtrade.exchange.interface import Exchange
 
@@ -82,9 +83,13 @@ class Bittrex(Exchange):
             raise RuntimeError('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
-        if not data['result']['Bid'] or not data['result']['Ask'] or not data['result']['Last']:
-            raise RuntimeError('{message} params=({pair})'.format(
-                message=data['message'],
+
+        if not data.get('result') \
+                or not data['result'].get('Bid') \
+                or not data['result'].get('Ask') \
+                or not data['result'].get('Last'):
+            raise ContentDecodingError('{message} params=({pair})'.format(
+                message='Got invalid response from bittrex',
                 pair=pair))
         return {
             'bid': float(data['result']['Bid']),
@@ -104,13 +109,16 @@ class Bittrex(Exchange):
 
         # These sanity check are necessary because bittrex cannot keep their API stable.
         if not data.get('result'):
-            return []
+            raise ContentDecodingError('{message} params=({pair})'.format(
+                message='Got invalid response from bittrex',
+                pair=pair))
 
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
             for tick in data['result']:
                 if prop not in tick.keys():
-                    logger.warning('Required property %s not present in response', prop)
-                    return []
+                    raise ContentDecodingError('{message} params=({pair})'.format(
+                        message='Required property {} not present in response'.format(prop),
+                        pair=pair))
 
         if not data['success']:
             raise RuntimeError('{message} params=({pair})'.format(

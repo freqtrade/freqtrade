@@ -93,8 +93,10 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
 
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
-        msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
-        logger.warning(msg)
+        logger.warning(
+            'Got %s in _process(), retrying in 30 seconds...',
+            error
+        )
         time.sleep(30)
     except RuntimeError:
         telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(

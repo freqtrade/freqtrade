@@ -1,9 +1,9 @@
 import argparse
 import enum
 import logging
+import time
 from typing import Any, Callable
 
-import time
 from wrapt import synchronized
 
 from freqtrade import __version__
