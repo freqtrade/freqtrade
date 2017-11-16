@@ -33,7 +33,7 @@ def backtest(backtest_conf, backdata, mocker):
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
     for pair, pair_data in backdata.items():
         mocked_history.return_value = pair_data
-        ticker = analyze_ticker(pair)[['close', 'date', 'buy']].copy()
+        ticker = analyze_ticker(pair)[['close', 'date', 'buy', 'sell']].copy()
         # for each buy point
         for row in ticker[ticker.buy == 1].itertuples(index=True):
             trade = Trade(
@@ -44,7 +44,7 @@ def backtest(backtest_conf, backdata, mocker):
             )
             # calculate win/lose forwards from buy point
             for row2 in ticker[row.Index:].itertuples(index=True):
-                if should_sell(trade, row2.close, row2.date):
+                if should_sell(trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
 
                     trades.append((pair, current_profit, row2.Index - row.Index))
