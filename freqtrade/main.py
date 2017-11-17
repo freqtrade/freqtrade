@@ -2,6 +2,7 @@
 import copy
 import json
 import logging
+import sys
 import time
 import traceback
 from datetime import datetime
@@ -14,8 +15,9 @@ from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_signal, SignalType
+from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, parse_args, throttle
 from freqtrade.misc import (
-    CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, FreqtradeException
+    FreqtradeException
 )
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
@@ -316,11 +318,8 @@ def main():
     :return: None
     """
     global _CONF
-    args = build_arg_parser().parse_args()
-
-    # Check if subcommand has been selected
-    if hasattr(args, 'func'):
-        args.func(args)
+    args = parse_args(sys.argv[1:])
+    if not args:
         exit(0)
 
     # Initialize logger

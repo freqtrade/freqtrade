@@ -3,7 +3,7 @@ import enum
 import logging
 import os
 import time
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 from wrapt import synchronized
 
@@ -62,8 +62,11 @@ def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     return result
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    """ Builds and returns an ArgumentParser instance """
+def parse_args(args: List[str]):
+    """
+    Parses given arguments and returns an argparse Namespace instance.
+    Returns None if a sub command has been selected and executed.
+    """
     parser = argparse.ArgumentParser(
         description='Simple High Frequency Trading Bot for crypto currencies'
     )
@@ -94,7 +97,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action='store_true',
     )
     build_subcommands(parser)
-    return parser
+    parsed_args = parser.parse_args(args)
+
+    # No subcommand as been selected
+    if not hasattr(parsed_args, 'func'):
+        return parsed_args
+
+    parsed_args.func(parsed_args)
+    return None
 
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
