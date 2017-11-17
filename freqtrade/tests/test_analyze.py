@@ -5,7 +5,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, \
-    get_signal, SignalType
+    get_signal, SignalType, populate_sell_trend
 
 
 @pytest.fixture
@@ -26,7 +26,11 @@ def test_dataframe_correct_length(result):
 def test_populates_buy_trend(result):
     dataframe = populate_buy_trend(populate_indicators(result))
     assert 'buy' in dataframe.columns
-    assert 'buy_price' in dataframe.columns
+
+
+def test_populates_buy_trend(result):
+    dataframe = populate_sell_trend(populate_indicators(result))
+    assert 'sell' in dataframe.columns
 
 
 def test_returns_latest_buy_signal(mocker):

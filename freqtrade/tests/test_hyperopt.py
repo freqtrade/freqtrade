@@ -9,7 +9,7 @@ import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
-from freqtrade.tests.test_backtesting import backtest, format_results
+from freqtrade.tests.test_backtesting import backtest, format_results, preprocess
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
@@ -59,7 +59,6 @@ def buy_strategy_generator(params):
         dataframe.loc[
             reduce(lambda x, y: x & y, conditions),
             'buy'] = 1
-        dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
         return dataframe
     return populate_buy_trend
@@ -67,12 +66,13 @@ def buy_strategy_generator(params):
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
 def test_hyperopt(backtest_conf, backdata, mocker):
-    mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
+    mocked_buy_trend = mocker.patch('freqtrade.tests.test_backtesting.populate_buy_trend')
+    processed = preprocess(backdata)
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)
 
-        results = backtest(backtest_conf, backdata, mocker)
+        results = backtest(backtest_conf, processed, mocker)
 
         result = format_results(results)
 
@@ -146,3 +146,8 @@ def test_hyperopt(backtest_conf, backdata, mocker):
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
     print('Result: {}'.format(newlist[0]['result']))
+
+
+if __name__ == '__main__':
+    # for profiling with cProfile and line_profiler
+    pytest.main([__file__, '-s'])
