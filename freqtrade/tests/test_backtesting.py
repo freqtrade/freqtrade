@@ -58,8 +58,7 @@ def backtest(backtest_conf, processed, mocker):
                     trades.append((pair, current_profit, row2.Index - row.Index))
                     break
     labels = ['currency', 'profit', 'duration']
-    results = DataFrame.from_records(trades, columns=labels)
-    return results
+    return DataFrame.from_records(trades, columns=labels)
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
