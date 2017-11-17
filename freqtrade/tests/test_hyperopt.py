@@ -9,6 +9,8 @@ import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
+from freqtrade import exchange
+from freqtrade.exchange import Bittrex
 from freqtrade.tests.test_backtesting import backtest, format_results
 from freqtrade.tests.test_backtesting import preprocess
 from freqtrade.vendor.qtpylib.indicators import crossed_above
@@ -70,6 +72,7 @@ def buy_strategy_generator(params):
 def test_hyperopt(backtest_conf, backdata, mocker):
     mocked_buy_trend = mocker.patch('freqtrade.tests.test_backtesting.populate_buy_trend')
     processed = preprocess(backdata)
+    exchange._API = Bittrex({'key': '', 'secret': ''})
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)

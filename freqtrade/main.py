@@ -11,14 +11,14 @@ from typing import Dict, Optional, List
 
 import requests
 from cachetools import cached, TTLCache
-from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_signal, SignalType
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, parse_args, throttle
 from freqtrade.misc import (
     FreqtradeException
 )
+from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
+    load_config
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -335,12 +335,7 @@ def main():
     )
 
     # Load and validate configuration
-    with open(args.config) as file:
-        _CONF = json.load(file)
-    if 'internals' not in _CONF:
-        _CONF['internals'] = {}
-    logger.info('Validating configuration ...')
-    validate(_CONF, CONF_SCHEMA)
+    _CONF = load_config(args.config)
 
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:

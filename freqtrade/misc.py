@@ -1,10 +1,12 @@
 import argparse
 import enum
+import json
 import logging
 import os
 import time
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Dict
 
+from jsonschema import validate
 from wrapt import synchronized
 
 from freqtrade import __version__
@@ -43,6 +45,21 @@ def get_state() -> State:
     :return:
     """
     return _STATE
+
+
+def load_config(path: str) -> Dict:
+    """
+    Loads a config file from the given path
+    :param path: path as str
+    :return: configuration as dictionary
+    """
+    with open(path) as file:
+        conf = json.load(file)
+    if 'internals' not in conf:
+        conf['internals'] = {}
+    logger.info('Validating configuration ...')
+    validate(conf, CONF_SCHEMA)
+    return conf
 
 
 def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
