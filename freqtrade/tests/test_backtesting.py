@@ -40,8 +40,9 @@ def backtest(backtest_conf, processed, mocker):
     mocker.patch.dict('freqtrade.main._CONF', backtest_conf)
     mocker.patch('arrow.utcnow', return_value=arrow.get('2017-08-20T14:50:00'))
     for pair, pair_data in processed.items():
-        ticker = populate_sell_trend(populate_buy_trend(pair_data))[['close', 'date', 'buy', 'sell']].copy()
-
+        pair_data['buy'] = 0
+        pair_data['sell'] = 0
+        ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
         for row in ticker[ticker.buy == 1].itertuples(index=True):
             trade = Trade(
