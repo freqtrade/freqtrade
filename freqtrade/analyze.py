@@ -73,7 +73,6 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
         (dataframe['fastd'] < 25) &
         (dataframe['adx'] > 30),
         'buy'] = 1
-    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
     return dataframe
 
@@ -86,7 +85,6 @@ def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
     dataframe.loc[
         (crossed_above(dataframe['rsi'], 70)),
         'sell'] = 1
-    dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
 
     return dataframe
 
@@ -106,6 +104,9 @@ def analyze_ticker(pair: str) -> DataFrame:
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     dataframe = populate_sell_trend(dataframe)
+    # TODO: buy_price and sell_price are only used by the plotter, should probably be moved there
+    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+    dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
     return dataframe
 
 
