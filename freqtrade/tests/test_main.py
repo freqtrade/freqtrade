@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 
 from freqtrade.exchange import Exchanges
 from freqtrade.analyze import SignalType
-from freqtrade.main import create_trade, handle_trade, close_trade_if_fulfilled, init, \
+from freqtrade.main import create_trade, handle_trade, init, \
     get_target_bid, _process
 from freqtrade.misc import get_state, State, FreqtradeException
 from freqtrade.persistence import Trade
@@ -183,7 +183,6 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
 
     handle_trade(trade)
     assert trade.open_order_id == 'mocked_limit_sell'
-    assert close_trade_if_fulfilled(trade) is False
 
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.update(limit_sell_order)
@@ -205,20 +204,15 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
     trade = create_trade(15.0)
-    trade.update(limit_buy_order)
-    trade.update(limit_sell_order)
-
     Trade.session.add(trade)
-    Trade.session.flush()
+    trade.update(limit_buy_order)
     trade = Trade.query.filter(Trade.is_open.is_(True)).first()
     assert trade
 
-    # Simulate that there is no open order
-    trade.open_order_id = None
+    trade.update(limit_sell_order)
+    trade = Trade.query.filter(Trade.is_open.is_(False)).first()
+    assert trade
 
-    closed = close_trade_if_fulfilled(trade)
-    assert closed
-    assert not trade.is_open
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
         handle_trade(trade)
 

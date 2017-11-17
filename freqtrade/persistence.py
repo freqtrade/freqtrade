@@ -85,20 +85,27 @@ class Trade(_DECL_BASE):
         if not order['closed']:
             return
 
-        logger.debug('Updating trade (id=%d) ...', self.id)
+        logger.info('Updating trade (id=%d) ...', self.id)
         if order['type'] == 'LIMIT_BUY':
             # Update open rate and actual amount
             self.open_rate = order['rate']
             self.amount = order['amount']
+            logger.info('LIMIT_BUY has been fulfilled for %s.', self)
         elif order['type'] == 'LIMIT_SELL':
             # Set close rate and set actual profit
             self.close_rate = order['rate']
             self.close_profit = self.calc_profit()
             self.close_date = datetime.utcnow()
+            self.is_open = False
+            logger.info(
+                'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+                self
+            )
         else:
             raise ValueError('Unknown order type: {}'.format(order['type']))
 
         self.open_order_id = None
+        Trade.session.flush()
 
     def calc_profit(self, rate: Optional[float] = None) -> float:
         """

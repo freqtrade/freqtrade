@@ -88,7 +88,7 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
                 logger.info('Got open order for %s', trade)
                 trade.update(exchange.get_order(trade.open_order_id))
 
-            if not close_trade_if_fulfilled(trade):
+            if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
                 state_changed = handle_trade(trade) or state_changed
 
@@ -107,27 +107,6 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
         logger.exception('Got RuntimeError. Stopping trader ...')
         update_state(State.STOPPED)
     return state_changed
-
-
-def close_trade_if_fulfilled(trade: Trade) -> bool:
-    """
-    Checks if the trade is closable, and if so it is being closed.
-    :param trade: Trade
-    :return: True if trade has been closed else False
-    """
-    # If we don't have an open order and the close rate is already set,
-    # we can close this trade.
-    if trade.close_profit is not None \
-            and trade.close_date is not None \
-            and trade.close_rate is not None \
-            and trade.open_order_id is None:
-        trade.is_open = False
-        logger.info(
-            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
-            trade
-        )
-        return True
-    return False
 
 
 def execute_sell(trade: Trade, limit: float) -> None:
