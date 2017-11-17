@@ -535,8 +535,7 @@ def test_send_msg_network_error(default_conf, mocker):
     default_conf['telegram']['enabled'] = True
     bot = MagicMock()
     bot.send_message = MagicMock(side_effect=NetworkError('Oh snap'))
-    with pytest.raises(NetworkError, match=r'Oh snap'):
-        send_msg('test', bot)
+    send_msg('test', bot)
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2

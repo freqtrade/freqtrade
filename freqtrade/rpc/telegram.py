@@ -8,7 +8,7 @@ from tabulate import tabulate
 import arrow
 from sqlalchemy import and_, func, text
 from telegram import ParseMode, Bot, Update
-from telegram.error import NetworkError
+from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade import exchange, __version__
@@ -475,13 +475,17 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
         return
 
     bot = bot or _UPDATER.bot
+
     try:
-        bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
-    except NetworkError as error:
-        # Sometimes the telegram server resets the current connection,
-        # if this is the case we send the message again.
-        logger.warning(
-            'Got Telegram NetworkError: %s! Trying one more time.',
-            error.message
-        )
-        bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+        try:
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+        except NetworkError as network_err:
+            # Sometimes the telegram server resets the current connection,
+            # if this is the case we send the message again.
+            logger.warning(
+                'Got Telegram NetworkError: %s! Trying one more time.',
+                network_err.message
+            )
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+    except TelegramError as telegram_err:
+        logger.warning('Got TelegramError: %s! Giving up on that message.', telegram_err.message)
