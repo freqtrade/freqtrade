@@ -10,7 +10,7 @@ import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above, crossed_below
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above
 
 logger = logging.getLogger(__name__)
 
