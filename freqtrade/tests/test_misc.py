@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,C0103
 import time
 import os
 from argparse import Namespace

@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,W0212
 import logging
 import os
 from functools import reduce
@@ -21,6 +21,7 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1300
 TOTAL_TRIES = 4
+# pylint: disable=C0103
 current_tries = 0
 
 
@@ -90,6 +91,7 @@ def test_hyperopt(backtest_conf, mocker):
         trade_loss = 1 - 0.4 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
         profit_loss = max(0, 1 - total_profit / 15000)  # max profit 15000
 
+        # pylint: disable=W0603
         global current_tries
         current_tries += 1
         print('{}/{}: {}'.format(current_tries, TOTAL_TRIES, result))

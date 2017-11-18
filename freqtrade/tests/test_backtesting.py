@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,W0212
 
 
 import logging
