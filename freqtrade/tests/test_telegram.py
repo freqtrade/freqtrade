@@ -1,10 +1,9 @@
-# pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors
+# pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
 import re
 from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock
 
-import pytest
 from sqlalchemy import create_engine
 from telegram import Update, Message, Chat
 from telegram.error import NetworkError
@@ -519,7 +518,7 @@ def test_send_msg(default_conf, mocker):
                           init=MagicMock())
     bot = MagicMock()
     send_msg('test', bot)
-    assert len(bot.method_calls) == 0
+    assert not bot.method_calls
     bot.reset_mock()
 
     default_conf['telegram']['enabled'] = True
