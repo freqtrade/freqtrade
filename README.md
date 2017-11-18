@@ -137,6 +137,43 @@ $ docker start freqtrade
 You do not need to rebuild the image for configuration
 changes, it will suffice to edit `config.json` and restart the container.
 
+### Usage
+```
+usage: freqtrade [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist]
+                 {backtesting} ...
+
+Simple High Frequency Trading Bot for crypto currencies
+
+positional arguments:
+  {backtesting}
+    backtesting         backtesting module
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        specify configuration file (default: config.json)
+  -v, --verbose         be verbose
+  --version             show program's version number and exit
+  --dynamic-whitelist   dynamically generate and update whitelist based on 24h
+                        BaseVolume
+
+```
+
+### Backtesting
+
+Backtesting also uses the config specified via `-c/--config`.
+
+```
+usage: freqtrade backtesting [-h] [-l] [-i INT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -l, --live            using live data
+  -i INT, --ticker-interval INT
+                        specify ticker interval in minutes (default: 5)
+```
+
+
 ### Execute tests
 
 ```

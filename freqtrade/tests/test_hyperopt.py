@@ -9,7 +9,11 @@ import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
-from freqtrade.tests.test_backtesting import backtest, format_results, preprocess
+from freqtrade import exchange
+from freqtrade.exchange import Bittrex
+from freqtrade.tests import load_backtesting_data
+from freqtrade.tests.test_backtesting import backtest, format_results
+from freqtrade.tests.test_backtesting import preprocess
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
@@ -18,6 +22,7 @@ logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 TARGET_TRADES = 1300
 TOTAL_TRIES = 4
 current_tries = 0
+
 
 def buy_strategy_generator(params):
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
@@ -65,9 +70,12 @@ def buy_strategy_generator(params):
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_hyperopt(backtest_conf, backdata, mocker):
+def test_hyperopt(backtest_conf, mocker):
     mocked_buy_trend = mocker.patch('freqtrade.tests.test_backtesting.populate_buy_trend')
+
+    backdata = load_backtesting_data()
     processed = preprocess(backdata)
+    exchange._API = Bittrex({'key': '', 'secret': ''})
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)

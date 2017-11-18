@@ -2,6 +2,7 @@
 import copy
 import json
 import logging
+import sys
 import time
 import traceback
 from datetime import datetime
@@ -10,13 +11,14 @@ from typing import Dict, Optional, List
 
 import requests
 from cachetools import cached, TTLCache
-from jsonschema import validate
 
 from freqtrade import __version__, exchange, persistence
 from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import (
-    CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle, FreqtradeException
+    FreqtradeException
 )
+from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
+    load_config
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 
@@ -295,7 +297,9 @@ def main():
     :return: None
     """
     global _CONF
-    args = build_arg_parser().parse_args()
+    args = parse_args(sys.argv[1:])
+    if not args:
+        exit(0)
 
     # Initialize logger
     logging.basicConfig(
@@ -310,12 +314,7 @@ def main():
     )
 
     # Load and validate configuration
-    with open(args.config) as file:
-        _CONF = json.load(file)
-    if 'internals' not in _CONF:
-        _CONF['internals'] = {}
-    logger.info('Validating configuration ...')
-    validate(_CONF, CONF_SCHEMA)
+    _CONF = load_config(args.config)
 
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
