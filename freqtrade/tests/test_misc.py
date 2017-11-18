@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring
 import time
+import os
 from argparse import Namespace
 from unittest.mock import MagicMock
 
@@ -117,4 +118,4 @@ def test_start_backtesting(mocker):
 
     main_call_args = pytest_mock.call_args[0][0]
     assert main_call_args[0] == '-s'
-    assert main_call_args[1].endswith('freqtrade/tests/test_backtesting.py')
+    assert main_call_args[1].endswith(os.path.join('freqtrade', 'tests', 'test_backtesting.py'))
