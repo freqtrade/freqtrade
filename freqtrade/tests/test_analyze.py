@@ -28,7 +28,7 @@ def test_populates_buy_trend(result):
     assert 'buy' in dataframe.columns
 
 
-def test_populates_buy_trend(result):
+def test_populates_sell_trend(result):
     dataframe = populate_sell_trend(populate_indicators(result))
     assert 'sell' in dataframe.columns
 
