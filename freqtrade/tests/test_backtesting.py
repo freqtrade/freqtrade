@@ -47,11 +47,11 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     """
     min_date, max_date = None, None
     for values in data.values():
-        values = sorted(values, key=lambda d: arrow.get(d['T']))
-        if not min_date or values[0]['T'] < min_date:
-            min_date = values[0]['T']
-        if not max_date or values[-1]['T'] > max_date:
-            max_date = values[-1]['T']
+        sorted_values = sorted(values, key=lambda d: arrow.get(d['T']))
+        if not min_date or sorted_values[0]['T'] < min_date:
+            min_date = sorted_values[0]['T']
+        if not max_date or sorted_values[-1]['T'] > max_date:
+            max_date = sorted_values[-1]['T']
     return arrow.get(min_date), arrow.get(max_date)
 
 
