@@ -119,15 +119,13 @@ def execute_sell(trade: Trade, limit: float) -> None:
     trade.open_order_id = order_id
 
     fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
-    message = '*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
+    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         limit,
         fmt_exp_profit
-    )
-    logger.info(message)
-    rpc.send_msg(message)
+    ))
 
 
 def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
@@ -214,14 +212,12 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
-    message = '*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
+    rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
         buy_limit
-    )
-    logger.info(message)
-    rpc.send_msg(message)
+    ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
     return Trade(pair=pair,
                  stake_amount=stake_amount,
