@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def format_results(results: DataFrame):
-    return 'Made {} buys. Average profit {:.2f}%. ' \
-           'Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
-               len(results.index),
-               results.profit.mean() * 100.0,
-               results.profit.sum(),
-               results.duration.mean() * 5,
-           )
+    return ('Made {} buys. Average profit {:.2f}%. '
+            'Total profit was {:.3f}. Average duration {:.1f} mins.').format(
+                len(results.index),
+                results.profit.mean() * 100.0,
+                results.profit.sum(),
+                results.duration.mean() * 5,
+            )
 
 
 def preprocess(backdata) -> Dict[str, DataFrame]:
