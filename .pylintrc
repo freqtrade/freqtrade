@@ -1,3 +1,10 @@
+[MASTER]
+extension-pkg-whitelist=numpy,talib
+
 [BASIC]
 good-names=logger
 ignore=vendor
+
+[TYPECHECK]
+ignored-modules=numpy,talib
+

@@ -1,3 +1,6 @@
+"""
+Functions to analyze ticker data with indicators and produce buy and sell signals
+"""
 from enum import Enum
 import logging
 from datetime import timedelta
@@ -7,11 +10,12 @@ import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above, crossed_below
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above
 
 logger = logging.getLogger(__name__)
 
 class SignalType(Enum):
+    """ Enum to distinguish between buy and sell signals """
     BUY = "buy"
     SELL = "sell"
 

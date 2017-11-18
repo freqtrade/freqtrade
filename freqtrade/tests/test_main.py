@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,C0103
 import copy
 from unittest.mock import MagicMock
 
@@ -26,7 +26,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    assert len(trades) == 0
+    assert not trades
 
     result = _process()
     assert result is True
@@ -81,7 +81,8 @@ def test_process_runtime_error(default_conf, ticker, health, mocker):
 def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.telegram', init=MagicMock(), send_msg=MagicMock())
-    signal = mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: False if args[1] == SignalType.SELL else True)
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda *args: False if args[1] == SignalType.SELL else True)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -91,7 +92,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    assert len(trades) == 0
+    assert not trades
     result = _process()
     assert result is True
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()

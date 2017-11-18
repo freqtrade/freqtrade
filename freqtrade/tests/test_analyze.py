@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,W0621
 from datetime import datetime
 import json
 import pytest

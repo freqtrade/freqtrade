@@ -1,3 +1,4 @@
+# pragma pylint: disable=missing-docstring
 import json
 import os
 
@@ -11,9 +12,9 @@ def load_backtesting_data(ticker_interval: int = 5):
     ]
     for pair in pairs:
         with open('{abspath}/testdata/{pair}-{ticker_interval}.json'.format(
-                abspath=path,
-                pair=pair,
-                ticker_interval=ticker_interval,
-        )) as fp:
-            result[pair] = json.load(fp)
+            abspath=path,
+            pair=pair,
+            ticker_interval=ticker_interval,
+        )) as tickerdata:
+            result[pair] = json.load(tickerdata)
     return result
