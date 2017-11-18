@@ -12,15 +12,11 @@ from typing import Dict, Optional, List
 import requests
 from cachetools import cached, TTLCache
 
-from freqtrade import __version__, exchange, persistence
+from freqtrade import __version__, exchange, persistence, rpc
 from freqtrade.analyze import get_signal, SignalType
-from freqtrade.misc import (
-    FreqtradeException
-)
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
-    load_config
+    load_config, FreqtradeException
 from freqtrade.persistence import Trade
-from freqtrade.rpc import telegram
 
 logger = logging.getLogger('freqtrade')
 
@@ -102,7 +98,7 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
         )
         time.sleep(30)
     except RuntimeError:
-        telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
+        rpc.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
             traceback=traceback.format_exc(),
             hint='Issue `/start` if you think it is safe to restart.'
         ))
@@ -131,7 +127,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
         fmt_exp_profit
     )
     logger.info(message)
-    telegram.send_msg(message)
+    rpc.send_msg(message)
 
 
 def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
@@ -225,7 +221,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
         buy_limit
     )
     logger.info(message)
-    telegram.send_msg(message)
+    rpc.send_msg(message)
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
     return Trade(pair=pair,
                  stake_amount=stake_amount,
@@ -245,7 +241,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     :return: None
     """
     # Initialize all modules
-    telegram.init(config)
+    rpc.init(config)
     persistence.init(config, db_url)
     exchange.init(config)
 
@@ -283,11 +279,11 @@ def cleanup(*args, **kwargs) -> None:
     Cleanup the application state und finish all pending tasks
     :return: None
     """
-    telegram.send_msg('*Status:* `Stopping trader...`')
+    rpc.send_msg('*Status:* `Stopping trader...`')
     logger.info('Stopping trader and cleaning up modules...')
     update_state(State.STOPPED)
     persistence.cleanup()
-    telegram.cleanup()
+    rpc.cleanup()
     exit(0)
 
 
@@ -325,7 +321,7 @@ def main():
         new_state = get_state()
         # Log state transition
         if new_state != old_state:
-            telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
+            rpc.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
             logger.info('Changing state to: %s', new_state.name)
 
         if new_state == State.STOPPED:
