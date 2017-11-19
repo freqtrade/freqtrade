@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0621
-from datetime import datetime
 import json
+import arrow
 import pytest
 from pandas import DataFrame
 
@@ -34,20 +34,20 @@ def test_populates_sell_trend(result):
 
 
 def test_returns_latest_buy_signal(mocker):
-    buydf = DataFrame([{'buy': 1, 'date': datetime.today()}])
+    buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
     assert get_signal('BTC-ETH', SignalType.BUY)
 
-    buydf = DataFrame([{'buy': 0, 'date': datetime.today()}])
+    buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
     assert not get_signal('BTC-ETH', SignalType.BUY)
 
 
 def test_returns_latest_sell_signal(mocker):
-    selldf = DataFrame([{'sell': 1, 'date': datetime.today()}])
+    selldf = DataFrame([{'sell': 1, 'date': arrow.utcnow()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=selldf)
     assert get_signal('BTC-ETH', SignalType.SELL)
 
-    selldf = DataFrame([{'sell': 0, 'date': datetime.today()}])
+    selldf = DataFrame([{'sell': 0, 'date': arrow.utcnow()}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=selldf)
     assert not get_signal('BTC-ETH', SignalType.SELL)
