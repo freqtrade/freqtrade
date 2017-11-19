@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring
-# from datetime import datetime
 import json
 import arrow
 import pytest
