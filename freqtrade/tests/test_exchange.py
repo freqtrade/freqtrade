@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,C0103
 from unittest.mock import MagicMock
 
 import pytest
@@ -33,4 +33,3 @@ def test_validate_pairs_not_compatible(default_conf, mocker):
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
     with pytest.raises(RuntimeError, match=r'not compatible'):
         validate_pairs(default_conf['exchange']['pair_whitelist'])
-

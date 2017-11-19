@@ -57,7 +57,7 @@ def init(config: dict) -> None:
         _UPDATER.dispatcher.add_handler(handle)
     _UPDATER.start_polling(
         clean=True,
-        bootstrap_retries=3,
+        bootstrap_retries=-1,
         timeout=30,
         read_latency=60,
     )

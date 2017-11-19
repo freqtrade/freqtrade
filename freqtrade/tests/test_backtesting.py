@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,W0212
 
 
 import logging
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def format_results(results: DataFrame):
-    return 'Made {} buys. Average profit {:.2f}%. ' \
-           'Total profit was {:.3f}. Average duration {:.1f} mins.'.format(
-               len(results.index),
-               results.profit.mean() * 100.0,
-               results.profit.sum(),
-               results.duration.mean() * 5,
-           )
+    return ('Made {} buys. Average profit {:.2f}%. '
+            'Total profit was {:.3f}. Average duration {:.1f} mins.').format(
+                len(results.index),
+                results.profit.mean() * 100.0,
+                results.profit.sum(),
+                results.duration.mean() * 5,
+            )
 
 
 def preprocess(backdata) -> Dict[str, DataFrame]:
@@ -47,11 +47,11 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     """
     min_date, max_date = None, None
     for values in data.values():
-        values = sorted(values, key=lambda d: arrow.get(d['T']))
-        if not min_date or values[0]['T'] < min_date:
-            min_date = values[0]['T']
-        if not max_date or values[-1]['T'] > max_date:
-            max_date = values[-1]['T']
+        sorted_values = sorted(values, key=lambda d: arrow.get(d['T']))
+        if not min_date or sorted_values[0]['T'] < min_date:
+            min_date = sorted_values[0]['T']
+        if not max_date or sorted_values[-1]['T'] > max_date:
+            max_date = sorted_values[-1]['T']
     return arrow.get(min_date), arrow.get(max_date)
 
 
