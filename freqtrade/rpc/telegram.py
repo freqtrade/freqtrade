@@ -163,8 +163,8 @@ def _status(bot: Bot, update: Update) -> None:
                 amount=round(trade.amount, 8),
                 close_profit=fmt_close_profit,
                 current_profit=round(current_profit * 100, 2),
-                open_order='{} ({})'.format(
-                    order['remaining'], order['type']
+                open_order='({} rem={:.8f})'.format(
+                    order['type'], order['remaining']
                 ) if order else None,
             )
             send_msg(message, bot=bot)
