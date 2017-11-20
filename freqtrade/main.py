@@ -2,6 +2,7 @@
 import copy
 import json
 import logging
+import sys
 import time
 import traceback
 from datetime import datetime
@@ -10,13 +11,12 @@ from typing import Dict, Optional, List
 
 import requests
 from cachetools import cached, TTLCache
-from jsonschema import validate
 
-from freqtrade import __version__, exchange, persistence
-from freqtrade.analyze import get_buy_signal
-from freqtrade.misc import CONF_SCHEMA, State, get_state, update_state, build_arg_parser, throttle
+from freqtrade import __version__, exchange, persistence, rpc
+from freqtrade.analyze import get_signal, SignalType
+from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
+    load_config, FreqtradeException
 from freqtrade.persistence import Trade
-from freqtrade.rpc import telegram
 
 logger = logging.getLogger('freqtrade')
 
@@ -76,8 +76,8 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
                     )
-            except ValueError:
-                logger.exception('Unable to create trade')
+            except FreqtradeException as e:
+                logger.warning('Unable to create trade: %s', e)
 
         for trade in trades:
             # Get order details for actual price per unit
@@ -86,44 +86,25 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
                 logger.info('Got open order for %s', trade)
                 trade.update(exchange.get_order(trade.open_order_id))
 
-            if not close_trade_if_fulfilled(trade):
+            if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
                 state_changed = handle_trade(trade) or state_changed
 
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
-        msg = 'Got {} in _process(), retrying in 30 seconds...'.format(error.__class__.__name__)
-        logger.exception(msg)
+        logger.warning(
+            'Got %s in _process(), retrying in 30 seconds...',
+            error
+        )
         time.sleep(30)
     except RuntimeError:
-        telegram.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
+        rpc.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
             traceback=traceback.format_exc(),
             hint='Issue `/start` if you think it is safe to restart.'
         ))
         logger.exception('Got RuntimeError. Stopping trader ...')
         update_state(State.STOPPED)
     return state_changed
-
-
-def close_trade_if_fulfilled(trade: Trade) -> bool:
-    """
-    Checks if the trade is closable, and if so it is being closed.
-    :param trade: Trade
-    :return: True if trade has been closed else False
-    """
-    # If we don't have an open order and the close rate is already set,
-    # we can close this trade.
-    if trade.close_profit is not None \
-            and trade.close_date is not None \
-            and trade.close_rate is not None \
-            and trade.open_order_id is None:
-        trade.is_open = False
-        logger.info(
-            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
-            trade
-        )
-        return True
-    return False
 
 
 def execute_sell(trade: Trade, limit: float) -> None:
@@ -138,20 +119,18 @@ def execute_sell(trade: Trade, limit: float) -> None:
     trade.open_order_id = order_id
 
     fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
-    message = '*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
+    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         limit,
         fmt_exp_profit
-    )
-    logger.info(message)
-    telegram.send_msg(message)
+    ))
 
 
-def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bool:
+def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
     """
-    Based an earlier trade and current price and configuration, decides whether bot should sell
+    Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
     current_profit = trade.calc_profit(current_rate)
@@ -159,9 +138,9 @@ def should_sell(trade: Trade, current_rate: float, current_time: datetime) -> bo
         logger.debug('Stop loss hit.')
         return True
 
+    # Check if time matches and current rate is above threshold
+    time_diff = (current_time - trade.open_date).total_seconds() / 60
     for duration, threshold in sorted(_CONF['minimal_roi'].items()):
-        # Check if time matches and current rate is above threshold
-        time_diff = (current_time - trade.open_date).total_seconds() / 60
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
@@ -179,7 +158,7 @@ def handle_trade(trade: Trade) -> bool:
 
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
-    if should_sell(trade, current_rate, datetime.utcnow()):
+    if min_roi_reached(trade, current_rate, datetime.utcnow()) or get_signal(trade.pair, SignalType.SELL):
         execute_sell(trade, current_rate)
         return True
     return False
@@ -206,7 +185,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
-        raise ValueError(
+        raise FreqtradeException(
             'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
         )
 
@@ -216,11 +195,11 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
-        raise ValueError('No pair in whitelist')
+        raise FreqtradeException('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_buy_signal(_pair):
+        if get_signal(_pair, SignalType.BUY):
             pair = _pair
             break
     else:
@@ -233,14 +212,12 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
-    message = '*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
+    rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
         buy_limit
-    )
-    logger.info(message)
-    telegram.send_msg(message)
+    ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
     return Trade(pair=pair,
                  stake_amount=stake_amount,
@@ -260,7 +237,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     :return: None
     """
     # Initialize all modules
-    telegram.init(config)
+    rpc.init(config)
     persistence.init(config, db_url)
     exchange.init(config)
 
@@ -298,11 +275,11 @@ def cleanup(*args, **kwargs) -> None:
     Cleanup the application state und finish all pending tasks
     :return: None
     """
-    telegram.send_msg('*Status:* `Stopping trader...`')
+    rpc.send_msg('*Status:* `Stopping trader...`')
     logger.info('Stopping trader and cleaning up modules...')
     update_state(State.STOPPED)
     persistence.cleanup()
-    telegram.cleanup()
+    rpc.cleanup()
     exit(0)
 
 
@@ -312,7 +289,9 @@ def main():
     :return: None
     """
     global _CONF
-    args = build_arg_parser().parse_args()
+    args = parse_args(sys.argv[1:])
+    if not args:
+        exit(0)
 
     # Initialize logger
     logging.basicConfig(
@@ -327,12 +306,7 @@ def main():
     )
 
     # Load and validate configuration
-    with open(args.config) as file:
-        _CONF = json.load(file)
-    if 'internals' not in _CONF:
-        _CONF['internals'] = {}
-    logger.info('Validating configuration ...')
-    validate(_CONF, CONF_SCHEMA)
+    _CONF = load_config(args.config)
 
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
@@ -343,7 +317,7 @@ def main():
         new_state = get_state()
         # Log state transition
         if new_state != old_state:
-            telegram.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
+            rpc.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
             logger.info('Changing state to: %s', new_state.name)
 
         if new_state == State.STOPPED:

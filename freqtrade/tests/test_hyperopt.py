@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring,W0212
 import logging
 import os
 from functools import reduce
@@ -9,15 +9,21 @@ import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
+from freqtrade import exchange
+from freqtrade.exchange import Bittrex
+from freqtrade.tests import load_backtesting_data
 from freqtrade.tests.test_backtesting import backtest, format_results
+from freqtrade.tests.test_backtesting import preprocess
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
-TARGET_TRADES = 1300
+TARGET_TRADES = 1100
 TOTAL_TRIES = 4
+# pylint: disable=C0103
 current_tries = 0
+
 
 def buy_strategy_generator(params):
     def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
@@ -59,32 +65,36 @@ def buy_strategy_generator(params):
         dataframe.loc[
             reduce(lambda x, y: x & y, conditions),
             'buy'] = 1
-        dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
 
         return dataframe
     return populate_buy_trend
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_hyperopt(backtest_conf, backdata, mocker):
-    mocked_buy_trend = mocker.patch('freqtrade.analyze.populate_buy_trend')
+def test_hyperopt(backtest_conf, mocker):
+    mocked_buy_trend = mocker.patch('freqtrade.tests.test_backtesting.populate_buy_trend')
+
+    backdata = load_backtesting_data()
+    processed = preprocess(backdata)
+    exchange._API = Bittrex({'key': '', 'secret': ''})
 
     def optimizer(params):
         mocked_buy_trend.side_effect = buy_strategy_generator(params)
 
-        results = backtest(backtest_conf, backdata, mocker)
+        results = backtest(backtest_conf, processed, mocker)
 
         result = format_results(results)
 
         total_profit = results.profit.sum() * 1000
         trade_count = len(results.index)
 
-        trade_loss = 1 - 0.4 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-        profit_loss = max(0, 1 - total_profit / 15000)  # max profit 15000
+        trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+        profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
 
+        # pylint: disable=W0603
         global current_tries
         current_tries += 1
-        print('{}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
+        print('{:5d}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
 
         return {
             'loss': trade_loss + profit_loss,
@@ -146,3 +156,8 @@ def test_hyperopt(backtest_conf, backdata, mocker):
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
     print('Result: {}'.format(newlist[0]['result']))
+
+
+if __name__ == '__main__':
+    # for profiling with cProfile and line_profiler
+    pytest.main([__file__, '-s'])

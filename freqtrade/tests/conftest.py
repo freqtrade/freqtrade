@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring
-import json
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -55,6 +54,8 @@ def default_conf():
 @pytest.fixture(scope="module")
 def backtest_conf():
     return {
+        "stake_currency": "BTC",
+        "stake_amount": 0.01,
         "minimal_roi": {
             "40":  0.0,
             "30":  0.01,
@@ -63,16 +64,6 @@ def backtest_conf():
         },
         "stoploss": -0.05
     }
-
-
-@pytest.fixture(scope="module")
-def backdata():
-    result = {}
-    for pair in ['btc-neo', 'btc-eth', 'btc-omg', 'btc-edg', 'btc-pay',
-                 'btc-pivx', 'btc-qtum', 'btc-mtl', 'btc-etc', 'btc-ltc']:
-        with open('freqtrade/tests/testdata/' + pair + '.json') as data_file:
-            result[pair] = json.load(data_file)
-    return result
 
 
 @pytest.fixture

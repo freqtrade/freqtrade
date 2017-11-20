@@ -1,14 +1,22 @@
 import argparse
 import enum
+import json
 import logging
-from typing import Any, Callable
-
+import os
 import time
+from typing import Any, Callable, List, Dict
+
+from jsonschema import validate, Draft4Validator
+from jsonschema.exceptions import best_match, ValidationError
 from wrapt import synchronized
 
 from freqtrade import __version__
 
 logger = logging.getLogger(__name__)
+
+
+class FreqtradeException(BaseException):
+    pass
 
 
 class State(enum.Enum):
@@ -40,6 +48,27 @@ def get_state() -> State:
     return _STATE
 
 
+def load_config(path: str) -> Dict:
+    """
+    Loads a config file from the given path
+    :param path: path as str
+    :return: configuration as dictionary
+    """
+    with open(path) as file:
+        conf = json.load(file)
+    if 'internals' not in conf:
+        conf['internals'] = {}
+    logger.info('Validating configuration ...')
+    try:
+        validate(conf, CONF_SCHEMA)
+        return conf
+    except ValidationError:
+        logger.fatal('Configuration is not valid! See config.json.example')
+        raise ValidationError(
+            best_match(Draft4Validator(CONF_SCHEMA).iter_errors(conf)).message
+        )
+
+
 def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     """
     Throttles the given callable that it
@@ -57,8 +86,11 @@ def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     return result
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    """ Builds and returns an ArgumentParser instance """
+def parse_args(args: List[str]):
+    """
+    Parses given arguments and returns an argparse Namespace instance.
+    Returns None if a sub command has been selected and executed.
+    """
     parser = argparse.ArgumentParser(
         description='Simple High Frequency Trading Bot for crypto currencies'
     )
@@ -88,7 +120,54 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help='dynamically generate and update whitelist based on 24h BaseVolume',
         action='store_true',
     )
-    return parser
+    build_subcommands(parser)
+    parsed_args = parser.parse_args(args)
+
+    # No subcommand as been selected
+    if not hasattr(parsed_args, 'func'):
+        return parsed_args
+
+    parsed_args.func(parsed_args)
+    return None
+
+
+def build_subcommands(parser: argparse.ArgumentParser) -> None:
+    """ Builds and attaches all subcommands """
+    subparsers = parser.add_subparsers(dest='subparser')
+    backtest = subparsers.add_parser('backtesting', help='backtesting module')
+    backtest.set_defaults(func=start_backtesting)
+    backtest.add_argument(
+        '-l', '--live',
+        action='store_true',
+        dest='live',
+        help='using live data',
+    )
+    backtest.add_argument(
+        '-i', '--ticker-interval',
+        help='specify ticker interval in minutes (default: 5)',
+        dest='ticker_interval',
+        default=5,
+        type=int,
+        metavar='INT',
+    )
+
+
+def start_backtesting(args) -> None:
+    """
+    Exports all args as environment variables and starts backtesting via pytest.
+    :param args: arguments namespace
+    :return:
+    """
+    import pytest
+
+    os.environ.update({
+        'BACKTEST': 'true',
+        'BACKTEST_LIVE': 'true' if args.live else '',
+        'BACKTEST_CONFIG': args.config,
+        'BACKTEST_TICKER_INTERVAL': str(args.ticker_interval),
+    })
+    path = os.path.join(os.path.dirname(__file__), 'tests', 'test_backtesting.py')
+    pytest.main(['-s', path])
 
 
 # Required json-schema for user specified config
@@ -146,7 +225,10 @@ CONF_SCHEMA = {
                 'secret': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
-                    'items': {'type': 'string'},
+                    'items': {
+                        'type': 'string',
+                        'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                    },
                     'uniqueItems': True
                 }
             },
