@@ -5,6 +5,7 @@ from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
 from requests.exceptions import ContentDecodingError
 
 from freqtrade.exchange.interface import Exchange
+from freqtrade import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class Bittrex(Exchange):
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise RuntimeError('{message} params=({pair}, {rate}, {amount})'.format(
+            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
                 message=data['message'],
                 pair=pair,
                 rate=rate,
@@ -56,7 +57,7 @@ class Bittrex(Exchange):
     def sell(self, pair: str, rate: float, amount: float) -> str:
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise RuntimeError('{message} params=({pair}, {rate}, {amount})'.format(
+            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
                 message=data['message'],
                 pair=pair,
                 rate=rate,
@@ -66,7 +67,7 @@ class Bittrex(Exchange):
     def get_balance(self, currency: str) -> float:
         data = _API.get_balance(currency)
         if not data['success']:
-            raise RuntimeError('{message} params=({currency})'.format(
+            raise OperationalException('{message} params=({currency})'.format(
                 message=data['message'],
                 currency=currency))
         return float(data['result']['Balance'] or 0.0)
@@ -74,13 +75,13 @@ class Bittrex(Exchange):
     def get_balances(self):
         data = _API.get_balances()
         if not data['success']:
-            raise RuntimeError('{message}'.format(message=data['message']))
+            raise OperationalException('{message}'.format(message=data['message']))
         return data['result']
 
     def get_ticker(self, pair: str) -> dict:
         data = _API.get_ticker(pair.replace('_', '-'))
         if not data['success']:
-            raise RuntimeError('{message} params=({pair})'.format(
+            raise OperationalException('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
 
@@ -121,7 +122,7 @@ class Bittrex(Exchange):
                         pair=pair))
 
         if not data['success']:
-            raise RuntimeError('{message} params=({pair})'.format(
+            raise OperationalException('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
 
@@ -130,7 +131,7 @@ class Bittrex(Exchange):
     def get_order(self, order_id: str) -> Dict:
         data = _API.get_order(order_id)
         if not data['success']:
-            raise RuntimeError('{message} params=({order_id})'.format(
+            raise OperationalException('{message} params=({order_id})'.format(
                 message=data['message'],
                 order_id=order_id))
         data = data['result']
@@ -148,7 +149,7 @@ class Bittrex(Exchange):
     def cancel_order(self, order_id: str) -> None:
         data = _API.cancel(order_id)
         if not data['success']:
-            raise RuntimeError('{message} params=({order_id})'.format(
+            raise OperationalException('{message} params=({order_id})'.format(
                 message=data['message'],
                 order_id=order_id))
 
@@ -158,19 +159,19 @@ class Bittrex(Exchange):
     def get_markets(self) -> List[str]:
         data = _API.get_markets()
         if not data['success']:
-            raise RuntimeError('{message}'.format(message=data['message']))
+            raise OperationalException('{message}'.format(message=data['message']))
         return [m['MarketName'].replace('-', '_') for m in data['result']]
 
     def get_market_summaries(self) -> List[Dict]:
         data = _API.get_market_summaries()
         if not data['success']:
-            raise RuntimeError('{message}'.format(message=data['message']))
+            raise OperationalException('{message}'.format(message=data['message']))
         return data['result']
 
     def get_wallet_health(self) -> List[Dict]:
         data = _API_V2.get_wallet_health()
         if not data['success']:
-            raise RuntimeError('{message}'.format(message=data['message']))
+            raise OperationalException('{message}'.format(message=data['message']))
         return [{
             'Currency': entry['Health']['Currency'],
             'IsActive': entry['Health']['IsActive'],
