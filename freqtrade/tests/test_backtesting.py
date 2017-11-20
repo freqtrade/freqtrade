@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 def format_results(results: DataFrame):
-    return ('Made {} buys. Average profit {:.2f}%. '
-            'Total profit was {:.3f}. Average duration {:.1f} mins.').format(
+    return ('Made {:6d} buys. Average profit {: 5.2f}%. '
+            'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
                 len(results.index),
                 results.profit.mean() * 100.0,
                 results.profit.sum(),

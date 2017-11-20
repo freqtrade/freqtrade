@@ -94,7 +94,7 @@ def test_hyperopt(backtest_conf, mocker):
         # pylint: disable=W0603
         global current_tries
         current_tries += 1
-        print('{}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
+        print('{:5d}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
 
         return {
             'loss': trade_loss + profit_loss,
