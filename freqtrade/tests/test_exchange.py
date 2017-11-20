@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from freqtrade import OperationalException
 from freqtrade.exchange import validate_pairs
-from freqtrade.misc import OperationalException
 
 
 def test_validate_pairs(default_conf, mocker):

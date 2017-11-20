@@ -2,11 +2,11 @@ import logging
 import re
 from datetime import timedelta
 from typing import Callable, Any
-from pandas import DataFrame
-from tabulate import tabulate
 
 import arrow
+from pandas import DataFrame
 from sqlalchemy import and_, func, text
+from tabulate import tabulate
 from telegram import ParseMode, Bot, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater

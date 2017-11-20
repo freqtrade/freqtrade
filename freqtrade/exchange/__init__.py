@@ -9,9 +9,9 @@ import arrow
 import requests
 from cachetools import cached, TTLCache
 
+from freqtrade import OperationalException
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.interface import Exchange
-from freqtrade import OperationalException
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,8 @@ from typing import List, Dict
 from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
 from requests.exceptions import ContentDecodingError
 
-from freqtrade.exchange.interface import Exchange
 from freqtrade import OperationalException
+from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 

@@ -7,8 +7,8 @@ import requests
 from sqlalchemy import create_engine
 
 from freqtrade import DependencyException, OperationalException
-from freqtrade.exchange import Exchanges
 from freqtrade.analyze import SignalType
+from freqtrade.exchange import Exchanges
 from freqtrade.main import create_trade, handle_trade, init, \
     get_target_bid, _process
 from freqtrade.misc import get_state, State

@@ -1,9 +1,9 @@
 """
 Functions to analyze ticker data with indicators and produce buy and sell signals
 """
-from enum import Enum
 import logging
 from datetime import timedelta
+from enum import Enum
 
 import arrow
 import talib.abstract as ta

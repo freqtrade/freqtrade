@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
-from unittest.mock import MagicMock
-
 from copy import deepcopy
+from unittest.mock import MagicMock
 
 from freqtrade.rpc import init, cleanup, send_msg
 
