@@ -1,12 +1,15 @@
 # pragma pylint: disable=missing-docstring,C0103
-import time
+import json
 import os
+import time
 from argparse import Namespace
+from copy import deepcopy
 from unittest.mock import MagicMock
 
 import pytest
+from jsonschema import ValidationError
 
-from freqtrade.misc import throttle, parse_args, start_backtesting
+from freqtrade.misc import throttle, parse_args, start_backtesting, load_config
 
 
 def test_throttle():
@@ -119,3 +122,28 @@ def test_start_backtesting(mocker):
     main_call_args = pytest_mock.call_args[0][0]
     assert main_call_args[0] == '-s'
     assert main_call_args[1].endswith(os.path.join('freqtrade', 'tests', 'test_backtesting.py'))
+
+
+def test_load_config(default_conf, mocker):
+    file_mock = mocker.patch('freqtrade.misc.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+    validated_conf = load_config('somefile')
+    assert file_mock.call_count == 1
+    assert validated_conf.items() >= default_conf.items()
+
+
+def test_load_config_invalid_pair(default_conf, mocker):
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'].append('BTC-ETH')
+    mocker.patch('freqtrade.misc.open', mocker.mock_open(read_data=json.dumps(conf)))
+    with pytest.raises(ValidationError, match=r'.*does not match.*'):
+        load_config('somefile')
+
+
+def test_load_config_missing_attributes(default_conf, mocker):
+    conf = deepcopy(default_conf)
+    conf.pop('exchange')
+    mocker.patch('freqtrade.misc.open', mocker.mock_open(read_data=json.dumps(conf)))
+    with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
+        load_config('somefile')

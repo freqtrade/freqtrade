@@ -6,7 +6,8 @@ import os
 import time
 from typing import Any, Callable, List, Dict
 
-from jsonschema import validate
+from jsonschema import validate, Draft4Validator
+from jsonschema.exceptions import best_match, ValidationError
 from wrapt import synchronized
 
 from freqtrade import __version__
@@ -58,8 +59,14 @@ def load_config(path: str) -> Dict:
     if 'internals' not in conf:
         conf['internals'] = {}
     logger.info('Validating configuration ...')
-    validate(conf, CONF_SCHEMA)
-    return conf
+    try:
+        validate(conf, CONF_SCHEMA)
+        return conf
+    except ValidationError:
+        logger.fatal('Configuration is not valid! See config.json.example')
+        raise ValidationError(
+            best_match(Draft4Validator(CONF_SCHEMA).iter_errors(conf)).message
+        )
 
 
 def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
@@ -218,7 +225,10 @@ CONF_SCHEMA = {
                 'secret': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
-                    'items': {'type': 'string'},
+                    'items': {
+                        'type': 'string',
+                        'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                    },
                     'uniqueItems': True
                 }
             },
