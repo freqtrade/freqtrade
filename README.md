@@ -74,14 +74,20 @@ Use your favorite AUR helper and install `python-freqtrade-git`.
 
 `develop` branch has often new features, but might also cause breaking changes. To use it, you are encouraged to join our [slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
 
-```
-$ cd freqtrade/
-# copy example config. Dont forget to insert your api keys
+```bash
+$ mkdir freqtrade && cd freqtrade/
+# Create an isolated Python virtual environment
+$ pip install virtualenv
+$ virtualenv ./virtualenv --python=$(which python3)
+# Activate the virtualenv
+$ . virtualenv/bin/activate
+# Copy example config. Dont forget to insert your api keys
 $ cp config.json.example config.json
-$ python -m venv .env
-$ source .env/bin/activate
+# Install requirements
 $ pip install -r requirements.txt
+# Install Freqtrade
 $ pip install -e .
+# Run Freqtrade
 $ ./freqtrade/main.py
 ```
 
