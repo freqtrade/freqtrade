@@ -85,22 +85,32 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
 
 def backtest(backtest_conf, processed, mocker):
     trades = []
+    trade_count_lock = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
     mocker.patch.dict('freqtrade.main._CONF', backtest_conf)
     for pair, pair_data in processed.items():
-        pair_data['buy'] = 0
-        pair_data['sell'] = 0
+        pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
         for row in ticker[ticker.buy == 1].itertuples(index=True):
+            # Check if max_open_trades has already been reached for the given date
+            if not trade_count_lock.get(row.date, 0) < backtest_conf['max_open_trades']:
+                continue
+
+            # Increase lock
+            trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
                 amount=backtest_conf['stake_amount'],
                 fee=exchange.get_fee() * 2
             )
+
             # calculate win/lose forwards from buy point
-            for row2 in ticker[row.Index:].itertuples(index=True):
+            for row2 in ticker[row.Index + 1:].itertuples(index=True):
+                # Increase trade_count_lock for every iteration
+                trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
+
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
 
@@ -139,6 +149,8 @@ def test_backtest(backtest_conf, mocker):
     print('Using stake_currency: {} ...\nUsing stake_amount: {} ...'.format(
         config['stake_currency'], config['stake_amount']
     ))
+
+    print('Using max_open_trades: {} ...'.format(config['max_open_trades']))
 
     # Print timeframe
     min_date, max_date = get_timeframe(data)
