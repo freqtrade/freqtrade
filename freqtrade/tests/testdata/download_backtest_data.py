@@ -3,27 +3,49 @@
 """This script generate json data from bittrex"""
 import json
 from os import path
+import urllib.request
+import ssl
 
-from freqtrade import exchange
-from freqtrade.exchange import Bittrex
 
-PAIRS = [
-    'BTC_BCC', 'BTC_ETH', 'BTC_MER', 'BTC_POWR', 'BTC_ETC',
-    'BTC_OK', 'BTC_NEO', 'BTC_EMC2', 'BTC_DASH', 'BTC_LSK',
-    'BTC_LTC', 'BTC_XZC', 'BTC_OMG', 'BTC_STRAT', 'BTC_XRP',
-    'BTC_QTUM', 'BTC_WAVES', 'BTC_VTC', 'BTC_XLM', 'BTC_MCO'
-]
-TICKER_INTERVAL = 5  # ticker interval in minutes (currently implemented: 1 and 5)
+PAIRS = ['BTC-BCC', 'BTC-DASH', 'BTC-EDG', 'BTC-ETC', 'BTC-ETH', 'BTC-LTC', 'BTC-MTL', 'BTC-NEO',
+         'BTC-OK', 'BTC-OMG', 'BTC-PAY', 'BTC-PIVX', 'BTC-QTUM', 'BTC-SNT', 'BTC-XMR', 'BTC-XRP', 'BTC-XZC', 'BTC-ZEC']
+
 OUTPUT_DIR = path.dirname(path.realpath(__file__))
 
-# Init Bittrex exchange
-exchange._API = Bittrex({'key': '', 'secret': ''})
 
 for pair in PAIRS:
-    data = exchange.get_ticker_history(pair, TICKER_INTERVAL)
-    filename = path.join(OUTPUT_DIR, '{}-{}.json'.format(
-        pair,
-        TICKER_INTERVAL,
+    print('========== Generating', pair, ' ==========')
+
+    filename = path.join(OUTPUT_DIR, '{}.json'.format(
+        pair.lower(),
     ))
-    with open(filename, 'w') as fp:
-        json.dump(data, fp)
+    print(filename)
+
+    if path.isfile(filename):
+        with open(filename) as fp:
+            data = json.load(fp)
+        print("Current Start:", data[1])
+        print("Current End: ", data[-1:])
+    else:
+        data=[]
+        print("Current Start: None")
+        print("Current End: None")
+
+
+
+    query = 'https://bittrex.com/Api/v2.0/pub/market/GetTicks?marketName=' + pair + '&tickInterval=oneMin'
+    print("Sending query:", query)
+    req = urllib.request.urlopen(url=query, timeout=60, context=ssl._create_unverified_context())
+    new_data = json.loads(req.read())
+    new_data = new_data['result']
+
+    for row in new_data:
+        if row not in data:
+            data.append(row)
+    #print("New Start:", data[1])
+    print("New End: ", data[-1:])
+    data = sorted(data, key=lambda data: data['T'])
+
+
+    with open(filename, "w") as fp:
+       json.dump(data, fp, indent=1)
