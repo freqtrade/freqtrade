@@ -18,6 +18,9 @@ def plot_analyzed_dataframe(pair: str) -> None:
     exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
     dataframe = analyze.analyze_ticker(pair)
 
+    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
+    dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
+
     # Two subplots sharing x axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
     fig.suptitle(pair, fontsize=14, fontweight='bold')

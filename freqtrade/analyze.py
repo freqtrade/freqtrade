@@ -107,9 +107,6 @@ def analyze_ticker(pair: str) -> DataFrame:
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     dataframe = populate_sell_trend(dataframe)
-    # TODO: buy_price and sell_price are only used by the plotter, should probably be moved there
-    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
-    dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
     return dataframe
 
 
