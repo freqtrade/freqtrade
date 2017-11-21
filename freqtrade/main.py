@@ -327,11 +327,10 @@ def main() -> None:
                     dynamic_whitelist=args.dynamic_whitelist,
                 )
             old_state = new_state
-
-    except RuntimeError:
-        logger.exception('Got fatal exception!')
     except KeyboardInterrupt:
         logger.info('Got SIGINT, aborting ...')
+    except BaseException:
+        logger.exception('Got fatal exception!')
     finally:
         cleanup()
 
