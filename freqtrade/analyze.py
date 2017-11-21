@@ -119,7 +119,12 @@ def get_signal(pair: str, signal: SignalType) -> bool:
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is good for buying, False otherwise
     """
-    dataframe = analyze_ticker(pair)
+    try:
+        dataframe = analyze_ticker(pair)
+    except ValueError as ex:
+        logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
+        return False
+
     if dataframe.empty:
         return False
 
