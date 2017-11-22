@@ -41,7 +41,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
     assert trade.open_rate == 0.072661
-    assert trade.amount == 0.6864067381401302
+    assert trade.amount == 0.6881270557795791
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
@@ -131,6 +131,21 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     assert trade.amount == 206.43811673387373
 
     assert whitelist == default_conf['exchange']['pair_whitelist']
+
+
+def test_create_trade_minimal_amount(default_conf, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    buy_mock = mocker.patch('freqtrade.main.exchange.buy', MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, create_engine('sqlite://'))
+    min_stake_amount = 0.0005
+    create_trade(min_stake_amount)
+    rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
+    assert rate * amount >= min_stake_amount
 
 
 def test_create_trade_no_stake_amount(default_conf, ticker, mocker):

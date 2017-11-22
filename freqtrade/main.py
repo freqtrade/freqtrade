@@ -204,10 +204,9 @@ def create_trade(stake_amount: float) -> bool:
     else:
         return False
 
-    # Calculate amount and subtract fee
-    fee = exchange.get_fee()
+    # Calculate amount
     buy_limit = get_target_bid(exchange.get_ticker(pair))
-    amount = (1 - fee) * stake_amount / buy_limit
+    amount = stake_amount / buy_limit
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
@@ -222,7 +221,7 @@ def create_trade(stake_amount: float) -> bool:
         pair=pair,
         stake_amount=stake_amount,
         amount=amount,
-        fee=fee * 2,
+        fee=exchange.get_fee() * 2,
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
         exchange=exchange.get_name().upper(),
