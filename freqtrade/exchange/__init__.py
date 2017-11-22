@@ -9,6 +9,7 @@ import arrow
 import requests
 from cachetools import cached, TTLCache
 
+from freqtrade import OperationalException
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.interface import Exchange
 
@@ -51,7 +52,7 @@ def init(config: dict) -> None:
     try:
         exchange_class = Exchanges[name.upper()].value
     except KeyError:
-        raise RuntimeError('Exchange {} is not supported'.format(name))
+        raise OperationalException('Exchange {} is not supported'.format(name))
 
     _API = exchange_class(exchange_config)
 
@@ -62,7 +63,7 @@ def init(config: dict) -> None:
 def validate_pairs(pairs: List[str]) -> None:
     """
     Checks if all given pairs are tradable on the current exchange.
-    Raises RuntimeError if one pair is not available.
+    Raises OperationalException if one pair is not available.
     :param pairs: list of pairs
     :return: None
     """
@@ -75,11 +76,12 @@ def validate_pairs(pairs: List[str]) -> None:
     stake_cur = _CONF['stake_currency']
     for pair in pairs:
         if not pair.startswith(stake_cur):
-            raise RuntimeError(
+            raise OperationalException(
                 'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
             )
         if pair not in markets:
-            raise RuntimeError('Pair {} is not available at {}'.format(pair, _API.name.lower()))
+            raise OperationalException(
+                'Pair {} is not available at {}'.format(pair, _API.name.lower()))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:

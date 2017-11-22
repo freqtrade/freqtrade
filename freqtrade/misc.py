@@ -15,10 +15,6 @@ from freqtrade import __version__
 logger = logging.getLogger(__name__)
 
 
-class FreqtradeException(BaseException):
-    pass
-
-
 class State(enum.Enum):
     RUNNING = 0
     STOPPED = 1

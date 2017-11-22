@@ -19,12 +19,12 @@
 # limitations under the License.
 #
 
+import sys
+import warnings
+from datetime import datetime, timedelta
+
 import numpy as np
 import pandas as pd
-import warnings
-import sys
-
-from datetime import datetime, timedelta
 from pandas.core.base import PandasObject
 
 # =============================================

@@ -6,11 +6,12 @@ import pytest
 import requests
 from sqlalchemy import create_engine
 
-from freqtrade.exchange import Exchanges
+from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
+from freqtrade.exchange import Exchanges
 from freqtrade.main import create_trade, handle_trade, init, \
     get_target_bid, _process
-from freqtrade.misc import get_state, State, FreqtradeException
+from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 
 
@@ -59,7 +60,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
     assert sleep_mock.has_calls()
 
 
-def test_process_runtime_error(default_conf, ticker, health, mocker):
+def test_process_operational_exception(default_conf, ticker, health, mocker):
     msg_mock = MagicMock()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=msg_mock)
@@ -68,14 +69,14 @@ def test_process_runtime_error(default_conf, ticker, health, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           get_wallet_health=health,
-                          buy=MagicMock(side_effect=RuntimeError))
+                          buy=MagicMock(side_effect=OperationalException))
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
 
     result = _process()
     assert result is False
     assert get_state() == State.STOPPED
-    assert 'RuntimeError' in msg_mock.call_args_list[-1][0][0]
+    assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
@@ -141,7 +142,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
-    with pytest.raises(FreqtradeException, match=r'.*stake amount.*'):
+    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         create_trade(default_conf['stake_amount'])
 
 
@@ -154,7 +155,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
-    with pytest.raises(FreqtradeException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
