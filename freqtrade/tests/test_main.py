@@ -41,7 +41,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
     assert trade.open_rate == 0.072661
-    assert trade.amount == 0.6864067381401302
+    assert trade.amount == 0.6881270557795791
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
