@@ -115,9 +115,9 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
     init(default_conf, create_engine('sqlite://'))
-    trade = create_trade(15.0)
-    Trade.session.add(trade)
-    Trade.session.flush()
+    create_trade(15.0)
+
+    trade = Trade.query.first()
     assert trade is not None
     assert trade.stake_amount == 15.0
     assert trade.is_open
@@ -176,12 +176,13 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           sell=MagicMock(return_value='mocked_limit_sell'))
     init(default_conf, create_engine('sqlite://'))
-    trade = create_trade(15.0)
-    trade.update(limit_buy_order)
-    Trade.session.add(trade)
-    Trade.session.flush()
-    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+    create_trade(15.0)
+
+    trade = Trade.query.first()
     assert trade
+
+    trade.update(limit_buy_order)
+    assert trade.is_open is True
 
     handle_trade(trade)
     assert trade.open_order_id == 'mocked_limit_sell'
@@ -205,15 +206,14 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
-    trade = create_trade(15.0)
-    Trade.session.add(trade)
-    trade.update(limit_buy_order)
-    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+    create_trade(15.0)
+
+    trade = Trade.query.first()
     assert trade
 
+    trade.update(limit_buy_order)
     trade.update(limit_sell_order)
-    trade = Trade.query.filter(Trade.is_open.is_(False)).first()
-    assert trade
+    assert trade.is_open is False
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
         handle_trade(trade)

@@ -67,11 +67,8 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
         if len(trades) < _CONF['max_open_trades']:
             try:
                 # Create entity and execute trade
-                trade = create_trade(float(_CONF['stake_amount']))
-                if trade:
-                    Trade.session.add(trade)
-                    state_changed = True
-                else:
+                state_changed = create_trade(float(_CONF['stake_amount']))
+                if not state_changed:
                     logger.info(
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
@@ -126,6 +123,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
         limit,
         fmt_exp_profit
     ))
+    Trade.session.flush()
 
 
 def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
@@ -172,11 +170,12 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float) -> Optional[Trade]:
+def create_trade(stake_amount: float) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
+    :return: True if a trade object has been created and persisted, False otherwise
     """
     logger.info(
         'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -203,7 +202,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
             pair = _pair
             break
     else:
-        return None
+        return False
 
     # Calculate amount and subtract fee
     fee = exchange.get_fee()
@@ -219,14 +218,19 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
         buy_limit
     ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-    return Trade(pair=pair,
-                 stake_amount=stake_amount,
-                 amount=amount,
-                 fee=fee * 2,
-                 open_rate=buy_limit,
-                 open_date=datetime.utcnow(),
-                 exchange=exchange.get_name().upper(),
-                 open_order_id=order_id)
+    trade = Trade(
+        pair=pair,
+        stake_amount=stake_amount,
+        amount=amount,
+        fee=fee * 2,
+        open_rate=buy_limit,
+        open_date=datetime.utcnow(),
+        exchange=exchange.get_name().upper(),
+        open_order_id=order_id
+    )
+    Trade.session.add(trade)
+    Trade.session.flush()
+    return True
 
 
 def init(config: dict, db_url: Optional[str] = None) -> None:
