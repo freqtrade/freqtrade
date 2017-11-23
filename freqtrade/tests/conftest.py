@@ -23,7 +23,7 @@ def default_conf():
             "20":  0.02,
             "0":  0.04
         },
-        "stoploss": -0.05,
+        "stoploss": -0.10,
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
@@ -54,6 +54,7 @@ def default_conf():
 @pytest.fixture(scope="module")
 def backtest_conf():
     return {
+        "max_open_trades": 3,
         "stake_currency": "BTC",
         "stake_amount": 0.01,
         "minimal_roi": {
@@ -62,7 +63,7 @@ def backtest_conf():
             "20":  0.02,
             "0":  0.04
         },
-        "stoploss": -0.05
+        "stoploss": -0.10
     }
 
 

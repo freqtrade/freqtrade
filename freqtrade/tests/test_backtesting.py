@@ -83,24 +83,46 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     return tabulate(tabular_data, headers=headers)
 
 
-def backtest(backtest_conf, processed, mocker):
+def backtest(config: Dict, processed, mocker, max_open_trades=0):
+    """
+    Implements backtesting functionality
+    :param config: config to use
+    :param processed: a processed dictionary with format {pair, data}
+    :param mocker: mocker instance
+    :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
+    :return: DataFrame
+    """
     trades = []
+    trade_count_lock = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
-    mocker.patch.dict('freqtrade.main._CONF', backtest_conf)
+    mocker.patch.dict('freqtrade.main._CONF', config)
     for pair, pair_data in processed.items():
-        pair_data['buy'] = 0
-        pair_data['sell'] = 0
+        pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
         for row in ticker[ticker.buy == 1].itertuples(index=True):
+            if max_open_trades > 0:
+                # Check if max_open_trades has already been reached for the given date
+                if not trade_count_lock.get(row.date, 0) < max_open_trades:
+                    continue
+
+            if max_open_trades > 0:
+                # Increase lock
+                trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
+
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                amount=backtest_conf['stake_amount'],
+                amount=config['stake_amount'],
                 fee=exchange.get_fee() * 2
             )
+
             # calculate win/lose forwards from buy point
-            for row2 in ticker[row.Index:].itertuples(index=True):
+            for row2 in ticker[row.Index + 1:].itertuples(index=True):
+                if max_open_trades > 0:
+                    # Increase trade_count_lock for every iteration
+                    trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
+
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
 
@@ -108,6 +130,13 @@ def backtest(backtest_conf, processed, mocker):
                     break
     labels = ['currency', 'profit', 'duration']
     return DataFrame.from_records(trades, columns=labels)
+
+
+def get_max_open_trades(config):
+    if not os.environ.get('BACKTEST_LIMIT_MAX_TRADES'):
+        return 0
+    print('Using max_open_trades: {} ...'.format(config['max_open_trades']))
+    return config['max_open_trades']
 
 
 @pytest.mark.skipif(not os.environ.get('BACKTEST'), reason="BACKTEST not set")
@@ -147,8 +176,6 @@ def test_backtest(backtest_conf, mocker):
     ))
 
     # Execute backtest and print results
-    results = backtest(config, preprocess(data), mocker)
-    print('====================== BACKTESTING REPORT ======================================\n\n'
-          'NOTE: This Report doesn\'t respect the limits of max_open_trades, \n'
-          '      so the projected values should be taken with a grain of salt.\n')
+    results = backtest(config, preprocess(data), mocker, get_max_open_trades(config))
+    print('====================== BACKTESTING REPORT ======================================\n\n')
     print(generate_text_table(data, results, config['stake_currency']))

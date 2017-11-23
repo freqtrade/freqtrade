@@ -6,11 +6,12 @@ import pytest
 import requests
 from sqlalchemy import create_engine
 
-from freqtrade.exchange import Exchanges
+from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
+from freqtrade.exchange import Exchanges
 from freqtrade.main import create_trade, handle_trade, init, \
     get_target_bid, _process
-from freqtrade.misc import get_state, State, FreqtradeException
+from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 
 
@@ -40,7 +41,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
     assert trade.open_rate == 0.072661
-    assert trade.amount == 0.6864067381401302
+    assert trade.amount == 0.6881270557795791
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
@@ -59,7 +60,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
     assert sleep_mock.has_calls()
 
 
-def test_process_runtime_error(default_conf, ticker, health, mocker):
+def test_process_operational_exception(default_conf, ticker, health, mocker):
     msg_mock = MagicMock()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=msg_mock)
@@ -68,14 +69,14 @@ def test_process_runtime_error(default_conf, ticker, health, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           get_wallet_health=health,
-                          buy=MagicMock(side_effect=RuntimeError))
+                          buy=MagicMock(side_effect=OperationalException))
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
 
     result = _process()
     assert result is False
     assert get_state() == State.STOPPED
-    assert 'RuntimeError' in msg_mock.call_args_list[-1][0][0]
+    assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
@@ -114,9 +115,9 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
     init(default_conf, create_engine('sqlite://'))
-    trade = create_trade(15.0)
-    Trade.session.add(trade)
-    Trade.session.flush()
+    create_trade(15.0)
+
+    trade = Trade.query.first()
     assert trade is not None
     assert trade.stake_amount == 15.0
     assert trade.is_open
@@ -132,6 +133,21 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
 
+def test_create_trade_minimal_amount(default_conf, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    buy_mock = mocker.patch('freqtrade.main.exchange.buy', MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, create_engine('sqlite://'))
+    min_stake_amount = 0.0005
+    create_trade(min_stake_amount)
+    rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
+    assert rate * amount >= min_stake_amount
+
+
 def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
@@ -141,7 +157,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
-    with pytest.raises(FreqtradeException, match=r'.*stake amount.*'):
+    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         create_trade(default_conf['stake_amount'])
 
 
@@ -154,7 +170,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
-    with pytest.raises(FreqtradeException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
@@ -175,12 +191,13 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           sell=MagicMock(return_value='mocked_limit_sell'))
     init(default_conf, create_engine('sqlite://'))
-    trade = create_trade(15.0)
-    trade.update(limit_buy_order)
-    Trade.session.add(trade)
-    Trade.session.flush()
-    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+    create_trade(15.0)
+
+    trade = Trade.query.first()
     assert trade
+
+    trade.update(limit_buy_order)
+    assert trade.is_open is True
 
     handle_trade(trade)
     assert trade.open_order_id == 'mocked_limit_sell'
@@ -204,15 +221,14 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
-    trade = create_trade(15.0)
-    Trade.session.add(trade)
-    trade.update(limit_buy_order)
-    trade = Trade.query.filter(Trade.is_open.is_(True)).first()
+    create_trade(15.0)
+
+    trade = Trade.query.first()
     assert trade
 
+    trade.update(limit_buy_order)
     trade.update(limit_sell_order)
-    trade = Trade.query.filter(Trade.is_open.is_(False)).first()
-    assert trade
+    assert trade.is_open is False
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
         handle_trade(trade)

@@ -6,16 +6,16 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from signal import signal, SIGINT, SIGABRT, SIGTERM
 from typing import Dict, Optional, List
 
 import requests
 from cachetools import cached, TTLCache
 
-from freqtrade import __version__, exchange, persistence, rpc
+from freqtrade import __version__, exchange, persistence, rpc, DependencyException, \
+    OperationalException
 from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
-    load_config, FreqtradeException
+    load_config
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger('freqtrade')
@@ -67,16 +67,13 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
         if len(trades) < _CONF['max_open_trades']:
             try:
                 # Create entity and execute trade
-                trade = create_trade(float(_CONF['stake_amount']))
-                if trade:
-                    Trade.session.add(trade)
-                    state_changed = True
-                else:
+                state_changed = create_trade(float(_CONF['stake_amount']))
+                if not state_changed:
                     logger.info(
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
                     )
-            except FreqtradeException as e:
+            except DependencyException as e:
                 logger.warning('Unable to create trade: %s', e)
 
         for trade in trades:
@@ -97,12 +94,12 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
             error
         )
         time.sleep(30)
-    except RuntimeError:
-        rpc.send_msg('*Status:* Got RuntimeError:\n```\n{traceback}```{hint}'.format(
+    except OperationalException:
+        rpc.send_msg('*Status:* Got OperationalException:\n```\n{traceback}```{hint}'.format(
             traceback=traceback.format_exc(),
             hint='Issue `/start` if you think it is safe to restart.'
         ))
-        logger.exception('Got RuntimeError. Stopping trader ...')
+        logger.exception('Got OperationalException. Stopping trader ...')
         update_state(State.STOPPED)
     return state_changed
 
@@ -126,6 +123,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
         limit,
         fmt_exp_profit
     ))
+    Trade.session.flush()
 
 
 def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
@@ -172,11 +170,12 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float) -> Optional[Trade]:
+def create_trade(stake_amount: float) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
     :param stake_amount: amount of btc to spend
+    :return: True if a trade object has been created and persisted, False otherwise
     """
     logger.info(
         'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -185,7 +184,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
-        raise FreqtradeException(
+        raise DependencyException(
             'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
         )
 
@@ -195,7 +194,7 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
-        raise FreqtradeException('No pair in whitelist')
+        raise DependencyException('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
@@ -203,12 +202,11 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
             pair = _pair
             break
     else:
-        return None
+        return False
 
-    # Calculate amount and subtract fee
-    fee = exchange.get_fee()
+    # Calculate amount
     buy_limit = get_target_bid(exchange.get_ticker(pair))
-    amount = (1 - fee) * stake_amount / buy_limit
+    amount = stake_amount / buy_limit
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
@@ -219,14 +217,19 @@ def create_trade(stake_amount: float) -> Optional[Trade]:
         buy_limit
     ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-    return Trade(pair=pair,
-                 stake_amount=stake_amount,
-                 amount=amount,
-                 fee=fee * 2,
-                 open_rate=buy_limit,
-                 open_date=datetime.utcnow(),
-                 exchange=exchange.get_name().upper(),
-                 open_order_id=order_id)
+    trade = Trade(
+        pair=pair,
+        stake_amount=stake_amount,
+        amount=amount,
+        fee=exchange.get_fee() * 2,
+        open_rate=buy_limit,
+        open_date=datetime.utcnow(),
+        exchange=exchange.get_name().upper(),
+        open_order_id=order_id
+    )
+    Trade.session.add(trade)
+    Trade.session.flush()
+    return True
 
 
 def init(config: dict, db_url: Optional[str] = None) -> None:
@@ -248,10 +251,6 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     else:
         update_state(State.STOPPED)
 
-    # Register signal handlers
-    for sig in (SIGINT, SIGTERM, SIGABRT):
-        signal(sig, cleanup)
-
 
 @cached(TTLCache(maxsize=1, ttl=1800))
 def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume') -> List[str]:
@@ -270,7 +269,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
     return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
 
 
-def cleanup(*args, **kwargs) -> None:
+def cleanup() -> None:
     """
     Cleanup the application state und finish all pending tasks
     :return: None
@@ -283,7 +282,7 @@ def cleanup(*args, **kwargs) -> None:
     exit(0)
 
 
-def main():
+def main() -> None:
     """
     Loads and validates the config and handles the main loop
     :return: None
@@ -311,24 +310,32 @@ def main():
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
         logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
-    init(_CONF)
-    old_state = None
-    while True:
-        new_state = get_state()
-        # Log state transition
-        if new_state != old_state:
-            rpc.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
-            logger.info('Changing state to: %s', new_state.name)
 
-        if new_state == State.STOPPED:
-            time.sleep(1)
-        elif new_state == State.RUNNING:
-            throttle(
-                _process,
-                min_secs=_CONF['internals'].get('process_throttle_secs', 10),
-                dynamic_whitelist=args.dynamic_whitelist,
-            )
-        old_state = new_state
+    try:
+        init(_CONF)
+        old_state = None
+        while True:
+            new_state = get_state()
+            # Log state transition
+            if new_state != old_state:
+                rpc.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
+                logger.info('Changing state to: %s', new_state.name)
+
+            if new_state == State.STOPPED:
+                time.sleep(1)
+            elif new_state == State.RUNNING:
+                throttle(
+                    _process,
+                    min_secs=_CONF['internals'].get('process_throttle_secs', 10),
+                    dynamic_whitelist=args.dynamic_whitelist,
+                )
+            old_state = new_state
+    except KeyboardInterrupt:
+        logger.info('Got SIGINT, aborting ...')
+    except BaseException:
+        logger.exception('Got fatal exception!')
+    finally:
+        cleanup()
 
 
 if __name__ == '__main__':
