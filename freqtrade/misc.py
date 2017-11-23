@@ -146,6 +146,12 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
+    backtest.add_argument(
+        '--limit-max-trades',
+        help='uses max_open_trades from config to simulate real world limitations',
+        action='store_true',
+        dest='limit_max_trades',
+    )
 
 
 def start_backtesting(args) -> None:
@@ -161,6 +167,7 @@ def start_backtesting(args) -> None:
         'BACKTEST_LIVE': 'true' if args.live else '',
         'BACKTEST_CONFIG': args.config,
         'BACKTEST_TICKER_INTERVAL': str(args.ticker_interval),
+        'BACKTEST_LIMIT_MAX_TRADES': 'true' if args.limit_max_trades else '',
     })
     path = os.path.join(os.path.dirname(__file__), 'tests', 'test_backtesting.py')
     pytest.main(['-s', path])

@@ -79,6 +79,7 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
 
     return dataframe
 
+
 def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
     """
     Based on TA indicators, populates the sell signal for the given dataframe
