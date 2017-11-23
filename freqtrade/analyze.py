@@ -61,6 +61,10 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     hilbert = ta.HT_SINE(dataframe)
     dataframe['htsine'] = hilbert['sine']
     dataframe['htleadsine'] = hilbert['leadsine']
+    dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
+    dataframe['plus_di'] = ta.PLUS_DI(dataframe)
+    dataframe['minus_dm'] = ta.MINUS_DM(dataframe)
+    dataframe['minus_di'] = ta.MINUS_DI(dataframe)
     return dataframe
 
 
@@ -71,10 +75,16 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     :return: DataFrame with buy column
     """
     dataframe.loc[
-        (dataframe['tema'] <= dataframe['blower']) &
-        (dataframe['rsi'] < 37) &
-        (dataframe['fastd'] < 48) &
-        (dataframe['adx'] > 31),
+        (
+            (dataframe['rsi'] < 35) &
+            (dataframe['fastd'] < 35) &
+            (dataframe['adx'] > 30) &
+            (dataframe['plus_di'] > 0.5)
+        ) |
+        (
+            (dataframe['adx'] > 65) &
+            (dataframe['plus_di'] > 0.5)
+        ),
         'buy'] = 1
 
     return dataframe
@@ -86,9 +96,19 @@ def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
     :return: DataFrame with buy column
     """
     dataframe.loc[
-        (crossed_above(dataframe['rsi'], 70)),
+        (
+            (
+                (crossed_above(dataframe['rsi'], 70)) |
+                (crossed_above(dataframe['fastd'], 70))
+            ) &
+            (dataframe['adx'] > 10) &
+            (dataframe['minus_di'] > 0)
+        ) |
+        (
+            (dataframe['adx'] > 70) &
+            (dataframe['minus_di'] > 0.5)
+        ),
         'sell'] = 1
-
     return dataframe
 
 
