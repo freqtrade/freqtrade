@@ -36,9 +36,6 @@ setup(name='freqtrade',
           'tabulate',
           'cachetools',
       ],
-      dependency_links=[
-          "git+https://github.com/ericsomdahl/python-bittrex.git@0.2.0#egg=python-bittrex"
-      ],
       include_package_data=True,
       zip_safe=False,
       classifiers=[
