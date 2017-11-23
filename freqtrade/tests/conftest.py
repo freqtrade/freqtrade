@@ -23,7 +23,7 @@ def default_conf():
             "20":  0.02,
             "0":  0.04
         },
-        "stoploss": -0.05,
+        "stoploss": -0.10,
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
@@ -63,7 +63,7 @@ def backtest_conf():
             "20":  0.02,
             "0":  0.04
         },
-        "stoploss": -0.05
+        "stoploss": -0.10
     }
 
 
