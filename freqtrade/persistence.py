@@ -68,7 +68,7 @@ class Trade(_DECL_BASE):
     open_order_id = Column(String)
 
     def __repr__(self):
-        return 'Trade(id={}, pair={}, amount={}, open_rate={}, open_since={})'.format(
+        return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
             self.id,
             self.pair,
             self.amount,
