@@ -7,7 +7,7 @@ import arrow
 from pandas import DataFrame
 from sqlalchemy import and_, func, text
 from tabulate import tabulate
-from telegram import ParseMode, Bot, Update
+from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
@@ -476,9 +476,15 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
+    keyboard = [['/status table', '/profit', '/performance', ],
+                ['/balance', '/status', '/count'],
+                ['/start', '/stop', '/help']]
+
+    reply_markup = ReplyKeyboardMarkup(keyboard)
+
     try:
         try:
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
         except NetworkError as network_err:
             # Sometimes the telegram server resets the current connection,
             # if this is the case we send the message again.
@@ -486,6 +492,6 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
                 'Got Telegram NetworkError: %s! Trying one more time.',
                 network_err.message
             )
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode)
+            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
     except TelegramError as telegram_err:
         logger.warning('Got TelegramError: %s! Giving up on that message.', telegram_err.message)
