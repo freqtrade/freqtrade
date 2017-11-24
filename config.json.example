@@ -29,6 +29,9 @@
             "BTC_LUN"
         ]
     },
+    "experimental": {
+        "use_sell_signal": false
+    },
     "telegram": {
         "enabled": true,
         "token": "token",
