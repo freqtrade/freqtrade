@@ -83,13 +83,14 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     return tabulate(tabular_data, headers=headers)
 
 
-def backtest(config: Dict, processed, mocker, max_open_trades=0):
+def backtest(config: Dict, processed, mocker, max_open_trades=0, realistic=True):
     """
     Implements backtesting functionality
     :param config: config to use
     :param processed: a processed dictionary with format {pair, data}
     :param mocker: mocker instance
     :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
+    :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
     """
     trades = []
@@ -100,7 +101,11 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0):
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
+        lock_pair_until = None
         for row in ticker[ticker.buy == 1].itertuples(index=True):
+            if realistic:
+                if lock_pair_until is not None and row.Index <= lock_pair_until:
+                    continue
             if max_open_trades > 0:
                 # Check if max_open_trades has already been reached for the given date
                 if not trade_count_lock.get(row.date, 0) < max_open_trades:
@@ -125,6 +130,7 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0):
 
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
+                    lock_pair_until = row2.Index
 
                     trades.append((pair, current_profit, row2.Index - row.Index))
                     break
@@ -133,7 +139,7 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0):
 
 
 def get_max_open_trades(config):
-    if not os.environ.get('BACKTEST_LIMIT_MAX_TRADES'):
+    if not os.environ.get('BACKTEST_REALISTIC_SIMULATION'):
         return 0
     print('Using max_open_trades: {} ...'.format(config['max_open_trades']))
     return config['max_open_trades']
@@ -176,6 +182,7 @@ def test_backtest(backtest_conf, mocker):
     ))
 
     # Execute backtest and print results
-    results = backtest(config, preprocess(data), mocker, get_max_open_trades(config))
+    realistic = os.environ.get('BACKTEST_REALISTIC_SIMULATION')
+    results = backtest(config, preprocess(data), mocker, get_max_open_trades(config), realistic)
     print('====================== BACKTESTING REPORT ======================================\n\n')
     print(generate_text_table(data, results, config['stake_currency']))

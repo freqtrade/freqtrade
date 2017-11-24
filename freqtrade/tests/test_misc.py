@@ -109,7 +109,7 @@ def test_start_backtesting(mocker):
         live=True,
         loglevel=20,
         ticker_interval=1,
-        limit_max_trades=True,
+        realistic_simulation=True,
     )
     start_backtesting(args)
     assert env_mock == {
@@ -117,7 +117,7 @@ def test_start_backtesting(mocker):
         'BACKTEST_LIVE': 'true',
         'BACKTEST_CONFIG': 'config.json',
         'BACKTEST_TICKER_INTERVAL': '1',
-        'BACKTEST_LIMIT_MAX_TRADES': 'true',
+        'BACKTEST_REALISTIC_SIMULATION': 'true',
     }
     assert pytest_mock.call_count == 1
 
