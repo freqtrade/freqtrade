@@ -2,7 +2,6 @@ import argparse
 import enum
 import json
 import logging
-import os
 import time
 from typing import Any, Callable, List, Dict
 
@@ -129,9 +128,11 @@ def parse_args(args: List[str]):
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
     """ Builds and attaches all subcommands """
+    from freqtrade.optimize import backtesting
+
     subparsers = parser.add_subparsers(dest='subparser')
     backtest = subparsers.add_parser('backtesting', help='backtesting module')
-    backtest.set_defaults(func=start_backtesting)
+    backtest.set_defaults(func=backtesting.start)
     backtest.add_argument(
         '-l', '--live',
         action='store_true',
@@ -152,25 +153,6 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         dest='realistic_simulation',
     )
-
-
-def start_backtesting(args) -> None:
-    """
-    Exports all args as environment variables and starts backtesting via pytest.
-    :param args: arguments namespace
-    :return:
-    """
-    import pytest
-
-    os.environ.update({
-        'BACKTEST': 'true',
-        'BACKTEST_LIVE': 'true' if args.live else '',
-        'BACKTEST_CONFIG': args.config,
-        'BACKTEST_TICKER_INTERVAL': str(args.ticker_interval),
-        'BACKTEST_REALISTIC_SIMULATION': 'true' if args.realistic_simulation else '',
-    })
-    path = os.path.join(os.path.dirname(__file__), 'tests', 'test_backtesting.py')
-    pytest.main(['-s', path])
 
 
 # Required json-schema for user specified config

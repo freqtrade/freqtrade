@@ -11,9 +11,9 @@ from pandas import DataFrame
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex
+from freqtrade.optimize.backtesting import backtest, format_results
+from freqtrade.optimize.backtesting import preprocess
 from freqtrade.tests import load_backtesting_data
-from freqtrade.tests.test_backtesting import backtest, format_results
-from freqtrade.tests.test_backtesting import preprocess
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
