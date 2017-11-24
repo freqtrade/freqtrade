@@ -100,7 +100,10 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0):
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
+        lock_pair_until = None
         for row in ticker[ticker.buy == 1].itertuples(index=True):
+            if lock_pair_until is not None and row.Index <= lock_pair_until:
+                continue
             if max_open_trades > 0:
                 # Check if max_open_trades has already been reached for the given date
                 if not trade_count_lock.get(row.date, 0) < max_open_trades:
@@ -125,6 +128,7 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0):
 
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
+                    lock_pair_until = row2.Index
 
                     trades.append((pair, current_profit, row2.Index - row.Index))
                     break
