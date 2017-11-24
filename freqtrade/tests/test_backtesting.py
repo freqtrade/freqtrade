@@ -102,9 +102,9 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0):
         # for each buy point
         lock_pair_until = None
         for row in ticker[ticker.buy == 1].itertuples(index=True):
-            if lock_pair_until is not None and row.Index <= lock_pair_until:
-                continue
             if max_open_trades > 0:
+                if lock_pair_until is not None and row.Index <= lock_pair_until:
+                    continue
                 # Check if max_open_trades has already been reached for the given date
                 if not trade_count_lock.get(row.date, 0) < max_open_trades:
                     continue
