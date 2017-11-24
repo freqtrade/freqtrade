@@ -202,6 +202,12 @@ CONF_SCHEMA = {
             'required': ['ask_last_balance']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
+        'experimental': {
+            'type': 'object',
+            'properties': {
+                'use_sell_signal': {'type': 'boolean'}
+            }
+        },
         'telegram': {
             'type': 'object',
             'properties': {
