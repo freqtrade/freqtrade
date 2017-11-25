@@ -15,6 +15,7 @@ from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_abov
 
 logger = logging.getLogger(__name__)
 
+
 class SignalType(Enum):
     """ Enum to distinguish between buy and sell signals """
     BUY = "buy"

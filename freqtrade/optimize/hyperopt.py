@@ -16,12 +16,15 @@ from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
+# Remove noisy log messages
+logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
-TOTAL_TRIES = 4
+TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 
 # Configuration and data used by hyperopt
@@ -188,8 +191,8 @@ def start(args):
     )
 
     if args.mongodb:
-        logger.info('Using mongodb.')
-        logger.info('Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually')
+        logger.info('Using mongodb ...')
+        logger.info('Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!')
 
         db_name = 'freqtrade_hyperopt'
         trials = MongoTrials('mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
@@ -197,9 +200,6 @@ def start(args):
         trials = Trials()
 
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
-    logger.info(
-        '\n==================== HYPEROPT BACKTESTING REPORT ==============================\n'
-    )
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
     results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])
