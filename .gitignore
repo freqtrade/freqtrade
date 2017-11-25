@@ -76,6 +76,7 @@ target/
 config.json
 preprocessor.py
 *.sqlite
+.mongodb
 
 .env
 .venv

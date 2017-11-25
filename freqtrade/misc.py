@@ -167,6 +167,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
+    hyperopt_cmd.add_argument(
+        '--use-mongodb',
+        help='parallelize evaluations with mongodb (requires mongod in PATH)',
+        dest='mongodb',
+        action='store_true',
+    )
+
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {

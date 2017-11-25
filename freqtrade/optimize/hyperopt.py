@@ -2,17 +2,22 @@
 
 
 import json
+import logging
 from functools import reduce
 from math import exp
 from operator import itemgetter
 
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest
 from freqtrade.vendor.qtpylib.indicators import crossed_above
+
+logger = logging.getLogger(__name__)
+
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
@@ -33,6 +38,11 @@ OPTIMIZE_CONFIG = {
     },
     'stoploss': -0.10,
 }
+
+# Monkey patch config
+from freqtrade import main
+main._CONF = OPTIMIZE_CONFIG
+
 
 SPACE = {
     'mfi': hp.choice('mfi', [
@@ -101,7 +111,7 @@ def optimizer(params):
     profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
 
     _CURRENT_TRIES += 1
-    print('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
+    logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
 
     return {
         'loss': trade_loss + profit_loss,
@@ -169,15 +179,27 @@ def start(args):
     global TOTAL_TRIES
     TOTAL_TRIES = args.epochs
 
-    # Monkey patch config
-    from freqtrade import main
-    main._CONF = OPTIMIZE_CONFIG
-
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    trials = Trials()
+    # Initialize logger
+    logging.basicConfig(
+        level=args.loglevel,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
+
+    if args.mongodb:
+        logger.info('Using mongodb.')
+        logger.info('Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually')
+
+        db_name = 'freqtrade_hyperopt'
+        trials = MongoTrials('mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
+    else:
+        trials = Trials()
+
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
-    print('\n==================== HYPEROPT BACKTESTING REPORT ==============================\n')
-    print('Best parameters: {}'.format(json.dumps(best, indent=4)))
+    logger.info(
+        '\n==================== HYPEROPT BACKTESTING REPORT ==============================\n'
+    )
+    logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
     results = sorted(trials.results, key=itemgetter('loss'))
-    print('Best Result: {}\n'.format(results[0]['result']))
+    logger.info('Best Result:\n%s', results[0]['result'])

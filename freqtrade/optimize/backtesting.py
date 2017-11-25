@@ -118,36 +118,38 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
 
 
 def start(args):
-    print('')
+    # Initialize logger
+    logging.basicConfig(
+        level=args.loglevel,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
+
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    print('Using config: {} ...'.format(args.config))
+    logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
 
-    print('Using ticker_interval: {} ...'.format(args.ticker_interval))
+    logger.info('Using ticker_interval: %s ...', args.ticker_interval)
 
     data = {}
     if args.live:
-        print('Downloading data for all pairs in whitelist ...')
+        logger.info('Downloading data for all pairs in whitelist ...')
         for pair in config['exchange']['pair_whitelist']:
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
-        print('Using local backtesting data (ignoring whitelist in given config)...')
+        logger.info('Using local backtesting data (ignoring whitelist in given config) ...')
         data = load_data(args.ticker_interval)
 
-    print('Using stake_currency: {} ...\nUsing stake_amount: {} ...'.format(
-        config['stake_currency'], config['stake_amount']
-    ))
+        logger.info('Using stake_currency: %s ...', config['stake_currency'])
+        logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
     # Print timeframe
     min_date, max_date = get_timeframe(data)
-    print('Measuring data from {} up to {} ...'.format(
-        min_date.isoformat(), max_date.isoformat()
-    ))
+    logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
 
     max_open_trades = 0
     if args.realistic_simulation:
-        print('Using max_open_trades: {} ...'.format(config['max_open_trades']))
+        logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
         max_open_trades = config['max_open_trades']
 
     # Monkey patch config
@@ -158,5 +160,7 @@ def start(args):
     results = backtest(
         config, preprocess(data), max_open_trades, args.realistic_simulation
     )
-    print('====================== BACKTESTING REPORT ======================================\n\n')
-    print(generate_text_table(data, results, config['stake_currency']))
+    logger.info(
+        '\n====================== BACKTESTING REPORT ======================================\n%s',
+        generate_text_table(data, results, config['stake_currency'])
+    )
