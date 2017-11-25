@@ -112,6 +112,20 @@ def test_parse_args_hyperopt(mocker):
     assert call_args.func is not None
 
 
+def test_parse_args_hyperopt_custom(mocker):
+    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'])
+    assert args is None
+    assert hyperopt_mock.call_count == 1
+
+    call_args = hyperopt_mock.call_args[0][0]
+    assert call_args.config == 'test_conf.json'
+    assert call_args.epochs == 20
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'hyperopt'
+    assert call_args.func is not None
+
+
 def test_load_config(default_conf, mocker):
     file_mock = mocker.patch('freqtrade.misc.open', mocker.mock_open(
         read_data=json.dumps(default_conf)

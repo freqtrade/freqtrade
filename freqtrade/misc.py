@@ -159,7 +159,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
     hyperopt_cmd.set_defaults(func=hyperopt.start)
-
+    hyperopt_cmd.add_argument(
+        '-e', '--epochs',
+        help='specify number of epochs (default: 100)',
+        dest='epochs',
+        default=100,
+        type=int,
+        metavar='INT',
+    )
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {

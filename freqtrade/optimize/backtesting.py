@@ -151,6 +151,7 @@ def start(args):
         print('Using max_open_trades: {} ...'.format(config['max_open_trades']))
         max_open_trades = config['max_open_trades']
 
+    # Monkey patch config
     from freqtrade import main
     main._CONF = config
 

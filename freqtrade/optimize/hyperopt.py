@@ -16,8 +16,7 @@ from freqtrade.vendor.qtpylib.indicators import crossed_above
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
 TOTAL_TRIES = 4
-# pylint: disable=C0103
-current_tries = 0
+_CURRENT_TRIES = 0
 
 # Configuration and data used by hyperopt
 PROCESSED = optimize.preprocess(optimize.load_data())
@@ -85,6 +84,8 @@ SPACE = {
 
 
 def optimizer(params):
+    global _CURRENT_TRIES
+
     from freqtrade.optimize import backtesting
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
@@ -98,10 +99,8 @@ def optimizer(params):
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
 
-    # pylint: disable=W0603
-    global current_tries
-    current_tries += 1
-    print('{:5d}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
+    _CURRENT_TRIES += 1
+    print('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
 
     return {
         'loss': trade_loss + profit_loss,
@@ -166,7 +165,12 @@ def buy_strategy_generator(params):
 
 
 def start(args):
-    # TODO: parse args
+    global TOTAL_TRIES
+    TOTAL_TRIES = args.epochs
+
+    # Monkey patch config
+    from freqtrade import main
+    main._CONF = OPTIMIZE_CONFIG
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
