@@ -78,10 +78,10 @@ def test_parse_args_backtesting(mocker):
 
 def test_parse_args_backtesting_invalid():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--ticker-interval'])
+        parse_args(['backtesting --ticker-interval'])
 
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--ticker-interval', 'abc'])
+        parse_args(['backtesting --ticker-interval', 'abc'])
 
 
 def test_parse_args_backtesting_custom(mocker):
@@ -97,6 +97,19 @@ def test_parse_args_backtesting_custom(mocker):
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
     assert call_args.ticker_interval == 1
+
+
+def test_parse_args_hyperopt(mocker):
+    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    args = parse_args(['hyperopt'])
+    assert args is None
+    assert hyperopt_mock.call_count == 1
+
+    call_args = hyperopt_mock.call_args[0][0]
+    assert call_args.config == 'config.json'
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'hyperopt'
+    assert call_args.func is not None
 
 
 def test_load_config(default_conf, mocker):

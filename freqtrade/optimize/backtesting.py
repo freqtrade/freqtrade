@@ -9,32 +9,15 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade import exchange
-from freqtrade.analyze import parse_ticker_dataframe, populate_indicators, \
-    populate_buy_trend, populate_sell_trend
+from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 from freqtrade.misc import load_config
+from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
-from freqtrade.tests import load_backtesting_data
+
 
 logger = logging.getLogger(__name__)
-
-
-def format_results(results: DataFrame):
-    return ('Made {:6d} buys. Average profit {: 5.2f}%. '
-            'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
-                len(results.index),
-                results.profit.mean() * 100.0,
-                results.profit.sum(),
-                results.duration.mean() * 5,
-            )
-
-
-def preprocess(backdata) -> Dict[str, DataFrame]:
-    processed = {}
-    for pair, pair_data in backdata.items():
-        processed[pair] = populate_indicators(parse_ticker_dataframe(pair_data))
-    return processed
 
 
 def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
@@ -151,7 +134,7 @@ def start(args):
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
         print('Using local backtesting data (ignoring whitelist in given config)...')
-        data = load_backtesting_data(args.ticker_interval)
+        data = load_data(args.ticker_interval)
 
     print('Using stake_currency: {} ...\nUsing stake_amount: {} ...'.format(
         config['stake_currency'], config['stake_amount']

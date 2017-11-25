@@ -1,28 +1,123 @@
 # pragma pylint: disable=missing-docstring,W0212
-import logging
-import os
+
+
 from functools import reduce
 from math import exp
 from operator import itemgetter
 
-import pytest
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
 
-from freqtrade import exchange
+from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
-from freqtrade.optimize.backtesting import backtest, format_results
-from freqtrade.optimize.backtesting import preprocess
-from freqtrade.tests import load_backtesting_data
+from freqtrade.optimize.backtesting import backtest
 from freqtrade.vendor.qtpylib.indicators import crossed_above
-
-logging.disable(logging.DEBUG)  # disable debug logs that slow backtesting a lot
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
 TOTAL_TRIES = 4
 # pylint: disable=C0103
 current_tries = 0
+
+# Configuration and data used by hyperopt
+PROCESSED = optimize.preprocess(optimize.load_data())
+OPTIMIZE_CONFIG = {
+    'max_open_trades': 3,
+    'stake_currency': 'BTC',
+    'stake_amount': 0.01,
+    'minimal_roi': {
+        '40':  0.0,
+        '30':  0.01,
+        '20':  0.02,
+        '0':  0.04,
+    },
+    'stoploss': -0.10,
+}
+
+SPACE = {
+    'mfi': hp.choice('mfi', [
+        {'enabled': False},
+        {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
+    ]),
+    'fastd': hp.choice('fastd', [
+        {'enabled': False},
+        {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
+    ]),
+    'adx': hp.choice('adx', [
+        {'enabled': False},
+        {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
+    ]),
+    'rsi': hp.choice('rsi', [
+        {'enabled': False},
+        {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
+    ]),
+    'uptrend_long_ema': hp.choice('uptrend_long_ema', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
+    'uptrend_short_ema': hp.choice('uptrend_short_ema', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
+    'over_sar': hp.choice('over_sar', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
+    'green_candle': hp.choice('green_candle', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
+    'uptrend_sma': hp.choice('uptrend_sma', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
+    'trigger': hp.choice('trigger', [
+        {'type': 'lower_bb'},
+        {'type': 'faststoch10'},
+        {'type': 'ao_cross_zero'},
+        {'type': 'ema5_cross_ema10'},
+        {'type': 'macd_cross_signal'},
+        {'type': 'sar_reversal'},
+        {'type': 'stochf_cross'},
+        {'type': 'ht_sine'},
+    ]),
+}
+
+
+def optimizer(params):
+    from freqtrade.optimize import backtesting
+    backtesting.populate_buy_trend = buy_strategy_generator(params)
+
+    results = backtest(OPTIMIZE_CONFIG, PROCESSED)
+
+    result = format_results(results)
+
+    total_profit = results.profit.sum() * 1000
+    trade_count = len(results.index)
+
+    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+    profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
+
+    # pylint: disable=W0603
+    global current_tries
+    current_tries += 1
+    print('{:5d}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
+
+    return {
+        'loss': trade_loss + profit_loss,
+        'status': STATUS_OK,
+        'result': result
+    }
+
+
+def format_results(results: DataFrame):
+    return ('Made {:6d} buys. Average profit {: 5.2f}%. '
+            'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
+                len(results.index),
+                results.profit.mean() * 100.0,
+                results.profit.sum(),
+                results.duration.mean() * 5,
+            )
 
 
 def buy_strategy_generator(params):
@@ -70,94 +165,14 @@ def buy_strategy_generator(params):
     return populate_buy_trend
 
 
-@pytest.mark.skipif(not os.environ.get('BACKTEST', False), reason="BACKTEST not set")
-def test_hyperopt(backtest_conf, mocker):
-    mocked_buy_trend = mocker.patch('freqtrade.tests.test_backtesting.populate_buy_trend')
+def start(args):
+    # TODO: parse args
 
-    backdata = load_backtesting_data()
-    processed = preprocess(backdata)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    def optimizer(params):
-        mocked_buy_trend.side_effect = buy_strategy_generator(params)
-
-        results = backtest(backtest_conf, processed, mocker)
-
-        result = format_results(results)
-
-        total_profit = results.profit.sum() * 1000
-        trade_count = len(results.index)
-
-        trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-        profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
-
-        # pylint: disable=W0603
-        global current_tries
-        current_tries += 1
-        print('{:5d}/{}: {}'.format(current_tries, TOTAL_TRIES, result))
-
-        return {
-            'loss': trade_loss + profit_loss,
-            'status': STATUS_OK,
-            'result': result
-        }
-
-    space = {
-        'mfi': hp.choice('mfi', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
-        ]),
-        'fastd': hp.choice('fastd', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
-        ]),
-        'adx': hp.choice('adx', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
-        ]),
-        'rsi': hp.choice('rsi', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
-        ]),
-        'uptrend_long_ema': hp.choice('uptrend_long_ema', [
-            {'enabled': False},
-            {'enabled': True}
-        ]),
-        'uptrend_short_ema': hp.choice('uptrend_short_ema', [
-            {'enabled': False},
-            {'enabled': True}
-        ]),
-        'over_sar': hp.choice('over_sar', [
-            {'enabled': False},
-            {'enabled': True}
-        ]),
-        'green_candle': hp.choice('green_candle', [
-            {'enabled': False},
-            {'enabled': True}
-        ]),
-        'uptrend_sma': hp.choice('uptrend_sma', [
-            {'enabled': False},
-            {'enabled': True}
-        ]),
-        'trigger': hp.choice('trigger', [
-            {'type': 'lower_bb'},
-            {'type': 'faststoch10'},
-            {'type': 'ao_cross_zero'},
-            {'type': 'ema5_cross_ema10'},
-            {'type': 'macd_cross_signal'},
-            {'type': 'sar_reversal'},
-            {'type': 'stochf_cross'},
-            {'type': 'ht_sine'},
-        ]),
-    }
     trials = Trials()
-    best = fmin(fn=optimizer, space=space, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
+    best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     print('\n\n\n\n==================== HYPEROPT BACKTESTING REPORT ==============================')
     print('Best parameters {}'.format(best))
     newlist = sorted(trials.results, key=itemgetter('loss'))
     print('Result: {}'.format(newlist[0]['result']))
-
-
-if __name__ == '__main__':
-    # for profiling with cProfile and line_profiler
-    pytest.main([__file__, '-s'])

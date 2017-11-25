@@ -51,22 +51,6 @@ def default_conf():
     return configuration
 
 
-@pytest.fixture(scope="module")
-def backtest_conf():
-    return {
-        "max_open_trades": 3,
-        "stake_currency": "BTC",
-        "stake_amount": 0.01,
-        "minimal_roi": {
-            "40":  0.0,
-            "30":  0.01,
-            "20":  0.02,
-            "0":  0.04
-        },
-        "stoploss": -0.10
-    }
-
-
 @pytest.fixture
 def update():
     _update = Update(0)

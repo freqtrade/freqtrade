@@ -128,18 +128,20 @@ def parse_args(args: List[str]):
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
     """ Builds and attaches all subcommands """
-    from freqtrade.optimize import backtesting
+    from freqtrade.optimize import backtesting, hyperopt
 
     subparsers = parser.add_subparsers(dest='subparser')
-    backtest = subparsers.add_parser('backtesting', help='backtesting module')
-    backtest.set_defaults(func=backtesting.start)
-    backtest.add_argument(
+
+    # Add backtesting subcommand
+    backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
+    backtesting_cmd.set_defaults(func=backtesting.start)
+    backtesting_cmd.add_argument(
         '-l', '--live',
         action='store_true',
         dest='live',
         help='using live data',
     )
-    backtest.add_argument(
+    backtesting_cmd.add_argument(
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
@@ -147,12 +149,16 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    backtest.add_argument(
+    backtesting_cmd.add_argument(
         '--realistic-simulation',
         help='uses max_open_trades from config to simulate real world limitations',
         action='store_true',
         dest='realistic_simulation',
     )
+
+    # Add hyperopt subcommand
+    hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+    hyperopt_cmd.set_defaults(func=hyperopt.start)
 
 
 # Required json-schema for user specified config
