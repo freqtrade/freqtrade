@@ -1,9 +1,12 @@
 # pragma pylint: disable=missing-docstring,W0212
 
 
+import json
+
 from functools import reduce
 from math import exp
 from operator import itemgetter
+from pprint import pprint
 
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
@@ -176,7 +179,7 @@ def start(args):
 
     trials = Trials()
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
-    print('\n\n\n\n==================== HYPEROPT BACKTESTING REPORT ==============================')
-    print('Best parameters {}'.format(best))
-    newlist = sorted(trials.results, key=itemgetter('loss'))
-    print('Result: {}'.format(newlist[0]['result']))
+    print('\n==================== HYPEROPT BACKTESTING REPORT ==============================\n')
+    print('Best parameters: {}'.format(json.dumps(best, indent=4)))
+    results = sorted(trials.results, key=itemgetter('loss'))
+    print('Best Result: {}\n'.format(results[0]['result']))
