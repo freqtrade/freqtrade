@@ -13,17 +13,20 @@ from freqtrade.misc import CONF_SCHEMA
 def default_conf():
     """ Returns validated configuration suitable for most tests """
     configuration = {
-        "max_open_trades": 1,
+        "max_open_trades": 3,
         "stake_currency": "BTC",
-        "stake_amount": 0.05,
+        "stake_amount": 0.004,
         "dry_run": True,
         "minimal_roi": {
-            "40":  0.0,
-            "30":  0.01,
-            "20":  0.02,
-            "0":  0.04
+	"30":  0.0,
+        "25":  0.015,
+        "20":  0.020,
+        "15":  0.025,
+        "10":  0.030,
+        "5":  0.035,
+        "0":  0.045
         },
-        "stoploss": -0.10,
+        "stoploss": -0.03,
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
@@ -32,13 +35,8 @@ def default_conf():
             "enabled": True,
             "key": "key",
             "secret": "secret",
-            "pair_whitelist": [
-                "BTC_ETH",
-                "BTC_TKN",
-                "BTC_TRST",
-                "BTC_SWT",
-                "BTC_BCC"
-            ]
+	"pair_whitelist": ["BTC_EDG", "BTC_ETC", "BTC_MTL", "BTC_OK", "BTC_PAY", "BTC_PIVX", "BTC_SNT", "BTC_XZC", "BTC_VTC", "BTC_XLM", "BTC_SWT",
+        "BTC_MER", "BTC_FTC", "BTC_INCNT", "BTC_TIX", "BTC_RCN", "BTC_RLC", "BTC_TKN", "BTC_TRST", "BTC_MLN", "BTC_TIME", "BTC_LUN", "BTC_WAVES"]
         },
         "telegram": {
             "enabled": True,
@@ -56,14 +54,17 @@ def backtest_conf():
     return {
         "max_open_trades": 3,
         "stake_currency": "BTC",
-        "stake_amount": 0.01,
+        "stake_amount": 0.004,
         "minimal_roi": {
-            "40":  0.0,
-            "30":  0.01,
-            "20":  0.02,
-            "0":  0.04
+	"30":  0.0,
+        "25":  0.015,
+        "20":  0.020,
+        "15":  0.025,
+        "10":  0.030,
+        "5":  0.035,
+        "0":  0.045
         },
-        "stoploss": -0.10
+        "stoploss": -0.03
     }
 
 
