@@ -37,7 +37,7 @@ See the example below:
     "40": 0.0,    # Sell after 40 minutes if the profit is not negative
     "30": 0.01,   # Sell after 30 minutes if there is at least 1% profit
     "20": 0.02,   # Sell after 20 minutes if there is at least 2% profit
-    "0":  0.04  # Sell immediately if there is at least 4% profit
+    "0":  0.04    # Sell immediately if there is at least 4% profit
 },
 ```
 
@@ -164,25 +164,39 @@ optional arguments:
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: freqtrade backtesting [-h] [-l] [-i INT]
+usage: freqtrade backtesting [-h] [-l] [-i INT] [--realistic-simulation]
 
 optional arguments:
   -h, --help            show this help message and exit
   -l, --live            using live data
   -i INT, --ticker-interval INT
                         specify ticker interval in minutes (default: 5)
+  --realistic-simulation
+                        uses max_open_trades from config to simulate real
+                        world limitations
+
 ```
 
+### Hyperopt
+
+It is possible to use hyperopt for trading strategy optimization.
+Hyperopt uses an internal config named `OPTIMIZE_CONFIG` located in `freqtrade/optimize/hyperopt.py`.
+
+```
+usage: freqtrade hyperopt [-h] [-e INT] [--use-mongodb]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -e INT, --epochs INT  specify number of epochs (default: 100)
+  --use-mongodb         parallelize evaluations with mongodb (requires mongod
+                        in PATH)
+
+```
 
 ### Execute tests
 
 ```
-$ pytest
-```
-This will by default skip the slow running backtest set. To run backtest set:
-
-```
-$ BACKTEST=true pytest -s freqtrade/tests/test_backtesting.py
+$ pytest freqtrade
 ```
 
 ### Contributing
