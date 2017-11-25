@@ -16,7 +16,6 @@ from freqtrade.misc import load_config
 from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
 
-
 logger = logging.getLogger(__name__)
 
 

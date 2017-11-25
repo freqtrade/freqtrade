@@ -2,11 +2,9 @@
 
 
 import json
-
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from pprint import pprint
 
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from pandas import DataFrame
