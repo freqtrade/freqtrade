@@ -36,7 +36,7 @@ def default_conf():
             "key": "key",
             "secret": "secret",
 	"pair_whitelist": ["BTC_EDG", "BTC_ETC", "BTC_MTL", "BTC_OK", "BTC_PAY", "BTC_PIVX", "BTC_SNT", "BTC_XZC", "BTC_VTC", "BTC_XLM", "BTC_SWT",
-        "BTC_MER", "BTC_FTC", "BTC_INCNT", "BTC_TIX", "BTC_RCN", "BTC_RLC", "BTC_TKN", "BTC_TRST", "BTC_MLN", "BTC_TIME", "BTC_LUN"]
+        "BTC_MER", "BTC_FTC", "BTC_INCNT", "BTC_TIX", "BTC_RCN", "BTC_RLC", "BTC_TKN", "BTC_TRST", "BTC_MLN", "BTC_TIME", "BTC_LUN", "BTC_WAVES"]
         },
         "telegram": {
             "enabled": True,
