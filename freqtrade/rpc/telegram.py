@@ -7,9 +7,9 @@ import arrow
 from pandas import DataFrame
 from sqlalchemy import and_, func, text
 from tabulate import tabulate
-from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
+from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater
+from telegram.ext import CommandHandler, Updater, CallbackQueryHandler
 
 from freqtrade import exchange, __version__
 from freqtrade.misc import get_state, State, update_state
@@ -51,10 +51,14 @@ def init(config: dict) -> None:
         CommandHandler('performance', _performance),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
-        CommandHandler('version', _version),
+        CommandHandler('version', _version)
     ]
+
     for handle in handles:
         _UPDATER.dispatcher.add_handler(handle)
+
+    _UPDATER.dispatcher.add_handler(CallbackQueryHandler(_sell_callback))
+
     _UPDATER.start_polling(
         clean=True,
         bootstrap_retries=-1,
@@ -323,6 +327,47 @@ def _stop(bot: Bot, update: Update) -> None:
 
 
 @authorized_only
+def _sell(bot: Bot, update: Update) -> None:
+    """
+    Handler for /sell <id>.
+    Sells the given trade at current price
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    if get_state() != State.RUNNING:
+        send_msg('`trader is not running`', bot=bot)
+        return
+
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    if not trades:
+        send_msg('no active trade', bot=bot)
+        return
+
+    button_list = []
+    for trade in trades:
+        # calculate profit and send message to user
+        current_rate = exchange.get_ticker(trade.pair)['bid']
+        current_profit = trade.calc_profit(current_rate)
+
+        message = '#{trade_id} [{pair}] ({current_profit:.2f}%)'.format(
+            trade_id=trade.id,
+            pair=trade.pair,
+            current_profit=round(current_profit * 100, 2)
+        )
+        button_list.append(InlineKeyboardButton(message, callback_data=trade.id))
+
+    reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+
+    send_msg('Choose order for sell:', inline_markup=reply_markup)
+
+
+def _sell_callback(bot, update):
+    query = update.callback_query
+    sell_order(query.data)
+
+
+@authorized_only
 def _forcesell(bot: Bot, update: Update) -> None:
     """
     Handler for /forcesell <id>.
@@ -339,25 +384,10 @@ def _forcesell(bot: Bot, update: Update) -> None:
     if trade_id == 'all':
         # Execute sell for all open orders
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
-            from freqtrade.main import execute_sell
-            execute_sell(trade, current_rate)
+            sell_order(trade.id)
         return
 
-    # Query for trade
-    trade = Trade.query.filter(and_(
-        Trade.id == trade_id,
-        Trade.is_open.is_(True)
-    )).first()
-    if not trade:
-        send_msg('Invalid argument. See `/help` to view usage')
-        logger.warning('/forcesell: Invalid argument received')
-        return
-    # Get current rate
-    current_rate = exchange.get_ticker(trade.pair)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
+    sell_order(trade_id)
 
 
 @authorized_only
@@ -463,12 +493,15 @@ def shorten_date(date):
     return new_date
 
 
-def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
+def send_msg(msg: str, bot: Bot = None,
+             parse_mode: ParseMode = ParseMode.MARKDOWN,
+             inline_markup: InlineKeyboardMarkup = None) -> None:
     """
     Send given markdown message
     :param msg: message
     :param bot: alternative bot
     :param parse_mode: telegram parse mode
+    :param inline_markup: inline_markup
     :return: None
     """
     if not is_enabled():
@@ -478,9 +511,9 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     keyboard = [['/status table', '/profit', '/performance', ],
                 ['/balance', '/status', '/count'],
-                ['/start', '/stop', '/help']]
+                ['/start', '/stop', '/sell']]
 
-    reply_markup = ReplyKeyboardMarkup(keyboard)
+    reply_markup = inline_markup or ReplyKeyboardMarkup(keyboard)
 
     try:
         try:
@@ -495,3 +528,39 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
             bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
     except TelegramError as telegram_err:
         logger.warning('Got TelegramError: %s! Giving up on that message.', telegram_err.message)
+
+
+def sell_order(trade_id) -> None:
+    """
+    Sell order by trade id
+    :param trade_id: trade id
+    :return: None
+    """
+    # Query for trade
+    trade = Trade.query.filter(and_(
+        Trade.id == trade_id,
+        Trade.is_open.is_(True)
+    )).first()
+    if not trade:
+        send_msg('Order #{} not found'.format(trade_id))
+        logger.warning('/forcesell: Invalid argument received')
+        return
+
+    # Get current rate
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
+
+
+def build_menu(buttons,
+               n_cols,
+               header_buttons=None,
+               footer_buttons=None):
+    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+    if header_buttons:
+        menu.insert(0, header_buttons)
+    if footer_buttons:
+        menu.append(footer_buttons)
+
+    return menu
+
