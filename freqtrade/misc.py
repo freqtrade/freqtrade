@@ -2,7 +2,6 @@ import argparse
 import enum
 import json
 import logging
-import os
 import time
 from typing import Any, Callable, List, Dict
 
@@ -129,16 +128,20 @@ def parse_args(args: List[str]):
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
     """ Builds and attaches all subcommands """
+    from freqtrade.optimize import backtesting, hyperopt
+
     subparsers = parser.add_subparsers(dest='subparser')
-    backtest = subparsers.add_parser('backtesting', help='backtesting module')
-    backtest.set_defaults(func=start_backtesting)
-    backtest.add_argument(
+
+    # Add backtesting subcommand
+    backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
+    backtesting_cmd.set_defaults(func=backtesting.start)
+    backtesting_cmd.add_argument(
         '-l', '--live',
         action='store_true',
         dest='live',
         help='using live data',
     )
-    backtest.add_argument(
+    backtesting_cmd.add_argument(
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
@@ -146,31 +149,30 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    backtest.add_argument(
+    backtesting_cmd.add_argument(
         '--realistic-simulation',
         help='uses max_open_trades from config to simulate real world limitations',
         action='store_true',
         dest='realistic_simulation',
     )
 
-
-def start_backtesting(args) -> None:
-    """
-    Exports all args as environment variables and starts backtesting via pytest.
-    :param args: arguments namespace
-    :return:
-    """
-    import pytest
-
-    os.environ.update({
-        'BACKTEST': 'true',
-        'BACKTEST_LIVE': 'true' if args.live else '',
-        'BACKTEST_CONFIG': args.config,
-        'BACKTEST_TICKER_INTERVAL': str(args.ticker_interval),
-        'BACKTEST_REALISTIC_SIMULATION': 'true' if args.realistic_simulation else '',
-    })
-    path = os.path.join(os.path.dirname(__file__), 'tests', 'test_backtesting.py')
-    pytest.main(['-s', path])
+    # Add hyperopt subcommand
+    hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+    hyperopt_cmd.set_defaults(func=hyperopt.start)
+    hyperopt_cmd.add_argument(
+        '-e', '--epochs',
+        help='specify number of epochs (default: 100)',
+        dest='epochs',
+        default=100,
+        type=int,
+        metavar='INT',
+    )
+    hyperopt_cmd.add_argument(
+        '--use-mongodb',
+        help='parallelize evaluations with mongodb (requires mongod in PATH)',
+        dest='mongodb',
+        action='store_true',
+    )
 
 
 # Required json-schema for user specified config

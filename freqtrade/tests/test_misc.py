@@ -1,15 +1,13 @@
 # pragma pylint: disable=missing-docstring,C0103
 import json
-import os
 import time
-from argparse import Namespace
 from copy import deepcopy
 from unittest.mock import MagicMock
 
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade.misc import throttle, parse_args, start_backtesting, load_config
+from freqtrade.misc import throttle, parse_args, load_config
 
 
 def test_throttle():
@@ -64,7 +62,7 @@ def test_parse_args_dynamic_whitelist():
 
 
 def test_parse_args_backtesting(mocker):
-    backtesting_mock = mocker.patch('freqtrade.misc.start_backtesting', MagicMock())
+    backtesting_mock = mocker.patch('freqtrade.optimize.backtesting.start', MagicMock())
     args = parse_args(['backtesting'])
     assert args is None
     assert backtesting_mock.call_count == 1
@@ -80,14 +78,14 @@ def test_parse_args_backtesting(mocker):
 
 def test_parse_args_backtesting_invalid():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--ticker-interval'])
+        parse_args(['backtesting --ticker-interval'])
 
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--ticker-interval', 'abc'])
+        parse_args(['backtesting --ticker-interval', 'abc'])
 
 
 def test_parse_args_backtesting_custom(mocker):
-    backtesting_mock = mocker.patch('freqtrade.misc.start_backtesting', MagicMock())
+    backtesting_mock = mocker.patch('freqtrade.optimize.backtesting.start', MagicMock())
     args = parse_args(['-c', 'test_conf.json', 'backtesting', '--live', '--ticker-interval', '1'])
     assert args is None
     assert backtesting_mock.call_count == 1
@@ -101,29 +99,31 @@ def test_parse_args_backtesting_custom(mocker):
     assert call_args.ticker_interval == 1
 
 
-def test_start_backtesting(mocker):
-    pytest_mock = mocker.patch('pytest.main', MagicMock())
-    env_mock = mocker.patch('os.environ', {})
-    args = Namespace(
-        config='config.json',
-        live=True,
-        loglevel=20,
-        ticker_interval=1,
-        realistic_simulation=True,
-    )
-    start_backtesting(args)
-    assert env_mock == {
-        'BACKTEST': 'true',
-        'BACKTEST_LIVE': 'true',
-        'BACKTEST_CONFIG': 'config.json',
-        'BACKTEST_TICKER_INTERVAL': '1',
-        'BACKTEST_REALISTIC_SIMULATION': 'true',
-    }
-    assert pytest_mock.call_count == 1
+def test_parse_args_hyperopt(mocker):
+    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    args = parse_args(['hyperopt'])
+    assert args is None
+    assert hyperopt_mock.call_count == 1
 
-    main_call_args = pytest_mock.call_args[0][0]
-    assert main_call_args[0] == '-s'
-    assert main_call_args[1].endswith(os.path.join('freqtrade', 'tests', 'test_backtesting.py'))
+    call_args = hyperopt_mock.call_args[0][0]
+    assert call_args.config == 'config.json'
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'hyperopt'
+    assert call_args.func is not None
+
+
+def test_parse_args_hyperopt_custom(mocker):
+    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'])
+    assert args is None
+    assert hyperopt_mock.call_count == 1
+
+    call_args = hyperopt_mock.call_args[0][0]
+    assert call_args.config == 'test_conf.json'
+    assert call_args.epochs == 20
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'hyperopt'
+    assert call_args.func is not None
 
 
 def test_load_config(default_conf, mocker):

@@ -4,6 +4,7 @@ Functions to analyze ticker data with indicators and produce buy and sell signal
 import logging
 from datetime import timedelta
 from enum import Enum
+from typing import List, Dict
 
 import arrow
 import talib.abstract as ta
@@ -13,6 +14,7 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above
 
 logger = logging.getLogger(__name__)
+
 
 class SignalType(Enum):
     """ Enum to distinguish between buy and sell signals """
@@ -113,18 +115,13 @@ def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
     return dataframe
 
 
-def analyze_ticker(pair: str) -> DataFrame:
+def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     """
-    Get ticker data for given currency pair, push it to a DataFrame and
+    Parses the given ticker history and returns a populated DataFrame
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    ticker_hist = get_ticker_history(pair)
-    if not ticker_hist:
-        logger.warning('Empty ticker history for pair %s', pair)
-        return DataFrame()
-
-    dataframe = parse_ticker_dataframe(ticker_hist)
+    dataframe = parse_ticker_dataframe(ticker_history)
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     dataframe = populate_sell_trend(dataframe)
@@ -137,8 +134,13 @@ def get_signal(pair: str, signal: SignalType) -> bool:
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is good for buying, False otherwise
     """
+    ticker_hist = get_ticker_history(pair)
+    if not ticker_hist:
+        logger.warning('Empty ticker history for pair %s', pair)
+        return False
+
     try:
-        dataframe = analyze_ticker(pair)
+        dataframe = analyze_ticker(ticker_hist)
     except ValueError as ex:
         logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
         return False

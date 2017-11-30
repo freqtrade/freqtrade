@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0621
 import json
+from unittest.mock import MagicMock
 
 import arrow
 import pytest
@@ -35,20 +36,30 @@ def test_populates_sell_trend(result):
 
 
 def test_returns_latest_buy_signal(mocker):
-    buydf = DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
-    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=MagicMock())
+    mocker.patch(
+        'freqtrade.analyze.analyze_ticker',
+        return_value=DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
+    )
     assert get_signal('BTC-ETH', SignalType.BUY)
 
-    buydf = DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
-    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=buydf)
+    mocker.patch(
+        'freqtrade.analyze.analyze_ticker',
+        return_value=DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
+    )
     assert not get_signal('BTC-ETH', SignalType.BUY)
 
 
 def test_returns_latest_sell_signal(mocker):
-    selldf = DataFrame([{'sell': 1, 'date': arrow.utcnow()}])
-    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=selldf)
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=MagicMock())
+    mocker.patch(
+        'freqtrade.analyze.analyze_ticker',
+        return_value=DataFrame([{'sell': 1, 'date': arrow.utcnow()}])
+    )
     assert get_signal('BTC-ETH', SignalType.SELL)
 
-    selldf = DataFrame([{'sell': 0, 'date': arrow.utcnow()}])
-    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=selldf)
+    mocker.patch(
+        'freqtrade.analyze.analyze_ticker',
+        return_value=DataFrame([{'sell': 0, 'date': arrow.utcnow()}])
+    )
     assert not get_signal('BTC-ETH', SignalType.SELL)

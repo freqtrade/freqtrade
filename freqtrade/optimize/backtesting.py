@@ -2,41 +2,21 @@
 
 
 import logging
-import os
 from typing import Tuple, Dict
 
 import arrow
-import pytest
 from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade import exchange
-from freqtrade.analyze import parse_ticker_dataframe, populate_indicators, \
-    populate_buy_trend, populate_sell_trend
+from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 from freqtrade.misc import load_config
+from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
-from freqtrade.tests import load_backtesting_data
 
 logger = logging.getLogger(__name__)
-
-
-def format_results(results: DataFrame):
-    return ('Made {:6d} buys. Average profit {: 5.2f}%. '
-            'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
-                len(results.index),
-                results.profit.mean() * 100.0,
-                results.profit.sum(),
-                results.duration.mean() * 5,
-            )
-
-
-def preprocess(backdata) -> Dict[str, DataFrame]:
-    processed = {}
-    for pair, pair_data in backdata.items():
-        processed[pair] = populate_indicators(parse_ticker_dataframe(pair_data))
-    return processed
 
 
 def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
@@ -83,12 +63,12 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     return tabulate(tabular_data, headers=headers)
 
 
-def backtest(config: Dict, processed, mocker, max_open_trades=0, realistic=True):
+def backtest(config: Dict, processed: Dict[str, DataFrame],
+             max_open_trades: int = 0, realistic: bool = True) -> DataFrame:
     """
     Implements backtesting functionality
     :param config: config to use
     :param processed: a processed dictionary with format {pair, data}
-    :param mocker: mocker instance
     :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
     :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
@@ -96,7 +76,6 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0, realistic=True)
     trades = []
     trade_count_lock = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
-    mocker.patch.dict('freqtrade.main._CONF', config)
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
@@ -138,51 +117,50 @@ def backtest(config: Dict, processed, mocker, max_open_trades=0, realistic=True)
     return DataFrame.from_records(trades, columns=labels)
 
 
-def get_max_open_trades(config):
-    if not os.environ.get('BACKTEST_REALISTIC_SIMULATION'):
-        return 0
-    print('Using max_open_trades: {} ...'.format(config['max_open_trades']))
-    return config['max_open_trades']
+def start(args):
+    # Initialize logger
+    logging.basicConfig(
+        level=args.loglevel,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    )
 
-
-@pytest.mark.skipif(not os.environ.get('BACKTEST'), reason="BACKTEST not set")
-def test_backtest(backtest_conf, mocker):
-    print('')
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    # Load configuration file based on env variable
-    conf_path = os.environ.get('BACKTEST_CONFIG')
-    if conf_path:
-        print('Using config: {} ...'.format(conf_path))
-        config = load_config(conf_path)
-    else:
-        config = backtest_conf
+    logger.info('Using config: %s ...', args.config)
+    config = load_config(args.config)
 
-    # Parse ticker interval
-    ticker_interval = int(os.environ.get('BACKTEST_TICKER_INTERVAL') or 5)
-    print('Using ticker_interval: {} ...'.format(ticker_interval))
+    logger.info('Using ticker_interval: %s ...', args.ticker_interval)
 
     data = {}
-    if os.environ.get('BACKTEST_LIVE'):
-        print('Downloading data for all pairs in whitelist ...')
+    if args.live:
+        logger.info('Downloading data for all pairs in whitelist ...')
         for pair in config['exchange']['pair_whitelist']:
-            data[pair] = exchange.get_ticker_history(pair, ticker_interval)
+            data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
-        print('Using local backtesting data (ignoring whitelist in given config)...')
-        data = load_backtesting_data(ticker_interval)
+        logger.info('Using local backtesting data (ignoring whitelist in given config) ...')
+        data = load_data(args.ticker_interval)
 
-    print('Using stake_currency: {} ...\nUsing stake_amount: {} ...'.format(
-        config['stake_currency'], config['stake_amount']
-    ))
+        logger.info('Using stake_currency: %s ...', config['stake_currency'])
+        logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
     # Print timeframe
     min_date, max_date = get_timeframe(data)
-    print('Measuring data from {} up to {} ...'.format(
-        min_date.isoformat(), max_date.isoformat()
-    ))
+    logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
+
+    max_open_trades = 0
+    if args.realistic_simulation:
+        logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
+        max_open_trades = config['max_open_trades']
+
+    # Monkey patch config
+    from freqtrade import main
+    main._CONF = config
 
     # Execute backtest and print results
-    realistic = os.environ.get('BACKTEST_REALISTIC_SIMULATION')
-    results = backtest(config, preprocess(data), mocker, get_max_open_trades(config), realistic)
-    print('====================== BACKTESTING REPORT ======================================\n\n')
-    print(generate_text_table(data, results, config['stake_currency']))
+    results = backtest(
+        config, preprocess(data), max_open_trades, args.realistic_simulation
+    )
+    logger.info(
+        '\n====================== BACKTESTING REPORT ======================================\n%s',
+        generate_text_table(data, results, config['stake_currency'])
+    )

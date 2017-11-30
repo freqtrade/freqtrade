@@ -76,6 +76,8 @@ target/
 config.json
 preprocessor.py
 *.sqlite
+.hyperopt
+logfile.txt
 
 .env
 .venv
