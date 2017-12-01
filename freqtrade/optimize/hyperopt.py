@@ -3,6 +3,7 @@
 
 import json
 import logging
+import sys
 from functools import reduce
 from math import exp
 from operator import itemgetter
@@ -28,9 +29,9 @@ TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 
-TOTAL_PROFIT_TO_BEAT = 4
+TOTAL_PROFIT_TO_BEAT = 3
 AVG_PROFIT_TO_BEAT = 0.2
-AVG_DURATION_TO_BEAT = 70
+AVG_DURATION_TO_BEAT = 50
 
 # Configuration and data used by hyperopt
 PROCESSED = optimize.preprocess(optimize.load_data())
@@ -101,6 +102,21 @@ SPACE = {
     ]),
 }
 
+def log_results(results):
+    "if results is better than _TO_BEAT show it"
+
+    current_try = results['current_tries']
+    total_tries = results['total_tries']
+    result = results['result']
+    profit = results['total_profit'] / 1000
+
+    outcome = '{:5d}/{}: {}'.format(current_try, total_tries, result)
+
+    if profit >= TOTAL_PROFIT_TO_BEAT:
+        logger.info(outcome)
+    else:
+        print('.', end='')
+        sys.stdout.flush()
 
 def optimizer(params):
     global _CURRENT_TRIES
@@ -119,7 +135,22 @@ def optimizer(params):
     profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
 
     _CURRENT_TRIES += 1
-    logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
+
+    result_data = {
+        'trade_count': trade_count,
+        'total_profit': total_profit,
+        'trade_loss': trade_loss,
+        'profit_loss': profit_loss,
+        'avg_profit': results.profit.mean() * 100.0,
+        'avg_duration': results.duration.mean() * 5,
+        'current_tries': _CURRENT_TRIES,
+        'total_tries': TOTAL_TRIES,
+        'result': result,
+        'results': results
+        }
+    
+    # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
+    log_results(result_data)
 
     return {
         'loss': trade_loss + profit_loss,
