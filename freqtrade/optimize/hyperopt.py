@@ -18,6 +18,7 @@ from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 # Remove noisy log messages
 logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
+logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,10 @@ logger = logging.getLogger(__name__)
 TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
+
+TOTAL_PROFIT_TO_BEAT = 4
+AVG_PROFIT_TO_BEAT = 0.2
+AVG_DURATION_TO_BEAT = 70
 
 # Configuration and data used by hyperopt
 PROCESSED = optimize.preprocess(optimize.load_data())
