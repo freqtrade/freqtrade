@@ -1,7 +1,7 @@
 python-bittrex==0.2.1
 SQLAlchemy==1.1.15
 python-telegram-bot==8.1.1
-arrow==0.10.0
+arrow==0.12.0
 cachetools==2.0.1
 requests==2.18.4
 urllib3==1.22
