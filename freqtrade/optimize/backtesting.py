@@ -35,7 +35,7 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     return arrow.get(min_date), arrow.get(max_date)
 
 
-def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currency) -> str:
+def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
@@ -49,7 +49,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
             len(result.index),
             '{:.2f}%'.format(result.profit.mean() * 100.0),
             '{:.08f} {}'.format(result.profit.sum(), stake_currency),
-            '{:.2f}'.format(result.duration.mean() * 5),
+            '{:.2f}'.format(result.duration.mean() * ticker_interval),
         ])
 
     # Append Total
@@ -58,7 +58,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
         '{:.08f} {}'.format(results.profit.sum(), stake_currency),
-        '{:.2f}'.format(results.duration.mean() * 5),
+        '{:.2f}'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
 
@@ -162,5 +162,5 @@ def start(args):
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
-        generate_text_table(data, results, config['stake_currency'])
+        generate_text_table(data, results, config['stake_currency'], ticker_interval)
     )
