@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 _API: _Bittrex = None
 _API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
-
+_cache: dict = dict()
 
 class Bittrex(Exchange):
     """
@@ -21,6 +21,7 @@ class Bittrex(Exchange):
     # Base URL and API endpoints
     BASE_URL: str = 'https://www.bittrex.com'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
+
 
     def __init__(self, config: dict) -> None:
         global _API, _API_V2, _EXCHANGE_CONF
@@ -98,6 +99,7 @@ class Bittrex(Exchange):
             'last': float(data['result']['Last']),
         }
 
+	
     def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         if tick_interval == 1:
             interval = 'oneMin'
@@ -105,9 +107,27 @@ class Bittrex(Exchange):
             interval = 'fiveMin'
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
-
-        data = _API_V2.get_candles(pair.replace('_', '-'), interval)
-
+        if pair in _cache.keys():
+                # pair is in cache retriev lastest candle
+                sdata = _API_V2.get_latest_candle(pair.replace('_', '-'), interval)
+                if not sdata.get('result'):
+                        raise ContentDecodingError('{message} params=({pair})'.format(
+                            message='Got invalid response from bittrex',
+                            pair=pair))
+                data = _cache[pair]
+                #this is the latest results we had
+                old_ticker = data['result'][-1];
+                #check timestamp is newer ...
+                if (sdata['result'][0]['T'] > old_ticker['T']) : 
+                        data['result'].append(sdata['result'][0])
+                elif (sdata['result'][0]['T'] == old_ticker['T']) :
+                        #if volume has changed, update the latest result with the new one
+                        if (sdata['result'][0]['V'] > old_ticker['V']) :
+                                data['result'][-1] = sdata['result'][0]
+        else : 
+                data = _API_V2.get_candles(pair.replace('_', '-'), interval)
+        # Update the value in cache
+        _cache[pair] = data
         # These sanity check are necessary because bittrex cannot keep their API stable.
         if not data.get('result'):
             raise ContentDecodingError('{message} params=({pair})'.format(
