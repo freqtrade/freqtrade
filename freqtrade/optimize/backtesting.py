@@ -162,5 +162,5 @@ def start(args):
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
-        generate_text_table(data, results, config['stake_currency'], ticker_interval)
+        generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
