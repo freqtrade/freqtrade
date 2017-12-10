@@ -1,11 +1,11 @@
 import logging
 import re
-from datetime import timedelta
+from datetime import timedelta, date
 from typing import Callable, Any
 
 import arrow
 from pandas import DataFrame
-from sqlalchemy import and_, func, text
+from sqlalchemy import and_, func, text, between
 from tabulate import tabulate
 from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
@@ -49,6 +49,7 @@ def init(config: dict) -> None:
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
         CommandHandler('performance', _performance),
+        CommandHandler('daily', _daily),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
         CommandHandler('version', _version),
@@ -206,7 +207,44 @@ def _status_table(bot: Bot, update: Update) -> None:
 
         send_msg(message, parse_mode=ParseMode.HTML)
 
+@authorized_only
+def _daily(bot: Bot, update: Update) -> None:
+    """
+    Handler for /daily <n>
+    Returns a daily profit (in BTC) over the last n days.
+    Default is 7 days
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    trades = Trade.query.order_by(Trade.close_date).all()
+    today = date.today().toordinal()
+    profit_days = {}
+    
+    try:
+        timescale = update.message.text.replace('/daily', '').strip()
+    except:
+        timescale = 7
 
+    for day in range(0, timescale):
+        #need to query between day+1 and day-1       
+        nextdate = date.fromordinal(today-day+1)
+        prevdate = date.fromordinal(today-day-1)
+        trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
+        curdayprofit = 0
+        for trade in trades:
+            curdayprofit += trade.close_profit * trade.stake_amount
+        profit_days[date.fromordinal(today-day)] = curdayprofit
+
+
+    stats = '\n'.join('{index}\t{profit} BTC'.format(
+        index=key,
+        profit=value,
+    ) for key, value in profit_days.items())
+    
+    message = '<b>Daily Profit:</b>\n{}'.format(stats)
+    send_msg(message, bot=bot)
+    
 @authorized_only
 def _profit(bot: Bot, update: Update) -> None:
     """

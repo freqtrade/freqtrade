@@ -25,6 +25,7 @@ Persistence is achieved through sqlite.
 * /forcesell <trade_id>|all: Instantly sells the given trade (Ignoring `minimum_roi`).
 * /performance: Show performance of each finished trade grouped by pair
 * /balance: Show account balance per currency
+* /daily [n]: Shows profit or loss per day, over the last n (default 7) days
 * /help: Show help message
 * /version: Show version
 

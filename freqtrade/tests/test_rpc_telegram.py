@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
 import re
-from datetime import datetime
+from datetime import datetime, date
 from random import randint
 from unittest.mock import MagicMock
 
@@ -14,7 +14,7 @@ from freqtrade.misc import update_state, State, get_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 from freqtrade.rpc.telegram import authorized_only, is_enabled, send_msg, _status, _status_table, \
-    _profit, _forcesell, _performance, _count, _start, _stop, _balance, _version, _help
+    _profit, _forcesell, _performance, _daily, _count, _start, _stop, _balance, _version, _help
 
 
 def test_is_enabled(default_conf, mocker):
@@ -316,7 +316,40 @@ def test_performance_handle(
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>BTC_ETH\t10.05%</code>' in msg_mock.call_args_list[0][0][0]
 
+def test_daily_handle(
+        default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, create_engine('sqlite://'))
 
+    # Create some test data
+    create_trade(15.0)
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+
+    _daily(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert 'Daily' in msg_mock.call_args_list[0][0][0]
+    assert str(date.today()) + '\t1.50701325 BTC' in msg_mock.call_args_list[0][0][0]
+    
 def test_count_handle(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
