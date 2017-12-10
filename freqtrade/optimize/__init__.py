@@ -20,8 +20,8 @@ def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None) -> Di
     path = os.path.abspath(os.path.dirname(__file__))
     result = {}
     _pairs = pairs or [
-        'BTC_BCC', 'BTC_ETH', 'BTC_DASH', 'BTC_POWR', 'BTC_ETC',
-        'BTC_VTC', 'BTC_WAVES', 'BTC_LSK', 'BTC_XLM', 'BTC_OK',
+        "BTC_ETH", "BTC_LTC", "BTC_ETC", "BTC_DASH", "BTC_ZEC",
+        "BTC_XLM", "BTC_NXT", "BTC_POWR", "BTC_ADA", "BTC_XMR",
     ]
     for pair in _pairs:
         with open('{abspath}/../tests/testdata/{pair}-{ticker_interval}.json'.format(
