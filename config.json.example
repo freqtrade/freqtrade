@@ -18,14 +18,16 @@
         "key": "key",
         "secret": "secret",
         "pair_whitelist": [
-            "BTC_RLC",
-            "BTC_TKN",
-            "BTC_TRST",
-            "BTC_SWT",
-            "BTC_PIVX",
-            "BTC_MLN",
-            "BTC_XZC",
-            "BTC_LUN"
+            "BTC_ETH",
+            "BTC_LTC",
+            "BTC_ETC",
+            "BTC_DASH",
+            "BTC_ZEC",
+            "BTC_XLM",
+            "BTC_NXT",
+            "BTC_POWR",
+            "BTC_ADA",
+            "BTC_XMR"
         ]
     },
     "experimental": {
