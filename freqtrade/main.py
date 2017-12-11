@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import copy
 import json
 import logging
@@ -49,7 +50,7 @@ def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
         _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
 
 
-def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
+def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
@@ -60,7 +61,7 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
     try:
         # Refresh whitelist based on wallet maintenance
         refresh_whitelist(
-            gen_pair_whitelist(_CONF['stake_currency']) if dynamic_whitelist else None
+            gen_pair_whitelist(_CONF['stake_currency'], topn = dynamic_whitelist) if dynamic_whitelist else None
         )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -266,7 +267,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
     """
     Updates the whitelist with with a dynamically generated list
     :param base_currency: base currency as str
-    :param topn: maximum number of returned results
+    :param topn: maximum number of returned results, must be greater than 0
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
@@ -275,6 +276,11 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
+
+    # topn must be greater than 0
+    if not topn > 0:
+        topn = 20
+
     return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
 
 

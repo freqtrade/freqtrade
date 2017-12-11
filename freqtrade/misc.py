@@ -112,8 +112,12 @@ def parse_args(args: List[str]):
     )
     parser.add_argument(
         '--dynamic-whitelist',
-        help='dynamically generate and update whitelist based on 24h BaseVolume',
-        action='store_true',
+        help='dynamically generate and update whitelist based on 24h BaseVolume (Default 20 currencies)',
+        dest='dynamic_whitelist',
+        const=20,
+        type=int,
+        metavar='INT',
+        nargs='?',
     )
     build_subcommands(parser)
     parsed_args = parser.parse_args(args)

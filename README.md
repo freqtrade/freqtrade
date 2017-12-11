@@ -146,18 +146,39 @@ Simple High Frequency Trading Bot for crypto currencies
 
 positional arguments:
   {backtesting}
-    backtesting         backtesting module
+    backtesting             backtesting module
 
 optional arguments:
-  -h, --help            show this help message and exit
+  -h, --help                show this help message and exit
   -c PATH, --config PATH
-                        specify configuration file (default: config.json)
-  -v, --verbose         be verbose
-  --version             show program's version number and exit
-  --dynamic-whitelist   dynamically generate and update whitelist based on 24h
-                        BaseVolume
+                            specify configuration file (default: config.json)
+  -v, --verbose             be verbose
+  --version                 show program's version number and exit
+  --dynamic-whitelist INT   dynamically generate and update whitelist based on 24h
+                            BaseVolume (Default 20 currencies)
 
 ```
+
+#### Dynamic whitelist example
+Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
+on BaseVolume. This value can be changed when you run the script.
+
+**By Default**  
+Get the 20 currencies based on BaseVolume.  
+```bash
+freqtrade --dynamic-whitelist
+```
+
+**Customize the number of currencies to retrieve**  
+Get the 30 currencies based on BaseVolume.  
+```bash
+freqtrade --dynamic-whitelist 30
+```
+
+**Exception**  
+`--dynamic-whitelist` must be greater than 0. If you enter 0 or a
+negative value (e.g -2), `--dynamic-whitelist` will use the default
+value (20).
 
 ### Backtesting
 
