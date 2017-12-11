@@ -30,7 +30,7 @@ def test_parse_args_defaults():
     args = parse_args([])
     assert args is not None
     assert args.config == 'config.json'
-    assert args.dynamic_whitelist is False
+    assert args.dynamic_whitelist is None
     assert args.loglevel == 20
 
 
@@ -58,7 +58,16 @@ def test_parse_args_verbose():
 def test_parse_args_dynamic_whitelist():
     args = parse_args(['--dynamic-whitelist'])
     assert args is not None
-    assert args.dynamic_whitelist is True
+    assert args.dynamic_whitelist is 20
+
+def test_parse_args_dynamic_whitelist_10():
+    args = parse_args(['--dynamic-whitelist', '10'])
+    assert args is not None
+    assert args.dynamic_whitelist is 10
+
+def test_parse_args_dynamic_whitelist_invalid_values():
+    with pytest.raises(SystemExit, match=r'2'):
+        parse_args(['--dynamic-whitelist', 'abc'])
 
 
 def test_parse_args_backtesting(mocker):
