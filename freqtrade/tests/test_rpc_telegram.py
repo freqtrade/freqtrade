@@ -330,7 +330,7 @@ def test_daily_handle(
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
-
+    
     # Create some test data
     create_trade(15.0)
     trade = Trade.query.first()
@@ -345,10 +345,21 @@ def test_daily_handle(
     trade.close_date = datetime.utcnow()
     trade.is_open = False
 
+    #try valid data
+    update.message.text = '/daily 7'
     _daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
-    assert str(date.today()) + '\t1.50701325 BTC' in msg_mock.call_args_list[0][0][0]
+    assert str(date.today()) + '  1.50701325 BTC' in msg_mock.call_args_list[0][0][0]
+    
+    #try invalid data
+    msg_mock.reset_mock()
+    update_state(State.RUNNING)
+    update.message.text = '/daily'
+    _daily(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert 'must be an integer greater than 0' in msg_mock.call_args_list[0][0][0]   
+    
     
 def test_count_handle(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
