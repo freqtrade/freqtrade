@@ -1,11 +1,11 @@
 import logging
 import re
-from datetime import timedelta
+from datetime import timedelta, date
 from typing import Callable, Any
 
 import arrow
 from pandas import DataFrame
-from sqlalchemy import and_, func, text
+from sqlalchemy import and_, func, text, between
 from tabulate import tabulate
 from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
@@ -49,6 +49,7 @@ def init(config: dict) -> None:
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
         CommandHandler('performance', _performance),
+        CommandHandler('daily', _daily),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
         CommandHandler('version', _version),
@@ -206,7 +207,47 @@ def _status_table(bot: Bot, update: Update) -> None:
 
         send_msg(message, parse_mode=ParseMode.HTML)
 
+@authorized_only
+def _daily(bot: Bot, update: Update) -> None:
+    """
+    Handler for /daily <n>
+    Returns a daily profit (in BTC) over the last n days.
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    trades = Trade.query.order_by(Trade.close_date).all()
+    today = date.today().toordinal()
+    profit_days = {}
+    
+    try:
+        timescale = int(update.message.text.replace('/daily', '').strip())
+    except:
+        send_msg('*Daily <n>:* `must be an integer greater than 0`', bot=bot)
+        return
+            
+    if not (isinstance(timescale, int) and timescale > 0):
+        send_msg('*Daily <n>:* `must be an integer greater than 0`', bot=bot)
+        return
 
+    for day in range(0, timescale):
+         #need to query between day+1 and day-1       
+         nextdate = date.fromordinal(today-day+1)
+         prevdate = date.fromordinal(today-day-1)
+         trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
+         curdayprofit = 0
+         for trade in trades:
+             curdayprofit += trade.close_profit * trade.stake_amount
+         profit_days[date.fromordinal(today-day)] = curdayprofit
+
+    stats = []
+    for key, value in profit_days.items():
+        stats.append([key, str(value) + ' BTC'])
+    stats = tabulate(stats, headers=['Day', 'Profit'], tablefmt='simple')
+
+    message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
+    send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+    
 @authorized_only
 def _profit(bot: Bot, update: Update) -> None:
     """
@@ -431,6 +472,7 @@ def _help(bot: Bot, update: Update) -> None:
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/daily <n>:* `Shows profit or loss per day, over the last n days`
 */count:* `Show number of trades running compared to allowed number of trades`
 */balance:* `Show account balance per currency`
 */help:* `This help message`
@@ -476,7 +518,7 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
-    keyboard = [['/status table', '/profit', '/performance', ],
+    keyboard = [['/daily', '/status table', '/profit', '/performance', ],
                 ['/balance', '/status', '/count'],
                 ['/start', '/stop', '/help']]
 
