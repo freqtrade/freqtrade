@@ -192,6 +192,7 @@ Backtesting also uses the config specified via `-c/--config`.
 
 ```
 usage: freqtrade backtesting [-h] [-l] [-i INT] [--realistic-simulation]
+                             [-r]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -201,8 +202,24 @@ optional arguments:
   --realistic-simulation
                         uses max_open_trades from config to simulate real
                         world limitations
-
+  -r, --refresh-pairs-cached
+                        refresh the pairs files in tests/testdata with 
+                        the latest data from Bittrex. Use it if you want
+                        to run your backtesting with up-to-date data.
 ```
+
+#### How to use --refresh-pairs-cached parameter?
+The first time your run Backtesting, it will take the pairs your have 
+set in your config file and download data from Bittrex. 
+
+If for any reason you want to update your data set, you use 
+`--refresh-pairs-cached` to force Backtesting to update the data it has. 
+**Use it only if you want to update your data set. You will not be able
+to come back to the previous version.**
+
+To test your strategy with latest data, we recommend to continue using  
+the parameter `-l` or `--live`.
+
 
 ### Hyperopt
 

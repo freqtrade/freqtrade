@@ -132,13 +132,14 @@ def start(args):
     logger.info('Using ticker_interval: %s ...', args.ticker_interval)
 
     data = {}
+    pairs = config['exchange']['pair_whitelist']
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
-        for pair in config['exchange']['pair_whitelist']:
+        for pair in pairs:
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
-        logger.info('Using local backtesting data (ignoring whitelist in given config) ...')
-        data = load_data(args.ticker_interval)
+        logger.info('Using local backtesting data (using whitelist in given config) ...')
+        data = load_data(pairs=pairs, ticker_interval=args.ticker_interval, refresh_pairs=args.refresh_pairs)
 
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])

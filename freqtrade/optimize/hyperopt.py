@@ -14,6 +14,7 @@ from pandas import DataFrame
 
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
+from freqtrade.misc import load_config
 from freqtrade.optimize.backtesting import backtest
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
@@ -34,7 +35,7 @@ AVG_PROFIT_TO_BEAT = 0.2
 AVG_DURATION_TO_BEAT = 50
 
 # Configuration and data used by hyperopt
-PROCESSED = optimize.preprocess(optimize.load_data())
+PROCESSED = []
 OPTIMIZE_CONFIG = {
     'max_open_trades': 3,
     'stake_currency': 'BTC',
@@ -215,7 +216,7 @@ def buy_strategy_generator(params):
 
 
 def start(args):
-    global TOTAL_TRIES
+    global TOTAL_TRIES, PROCESSED
     TOTAL_TRIES = args.epochs
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -225,6 +226,11 @@ def start(args):
         level=args.loglevel,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
+
+    logger.info('Using config: %s ...', args.config)
+    config = load_config(args.config)
+    pairs = config['exchange']['pair_whitelist']
+    PROCESSED = optimize.preprocess(optimize.load_data(pairs=pairs, ticker_interval=args.ticker_interval))
 
     if args.mongodb:
         logger.info('Using mongodb ...')
