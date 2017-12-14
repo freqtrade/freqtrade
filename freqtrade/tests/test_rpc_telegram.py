@@ -350,7 +350,7 @@ def test_daily_handle(
     _daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
-    assert str(date.today()) + '  1.50701325 BTC' in msg_mock.call_args_list[0][0][0]
+    assert str(date.today()) + '  0 BTC' in msg_mock.call_args_list[0][0][0]
     
     #try invalid data
     msg_mock.reset_mock()
