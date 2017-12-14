@@ -140,24 +140,29 @@ changes, it will suffice to edit `config.json` and restart the container.
 
 ### Usage
 ```
-usage: freqtrade [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist]
-                 {backtesting} ...
+usage: main.py [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist [INT]]
+               [--dry-run-db]
+               {backtesting,hyperopt} ...
 
 Simple High Frequency Trading Bot for crypto currencies
 
 positional arguments:
-  {backtesting}
-    backtesting             backtesting module
+  {backtesting,hyperopt}
+    backtesting         backtesting module
+    hyperopt            hyperopt module
 
 optional arguments:
-  -h, --help                show this help message and exit
+  -h, --help            show this help message and exit
   -c PATH, --config PATH
-                            specify configuration file (default: config.json)
-  -v, --verbose             be verbose
-  --version                 show program's version number and exit
-  --dynamic-whitelist INT   dynamically generate and update whitelist based on 24h
-                            BaseVolume (Default 20 currencies)
-
+                        specify configuration file (default: config.json)
+  -v, --verbose         be verbose
+  --version             show program's version number and exit
+  --dynamic-whitelist [INT]
+                        dynamically generate and update whitelist based on 24h
+                        BaseVolume (Default 20 currencies)
+  --dry-run-db          Force dry run to use a local DB
+                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
+                        only if dry_run is enabled.
 ```
 
 #### Dynamic whitelist example

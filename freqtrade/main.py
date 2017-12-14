@@ -325,6 +325,14 @@ def main() -> None:
     if args.dynamic_whitelist:
         logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
 
+    # If the user ask for Dry run with a local DB instead of memory
+    if args.dry_run_db:
+        if _CONF.get('dry_run', False):
+            _CONF.update({'dry_run_db': True})
+            logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)')
+        else:
+            logger.info('Dry run is disabled. (--dry_run_db ignored)')
+
     try:
         init(_CONF)
         old_state = None

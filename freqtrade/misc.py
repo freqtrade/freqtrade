@@ -119,6 +119,13 @@ def parse_args(args: List[str]):
         metavar='INT',
         nargs='?',
     )
+    parser.add_argument(
+        '--dry-run-db',
+        help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" instead of memory DB. Work only if dry_run is \
+             enabled.',
+        action='store_true',
+        dest='dry_run_db',
+    )
     build_subcommands(parser)
     parsed_args = parser.parse_args(args)
 
