@@ -29,10 +29,15 @@ def init(config: dict, engine: Optional[Engine] = None) -> None:
     _CONF.update(config)
     if not engine:
         if _CONF.get('dry_run', False):
-            engine = create_engine('sqlite://',
-                                   connect_args={'check_same_thread': False},
-                                   poolclass=StaticPool,
-                                   echo=False)
+            # the user wants dry run to use a DB
+            if _CONF.get('dry_run_db', False):
+                engine = create_engine('sqlite:///tradesv3.dry_run.sqlite')
+            # Otherwise dry run will store in memory
+            else:
+                engine = create_engine('sqlite://',
+                                       connect_args={'check_same_thread': False},
+                                       poolclass=StaticPool,
+                                       echo=False)
         else:
             engine = create_engine('sqlite:///tradesv3.sqlite')
 
