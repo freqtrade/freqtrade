@@ -223,11 +223,10 @@ def _daily(bot: Bot, update: Update) -> None:
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
     except:
-        send_msg('*Daily <n>:* `must be an integer greater than 0`', bot=bot)
-        return
+        timescale = 5
             
     if not (isinstance(timescale, int) and timescale > 0):
-        send_msg('*Daily <n>:* `must be an integer greater than 0`', bot=bot)
+        send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
         return
 
     for day in range(0, timescale):
@@ -238,7 +237,7 @@ def _daily(bot: Bot, update: Update) -> None:
          curdayprofit = 0
          for trade in trades:
              curdayprofit += trade.close_profit * trade.stake_amount
-         profit_days[date.fromordinal(today-day)] = curdayprofit
+         profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
 
     stats = []
     for key, value in profit_days.items():
@@ -518,9 +517,9 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
-    keyboard = [['/daily', '/status table', '/profit', '/performance', ],
-                ['/balance', '/status', '/count'],
-                ['/start', '/stop', '/help']]
+    keyboard = [['/daily', '/profit', '/balance' ],
+                ['/status', '/status table', '/performance'],
+                ['/count', '/start', '/stop', '/help']]
 
     reply_markup = ReplyKeyboardMarkup(keyboard)
 

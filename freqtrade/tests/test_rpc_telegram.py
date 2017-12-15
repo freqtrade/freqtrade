@@ -355,7 +355,7 @@ def test_daily_handle(
     #try invalid data
     msg_mock.reset_mock()
     update_state(State.RUNNING)
-    update.message.text = '/daily'
+    update.message.text = '/daily -2'
     _daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'must be an integer greater than 0' in msg_mock.call_args_list[0][0][0]   
