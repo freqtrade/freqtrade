@@ -208,6 +208,7 @@ def _status_table(bot: Bot, update: Update) -> None:
 
         send_msg(message, parse_mode=ParseMode.HTML)
 
+
 @authorized_only
 def _daily(bot: Bot, update: Update) -> None:
     """
@@ -217,37 +218,33 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    trades = Trade.query.order_by(Trade.close_date).all()
     today = date.today().toordinal()
     profit_days = {}
-    
+
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
-    except:
+    except (TypeError, ValueError):
         timescale = 5
-            
+
     if not (isinstance(timescale, int) and timescale > 0):
         send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
         return
 
     for day in range(0, timescale):
-         #need to query between day+1 and day-1       
-         nextdate = date.fromordinal(today-day+1)
-         prevdate = date.fromordinal(today-day-1)
-         trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
-         curdayprofit = 0
-         for trade in trades:
-             curdayprofit += trade.close_profit * trade.stake_amount
-         profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
+        # need to query between day+1 and day-1
+        nextdate = date.fromordinal(today-day+1)
+        prevdate = date.fromordinal(today-day-1)
+        trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
+        curdayprofit = sum(trade.close_profit * trade.stake_amount for trade in trades)
+        profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
 
-    stats = []
-    for key, value in profit_days.items():
-        stats.append([key, str(value) + ' BTC'])
+    stats = [[key, str(value) + ' BTC'] for key, value in profit_days.items()]
     stats = tabulate(stats, headers=['Day', 'Profit'], tablefmt='simple')
 
     message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
     send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
-    
+
+
 @authorized_only
 def _profit(bot: Bot, update: Update) -> None:
     """
@@ -504,11 +501,11 @@ def _version(bot: Bot, update: Update) -> None:
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
 
-def shorten_date(date):
+def shorten_date(_date):
     """
     Trim the date so it fits on small screens
     """
-    new_date = re.sub('seconds?', 'sec', date)
+    new_date = re.sub('seconds?', 'sec', _date)
     new_date = re.sub('minutes?', 'min', new_date)
     new_date = re.sub('hours?', 'h', new_date)
     new_date = re.sub('days?', 'd', new_date)
