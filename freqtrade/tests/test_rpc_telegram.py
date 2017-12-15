@@ -189,7 +189,7 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
 
     _profit(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert '*ROI:* `1.50701325 (10.05%)`' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI All trades:* `0.00765279 BTC (10.05%)`' in msg_mock.call_args_list[-1][0][0]
     assert 'Best Performing:* `BTC_ETH: 10.05%`' in msg_mock.call_args_list[-1][0][0]
 
 

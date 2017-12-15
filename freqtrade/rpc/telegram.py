@@ -4,6 +4,7 @@ from datetime import timedelta, date
 from typing import Callable, Any
 
 import arrow
+from decimal import Decimal
 from pandas import DataFrame
 from sqlalchemy import and_, func, text, between
 from tabulate import tabulate
@@ -258,23 +259,31 @@ def _profit(bot: Bot, update: Update) -> None:
     """
     trades = Trade.query.order_by(Trade.id).all()
 
-    profit_amounts = []
-    profits = []
+    profit_all_btc = []
+    profit_all = []
+    profit_btc_closed = []
+    profit_closed = []
     durations = []
+
     for trade in trades:
+        current_rate = None
+
         if not trade.open_rate:
             continue
         if trade.close_date:
             durations.append((trade.close_date - trade.open_date).total_seconds())
-        if trade.close_profit:
+
+        if not trade.is_open:
             profit = trade.close_profit
+            profit_btc_closed.append(Decimal(trade.close_rate) - Decimal(trade.open_rate))
+            profit_closed.append(profit)
         else:
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
             profit = trade.calc_profit(current_rate)
 
-        profit_amounts.append(profit * trade.stake_amount)
-        profits.append(profit)
+        profit_all_btc.append(Decimal(trade.close_rate or current_rate) - Decimal(trade.open_rate))
+        profit_all.append(profit)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
@@ -288,15 +297,18 @@ def _profit(bot: Bot, update: Update) -> None:
 
     bp_pair, bp_rate = best_pair
     markdown_msg = """
-*ROI:* `{profit_btc:.8f} ({profit:.2f}%)`
-*Trade Count:* `{trade_count}`
+*ROI Trade closed:* `{profit_closed_btc:.8f} BTC ({profit_closed:.2f}%)`
+*ROI All trades:* `{profit_all_btc:.8f} BTC ({profit_all:.2f}%)`
+*Total Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
     """.format(
-        profit_btc=round(sum(profit_amounts), 8),
-        profit=round(sum(profits) * 100, 2),
+        profit_closed_btc=round(sum(profit_btc_closed), 8),
+        profit_closed=round(sum(profit_closed) * 100, 2),
+        profit_all_btc=round(sum(profit_all_btc), 8),
+        profit_all=round(sum(profit_all) * 100, 2),
         trade_count=len(trades),
         first_trade_date=arrow.get(trades[0].open_date).humanize(),
         latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
