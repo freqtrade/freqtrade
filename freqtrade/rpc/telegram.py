@@ -1,10 +1,10 @@
 import logging
 import re
 from datetime import timedelta, date
+from decimal import Decimal
 from typing import Callable, Any
 
 import arrow
-from decimal import Decimal
 from pandas import DataFrame
 from sqlalchemy import and_, func, text, between
 from tabulate import tabulate
