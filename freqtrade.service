@@ -1,0 +1,14 @@
+[Unit]
+Description=Freqtrade Daemon
+After=network.target
+
+[Service]
+# Set WorkingDirectory and ExecStart to your file paths accordingly
+# NOTE: %h will be resolved to /home/<username>
+WorkingDirectory=%h/freqtrade
+ExecStart=/usr/bin/freqtrade --dynamic-whitelist 40
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+
