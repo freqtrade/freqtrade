@@ -87,7 +87,8 @@ class Trade(_DECL_BASE):
         :param order: order retrieved by exchange.get_order()
         :return: None
         """
-        if not order['closed']:
+        # Ignore open and cancelled orders
+        if not order['closed'] or order['rate'] is None:
             return
 
         logger.info('Updating trade (id=%d) ...', self.id)
