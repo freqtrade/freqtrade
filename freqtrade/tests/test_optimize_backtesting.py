@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212
 
+from unittest.mock import MagicMock
 
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
@@ -28,8 +29,10 @@ def test_1min_ticker_interval(default_conf, mocker):
     results = backtest(default_conf, optimize.preprocess(data), 1, True)
     assert len(results) > 0
 
-def test_backtest_with_new_pair(default_conf, mocker):
+def test_backtest_with_new_pair(default_conf, ticker_history, mocker):
+    mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     optimize.load_data(ticker_interval=1, pairs=['BTC_MEME'])
@@ -45,7 +48,8 @@ def test_testdata_path():
     assert str('freqtrade/optimize/../tests/testdata') in testdata_path()
 
 
-def test_download_pairs(default_conf, mocker):
+def test_download_pairs(default_conf, ticker_history, mocker):
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
@@ -75,7 +79,8 @@ def test_download_pairs(default_conf, mocker):
         os.remove(file2_5)
 
 
-def test_download_backtesting_testdata(default_conf, mocker):
+def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
