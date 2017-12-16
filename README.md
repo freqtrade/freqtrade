@@ -138,6 +138,14 @@ $ docker start freqtrade
 You do not need to rebuild the image for configuration
 changes, it will suffice to edit `config.json` and restart the container.
 
+#### systemd service file
+Copy `./freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`)
+and update `WorkingDirectory` and `ExecStart` to match your setup.
+After that you can start the daemon with:
+```bash
+$ systemctl --user start freqtrade
+```
+
 ### Usage
 ```
 usage: main.py [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist [INT]]
