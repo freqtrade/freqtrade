@@ -4,7 +4,6 @@ import logging
 import json
 import os
 from typing import Optional, List, Dict
-import time
 from freqtrade.exchange import get_ticker_history
 
 from pandas import DataFrame
