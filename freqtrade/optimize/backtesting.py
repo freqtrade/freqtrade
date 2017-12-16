@@ -35,7 +35,8 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     return arrow.get(min_date), arrow.get(max_date)
 
 
-def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
+def generate_text_table(
+        data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str

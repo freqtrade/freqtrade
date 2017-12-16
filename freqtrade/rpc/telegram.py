@@ -93,7 +93,7 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     :return: decorated function
     """
     def wrapper(*args, **kwargs):
-        bot, update = kwargs.get('bot') or args[0], kwargs.get('update') or args[1]
+        update = kwargs.get('update') or args[1]
 
         # Reject unauthorized messages
         chat_id = int(_CONF['telegram']['chat_id'])
@@ -551,7 +551,10 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     try:
         try:
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
+            bot.send_message(
+                _CONF['telegram']['chat_id'], msg,
+                parse_mode=parse_mode, reply_markup=reply_markup
+            )
         except NetworkError as network_err:
             # Sometimes the telegram server resets the current connection,
             # if this is the case we send the message again.
@@ -559,6 +562,9 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
                 'Got Telegram NetworkError: %s! Trying one more time.',
                 network_err.message
             )
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
+            bot.send_message(
+                _CONF['telegram']['chat_id'], msg,
+                parse_mode=parse_mode, reply_markup=reply_markup
+            )
     except TelegramError as telegram_err:
         logger.warning('Got TelegramError: %s! Giving up on that message.', telegram_err.message)
