@@ -379,7 +379,7 @@ def _exec_forcesell(trade: Trade) -> None:
         # Cancel open LIMIT_BUY orders and close trade
         if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
             exchange.cancel_order(trade.open_order_id)
-            trade.close(order.get('rate', trade.open_rate))
+            trade.close(order.get('rate') or trade.open_rate)
             # TODO: sell amount which has been bought already
             return
 
