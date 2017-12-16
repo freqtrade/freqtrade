@@ -371,6 +371,28 @@ def _stop(bot: Bot, update: Update) -> None:
         send_msg('*Status:* `already stopped`', bot=bot)
 
 
+def _exec_forcesell(trade: Trade) -> None:
+    # Check if there is there is an open order
+    if trade.open_order_id:
+        order = exchange.get_order(trade.open_order_id)
+
+        # Cancel open LIMIT_BUY orders and close trade
+        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
+            exchange.cancel_order(trade.open_order_id)
+            trade.close(order.get('rate', trade.open_rate))
+            # TODO: sell amount which has been bought already
+            return
+
+        # Ignore trades with an attached LIMIT_SELL order
+        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+            return
+
+    # Get current rate and execute sell
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
+
+
 @authorized_only
 def _forcesell(bot: Bot, update: Update) -> None:
     """
@@ -388,10 +410,7 @@ def _forcesell(bot: Bot, update: Update) -> None:
     if trade_id == 'all':
         # Execute sell for all open orders
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
-            from freqtrade.main import execute_sell
-            execute_sell(trade, current_rate)
+            _exec_forcesell(trade)
         return
 
     # Query for trade
@@ -403,10 +422,8 @@ def _forcesell(bot: Bot, update: Update) -> None:
         send_msg('Invalid argument. See `/help` to view usage')
         logger.warning('/forcesell: Invalid argument received')
         return
-    # Get current rate
-    current_rate = exchange.get_ticker(trade.pair)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
+
+    _exec_forcesell(trade)
 
 
 @authorized_only
@@ -526,7 +543,7 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
-    keyboard = [['/daily', '/profit', '/balance' ],
+    keyboard = [['/daily', '/profit', '/balance'],
                 ['/status', '/status table', '/performance'],
                 ['/count', '/start', '/stop', '/help']]
 
