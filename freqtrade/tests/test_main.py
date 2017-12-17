@@ -137,7 +137,9 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
-    buy_mock = mocker.patch('freqtrade.main.exchange.buy', MagicMock(return_value='mocked_limit_buy'))
+    buy_mock = mocker.patch(
+        'freqtrade.main.exchange.buy', MagicMock(return_value='mocked_limit_buy')
+    )
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)

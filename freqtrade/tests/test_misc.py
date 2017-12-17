@@ -60,10 +60,12 @@ def test_parse_args_dynamic_whitelist():
     assert args is not None
     assert args.dynamic_whitelist is 20
 
+
 def test_parse_args_dynamic_whitelist_10():
     args = parse_args(['--dynamic-whitelist', '10'])
     assert args is not None
     assert args.dynamic_whitelist is 10
+
 
 def test_parse_args_dynamic_whitelist_invalid_values():
     with pytest.raises(SystemExit, match=r'2'):

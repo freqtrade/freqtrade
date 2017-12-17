@@ -10,6 +10,7 @@ import os
 
 import pytest
 
+
 def test_backtest(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})

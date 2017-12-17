@@ -60,7 +60,10 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
     try:
         # Refresh whitelist based on wallet maintenance
         refresh_whitelist(
-            gen_pair_whitelist(_CONF['stake_currency'], topn = dynamic_whitelist) if dynamic_whitelist else None
+            gen_pair_whitelist(
+                _CONF['stake_currency'],
+                topn=dynamic_whitelist
+            ) if dynamic_whitelist else None
         )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -329,7 +332,9 @@ def main() -> None:
     if args.dry_run_db:
         if _CONF.get('dry_run', False):
             _CONF.update({'dry_run_db': True})
-            logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)')
+            logger.info(
+                'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)'
+            )
         else:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
 

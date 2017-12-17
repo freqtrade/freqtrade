@@ -112,7 +112,7 @@ def parse_args(args: List[str]):
     )
     parser.add_argument(
         '--dynamic-whitelist',
-        help='dynamically generate and update whitelist based on 24h BaseVolume (Default 20 currencies)',
+        help='dynamically generate and update whitelist based on 24h BaseVolume (Default 20 currencies)',  # noqa
         dest='dynamic_whitelist',
         const=20,
         type=int,
@@ -122,7 +122,7 @@ def parse_args(args: List[str]):
     parser.add_argument(
         '--dry-run-db',
         help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" instead of memory DB. Work only if dry_run is \
-             enabled.',
+             enabled.',  # noqa
         action='store_true',
         dest='dry_run_db',
     )

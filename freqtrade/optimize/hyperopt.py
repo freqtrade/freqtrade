@@ -50,7 +50,7 @@ OPTIMIZE_CONFIG = {
 }
 
 # Monkey patch config
-from freqtrade import main
+from freqtrade import main  # noqa
 main._CONF = OPTIMIZE_CONFIG
 
 
@@ -103,6 +103,7 @@ SPACE = {
     ]),
 }
 
+
 def log_results(results):
     "if results is better than _TO_BEAT show it"
 
@@ -118,6 +119,7 @@ def log_results(results):
     else:
         print('.', end='')
         sys.stdout.flush()
+
 
 def optimizer(params):
     global _CURRENT_TRIES
@@ -149,7 +151,7 @@ def optimizer(params):
         'result': result,
         'results': results
         }
-    
+
     # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
     log_results(result_data)
 
