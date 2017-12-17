@@ -16,7 +16,8 @@ def plot_analyzed_dataframe(pair: str) -> None:
 
     # Init Bittrex to use public API
     exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
-    dataframe = analyze.analyze_ticker(pair)
+    ticker = exchange.get_ticker_history(pair)
+    dataframe = analyze.analyze_ticker(ticker)
 
     dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
     dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
