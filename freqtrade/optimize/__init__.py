@@ -65,7 +65,7 @@ def download_pairs(pairs: List[str]) -> bool:
             for interval in [1, 5]:
                 download_backtesting_testdata(pair=pair, interval=interval)
         except BaseException:
-            logger.info('Impossible to download the pair: "{pair}", Interval: {interval} min'.format(
+            logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
                 pair=pair,
                 interval=interval,
             ))
