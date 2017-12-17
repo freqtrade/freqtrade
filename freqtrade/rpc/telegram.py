@@ -232,11 +232,11 @@ def _daily(bot: Bot, update: Update) -> None:
 
     for day in range(0, timescale):
         # need to query between day+1 and day-1
-        nextdate = date.fromordinal(today-day+1)
-        prevdate = date.fromordinal(today-day-1)
+        nextdate = date.fromordinal(today - day + 1)
+        prevdate = date.fromordinal(today - day - 1)
         trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
         curdayprofit = sum(trade.close_profit * trade.stake_amount for trade in trades)
-        profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
+        profit_days[date.fromordinal(today - day)] = format(curdayprofit, '.8f')
 
     stats = [[key, str(value) + ' BTC'] for key, value in profit_days.items()]
     stats = tabulate(stats, headers=['Day', 'Profit'], tablefmt='simple')

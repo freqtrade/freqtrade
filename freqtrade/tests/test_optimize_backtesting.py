@@ -30,6 +30,7 @@ def test_1min_ticker_interval(default_conf, mocker):
     results = backtest(default_conf, optimize.preprocess(data), 1, True)
     assert len(results) > 0
 
+
 def test_backtest_with_new_pair(default_conf, ticker_history, mocker):
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
@@ -59,7 +60,7 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     file2_1 = 'freqtrade/tests/testdata/BTC_CFI-1.json'
     file2_5 = 'freqtrade/tests/testdata/BTC_CFI-5.json'
 
-    assert download_pairs(pairs = ['BTC-MEME', 'BTC-CFI']) is True
+    assert download_pairs(pairs=['BTC-MEME', 'BTC-CFI']) is True
 
     assert os.path.isfile(file1_1) is True
     assert os.path.isfile(file1_5) is True
@@ -87,7 +88,7 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
 
     # Download a 1 min ticker file
     file1 = 'freqtrade/tests/testdata/BTC_XEL-1.json'
-    download_backtesting_testdata(pair = "BTC-XEL", interval = 1)
+    download_backtesting_testdata(pair="BTC-XEL", interval=1)
     assert os.path.isfile(file1) is True
 
     if os.path.isfile(file1):
@@ -95,7 +96,7 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
 
     # Download a 5 min ticker file
     file2 = 'freqtrade/tests/testdata/BTC_STORJ-5.json'
-    download_backtesting_testdata(pair = "BTC-STORJ", interval = 5)
+    download_backtesting_testdata(pair="BTC-STORJ", interval=5)
     assert os.path.isfile(file2) is True
 
     if os.path.isfile(file2):
