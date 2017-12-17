@@ -1,10 +1,10 @@
 import logging
 import re
 from datetime import timedelta, date
+from decimal import Decimal
 from typing import Callable, Any
 
 import arrow
-from decimal import Decimal
 from pandas import DataFrame
 from sqlalchemy import and_, func, text, between
 from tabulate import tabulate
@@ -208,6 +208,7 @@ def _status_table(bot: Bot, update: Update) -> None:
 
         send_msg(message, parse_mode=ParseMode.HTML)
 
+
 @authorized_only
 def _daily(bot: Bot, update: Update) -> None:
     """
@@ -217,37 +218,33 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    trades = Trade.query.order_by(Trade.close_date).all()
     today = date.today().toordinal()
     profit_days = {}
-    
+
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
-    except:
+    except (TypeError, ValueError):
         timescale = 5
-            
+
     if not (isinstance(timescale, int) and timescale > 0):
         send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
         return
 
     for day in range(0, timescale):
-         #need to query between day+1 and day-1       
-         nextdate = date.fromordinal(today-day+1)
-         prevdate = date.fromordinal(today-day-1)
-         trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
-         curdayprofit = 0
-         for trade in trades:
-             curdayprofit += trade.close_profit * trade.stake_amount
-         profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
+        # need to query between day+1 and day-1
+        nextdate = date.fromordinal(today-day+1)
+        prevdate = date.fromordinal(today-day-1)
+        trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
+        curdayprofit = sum(trade.close_profit * trade.stake_amount for trade in trades)
+        profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
 
-    stats = []
-    for key, value in profit_days.items():
-        stats.append([key, str(value) + ' BTC'])
+    stats = [[key, str(value) + ' BTC'] for key, value in profit_days.items()]
     stats = tabulate(stats, headers=['Day', 'Profit'], tablefmt='simple')
 
     message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
     send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
-    
+
+
 @authorized_only
 def _profit(bot: Bot, update: Update) -> None:
     """
@@ -391,10 +388,7 @@ def _forcesell(bot: Bot, update: Update) -> None:
     if trade_id == 'all':
         # Execute sell for all open orders
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
-            from freqtrade.main import execute_sell
-            execute_sell(trade, current_rate)
+            _exec_forcesell(trade)
         return
 
     # Query for trade
@@ -406,10 +400,8 @@ def _forcesell(bot: Bot, update: Update) -> None:
         send_msg('Invalid argument. See `/help` to view usage')
         logger.warning('/forcesell: Invalid argument received')
         return
-    # Get current rate
-    current_rate = exchange.get_ticker(trade.pair)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
+
+    _exec_forcesell(trade)
 
 
 @authorized_only
@@ -504,16 +496,38 @@ def _version(bot: Bot, update: Update) -> None:
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
 
-def shorten_date(date):
+def shorten_date(_date):
     """
     Trim the date so it fits on small screens
     """
-    new_date = re.sub('seconds?', 'sec', date)
+    new_date = re.sub('seconds?', 'sec', _date)
     new_date = re.sub('minutes?', 'min', new_date)
     new_date = re.sub('hours?', 'h', new_date)
     new_date = re.sub('days?', 'd', new_date)
     new_date = re.sub('^an?', '1', new_date)
     return new_date
+
+
+def _exec_forcesell(trade: Trade) -> None:
+    # Check if there is there is an open order
+    if trade.open_order_id:
+        order = exchange.get_order(trade.open_order_id)
+
+        # Cancel open LIMIT_BUY orders and close trade
+        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
+            exchange.cancel_order(trade.open_order_id)
+            trade.close(order.get('rate') or trade.open_rate)
+            # TODO: sell amount which has been bought already
+            return
+
+        # Ignore trades with an attached LIMIT_SELL order
+        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+            return
+
+    # Get current rate and execute sell
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
@@ -529,7 +543,7 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
-    keyboard = [['/daily', '/profit', '/balance' ],
+    keyboard = [['/daily', '/profit', '/balance'],
                 ['/status', '/status table', '/performance'],
                 ['/count', '/start', '/stop', '/help']]
 
