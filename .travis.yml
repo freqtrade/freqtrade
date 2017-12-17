@@ -21,7 +21,9 @@ install:
 jobs:
   include:
     - script: pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
-    - script: python freqtrade/main.py backtesting
+    - script:
+      - cp config.json.example config.json
+      - python freqtrade/main.py backtesting
     - script:
       - cp config.json.example config.json
       - python freqtrade/main.py hyperopt -e 5
