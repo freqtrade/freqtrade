@@ -19,15 +19,9 @@ install:
 - pip install -r requirements.txt
 jobs:
   include:
-    - stage: test
-      script: 
-        - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
-    - stage: hyperopt
-      script:
-        - python freqtrade/main.py hyperopt -e 5
-    - stage: backtesting
-      script:
-        - python freqtrade/main.py backtesting
+    - script: pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+    - script: python freqtrade/main.py hyperopt -e 5
+    - script: python freqtrade/main.py backtesting
 after_success:
 - flake8 freqtrade && coveralls
 notifications:
