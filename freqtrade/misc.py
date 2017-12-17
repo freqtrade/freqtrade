@@ -191,6 +191,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='mongodb',
         action='store_true',
     )
+    hyperopt_cmd.add_argument(
+        '-i', '--ticker-interval',
+        help='specify ticker interval in minutes (default: 5)',
+        dest='ticker_interval',
+        default=5,
+        type=int,
+        metavar='INT',
+    )
 
 
 # Required json-schema for user specified config
