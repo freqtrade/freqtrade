@@ -118,13 +118,14 @@ def execute_sell(trade: Trade, limit: float) -> None:
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
     trade.open_order_id = order_id
 
-    fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
-    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
+    fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
+    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%, {:.8f})`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         limit,
-        fmt_exp_profit
+        fmt_exp_profit,
+        trade.calc_profit(rate=limit),
     ))
     Trade.session.flush()
 
@@ -134,7 +135,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
-    current_profit = trade.calc_profit(current_rate)
+    current_profit = trade.calc_profit_percent(current_rate)
     if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
         logger.debug('Stop loss hit.')
         return True
@@ -145,7 +146,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
-    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
+    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', float(current_profit) * 100.0)
     return False
 
 
@@ -233,7 +234,7 @@ def create_trade(stake_amount: float) -> bool:
         pair=pair,
         stake_amount=stake_amount,
         amount=amount,
-        fee=exchange.get_fee() * 2,
+        fee=exchange.get_fee(),
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
         exchange=exchange.get_name().upper(),

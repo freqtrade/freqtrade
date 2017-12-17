@@ -15,7 +15,7 @@ def default_conf():
     configuration = {
         "max_open_trades": 1,
         "stake_currency": "BTC",
-        "stake_amount": 0.05,
+        "stake_amount": 0.001,
         "dry_run": True,
         "minimal_roi": {
             "40":  0.0,
@@ -61,11 +61,26 @@ def update():
 @pytest.fixture
 def ticker():
     return MagicMock(return_value={
-        'bid': 0.07256061,
-        'ask': 0.072661,
-        'last': 0.07256061,
+        'bid': 0.00001098,
+        'ask': 0.00001099,
+        'last': 0.00001098,
     })
 
+@pytest.fixture
+def ticker_sell_up():
+    return MagicMock(return_value={
+        'bid': 0.00001172,
+        'ask': 0.00001173,
+        'last': 0.00001172,
+    })
+
+@pytest.fixture
+def ticker_sell_down():
+    return MagicMock(return_value={
+        'bid': 0.00001044,
+        'ask': 0.00001043,
+        'last': 0.00001044,
+    })
 
 @pytest.fixture
 def health():
@@ -104,8 +119,8 @@ def limit_buy_order():
         'type': 'LIMIT_BUY',
         'pair': 'mocked',
         'opened': datetime.utcnow(),
-        'rate': 0.07256061,
-        'amount': 206.43811673387373,
+        'rate': 0.00001099,
+        'amount': 90.99181073,
         'remaining': 0.0,
         'closed': datetime.utcnow(),
     }
@@ -118,8 +133,8 @@ def limit_sell_order():
         'type': 'LIMIT_SELL',
         'pair': 'mocked',
         'opened': datetime.utcnow(),
-        'rate': 0.0802134,
-        'amount': 206.43811673387373,
+        'rate': 0.00001173,
+        'amount': 90.99181073,
         'remaining': 0.0,
         'closed': datetime.utcnow(),
     }

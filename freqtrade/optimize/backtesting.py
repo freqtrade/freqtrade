@@ -99,7 +99,7 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
                 open_rate=row.close,
                 open_date=row.date,
                 amount=config['stake_amount'],
-                fee=exchange.get_fee() * 2
+                fee=exchange.get_fee()
             )
 
             # calculate win/lose forwards from buy point
@@ -109,7 +109,7 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
-                    current_profit = trade.calc_profit(row2.close)
+                    current_profit = trade.calc_profit_percent(row2.close)
                     lock_pair_until = row2.Index
 
                     trades.append((pair, current_profit, row2.Index - row.Index))
