@@ -17,6 +17,7 @@ install:
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 - pip install flake8 coveralls
 - pip install -r requirements.txt
+- pip install -e .
 jobs:
   include:
     - script: pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
