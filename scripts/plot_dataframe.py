@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
 import matplotlib  # Install PYQT5 manually if you want to test this helper function
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from freqtrade import exchange, analyze
-
-matplotlib.use("Qt5Agg")
 
 
 def plot_analyzed_dataframe(pair: str) -> None:
