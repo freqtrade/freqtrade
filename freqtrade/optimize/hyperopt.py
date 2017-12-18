@@ -150,7 +150,7 @@ def optimizer(params):
         'total_tries': TOTAL_TRIES,
         'result': result,
         'results': results
-        }
+    }
 
     # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
     log_results(result_data)
@@ -169,7 +169,7 @@ def format_results(results: DataFrame):
                 results.profit.mean() * 100.0,
                 results.profit.sum(),
                 results.duration.mean() * 5,
-            )
+    )
 
 
 def buy_strategy_generator(params):
@@ -232,7 +232,8 @@ def start(args):
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
-    PROCESSED = optimize.preprocess(optimize.load_data(pairs=pairs, ticker_interval=args.ticker_interval))
+    PROCESSED = optimize.preprocess(optimize.load_data(
+        pairs=pairs, ticker_interval=args.ticker_interval))
 
     if args.mongodb:
         logger.info('Using mongodb ...')

@@ -3,7 +3,6 @@
 import matplotlib  # Install PYQT5 manually if you want to test this helper function
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
-
 from freqtrade import exchange, analyze
 
 
@@ -52,4 +51,3 @@ def plot_analyzed_dataframe(pair: str) -> None:
 
 if __name__ == '__main__':
     plot_analyzed_dataframe('BTC_ETH')
-
