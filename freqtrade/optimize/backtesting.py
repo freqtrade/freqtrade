@@ -48,8 +48,8 @@ def generate_text_table(
         tabular_data.append([
             pair,
             len(result.index),
-            '{:.2f}%'.format(result.profit.mean() * 100.0),
-            '{:.08f} {}'.format(result.profit.sum(), stake_currency),
+            '{:.2f}%'.format(result.profit_percent.mean() * 100.0),
+            '{:.08f} {}'.format(result.profit_BTC.sum(), stake_currency),
             '{:.2f}'.format(result.duration.mean() * ticker_interval),
         ])
 
@@ -57,8 +57,8 @@ def generate_text_table(
     tabular_data.append([
         'TOTAL',
         len(results.index),
-        '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.08f} {}'.format(results.profit.sum(), stake_currency),
+        '{:.2f}%'.format(results.profit_percent.mean() * 100.0),
+        '{:.08f} {}'.format(results.profit_BTC.sum(), stake_currency),
         '{:.2f}'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
@@ -98,7 +98,8 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                amount=config['stake_amount'],
+                stake_amount=config['stake_amount'],
+                amount=config['stake_amount'] / row.open,
                 fee=exchange.get_fee()
             )
 
@@ -109,12 +110,20 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
-                    current_profit = trade.calc_profit_percent(row2.close)
+                    current_profit_percent = trade.calc_profit_percent(rate=row2.close)
+                    current_profit_BTC = trade.calc_profit(rate=row2.close)
                     lock_pair_until = row2.Index
 
-                    trades.append((pair, current_profit, row2.Index - row.Index))
+                    trades.append(
+                        (
+                            pair,
+                            current_profit_percent,
+                            current_profit_BTC,
+                            row2.Index - row.Index
+                         )
+                    )
                     break
-    labels = ['currency', 'profit', 'duration']
+    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
     return DataFrame.from_records(trades, columns=labels)
 
 
@@ -140,7 +149,8 @@ def start(args):
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        data = load_data(pairs=pairs, ticker_interval=args.ticker_interval, refresh_pairs=args.refresh_pairs)
+        data = load_data(pairs=pairs, ticker_interval=args.ticker_interval,
+                         refresh_pairs=args.refresh_pairs)
 
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])

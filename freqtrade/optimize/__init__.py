@@ -13,7 +13,8 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 logger = logging.getLogger(__name__)
 
 
-def load_data(pairs: List[str], ticker_interval: int = 5, refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
+def load_data(pairs: List[str], ticker_interval: int = 5,
+              refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :param ticker_interval: ticker interval in minutes
@@ -61,10 +62,10 @@ def download_pairs(pairs: List[str]) -> bool:
     """For each pairs passed in parameters, download 1 and 5 ticker intervals"""
     for pair in pairs:
         try:
-            for interval in [1,5]:
+            for interval in [1, 5]:
                 download_backtesting_testdata(pair=pair, interval=interval)
         except BaseException:
-            logger.info('Impossible to download the pair: "{pair}", Interval: {interval} min'.format(
+            logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
                 pair=pair,
                 interval=interval,
             ))
@@ -103,7 +104,7 @@ def download_backtesting_testdata(pair: str, interval: int = 5) -> bool:
         logger.debug("Current Start: None")
         logger.debug("Current End: None")
 
-    new_data = get_ticker_history(pair = pair, tick_interval = int(interval))
+    new_data = get_ticker_history(pair=pair, tick_interval=int(interval))
     for row in new_data:
         if row not in data:
             data.append(row)

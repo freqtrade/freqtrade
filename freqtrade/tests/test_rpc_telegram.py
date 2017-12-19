@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
 import re
-from datetime import datetime, date
+from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock
 
@@ -151,7 +151,8 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     assert msg_mock.call_count == 1
 
 
-def test_profit_handle(default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
+def test_profit_handle(
+        default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     msg_mock = MagicMock()
@@ -246,7 +247,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     # Create some test data
     create_trade(0.001)
 
-    ## Decrease the price and sell it
+    # Decrease the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker_sell_down)
@@ -383,7 +384,6 @@ def test_performance_handle(
     assert '<code>BTC_ETH\t6.20%</code>' in msg_mock.call_args_list[0][0][0]
 
 
-
 def test_daily_handle(
         default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
@@ -419,7 +419,7 @@ def test_daily_handle(
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) + '  0.00006217 BTC' in msg_mock.call_args_list[0][0][0]
-    
+
     # Try invalid data
     msg_mock.reset_mock()
     update_state(State.RUNNING)

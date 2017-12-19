@@ -121,7 +121,9 @@ class Trade(_DECL_BASE):
             self
         )
 
-    def calc_open_trade_price(self, fee: Optional[float] = None) -> float:
+    def calc_open_trade_price(
+            self,
+            fee: Optional[float] = None) -> float:
         """
         Calculate the open_rate in BTC
         :param fee: fee to use on the open rate (optional).
@@ -134,7 +136,10 @@ class Trade(_DECL_BASE):
         fees = buy_trade * Decimal(fee or self.fee)
         return float(buy_trade + fees)
 
-    def calc_close_trade_price(self, rate: Optional[float] = None, fee: Optional[float] = None) -> float:
+    def calc_close_trade_price(
+            self,
+            rate: Optional[float] = None,
+            fee: Optional[float] = None) -> float:
         """
         Calculate the close_rate in BTC
         :param fee: fee to use on the close rate (optional).
@@ -152,7 +157,10 @@ class Trade(_DECL_BASE):
         fees = sell_trade * Decimal(fee or self.fee)
         return float(sell_trade - fees)
 
-    def calc_profit(self, rate: Optional[float] = None, fee: Optional[float] = None) -> float:
+    def calc_profit(
+            self,
+            rate: Optional[float] = None,
+            fee: Optional[float] = None) -> float:
         """
         Calculate the profit in BTC between Close and Open trade
         :param fee: fee to use on the close rate (optional).
@@ -168,7 +176,10 @@ class Trade(_DECL_BASE):
         )
         return float("{0:.8f}".format(close_trade_price - open_trade_price))
 
-    def calc_profit_percent(self, rate: Optional[float] = None, fee: Optional[float] = None) -> float:
+    def calc_profit_percent(
+            self,
+            rate: Optional[float] = None,
+            fee: Optional[float] = None) -> float:
         """
         Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).

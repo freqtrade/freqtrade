@@ -66,6 +66,7 @@ def ticker():
         'last': 0.00001098,
     })
 
+
 @pytest.fixture
 def ticker_sell_up():
     return MagicMock(return_value={
@@ -74,6 +75,7 @@ def ticker_sell_up():
         'last': 0.00001172,
     })
 
+
 @pytest.fixture
 def ticker_sell_down():
     return MagicMock(return_value={
@@ -81,6 +83,7 @@ def ticker_sell_down():
         'ask': 0.00001043,
         'last': 0.00001044,
     })
+
 
 @pytest.fixture
 def health():
@@ -143,7 +146,7 @@ def limit_sell_order():
 @pytest.fixture
 def ticker_history():
     return [
-	    {
+        {
             "O": 8.794e-05,
             "H": 8.948e-05,
             "L": 8.794e-05,
@@ -152,7 +155,7 @@ def ticker_history():
             "T": "2017-11-26T08:50:00",
             "BV": 0.0877869
         },
-	    {
+        {
             "O": 8.88e-05,
             "H": 8.942e-05,
             "L": 8.88e-05,
@@ -161,7 +164,7 @@ def ticker_history():
             "T": "2017-11-26T08:55:00",
             "BV": 0.05874751
         },
-	    {
+        {
             "O": 8.891e-05,
             "H": 8.893e-05,
             "L": 8.875e-05,

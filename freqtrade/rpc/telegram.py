@@ -232,8 +232,8 @@ def _daily(bot: Bot, update: Update) -> None:
 
     for day in range(0, timescale):
         # need to query between day+1 and day-1
-        nextdate = date.fromordinal(today-day+1)
-        prevdate = date.fromordinal(today-day-1)
+        nextdate = date.fromordinal(today - day + 1)
+        prevdate = date.fromordinal(today - day - 1)
         trades = Trade.query \
             .filter(Trade.is_open.is_(False)) \
             .filter(between(Trade.close_date, prevdate, nextdate)) \

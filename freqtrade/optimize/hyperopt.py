@@ -131,7 +131,7 @@ def optimizer(params):
 
     result = format_results(results)
 
-    total_profit = results.profit.sum() * 1000
+    total_profit = results.profit_percent.sum() * 1000
     trade_count = len(results.index)
 
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
@@ -144,13 +144,13 @@ def optimizer(params):
         'total_profit': total_profit,
         'trade_loss': trade_loss,
         'profit_loss': profit_loss,
-        'avg_profit': results.profit.mean() * 100.0,
+        'avg_profit': results.profit_percent.mean() * 100.0,
         'avg_duration': results.duration.mean() * 5,
         'current_tries': _CURRENT_TRIES,
         'total_tries': TOTAL_TRIES,
         'result': result,
         'results': results
-        }
+    }
 
     # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
     log_results(result_data)
@@ -166,10 +166,10 @@ def format_results(results: DataFrame):
     return ('Made {:6d} buys. Average profit {: 5.2f}%. '
             'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
                 len(results.index),
-                results.profit.mean() * 100.0,
-                results.profit.sum(),
+                results.profit_percent.mean() * 100.0,
+                results.profit_BTC.sum(),
                 results.duration.mean() * 5,
-            )
+    )
 
 
 def buy_strategy_generator(params):
@@ -232,7 +232,8 @@ def start(args):
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
-    PROCESSED = optimize.preprocess(optimize.load_data(pairs=pairs, ticker_interval=args.ticker_interval))
+    PROCESSED = optimize.preprocess(optimize.load_data(
+        pairs=pairs, ticker_interval=args.ticker_interval))
 
     if args.mongodb:
         logger.info('Using mongodb ...')

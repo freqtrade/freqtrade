@@ -10,17 +10,23 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     On this test we will buy and sell a crypto currency.
 
     Buy
-    - Buy: 90.99181073 Crypto at 0.00001099 BTC (90.99181073*0.00001099 = 0.0009999 BTC)
+    - Buy: 90.99181073 Crypto at 0.00001099 BTC
+        (90.99181073*0.00001099 = 0.0009999 BTC)
     - Buying fee: 0.25%
-    - Total cost of buy trade: 0.001002500 BTC ((90.99181073*0.00001099) + ((90.99181073*0.00001099)*0.0025))
+    - Total cost of buy trade: 0.001002500 BTC
+        ((90.99181073*0.00001099) + ((90.99181073*0.00001099)*0.0025))
 
     Sell
-    - Sell: 90.99181073 Crypto at 0.00001173 BTC (90.99181073*0.00001173 = 0,00106733394 BTC)
+    - Sell: 90.99181073 Crypto at 0.00001173 BTC
+        (90.99181073*0.00001173 = 0,00106733394 BTC)
     - Selling fee: 0.25%
-    - Total cost of sell trade: 0.001064666 BTC ((90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025))
+    - Total cost of sell trade: 0.001064666 BTC
+        ((90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025))
 
-    Profit/Loss: +0.000062166 BTC (Sell:0.001064666 - Buy:0.001002500)
-    Profit/Loss percentage: 0.0620  ((0.001064666/0.001002500)-1 = 6.20%)
+    Profit/Loss: +0.000062166 BTC
+        (Sell:0.001064666 - Buy:0.001002500)
+    Profit/Loss percentage: 0.0620
+        ((0.001064666/0.001002500)-1 = 6.20%)
 
     :param limit_buy_order:
     :param limit_sell_order:
