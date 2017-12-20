@@ -9,6 +9,12 @@
         "20":  0.02,
         "0":  0.04
     },
+    "trailing_stoploss": {
+        "40":  0.0,
+        "30":  0.01,
+        "20":  0.02,
+        "0":  0.04
+    },
     "stoploss": -0.10,
     "bid_strategy": {
         "ask_last_balance": 0.0

@@ -71,6 +71,10 @@ class Trade(_DECL_BASE):
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
     open_order_id = Column(String)
+    stat_min_rate = Column(Float)
+    stat_min_rate_date = Column(DateTime)
+    stat_max_rate = Column(Float)
+    stat_max_rate_date = Column(DateTime)
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
@@ -78,9 +82,33 @@ class Trade(_DECL_BASE):
             self.pair,
             self.amount,
             self.open_rate,
-            arrow.get(self.open_date).humanize() if self.is_open else 'closed'
+            arrow.get(self.open_date).humanize() if self.is_open else 'closed',
+            self.stat_min_rate,
+            self.stat_max_rate,
         )
 
+    def update_stats(self, current_rate: Dict) -> None:
+        """
+        Updates this entity statistics with current rates.
+        :param current_rate: current rate retrieved by exchange.get_ticker()
+        :return: None
+        """
+        logger.info('Updating statistics for trade (id=%d) ...', self.id)
+        need_update = False
+        if not self.stat_min_rate or current_rate < self.stat_min_rate:
+            logger.info('Update stat_min_rate. %s -> %s' % (self.stat_min_rate, current_rate))
+            self.stat_min_rate = current_rate
+            self.stat_min_rate_date = datetime.utcnow()
+            need_update = True
+        if not self.stat_max_rate or current_rate > self.stat_max_rate:
+            logger.info('Update stat_max_rate. %s -> %s' % (self.stat_max_rate, current_rate))
+            self.stat_max_rate = current_rate
+            self.stat_max_rate_date = datetime.utcnow()
+            need_update = True
+        if need_update:
+            Trade.session.flush()
+        
+        
     def update(self, order: Dict) -> None:
         """
         Updates this entity with amount and actual open/close rates.
