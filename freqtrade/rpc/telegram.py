@@ -196,7 +196,7 @@ def _status_table(bot: Bot, update: Update) -> None:
                 trade.id,
                 trade.pair,
                 shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}'.format(100 * trade.calc_profit(current_rate))
+                '{:.2f}%'.format(100 * trade.calc_profit(current_rate))
             ])
 
         columns = ['ID', 'Pair', 'Since', 'Profit']
