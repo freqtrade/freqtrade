@@ -216,6 +216,13 @@ CONF_SCHEMA = {
             },
             'minProperties': 1
         },
+        'trailing_stoploss': {
+            'type': 'object',
+            'patternProperties': {
+                '^[0-9.]+$': {'type': 'number'}
+            },
+            'minProperties': 0
+        },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'bid_strategy': {
             'type': 'object',
