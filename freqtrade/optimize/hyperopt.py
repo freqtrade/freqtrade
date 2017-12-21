@@ -16,6 +16,7 @@ from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
 from freqtrade.optimize.backtesting import backtest
+from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 # Remove noisy log messages
@@ -35,19 +36,8 @@ AVG_PROFIT_TO_BEAT = 0.2
 AVG_DURATION_TO_BEAT = 50
 
 # Configuration and data used by hyperopt
-PROCESSED = []
-OPTIMIZE_CONFIG = {
-    'max_open_trades': 3,
-    'stake_currency': 'BTC',
-    'stake_amount': 0.01,
-    'minimal_roi': {
-        '40':  0.0,
-        '30':  0.01,
-        '20':  0.02,
-        '0':  0.04,
-    },
-    'stoploss': -0.10,
-}
+PROCESSED = optimize.preprocess(optimize.load_data())
+OPTIMIZE_CONFIG = hyperopt_optimize_conf()
 
 # Monkey patch config
 from freqtrade import main  # noqa
