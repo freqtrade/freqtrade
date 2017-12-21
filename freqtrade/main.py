@@ -119,11 +119,15 @@ def execute_sell(trade: Trade, limit: float) -> None:
     trade.open_order_id = order_id
 
     fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
-    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
+    _txtprofit = 'profit'
+    if fmt_exp_profit < 0:
+        _txtprofit = 'loss'
+    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} ({}: ~{:.2f}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),
         exchange.get_pair_detail_url(trade.pair),
         limit,
+        _txtprofit,
         fmt_exp_profit
     ))
     Trade.session.flush()
