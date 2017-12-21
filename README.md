@@ -62,6 +62,7 @@ if not feel free to raise a github issue.
 * python3.6
 * sqlite
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
+* Minimal (advised) system requirements: 2GB RAM, 1GB data, 2vCPU
 
 ### Install
 
