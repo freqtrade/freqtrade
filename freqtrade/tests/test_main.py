@@ -432,3 +432,99 @@ def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker)
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert '(profit: ~6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
     assert 'USD' not in rpc_mock.call_args_list[-1][0][0]
+
+
+def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
+    default_conf['experimental'] = {}
+    default_conf['experimental']['sell_profit_only'] = True
+
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.00002172,
+                              'ask': 0.00002173,
+                              'last': 0.00002172
+                          }),
+                          buy=MagicMock(return_value='mocked_limit_buy'))
+
+    init(default_conf, create_engine('sqlite://'))
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    assert handle_trade(trade) is True
+
+
+def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
+    default_conf['experimental'] = {}
+    default_conf['experimental']['sell_profit_only'] = False
+
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.00002172,
+                              'ask': 0.00002173,
+                              'last': 0.00002172
+                          }),
+                          buy=MagicMock(return_value='mocked_limit_buy'))
+
+    init(default_conf, create_engine('sqlite://'))
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    assert handle_trade(trade) is True
+
+
+def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
+        default_conf['experimental'] = {}
+        default_conf['experimental']['sell_profit_only'] = True
+
+        mocker.patch.dict('freqtrade.main._CONF', default_conf)
+        mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+        mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+        mocker.patch.multiple('freqtrade.main.exchange',
+                              validate_pairs=MagicMock(),
+                              get_ticker=MagicMock(return_value={
+                                  'bid': 0.00000172,
+                                  'ask': 0.00000173,
+                                  'last': 0.00000172
+                              }),
+                              buy=MagicMock(return_value='mocked_limit_buy'))
+
+        init(default_conf, create_engine('sqlite://'))
+        create_trade(0.001)
+
+        trade = Trade.query.first()
+        trade.update(limit_buy_order)
+        assert handle_trade(trade) is False
+
+
+def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
+        default_conf['experimental'] = {}
+        default_conf['experimental']['sell_profit_only'] = False
+
+        mocker.patch.dict('freqtrade.main._CONF', default_conf)
+        mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+        mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+        mocker.patch.multiple('freqtrade.main.exchange',
+                              validate_pairs=MagicMock(),
+                              get_ticker=MagicMock(return_value={
+                                  'bid': 0.00000172,
+                                  'ask': 0.00000173,
+                                  'last': 0.00000172
+                              }),
+                              buy=MagicMock(return_value='mocked_limit_buy'))
+
+        init(default_conf, create_engine('sqlite://'))
+        create_trade(0.001)
+
+        trade = Trade.query.first()
+        trade.update(limit_buy_order)
+        assert handle_trade(trade) is True
