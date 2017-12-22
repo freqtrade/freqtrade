@@ -32,9 +32,9 @@ TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 
-TOTAL_PROFIT_TO_BEAT = 3
-AVG_PROFIT_TO_BEAT = 0.2
-AVG_DURATION_TO_BEAT = 50
+TOTAL_PROFIT_TO_BEAT = 0
+AVG_PROFIT_TO_BEAT = 0
+AVG_DURATION_TO_BEAT = 100
 
 # Configuration and data used by hyperopt
 PROCESSED = optimize.preprocess(optimize.load_data())
