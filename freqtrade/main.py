@@ -161,11 +161,17 @@ def handle_trade(trade: Trade) -> bool:
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
+    # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
+    if _CONF.get('experimental', {}).get('sell_profit_only'):
+        logger.debug('Checking if trade is profitable ...')
+        if trade.calc_profit(rate=current_rate) <= 0:
+            return False
+
     # Check if minimal roi has been reached
     if not min_roi_reached(trade, current_rate, datetime.utcnow()):
         return False
 
-    # Check if sell signal has been enabled and triggered
+    # Experimental: Check if sell signal has been enabled and triggered
     if _CONF.get('experimental', {}).get('use_sell_signal'):
         logger.debug('Checking sell_signal ...')
         if not get_signal(trade.pair, SignalType.SELL):
