@@ -254,8 +254,5 @@ $ pytest freqtrade
 
 ### Contributing
 
-Feel like our bot is missing a feature? We welcome your pull requests! Few pointers for contributions:
-
-- Create your PR against the `develop` branch, not `master`.
-- New features need to contain unit tests and must be PEP8 conform (`max-line-length = 100`).
-- If you are unsure, discuss the feature on [slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) or in a [issue](https://github.com/gcarq/freqtrade/issues) before a PR.
+We welcome contributions. See our [contribution guide](https://github.com/gcarq/freqtrade/blob/develop/README.md)
+for more details.
