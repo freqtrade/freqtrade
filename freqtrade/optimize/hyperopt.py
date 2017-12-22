@@ -101,7 +101,7 @@ def log_results(results):
     current_try = results['current_tries']
     total_tries = results['total_tries']
     result = results['result']
-    profit = results['total_profit'] / 1000
+    profit = results['total_profit']
 
     outcome = '{:5d}/{}: {}'.format(current_try, total_tries, result)
 
