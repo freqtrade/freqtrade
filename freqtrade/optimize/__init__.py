@@ -5,6 +5,7 @@ import json
 import os
 from typing import Optional, List, Dict
 from freqtrade.exchange import get_ticker_history
+from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
 
 from pandas import DataFrame
 
@@ -13,7 +14,7 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 logger = logging.getLogger(__name__)
 
 
-def load_data(pairs: List[str], ticker_interval: int = 5,
+def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -24,12 +25,14 @@ def load_data(pairs: List[str], ticker_interval: int = 5,
     path = testdata_path()
     result = {}
 
+    _pairs = pairs or hyperopt_optimize_conf()['exchange']['pair_whitelist']
+
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in freqtrade/tests/testsdata')
-        download_pairs(pairs)
+        download_pairs(_pairs)
 
-    for pair in pairs:
+    for pair in _pairs:
         file = '{abspath}/{pair}-{ticker_interval}.json'.format(
             abspath=path,
             pair=pair,

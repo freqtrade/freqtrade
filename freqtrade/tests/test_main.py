@@ -40,8 +40,8 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
-    assert trade.open_rate == 0.072661
-    assert trade.amount == 0.6881270557795791
+    assert trade.open_rate == 0.00001099
+    assert trade.amount == 90.99181073703367
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
@@ -115,11 +115,11 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(15.0)
+    create_trade(0.001)
 
     trade = Trade.query.first()
     assert trade is not None
-    assert trade.stake_amount == 15.0
+    assert trade.stake_amount == 0.001
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
@@ -127,8 +127,8 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
 
-    assert trade.open_rate == 0.07256061
-    assert trade.amount == 206.43811673387373
+    assert trade.open_rate == 0.00001099
+    assert trade.amount == 90.99181073
 
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
@@ -186,14 +186,14 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=MagicMock(return_value={
-                              'bid': 0.17256061,
-                              'ask': 0.172661,
-                              'last': 0.17256061
+                              'bid': 0.00001172,
+                              'ask': 0.00001173,
+                              'last': 0.00001172
                           }),
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           sell=MagicMock(return_value='mocked_limit_sell'))
     init(default_conf, create_engine('sqlite://'))
-    create_trade(15.0)
+    create_trade(0.001)
 
     trade = Trade.query.first()
     assert trade
@@ -207,8 +207,9 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.update(limit_sell_order)
 
-    assert trade.close_rate == 0.0802134
-    assert trade.close_profit == 0.10046755
+    assert trade.close_rate == 0.00001173
+    assert trade.close_profit == 0.06201057
+    assert trade.calc_profit() == 0.00006217
     assert trade.close_date is not None
 
 
@@ -223,7 +224,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
-    create_trade(15.0)
+    create_trade(0.001)
 
     trade = Trade.query.first()
     assert trade

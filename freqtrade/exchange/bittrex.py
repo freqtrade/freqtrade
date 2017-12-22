@@ -50,7 +50,7 @@ class Bittrex(Exchange):
 
     @property
     def fee(self) -> float:
-        # See https://bittrex.com/fees
+        # 0.25 %: See https://bittrex.com/fees
         return 0.0025
 
     def buy(self, pair: str, rate: float, amount: float) -> str:

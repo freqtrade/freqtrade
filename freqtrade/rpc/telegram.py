@@ -1,7 +1,7 @@
 import logging
 import re
-from datetime import timedelta, date
 from decimal import Decimal
+from datetime import timedelta, date, datetime
 from typing import Callable, Any
 
 import arrow
@@ -139,7 +139,7 @@ def _status(bot: Bot, update: Update) -> None:
                 order = exchange.get_order(trade.open_order_id)
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            current_profit = trade.calc_profit(current_rate)
+            current_profit = trade.calc_profit_percent(current_rate)
             fmt_close_profit = '{:.2f}%'.format(
                 round(trade.close_profit * 100, 2)
             ) if trade.close_profit else None
@@ -196,7 +196,7 @@ def _status_table(bot: Bot, update: Update) -> None:
                 trade.id,
                 trade.pair,
                 shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}%'.format(100 * trade.calc_profit(current_rate))
+                '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
             ])
 
         columns = ['ID', 'Pair', 'Since', 'Profit']
@@ -218,7 +218,7 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    today = date.today().toordinal()
+    today = datetime.utcnow().toordinal()
     profit_days = {}
 
     try:
@@ -234,8 +234,12 @@ def _daily(bot: Bot, update: Update) -> None:
         # need to query between day+1 and day-1
         nextdate = date.fromordinal(today - day + 1)
         prevdate = date.fromordinal(today - day - 1)
-        trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
-        curdayprofit = sum(trade.close_profit * trade.stake_amount for trade in trades)
+        trades = Trade.query \
+            .filter(Trade.is_open.is_(False)) \
+            .filter(between(Trade.close_date, prevdate, nextdate)) \
+            .order_by(Trade.close_date)\
+            .all()
+        curdayprofit = sum(trade.calc_profit() for trade in trades)
         profit_days[date.fromordinal(today - day)] = format(curdayprofit, '.8f')
 
     stats = [[key, str(value) + ' BTC'] for key, value in profit_days.items()]
@@ -257,9 +261,9 @@ def _profit(bot: Bot, update: Update) -> None:
     trades = Trade.query.order_by(Trade.id).all()
 
     profit_all_btc = []
-    profit_all = []
+    profit_all_percent = []
     profit_btc_closed = []
-    profit_closed = []
+    profit_closed_percent = []
     durations = []
 
     for trade in trades:
@@ -271,16 +275,16 @@ def _profit(bot: Bot, update: Update) -> None:
             durations.append((trade.close_date - trade.open_date).total_seconds())
 
         if not trade.is_open:
-            profit = trade.close_profit
-            profit_btc_closed.append(Decimal(trade.close_rate) - Decimal(trade.open_rate))
-            profit_closed.append(profit)
+            profit_percent = trade.calc_profit_percent()
+            profit_btc_closed.append(trade.calc_profit())
+            profit_closed_percent.append(profit_percent)
         else:
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            profit = trade.calc_profit(current_rate)
+            profit_percent = trade.calc_profit_percent(rate=current_rate)
 
-        profit_all_btc.append(Decimal(trade.close_rate or current_rate) - Decimal(trade.open_rate))
-        profit_all.append(profit)
+        profit_all_btc.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
+        profit_all_percent.append(profit_percent)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
@@ -294,8 +298,8 @@ def _profit(bot: Bot, update: Update) -> None:
 
     bp_pair, bp_rate = best_pair
     markdown_msg = """
-*ROI Trade closed:* `{profit_closed_btc:.8f} BTC ({profit_closed:.2f}%)`
-*ROI All trades:* `{profit_all_btc:.8f} BTC ({profit_all:.2f}%)`
+*ROI Trade closed:* `{profit_closed_btc:.8f} BTC ({profit_closed_percent:.2f}%)`
+*ROI All trades:* `{profit_all_btc:.8f} BTC ({profit_all_percent:.2f}%)`
 *Total Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
@@ -303,9 +307,9 @@ def _profit(bot: Bot, update: Update) -> None:
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
     """.format(
         profit_closed_btc=round(sum(profit_btc_closed), 8),
-        profit_closed=round(sum(profit_closed) * 100, 2),
+        profit_closed_percent=round(sum(profit_closed_percent) * 100, 2),
         profit_all_btc=round(sum(profit_all_btc), 8),
-        profit_all=round(sum(profit_all) * 100, 2),
+        profit_all_percent=round(sum(profit_all_percent) * 100, 2),
         trade_count=len(trades),
         first_trade_date=arrow.get(trades[0].open_date).humanize(),
         latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
