@@ -103,10 +103,8 @@ def log_results(results):
     result = results['result']
     profit = results['total_profit']
 
-    outcome = '{:5d}/{}: {}'.format(current_try, total_tries, result)
-
     if profit >= TOTAL_PROFIT_TO_BEAT:
-        logger.info(outcome)
+        logger.info('{:5d}/{}: {}'.format(current_try, total_tries, result))
     else:
         print('.', end='')
         sys.stdout.flush()
