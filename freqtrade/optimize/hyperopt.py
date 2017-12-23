@@ -36,6 +36,10 @@ TOTAL_PROFIT_TO_BEAT = 0
 AVG_PROFIT_TO_BEAT = 0
 AVG_DURATION_TO_BEAT = 100
 
+# this is expexted avg profit * expected trade count
+# for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
+EXPECTED_MAX_PROFIT = 3.85
+
 # Configuration and data used by hyperopt
 PROCESSED = optimize.preprocess(optimize.load_data())
 OPTIMIZE_CONFIG = hyperopt_optimize_conf()
@@ -120,11 +124,11 @@ def optimizer(params):
 
     result = format_results(results)
 
-    total_profit = results.profit_percent.sum() * 1000
+    total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
 
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-    profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
+    profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
 
     _CURRENT_TRIES += 1
 
