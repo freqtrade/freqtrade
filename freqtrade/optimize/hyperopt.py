@@ -140,8 +140,6 @@ def optimizer(params):
         'result': result,
         'results': results
     }
-
-    # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
     log_results(result_data)
 
     return {
