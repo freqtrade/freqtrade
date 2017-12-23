@@ -64,7 +64,7 @@ def generate_text_table(
     return tabulate(tabular_data, headers=headers)
 
 
-def backtest(config: Dict, processed: Dict[str, DataFrame],
+def backtest(stake_amount: float, processed: Dict[str, DataFrame],
              max_open_trades: int = 0, realistic: bool = True) -> DataFrame:
     """
     Implements backtesting functionality
@@ -98,8 +98,8 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                stake_amount=config['stake_amount'],
-                amount=config['stake_amount'] / row.open,
+                stake_amount=stake_amount,
+                amount=stake_amount / row.open,
                 fee=exchange.get_fee()
             )
 
@@ -170,7 +170,7 @@ def start(args):
 
     # Execute backtest and print results
     results = backtest(
-        config, preprocess(data), max_open_trades, args.realistic_simulation
+        config['stake_amount'], preprocess(data), max_open_trades, args.realistic_simulation
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
