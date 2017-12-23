@@ -11,6 +11,7 @@ from operator import itemgetter
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
+import numpy as np
 
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
@@ -148,7 +149,9 @@ def optimizer(params):
     return {
         'loss': trade_loss + profit_loss,
         'status': STATUS_OK,
-        'result': result
+        'result': result,
+        'total_profit': total_profit,
+        'avg_profit': result_data['avg_profit'],
     }
 
 
@@ -160,6 +163,10 @@ def format_results(results: DataFrame):
                 results.profit_BTC.sum(),
                 results.duration.mean() * 5,
     )
+
+
+def filter_nan(result, filter_key):
+    return [r for r in result if not np.isnan(r[filter_key])]
 
 
 def buy_strategy_generator(params):
@@ -236,5 +243,10 @@ def start(args):
 
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
-    results = sorted(trials.results, key=itemgetter('loss'))
+
+    filt_res = filter_nan(trials.results, 'total_profit')
+    filt_res = filter_nan(filt_res, 'avg_profit')
+
+    results = sorted(filt_res, key=itemgetter('loss'))
+
     logger.info('Best Result:\n%s', results[0]['result'])
