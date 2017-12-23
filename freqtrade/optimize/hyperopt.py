@@ -153,7 +153,7 @@ def optimizer(params):
 
 def format_results(results: DataFrame):
     return ('Made {:6d} buys. Average profit {: 5.2f}%. '
-            'Total profit was {: 11.8f}. Average duration {:5.1f} mins.').format(
+            'Total profit was {: 11.8f} BTC. Average duration {:5.1f} mins.').format(
                 len(results.index),
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
