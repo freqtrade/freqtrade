@@ -32,9 +32,13 @@ TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 
-TOTAL_PROFIT_TO_BEAT = 3
-AVG_PROFIT_TO_BEAT = 0.2
-AVG_DURATION_TO_BEAT = 50
+TOTAL_PROFIT_TO_BEAT = 0
+AVG_PROFIT_TO_BEAT = 0
+AVG_DURATION_TO_BEAT = 100
+
+# this is expexted avg profit * expected trade count
+# for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
+EXPECTED_MAX_PROFIT = 3.85
 
 # Configuration and data used by hyperopt
 PROCESSED = optimize.preprocess(optimize.load_data())
@@ -101,12 +105,10 @@ def log_results(results):
     current_try = results['current_tries']
     total_tries = results['total_tries']
     result = results['result']
-    profit = results['total_profit'] / 1000
-
-    outcome = '{:5d}/{}: {}'.format(current_try, total_tries, result)
+    profit = results['total_profit']
 
     if profit >= TOTAL_PROFIT_TO_BEAT:
-        logger.info(outcome)
+        logger.info('\n{:5d}/{}: {}'.format(current_try, total_tries, result))
     else:
         print('.', end='')
         sys.stdout.flush()
@@ -118,15 +120,15 @@ def optimizer(params):
     from freqtrade.optimize import backtesting
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
-    results = backtest(OPTIMIZE_CONFIG, PROCESSED)
+    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED)
 
     result = format_results(results)
 
-    total_profit = results.profit_percent.sum() * 1000
+    total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
 
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-    profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
+    profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
 
     _CURRENT_TRIES += 1
 
@@ -142,8 +144,6 @@ def optimizer(params):
         'result': result,
         'results': results
     }
-
-    # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
     log_results(result_data)
 
     return {
@@ -157,7 +157,7 @@ def optimizer(params):
 
 def format_results(results: DataFrame):
     return ('Made {:6d} buys. Average profit {: 5.2f}%. '
-            'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
+            'Total profit was {: 11.8f} BTC. Average duration {:5.1f} mins.').format(
                 len(results.index),
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
