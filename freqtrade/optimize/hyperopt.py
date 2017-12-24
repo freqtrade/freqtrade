@@ -223,7 +223,7 @@ def start(args):
     # Initialize logger
     logging.basicConfig(
         level=args.loglevel,
-        format='\n%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='\n%(message)s',
     )
 
     logger.info('Using config: %s ...', args.config)
