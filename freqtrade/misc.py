@@ -233,7 +233,8 @@ CONF_SCHEMA = {
         'experimental': {
             'type': 'object',
             'properties': {
-                'use_sell_signal': {'type': 'boolean'}
+                'use_sell_signal': {'type': 'boolean'},
+                'sell_profit_only': {'type': 'boolean'}
             }
         },
         'telegram': {
