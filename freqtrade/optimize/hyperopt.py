@@ -108,7 +108,7 @@ def log_results(results):
     profit = results['total_profit']
 
     if profit >= TOTAL_PROFIT_TO_BEAT:
-        logger.info('\n{:5d}/{}: {}'.format(current_try, total_tries, result))
+        logger.info('{:5d}/{}: {}'.format(current_try, total_tries, result))
     else:
         print('.', end='')
         sys.stdout.flush()
@@ -223,7 +223,7 @@ def start(args):
     # Initialize logger
     logging.basicConfig(
         level=args.loglevel,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='\n%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
     logger.info('Using config: %s ...', args.config)
