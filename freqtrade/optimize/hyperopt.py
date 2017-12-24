@@ -101,13 +101,12 @@ def log_results(results):
     "if results is better than _TO_BEAT show it"
     global CURRENT_BEST_LOSS
 
-    current_try = results['current_tries']
-    total_tries = results['total_tries']
-    result = results['result']
-
     if results['loss'] < CURRENT_BEST_LOSS:
         CURRENT_BEST_LOSS = results['loss']
-        logger.info('{:5d}/{}: {}'.format(current_try, total_tries, result))
+        logger.info('{:5d}/{}: {}'.format(
+            results['current_tries'],
+            results['total_tries'],
+            results['result']))
     else:
         print('.', end='')
         sys.stdout.flush()
