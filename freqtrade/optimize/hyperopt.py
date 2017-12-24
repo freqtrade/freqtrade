@@ -8,7 +8,7 @@ from functools import reduce
 from math import exp
 from operator import itemgetter
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 import numpy as np
@@ -127,6 +127,12 @@ def optimizer(params):
     total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
 
+    if trade_count == 0:
+        return {
+            'status': STATUS_FAIL,
+            'loss': float('inf')
+        }
+
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
 
@@ -163,10 +169,6 @@ def format_results(results: DataFrame):
                 results.profit_BTC.sum(),
                 results.duration.mean() * 5,
     )
-
-
-def filter_nan(result, filter_key):
-    return [r for r in result if not np.isnan(r[filter_key])]
 
 
 def buy_strategy_generator(params):
@@ -244,9 +246,5 @@ def start(args):
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
 
-    filt_res = filter_nan(trials.results, 'total_profit')
-    filt_res = filter_nan(filt_res, 'avg_profit')
-
-    results = sorted(filt_res, key=itemgetter('loss'))
-
+    results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])
