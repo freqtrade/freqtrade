@@ -137,15 +137,10 @@ def optimizer(params):
     _CURRENT_TRIES += 1
 
     result_data = {
-        'trade_count': trade_count,
-        'total_profit': total_profit,
         'loss': loss,
-        'avg_profit': results.profit_percent.mean() * 100.0,
-        'avg_duration': results.duration.mean() * 5,
         'current_tries': _CURRENT_TRIES,
         'total_tries': TOTAL_TRIES,
         'result': result,
-        'results': results
     }
     log_results(result_data)
 
@@ -154,7 +149,7 @@ def optimizer(params):
         'status': STATUS_OK,
         'result': result,
         'total_profit': total_profit,
-        'avg_profit': result_data['avg_profit'],
+        'avg_profit': results.profit_percent.mean() * 100.0,
     }
 
 
