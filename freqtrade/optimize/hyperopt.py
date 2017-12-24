@@ -32,9 +32,7 @@ TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 
-TOTAL_PROFIT_TO_BEAT = 0
-AVG_PROFIT_TO_BEAT = 0
-AVG_DURATION_TO_BEAT = 100
+CURRENT_BEST_LOSS = 100
 
 # this is expexted avg profit * expected trade count
 # for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
@@ -101,13 +99,14 @@ SPACE = {
 
 def log_results(results):
     "if results is better than _TO_BEAT show it"
+    global CURRENT_BEST_LOSS
 
     current_try = results['current_tries']
     total_tries = results['total_tries']
     result = results['result']
-    profit = results['total_profit']
 
-    if profit >= TOTAL_PROFIT_TO_BEAT:
+    if results['loss'] < CURRENT_BEST_LOSS:
+        CURRENT_BEST_LOSS = results['loss']
         logger.info('{:5d}/{}: {}'.format(current_try, total_tries, result))
     else:
         print('.', end='')
@@ -135,14 +134,13 @@ def optimizer(params):
 
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-
+    loss = trade_loss + profit_loss
     _CURRENT_TRIES += 1
 
     result_data = {
         'trade_count': trade_count,
         'total_profit': total_profit,
-        'trade_loss': trade_loss,
-        'profit_loss': profit_loss,
+        'loss': loss,
         'avg_profit': results.profit_percent.mean() * 100.0,
         'avg_duration': results.duration.mean() * 5,
         'current_tries': _CURRENT_TRIES,
@@ -153,7 +151,7 @@ def optimizer(params):
     log_results(result_data)
 
     return {
-        'loss': trade_loss + profit_loss,
+        'loss': loss,
         'status': STATUS_OK,
         'result': result,
         'total_profit': total_profit,
