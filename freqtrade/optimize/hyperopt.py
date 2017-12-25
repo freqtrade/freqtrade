@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring,W0212
+# pragma pylint: disable=missing-docstring,W0212,W0603
 
 
 import json
