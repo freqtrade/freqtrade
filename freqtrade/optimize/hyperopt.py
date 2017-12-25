@@ -97,7 +97,7 @@ SPACE = {
 
 
 def log_results(results):
-    "if results is better than _TO_BEAT show it"
+    """ log results if it is better than any previous evaluation """
     global CURRENT_BEST_LOSS
 
     if results['loss'] < CURRENT_BEST_LOSS:
