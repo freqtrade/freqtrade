@@ -68,14 +68,14 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
              max_open_trades: int = 0, realistic: bool = True) -> DataFrame:
     """
     Implements backtesting functionality
-    :param config: config to use
+    :param stake_amount: btc amount to use for each trade
     :param processed: a processed dictionary with format {pair, data}
     :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
     :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
     """
     trades = []
-    trade_count_lock = {}
+    trade_count_lock: dict = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
@@ -120,7 +120,7 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                             current_profit_percent,
                             current_profit_BTC,
                             row2.Index - row.Index
-                         )
+                        )
                     )
                     break
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']

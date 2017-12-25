@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring,W0212
+# pragma pylint: disable=missing-docstring,W0212,W0603
 
 
 import json
@@ -159,7 +159,7 @@ def format_results(results: DataFrame):
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
                 results.duration.mean() * 5,
-    )
+            )
 
 
 def buy_strategy_generator(params):

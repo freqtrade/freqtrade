@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring,W0212
 
+import os
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest
 from freqtrade.optimize.__init__ import testdata_path, download_pairs, download_backtesting_testdata
-import os
 
 
 def test_backtest(default_conf, mocker):
@@ -13,8 +13,7 @@ def test_backtest(default_conf, mocker):
 
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
     results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
-    num_results = len(results)
-    assert num_results > 0
+    assert not results.empty
 
 
 def test_1min_ticker_interval(default_conf, mocker):
@@ -24,7 +23,7 @@ def test_1min_ticker_interval(default_conf, mocker):
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
     results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 1, True)
-    assert len(results) > 0
+    assert not results.empty
 
 
 def test_backtest_with_new_pair(default_conf, ticker_history, mocker):
@@ -43,7 +42,7 @@ def test_backtest_with_new_pair(default_conf, ticker_history, mocker):
 
 
 def test_testdata_path():
-    assert str('freqtrade/optimize/../tests/testdata') in testdata_path()
+    assert os.path.join('freqtrade', 'tests', 'testdata') in testdata_path()
 
 
 def test_download_pairs(default_conf, ticker_history, mocker):

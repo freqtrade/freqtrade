@@ -78,8 +78,8 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
                     )
-            except DependencyException as e:
-                logger.warning('Unable to create trade: %s', e)
+            except DependencyException as exception:
+                logger.warning('Unable to create trade: %s', exception)
 
         for trade in trades:
             # Get order details for actual price per unit
@@ -291,8 +291,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
         reverse=True
     )
 
-    # topn must be greater than 0
-    if not topn > 0:
+    if topn <= 0:
         topn = 20
 
     return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]

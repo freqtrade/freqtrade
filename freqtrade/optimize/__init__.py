@@ -58,7 +58,7 @@ def preprocess(tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
 
 def testdata_path() -> str:
     """Return the path where testdata files are stored"""
-    return os.path.abspath(os.path.dirname(__file__)) + '/../tests/testdata'
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tests', 'testdata'))
 
 
 def download_pairs(pairs: List[str]) -> bool:
