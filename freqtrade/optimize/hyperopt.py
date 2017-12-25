@@ -8,10 +8,9 @@ from functools import reduce
 from math import exp
 from operator import itemgetter
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
-import numpy as np
 
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
@@ -32,9 +31,7 @@ TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 
-TOTAL_PROFIT_TO_BEAT = 0
-AVG_PROFIT_TO_BEAT = 0
-AVG_DURATION_TO_BEAT = 100
+CURRENT_BEST_LOSS = 100
 
 # this is expexted avg profit * expected trade count
 # for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
@@ -100,15 +97,15 @@ SPACE = {
 
 
 def log_results(results):
-    "if results is better than _TO_BEAT show it"
+    """ log results if it is better than any previous evaluation """
+    global CURRENT_BEST_LOSS
 
-    current_try = results['current_tries']
-    total_tries = results['total_tries']
-    result = results['result']
-    profit = results['total_profit']
-
-    if profit >= TOTAL_PROFIT_TO_BEAT:
-        logger.info('\n{:5d}/{}: {}'.format(current_try, total_tries, result))
+    if results['loss'] < CURRENT_BEST_LOSS:
+        CURRENT_BEST_LOSS = results['loss']
+        logger.info('{:5d}/{}: {}'.format(
+            results['current_tries'],
+            results['total_tries'],
+            results['result']))
     else:
         print('.', end='')
         sys.stdout.flush()
@@ -127,46 +124,42 @@ def optimizer(params):
     total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
 
+    if trade_count == 0:
+        return {
+            'status': STATUS_FAIL,
+            'loss': float('inf')
+        }
+
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-
+    loss = trade_loss + profit_loss
     _CURRENT_TRIES += 1
 
     result_data = {
-        'trade_count': trade_count,
-        'total_profit': total_profit,
-        'trade_loss': trade_loss,
-        'profit_loss': profit_loss,
-        'avg_profit': results.profit_percent.mean() * 100.0,
-        'avg_duration': results.duration.mean() * 5,
+        'loss': loss,
         'current_tries': _CURRENT_TRIES,
         'total_tries': TOTAL_TRIES,
         'result': result,
-        'results': results
     }
     log_results(result_data)
 
     return {
-        'loss': trade_loss + profit_loss,
+        'loss': loss,
         'status': STATUS_OK,
         'result': result,
         'total_profit': total_profit,
-        'avg_profit': result_data['avg_profit'],
+        'avg_profit': results.profit_percent.mean() * 100.0,
     }
 
 
 def format_results(results: DataFrame):
-    return ('Made {:6d} buys. Average profit {: 5.2f}%. '
-            'Total profit was {: 11.8f} BTC. Average duration {:5.1f} mins.').format(
+    return ('{:6d} trades. Avg profit {: 5.2f}%. '
+            'Total profit {: 11.8f} BTC. Avg duration {:5.1f} mins.').format(
                 len(results.index),
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
                 results.duration.mean() * 5,
     )
-
-
-def filter_nan(result, filter_key):
-    return [r for r in result if not np.isnan(r[filter_key])]
 
 
 def buy_strategy_generator(params):
@@ -223,7 +216,7 @@ def start(args):
     # Initialize logger
     logging.basicConfig(
         level=args.loglevel,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='\n%(message)s',
     )
 
     logger.info('Using config: %s ...', args.config)
@@ -244,9 +237,5 @@ def start(args):
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
 
-    filt_res = filter_nan(trials.results, 'total_profit')
-    filt_res = filter_nan(filt_res, 'avg_profit')
-
-    results = sorted(filt_res, key=itemgetter('loss'))
-
+    results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])
