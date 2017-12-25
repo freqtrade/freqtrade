@@ -291,8 +291,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
         reverse=True
     )
 
-    # topn must be greater than 0
-    if not topn > 0:
+    if topn <= 0:
         topn = 20
 
     return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
