@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring,W0212
 
+import os
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest
 from freqtrade.optimize.__init__ import testdata_path, download_pairs, download_backtesting_testdata
-import os
 
 
 def test_backtest(default_conf, mocker):
