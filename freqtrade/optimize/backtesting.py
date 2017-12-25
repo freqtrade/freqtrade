@@ -120,7 +120,7 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                             current_profit_percent,
                             current_profit_BTC,
                             row2.Index - row.Index
-                         )
+                        )
                     )
                     break
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
