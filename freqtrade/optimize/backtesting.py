@@ -75,7 +75,7 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
     :return: DataFrame
     """
     trades = []
-    trade_count_lock = {}
+    trade_count_lock: dict = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
