@@ -11,7 +11,6 @@ from operator import itemgetter
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
-import numpy as np
 
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
