@@ -42,7 +42,7 @@ def test_backtest_with_new_pair(default_conf, ticker_history, mocker):
 
 
 def test_testdata_path():
-    assert str('freqtrade/optimize/../tests/testdata') in testdata_path()
+    assert os.path.join('freqtrade', 'tests', 'testdata') in testdata_path()
 
 
 def test_download_pairs(default_conf, ticker_history, mocker):
