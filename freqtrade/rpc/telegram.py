@@ -15,6 +15,7 @@ from telegram.ext import CommandHandler, Updater
 from freqtrade import exchange, __version__
 from freqtrade.misc import get_state, State, update_state
 from freqtrade.persistence import Trade
+from freqtrade.fiat_convert import CryptoToFiatConverter
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
+_FIAT_CONVERT = CryptoToFiatConverter()
 
 
 def init(config: dict) -> None:
@@ -242,8 +244,28 @@ def _daily(bot: Bot, update: Update) -> None:
         curdayprofit = sum(trade.calc_profit() for trade in trades)
         profit_days[date.fromordinal(today - day)] = format(curdayprofit, '.8f')
 
-    stats = [[key, str(value) + ' BTC'] for key, value in profit_days.items()]
-    stats = tabulate(stats, headers=['Day', 'Profit'], tablefmt='simple')
+    stats = [
+        [
+            key,
+            '{value:.8f} {symbol}'.format(value=float(value), symbol=_CONF['stake_currency']),
+            '{value:.3f} {symbol}'.format(
+                value=_FIAT_CONVERT.convert_amount(
+                    value,
+                    _CONF['stake_currency'],
+                    _CONF['fiat_display_currency']
+                ),
+                symbol=_CONF['fiat_display_currency']
+            )
+         ]
+        for key, value in profit_days.items()
+    ]
+    stats = tabulate(stats,
+                     headers=[
+                         'Day',
+                         'Profit {}'.format(_CONF['stake_currency']),
+                         'Profit {}'.format(_CONF['fiat_display_currency'])
+                     ],
+                     tablefmt='simple')
 
     message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
     send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
@@ -260,9 +282,9 @@ def _profit(bot: Bot, update: Update) -> None:
     """
     trades = Trade.query.order_by(Trade.id).all()
 
-    profit_all_btc = []
+    profit_all_coin = []
     profit_all_percent = []
-    profit_btc_closed = []
+    profit_closed_coin = []
     profit_closed_percent = []
     durations = []
 
@@ -276,14 +298,14 @@ def _profit(bot: Bot, update: Update) -> None:
 
         if not trade.is_open:
             profit_percent = trade.calc_profit_percent()
-            profit_btc_closed.append(trade.calc_profit())
+            profit_closed_coin.append(trade.calc_profit())
             profit_closed_percent.append(profit_percent)
         else:
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
             profit_percent = trade.calc_profit_percent(rate=current_rate)
 
-        profit_all_btc.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
+        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
         profit_all_percent.append(profit_percent)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
@@ -297,19 +319,46 @@ def _profit(bot: Bot, update: Update) -> None:
         return
 
     bp_pair, bp_rate = best_pair
+
+    # Prepare data to display
+    profit_closed_coin = round(sum(profit_closed_coin), 8)
+    profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
+    profit_closed_fiat = _FIAT_CONVERT.convert_amount(
+        profit_closed_coin,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+    profit_all_coin = round(sum(profit_all_coin), 8)
+    profit_all_percent = round(sum(profit_all_percent) * 100, 2)
+    profit_all_fiat = _FIAT_CONVERT.convert_amount(
+        profit_all_coin,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+
+    # Message to display
     markdown_msg = """
-*ROI Trade closed:* `{profit_closed_btc:.8f} BTC ({profit_closed_percent:.2f}%)`
-*ROI All trades:* `{profit_all_btc:.8f} BTC ({profit_all_percent:.2f}%)`
+*ROI:* Close trades
+  ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`
+  ∙ `{profit_closed_fiat:.3f} {fiat}`
+*ROI:* All trades
+  ∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`
+  ∙ `{profit_all_fiat:.3f} {fiat}`
+
 *Total Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
     """.format(
-        profit_closed_btc=round(sum(profit_btc_closed), 8),
-        profit_closed_percent=round(sum(profit_closed_percent) * 100, 2),
-        profit_all_btc=round(sum(profit_all_btc), 8),
-        profit_all_percent=round(sum(profit_all_percent) * 100, 2),
+        coin=_CONF['stake_currency'],
+        fiat=_CONF['fiat_display_currency'],
+        profit_closed_coin=profit_closed_coin,
+        profit_closed_percent=profit_closed_percent,
+        profit_closed_fiat=profit_closed_fiat,
+        profit_all_coin=profit_all_coin,
+        profit_all_percent=profit_all_percent,
+        profit_all_fiat=profit_all_fiat,
         trade_count=len(trades),
         first_trade_date=arrow.get(trades[0].open_date).humanize(),
         latest_trade_date=arrow.get(trades[-1].open_date).humanize(),

@@ -208,6 +208,7 @@ CONF_SCHEMA = {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'fiat_display_currency': {'type': 'string', 'enum': ['USD', 'EUR', 'CAD', 'SGD']},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',

@@ -16,6 +16,7 @@ def default_conf():
         "max_open_trades": 1,
         "stake_currency": "BTC",
         "stake_amount": 0.001,
+        "fiat_display_currency": "USD",
         "dry_run": True,
         "minimal_roi": {
             "40":  0.0,
