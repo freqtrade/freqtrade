@@ -78,8 +78,8 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
                     )
-            except DependencyException as e:
-                logger.warning('Unable to create trade: %s', e)
+            except DependencyException as exception:
+                logger.warning('Unable to create trade: %s', exception)
 
         for trade in trades:
             # Get order details for actual price per unit
