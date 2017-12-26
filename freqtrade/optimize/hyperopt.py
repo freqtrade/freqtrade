@@ -129,6 +129,7 @@ def optimizer(params):
     trade_count = len(results.index)
 
     if trade_count == 0:
+        print('.', end='')
         return {
             'status': STATUS_FAIL,
             'loss': float('inf')
