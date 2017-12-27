@@ -220,29 +220,28 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    today = datetime.utcnow().toordinal()
+    today = datetime.utcnow().date()
     profit_days = {}
 
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
     except (TypeError, ValueError):
-        timescale = 5
+        timescale = 7
 
     if not (isinstance(timescale, int) and timescale > 0):
         send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
         return
 
     for day in range(0, timescale):
-        # need to query between day+1 and day-1
-        nextdate = date.fromordinal(today - day + 1)
-        prevdate = date.fromordinal(today - day - 1)
+        profitday = today - timedelta(days=day)
         trades = Trade.query \
             .filter(Trade.is_open.is_(False)) \
-            .filter(between(Trade.close_date, prevdate, nextdate)) \
+            .filter(Trade.close_date >= profitday)\
+            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
             .order_by(Trade.close_date)\
             .all()
         curdayprofit = sum(trade.calc_profit() for trade in trades)
-        profit_days[date.fromordinal(today - day)] = format(curdayprofit, '.8f')
+        profit_days[profitday] = format(curdayprofit, '.8f')
 
     stats = [
         [
