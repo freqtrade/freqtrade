@@ -65,7 +65,8 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
         refresh_whitelist(
             gen_pair_whitelist(
                 _CONF['stake_currency'],
-                topn=dynamic_whitelist
+                topn=dynamic_whitelist,
+                black_list = _CONF.get('pair_blacklist', []),
             ) if dynamic_whitelist else None
         )
         # Query trades from persistence layer
@@ -292,7 +293,7 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 
 @cached(TTLCache(maxsize=1, ttl=1800))
-def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume') -> List[str]:
+def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume', black_list: List[str] = []) -> List[str]:
     """
     Updates the whitelist with with a dynamically generated list
     :param base_currency: base currency as str
@@ -301,7 +302,7 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
     :return: List of pairs
     """
     summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
+        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency) and s['MarketName'].replace('-','_') not in black_list),
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
