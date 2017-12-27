@@ -1,12 +1,12 @@
 import logging
 import re
 from decimal import Decimal
-from datetime import timedelta, date, datetime
+from datetime import timedelta, datetime
 from typing import Callable, Any
 
 import arrow
 from pandas import DataFrame
-from sqlalchemy import and_, func, text, between
+from sqlalchemy import and_, func, text
 from tabulate import tabulate
 from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
