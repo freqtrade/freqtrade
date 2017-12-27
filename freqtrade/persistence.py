@@ -104,7 +104,7 @@ class Trade(_DECL_BASE):
             self.close(order['rate'])
         else:
             raise ValueError('Unknown order type: {}'.format(order['type']))
-        Trade.session.flush()
+        cleanup()
 
     def close(self, rate: float) -> None:
         """

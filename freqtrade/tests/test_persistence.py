@@ -1,8 +1,91 @@
 # pragma pylint: disable=missing-docstring
 import pytest
 
+import os
 from freqtrade.exchange import Exchanges
-from freqtrade.persistence import Trade
+from freqtrade.persistence import init, Trade
+
+
+def test_init_create_session(default_conf, mocker):
+    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+
+    # Check if init create a session
+    init(default_conf)
+    assert hasattr(Trade, 'session')
+    assert type(Trade.session).__name__ is 'Session'
+
+
+def test_init_dry_run_db(default_conf, mocker):
+    default_conf.update({'dry_run_db': True})
+    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+
+    # First, protect the existing 'tradesv3.dry_run.sqlite' (Do not delete user data)
+    dry_run_db = 'tradesv3.dry_run.sqlite'
+    dry_run_db_swp = dry_run_db + '.swp'
+
+    if os.path.isfile(dry_run_db):
+        os.rename(dry_run_db, dry_run_db_swp)
+
+    # Check if the new tradesv3.dry_run.sqlite was created
+    init(default_conf)
+    assert os.path.isfile(dry_run_db) is True
+
+    # Delete the file made for this unitest and rollback to the previous
+    # tradesv3.dry_run.sqlite file
+
+    # 1. Delete file from the test
+    if os.path.isfile(dry_run_db):
+        os.remove(dry_run_db)
+
+    # 2. Rollback to the initial file
+    if os.path.isfile(dry_run_db_swp):
+        os.rename(dry_run_db_swp, dry_run_db)
+
+
+def test_init_dry_run_without_db(default_conf, mocker):
+    default_conf.update({'dry_run_db': False})
+    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+
+    # First, protect the existing 'tradesv3.dry_run.sqlite' (Do not delete user data)
+    dry_run_db = 'tradesv3.dry_run.sqlite'
+    dry_run_db_swp = dry_run_db + '.swp'
+
+    if os.path.isfile(dry_run_db):
+        os.rename(dry_run_db, dry_run_db_swp)
+
+    # Check if the new tradesv3.dry_run.sqlite was created
+    init(default_conf)
+    assert os.path.isfile(dry_run_db) is False
+
+    # Rollback to the initial 'tradesv3.dry_run.sqlite' file
+    if os.path.isfile(dry_run_db_swp):
+        os.rename(dry_run_db_swp, dry_run_db)
+
+
+def test_init_prod_db(default_conf, mocker):
+    default_conf.update({'dry_run': False})
+    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+
+    # First, protect the existing 'tradesv3.sqlite' (Do not delete user data)
+    prod_db = 'tradesv3.sqlite'
+    prod_db_swp = prod_db + '.swp'
+
+    if os.path.isfile(prod_db):
+        os.rename(prod_db, prod_db_swp)
+
+    # Check if the new tradesv3.sqlite was created
+    init(default_conf)
+    assert os.path.isfile(prod_db) is True
+
+    # Delete the file made for this unitest and rollback to the previous tradesv3.sqlite file
+
+    # 1. Delete file from the test
+    if os.path.isfile(prod_db):
+        os.remove(prod_db)
+
+    # Rollback to the initial 'tradesv3.sqlite' file
+    if os.path.isfile(prod_db_swp):
+        os.rename(prod_db_swp, prod_db)
 
 
 def test_update_with_bittrex(limit_buy_order, limit_sell_order):
@@ -79,6 +162,19 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
 
     # Profit in percent
     assert trade.calc_profit_percent() == 0.06201057
+
+
+def test_calc_close_trade_price_exception(limit_buy_order):
+    trade = Trade(
+        pair='BTC_ETH',
+        stake_amount=0.001,
+        fee=0.0025,
+        exchange=Exchanges.BITTREX,
+    )
+
+    trade.open_order_id = 'something'
+    trade.update(limit_buy_order)
+    assert trade.calc_close_trade_price() == 0.0
 
 
 def test_update_open_order(limit_buy_order):
