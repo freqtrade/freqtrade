@@ -164,6 +164,9 @@ def test_profit_handle(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     _profit(bot=MagicMock(), update=update)
@@ -194,9 +197,14 @@ def test_profit_handle(
 
     _profit(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert '*ROI Trade closed:* `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
-    assert '*ROI All trades:* `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
-    assert 'Best Performing:* `BTC_ETH: 6.20%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* Close trades' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
+
+    assert '*Best Performing:* `BTC_ETH: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
@@ -210,6 +218,9 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -228,7 +239,9 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001172 (profit: ~6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
+    assert 'profit: ~6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
 def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, mocker):
@@ -242,6 +255,9 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -260,7 +276,9 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
 
     assert rpc_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001044 (profit: ~-5.48%, -0.00005492)' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
+    assert 'profit: ~-5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
+    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
 def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
@@ -298,6 +316,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -310,7 +331,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
 
     assert rpc_mock.call_count == 4
     for args in rpc_mock.call_args_list:
-        assert '0.00001098 (profit: ~-0.59%, -0.00000591)' in args[0][0]
+        assert '0.00001098' in args[0][0]
+        assert 'profit: ~-0.59%, -0.00000591 BTC' in args[0][0]
+        assert '-0.089 USD' in args[0][0]
 
 
 def test_forcesell_handle_invalid(default_conf, update, mocker):
@@ -397,6 +420,9 @@ def test_daily_handle(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -418,7 +444,9 @@ def test_daily_handle(
     _daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
-    assert str(datetime.utcnow().date()) + '  0.00006217 BTC' in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
 
     # Try invalid data
     msg_mock.reset_mock()

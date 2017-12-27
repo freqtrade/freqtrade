@@ -19,6 +19,7 @@ from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
     load_config
 from freqtrade.persistence import Trade
+from freqtrade.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger('freqtrade')
 
@@ -121,14 +122,28 @@ def execute_sell(trade: Trade, limit: float) -> None:
     trade.open_order_id = order_id
 
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
-    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%, {:.8f})`'.format(
-        trade.exchange,
-        trade.pair.replace('_', '/'),
-        exchange.get_pair_detail_url(trade.pair),
-        limit,
-        fmt_exp_profit,
-        trade.calc_profit(rate=limit),
-    ))
+    profit_trade = trade.calc_profit(rate=limit)
+
+    fiat_converter = CryptoToFiatConverter()
+    profit_fiat = fiat_converter.convert_amount(
+        profit_trade,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+
+    rpc.send_msg('*{exchange}:* Selling [{pair}]({pair_url}) with limit `{limit:.8f}`'
+                 '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f} {coin}`'
+                 '` / {profit_fiat:.3f} {fiat})`'.format(
+                        exchange=trade.exchange,
+                        pair=trade.pair.replace('_', '/'),
+                        pair_url=exchange.get_pair_detail_url(trade.pair),
+                        limit=limit,
+                        profit_percent=fmt_exp_profit,
+                        profit_coin=profit_trade,
+                        coin=_CONF['stake_currency'],
+                        profit_fiat=profit_fiat,
+                        fiat=_CONF['fiat_display_currency'],
+                    ))
     Trade.session.flush()
 
 
