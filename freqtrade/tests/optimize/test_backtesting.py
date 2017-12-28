@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212
 
+import math
 import os
 import pandas as pd
 from freqtrade import exchange, optimize
@@ -120,3 +121,106 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
 
     if os.path.isfile(file2):
         os.remove(file2)
+
+
+def trim_dataframe(df, num):
+    new = dict()
+    for pair, pair_data in df.items():
+        new[pair] = pair_data[-num:] # last 50 rows
+    return new
+
+def load_data_test(what):
+    data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = trim_dataframe(data, -40)
+    pair = data['BTC_UNITEST']
+
+    # Depending on the what parameter we now adjust the
+    # loaded data:
+    # pair :: [{'O': 0.123, 'H': 0.123, 'L': 0.123, 'C': 0.123, 'V': 123.123, 'T': '2017-11-04T23:02:00', 'BV': 0.123}]
+    if what == 'raise':
+        o = h = l = c = 0.001
+        l -= 0.0001
+        h += 0.0001
+        for frame in pair:
+            o += 0.0001
+            h += 0.0001
+            l += 0.0001
+            c += 0.0001
+            o = round(o,9) # round to satoshis
+            h = round(h,9)
+            l = round(l,9)
+            c = round(c,9)
+            frame['O'] = o
+            frame['H'] = h
+            frame['L'] = l
+            frame['C'] = c
+    if what == 'lower':
+        o = h = l = c = 0.001
+        l -= 0.0001
+        h += 0.0001
+        for frame in pair:
+            o -= 0.0001
+            h -= 0.0001
+            l -= 0.0001
+            c -= 0.0001
+            o = round(o,9) # round to satoshis
+            h = round(h,9)
+            l = round(l,9)
+            c = round(c,9)
+            frame['O'] = o
+            frame['H'] = h
+            frame['L'] = l
+            frame['C'] = c
+    if what == 'sine':
+        i = 0
+        o = h = l = c = (2 + math.sin(i/10)) / 1000
+        h += 0.0001
+        l -= 0.0001
+        for frame in pair:
+            o = (2 + math.sin(i/10)) / 1000 
+            h = (2 + math.sin(i/10)) / 1000 + 0.0001
+            l = (2 + math.sin(i/10)) / 1000 - 0.0001
+            c = (2 + math.sin(i/10)) / 1000 - 0.000001
+
+            o = round(o,9) # round to satoshis
+            h = round(h,9)
+            l = round(l,9)
+            c = round(c,9)
+            frame['O'] = o
+            frame['H'] = h
+            frame['L'] = l
+            frame['C'] = c
+            i += 1
+    return data
+
+def simple_backtest(config, contour, num_results):
+    data = load_data_test(contour)
+    processed = optimize.preprocess(data)
+    assert isinstance(processed, dict)
+    results = backtest(config['stake_amount'], processed, 1, True)
+    # results :: <class 'pandas.core.frame.DataFrame'>
+    assert len(results) == num_results
+
+# Test backtest on offline data
+# loaded by freqdata/optimize/__init__.py::load_data()
+
+def test_backtest(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
+    results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
+    num_resutls = len(results)
+    assert num_resutls > 0
+
+def test_processed(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    data = load_data_test('raise')
+    processed = optimize.preprocess(data)
+
+def test_raise(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    tests = [['raise', 359], ['lower', 0], ['sine', 1734]]
+    for [contour, numres] in tests:
+        simple_backtest(default_conf, contour, numres)
+
+
+
