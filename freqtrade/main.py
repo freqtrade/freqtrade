@@ -19,6 +19,7 @@ from freqtrade.misc import State, get_state, update_state, parse_args, throttle,
     load_config
 from freqtrade.persistence import Trade
 from freqtrade.fiat_convert import CryptoToFiatConverter
+from freqtrade.watchdog import Watchdog
 
 logger = logging.getLogger('freqtrade')
 
@@ -441,6 +442,13 @@ def main(sysargv=sys.argv[1:]) -> None:
         else:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
+    watchdog = Watchdog()
+
+    if args.watchdog_enable:
+        logger.info('Using watchdog to monitor process (--watchdog)')
+        if not watchdog.start():
+            return
+
     try:
         init(_CONF)
         old_state = None
@@ -460,6 +468,7 @@ def main(sysargv=sys.argv[1:]) -> None:
                     nb_assets=args.dynamic_whitelist,
                 )
             old_state = new_state
+            watchdog.heartbeat()
     except KeyboardInterrupt:
         logger.info('Got SIGINT, aborting ...')
     except BaseException:

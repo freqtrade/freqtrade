@@ -142,6 +142,12 @@ def parse_args(args: List[str], description: str):
         metavar='INT',
         nargs='?',
     )
+    parser.add_argument(
+        '-w', '--watchdog',
+        help='Run under watchdog (restart process if main loop is stalled)',  # noqa
+        action='store_true',
+        dest='watchdog_enable',
+    )
 
     build_subcommands(parser)
     return parser.parse_args(args)
