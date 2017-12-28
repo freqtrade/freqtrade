@@ -25,12 +25,10 @@ logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
-
 CURRENT_BEST_LOSS = 100
 
 # this is expexted avg profit * expected trade count
@@ -111,6 +109,13 @@ def log_results(results):
         sys.stdout.flush()
 
 
+def calculate_loss(total_profit: float, trade_count: int):
+    """ objective function, returns smaller number for more optimal results """
+    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+    profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
+    return trade_loss + profit_loss
+
+
 def optimizer(params):
     global _CURRENT_TRIES
 
@@ -118,37 +123,33 @@ def optimizer(params):
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
     results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED)
-
-    result = format_results(results)
+    result_explanation = format_results(results)
 
     total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
 
     if trade_count == 0:
+        print('.', end='')
         return {
             'status': STATUS_FAIL,
             'loss': float('inf')
         }
 
-    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-    profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-    loss = trade_loss + profit_loss
+    loss = calculate_loss(total_profit, trade_count)
+
     _CURRENT_TRIES += 1
 
-    result_data = {
+    log_results({
         'loss': loss,
         'current_tries': _CURRENT_TRIES,
         'total_tries': TOTAL_TRIES,
-        'result': result,
-    }
-    log_results(result_data)
+        'result': result_explanation,
+    })
 
     return {
         'loss': loss,
         'status': STATUS_OK,
-        'result': result,
-        'total_profit': total_profit,
-        'avg_profit': results.profit_percent.mean() * 100.0,
+        'result': result_explanation,
     }
 
 
