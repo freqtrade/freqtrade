@@ -33,8 +33,7 @@ def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
     :return: None
     """
     whitelist = whitelist or _CONF['exchange']['pair_whitelist']
-
-    sanitized_whitelist = []
+    sanitized_whitelist = [x for x in whiletlist if x not in _CONF['exchange'].get('pair_blacklist',[])]
     health = exchange.get_wallet_health()
     for status in health:
         pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
