@@ -87,17 +87,17 @@ def download_backtesting_testdata(pair: str, interval: int = 5) -> bool:
     ))
 
     filepair = pair.replace("-", "_")
-    filename = os.path.join(path, '{}-{}.json'.format(
-        filepair,
-        interval,
+    filename = os.path.join(path, '{pair}-{interval}.json'.format(
+        pair=filepair,
+        interval=interval,
     ))
     filename = filename.replace('USDT_BTC', 'BTC_FAKEBULL')
 
     if os.path.isfile(filename):
         with open(filename, "rt") as fp:
             data = json.load(fp)
-        logger.debug("Current Start:", data[1]['T'])
-        logger.debug("Current End: ", data[-1:][0]['T'])
+        logger.debug("Current Start: {}".format(data[1]['T']))
+        logger.debug("Current End: {}".format(data[-1:][0]['T']))
     else:
         data = []
         logger.debug("Current Start: None")
@@ -107,8 +107,8 @@ def download_backtesting_testdata(pair: str, interval: int = 5) -> bool:
     for row in new_data:
         if row not in data:
             data.append(row)
-    logger.debug("New Start:", data[1]['T'])
-    logger.debug("New End: ", data[-1:][0]['T'])
+    logger.debug("New Start: {}".format(data[1]['T']))
+    logger.debug("New End: {}".format(data[-1:][0]['T']))
     data = sorted(data, key=lambda data: data['T'])
 
     with open(filename, "wt") as fp:
