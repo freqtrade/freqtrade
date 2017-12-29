@@ -75,10 +75,10 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
                 balance = exchange.get_balance(_CONF['stake_currency'])
                 stake_amount = float(_CONF['stake_amount'])
                 if _CONF.get('experimental', {}).get('auto_stake_amount', False):
-                    #Numbers of trading slots available
+                    # Numbers of trading slots available
                     nb_trades_left = float(_CONF['max_open_trades'] - len (trades))
                     print("nb_trades_left "+str(nb_trades_left))
-                    #stake_amount in the conf is being used as the max value authorized 
+                    # Stake_amount in the conf is being used as the max value authorized 
                     stake_amount = min(_CONF['stake_amount'], balance / nb_trades_left)
                     print("stake amount "+str(_CONF['stake_amount'])+" "+str(balance))
                 # Create entity and execute trade
