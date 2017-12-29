@@ -33,6 +33,7 @@
     },
     "experimental": {
         "use_sell_signal": false
+        "auto_stake_amount": false
     },
     "telegram": {
         "enabled": true,

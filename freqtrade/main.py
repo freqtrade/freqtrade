@@ -72,8 +72,15 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
             try:
+                balance = exchange.get_balance(_CONF['stake_currency'])
+                stake_amount = float(_CONF['stake_amount'])
+                if _CONF.get('experimental', {}).get('auto_stake_amount'):
+                    #Numbers of trading slots available
+                    nb_trades_left = float(_CONF['max_open_trades'] - len (trades))
+                    #stake_amount in the conf is being used as the max value authorized 
+                    stake_amount = min(_CONF['stake_amount'], balance / nb_trades_left)
                 # Create entity and execute trade
-                state_changed = create_trade(float(_CONF['stake_amount']))
+                state_changed = create_trade(stake_amount, balance)
                 if not state_changed:
                     logger.info(
                         'Checked all whitelisted currencies. '
@@ -203,7 +210,7 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float) -> bool:
+def create_trade(stake_amount: float, balance: float) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
@@ -216,7 +223,7 @@ def create_trade(stake_amount: float) -> bool:
     )
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
-    if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
+    if balance < stake_amount:
         raise DependencyException(
             'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
         )

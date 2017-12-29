@@ -116,7 +116,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001)
+    create_trade(0.001,1)
 
     trade = Trade.query.first()
     assert trade is not None
@@ -146,7 +146,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
     min_stake_amount = 0.0005
-    create_trade(min_stake_amount)
+    create_trade(min_stake_amount, 1)
     rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
     assert rate * amount >= min_stake_amount
 
@@ -161,7 +161,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        create_trade(default_conf['stake_amount'])
+        create_trade(default_conf['stake_amount'], default_conf['stake_amount'] - 0.0001)
 
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker):
@@ -177,7 +177,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
-        create_trade(default_conf['stake_amount'])
+        create_trade(default_conf['stake_amount'], default_conf['stake_amount'])
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
@@ -197,7 +197,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001)
+    create_trade(0.001,1)
 
     trade = Trade.query.first()
     assert trade
@@ -230,7 +230,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog)
     mocker.patch('freqtrade.main.min_roi_reached', return_value=True)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001)
+    create_trade(0.001,1)
 
     trade = Trade.query.first()
     trade.is_open = True
@@ -262,7 +262,7 @@ def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker
     mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001)
+    create_trade(0.001,1)
 
     trade = Trade.query.first()
     trade.is_open = True
@@ -288,7 +288,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001)
+    create_trade(0.001,1)
 
     trade = Trade.query.first()
     assert trade
