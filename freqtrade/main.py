@@ -74,7 +74,7 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
             try:
                 balance = exchange.get_balance(_CONF['stake_currency'])
                 stake_amount = float(_CONF['stake_amount'])
-                if _CONF.get('experimental', {}).get('auto_stake_amount'):
+                if _CONF.get('experimental', {}).get('auto_stake_amount', False):
                     #Numbers of trading slots available
                     nb_trades_left = float(_CONF['max_open_trades'] - len (trades))
                     print("nb_trades_left "+str(nb_trades_left))
