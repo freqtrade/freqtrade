@@ -165,6 +165,8 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
 
 
 def test_create_trade_dynamic_stake_amount_under_maximum(default_conf, ticker, mocker):
+    default_conf.update({'experimental': {'auto_stake_amount': True}})
+    default_conf.update({'max_open_trades': 2})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -172,7 +174,7 @@ def test_create_trade_dynamic_stake_amount_under_maximum(default_conf, ticker, m
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
-                          get_balance=MagicMock(return_value=0.05))
+                          get_balance=MagicMock(return_value=0.0015))
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -185,13 +187,12 @@ def test_create_trade_dynamic_stake_amount_under_maximum(default_conf, ticker, m
     assert len(trades) == 1
     trade = trades[0]
     assert trade is not None
-    assert trade.stake_amount == min(float(0.05)/default_conf['max_open_trades'], default_conf['stake_amount'])
+    assert trade.stake_amount == float(0.0015)/default_conf['max_open_trades']
     assert trade.is_open
-    assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
-    assert trade.open_rate == 0.00001099
 
-def test_create_trade_dynamic_stake_amount_over_maximum(default_conf, ticker, mocker):
+def test_create_trade_dynamic_dynamic_stake_amount_over_maximum(default_conf, ticker, mocker):
+    default_conf.update({'experimental': {'auto_stake_amount': True}})
+    default_conf.update({'max_open_trades': 2})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -199,7 +200,7 @@ def test_create_trade_dynamic_stake_amount_over_maximum(default_conf, ticker, mo
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
-                          get_balance=MagicMock(return_value=10))
+                          get_balance=MagicMock(return_value=1))
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -207,16 +208,13 @@ def test_create_trade_dynamic_stake_amount_over_maximum(default_conf, ticker, mo
 
     result = _process()
     assert result is True
-
+    print(default_conf['max_open_trades'])
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
     trade = trades[0]
     assert trade is not None
-    assert trade.stake_amount == min(float(10)/default_conf['max_open_trades'], default_conf['stake_amount'])
+    assert trade.stake_amount == default_conf['stake_amount']
     assert trade.is_open
-    assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
-    assert trade.open_rate == 0.00001099
 
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker):
