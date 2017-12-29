@@ -216,6 +216,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.calc_profit() == 0.00006217
     assert trade.close_date is not None
 
+
 def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
@@ -247,6 +248,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog)
     assert handle_trade(trade)
     assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
 
+
 def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
@@ -271,7 +273,8 @@ def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker
     assert value_returned is False
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     assert handle_trade(trade)
-    assert ('freqtrade', logging.DEBUG, 'Executing sell due to sell signal ...') in caplog.record_tuples
+    s = 'Executing sell due to sell signal ...'
+    assert ('freqtrade', logging.DEBUG, s) in caplog.record_tuples
 
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker):
