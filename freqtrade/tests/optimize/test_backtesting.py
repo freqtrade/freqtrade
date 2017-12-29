@@ -1,10 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0212
 
 import math
+#  import json
 import pandas as pd
+# from unittest.mock import MagicMock
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
+# import freqtrade.optimize.backtesting as backtesting
 
 
 def test_generate_text_table():
@@ -137,3 +140,28 @@ def test_backtest_pricecontours(default_conf, mocker):
     tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
+
+# Please make this work, the load_config needs to be mocked
+# and cleanups.
+# def test_backtest_start(default_conf, mocker):
+#    default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+#    #mocker.patch.dict('freqtrade.main._CONF', default_conf)
+#    mocker.patch.multiple('freqtrade.misc',
+#                          load_config=MagicMock())
+#
+#    #mocker.patch('freqtrade.misc.load_config', side_effect=lambda s: {})
+#    #mocker.patch('freqtrade.misc.load_config', MagicMock())
+#    #side_effect=lambda s: {})
+#    #mocker.patch('freqtrade.misc.open', mocker.mock_open(
+#    #    read_data=json.dumps(default_conf)
+#    #))
+#
+#
+#    print(default_conf)
+#    args = MagicMock()
+#    args.level = 10
+#    backtesting.start(args)
+#
+#    Check what sideeffect backtstesting has done.
+#    Probably need to capture standard-output and
+#    check for the generated report table.
