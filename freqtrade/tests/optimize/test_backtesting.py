@@ -49,30 +49,31 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
     assert not results.empty
 
 
-def trim_dataframe(df, num):
-    new = dict()
-    for pair, pair_data in df.items():
-        new[pair] = pair_data[-num:]  # last 50 rows
+def trim_dictlist(dl, num):
+    new = {}
+    for pair, pair_data in dl.items():
+        # Can't figure out why -num wont work
+        #new[pair] = pair_data[-num:]
+        new[pair] = pair_data[-100:]
     return new
 
 
 def load_data_test(what):
     data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
-    data = trim_dataframe(data, -40)
+    data = trim_dictlist(data, -100)
     pair = data['BTC_UNITEST']
-
     # Depending on the what parameter we now adjust the
-    # loaded data:
+    # loaded data looks:
     # pair :: [{'O': 0.123, 'H': 0.123, 'L': 0.123,
     #           'C': 0.123, 'V': 123.123,
     #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
+    o = 0.001
+    h = o
+    ll = o
+    c = o
+    ll -= 0.0001
+    h += 0.0001
     if what == 'raise':
-        o = 0.001
-        h = 0.001
-        ll = 0.001
-        c = 0.001
-        ll -= 0.0001
-        h += 0.0001
         for frame in pair:
             o += 0.0001
             h += 0.0001
@@ -84,12 +85,6 @@ def load_data_test(what):
             frame['L'] = round(ll, 9)
             frame['C'] = round(c, 9)
     if what == 'lower':
-        o = 0.001
-        h = 0.001
-        ll = 0.001
-        c = 0.001
-        ll -= 0.0001
-        h += 0.0001
         for frame in pair:
             o -= 0.0001
             h -= 0.0001
@@ -102,18 +97,11 @@ def load_data_test(what):
             frame['C'] = round(c, 9)
     if what == 'sine':
         i = 0
-        o = (2 + math.sin(i/10)) / 1000
-        h = o
-        ll = o
-        c = o
-        h += 0.0001
-        ll -= 0.0001
         for frame in pair:
             o = (2 + math.sin(i/10)) / 1000
             h = (2 + math.sin(i/10)) / 1000 + 0.0001
             ll = (2 + math.sin(i/10)) / 1000 - 0.0001
             c = (2 + math.sin(i/10)) / 1000 - 0.000001
-
             # save prices rounded to satoshis
             frame['O'] = round(o, 9)
             frame['H'] = round(h, 9)
@@ -139,18 +127,24 @@ def test_backtest2(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
     results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
-    num_resutls = len(results)
-    assert num_resutls > 0
+    num_results = len(results)
+    assert num_results > 0
 
 
 def test_processed(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = load_data_test('raise')
-    assert optimize.preprocess(data)
+    x = optimize.preprocess(data)
+    df = x['BTC_UNITEST']
+    cols = df.columns
+    # assert the dataframe got some of the indicator columns
+    for col in ['close', 'high', 'low', 'open', 'date',
+                'ema50', 'ao', 'macd', 'plus_dm']:
+        assert col in cols
 
 
-def test_raise(default_conf, mocker):
+def test_backtest_pricecontours(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    tests = [['raise', 359], ['lower', 0], ['sine', 1734]]
+    tests = [['raise', 16], ['lower', 0], ['sine', 9]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
