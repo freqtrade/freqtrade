@@ -64,7 +64,7 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
         )
 
         # Keep only the subsets of pairs wanted (up to nb_assets)
-        _CONF['exchange']['pair_whitelist'] = sanitized_list if (nb_assets == 0) else sanitized_list[:nb_assets]
+        _CONF['exchange']['pair_whitelist'] = sanitized_list[:nb_assets] if nb_assets else sanitized_list
 
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
