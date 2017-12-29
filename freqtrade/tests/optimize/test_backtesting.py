@@ -1,10 +1,11 @@
+# pragma pylint: disable=missing-docstring,W0212
+
 import math
 import os
 import pandas as pd
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
-from freqtrade.optimize.__init__ import testdata_path, download_pairs, download_backtesting_testdata
 
 
 def test_generate_text_table():
@@ -39,7 +40,7 @@ def test_backtest(default_conf, mocker):
     assert not results.empty
 
 
-def test_1min_ticker_interval(default_conf, mocker):
+def test_backtest_1min_ticker_interval(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 

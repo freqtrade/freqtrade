@@ -179,17 +179,20 @@ def handle_trade(trade: Trade) -> bool:
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
     # Check if minimal roi has been reached
-    if not min_roi_reached(trade, current_rate, datetime.utcnow()):
-        return False
+    if min_roi_reached(trade, current_rate, datetime.utcnow()):
+        logger.debug('Executing sell due to ROI ...')
+        execute_sell(trade, current_rate)
+        return True
 
     # Check if sell signal has been enabled and triggered
     if _CONF.get('experimental', {}).get('use_sell_signal'):
         logger.debug('Checking sell_signal ...')
-        if not get_signal(trade.pair, SignalType.SELL):
-            return False
+        if get_signal(trade.pair, SignalType.SELL):
+            logger.debug('Executing sell due to sell signal ...')
+            execute_sell(trade, current_rate)
+            return True
 
-    execute_sell(trade, current_rate)
-    return True
+    return False
 
 
 def get_target_bid(ticker: Dict[str, float]) -> float:
