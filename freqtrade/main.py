@@ -65,7 +65,7 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
             gen_pair_whitelist(
                 _CONF['stake_currency'],
                 topn=dynamic_whitelist,
-                black_list = _CONF.get('pair_blacklist', []),
+                black_list = _CONF.get('exchange').get('pair_blacklist', []),
             ) if dynamic_whitelist else None
         )
         # Query trades from persistence layer
