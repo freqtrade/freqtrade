@@ -53,7 +53,7 @@ def trim_dictlist(dl, num):
     new = {}
     for pair, pair_data in dl.items():
         # Can't figure out why -num wont work
-        #new[pair] = pair_data[-num:]
+        # new[pair] = pair_data[-num:]
         new[pair] = pair_data[-100:]
     return new
 
