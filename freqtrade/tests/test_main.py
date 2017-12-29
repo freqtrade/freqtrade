@@ -190,6 +190,7 @@ def test_create_trade_dynamic_stake_amount_under_maximum(default_conf, ticker, m
     assert trade.stake_amount == float(0.0015)/default_conf['max_open_trades']
     assert trade.is_open
 
+
 def test_create_trade_dynamic_dynamic_stake_amount_over_maximum(default_conf, ticker, mocker):
     default_conf.update({'experimental': {'auto_stake_amount': True}})
     default_conf.update({'max_open_trades': 2})
