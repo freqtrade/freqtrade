@@ -71,13 +71,13 @@ def load_data_test(what):
     base = 0.001
     if what == 'raise':
         return {'BTC_UNITEST':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
+                [{'T':  pair[x]['T'],  # Keep old dates
+                  'V':  pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
-                  'O': x * base,        # But replace O,H,L,C
-                  'H': x * base + 0.0001,
-                  'L': x * base - 0.0001,
-                  'C': x * base} for x in range(0,datalen)]}
+                  'O':  x * base,        # But replace O,H,L,C
+                  'H':  x * base + 0.0001,
+                  'L':  x * base - 0.0001,
+                  'C':  x * base} for x in range(0, datalen)]}
     if what == 'lower':
         return {'BTC_UNITEST':
                 [{'T': pair[x]['T'],  # Keep old dates
@@ -86,9 +86,9 @@ def load_data_test(what):
                   'O': 1 - x * base,        # But replace O,H,L,C
                   'H': 1 - x * base + 0.0001,
                   'L': 1 - x * base - 0.0001,
-                  'C': 1 - x * base} for x in range(0,datalen)]}
+                  'C': 1 - x * base} for x in range(0, datalen)]}
     if what == 'sine':
-        hz = 0.1 # frequency
+        hz = 0.1  # frequency
         return {'BTC_UNITEST':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
@@ -96,7 +96,7 @@ def load_data_test(what):
                   'O': math.sin(x*hz) / 1000 + base,        # But replace O,H,L,C
                   'H': math.sin(x*hz) / 1000 + base + 0.0001,
                   'L': math.sin(x*hz) / 1000 + base - 0.0001,
-                  'C': math.sin(x*hz) / 1000 + base} for x in range(0,datalen)]}
+                  'C': math.sin(x*hz) / 1000 + base} for x in range(0, datalen)]}
     return data
 
 
