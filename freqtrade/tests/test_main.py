@@ -217,7 +217,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.close_date is not None
 
 
-def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker, caplog):
+def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
