@@ -26,14 +26,13 @@ logger = logging.getLogger('freqtrade')
 _CONF = {}
 
 
-def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
+def refresh_whitelist(whitelist: List[str]) -> List[str]:
     """
     Check wallet health and remove pair from whitelist if necessary
     :param whitelist: a new whitelist (optional)
     :return: None
     """
-    whitelist = whitelist or _CONF['exchange']['pair_whitelist']
-    sanitized_whitelist = [x for x in whiletlist if x not in _CONF['exchange'].get('pair_blacklist',[])]
+    sanitized_whitelist = [x for x in whitelist if x not in _CONF['exchange'].get('pair_blacklist',[])]
     health = exchange.get_wallet_health()
     for status in health:
         pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
@@ -46,12 +45,9 @@ def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
                 'Ignoring %s from whitelist (reason: %s).',
                 pair, status.get('Notice') or 'wallet is not active'
             )
-    if _CONF['exchange']['pair_whitelist'] != sanitized_whitelist:
-        logger.debug('Using refreshed pair whitelist: %s ...', sanitized_whitelist)
-        _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
+    return sanitized_whitelist
 
-
-def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
+def _process(nb_assets: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
@@ -61,13 +57,15 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
     state_changed = False
     try:
         # Refresh whitelist based on wallet maintenance
-        refresh_whitelist(
+        sanitized_list = refresh_whitelist(
             gen_pair_whitelist(
-                _CONF['stake_currency'],
-                topn=dynamic_whitelist,
-                black_list = _CONF.get('pair_blacklist', []),
-            ) if dynamic_whitelist else None
+                _CONF['stake_currency']
+            ) if nb_assets else _CONF['exchange']['pair_whitelist']
         )
+
+        # Keep only the subsets of pairs wanted (up to nb_assets)
+        _CONF['exchange']['pair_whitelist'] = sanitized_list if (nb_assets == 0) else sanitized_list[:nb_assets]
+
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
@@ -292,24 +290,20 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 
 @cached(TTLCache(maxsize=1, ttl=1800))
-def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume', black_list: List[str] = []) -> List[str]:
+def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]:
     """
     Updates the whitelist with with a dynamically generated list
     :param base_currency: base currency as str
-    :param topn: maximum number of returned results, must be greater than 0
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
     summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency) and s['MarketName'].replace('-','_') not in black_list),
+        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
 
-    if topn <= 0:
-        topn = 20
-
-    return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
+    return [s['MarketName'].replace('-', '_') for s in summaries]
 
 
 def cleanup() -> None:
