@@ -62,52 +62,41 @@ def load_data_test(what):
     data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
     data = trim_dictlist(data, -100)
     pair = data['BTC_UNITEST']
+    datalen = len(pair)
     # Depending on the what parameter we now adjust the
     # loaded data looks:
     # pair :: [{'O': 0.123, 'H': 0.123, 'L': 0.123,
     #           'C': 0.123, 'V': 123.123,
     #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
-    o = 0.001
-    h = o
-    ll = o
-    c = o
-    ll -= 0.0001
-    h += 0.0001
+    base = 0.001
     if what == 'raise':
-        for frame in pair:
-            o += 0.0001
-            h += 0.0001
-            ll += 0.0001
-            c += 0.0001
-            # save prices rounded to satoshis
-            frame['O'] = round(o, 9)
-            frame['H'] = round(h, 9)
-            frame['L'] = round(ll, 9)
-            frame['C'] = round(c, 9)
+        return {'BTC_UNITEST':
+                [{'T': pair[x]['T'],  # Keep old dates
+                  'V': pair[x]['V'],  # Keep old volume
+                  'BV': pair[x]['BV'],  # keep too
+                  'O': x * base,        # But replace O,H,L,C
+                  'H': x * base + 0.0001,
+                  'L': x * base - 0.0001,
+                  'C': x * base} for x in range(0,datalen)]}
     if what == 'lower':
-        for frame in pair:
-            o -= 0.0001
-            h -= 0.0001
-            ll -= 0.0001
-            c -= 0.0001
-            # save prices rounded to satoshis
-            frame['O'] = round(o, 9)
-            frame['H'] = round(h, 9)
-            frame['L'] = round(ll, 9)
-            frame['C'] = round(c, 9)
+        return {'BTC_UNITEST':
+                [{'T': pair[x]['T'],  # Keep old dates
+                  'V': pair[x]['V'],  # Keep old volume
+                  'BV': pair[x]['BV'],  # keep too
+                  'O': 1 - x * base,        # But replace O,H,L,C
+                  'H': 1 - x * base + 0.0001,
+                  'L': 1 - x * base - 0.0001,
+                  'C': 1 - x * base} for x in range(0,datalen)]}
     if what == 'sine':
-        i = 0
-        for frame in pair:
-            o = (2 + math.sin(i/10)) / 1000
-            h = (2 + math.sin(i/10)) / 1000 + 0.0001
-            ll = (2 + math.sin(i/10)) / 1000 - 0.0001
-            c = (2 + math.sin(i/10)) / 1000 - 0.000001
-            # save prices rounded to satoshis
-            frame['O'] = round(o, 9)
-            frame['H'] = round(h, 9)
-            frame['L'] = round(ll, 9)
-            frame['C'] = round(c, 9)
-            i += 1
+        hz = 0.1 # frequency
+        return {'BTC_UNITEST':
+                [{'T': pair[x]['T'],  # Keep old dates
+                  'V': pair[x]['V'],  # Keep old volume
+                  'BV': pair[x]['BV'],  # keep too
+                  'O': math.sin(x*hz) / 1000 + base,        # But replace O,H,L,C
+                  'H': math.sin(x*hz) / 1000 + base + 0.0001,
+                  'L': math.sin(x*hz) / 1000 + base - 0.0001,
+                  'C': math.sin(x*hz) / 1000 + base} for x in range(0,datalen)]}
     return data
 
 
@@ -119,6 +108,7 @@ def simple_backtest(config, contour, num_results):
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
 
+
 # Test backtest on offline data
 # loaded by freqdata/optimize/__init__.py::load_data()
 
@@ -127,16 +117,15 @@ def test_backtest2(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
     results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
-    num_results = len(results)
-    assert num_results > 0
+    assert not results.empty
 
 
 def test_processed(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    data = load_data_test('raise')
-    x = optimize.preprocess(data)
-    df = x['BTC_UNITEST']
-    cols = df.columns
+    dict_of_tickerrows = load_data_test('raise')
+    dataframes = optimize.preprocess(dict_of_tickerrows)
+    dataframe = dataframes['BTC_UNITEST']
+    cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
     for col in ['close', 'high', 'low', 'open', 'date',
                 'ema50', 'ao', 'macd', 'plus_dm']:
@@ -145,6 +134,6 @@ def test_processed(default_conf, mocker):
 
 def test_backtest_pricecontours(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    tests = [['raise', 16], ['lower', 0], ['sine', 9]]
+    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
