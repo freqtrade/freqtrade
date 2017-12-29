@@ -36,7 +36,7 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     health = exchange.get_wallet_health()
     for status in health:
         pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
-        if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist',[]):
+        if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
         if status['IsActive']:
             sanitized_whitelist.append(pair)
@@ -46,6 +46,7 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
                 pair, status.get('Notice') or 'wallet is not active'
             )
     return sanitized_whitelist
+
 
 def _process(nb_assets: Optional[int] = 0) -> bool:
     """
@@ -64,7 +65,8 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
         )
 
         # Keep only the subsets of pairs wanted (up to nb_assets)
-        _CONF['exchange']['pair_whitelist'] = sanitized_list[:nb_assets] if nb_assets else sanitized_list
+        final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
+        _CONF['exchange']['pair_whitelist'] = final_list
 
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()

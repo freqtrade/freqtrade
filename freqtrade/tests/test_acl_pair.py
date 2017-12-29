@@ -52,7 +52,6 @@ def test_refresh_whitelist(mocker):
     print(conf['exchange']['pair_whitelist'])
     print(refreshedwhitelist)
     whitelist = ['BTC_ETH', 'BTC_TKN']
-    pairslist = conf['exchange']['pair_whitelist']
     # Ensure all except those in whitelist are removed
     assert_list_equal(whitelist, refreshedwhitelist)
 

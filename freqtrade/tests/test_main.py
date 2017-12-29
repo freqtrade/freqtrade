@@ -179,6 +179,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
         mocker.patch.dict('freqtrade.main._CONF', conf)
         create_trade(default_conf['stake_amount'])
 
+
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
