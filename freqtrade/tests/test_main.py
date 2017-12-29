@@ -217,7 +217,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.close_date is not None
 
 
-def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
+def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -235,10 +235,46 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     trade = Trade.query.first()
     trade.is_open = True
 
+    # FIX: sniffing logs, suggest handle_trade should not execute_sell
+    #      instead that responsibility should be moved out of handle_trade(),
+    #      we might just want to check if we are in a sell condition without
+    #      executing
+    # if ROI is reached we must sell
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: False)
+    assert handle_trade(trade)
+    assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
+    # if ROI is reached we must sell even if sell-signal is not signalled
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    assert handle_trade(trade)
+    assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
+
+
+def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker, caplog):
+    default_conf.update({'experimental': {'use_sell_signal': True}})
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker,
+                          buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
+
+    init(default_conf, create_engine('sqlite://'))
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    trade.is_open = True
+
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: False)
     value_returned = handle_trade(trade)
     assert ('freqtrade', logging.DEBUG, 'Checking sell_signal ...') in caplog.record_tuples
     assert value_returned is False
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    assert handle_trade(trade)
+    s = 'Executing sell due to sell signal ...'
+    assert ('freqtrade', logging.DEBUG, s) in caplog.record_tuples
 
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker):
