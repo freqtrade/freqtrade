@@ -2,9 +2,11 @@
 
 import math
 import pandas as pd
+# from unittest.mock import MagicMock
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
+# import freqtrade.optimize.backtesting as backtesting
 
 
 def test_generate_text_table():
@@ -49,77 +51,53 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
     assert not results.empty
 
 
-def trim_dataframe(df, num):
-    new = dict()
-    for pair, pair_data in df.items():
-        new[pair] = pair_data[-num:]  # last 50 rows
+def trim_dictlist(dl, num):
+    new = {}
+    for pair, pair_data in dl.items():
+        # Can't figure out why -num wont work
+        new[pair] = pair_data[num:]
     return new
 
 
 def load_data_test(what):
     data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
-    data = trim_dataframe(data, -40)
+    data = trim_dictlist(data, -100)
     pair = data['BTC_UNITEST']
-
+    datalen = len(pair)
     # Depending on the what parameter we now adjust the
-    # loaded data:
+    # loaded data looks:
     # pair :: [{'O': 0.123, 'H': 0.123, 'L': 0.123,
     #           'C': 0.123, 'V': 123.123,
     #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
+    base = 0.001
     if what == 'raise':
-        o = 0.001
-        h = 0.001
-        ll = 0.001
-        c = 0.001
-        ll -= 0.0001
-        h += 0.0001
-        for frame in pair:
-            o += 0.0001
-            h += 0.0001
-            ll += 0.0001
-            c += 0.0001
-            # save prices rounded to satoshis
-            frame['O'] = round(o, 9)
-            frame['H'] = round(h, 9)
-            frame['L'] = round(ll, 9)
-            frame['C'] = round(c, 9)
+        return {'BTC_UNITEST':
+                [{'T':  pair[x]['T'],  # Keep old dates
+                  'V':  pair[x]['V'],  # Keep old volume
+                  'BV': pair[x]['BV'],  # keep too
+                  'O':  x * base,        # But replace O,H,L,C
+                  'H':  x * base + 0.0001,
+                  'L':  x * base - 0.0001,
+                  'C':  x * base} for x in range(0, datalen)]}
     if what == 'lower':
-        o = 0.001
-        h = 0.001
-        ll = 0.001
-        c = 0.001
-        ll -= 0.0001
-        h += 0.0001
-        for frame in pair:
-            o -= 0.0001
-            h -= 0.0001
-            ll -= 0.0001
-            c -= 0.0001
-            # save prices rounded to satoshis
-            frame['O'] = round(o, 9)
-            frame['H'] = round(h, 9)
-            frame['L'] = round(ll, 9)
-            frame['C'] = round(c, 9)
+        return {'BTC_UNITEST':
+                [{'T': pair[x]['T'],  # Keep old dates
+                  'V': pair[x]['V'],  # Keep old volume
+                  'BV': pair[x]['BV'],  # keep too
+                  'O': 1 - x * base,        # But replace O,H,L,C
+                  'H': 1 - x * base + 0.0001,
+                  'L': 1 - x * base - 0.0001,
+                  'C': 1 - x * base} for x in range(0, datalen)]}
     if what == 'sine':
-        i = 0
-        o = (2 + math.sin(i/10)) / 1000
-        h = o
-        ll = o
-        c = o
-        h += 0.0001
-        ll -= 0.0001
-        for frame in pair:
-            o = (2 + math.sin(i/10)) / 1000
-            h = (2 + math.sin(i/10)) / 1000 + 0.0001
-            ll = (2 + math.sin(i/10)) / 1000 - 0.0001
-            c = (2 + math.sin(i/10)) / 1000 - 0.000001
-
-            # save prices rounded to satoshis
-            frame['O'] = round(o, 9)
-            frame['H'] = round(h, 9)
-            frame['L'] = round(ll, 9)
-            frame['C'] = round(c, 9)
-            i += 1
+        hz = 0.1  # frequency
+        return {'BTC_UNITEST':
+                [{'T': pair[x]['T'],  # Keep old dates
+                  'V': pair[x]['V'],  # Keep old volume
+                  'BV': pair[x]['BV'],  # keep too
+                  'O': math.sin(x*hz) / 1000 + base,        # But replace O,H,L,C
+                  'H': math.sin(x*hz) / 1000 + base + 0.0001,
+                  'L': math.sin(x*hz) / 1000 + base - 0.0001,
+                  'C': math.sin(x*hz) / 1000 + base} for x in range(0, datalen)]}
     return data
 
 
@@ -131,6 +109,7 @@ def simple_backtest(config, contour, num_results):
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
 
+
 # Test backtest on offline data
 # loaded by freqdata/optimize/__init__.py::load_data()
 
@@ -139,18 +118,42 @@ def test_backtest2(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
     results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
-    num_resutls = len(results)
-    assert num_resutls > 0
+    assert not results.empty
 
 
 def test_processed(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    data = load_data_test('raise')
-    assert optimize.preprocess(data)
+    dict_of_tickerrows = load_data_test('raise')
+    dataframes = optimize.preprocess(dict_of_tickerrows)
+    dataframe = dataframes['BTC_UNITEST']
+    cols = dataframe.columns
+    # assert the dataframe got some of the indicator columns
+    for col in ['close', 'high', 'low', 'open', 'date',
+                'ema50', 'ao', 'macd', 'plus_dm']:
+        assert col in cols
 
 
-def test_raise(default_conf, mocker):
+def test_backtest_pricecontours(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    tests = [['raise', 359], ['lower', 0], ['sine', 1734]]
+    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
+
+# Please make this work, the load_config needs to be mocked
+# and cleanups.
+# def test_backtest_start(default_conf, mocker):
+#   default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+#   mocker.patch.dict('freqtrade.main._CONF', default_conf)
+#   # see https://pypi.python.org/pypi/pytest-mock/
+#   # and http://www.voidspace.org.uk/python/mock/patch.html
+#   # No usage example of simple function mocking,
+#   # and no documentation of side_effect
+#   mocker.patch('freqtrade.misc.load_config', new=lambda s, t: {})
+#   args = MagicMock()
+#   args.level = 10
+#   #load_config('foo')
+#   backtesting.start(args)
+#
+#    Check what sideeffect backtstesting has done.
+#    Probably need to capture standard-output and
+#    check for the generated report table.

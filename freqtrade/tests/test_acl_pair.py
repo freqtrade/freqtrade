@@ -5,13 +5,6 @@ from freqtrade.main import refresh_whitelist
 # perhaps try to anticipate that by using some python package
 
 
-def assert_list_equal(l1, l2):
-    for pair in l1:
-        assert pair in l2
-    for pair in l2:
-        assert pair in l1
-
-
 def whitelist_conf():
     return {
         "stake_currency": "BTC",
@@ -51,7 +44,7 @@ def test_refresh_whitelist(mocker):
     refreshedwhitelist = refresh_whitelist(conf['exchange']['pair_whitelist'])
     whitelist = ['BTC_ETH', 'BTC_TKN']
     # Ensure all except those in whitelist are removed
-    assert_list_equal(whitelist, refreshedwhitelist)
+    assert set(whitelist) == set(refreshedwhitelist)
 
 
 def test_refresh_whitelist_dynamic(mocker):
@@ -62,7 +55,7 @@ def test_refresh_whitelist_dynamic(mocker):
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = ['BTC_ETH', 'BTC_TKN']
     refreshedwhitelist = refresh_whitelist(whitelist)
-    assert_list_equal(whitelist, refreshedwhitelist)
+    assert set(whitelist) == set(refreshedwhitelist)
 
 
 def test_refresh_whitelist_dynamic_empty(mocker):
@@ -75,4 +68,4 @@ def test_refresh_whitelist_dynamic_empty(mocker):
     conf['exchange']['pair_whitelist'] = []
     refresh_whitelist(whitelist)
     pairslist = conf['exchange']['pair_whitelist']
-    assert_list_equal(whitelist, pairslist)
+    assert set(whitelist) == set(pairslist)
