@@ -379,7 +379,7 @@ def main() -> None:
                 throttle(
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
-                    dynamic_whitelist=args.dynamic_whitelist,
+                    nb_assets=args.dynamic_whitelist,
                 )
             old_state = new_state
     except KeyboardInterrupt:
