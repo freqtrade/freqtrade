@@ -16,32 +16,26 @@ def test_throttle():
         return 42
 
     start = time.time()
-    result = throttle(func, min_secs = 0.1)
+    result = throttle(func, min_secs=0.1)
     end = time.time()
 
     assert result == 42
     assert end - start > 0.1
 
-    result = throttle(func, min_secs = -1)
+    result = throttle(func, min_secs=-1)
     assert result == 42
+
 
 def test_throttle_with_assets():
 
-    def func(nb_assets = -1):
+    def func(nb_assets=-1):
         return nb_assets
 
-    start = time.time()
-    result = throttle(func, min_secs = 0.1, nb_assets = 666)
-    end = time.time()
-
+    result = throttle(func, min_secs=0.1, nb_assets=666)
     assert result == 666
 
-    start = time.time()
-    result = throttle(func, min_secs = 0.1)
-    end = time.time()
-
+    result = throttle(func, min_secs=0.1)
     assert result == -1
-
 
 
 def test_parse_args_defaults():
@@ -91,7 +85,8 @@ def test_parse_args_dynamic_whitelist_invalid_values():
 
 
 def test_parse_args_backtesting(mocker):
-    backtesting_mock = mocker.patch('freqtrade.optimize.backtesting.start', MagicMock())
+    backtesting_mock = mocker.patch(
+        'freqtrade.optimize.backtesting.start', MagicMock())
     args = parse_args(['backtesting'])
     assert args is None
     assert backtesting_mock.call_count == 1
@@ -114,7 +109,8 @@ def test_parse_args_backtesting_invalid():
 
 
 def test_parse_args_backtesting_custom(mocker):
-    backtesting_mock = mocker.patch('freqtrade.optimize.backtesting.start', MagicMock())
+    backtesting_mock = mocker.patch(
+        'freqtrade.optimize.backtesting.start', MagicMock())
     args = parse_args([
         '-c', 'test_conf.json',
         'backtesting',
@@ -135,7 +131,8 @@ def test_parse_args_backtesting_custom(mocker):
 
 
 def test_parse_args_hyperopt(mocker):
-    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    hyperopt_mock = mocker.patch(
+        'freqtrade.optimize.hyperopt.start', MagicMock())
     args = parse_args(['hyperopt'])
     assert args is None
     assert hyperopt_mock.call_count == 1
@@ -148,7 +145,8 @@ def test_parse_args_hyperopt(mocker):
 
 
 def test_parse_args_hyperopt_custom(mocker):
-    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    hyperopt_mock = mocker.patch(
+        'freqtrade.optimize.hyperopt.start', MagicMock())
     args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'])
     assert args is None
     assert hyperopt_mock.call_count == 1
@@ -173,7 +171,10 @@ def test_load_config(default_conf, mocker):
 def test_load_config_invalid_pair(default_conf, mocker):
     conf = deepcopy(default_conf)
     conf['exchange']['pair_whitelist'].append('BTC-ETH')
-    mocker.patch('freqtrade.misc.open', mocker.mock_open(read_data=json.dumps(conf)))
+    mocker.patch(
+        'freqtrade.misc.open',
+        mocker.mock_open(
+            read_data=json.dumps(conf)))
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         load_config('somefile')
 
@@ -181,6 +182,9 @@ def test_load_config_invalid_pair(default_conf, mocker):
 def test_load_config_missing_attributes(default_conf, mocker):
     conf = deepcopy(default_conf)
     conf.pop('exchange')
-    mocker.patch('freqtrade.misc.open', mocker.mock_open(read_data=json.dumps(conf)))
+    mocker.patch(
+        'freqtrade.misc.open',
+        mocker.mock_open(
+            read_data=json.dumps(conf)))
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
         load_config('somefile')
