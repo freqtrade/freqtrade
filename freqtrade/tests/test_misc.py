@@ -16,14 +16,32 @@ def test_throttle():
         return 42
 
     start = time.time()
-    result = throttle(func, 0.1)
+    result = throttle(func, min_secs = 0.1)
     end = time.time()
 
     assert result == 42
     assert end - start > 0.1
 
-    result = throttle(func, -1)
+    result = throttle(func, min_secs = -1)
     assert result == 42
+
+def test_throttle_with_assets():
+
+    def func(nb_assets = -1):
+        return nb_assets
+
+    start = time.time()
+    result = throttle(func, min_secs = 0.1, nb_assets = 666)
+    end = time.time()
+
+    assert result == 666
+
+    start = time.time()
+    result = throttle(func, min_secs = 0.1)
+    end = time.time()
+
+    assert result == -1
+
 
 
 def test_parse_args_defaults():
