@@ -55,7 +55,7 @@ use the `last` price and values between those interpolate between ask and last
 price. Using `ask` price will guarantee quick success in bid, but bot will also
 end up paying more then would probably have been necessary.
 
-`fiat_currency` set the fiat to use for the conversion form coin to 
+`fiat_display_currency` set the fiat to use for the conversion form coin to 
 fiat in Telegram. The valid value are: "AUD", "BRL", "CAD", "CHF", 
 "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", 
 "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",

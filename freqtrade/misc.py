@@ -280,6 +280,7 @@ CONF_SCHEMA = {
         'max_open_trades',
         'stake_currency',
         'stake_amount',
+        'fiat_display_currency',
         'dry_run',
         'minimal_roi',
         'bid_strategy',

@@ -124,26 +124,39 @@ def execute_sell(trade: Trade, limit: float) -> None:
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
     profit_trade = trade.calc_profit(rate=limit)
 
-    fiat_converter = CryptoToFiatConverter()
-    profit_fiat = fiat_converter.convert_amount(
-        profit_trade,
-        _CONF['stake_currency'],
-        _CONF['fiat_display_currency']
-    )
+    message = '*{exchange}:* Selling [{pair}]({pair_url}) with limit `{limit:.8f}`'.format(
+                    exchange=trade.exchange,
+                    pair=trade.pair.replace('_', '/'),
+                    pair_url=exchange.get_pair_detail_url(trade.pair),
+                    limit=limit
+                )
 
-    rpc.send_msg('*{exchange}:* Selling [{pair}]({pair_url}) with limit `{limit:.8f}`'
-                 '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f} {coin}`'
-                 '` / {profit_fiat:.3f} {fiat})`'.format(
-                        exchange=trade.exchange,
-                        pair=trade.pair.replace('_', '/'),
-                        pair_url=exchange.get_pair_detail_url(trade.pair),
-                        limit=limit,
+    # For regular case, when the configuration exists
+    if 'stake_currency' in _CONF and 'fiat_display_currency' in _CONF:
+        fiat_converter = CryptoToFiatConverter()
+        profit_fiat = fiat_converter.convert_amount(
+            profit_trade,
+            _CONF['stake_currency'],
+            _CONF['fiat_display_currency']
+        )
+        message += '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
+                   '` / {profit_fiat:.3f} {fiat})`'.format(
                         profit_percent=fmt_exp_profit,
                         profit_coin=profit_trade,
                         coin=_CONF['stake_currency'],
                         profit_fiat=profit_fiat,
                         fiat=_CONF['fiat_display_currency'],
-                    ))
+                   )
+    # Because telegram._forcesell does not have the configuration
+    # Ignore the FIAT value and does not show the stake_currency as well
+    else:
+        message += '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f})`'.format(
+            profit_percent=fmt_exp_profit,
+            profit_coin=profit_trade
+        )
+
+    # Send the message
+    rpc.send_msg(message)
     Trade.session.flush()
 
 

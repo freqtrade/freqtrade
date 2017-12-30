@@ -11,7 +11,7 @@ from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
 from freqtrade.exchange import Exchanges
 from freqtrade.main import create_trade, handle_trade, init, \
-    get_target_bid, _process
+    get_target_bid, _process, execute_sell
 from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 
@@ -314,3 +314,104 @@ def test_balance_fully_last_side(mocker):
 def test_balance_bigger_last_ask(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
     assert get_target_bid({'ask': 5, 'last': 10}) == 5
+
+
+def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    init(default_conf, create_engine('sqlite://'))
+
+    # Create some test data
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Increase the price and sell it
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_up)
+
+    execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
+
+    assert rpc_mock.call_count == 2
+    assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
+    assert 'profit: ~6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
+
+
+def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    init(default_conf, create_engine('sqlite://'))
+
+    # Create some test data
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Decrease the price and sell it
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_down)
+
+    execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
+
+    assert rpc_mock.call_count == 2
+    assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
+    assert 'profit: ~-5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
+    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
+
+
+def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, create_engine('sqlite://'))
+
+    # Create some test data
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Increase the price and sell it
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_up)
+    mocker.patch('freqtrade.main._CONF', {})
+
+    execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
+
+    assert rpc_mock.call_count == 2
+    assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
+    assert '(profit: ~6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
+    assert 'USD' not in rpc_mock.call_args_list[-1][0][0]
