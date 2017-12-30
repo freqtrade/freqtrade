@@ -29,8 +29,8 @@ _CONF = {}
 def refresh_whitelist(whitelist: List[str]) -> List[str]:
     """
     Check wallet health and remove pair from whitelist if necessary
-    :param whitelist: a new whitelist (optional)
-    :return: None
+    :param whitelist: the pair the user might want to trade
+    :return: the list of pairs the user wants to trade without the one unavailable or black_listed
     """
     sanitized_whitelist = []
     health = exchange.get_wallet_health()
@@ -52,7 +52,7 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
-    :param: dynamic_whitelist: True is a dynamic whitelist should be generated (optional)
+    :param: nb_assets: the maximum number of pairs to be traded at the same time
     :return: True if a trade has been created or closed, False otherwise
     """
     state_changed = False

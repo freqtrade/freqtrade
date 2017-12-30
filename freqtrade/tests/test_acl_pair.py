@@ -49,8 +49,6 @@ def test_refresh_whitelist(mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_wallet_health=get_health)
     refreshedwhitelist = refresh_whitelist(conf['exchange']['pair_whitelist'])
-    print(conf['exchange']['pair_whitelist'])
-    print(refreshedwhitelist)
     whitelist = ['BTC_ETH', 'BTC_TKN']
     # Ensure all except those in whitelist are removed
     assert_list_equal(whitelist, refreshedwhitelist)
