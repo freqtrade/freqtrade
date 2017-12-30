@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212
 
 import math
-#  import json
 import pandas as pd
 # from unittest.mock import MagicMock
 from freqtrade import exchange, optimize
@@ -56,8 +55,7 @@ def trim_dictlist(dl, num):
     new = {}
     for pair, pair_data in dl.items():
         # Can't figure out why -num wont work
-        # new[pair] = pair_data[-num:]
-        new[pair] = pair_data[-100:]
+        new[pair] = pair_data[num:]
     return new
 
 
@@ -144,23 +142,17 @@ def test_backtest_pricecontours(default_conf, mocker):
 # Please make this work, the load_config needs to be mocked
 # and cleanups.
 # def test_backtest_start(default_conf, mocker):
-#    default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
-#    #mocker.patch.dict('freqtrade.main._CONF', default_conf)
-#    mocker.patch.multiple('freqtrade.misc',
-#                          load_config=MagicMock())
-#
-#    #mocker.patch('freqtrade.misc.load_config', side_effect=lambda s: {})
-#    #mocker.patch('freqtrade.misc.load_config', MagicMock())
-#    #side_effect=lambda s: {})
-#    #mocker.patch('freqtrade.misc.open', mocker.mock_open(
-#    #    read_data=json.dumps(default_conf)
-#    #))
-#
-#
-#    print(default_conf)
-#    args = MagicMock()
-#    args.level = 10
-#    backtesting.start(args)
+#   default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+#   mocker.patch.dict('freqtrade.main._CONF', default_conf)
+#   # see https://pypi.python.org/pypi/pytest-mock/
+#   # and http://www.voidspace.org.uk/python/mock/patch.html
+#   # No usage example of simple function mocking,
+#   # and no documentation of side_effect
+#   mocker.patch('freqtrade.misc.load_config', new=lambda s, t: {})
+#   args = MagicMock()
+#   args.level = 10
+#   #load_config('foo')
+#   backtesting.start(args)
 #
 #    Check what sideeffect backtstesting has done.
 #    Probably need to capture standard-output and

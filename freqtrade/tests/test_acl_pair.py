@@ -53,7 +53,7 @@ def test_refresh_whitelist(mocker):
     whitelist = ['BTC_ETH', 'BTC_TKN']
     pairslist = conf['exchange']['pair_whitelist']
     # Ensure all except those in whitelist are removed
-    assert_list_equal(whitelist, pairslist)
+    set(whitelist) == set(pairslist)
 
 
 def test_refresh_whitelist_dynamic(mocker):
@@ -65,7 +65,7 @@ def test_refresh_whitelist_dynamic(mocker):
     whitelist = ['BTC_ETH', 'BTC_TKN']
     refresh_whitelist(whitelist)
     pairslist = conf['exchange']['pair_whitelist']
-    assert_list_equal(whitelist, pairslist)
+    set(whitelist) == set(pairslist)
 
 
 def test_refresh_whitelist_dynamic_empty(mocker):
@@ -78,4 +78,4 @@ def test_refresh_whitelist_dynamic_empty(mocker):
     conf['exchange']['pair_whitelist'] = []
     refresh_whitelist(whitelist)
     pairslist = conf['exchange']['pair_whitelist']
-    assert_list_equal(whitelist, pairslist)
+    set(whitelist) == set(pairslist)
