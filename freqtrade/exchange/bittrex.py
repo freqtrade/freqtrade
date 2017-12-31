@@ -148,9 +148,9 @@ class Bittrex(Exchange):
             raise ValueError(
                 'Cannot parse tick_interval: {}'.format(tick_interval))
         if pair in _cache.keys():
-            _cache[pair] = self.update_with_latest_ticker(pair)
+            data = self.update_with_latest_ticker(pair)
         else:
-            _cache[pair] = _API_V2.get_candles(pair.replace('_', '-'), interval)
+            data = _API_V2.get_candles(pair.replace('_', '-'), interval)
         # These sanity check are necessary because bittrex cannot keep their
         # API stable.
         if not data.get('result'):
