@@ -14,6 +14,7 @@ _API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
 _cache: dict = dict()
 
+
 class Bittrex(Exchange):
     """
     Bittrex API wrapper.
@@ -21,7 +22,6 @@ class Bittrex(Exchange):
     # Base URL and API endpoints
     BASE_URL: str = 'https://www.bittrex.com'
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
-
 
     def __init__(self, config: dict) -> None:
         global _API, _API_V2, _EXCHANGE_CONF
@@ -48,21 +48,17 @@ class Bittrex(Exchange):
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
-                message=data['message'],
-                pair=pair,
-                rate=rate,
-                amount=amount))
+            raise OperationalException(
+                '{message} params=({pair}, {rate}, {amount})'.format(
+                    message=data['message'], pair=pair, rate=rate, amount=amount))
         return data['result']['uuid']
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
-                message=data['message'],
-                pair=pair,
-                rate=rate,
-                amount=amount))
+            raise OperationalException(
+                '{message} params=({pair}, {rate}, {amount})'.format(
+                    message=data['message'], pair=pair, rate=rate, amount=amount))
         return data['result']['uuid']
 
     def get_balance(self, currency: str) -> float:
@@ -76,7 +72,9 @@ class Bittrex(Exchange):
     def get_balances(self):
         data = _API.get_balances()
         if not data['success']:
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(
+                '{message}'.format(
+                    message=data['message']))
         return data['result']
 
     def get_ticker(self, pair: str) -> dict:
@@ -99,36 +97,40 @@ class Bittrex(Exchange):
             'last': float(data['result']['Last']),
         }
 
-	
     def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         if tick_interval == 1:
             interval = 'oneMin'
         elif tick_interval == 5:
             interval = 'fiveMin'
         else:
-            raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
+            raise ValueError(
+                'Cannot parse tick_interval: {}'.format(tick_interval))
         if pair in _cache.keys():
-                # pair is in cache retriev lastest candle
-                sdata = _API_V2.get_latest_candle(pair.replace('_', '-'), interval)
-                if not sdata.get('result'):
-                        raise ContentDecodingError('{message} params=({pair})'.format(
-                            message='Got invalid response from bittrex',
-                            pair=pair))
-                data = _cache[pair]
-                #this is the latest results we had
-                old_ticker = data['result'][-1];
-                #check timestamp is newer ...
-                if (sdata['result'][0]['T'] > old_ticker['T']) : 
-                        data['result'].append(sdata['result'][0])
-                elif (sdata['result'][0]['T'] == old_ticker['T']) :
-                        #if volume has changed, update the latest result with the new one
-                        if (sdata['result'][0]['V'] > old_ticker['V']) :
-                                data['result'][-1] = sdata['result'][0]
-        else : 
-                data = _API_V2.get_candles(pair.replace('_', '-'), interval)
+            # pair is in cache retriev lastest candle
+            sdata = _API_V2.get_latest_candle(pair.replace('_', '-'), interval)
+            if not sdata.get('result'):
+                raise ContentDecodingError('{message} params=({pair})'.format(
+                    message='Got invalid response from bittrex',
+                    pair=pair))
+            data = _cache[pair]
+            # this is the latest results we had
+            old_ticker = data['result'][-1]
+            # check timestamp is newer ...
+            if (sdata['result'][0]['T'] > old_ticker['T']):
+                data['result'].append(sdata['result'][0])
+                # avoid habinf to much data to analyze
+                data['result'].pop(0)
+            elif (sdata['result'][0]['T'] == old_ticker['T']):
+                # if volume has changed, update the latest result with the new
+                # one
+                if (sdata['result'][0]['V'] > old_ticker['V']):
+                    data['result'][-1] = sdata['result'][0]
+        else:
+            data = _API_V2.get_candles(pair.replace('_', '-'), interval)
         # Update the value in cache
         _cache[pair] = data
-        # These sanity check are necessary because bittrex cannot keep their API stable.
+        # These sanity check are necessary because bittrex cannot keep their
+        # API stable.
         if not data.get('result'):
             raise ContentDecodingError('{message} params=({pair})'.format(
                 message='Got invalid response from bittrex',
@@ -137,9 +139,10 @@ class Bittrex(Exchange):
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
             for tick in data['result']:
                 if prop not in tick.keys():
-                    raise ContentDecodingError('{message} params=({pair})'.format(
-                        message='Required property {} not present in response'.format(prop),
-                        pair=pair))
+                    raise ContentDecodingError(
+                        '{message} params=({pair})'.format(
+                            message='Required property {} not present in response'.format(prop),
+                            pair=pair))
 
         if not data['success']:
             raise OperationalException('{message} params=({pair})'.format(
@@ -174,24 +177,31 @@ class Bittrex(Exchange):
                 order_id=order_id))
 
     def get_pair_detail_url(self, pair: str) -> str:
-        return self.PAIR_DETAIL_METHOD + '?MarketName={}'.format(pair.replace('_', '-'))
+        return self.PAIR_DETAIL_METHOD + \
+            '?MarketName={}'.format(pair.replace('_', '-'))
 
     def get_markets(self) -> List[str]:
         data = _API.get_markets()
         if not data['success']:
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(
+                '{message}'.format(
+                    message=data['message']))
         return [m['MarketName'].replace('-', '_') for m in data['result']]
 
     def get_market_summaries(self) -> List[Dict]:
         data = _API.get_market_summaries()
         if not data['success']:
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(
+                '{message}'.format(
+                    message=data['message']))
         return data['result']
 
     def get_wallet_health(self) -> List[Dict]:
         data = _API_V2.get_wallet_health()
         if not data['success']:
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(
+                '{message}'.format(
+                    message=data['message']))
         return [{
             'Currency': entry['Health']['Currency'],
             'IsActive': entry['Health']['IsActive'],
