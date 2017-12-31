@@ -29,6 +29,9 @@
             "BTC_POWR",
             "BTC_ADA",
             "BTC_XMR"
+        ],
+        "pair_blacklist": [
+            "BTC_DOGE"
         ]
     },
     "experimental": {
