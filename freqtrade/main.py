@@ -92,8 +92,8 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
                 state_changed = handle_trade(trade) or state_changed
+        Trade.session.flush()
 
-            Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         logger.warning(
             'Got %s in _process(), retrying in 30 seconds...',
