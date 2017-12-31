@@ -35,7 +35,8 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     return arrow.get(min_date), arrow.get(max_date)
 
 
-def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currency) -> str:
+def generate_text_table(
+        data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
@@ -47,34 +48,34 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
         tabular_data.append([
             pair,
             len(result.index),
-            '{:.2f}%'.format(result.profit.mean() * 100.0),
-            '{:.08f} {}'.format(result.profit.sum(), stake_currency),
-            '{:.2f}'.format(result.duration.mean() * 5),
+            '{:.2f}%'.format(result.profit_percent.mean() * 100.0),
+            '{:.08f} {}'.format(result.profit_BTC.sum(), stake_currency),
+            '{:.2f}'.format(result.duration.mean() * ticker_interval),
         ])
 
     # Append Total
     tabular_data.append([
         'TOTAL',
         len(results.index),
-        '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.08f} {}'.format(results.profit.sum(), stake_currency),
-        '{:.2f}'.format(results.duration.mean() * 5),
+        '{:.2f}%'.format(results.profit_percent.mean() * 100.0),
+        '{:.08f} {}'.format(results.profit_BTC.sum(), stake_currency),
+        '{:.2f}'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
 
 
-def backtest(config: Dict, processed: Dict[str, DataFrame],
+def backtest(stake_amount: float, processed: Dict[str, DataFrame],
              max_open_trades: int = 0, realistic: bool = True) -> DataFrame:
     """
     Implements backtesting functionality
-    :param config: config to use
+    :param stake_amount: btc amount to use for each trade
     :param processed: a processed dictionary with format {pair, data}
     :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
     :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
     """
     trades = []
-    trade_count_lock = {}
+    trade_count_lock: dict = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
@@ -97,8 +98,9 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                amount=config['stake_amount'],
-                fee=exchange.get_fee() * 2
+                stake_amount=stake_amount,
+                amount=stake_amount / row.open,
+                fee=exchange.get_fee()
             )
 
             # calculate win/lose forwards from buy point
@@ -108,12 +110,20 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
                 if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
-                    current_profit = trade.calc_profit(row2.close)
+                    current_profit_percent = trade.calc_profit_percent(rate=row2.close)
+                    current_profit_btc = trade.calc_profit(rate=row2.close)
                     lock_pair_until = row2.Index
 
-                    trades.append((pair, current_profit, row2.Index - row.Index))
+                    trades.append(
+                        (
+                            pair,
+                            current_profit_percent,
+                            current_profit_btc,
+                            row2.Index - row.Index
+                        )
+                    )
                     break
-    labels = ['currency', 'profit', 'duration']
+    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
     return DataFrame.from_records(trades, columns=labels)
 
 
@@ -132,13 +142,15 @@ def start(args):
     logger.info('Using ticker_interval: %s ...', args.ticker_interval)
 
     data = {}
+    pairs = config['exchange']['pair_whitelist']
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
-        for pair in config['exchange']['pair_whitelist']:
+        for pair in pairs:
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
-        logger.info('Using local backtesting data (ignoring whitelist in given config) ...')
-        data = load_data(args.ticker_interval)
+        logger.info('Using local backtesting data (using whitelist in given config) ...')
+        data = load_data(pairs=pairs, ticker_interval=args.ticker_interval,
+                         refresh_pairs=args.refresh_pairs)
 
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
@@ -158,9 +170,9 @@ def start(args):
 
     # Execute backtest and print results
     results = backtest(
-        config, preprocess(data), max_open_trades, args.realistic_simulation
+        config['stake_amount'], preprocess(data), max_open_trades, args.realistic_simulation
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
-        generate_text_table(data, results, config['stake_currency'])
+        generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )

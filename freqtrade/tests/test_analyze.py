@@ -22,7 +22,7 @@ def test_dataframe_correct_columns(result):
 
 
 def test_dataframe_correct_length(result):
-    assert len(result.index) == 14382
+    assert len(result.index) == 14395
 
 
 def test_populates_buy_trend(result):

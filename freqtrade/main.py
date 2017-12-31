@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import asyncio
 import copy
 import json
 import logging
 import sys
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Dict, Optional, List
 
@@ -17,25 +19,24 @@ from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
     load_config
 from freqtrade.persistence import Trade
+from freqtrade.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger('freqtrade')
 
 _CONF = {}
 
 
-def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
+def refresh_whitelist(whitelist: List[str]) -> List[str]:
     """
     Check wallet health and remove pair from whitelist if necessary
-    :param whitelist: a new whitelist (optional)
-    :return: None
+    :param whitelist: the pair the user might want to trade
+    :return: the list of pairs the user wants to trade without the one unavailable or black_listed
     """
-    whitelist = whitelist or _CONF['exchange']['pair_whitelist']
-
     sanitized_whitelist = []
     health = exchange.get_wallet_health()
     for status in health:
         pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
-        if pair not in whitelist:
+        if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
         if status['IsActive']:
             sanitized_whitelist.append(pair)
@@ -44,24 +45,29 @@ def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
                 'Ignoring %s from whitelist (reason: %s).',
                 pair, status.get('Notice') or 'wallet is not active'
             )
-    if _CONF['exchange']['pair_whitelist'] != sanitized_whitelist:
-        logger.debug('Using refreshed pair whitelist: %s ...', sanitized_whitelist)
-        _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
+    return sanitized_whitelist
 
 
-def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
+def _process(nb_assets: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
-    :param: dynamic_whitelist: True is a dynamic whitelist should be generated (optional)
+    :param: nb_assets: the maximum number of pairs to be traded at the same time
     :return: True if a trade has been created or closed, False otherwise
     """
     state_changed = False
     try:
         # Refresh whitelist based on wallet maintenance
-        refresh_whitelist(
-            gen_pair_whitelist(_CONF['stake_currency']) if dynamic_whitelist else None
+        sanitized_list = refresh_whitelist(
+            gen_pair_whitelist(
+                _CONF['stake_currency']
+            ) if nb_assets else _CONF['exchange']['pair_whitelist']
         )
+
+        # Keep only the subsets of pairs wanted (up to nb_assets)
+        final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
+        _CONF['exchange']['pair_whitelist'] = final_list
+
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
@@ -73,8 +79,8 @@ def _process(dynamic_whitelist: Optional[bool] = False) -> bool:
                         'Checked all whitelisted currencies. '
                         'Found no suitable entry positions for buying. Will keep looking ...'
                     )
-            except DependencyException as e:
-                logger.warning('Unable to create trade: %s', e)
+            except DependencyException as exception:
+                logger.warning('Unable to create trade: %s', exception)
 
         for trade in trades:
             # Get order details for actual price per unit
@@ -115,14 +121,42 @@ def execute_sell(trade: Trade, limit: float) -> None:
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
     trade.open_order_id = order_id
 
-    fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
-    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
-        trade.exchange,
-        trade.pair.replace('_', '/'),
-        exchange.get_pair_detail_url(trade.pair),
-        limit,
-        fmt_exp_profit
-    ))
+    fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
+    profit_trade = trade.calc_profit(rate=limit)
+
+    message = '*{exchange}:* Selling [{pair}]({pair_url}) with limit `{limit:.8f}`'.format(
+                    exchange=trade.exchange,
+                    pair=trade.pair.replace('_', '/'),
+                    pair_url=exchange.get_pair_detail_url(trade.pair),
+                    limit=limit
+                )
+
+    # For regular case, when the configuration exists
+    if 'stake_currency' in _CONF and 'fiat_display_currency' in _CONF:
+        fiat_converter = CryptoToFiatConverter()
+        profit_fiat = fiat_converter.convert_amount(
+            profit_trade,
+            _CONF['stake_currency'],
+            _CONF['fiat_display_currency']
+        )
+        message += '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
+                   '` / {profit_fiat:.3f} {fiat})`'.format(
+                        profit_percent=fmt_exp_profit,
+                        profit_coin=profit_trade,
+                        coin=_CONF['stake_currency'],
+                        profit_fiat=profit_fiat,
+                        fiat=_CONF['fiat_display_currency'],
+                   )
+    # Because telegram._forcesell does not have the configuration
+    # Ignore the FIAT value and does not show the stake_currency as well
+    else:
+        message += '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f})`'.format(
+            profit_percent=fmt_exp_profit,
+            profit_coin=profit_trade
+        )
+
+    # Send the message
+    rpc.send_msg(message)
     Trade.session.flush()
 
 
@@ -131,7 +165,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
-    current_profit = trade.calc_profit(current_rate)
+    current_profit = trade.calc_profit_percent(current_rate)
     if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
         logger.debug('Stop loss hit.')
         return True
@@ -142,7 +176,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
-    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
+    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', float(current_profit) * 100.0)
     return False
 
 
@@ -158,17 +192,20 @@ def handle_trade(trade: Trade) -> bool:
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
     # Check if minimal roi has been reached
-    if not min_roi_reached(trade, current_rate, datetime.utcnow()):
-        return False
+    if min_roi_reached(trade, current_rate, datetime.utcnow()):
+        logger.debug('Executing sell due to ROI ...')
+        execute_sell(trade, current_rate)
+        return True
 
     # Check if sell signal has been enabled and triggered
     if _CONF.get('experimental', {}).get('use_sell_signal'):
         logger.debug('Checking sell_signal ...')
-        if not get_signal(trade.pair, SignalType.SELL):
-            return False
+        if get_signal(trade.pair, SignalType.SELL):
+            logger.debug('Executing sell due to sell signal ...')
+            execute_sell(trade, current_rate)
+            return True
 
-    execute_sell(trade, current_rate)
-    return True
+    return False
 
 
 def get_target_bid(ticker: Dict[str, float]) -> float:
@@ -206,8 +243,17 @@ def create_trade(stake_amount: float) -> bool:
         raise DependencyException('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
-    for _pair in whitelist:
-        if get_signal(_pair, SignalType.BUY):
+    with ThreadPoolExecutor() as pool:
+        awaitable_signals = [
+            asyncio.wrap_future(pool.submit(get_signal, pair, SignalType.BUY))
+            for pair in whitelist
+        ]
+
+    loop = asyncio.get_event_loop()
+    signals = loop.run_until_complete(asyncio.gather(*awaitable_signals))
+
+    for idx, _pair in enumerate(whitelist):
+        if signals[idx]:
             pair = _pair
             break
     else:
@@ -230,7 +276,7 @@ def create_trade(stake_amount: float) -> bool:
         pair=pair,
         stake_amount=stake_amount,
         amount=amount,
-        fee=exchange.get_fee() * 2,
+        fee=exchange.get_fee(),
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
         exchange=exchange.get_name().upper(),
@@ -262,11 +308,10 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
 
 
 @cached(TTLCache(maxsize=1, ttl=1800))
-def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolume') -> List[str]:
+def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]:
     """
     Updates the whitelist with with a dynamically generated list
     :param base_currency: base currency as str
-    :param topn: maximum number of returned results
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
@@ -275,7 +320,8 @@ def gen_pair_whitelist(base_currency: str, topn: int = 20, key: str = 'BaseVolum
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
-    return [s['MarketName'].replace('-', '_') for s in summaries[:topn]]
+
+    return [s['MarketName'].replace('-', '_') for s in summaries]
 
 
 def cleanup() -> None:
@@ -320,6 +366,16 @@ def main() -> None:
     if args.dynamic_whitelist:
         logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
 
+    # If the user ask for Dry run with a local DB instead of memory
+    if args.dry_run_db:
+        if _CONF.get('dry_run', False):
+            _CONF.update({'dry_run_db': True})
+            logger.info(
+                'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)'
+            )
+        else:
+            logger.info('Dry run is disabled. (--dry_run_db ignored)')
+
     try:
         init(_CONF)
         old_state = None
@@ -336,7 +392,7 @@ def main() -> None:
                 throttle(
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
-                    dynamic_whitelist=args.dynamic_whitelist,
+                    nb_assets=args.dynamic_whitelist,
                 )
             old_state = new_state
     except KeyboardInterrupt:

@@ -20,4 +20,4 @@ RUN pip install -r requirements.txt
 # Install and execute
 COPY . /freqtrade/
 RUN pip install -e .
-CMD ["freqtrade"]
+ENTRYPOINT ["freqtrade"]

@@ -112,8 +112,19 @@ def parse_args(args: List[str]):
     )
     parser.add_argument(
         '--dynamic-whitelist',
-        help='dynamically generate and update whitelist based on 24h BaseVolume',
+        help='dynamically generate and update whitelist based on 24h BaseVolume (Default 20 currencies)',  # noqa
+        dest='dynamic_whitelist',
+        const=20,
+        type=int,
+        metavar='INT',
+        nargs='?',
+    )
+    parser.add_argument(
+        '--dry-run-db',
+        help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" instead of memory DB. Work only if dry_run is \
+             enabled.',  # noqa
         action='store_true',
+        dest='dry_run_db',
     )
     build_subcommands(parser)
     parsed_args = parser.parse_args(args)
@@ -155,6 +166,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         dest='realistic_simulation',
     )
+    backtesting_cmd.add_argument(
+        '-r', '--refresh-pairs-cached',
+        help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
+              Use it if you want to run your backtesting with up-to-date data.',
+        action='store_true',
+        dest='refresh_pairs',
+    )
 
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
@@ -173,6 +191,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='mongodb',
         action='store_true',
     )
+    hyperopt_cmd.add_argument(
+        '-i', '--ticker-interval',
+        help='specify ticker interval in minutes (default: 5)',
+        dest='ticker_interval',
+        default=5,
+        type=int,
+        metavar='INT',
+    )
 
 
 # Required json-schema for user specified config
@@ -182,6 +208,7 @@ CONF_SCHEMA = {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'fiat_display_currency': {'type': 'string', 'enum': ['USD', 'EUR', 'CAD', 'SGD']},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -241,6 +268,14 @@ CONF_SCHEMA = {
                         'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
                     },
                     'uniqueItems': True
+                },
+                'pair_blacklist': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                    },
+                    'uniqueItems': True
                 }
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
@@ -253,6 +288,7 @@ CONF_SCHEMA = {
         'max_open_trades',
         'stake_currency',
         'stake_amount',
+        'fiat_display_currency',
         'dry_run',
         'minimal_roi',
         'bid_strategy',

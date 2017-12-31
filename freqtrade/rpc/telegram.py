@@ -1,6 +1,7 @@
 import logging
 import re
-from datetime import timedelta
+from decimal import Decimal
+from datetime import timedelta, datetime
 from typing import Callable, Any
 
 import arrow
@@ -14,6 +15,7 @@ from telegram.ext import CommandHandler, Updater
 from freqtrade import exchange, __version__
 from freqtrade.misc import get_state, State, update_state
 from freqtrade.persistence import Trade
+from freqtrade.fiat_convert import CryptoToFiatConverter
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
+_FIAT_CONVERT = CryptoToFiatConverter()
 
 
 def init(config: dict) -> None:
@@ -49,6 +52,7 @@ def init(config: dict) -> None:
         CommandHandler('stop', _stop),
         CommandHandler('forcesell', _forcesell),
         CommandHandler('performance', _performance),
+        CommandHandler('daily', _daily),
         CommandHandler('count', _count),
         CommandHandler('help', _help),
         CommandHandler('version', _version),
@@ -91,7 +95,7 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     :return: decorated function
     """
     def wrapper(*args, **kwargs):
-        bot, update = kwargs.get('bot') or args[0], kwargs.get('update') or args[1]
+        update = kwargs.get('update') or args[1]
 
         # Reject unauthorized messages
         chat_id = int(_CONF['telegram']['chat_id'])
@@ -137,7 +141,7 @@ def _status(bot: Bot, update: Update) -> None:
                 order = exchange.get_order(trade.open_order_id)
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            current_profit = trade.calc_profit(current_rate)
+            current_profit = trade.calc_profit_percent(current_rate)
             fmt_close_profit = '{:.2f}%'.format(
                 round(trade.close_profit * 100, 2)
             ) if trade.close_profit else None
@@ -194,7 +198,7 @@ def _status_table(bot: Bot, update: Update) -> None:
                 trade.id,
                 trade.pair,
                 shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}'.format(100 * trade.calc_profit(current_rate))
+                '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
             ])
 
         columns = ['ID', 'Pair', 'Since', 'Profit']
@@ -208,6 +212,65 @@ def _status_table(bot: Bot, update: Update) -> None:
 
 
 @authorized_only
+def _daily(bot: Bot, update: Update) -> None:
+    """
+    Handler for /daily <n>
+    Returns a daily profit (in BTC) over the last n days.
+    :param bot: telegram bot
+    :param update: message update
+    :return: None
+    """
+    today = datetime.utcnow().date()
+    profit_days = {}
+
+    try:
+        timescale = int(update.message.text.replace('/daily', '').strip())
+    except (TypeError, ValueError):
+        timescale = 7
+
+    if not (isinstance(timescale, int) and timescale > 0):
+        send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
+        return
+
+    for day in range(0, timescale):
+        profitday = today - timedelta(days=day)
+        trades = Trade.query \
+            .filter(Trade.is_open.is_(False)) \
+            .filter(Trade.close_date >= profitday)\
+            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
+            .order_by(Trade.close_date)\
+            .all()
+        curdayprofit = sum(trade.calc_profit() for trade in trades)
+        profit_days[profitday] = format(curdayprofit, '.8f')
+
+    stats = [
+        [
+            key,
+            '{value:.8f} {symbol}'.format(value=float(value), symbol=_CONF['stake_currency']),
+            '{value:.3f} {symbol}'.format(
+                value=_FIAT_CONVERT.convert_amount(
+                    value,
+                    _CONF['stake_currency'],
+                    _CONF['fiat_display_currency']
+                ),
+                symbol=_CONF['fiat_display_currency']
+            )
+         ]
+        for key, value in profit_days.items()
+    ]
+    stats = tabulate(stats,
+                     headers=[
+                         'Day',
+                         'Profit {}'.format(_CONF['stake_currency']),
+                         'Profit {}'.format(_CONF['fiat_display_currency'])
+                     ],
+                     tablefmt='simple')
+
+    message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
+    send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+
+
+@authorized_only
 def _profit(bot: Bot, update: Update) -> None:
     """
     Handler for /profit.
@@ -218,23 +281,31 @@ def _profit(bot: Bot, update: Update) -> None:
     """
     trades = Trade.query.order_by(Trade.id).all()
 
-    profit_amounts = []
-    profits = []
+    profit_all_coin = []
+    profit_all_percent = []
+    profit_closed_coin = []
+    profit_closed_percent = []
     durations = []
+
     for trade in trades:
+        current_rate = None
+
         if not trade.open_rate:
             continue
         if trade.close_date:
             durations.append((trade.close_date - trade.open_date).total_seconds())
-        if trade.close_profit:
-            profit = trade.close_profit
+
+        if not trade.is_open:
+            profit_percent = trade.calc_profit_percent()
+            profit_closed_coin.append(trade.calc_profit())
+            profit_closed_percent.append(profit_percent)
         else:
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            profit = trade.calc_profit(current_rate)
+            profit_percent = trade.calc_profit_percent(rate=current_rate)
 
-        profit_amounts.append(profit * trade.stake_amount)
-        profits.append(profit)
+        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
+        profit_all_percent.append(profit_percent)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
@@ -247,16 +318,46 @@ def _profit(bot: Bot, update: Update) -> None:
         return
 
     bp_pair, bp_rate = best_pair
+
+    # Prepare data to display
+    profit_closed_coin = round(sum(profit_closed_coin), 8)
+    profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
+    profit_closed_fiat = _FIAT_CONVERT.convert_amount(
+        profit_closed_coin,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+    profit_all_coin = round(sum(profit_all_coin), 8)
+    profit_all_percent = round(sum(profit_all_percent) * 100, 2)
+    profit_all_fiat = _FIAT_CONVERT.convert_amount(
+        profit_all_coin,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+
+    # Message to display
     markdown_msg = """
-*ROI:* `{profit_btc:.8f} ({profit:.2f}%)`
-*Trade Count:* `{trade_count}`
+*ROI:* Close trades
+  ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`
+  ∙ `{profit_closed_fiat:.3f} {fiat}`
+*ROI:* All trades
+  ∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`
+  ∙ `{profit_all_fiat:.3f} {fiat}`
+
+*Total Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
     """.format(
-        profit_btc=round(sum(profit_amounts), 8),
-        profit=round(sum(profits) * 100, 2),
+        coin=_CONF['stake_currency'],
+        fiat=_CONF['fiat_display_currency'],
+        profit_closed_coin=profit_closed_coin,
+        profit_closed_percent=profit_closed_percent,
+        profit_closed_fiat=profit_closed_fiat,
+        profit_all_coin=profit_all_coin,
+        profit_all_percent=profit_all_percent,
+        profit_all_fiat=profit_all_fiat,
         trade_count=len(trades),
         first_trade_date=arrow.get(trades[0].open_date).humanize(),
         latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
@@ -339,10 +440,7 @@ def _forcesell(bot: Bot, update: Update) -> None:
     if trade_id == 'all':
         # Execute sell for all open orders
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
-            from freqtrade.main import execute_sell
-            execute_sell(trade, current_rate)
+            _exec_forcesell(trade)
         return
 
     # Query for trade
@@ -354,10 +452,8 @@ def _forcesell(bot: Bot, update: Update) -> None:
         send_msg('Invalid argument. See `/help` to view usage')
         logger.warning('/forcesell: Invalid argument received')
         return
-    # Get current rate
-    current_rate = exchange.get_ticker(trade.pair)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
+
+    _exec_forcesell(trade)
 
 
 @authorized_only
@@ -431,6 +527,7 @@ def _help(bot: Bot, update: Update) -> None:
 */profit:* `Lists cumulative profit from all finished trades`
 */forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, regardless of profit`
 */performance:* `Show performance of each finished trade grouped by pair`
+*/daily <n>:* `Shows profit or loss per day, over the last n days`
 */count:* `Show number of trades running compared to allowed number of trades`
 */balance:* `Show account balance per currency`
 */help:* `This help message`
@@ -451,16 +548,38 @@ def _version(bot: Bot, update: Update) -> None:
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
 
-def shorten_date(date):
+def shorten_date(_date):
     """
     Trim the date so it fits on small screens
     """
-    new_date = re.sub('seconds?', 'sec', date)
+    new_date = re.sub('seconds?', 'sec', _date)
     new_date = re.sub('minutes?', 'min', new_date)
     new_date = re.sub('hours?', 'h', new_date)
     new_date = re.sub('days?', 'd', new_date)
     new_date = re.sub('^an?', '1', new_date)
     return new_date
+
+
+def _exec_forcesell(trade: Trade) -> None:
+    # Check if there is there is an open order
+    if trade.open_order_id:
+        order = exchange.get_order(trade.open_order_id)
+
+        # Cancel open LIMIT_BUY orders and close trade
+        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
+            exchange.cancel_order(trade.open_order_id)
+            trade.close(order.get('rate') or trade.open_rate)
+            # TODO: sell amount which has been bought already
+            return
+
+        # Ignore trades with an attached LIMIT_SELL order
+        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+            return
+
+    # Get current rate and execute sell
+    current_rate = exchange.get_ticker(trade.pair)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
@@ -476,15 +595,18 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
-    keyboard = [['/status table', '/profit', '/performance', ],
-                ['/balance', '/status', '/count'],
-                ['/start', '/stop', '/help']]
+    keyboard = [['/daily', '/profit', '/balance'],
+                ['/status', '/status table', '/performance'],
+                ['/count', '/start', '/stop', '/help']]
 
     reply_markup = ReplyKeyboardMarkup(keyboard)
 
     try:
         try:
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
+            bot.send_message(
+                _CONF['telegram']['chat_id'], msg,
+                parse_mode=parse_mode, reply_markup=reply_markup
+            )
         except NetworkError as network_err:
             # Sometimes the telegram server resets the current connection,
             # if this is the case we send the message again.
@@ -492,6 +614,9 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
                 'Got Telegram NetworkError: %s! Trying one more time.',
                 network_err.message
             )
-            bot.send_message(_CONF['telegram']['chat_id'], msg, parse_mode=parse_mode, reply_markup=reply_markup)
+            bot.send_message(
+                _CONF['telegram']['chat_id'], msg,
+                parse_mode=parse_mode, reply_markup=reply_markup
+            )
     except TelegramError as telegram_err:
         logger.warning('Got TelegramError: %s! Giving up on that message.', telegram_err.message)

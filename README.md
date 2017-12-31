@@ -25,6 +25,7 @@ Persistence is achieved through sqlite.
 * /forcesell <trade_id>|all: Instantly sells the given trade (Ignoring `minimum_roi`).
 * /performance: Show performance of each finished trade grouped by pair
 * /balance: Show account balance per currency
+* /daily <n>: Shows profit or loss per day, over the last n days
 * /help: Show help message
 * /version: Show version
 
@@ -54,6 +55,12 @@ use the `last` price and values between those interpolate between ask and last
 price. Using `ask` price will guarantee quick success in bid, but bot will also
 end up paying more then would probably have been necessary.
 
+`fiat_display_currency` set the fiat to use for the conversion form coin to 
+fiat in Telegram. The valid value are: "AUD", "BRL", "CAD", "CHF", 
+"CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", 
+"INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
+"RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
+
 The other values should be self-explanatory,
 if not feel free to raise a github issue.
 
@@ -61,6 +68,7 @@ if not feel free to raise a github issue.
 * python3.6
 * sqlite
 * [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
+* Minimal (advised) system requirements: 2GB RAM, 1GB data, 2vCPU
 
 ### Install
 
@@ -137,16 +145,26 @@ $ docker start freqtrade
 You do not need to rebuild the image for configuration
 changes, it will suffice to edit `config.json` and restart the container.
 
+#### systemd service file
+Copy `./freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`)
+and update `WorkingDirectory` and `ExecStart` to match your setup.
+After that you can start the daemon with:
+```bash
+$ systemctl --user start freqtrade
+```
+
 ### Usage
 ```
-usage: freqtrade [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist]
-                 {backtesting} ...
+usage: main.py [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist [INT]]
+               [--dry-run-db]
+               {backtesting,hyperopt} ...
 
 Simple High Frequency Trading Bot for crypto currencies
 
 positional arguments:
-  {backtesting}
+  {backtesting,hyperopt}
     backtesting         backtesting module
+    hyperopt            hyperopt module
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -154,10 +172,34 @@ optional arguments:
                         specify configuration file (default: config.json)
   -v, --verbose         be verbose
   --version             show program's version number and exit
-  --dynamic-whitelist   dynamically generate and update whitelist based on 24h
-                        BaseVolume
-
+  --dynamic-whitelist [INT]
+                        dynamically generate and update whitelist based on 24h
+                        BaseVolume (Default 20 currencies)
+  --dry-run-db          Force dry run to use a local DB
+                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
+                        only if dry_run is enabled.
 ```
+
+#### Dynamic whitelist example
+Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
+on BaseVolume. This value can be changed when you run the script.
+
+**By Default**  
+Get the 20 currencies based on BaseVolume.  
+```bash
+freqtrade --dynamic-whitelist
+```
+
+**Customize the number of currencies to retrieve**  
+Get the 30 currencies based on BaseVolume.  
+```bash
+freqtrade --dynamic-whitelist 30
+```
+
+**Exception**  
+`--dynamic-whitelist` must be greater than 0. If you enter 0 or a
+negative value (e.g -2), `--dynamic-whitelist` will use the default
+value (20).
 
 ### Backtesting
 
@@ -165,6 +207,7 @@ Backtesting also uses the config specified via `-c/--config`.
 
 ```
 usage: freqtrade backtesting [-h] [-l] [-i INT] [--realistic-simulation]
+                             [-r]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -174,8 +217,24 @@ optional arguments:
   --realistic-simulation
                         uses max_open_trades from config to simulate real
                         world limitations
-
+  -r, --refresh-pairs-cached
+                        refresh the pairs files in tests/testdata with 
+                        the latest data from Bittrex. Use it if you want
+                        to run your backtesting with up-to-date data.
 ```
+
+#### How to use --refresh-pairs-cached parameter?
+The first time your run Backtesting, it will take the pairs your have 
+set in your config file and download data from Bittrex. 
+
+If for any reason you want to update your data set, you use 
+`--refresh-pairs-cached` to force Backtesting to update the data it has. 
+**Use it only if you want to update your data set. You will not be able
+to come back to the previous version.**
+
+To test your strategy with latest data, we recommend to continue using  
+the parameter `-l` or `--live`.
+
 
 ### Hyperopt
 
@@ -201,8 +260,5 @@ $ pytest freqtrade
 
 ### Contributing
 
-Feel like our bot is missing a feature? We welcome your pull requests! Few pointers for contributions:
-
-- Create your PR against the `develop` branch, not `master`.
-- New features need to contain unit tests.
-- If you are unsure, discuss the feature on [slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) or in a [issue](https://github.com/gcarq/freqtrade/issues) before a PR.
+We welcome contributions. See our [contribution guide](https://github.com/gcarq/freqtrade/blob/develop/README.md)
+for more details.

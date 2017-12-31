@@ -1,0 +1,111 @@
+# pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
+
+import time
+import pytest
+from unittest.mock import MagicMock
+
+from freqtrade.fiat_convert import CryptoToFiatConverter, CryptoFiat
+
+
+def test_pair_convertion_object():
+    pair_convertion = CryptoFiat(
+        crypto_symbol='btc',
+        fiat_symbol='usd',
+        price=12345.0
+    )
+
+    # Check the cache duration is 6 hours
+    assert pair_convertion.CACHE_DURATION == 6 * 60 * 60
+
+    # Check a regular usage
+    assert pair_convertion.crypto_symbol == 'BTC'
+    assert pair_convertion.fiat_symbol == 'USD'
+    assert pair_convertion.price == 12345.0
+    assert pair_convertion.is_expired() is False
+
+    # Update the expiration time (- 2 hours) and check the behavior
+    pair_convertion._expiration = time.time() - 2 * 60 * 60
+    assert pair_convertion.is_expired() is True
+
+    # Check set price behaviour
+    time_reference = time.time() + pair_convertion.CACHE_DURATION
+    pair_convertion.set_price(price=30000.123)
+    assert pair_convertion.is_expired() is False
+    assert pair_convertion._expiration >= time_reference
+    assert pair_convertion.price == 30000.123
+
+
+def test_fiat_convert_is_supported():
+    fiat_convert = CryptoToFiatConverter()
+    assert fiat_convert._is_supported_fiat(fiat='USD') is True
+    assert fiat_convert._is_supported_fiat(fiat='usd') is True
+    assert fiat_convert._is_supported_fiat(fiat='abc') is False
+    assert fiat_convert._is_supported_fiat(fiat='ABC') is False
+
+
+def test_fiat_convert_add_pair():
+    fiat_convert = CryptoToFiatConverter()
+
+    assert len(fiat_convert._pairs) == 0
+
+    fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='usd', price=12345.0)
+    assert len(fiat_convert._pairs) == 1
+    assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
+    assert fiat_convert._pairs[0].fiat_symbol == 'USD'
+    assert fiat_convert._pairs[0].price == 12345.0
+
+    fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='Eur', price=13000.2)
+    assert len(fiat_convert._pairs) == 2
+    assert fiat_convert._pairs[1].crypto_symbol == 'BTC'
+    assert fiat_convert._pairs[1].fiat_symbol == 'EUR'
+    assert fiat_convert._pairs[1].price == 13000.2
+
+
+def test_fiat_convert_find_price(mocker):
+    api_mock = MagicMock(return_value={
+        'price_usd': 12345.0,
+        'price_eur': 13000.2
+    })
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    fiat_convert = CryptoToFiatConverter()
+
+    with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
+        fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
+
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 12345.0
+    assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 12345.0
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
+
+
+def test_fiat_convert_get_price(mocker):
+    api_mock = MagicMock(return_value={
+        'price_usd': 28000.0,
+        'price_eur': 15000.0
+    })
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+
+    fiat_convert = CryptoToFiatConverter()
+
+    with pytest.raises(ValueError, match=r'The fiat US DOLLAR is not supported.'):
+        fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='US Dollar')
+
+    # Check the value return by the method
+    assert len(fiat_convert._pairs) == 0
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
+    assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
+    assert fiat_convert._pairs[0].fiat_symbol == 'USD'
+    assert fiat_convert._pairs[0].price == 28000.0
+    assert fiat_convert._pairs[0]._expiration is not 0
+    assert len(fiat_convert._pairs) == 1
+
+    # Verify the cached is used
+    fiat_convert._pairs[0].price = 9867.543
+    expiration = fiat_convert._pairs[0]._expiration
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 9867.543
+    assert fiat_convert._pairs[0]._expiration == expiration
+
+    # Verify the cache expiration
+    expiration = time.time() - 2 * 60 * 60
+    fiat_convert._pairs[0]._expiration = expiration
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
+    assert fiat_convert._pairs[0]._expiration is not expiration

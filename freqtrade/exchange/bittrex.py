@@ -40,46 +40,68 @@ class Bittrex(Exchange):
             api_version=API_V2_0,
         )
 
+    @staticmethod
+    def _validate_response(response) -> None:
+        """
+        Validates the given bittrex response
+        and raises a ContentDecodingError if a non-fatal issue happened.
+        """
+        temp_error_messages = [
+            'NO_API_RESPONSE',
+            'MIN_TRADE_REQUIREMENT_NOT_MET',
+        ]
+        if response['message'] in temp_error_messages:
+            raise ContentDecodingError('Got {}'.format(response['message']))
+
     @property
     def fee(self) -> float:
-        # See https://bittrex.com/fees
+        # 0.25 %: See https://bittrex.com/fees
         return 0.0025
 
     def buy(self, pair: str, rate: float, amount: float) -> str:
         data = _API.buy_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise OperationalException(
-                '{message} params=({pair}, {rate}, {amount})'.format(
-                    message=data['message'], pair=pair, rate=rate, amount=amount))
+            Bittrex._validate_response(data)
+            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
+                message=data['message'],
+                pair=pair,
+                rate=rate,
+                amount=amount))
         return data['result']['uuid']
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
-            raise OperationalException(
-                '{message} params=({pair}, {rate}, {amount})'.format(
-                    message=data['message'], pair=pair, rate=rate, amount=amount))
+            Bittrex._validate_response(data)
+            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
+                message=data['message'],
+                pair=pair,
+                rate=rate,
+                amount=amount))
         return data['result']['uuid']
 
     def get_balance(self, currency: str) -> float:
         data = _API.get_balance(currency)
         if not data['success']:
+            Bittrex._validate_response(data)
             raise OperationalException('{message} params=({currency})'.format(
                 message=data['message'],
                 currency=currency))
         return float(data['result']['Balance'] or 0.0)
 
+      
     def get_balances(self):
         data = _API.get_balances()
         if not data['success']:
-            raise OperationalException(
-                '{message}'.format(
-                    message=data['message']))
+            Bittrex._validate_response(data)
+            raise OperationalException('{message}'.format(message=data['message'])
         return data['result']
 
+                                       
     def get_ticker(self, pair: str) -> dict:
         data = _API.get_ticker(pair.replace('_', '-'))
         if not data['success']:
+            Bittrex._validate_response(data)
             raise OperationalException('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
@@ -145,6 +167,7 @@ class Bittrex(Exchange):
                             pair=pair))
 
         if not data['success']:
+            Bittrex._validate_response(data)
             raise OperationalException('{message} params=({pair})'.format(
                 message=data['message'],
                 pair=pair))
@@ -154,6 +177,7 @@ class Bittrex(Exchange):
     def get_order(self, order_id: str) -> Dict:
         data = _API.get_order(order_id)
         if not data['success']:
+            Bittrex._validate_response(data)
             raise OperationalException('{message} params=({order_id})'.format(
                 message=data['message'],
                 order_id=order_id))
@@ -172,6 +196,7 @@ class Bittrex(Exchange):
     def cancel_order(self, order_id: str) -> None:
         data = _API.cancel(order_id)
         if not data['success']:
+            Bittrex._validate_response(data)
             raise OperationalException('{message} params=({order_id})'.format(
                 message=data['message'],
                 order_id=order_id))
@@ -183,25 +208,22 @@ class Bittrex(Exchange):
     def get_markets(self) -> List[str]:
         data = _API.get_markets()
         if not data['success']:
-            raise OperationalException(
-                '{message}'.format(
-                    message=data['message']))
+            Bittrex._validate_response(data)
+            raise OperationalException('{message}'.format(message=data['message']))
         return [m['MarketName'].replace('-', '_') for m in data['result']]
 
     def get_market_summaries(self) -> List[Dict]:
         data = _API.get_market_summaries()
         if not data['success']:
-            raise OperationalException(
-                '{message}'.format(
-                    message=data['message']))
+            Bittrex._validate_response(data)
+            raise OperationalException('{message}'.format(message=data['message']))
         return data['result']
 
     def get_wallet_health(self) -> List[Dict]:
         data = _API_V2.get_wallet_health()
         if not data['success']:
-            raise OperationalException(
-                '{message}'.format(
-                    message=data['message']))
+            Bittrex._validate_response(data)
+            raise OperationalException('{message}'.format(message=data['message']))
         return [{
             'Currency': entry['Health']['Currency'],
             'IsActive': entry['Health']['IsActive'],
