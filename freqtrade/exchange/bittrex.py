@@ -88,7 +88,6 @@ class Bittrex(Exchange):
                 message=data['message'],
                 currency=currency))
         return float(data['result']['Balance'] or 0.0)
-
       
     def get_balances(self):
         data = _API.get_balances()
@@ -97,7 +96,6 @@ class Bittrex(Exchange):
             raise OperationalException('{message}'.format(message=data['message']))
         return data['result']
 
-                                       
     def get_ticker(self, pair: str) -> dict:
         data = _API.get_ticker(pair.replace('_', '-'))
         if not data['success']:
