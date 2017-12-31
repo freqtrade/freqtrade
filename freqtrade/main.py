@@ -92,6 +92,7 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
                 state_changed = handle_trade(trade) or state_changed
+        Trade.session.flush()
 
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         logger.warning(
@@ -106,7 +107,6 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
         ))
         logger.exception('Got OperationalException. Stopping trader ...')
         update_state(State.STOPPED)
-    Trade.session.flush()
     return state_changed
 
 
