@@ -117,7 +117,7 @@ class Bittrex(Exchange):
             'last': float(data['result']['Last']),
         }
 
-    def update_with_latest_ticker(self, pair: str) -> List[Dict]:
+    def update_with_latest_ticker(self, pair: str, interval) -> List[Dict]:
         # pair is in cache retrieve latest candle
         sdata = _API_V2.get_latest_candle(pair.replace('_', '-'), interval)
         if not sdata.get('result'):
@@ -148,7 +148,7 @@ class Bittrex(Exchange):
             raise ValueError(
                 'Cannot parse tick_interval: {}'.format(tick_interval))
         if pair in _cache.keys():
-            data = self.update_with_latest_ticker(pair)
+            data = self.update_with_latest_ticker(pair, interval)
         else:
             data = _API_V2.get_candles(pair.replace('_', '-'), interval)
         # These sanity check are necessary because bittrex cannot keep their
