@@ -273,7 +273,7 @@ def create_trade(stake_amount: float) -> bool:
     )
 
     # Create trade entity and return
-    rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f}` ({:8.f} {}, {:3.f} {})'.format(
+    rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f}` ({:.8f} {}, {:.3f} {})'.format(
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
