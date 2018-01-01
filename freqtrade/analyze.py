@@ -144,9 +144,6 @@ def get_signal(pair: str, signal: SignalType) -> bool:
     except ValueError as ex:
         logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
         return False
-    except Exception:
-        logger.exception('Unexpected error when analyzing ticker for pair %s.', pair)
-        return False
 
     if dataframe.empty:
         return False

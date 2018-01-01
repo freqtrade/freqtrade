@@ -3,7 +3,6 @@
 import enum
 import logging
 from random import randint
-from threading import RLock
 from typing import List, Dict, Any, Optional
 
 import arrow
@@ -15,7 +14,6 @@ from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
-lock = RLock()
 
 # Current selected exchange
 _API: Exchange = None
@@ -140,7 +138,7 @@ def get_ticker(pair: str) -> dict:
     return _API.get_ticker(pair)
 
 
-@cached(TTLCache(maxsize=100, ttl=30), lock=lock)
+@cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval: Optional[int] = 5) -> List[Dict]:
     return _API.get_ticker_history(pair, tick_interval)
 
