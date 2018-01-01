@@ -5,6 +5,7 @@ import logging
 from datetime import timedelta
 from enum import Enum
 from typing import List, Dict
+from threading import RLock
 
 import arrow
 import talib.abstract as ta
@@ -14,7 +15,7 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above
 
 logger = logging.getLogger(__name__)
-
+lock = RLock()
 
 class SignalType(Enum):
     """ Enum to distinguish between buy and sell signals """
@@ -121,10 +122,12 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
-    dataframe = parse_ticker_dataframe(ticker_history)
+    with lock:
+        dataframe = parse_ticker_dataframe(ticker_history)
     dataframe = populate_indicators(dataframe)
     dataframe = populate_buy_trend(dataframe)
     dataframe = populate_sell_trend(dataframe)
+
     return dataframe
 
 
