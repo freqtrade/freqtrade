@@ -137,8 +137,9 @@ def execute_sell(trade: Trade, limit: float) -> None:
             _CONF['stake_currency'],
             _CONF['fiat_display_currency']
         )
-        message += '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
+        message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
                    '` / {profit_fiat:.3f} {fiat})`'.format(
+                        gain="profit" if fmt_exp_profit > 0 else "loss",
                         profit_percent=fmt_exp_profit,
                         profit_coin=profit_trade,
                         coin=_CONF['stake_currency'],
@@ -148,7 +149,8 @@ def execute_sell(trade: Trade, limit: float) -> None:
     # Because telegram._forcesell does not have the configuration
     # Ignore the FIAT value and does not show the stake_currency as well
     else:
-        message += '` (profit: ~{profit_percent:.2f}%, {profit_coin:.8f})`'.format(
+        message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f})`'.format(
+            gain="profit" if fmt_exp_profit > 0 else "loss",
             profit_percent=fmt_exp_profit,
             profit_coin=profit_trade
         )
