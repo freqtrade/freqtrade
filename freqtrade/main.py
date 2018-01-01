@@ -255,12 +255,21 @@ def create_trade(stake_amount: float) -> bool:
     amount = stake_amount / buy_limit
 
     order_id = exchange.buy(pair, buy_limit, amount)
+
+    fiat_converter = CryptoToFiatConverter()
+    stake_amount_fiat = fiat_converter.convert_amount(
+        stake_amount,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+
     # Create trade entity and return
-    rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
+    rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '.format(
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
-        buy_limit
+        buy_limit, stake_amount, _CONF['stake_currency'],
+        stake_amount_fiat, _CONF['fiat_display_currency']
     ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
     trade = Trade(
