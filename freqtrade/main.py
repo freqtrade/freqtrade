@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-import asyncio
 import copy
 import json
 import logging
 import sys
 import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Dict, Optional, List
 
@@ -243,17 +241,8 @@ def create_trade(stake_amount: float) -> bool:
         raise DependencyException('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
-    with ThreadPoolExecutor() as pool:
-        awaitable_signals = [
-            asyncio.wrap_future(pool.submit(get_signal, pair, SignalType.BUY))
-            for pair in whitelist
-        ]
-
-    loop = asyncio.get_event_loop()
-    signals = loop.run_until_complete(asyncio.gather(*awaitable_signals))
-
-    for idx, _pair in enumerate(whitelist):
-        if signals[idx]:
+    for _pair in whitelist:
+        if get_signal(_pair, SignalType.BUY):
             pair = _pair
             break
     else:
