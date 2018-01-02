@@ -404,7 +404,7 @@ def test_performance_handle(
     _performance(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>BTC_ETH\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>[BTC_ETH](https://www.bittrex.com/Market/Index?MarketName=BTC-ETH)\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_daily_handle(
