@@ -22,12 +22,12 @@ def whitelist_conf():
 
 def get_health():
     return [{'Currency': 'ETH',
-             'IsActive': True, 
-             'BaseVolume' : 42
+             'IsActive': True,
+             'BaseVolume': 42
              },
             {'Currency': 'TKN',
              'IsActive': True,
-             'BaseVolume' : 1664
+             'BaseVolume': 1664
              }]
 
 
