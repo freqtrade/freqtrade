@@ -175,6 +175,6 @@ def start(args):
         config['stake_amount'], preprocess(data), max_open_trades, args.realistic_simulation
     )
     logger.info(
-        '\n====================== BACKTESTING REPORT ======================================\n%s',
+        '\n====================== BACKTESTING REPORT ================================\n%s',
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
