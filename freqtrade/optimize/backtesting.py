@@ -5,7 +5,7 @@ import logging
 from typing import Tuple, Dict
 
 import arrow
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from tabulate import tabulate
 
 from freqtrade import exchange
@@ -19,20 +19,17 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 
-def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
+def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     """
     Get the maximum timeframe for the given backtest data
-    :param data: dictionary with backtesting data
+    :param data: dictionary with preprocessed backtesting data
     :return: tuple containing min_date, max_date
     """
-    min_date, max_date = None, None
-    for values in data.values():
-        sorted_values = sorted(values, key=lambda d: arrow.get(d['T']))
-        if not min_date or sorted_values[0]['T'] < min_date:
-            min_date = sorted_values[0]['T']
-        if not max_date or sorted_values[-1]['T'] > max_date:
-            max_date = sorted_values[-1]['T']
-    return arrow.get(min_date), arrow.get(max_date)
+    all_dates = Series([])
+    for pair, pair_data in data.items():
+        all_dates = all_dates.append(pair_data['date'])
+    all_dates.sort_values(inplace=True)
+    return arrow.get(all_dates.iloc[0]), arrow.get(all_dates.iloc[-1])
 
 
 def generate_text_table(
@@ -159,10 +156,6 @@ def start(args):
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
-    # Print timeframe
-    min_date, max_date = get_timeframe(data)
-    logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
-
     max_open_trades = 0
     if args.realistic_simulation:
         logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
@@ -172,9 +165,14 @@ def start(args):
     from freqtrade import main
     main._CONF = config
 
+    preprocessed = preprocess(data)
+    # Print timeframe
+    min_date, max_date = get_timeframe(preprocessed)
+    logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
+
     # Execute backtest and print results
     results = backtest(
-        config['stake_amount'], preprocess(data), max_open_trades, args.realistic_simulation
+        config['stake_amount'], preprocessed, max_open_trades, args.realistic_simulation
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ================================\n%s',
