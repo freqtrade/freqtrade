@@ -1,160 +1,132 @@
 # freqtrade
 
 [![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
-[![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
 
 
-Simple High frequency trading bot for crypto currencies.
-Currently supports trading on Bittrex exchange.
+Simple High frequency trading bot for crypto currencies designed to 
+support multi exchanges and be controlled via Telegram.
 
-This software is for educational purposes only.
-Don't risk money which you are afraid to lose.
+![freqtrade](https://raw.githubusercontent.com/gcarq/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
 
-The command interface is accessible via Telegram (not required).
-Just register a new bot on https://telegram.me/BotFather
-and enter the telegram `token` and your `chat_id` in `config.json`
+## Disclaimer
+This software is for educational purposes only. Do not risk money which 
+you are afraid to lose. Always start by running a trading bot in Dry-run and do not engage money
+before you understand how it works and what profit/loss you should
+expect.
 
-Persistence is achieved through sqlite.
+We strongly recommend you to have coding and Python knowledge. Do not 
+hesitate to read the source code and understand the mechanism of this bot.
 
-### Telegram RPC commands:
-* /start: Starts the trader
-* /stop: Stops the trader
-* /status [table]: Lists all open trades
-* /count: Displays number of open trades
-* /profit: Lists cumulative profit from all finished trades
-* /forcesell <trade_id>|all: Instantly sells the given trade (Ignoring `minimum_roi`).
-* /performance: Show performance of each finished trade grouped by pair
-* /balance: Show account balance per currency
-* /daily <n>: Shows profit or loss per day, over the last n days
-* /help: Show help message
-* /version: Show version
+## Table of Contents
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Documentations](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md)
+   - [Installation](https://github.com/gcarq/freqtrade/blob/develop/docs/installation.md)
+- [Support](#support)
+   - [Help](#help--slack)
+   - [Bugs](#bugs--issues)
+   - [Feature Requests](#feature-requests)
+   - [Pull Requests](#pull-requests)
+- [Basic Usage](#basic-usage)
+  - [Bot commands](#bot-commands)
+  - [Telegram RPC commands](#telegram-rpc-commands)
+- [Min hardware required](#min-hardware-required)
 
-### Config
-`minimal_roi` is a JSON object where the key is a duration
-in minutes and the value is the minimum ROI in percent.
-See the example below:
-```
-"minimal_roi": {
-    "40": 0.0,    # Sell after 40 minutes if the profit is not negative
-    "30": 0.01,   # Sell after 30 minutes if there is at least 1% profit
-    "20": 0.02,   # Sell after 20 minutes if there is at least 2% profit
-    "0":  0.04    # Sell immediately if there is at least 4% profit
-},
-```
+## Branches
+The project is currently setup in two main branches:
+- `develop` - This branch has often new features, but might also cause 
+breaking changes.
+- `master` - This branch contains the latest stable release. The bot 
+'should' be stable on this branch, and is generally well tested. 
 
-`stoploss` is loss in percentage that should trigger a sale.
-For example value `-0.10` will cause immediate sell if the
-profit dips below -10% for a given trade. This parameter is optional.
+## Features
+- [x] **Based on Python**: For botting on any operating system - 
+Windows, macOS and Linux
+- [x] **Persistence**: Persistence is achieved through sqlite
+- [x] **Dry-run**: Run the bot without playing money.
+- [x] **Backtesting**: Run a simulation of your buy/sell strategy.
+- [x] **Strategy Optimization**: Optimize your buy/sell strategy 
+parameters with Hyperopts.
+- [x] **Whitelist crypto-currencies**: Select which crypto-currency you
+want to trade.
+- [x] **Blacklist crypto-currencies**: Select which crypto-currency you
+want to avoid.
+- [x] **Manageable via Telegram**: Manage the bot with Telegram
+- [x] **Display profit/loss in fiat**: Display your profit/loss in
+33 fiat.
+- [x] **Daily summary of profit/loss**: Provide a daily summary
+ of your profit/loss.
+- [x] **Performance status report**: Provide a performance status of 
+your current trades.
 
-`initial_state` is an optional field that defines the initial application state.
-Possible values are `running` or `stopped`. (default=`running`)
-If the value is `stopped` the bot has to be started with `/start` first.
+### Exchange supported
+- [x] Bittrex
+- [ ] Binance
+- [ ] Others
 
-`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last
-price. Using `ask` price will guarantee quick success in bid, but bot will also
-end up paying more then would probably have been necessary.
+## Quick start
+This quick start section is a very short explanation on how to test the 
+bot in dry-run. We invite you to read the 
+[bot documentation](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md) 
+to ensure you understand how the bot is working.
 
-`fiat_display_currency` set the fiat to use for the conversion form coin to 
-fiat in Telegram. The valid value are: "AUD", "BRL", "CAD", "CHF", 
-"CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", 
-"INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
-"RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
+The following steps are made for Linux/MacOS environment
 
-The other values should be self-explanatory,
-if not feel free to raise a github issue.
-
-### Prerequisites
-* python3.6
-* sqlite
-* [TA-lib](https://github.com/mrjbq7/ta-lib#dependencies) binaries
-* Minimal (advised) system requirements: 2GB RAM, 1GB data, 2vCPU
-
-### Install
-
-#### Arch Linux
-
-Use your favorite AUR helper and install `python-freqtrade-git`.
-
-#### Manually
-
-`master` branch contains the latest stable release.
-
-`develop` branch has often new features, but might also cause breaking changes. To use it, you are encouraged to join our [slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
-
-```
-$ cd freqtrade/
-# copy example config. Dont forget to insert your api keys
-$ cp config.json.example config.json
-$ python -m venv .env
-$ source .env/bin/activate
-$ pip install -r requirements.txt
-$ pip install -e .
-$ ./freqtrade/main.py
-```
-
-There is also an [article](https://www.sales4k.com/blockchain/high-frequency-trading-bot-tutorial/) about how to setup the bot (thanks [@gurghet](https://github.com/gurghet)).*
-
-\* *Note:* that article was written for an earlier version, so it may be outdated
-
-#### Docker
-
-Building the image:
-
-```
-$ cd freqtrade
-$ docker build -t freqtrade .
-```
-
-For security reasons, your configuration file will not be included in the
-image, you will need to bind mount it. It is also advised to bind mount
-a SQLite database file (see second example) to keep it between updates.
-
-You can run a one-off container that is immediately deleted upon exiting with
-the following command (config.json must be in the current working directory):
-
-```
-$ docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
-```
-
-To run a restartable instance in the background (feel free to place your
-configuration and database files wherever it feels comfortable on your
-filesystem):
-
-```
-$ cd ~/.freq
-$ touch tradesv3.sqlite
-$ docker run -d \
-  --name freqtrade \
-  -v ~/.freq/config.json:/freqtrade/config.json \
-  -v ~/.freq/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
-  freqtrade
-```
-If you are using `dry_run=True` it's not necessary to mount `tradesv3.sqlite`.
-
-You can then use the following commands to monitor and manage your container:
-
-```
-$ docker logs freqtrade
-$ docker logs -f freqtrade
-$ docker restart freqtrade
-$ docker stop freqtrade
-$ docker start freqtrade
-```
-
-You do not need to rebuild the image for configuration
-changes, it will suffice to edit `config.json` and restart the container.
-
-#### systemd service file
-Copy `./freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`)
-and update `WorkingDirectory` and `ExecStart` to match your setup.
-After that you can start the daemon with:
+**1. Clone the repo**
 ```bash
-$ systemctl --user start freqtrade
+git clone git@github.com:gcarq/freqtrade.git
+git checkout develop
+cd freqtrade
+```
+**2. Create the config file**  
+Switch `"dry_run": true,`
+```bash
+cp config.json.example config.json
+vi config.json
+```
+**3. Build your docker image and run it**
+```bash
+docker build -t freqtrade .
+docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
 
-### Usage
-```
+
+### Help / Slack
+For any questions not covered by the documentation or for further
+information about the bot, we encourage you to join our slack channel.
+- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
+
+### [Bugs / Issues](https://github.com/gcarq/freqtrade/issues?q=is%3Aissue)
+If you discover a bug in the bot, please 
+[search our issue tracker](https://github.com/gcarq/freqtrade/issues?q=is%3Aissue) 
+first. If it hasn't been reported, please 
+[create a new issue](https://github.com/gcarq/freqtrade/issues/new) and 
+ensure you follow the template guide so that our team can assist you as 
+quickly as possible.
+
+### [Feature Requests](https://github.com/gcarq/freqtrade/labels/enhancement)
+Have you a great idea to improve the bot you want to share? Please,
+first search if this feature was not [already discussed](https://github.com/gcarq/freqtrade/labels/enhancement).
+If it hasn't been requested, please 
+[create a new request](https://github.com/gcarq/freqtrade/issues/new) 
+and ensure you follow the template guide so that it does not get lost 
+in the bug reports.
+
+### [Pull Requests](https://github.com/gcarq/freqtrade/pulls)
+Feel like our bot is missing a feature? We welcome your pull requests! 
+Please read our 
+[Contributing document](https://github.com/gcarq/freqtrade/blob/develop/CONTRIBUTING.md)
+to understand the requirements before sending your pull-requests. 
+
+**Important:** Always create your PR against the `develop` branch, not 
+`master`.
+
+## Basic Usage
+
+### Bot commands
+
+```bash
 usage: main.py [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist [INT]]
                [--dry-run-db]
                {backtesting,hyperopt} ...
@@ -179,86 +151,30 @@ optional arguments:
                         "tradesv3.dry_run.sqlite" instead of memory DB. Work
                         only if dry_run is enabled.
 ```
+More details on:
+- [How to run the bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
+- [How to use Backtesting](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
+- [How to use Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands)
+   
+### Telegram RPC commands
+Telegram is not mandatory. However, this is a great way to control your
+bot. More details on our 
+[documentation](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md)
 
-#### Dynamic whitelist example
-Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
-on BaseVolume. This value can be changed when you run the script.
-
-**By Default**  
-Get the 20 currencies based on BaseVolume.  
-```bash
-freqtrade --dynamic-whitelist
-```
-
-**Customize the number of currencies to retrieve**  
-Get the 30 currencies based on BaseVolume.  
-```bash
-freqtrade --dynamic-whitelist 30
-```
-
-**Exception**  
-`--dynamic-whitelist` must be greater than 0. If you enter 0 or a
-negative value (e.g -2), `--dynamic-whitelist` will use the default
-value (20).
-
-### Backtesting
-
-Backtesting also uses the config specified via `-c/--config`.
-
-```
-usage: freqtrade backtesting [-h] [-l] [-i INT] [--realistic-simulation]
-                             [-r]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -l, --live            using live data
-  -i INT, --ticker-interval INT
-                        specify ticker interval in minutes (default: 5)
-  --realistic-simulation
-                        uses max_open_trades from config to simulate real
-                        world limitations
-  -r, --refresh-pairs-cached
-                        refresh the pairs files in tests/testdata with 
-                        the latest data from Bittrex. Use it if you want
-                        to run your backtesting with up-to-date data.
-```
-
-#### How to use --refresh-pairs-cached parameter?
-The first time your run Backtesting, it will take the pairs your have 
-set in your config file and download data from Bittrex. 
-
-If for any reason you want to update your data set, you use 
-`--refresh-pairs-cached` to force Backtesting to update the data it has. 
-**Use it only if you want to update your data set. You will not be able
-to come back to the previous version.**
-
-To test your strategy with latest data, we recommend to continue using  
-the parameter `-l` or `--live`.
+- `/start`: Starts the trader
+- `/stop`: Stops the trader
+- `/status [table]`: Lists all open trades
+- `/count`: Displays number of open trades
+- `/profit`: Lists cumulative profit from all finished trades
+- `/forcesell <trade_id>|all`: Instantly sells the given trade 
+(Ignoring `minimum_roi`).
+- `/performance`: Show performance of each finished trade grouped by pair
+- `/balance`: Show account balance per currency
+- `/daily <n>`: Shows profit or loss per day, over the last n days
+- `/help`: Show help message
+- `/version`: Show version
 
 
-### Hyperopt
-
-It is possible to use hyperopt for trading strategy optimization.
-Hyperopt uses an internal config named `OPTIMIZE_CONFIG` located in `freqtrade/optimize/hyperopt.py`.
-
-```
-usage: freqtrade hyperopt [-h] [-e INT] [--use-mongodb]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -e INT, --epochs INT  specify number of epochs (default: 100)
-  --use-mongodb         parallelize evaluations with mongodb (requires mongod
-                        in PATH)
-
-```
-
-### Execute tests
-
-```
-$ pytest freqtrade
-```
-
-### Contributing
-
-We welcome contributions. See our [contribution guide](https://github.com/gcarq/freqtrade/blob/develop/README.md)
-for more details.
+## Min hardware required
+To run this bot we recommend you a cloud instance with a minimum of:
+* Minimal (advised) system requirements: 2GB RAM, 1GB disk space, 2vCPU
