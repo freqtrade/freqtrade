@@ -88,6 +88,7 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
             (dataframe['plus_di'] > 0.5)
         ),
         'buy'] = 1
+    dataframe['buy'] = 1
 
     return dataframe
 

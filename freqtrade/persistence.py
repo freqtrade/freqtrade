@@ -102,7 +102,7 @@ class Trade(_DECL_BASE):
             logger.info('Update stat_max_rate. %s -> %s' % (self.stat_max_rate, current_rate))
             self.stat_max_rate = current_rate
             self.stat_max_rate_date = datetime.utcnow()
-            
+
     def update(self, order: Dict) -> None:
         """
         Updates this entity with amount and actual open/close rates.
@@ -114,25 +114,27 @@ class Trade(_DECL_BASE):
             return
 
         logger.info('Updating trade (id=%d) ...', self.id)
+
+        getcontext().prec = 8  # Bittrex do not go above 8 decimal
         if order['type'] == 'LIMIT_BUY':
             # Update open rate and actual amount
-            self.open_rate = order['rate']
-            self.amount = order['amount']
+            self.open_rate = Decimal(order['rate'])
+            self.amount = Decimal(order['amount'])
             logger.info('LIMIT_BUY has been fulfilled for %s.', self)
             self.open_order_id = None
         elif order['type'] == 'LIMIT_SELL':
             self.close(order['rate'])
         else:
             raise ValueError('Unknown order type: {}'.format(order['type']))
-        Trade.session.flush()
+        cleanup()
 
     def close(self, rate: float) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed
         """
-        self.close_rate = rate
-        self.close_profit = self.calc_profit()
+        self.close_rate = Decimal(rate)
+        self.close_profit = self.calc_profit_percent()
         self.close_date = datetime.utcnow()
         self.is_open = False
         self.open_order_id = None
@@ -141,7 +143,65 @@ class Trade(_DECL_BASE):
             self
         )
 
-    def calc_profit(self, rate: Optional[float] = None) -> float:
+    def calc_open_trade_price(
+            self,
+            fee: Optional[float] = None) -> float:
+        """
+        Calculate the open_rate in BTC
+        :param fee: fee to use on the open rate (optional).
+        If rate is not set self.fee will be used
+        :return: Price in BTC of the open trade
+        """
+        getcontext().prec = 8
+
+        buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
+        fees = buy_trade * Decimal(fee or self.fee)
+        return float(buy_trade + fees)
+
+    def calc_close_trade_price(
+            self,
+            rate: Optional[float] = None,
+            fee: Optional[float] = None) -> float:
+        """
+        Calculate the close_rate in BTC
+        :param fee: fee to use on the close rate (optional).
+        If rate is not set self.fee will be used
+        :param rate: rate to compare with (optional).
+        If rate is not set self.close_rate will be used
+        :return: Price in BTC of the open trade
+        """
+        getcontext().prec = 8
+
+        if rate is None and not self.close_rate:
+            return 0.0
+
+        sell_trade = (Decimal(self.amount) * Decimal(rate or self.close_rate))
+        fees = sell_trade * Decimal(fee or self.fee)
+        return float(sell_trade - fees)
+
+    def calc_profit(
+            self,
+            rate: Optional[float] = None,
+            fee: Optional[float] = None) -> float:
+        """
+        Calculate the profit in BTC between Close and Open trade
+        :param fee: fee to use on the close rate (optional).
+        If rate is not set self.fee will be used
+        :param rate: close rate to compare with (optional).
+        If rate is not set self.close_rate will be used
+        :return:  profit in BTC as float
+        """
+        open_trade_price = self.calc_open_trade_price()
+        close_trade_price = self.calc_close_trade_price(
+            rate=Decimal(rate or self.close_rate),
+            fee=Decimal(fee or self.fee)
+        )
+        return float("{0:.8f}".format(close_trade_price - open_trade_price))
+
+    def calc_profit_percent(
+            self,
+            rate: Optional[float] = None,
+            fee: Optional[float] = None) -> float:
         """
         Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).
@@ -149,5 +209,11 @@ class Trade(_DECL_BASE):
         :return: profit in percentage as float
         """
         getcontext().prec = 8
-        return float((Decimal(rate or self.close_rate) - Decimal(self.open_rate))
-                     / Decimal(self.open_rate) - Decimal(self.fee))
+
+        open_trade_price = self.calc_open_trade_price()
+        close_trade_price = self.calc_close_trade_price(
+            rate=Decimal(rate or self.close_rate),
+            fee=Decimal(fee or self.fee)
+        )
+
+        return float("{0:.8f}".format((close_trade_price / open_trade_price) - 1))

@@ -1,12 +1,12 @@
 python-bittrex==0.2.2
-SQLAlchemy==1.1.15
+SQLAlchemy==1.2.0
 python-telegram-bot==9.0.0
 arrow==0.12.0
 cachetools==2.0.1
 requests==2.18.4
 urllib3==1.22
 wrapt==1.10.11
-pandas==0.21.1
+pandas==0.22.0
 scikit-learn==0.19.1
 scipy==1.0.0
 jsonschema==2.6.0
@@ -19,6 +19,7 @@ hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
 networkx==1.11
 tabulate==0.8.2
+pymarketcap==3.3.141
 
 # Required for plotting data
 #matplotlib==2.1.0

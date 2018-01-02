@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring,W0212
+# pragma pylint: disable=missing-docstring,W0212,W0603
 
 
 import json
@@ -8,7 +8,7 @@ from functools import reduce
 from math import exp
 from operator import itemgetter
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
@@ -16,6 +16,7 @@ from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
 from freqtrade.optimize.backtesting import backtest
+from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
 from freqtrade.vendor.qtpylib.indicators import crossed_above
 
 # Remove noisy log messages
@@ -24,30 +25,19 @@ logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
 TOTAL_TRIES = None
 _CURRENT_TRIES = 0
+CURRENT_BEST_LOSS = 100
 
-TOTAL_PROFIT_TO_BEAT = 3
-AVG_PROFIT_TO_BEAT = 0.2
-AVG_DURATION_TO_BEAT = 50
+# this is expexted avg profit * expected trade count
+# for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
+EXPECTED_MAX_PROFIT = 3.85
 
 # Configuration and data used by hyperopt
-PROCESSED = []
-OPTIMIZE_CONFIG = {
-    'max_open_trades': 3,
-    'stake_currency': 'BTC',
-    'stake_amount': 0.01,
-    'minimal_roi': {
-        '40':  0.0,
-        '30':  0.01,
-        '20':  0.02,
-        '0':  0.04,
-    },
-    'stoploss': -0.10,
-}
+PROCESSED = optimize.preprocess(optimize.load_data())
+OPTIMIZE_CONFIG = hyperopt_optimize_conf()
 
 # Monkey patch config
 from freqtrade import main  # noqa
@@ -105,20 +95,25 @@ SPACE = {
 
 
 def log_results(results):
-    "if results is better than _TO_BEAT show it"
+    """ log results if it is better than any previous evaluation """
+    global CURRENT_BEST_LOSS
 
-    current_try = results['current_tries']
-    total_tries = results['total_tries']
-    result = results['result']
-    profit = results['total_profit'] / 1000
-
-    outcome = '{:5d}/{}: {}'.format(current_try, total_tries, result)
-
-    if profit >= TOTAL_PROFIT_TO_BEAT:
-        logger.info(outcome)
+    if results['loss'] < CURRENT_BEST_LOSS:
+        CURRENT_BEST_LOSS = results['loss']
+        logger.info('{:5d}/{}: {}'.format(
+            results['current_tries'],
+            results['total_tries'],
+            results['result']))
     else:
         print('.', end='')
         sys.stdout.flush()
+
+
+def calculate_loss(total_profit: float, trade_count: int):
+    """ objective function, returns smaller number for more optimal results """
+    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+    profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
+    return trade_loss + profit_loss
 
 
 def optimizer(params):
@@ -127,49 +122,45 @@ def optimizer(params):
     from freqtrade.optimize import backtesting
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
-    results = backtest(OPTIMIZE_CONFIG, PROCESSED)
+    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED)
+    result_explanation = format_results(results)
 
-    result = format_results(results)
-
-    total_profit = results.profit.sum() * 1000
+    total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
 
-    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-    profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
+    if trade_count == 0:
+        print('.', end='')
+        return {
+            'status': STATUS_FAIL,
+            'loss': float('inf')
+        }
+
+    loss = calculate_loss(total_profit, trade_count)
 
     _CURRENT_TRIES += 1
 
-    result_data = {
-        'trade_count': trade_count,
-        'total_profit': total_profit,
-        'trade_loss': trade_loss,
-        'profit_loss': profit_loss,
-        'avg_profit': results.profit.mean() * 100.0,
-        'avg_duration': results.duration.mean() * 5,
+    log_results({
+        'loss': loss,
         'current_tries': _CURRENT_TRIES,
         'total_tries': TOTAL_TRIES,
-        'result': result,
-        'results': results
-    }
-
-    # logger.info('{:5d}/{}: {}'.format(_CURRENT_TRIES, TOTAL_TRIES, result))
-    log_results(result_data)
+        'result': result_explanation,
+    })
 
     return {
-        'loss': trade_loss + profit_loss,
+        'loss': loss,
         'status': STATUS_OK,
-        'result': result
+        'result': result_explanation,
     }
 
 
 def format_results(results: DataFrame):
-    return ('Made {:6d} buys. Average profit {: 5.2f}%. '
-            'Total profit was {: 7.3f}. Average duration {:5.1f} mins.').format(
+    return ('{:6d} trades. Avg profit {: 5.2f}%. '
+            'Total profit {: 11.8f} BTC. Avg duration {:5.1f} mins.').format(
                 len(results.index),
-                results.profit.mean() * 100.0,
-                results.profit.sum(),
+                results.profit_percent.mean() * 100.0,
+                results.profit_BTC.sum(),
                 results.duration.mean() * 5,
-    )
+            )
 
 
 def buy_strategy_generator(params):
@@ -226,7 +217,7 @@ def start(args):
     # Initialize logger
     logging.basicConfig(
         level=args.loglevel,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='\n%(message)s',
     )
 
     logger.info('Using config: %s ...', args.config)
@@ -246,5 +237,6 @@ def start(args):
 
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
+
     results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])
