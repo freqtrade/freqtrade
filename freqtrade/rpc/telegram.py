@@ -479,7 +479,6 @@ def _performance(bot: Bot, update: Update) -> None:
     stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
         index=i + 1,
         pair=pair,
-        #url=exchange.get_pair_detail_url(pair),
         profit=round(rate * 100, 2),
         count=count
     ) for i, (pair, rate, count) in enumerate(pair_rates))
