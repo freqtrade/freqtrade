@@ -469,17 +469,19 @@ def _performance(bot: Bot, update: Update) -> None:
         send_msg('`trader is not running`', bot=bot)
         return
 
-    pair_rates = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
+    pair_rates = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum'),
+                                     func.count(Trade.pair).label('count')) \
         .filter(Trade.is_open.is_(False)) \
         .group_by(Trade.pair) \
         .order_by(text('profit_sum DESC')) \
         .all()
 
-    stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}%</code>'.format(
+    stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
         index=i + 1,
         pair=pair,
-        profit=round(rate * 100, 2)
-    ) for i, (pair, rate) in enumerate(pair_rates))
+        profit=round(rate * 100, 2),
+        count=count
+    ) for i, (pair, rate, count) in enumerate(pair_rates))
 
     message = '<b>Performance:</b>\n{}'.format(stats)
     logger.debug(message)
