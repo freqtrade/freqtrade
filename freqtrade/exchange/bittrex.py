@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
 from requests.exceptions import ContentDecodingError
@@ -38,6 +38,7 @@ class Bittrex(Exchange):
             calls_per_second=1,
             api_version=API_V2_0,
         )
+        self.cached_ticker = {}
 
     @staticmethod
     def _validate_response(response) -> None:
@@ -95,26 +96,29 @@ class Bittrex(Exchange):
             raise OperationalException('{message}'.format(message=data['message']))
         return data['result']
 
-    def get_ticker(self, pair: str) -> dict:
-        data = _API.get_ticker(pair.replace('_', '-'))
-        if not data['success']:
-            Bittrex._validate_response(data)
-            raise OperationalException('{message} params=({pair})'.format(
-                message=data['message'],
-                pair=pair))
+    def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
+        data = _API.get_ticker(pair.replace('_', '-'), refresh)
+        if refresh:
+            if not data['success']:
+                Bittrex._validate_response(data)
+                raise OperationalException('{message} params=({pair})'.format(
+                    message=data['message'],
+                    pair=pair))
 
-        if not data.get('result') \
-                or not data['result'].get('Bid') \
-                or not data['result'].get('Ask') \
-                or not data['result'].get('Last'):
-            raise ContentDecodingError('{message} params=({pair})'.format(
-                message='Got invalid response from bittrex',
-                pair=pair))
-        return {
-            'bid': float(data['result']['Bid']),
-            'ask': float(data['result']['Ask']),
-            'last': float(data['result']['Last']),
-        }
+            if not data.get('result') \
+                    or not data['result'].get('Bid') \
+                    or not data['result'].get('Ask') \
+                    or not data['result'].get('Last'):
+                raise ContentDecodingError('{message} params=({pair})'.format(
+                    message='Got invalid response from bittrex',
+                    pair=pair))
+            # Update the pair
+            self.cached_ticker[pair] = {
+                'bid': float(data['result']['Bid']),
+                'ask': float(data['result']['Ask']),
+                'last': float(data['result']['Last']),
+            }
+        return self.cached_ticker[pair]
 
     def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         if tick_interval == 1:

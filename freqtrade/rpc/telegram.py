@@ -140,7 +140,7 @@ def _status(bot: Bot, update: Update) -> None:
             if trade.open_order_id:
                 order = exchange.get_order(trade.open_order_id)
             # calculate profit and send message to user
-            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_rate = exchange.get_ticker(trade.pair, False)['bid']
             current_profit = trade.calc_profit_percent(current_rate)
             fmt_close_profit = '{:.2f}%'.format(
                 round(trade.close_profit * 100, 2)
@@ -193,7 +193,7 @@ def _status_table(bot: Bot, update: Update) -> None:
         trades_list = []
         for trade in trades:
             # calculate profit and send message to user
-            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_rate = exchange.get_ticker(trade.pair, False)['bid']
             trades_list.append([
                 trade.id,
                 trade.pair,
@@ -301,7 +301,7 @@ def _profit(bot: Bot, update: Update) -> None:
             profit_closed_percent.append(profit_percent)
         else:
             # Get current rate
-            current_rate = exchange.get_ticker(trade.pair)['bid']
+            current_rate = exchange.get_ticker(trade.pair, False)['bid']
             profit_percent = trade.calc_profit_percent(rate=current_rate)
 
         profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
@@ -577,7 +577,7 @@ def _exec_forcesell(trade: Trade) -> None:
             return
 
     # Get current rate and execute sell
-    current_rate = exchange.get_ticker(trade.pair)['bid']
+    current_rate = exchange.get_ticker(trade.pair, False)['bid']
     from freqtrade.main import execute_sell
     execute_sell(trade, current_rate)
 
