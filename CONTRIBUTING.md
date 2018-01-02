@@ -24,7 +24,7 @@ pytest freqtrade/tests/test_<file_name>.py
 
 **Test only one method from one file**
 ```bash
-pytest freqtrade/tests/test_<file_name>.py:test_<method_name>
+pytest freqtrade/tests/test_<file_name>.py::test_<method_name>
 ```
 ## Test if your code is PEP8 compliant
 **Install packages** (If not already installed)
