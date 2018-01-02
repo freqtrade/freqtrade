@@ -84,7 +84,8 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
         lock_pair_until = None
-        for row in ticker[ticker.buy == 1].itertuples(index=True):
+        buy_subset = ticker[ticker.buy == 1][['buy', 'open', 'close', 'date', 'sell']]
+        for row in buy_subset.itertuples(index=True):
             if realistic:
                 if lock_pair_until is not None and row.Index <= lock_pair_until:
                     continue
@@ -106,7 +107,8 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
             )
 
             # calculate win/lose forwards from buy point
-            for row2 in ticker[row.Index + 1:].itertuples(index=True):
+            sell_subset = ticker[row.Index + 1:][['close', 'date', 'sell']]
+            for row2 in sell_subset.itertuples(index=True):
                 if max_open_trades > 0:
                     # Increase trade_count_lock for every iteration
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
