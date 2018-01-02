@@ -97,8 +97,8 @@ class Bittrex(Exchange):
         return data['result']
 
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
-        data = _API.get_ticker(pair.replace('_', '-'))
         if refresh or pair not in self.cached_ticker.keys():
+            data = _API.get_ticker(pair.replace('_', '-'))
             if not data['success']:
                 Bittrex._validate_response(data)
                 raise OperationalException('{message} params=({pair})'.format(
