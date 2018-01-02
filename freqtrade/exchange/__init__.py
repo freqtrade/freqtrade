@@ -134,8 +134,8 @@ def get_balances():
     return _API.get_balances()
 
 
-def get_ticker(pair: str) -> dict:
-    return _API.get_ticker(pair)
+def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
+    return _API.get_ticker(pair, refresh)
 
 
 @cached(TTLCache(maxsize=100, ttl=30))
