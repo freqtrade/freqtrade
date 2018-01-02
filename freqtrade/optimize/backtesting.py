@@ -41,27 +41,29 @@ def generate_text_table(
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
     """
+    floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
     tabular_data = []
-    headers = ['pair', 'buy count', 'avg profit', 'total profit', 'avg duration']
+    headers = ['pair', 'buy count', 'avg profit %',
+               'total profit ' + stake_currency, 'avg duration']
     for pair in data:
         result = results[results.currency == pair]
         tabular_data.append([
             pair,
             len(result.index),
-            '{:.2f}%'.format(result.profit_percent.mean() * 100.0),
-            '{:.08f} {}'.format(result.profit_BTC.sum(), stake_currency),
-            '{:.2f}'.format(result.duration.mean() * ticker_interval),
+            result.profit_percent.mean() * 100.0,
+            result.profit_BTC.sum(),
+            result.duration.mean() * ticker_interval,
         ])
 
     # Append Total
     tabular_data.append([
         'TOTAL',
         len(results.index),
-        '{:.2f}%'.format(results.profit_percent.mean() * 100.0),
-        '{:.08f} {}'.format(results.profit_BTC.sum(), stake_currency),
-        '{:.2f}'.format(results.duration.mean() * ticker_interval),
+        results.profit_percent.mean() * 100.0,
+        results.profit_BTC.sum(),
+        results.duration.mean() * ticker_interval,
     ])
-    return tabulate(tabular_data, headers=headers)
+    return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
 
 def backtest(stake_amount: float, processed: Dict[str, DataFrame],
