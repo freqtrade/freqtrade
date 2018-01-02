@@ -1,12 +1,12 @@
 import logging
 import re
-from datetime import timedelta, date
 from decimal import Decimal
+from datetime import timedelta, datetime
 from typing import Callable, Any
 
 import arrow
 from pandas import DataFrame
-from sqlalchemy import and_, func, text, between
+from sqlalchemy import and_, func, text
 from tabulate import tabulate
 from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
@@ -15,6 +15,7 @@ from telegram.ext import CommandHandler, Updater
 from freqtrade import exchange, __version__
 from freqtrade.misc import get_state, State, update_state
 from freqtrade.persistence import Trade
+from freqtrade.fiat_convert import CryptoToFiatConverter
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
+_FIAT_CONVERT = CryptoToFiatConverter()
 
 
 def init(config: dict) -> None:
@@ -139,7 +141,7 @@ def _status(bot: Bot, update: Update) -> None:
                 order = exchange.get_order(trade.open_order_id)
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            current_profit = trade.calc_profit(current_rate)
+            current_profit = trade.calc_profit_percent(current_rate)
             fmt_close_profit = '{:.2f}%'.format(
                 round(trade.close_profit * 100, 2)
             ) if trade.close_profit else None
@@ -196,7 +198,7 @@ def _status_table(bot: Bot, update: Update) -> None:
                 trade.id,
                 trade.pair,
                 shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}'.format(100 * trade.calc_profit(current_rate))
+                '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
             ])
 
         columns = ['ID', 'Pair', 'Since', 'Profit']
@@ -218,28 +220,51 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    today = date.today().toordinal()
+    today = datetime.utcnow().date()
     profit_days = {}
 
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
     except (TypeError, ValueError):
-        timescale = 5
+        timescale = 7
 
     if not (isinstance(timescale, int) and timescale > 0):
         send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
         return
 
     for day in range(0, timescale):
-        # need to query between day+1 and day-1
-        nextdate = date.fromordinal(today-day+1)
-        prevdate = date.fromordinal(today-day-1)
-        trades = Trade.query.filter(between(Trade.close_date, prevdate, nextdate)).all()
-        curdayprofit = sum(trade.close_profit * trade.stake_amount for trade in trades)
-        profit_days[date.fromordinal(today-day)] = format(curdayprofit, '.8f')
+        profitday = today - timedelta(days=day)
+        trades = Trade.query \
+            .filter(Trade.is_open.is_(False)) \
+            .filter(Trade.close_date >= profitday)\
+            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
+            .order_by(Trade.close_date)\
+            .all()
+        curdayprofit = sum(trade.calc_profit() for trade in trades)
+        profit_days[profitday] = format(curdayprofit, '.8f')
 
-    stats = [[key, str(value) + ' BTC'] for key, value in profit_days.items()]
-    stats = tabulate(stats, headers=['Day', 'Profit'], tablefmt='simple')
+    stats = [
+        [
+            key,
+            '{value:.8f} {symbol}'.format(value=float(value), symbol=_CONF['stake_currency']),
+            '{value:.3f} {symbol}'.format(
+                value=_FIAT_CONVERT.convert_amount(
+                    value,
+                    _CONF['stake_currency'],
+                    _CONF['fiat_display_currency']
+                ),
+                symbol=_CONF['fiat_display_currency']
+            )
+         ]
+        for key, value in profit_days.items()
+    ]
+    stats = tabulate(stats,
+                     headers=[
+                         'Day',
+                         'Profit {}'.format(_CONF['stake_currency']),
+                         'Profit {}'.format(_CONF['fiat_display_currency'])
+                     ],
+                     tablefmt='simple')
 
     message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
     send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
@@ -256,10 +281,10 @@ def _profit(bot: Bot, update: Update) -> None:
     """
     trades = Trade.query.order_by(Trade.id).all()
 
-    profit_all_btc = []
-    profit_all = []
-    profit_btc_closed = []
-    profit_closed = []
+    profit_all_coin = []
+    profit_all_percent = []
+    profit_closed_coin = []
+    profit_closed_percent = []
     durations = []
 
     for trade in trades:
@@ -271,16 +296,16 @@ def _profit(bot: Bot, update: Update) -> None:
             durations.append((trade.close_date - trade.open_date).total_seconds())
 
         if not trade.is_open:
-            profit = trade.close_profit
-            profit_btc_closed.append(Decimal(trade.close_rate) - Decimal(trade.open_rate))
-            profit_closed.append(profit)
+            profit_percent = trade.calc_profit_percent()
+            profit_closed_coin.append(trade.calc_profit())
+            profit_closed_percent.append(profit_percent)
         else:
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            profit = trade.calc_profit(current_rate)
+            profit_percent = trade.calc_profit_percent(rate=current_rate)
 
-        profit_all_btc.append(Decimal(trade.close_rate or current_rate) - Decimal(trade.open_rate))
-        profit_all.append(profit)
+        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
+        profit_all_percent.append(profit_percent)
 
     best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
         .filter(Trade.is_open.is_(False)) \
@@ -293,19 +318,46 @@ def _profit(bot: Bot, update: Update) -> None:
         return
 
     bp_pair, bp_rate = best_pair
+
+    # Prepare data to display
+    profit_closed_coin = round(sum(profit_closed_coin), 8)
+    profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
+    profit_closed_fiat = _FIAT_CONVERT.convert_amount(
+        profit_closed_coin,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+    profit_all_coin = round(sum(profit_all_coin), 8)
+    profit_all_percent = round(sum(profit_all_percent) * 100, 2)
+    profit_all_fiat = _FIAT_CONVERT.convert_amount(
+        profit_all_coin,
+        _CONF['stake_currency'],
+        _CONF['fiat_display_currency']
+    )
+
+    # Message to display
     markdown_msg = """
-*ROI Trade closed:* `{profit_closed_btc:.8f} BTC ({profit_closed:.2f}%)`
-*ROI All trades:* `{profit_all_btc:.8f} BTC ({profit_all:.2f}%)`
+*ROI:* Close trades
+  ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`
+  ∙ `{profit_closed_fiat:.3f} {fiat}`
+*ROI:* All trades
+  ∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`
+  ∙ `{profit_all_fiat:.3f} {fiat}`
+
 *Total Trade Count:* `{trade_count}`
 *First Trade opened:* `{first_trade_date}`
 *Latest Trade opened:* `{latest_trade_date}`
 *Avg. Duration:* `{avg_duration}`
 *Best Performing:* `{best_pair}: {best_rate:.2f}%`
     """.format(
-        profit_closed_btc=round(sum(profit_btc_closed), 8),
-        profit_closed=round(sum(profit_closed) * 100, 2),
-        profit_all_btc=round(sum(profit_all_btc), 8),
-        profit_all=round(sum(profit_all) * 100, 2),
+        coin=_CONF['stake_currency'],
+        fiat=_CONF['fiat_display_currency'],
+        profit_closed_coin=profit_closed_coin,
+        profit_closed_percent=profit_closed_percent,
+        profit_closed_fiat=profit_closed_fiat,
+        profit_all_coin=profit_all_coin,
+        profit_all_percent=profit_all_percent,
+        profit_all_fiat=profit_all_fiat,
         trade_count=len(trades),
         first_trade_date=arrow.get(trades[0].open_date).humanize(),
         latest_trade_date=arrow.get(trades[-1].open_date).humanize(),

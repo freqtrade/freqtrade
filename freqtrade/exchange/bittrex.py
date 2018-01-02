@@ -45,12 +45,16 @@ class Bittrex(Exchange):
         Validates the given bittrex response
         and raises a ContentDecodingError if a non-fatal issue happened.
         """
-        if response['message'] == 'NO_API_RESPONSE':
-            raise ContentDecodingError('Unable to decode bittrex response')
+        temp_error_messages = [
+            'NO_API_RESPONSE',
+            'MIN_TRADE_REQUIREMENT_NOT_MET',
+        ]
+        if response['message'] in temp_error_messages:
+            raise ContentDecodingError('Got {}'.format(response['message']))
 
     @property
     def fee(self) -> float:
-        # See https://bittrex.com/fees
+        # 0.25 %: See https://bittrex.com/fees
         return 0.0025
 
     def buy(self, pair: str, rate: float, amount: float) -> str:

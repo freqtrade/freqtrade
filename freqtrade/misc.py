@@ -168,8 +168,8 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     )
     backtesting_cmd.add_argument(
         '-r', '--refresh-pairs-cached',
-        help='refresh the pairs files in tests/testdata with the latest data from Bittrex. Use it if you want to \
-              run your backtesting with up-to-date data.',
+        help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
+              Use it if you want to run your backtesting with up-to-date data.',
         action='store_true',
         dest='refresh_pairs',
     )
@@ -208,6 +208,7 @@ CONF_SCHEMA = {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'fiat_display_currency': {'type': 'string', 'enum': ['USD', 'EUR', 'CAD', 'SGD']},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -274,6 +275,14 @@ CONF_SCHEMA = {
                         'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
                     },
                     'uniqueItems': True
+                },
+                'pair_blacklist': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                    },
+                    'uniqueItems': True
                 }
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
@@ -286,6 +295,7 @@ CONF_SCHEMA = {
         'max_open_trades',
         'stake_currency',
         'stake_amount',
+        'fiat_display_currency',
         'dry_run',
         'minimal_roi',
         'bid_strategy',

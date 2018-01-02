@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
 import re
-from datetime import datetime, date
+from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock
 
@@ -102,7 +102,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(0.001)
     # Trigger status while we have a fulfilled order for the open trade
     _status(bot=MagicMock(), update=update)
 
@@ -151,7 +151,8 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     assert msg_mock.call_count == 1
 
 
-def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+def test_profit_handle(
+        default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     msg_mock = MagicMock()
@@ -163,6 +164,9 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     _profit(bot=MagicMock(), update=update)
@@ -171,7 +175,7 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(0.001)
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -182,7 +186,10 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
     assert 'no closed trade' in msg_mock.call_args_list[-1][0][0]
     msg_mock.reset_mock()
 
-    # Simulate fulfilled LIMIT_SELL order for trade
+    # Update the ticker with a market going up
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_up)
     trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()
@@ -190,11 +197,17 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
 
     _profit(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert '*ROI All trades:* `0.00765279 BTC (10.05%)`' in msg_mock.call_args_list[-1][0][0]
-    assert 'Best Performing:* `BTC_ETH: 10.05%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* Close trades' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
+    assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
+
+    assert '*Best Performing:* `BTC_ETH: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_forcesell_handle(default_conf, update, ticker, mocker):
+def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
@@ -205,10 +218,55 @@ def test_forcesell_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(0.001)
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Increase the price and sell it
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_up)
+
+    update.message.text = '/forcesell 1'
+    _forcesell(bot=MagicMock(), update=update)
+
+    assert rpc_mock.call_count == 2
+    assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
+    assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
+
+
+def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    init(default_conf, create_engine('sqlite://'))
+
+    # Create some test data
+    create_trade(0.001)
+
+    # Decrease the price and sell it
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_down)
 
     trade = Trade.query.first()
     assert trade
@@ -218,7 +276,9 @@ def test_forcesell_handle(default_conf, update, ticker, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.07256061 (profit: ~-0.64%)' in rpc_mock.call_args_list[-1][0][0]
+    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
+    assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
+    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
 def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
@@ -256,11 +316,14 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
     for _ in range(4):
-        create_trade(15.0)
+        create_trade(0.001)
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
@@ -268,7 +331,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
 
     assert rpc_mock.call_count == 4
     for args in rpc_mock.call_args_list:
-        assert '0.07256061 (profit: ~-0.64%)' in args[0][0]
+        assert '0.00001098' in args[0][0]
+        assert 'loss: -0.59%, -0.00000591 BTC' in args[0][0]
+        assert '-0.089 USD' in args[0][0]
 
 
 def test_forcesell_handle_invalid(default_conf, update, mocker):
@@ -323,7 +388,7 @@ def test_performance_handle(
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(0.001)
     trade = Trade.query.first()
     assert trade
 
@@ -339,7 +404,7 @@ def test_performance_handle(
     _performance(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>BTC_ETH\t10.05%</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>BTC_ETH\t6.20%</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_daily_handle(
@@ -355,10 +420,13 @@ def test_daily_handle(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(0.001)
     trade = Trade.query.first()
     assert trade
 
@@ -371,14 +439,16 @@ def test_daily_handle(
     trade.close_date = datetime.utcnow()
     trade.is_open = False
 
-    # try valid data
-    update.message.text = '/daily 7'
+    # Try valid data
+    update.message.text = '/daily 2'
     _daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
-    assert str(date.today()) + '  1.50701325 BTC' in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
 
-    # try invalid data
+    # Try invalid data
     msg_mock.reset_mock()
     update_state(State.RUNNING)
     update.message.text = '/daily -2'
@@ -409,7 +479,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     update_state(State.RUNNING)
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(0.001)
     msg_mock.reset_mock()
     _count(bot=MagicMock(), update=update)
 
