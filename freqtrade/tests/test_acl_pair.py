@@ -22,10 +22,12 @@ def whitelist_conf():
 
 def get_health():
     return [{'Currency': 'ETH',
-             'IsActive': True
+             'IsActive': True, 
+             'BaseVolume' : 42
              },
             {'Currency': 'TKN',
-             'IsActive': True
+             'IsActive': True,
+             'BaseVolume' : 1664
              }]
 
 
@@ -44,7 +46,7 @@ def test_refresh_whitelist(mocker):
     refreshedwhitelist = refresh_whitelist(conf['exchange']['pair_whitelist'])
     whitelist = ['BTC_ETH', 'BTC_TKN']
     # Ensure all except those in whitelist are removed
-    assert set(whitelist) == set(refreshedwhitelist)
+    assert whitelist == refreshedwhitelist
 
 
 def test_refresh_whitelist_dynamic(mocker):
@@ -53,9 +55,9 @@ def test_refresh_whitelist_dynamic(mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_wallet_health=get_health)
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['BTC_ETH', 'BTC_TKN']
+    whitelist = ['BTC_TKN', 'BTC_ETH']
     refreshedwhitelist = refresh_whitelist(whitelist)
-    assert set(whitelist) == set(refreshedwhitelist)
+    assert whitelist == refreshedwhitelist
 
 
 def test_refresh_whitelist_dynamic_empty(mocker):

@@ -27,23 +27,28 @@ _CONF = {}
 def refresh_whitelist(whitelist: List[str]) -> List[str]:
     """
     Check wallet health and remove pair from whitelist if necessary
-    :param whitelist: the pair the user might want to trade
+    :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to trade
     :return: the list of pairs the user wants to trade without the one unavailable or black_listed
     """
-    sanitized_whitelist = []
+    sanitized_whitelist = whitelist
     health = exchange.get_wallet_health()
+    known_pairs = set()
     for status in health:
         pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+        known_pairs.add(pair)
         if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
-        if status['IsActive']:
-            sanitized_whitelist.append(pair)
+        if not status['IsActive']:
+            sanitized_whitelist.remove(pair)
         else:
             logger.info(
                 'Ignoring %s from whitelist (reason: %s).',
                 pair, status.get('Notice') or 'wallet is not active'
             )
-    return sanitized_whitelist
+
+    # We need to remove pairs that are unknown
+    final_list = [x for x in sanitized_whitelist if x in known_pairs]
+    return final_list
 
 
 def _process(nb_assets: Optional[int] = 0) -> bool:
