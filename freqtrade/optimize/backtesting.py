@@ -96,6 +96,7 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                 trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
             trade = Trade(
+                pair=pair,
                 open_rate=row.close,
                 open_date=row.date,
                 stake_amount=stake_amount,

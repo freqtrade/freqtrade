@@ -93,13 +93,12 @@ class Trade(_DECL_BASE):
         :param current_rate: current rate retrieved by exchange.get_ticker()
         :return: None
         """
-        logger.info('Updating statistics for trade (id=%d) ...', self.id)
         if not self.stat_min_rate or current_rate < self.stat_min_rate:
-            logger.info('Update stat_min_rate. %s -> %s' % (self.stat_min_rate, current_rate))
+            logger.debug('Update stat_min_rate. %s -> %s' % (self.stat_min_rate, current_rate))
             self.stat_min_rate = current_rate
             self.stat_min_rate_date = datetime.utcnow()
         if not self.stat_max_rate or current_rate > self.stat_max_rate:
-            logger.info('Update stat_max_rate. %s -> %s' % (self.stat_max_rate, current_rate))
+            logger.debug('Update stat_max_rate. %s -> %s' % (self.stat_max_rate, current_rate))
             self.stat_max_rate = current_rate
             self.stat_max_rate_date = datetime.utcnow()
 
