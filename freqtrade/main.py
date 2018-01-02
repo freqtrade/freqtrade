@@ -176,11 +176,15 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
         time_diff = (current_time - trade.open_date).total_seconds() / 60
         for duration, threshold in sorted(_CONF['trailing_stoploss'].items()):
             if time_diff > float(duration):
-                print(current_profit, current_rate, trade.stat_max_rate)
                 percentage_change = ((current_rate - trade.stat_max_rate) / trade.stat_max_rate) 
                 logger.debug('Check trailing stop loss. %s < %s' % (percentage_change, -threshold))
                 if percentage_change < -threshold:
-                    logger.debug('Trailing stop loss hit: %s, %s : %s < %s' % (duration, threshold, percentage_change, -threshold))
+                    logger.debug('Trailing stop loss hit: %s, %s : %s < %s' % \
+                                                        (duration, 
+                                                         threshold, 
+                                                         percentage_change, 
+                                                         -threshold)
+                                )
                     return True
 
     # Check if time matches and current rate is above threshold
