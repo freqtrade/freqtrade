@@ -171,7 +171,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
         return True
 
     # Check if profit is positive, time matches and current rate is below trailing stop loss
-    if current_profit > 0:
+    if current_profit > 0 and 'trailing_stoploss' in _CONF:
         logger.debug('Check trailing stop loss...')
         time_diff = (current_time - trade.open_date).total_seconds() / 60
         for duration, threshold in sorted(_CONF['trailing_stoploss'].items()):
