@@ -94,20 +94,14 @@ class Trade(_DECL_BASE):
         :return: None
         """
         logger.info('Updating statistics for trade (id=%d) ...', self.id)
-        need_update = False
         if not self.stat_min_rate or current_rate < self.stat_min_rate:
             logger.info('Update stat_min_rate. %s -> %s' % (self.stat_min_rate, current_rate))
             self.stat_min_rate = current_rate
             self.stat_min_rate_date = datetime.utcnow()
-            need_update = True
         if not self.stat_max_rate or current_rate > self.stat_max_rate:
             logger.info('Update stat_max_rate. %s -> %s' % (self.stat_max_rate, current_rate))
             self.stat_max_rate = current_rate
             self.stat_max_rate_date = datetime.utcnow()
-            need_update = True
-        if need_update:
-            Trade.session.flush()
-        
         
     def update(self, order: Dict) -> None:
         """
