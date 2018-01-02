@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 class Exchange(ABC):
@@ -62,10 +62,11 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_ticker(self, pair: str) -> dict:
+    def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         """
         Gets ticker for given pair.
         :param pair: Pair as str, format: BTC_ETC
+        :param refresh: Shall we query a new value or a cached value is enought
         :return: dict, format: {
             'bid': float,
             'ask': float,
