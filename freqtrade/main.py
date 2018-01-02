@@ -40,7 +40,6 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
             continue
         if not status['IsActive']:
             sanitized_whitelist.remove(pair)
-        else:
             logger.info(
                 'Ignoring %s from whitelist (reason: %s).',
                 pair, status.get('Notice') or 'wallet is not active'
