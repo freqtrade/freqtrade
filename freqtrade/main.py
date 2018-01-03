@@ -176,7 +176,20 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
         logger.debug('Stop loss hit.')
         return True
-
+        
+    # Check if profit is positive, time matches and current rate is below trailing stop loss
+    if current_profit > 0:
+        logger.info('Check trailing stop loss...')
+        time_diff = (current_time - trade.open_date).total_seconds() / 60
+        for duration, threshold in sorted(_CONF['trailing_stoploss'].items()):
+            if time_diff > float(duration):
+                print(current_profit, current_rate, trade.stat_max_rate)
+                percentage_change = ((current_rate - trade.stat_max_rate) / trade.stat_max_rate) 
+                logger.info('Check trailing stop loss. %s < %s' % (percentage_change, -threshold))
+                if percentage_change < -threshold:
+                    logger.info('Trailing stop loss hit: %s, %s : %s < %s' % (duration, threshold, percentage_change, -threshold))
+                    return True
+                
     # Check if time matches and current rate is above threshold
     time_diff = (current_time - trade.open_date).total_seconds() / 60
     for duration, threshold in sorted(_CONF['minimal_roi'].items()):
@@ -197,6 +210,9 @@ def handle_trade(trade: Trade) -> bool:
 
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
+    
+    # Update statistic values for trailing stoploss
+    trade.update_stats(current_rate)
 
     # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
     if _CONF.get('experimental', {}).get('sell_profit_only'):
@@ -362,7 +378,7 @@ def main() -> None:
 
     # Initialize logger
     logging.basicConfig(
-        level=args.loglevel,
+        level=args.loglevel,#'DEBUG',#args.loglevel,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
