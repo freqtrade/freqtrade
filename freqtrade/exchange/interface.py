@@ -66,7 +66,7 @@ class Exchange(ABC):
         """
         Gets ticker for given pair.
         :param pair: Pair as str, format: BTC_ETC
-        :param refresh: Shall we query a new value or a cached value is enought
+        :param refresh: Shall we query a new value or a cached value is enough
         :return: dict, format: {
             'bid': float,
             'ask': float,
