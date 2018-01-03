@@ -64,7 +64,7 @@ def generate_text_table(
 
 
 def backtest(stake_amount: float, processed: Dict[str, DataFrame],
-             max_open_trades: int = 0, realistic: bool = True) -> DataFrame:
+             max_open_trades: int = 0, realistic: bool = True, sell_profit_only: bool = False, stoploss: int = -1.00) -> DataFrame:
     """
     Implements backtesting functionality
     :param stake_amount: btc amount to use for each trade
@@ -110,8 +110,10 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                     # Increase trade_count_lock for every iteration
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
-                if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
-                    current_profit_percent = trade.calc_profit_percent(rate=row2.close)
+                current_profit_percent = trade.calc_profit_percent(rate=row2.close)
+                if (sell_profit_only and current_profit_percent < 0) :
+                    continue
+                if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1 or current_profit_percent < stoploss:
                     current_profit_btc = trade.calc_profit(rate=row2.close)
                     lock_pair_until = row2.Index
 
@@ -172,7 +174,7 @@ def start(args):
 
     # Execute backtest and print results
     results = backtest(
-        config['stake_amount'], preprocessed, max_open_trades, args.realistic_simulation
+        config['stake_amount'], preprocessed, max_open_trades, args.realistic_simulation, config.get('experimental',{}).get('sell_profit_only', False), config.get('stoploss')
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ================================\n%s',
