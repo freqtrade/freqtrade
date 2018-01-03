@@ -177,6 +177,23 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
         logger.debug('Stop loss hit.')
         return True
 
+    # Check if profit is positive, time matches and current rate is below trailing stop loss
+    if current_profit > 0 and 'trailing_stoploss' in _CONF:
+        logger.debug('Check trailing stop loss...')
+        time_diff = (current_time - trade.open_date).total_seconds() / 60
+        for duration, threshold in sorted(_CONF['trailing_stoploss'].items()):
+            if time_diff > float(duration):
+                percentage_change = ((current_rate - trade.stat_max_rate) / trade.stat_max_rate) 
+                logger.debug('Check trailing stop loss. %s < %s' % (percentage_change, -threshold))
+                if percentage_change < -threshold:
+                    logger.debug('Trailing stop loss hit: %s, %s : %s < %s' % \
+                                                        (duration, 
+                                                         threshold, 
+                                                         percentage_change, 
+                                                         -threshold)
+                                )
+                    return True
+
     # Check if time matches and current rate is above threshold
     time_diff = (current_time - trade.open_date).total_seconds() / 60
     for duration, threshold in sorted(_CONF['minimal_roi'].items()):
@@ -197,7 +214,13 @@ def handle_trade(trade: Trade) -> bool:
 
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
+    
+    # Update statistic values for trailing stoploss
+    trade.update_stats(current_rate)
 
+    # Update statistic values for trailing stoploss
+    trade.update_stats(current_rate)
+    
     # Check if minimal roi has been reached
     if min_roi_reached(trade, current_rate, datetime.utcnow()):
         logger.debug('Executing sell due to ROI ...')
@@ -356,7 +379,7 @@ def main() -> None:
 
     # Initialize logger
     logging.basicConfig(
-        level=args.loglevel,
+        level=args.loglevel,#'DEBUG',#args.loglevel,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 

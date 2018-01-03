@@ -98,6 +98,7 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                 trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
             trade = Trade(
+                pair=pair,
                 open_rate=row.close,
                 open_date=row.date,
                 stake_amount=stake_amount,
@@ -107,6 +108,10 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
 
             # calculate win/lose forwards from buy point
             for row2 in ticker[row.Index + 1:].itertuples(index=True):
+                
+                # Update statistic values for trailing stoploss
+                trade.update_stats(row2.close)
+                
                 if max_open_trades > 0:
                     # Increase trade_count_lock for every iteration
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
