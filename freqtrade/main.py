@@ -98,7 +98,7 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
                 # Check if we can sell our current pair
                 state_changed = handle_trade(trade) or state_changed
 
-            if 'opentradetimeout' in _CONF and trade.open_order_id:
+            if 'unfilledtimeout' in _CONF and trade.open_order_id:
                 # Check and handle any timed out trades
                 check_handle_timedout(trade)
 
@@ -125,7 +125,7 @@ def check_handle_timedout(trade: Trade) -> bool:
     :param trade: Trade instance
     :return: True if the trade is timed out, false otherwise
     """
-    timeoutthreashold = datetime.utcnow() - timedelta(minutes=_CONF['opentradetimeout'])
+    timeoutthreashold = datetime.utcnow() - timedelta(minutes=_CONF['unfilledtimeout'])
     order = exchange.get_order(trade.open_order_id)
 
     if trade.open_date < timeoutthreashold:

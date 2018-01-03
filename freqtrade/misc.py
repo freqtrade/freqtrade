@@ -218,7 +218,7 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'opentradetimeout': {'type': 'integer', 'minimum': 0},
+        'unfilledtimeout': {'type': 'integer', 'minimum': 0},
         'bid_strategy': {
             'type': 'object',
             'properties': {
