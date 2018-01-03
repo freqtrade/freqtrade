@@ -118,23 +118,23 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                 current_profit_percent = trade.calc_profit_percent(rate=row2.close)
                 if (sell_profit_only and current_profit_percent < 0):
                     continue
-                if min_roi_reached(trade, row2.close, row2.date)
-                or (row2.sell == 1 and use_sell_signal)
-                or current_profit_percent <= stoploss:
-                    current_profit_btc = trade.calc_profit(rate=row2.close)
-                    lock_pair_until = row2.Index
+                if min_roi_reached(trade, row2.close, row2.date) or \
+                    (row2.sell == 1 and use_sell_signal) or \
+                        current_profit_percent <= stoploss:
+                        current_profit_btc = trade.calc_profit(rate=row2.close)
+                        lock_pair_until = row2.Index
 
-                    trades.append(
-                        (
-                            pair,
-                            current_profit_percent,
-                            current_profit_btc,
-                            row2.Index - row.Index,
-                            current_profit_btc > 0,
-                            current_profit_btc < 0
+                        trades.append(
+                            (
+                                pair,
+                                current_profit_percent,
+                                current_profit_btc,
+                                row2.Index - row.Index,
+                                current_profit_btc > 0,
+                                current_profit_btc < 0
+                            )
                         )
-                    )
-                    break
+                        break
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'profit', 'loss']
     return DataFrame.from_records(trades, columns=labels)
 
