@@ -35,7 +35,8 @@
         ]
     },
     "experimental": {
-        "use_sell_signal": false
+        "use_sell_signal": false,
+        "sell_profit_only": false
     },
     "telegram": {
         "enabled": true,
