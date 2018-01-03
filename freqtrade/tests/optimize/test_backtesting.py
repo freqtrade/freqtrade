@@ -23,14 +23,15 @@ def test_generate_text_table():
     )
     print(generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5))
     assert generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5) == (
-        'pair       buy count    avg profit %    total profit BTC    avg duration    profit    loss\n'
-        '-------  -----------  --------------  ------------------  --------------  --------  ------\n'
-        'BTC_ETH            2           15.00          0.60000000           100.0         2       0\n'
-        'TOTAL              2           15.00          0.60000000           100.0         2       0')
+        'pair       buy count    avg profit %    total profit BTC    avg duration    profit    loss\n'  # noqa
+        '-------  -----------  --------------  ------------------  --------------  --------  ------\n'  # noqa
+        'BTC_ETH            2           15.00          0.60000000           100.0         2       0\n'  # noqa
+        'TOTAL              2           15.00          0.60000000           100.0         2       0')  # noqa
 
 
 def test_get_timeframe():
-    data = preprocess(optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST']))
+    data = preprocess(optimize.load_data(
+        ticker_interval=1, pairs=['BTC_UNITEST']))
     min_date, max_date = get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
@@ -41,7 +42,8 @@ def test_backtest(default_conf, mocker):
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
-    results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
+    results = backtest(default_conf['stake_amount'],
+                       optimize.preprocess(data), 10, True)
     assert not results.empty
 
 
@@ -51,7 +53,8 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
-    results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 1, True)
+    results = backtest(default_conf['stake_amount'],
+                       optimize.preprocess(data), 1, True)
     assert not results.empty
 
 
@@ -76,13 +79,13 @@ def load_data_test(what):
     base = 0.001
     if what == 'raise':
         return {'BTC_UNITEST':
-                [{'T':  pair[x]['T'],  # Keep old dates
-                  'V':  pair[x]['V'],  # Keep old volume
+                [{'T': pair[x]['T'],  # Keep old dates
+                  'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
-                  'O':  x * base,        # But replace O,H,L,C
-                  'H':  x * base + 0.0001,
-                  'L':  x * base - 0.0001,
-                  'C':  x * base} for x in range(0, datalen)]}
+                  'O': x * base,        # But replace O,H,L,C
+                  'H': x * base + 0.0001,
+                  'L': x * base - 0.0001,
+                  'C': x * base} for x in range(0, datalen)]}
     if what == 'lower':
         return {'BTC_UNITEST':
                 [{'T': pair[x]['T'],  # Keep old dates
@@ -98,10 +101,11 @@ def load_data_test(what):
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
-                  'O': math.sin(x*hz) / 1000 + base,        # But replace O,H,L,C
-                  'H': math.sin(x*hz) / 1000 + base + 0.0001,
-                  'L': math.sin(x*hz) / 1000 + base - 0.0001,
-                  'C': math.sin(x*hz) / 1000 + base} for x in range(0, datalen)]}
+                  # But replace O,H,L,C
+                  'O': math.sin(x * hz) / 1000 + base,
+                  'H': math.sin(x * hz) / 1000 + base + 0.0001,
+                  'L': math.sin(x * hz) / 1000 + base - 0.0001,
+                  'C': math.sin(x * hz) / 1000 + base} for x in range(0, datalen)]}
     return data
 
 
@@ -121,7 +125,8 @@ def simple_backtest(config, contour, num_results):
 def test_backtest2(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
-    results = backtest(default_conf['stake_amount'], optimize.preprocess(data), 10, True)
+    results = backtest(default_conf['stake_amount'],
+                       optimize.preprocess(data), 10, True)
     assert not results.empty
 
 
