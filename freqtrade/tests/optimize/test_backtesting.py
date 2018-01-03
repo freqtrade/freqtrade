@@ -16,15 +16,17 @@ def test_generate_text_table():
             'currency': ['BTC_ETH', 'BTC_ETH'],
             'profit_percent': [0.1, 0.2],
             'profit_BTC': [0.2, 0.4],
-            'duration': [10, 30]
+            'duration': [10, 30],
+            'profit': [2,0],
+            'loss': [0,0]
         }
     )
     print(generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5))
     assert generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5) == (
-        'pair       buy count    avg profit %    total profit BTC    avg duration\n'
-        '-------  -----------  --------------  ------------------  --------------\n'
-        'BTC_ETH            2           15.00          0.60000000           100.0\n'
-        'TOTAL              2           15.00          0.60000000           100.0')
+        'pair       buy count    avg profit %    total profit BTC    avg duration    profit    loss\n'
+        '-------  -----------  --------------  ------------------  --------------  --------  ------\n'
+        'BTC_ETH            2           15.00          0.60000000           100.0         2       0\n'
+        'TOTAL              2           15.00          0.60000000           100.0         2       0')
 
 
 def test_get_timeframe():
