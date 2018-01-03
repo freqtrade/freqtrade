@@ -17,8 +17,8 @@ def test_generate_text_table():
             'profit_percent': [0.1, 0.2],
             'profit_BTC': [0.2, 0.4],
             'duration': [10, 30],
-            'profit': [2,0],
-            'loss': [0,0]
+            'profit': [2, 0],
+            'loss': [0, 0]
         }
     )
     print(generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5))
