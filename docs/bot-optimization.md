@@ -114,4 +114,4 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
 ## Next step
 Now you have a perfect strategy you probably want to backtesting it. 
-Your next step is to learn [How to use ](https://github.com/gcarq/freqtrade/blob/develop/docs/backtesting.md).
+Your next step is to learn [How to use the Backtesting](https://github.com/gcarq/freqtrade/blob/develop/docs/backtesting.md).
