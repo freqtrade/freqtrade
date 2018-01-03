@@ -35,9 +35,12 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     known_pairs = set()
     for status in health:
         pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
-        known_pairs.add(pair)
+        # pair is not int the generated dynamic market, or in the blacklist ... ignore it
         if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
+        # else the pair is valid
+        known_pairs.add(pair)
+        # Market is not active
         if not status['IsActive']:
             sanitized_whitelist.remove(pair)
             logger.info(
