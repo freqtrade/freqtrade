@@ -21,6 +21,7 @@ The table below will list all configuration parameters.
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. 
 | `minimal_roi` | See below | Yes | Set the threshold in percent the bot will use to sell a trade. More information below. 
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. 
+| `opentradetimeout` | 0 | No | The number of minutes until an open trade will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use.
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.

@@ -160,7 +160,6 @@ optional arguments:
                         "tradesv3.dry_run.sqlite" instead of memory DB. Work
                         only if dry_run is enabled.
 ```
-
 More details on:
 - [How to run the bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
 - [How to use Backtesting](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
@@ -197,4 +196,3 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
 - [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)
-
