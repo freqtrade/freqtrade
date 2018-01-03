@@ -11,7 +11,10 @@ support multi exchanges and be controlled via Telegram.
 
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
-you are afraid to lose. Always start by running a trading bot in Dry-run and do not engage money
+you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
+AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS. 
+
+Always start by running a trading bot in Dry-run and do not engage money
 before you understand how it works and what profit/loss you should
 expect.
 
@@ -31,7 +34,9 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [Basic Usage](#basic-usage)
   - [Bot commands](#bot-commands)
   - [Telegram RPC commands](#telegram-rpc-commands)
-- [Min hardware required](#min-hardware-required)
+- [Requirements](#requirements)
+    - [Min hardware required](#min-hardware-required)
+    - [Software requirements](#software-requirements)
 
 ## Branches
 The project is currently setup in two main branches:
@@ -41,7 +46,7 @@ breaking changes.
 'should' be stable on this branch, and is generally well tested. 
 
 ## Features
-- [x] **Based on Python**: For botting on any operating system - 
+- [x] **Based on Python 3.6+**: For botting on any operating system - 
 Windows, macOS and Linux
 - [x] **Persistence**: Persistence is achieved through sqlite
 - [x] **Dry-run**: Run the bot without playing money.
@@ -174,7 +179,16 @@ bot. More details on our
 - `/help`: Show help message
 - `/version`: Show version
 
+## Requirements
 
-## Min hardware required
+### Min hardware required
 To run this bot we recommend you a cloud instance with a minimum of:
 * Minimal (advised) system requirements: 2GB RAM, 1GB disk space, 2vCPU
+
+### Software requirements
+- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/) 
+- [pip](https://pip.pypa.io/en/stable/installing/)
+- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
+- [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+- [Docker](https://www.docker.com/products/docker) (Recommended)

@@ -128,22 +128,22 @@ automatically. Testdata files will not be updated until your specify it.
 ### Run a backtesting against the currencies listed in your config file
 **With 5 min tickers (Per default)**
 ```bash
-python3 ./freqtrade/main.py -c config.json backtesting --realistic-simulation
+python3 ./freqtrade/main.py backtesting --realistic-simulation
 ```
 
 **With 1 min tickers**
 ```bash
-python3 ./freqtrade/main.py -c config.json backtesting --realistic-simulation --ticker-interval 1
+python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1
 ```
 
 **Reload your testdata files**
 ```bash
-python3 ./freqtrade/main.py -c config.json backtesting --realistic-simulation --refresh-pairs-cached
+python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
 ```
 
 **With live data (do not alter your testdata files)**
 ```bash
-python3 ./freqtrade/main.py -c config.json backtesting --realistic-simulation --live
+python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 ```
 
 ## Find optimal parameters with Hyperopt

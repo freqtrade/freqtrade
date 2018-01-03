@@ -43,7 +43,7 @@ cd freqtrade
 cp config.json.example config.json
 ```
 To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page 
-5. Create your DB file 
+5. Create your DB file (Optional, the bot will create it if it is missing)
 ```bash
 # For Production
 touch tradesv3.sqlite
@@ -171,16 +171,12 @@ If you are on a different Linux OS you maybe have to adapt things like:
 
 ### 2.3. MacOS installation
 
-**2.3.1. Install git and wget**
+**2.3.1. Install Python 3.6, git and wget**
 ```bash
-brew install wget git
+brew install python3 git wget
 ```
 
-**2.3.2. Install Python 3.6**  
-- [Python 3.6 MacOS offical page](https://www.python.org/downloads/mac-osx/)
-
-
-**2.3.3. [Optional] Install MongoDB**  
+**2.3.2. [Optional] Install MongoDB**  
 Install MongoDB if you plan to optimize your strategy with Hyperopt.
 ```bash
 curl -O https://fastdl.mongodb.org/osx/mongodb-osx-ssl-x86_64-3.4.10.tgz
@@ -208,7 +204,6 @@ python3.6 -m venv .env
 source .env/bin/activate
 pip3.6 install -r requirements.txt
 pip3.6 install -e .
-pip3.6 install hyperopt
 ```
 
 ## 6. Run the bot
