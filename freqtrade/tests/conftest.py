@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
+import arrow
 from jsonschema import validate
 from telegram import Message, Chat, Update
 
@@ -123,11 +124,50 @@ def limit_buy_order():
         'id': 'mocked_limit_buy',
         'type': 'LIMIT_BUY',
         'pair': 'mocked',
-        'opened': datetime.utcnow(),
+        'opened': arrow.utcnow().datetime,
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': datetime.utcnow(),
+        'closed': arrow.utcnow().datetime,
+    }
+
+
+@pytest.fixture
+def limit_buy_order_old():
+    return {
+        'id': 'mocked_limit_buy_old',
+        'type': 'LIMIT_BUY',
+        'pair': 'BTC_ETH',
+        'opened': arrow.utcnow().shift(minutes=-601).datetime,
+        'rate': 0.00001099,
+        'amount': 90.99181073,
+        'remaining': 90.99181073,
+    }
+
+
+@pytest.fixture
+def limit_sell_order_old():
+    return {
+        'id': 'mocked_limit_sell_old',
+        'type': 'LIMIT_SELL',
+        'pair': 'BTC_ETH',
+        'opened': arrow.utcnow().shift(minutes=-601).datetime,
+        'rate': 0.00001099,
+        'amount': 90.99181073,
+        'remaining': 90.99181073,
+    }
+
+
+@pytest.fixture
+def limit_buy_order_old_partial():
+    return {
+        'id': 'mocked_limit_buy_old_partial',
+        'type': 'LIMIT_BUY',
+        'pair': 'BTC_ETH',
+        'opened': arrow.utcnow().shift(minutes=-601).datetime,
+        'rate': 0.00001099,
+        'amount': 90.99181073,
+        'remaining': 67.99181073,
     }
 
 
@@ -137,11 +177,11 @@ def limit_sell_order():
         'id': 'mocked_limit_sell',
         'type': 'LIMIT_SELL',
         'pair': 'mocked',
-        'opened': datetime.utcnow(),
+        'opened': arrow.utcnow().datetime,
         'rate': 0.00001173,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': datetime.utcnow(),
+        'closed': arrow.utcnow().datetime,
     }
 
 
