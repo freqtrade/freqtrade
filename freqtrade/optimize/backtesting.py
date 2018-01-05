@@ -12,8 +12,9 @@ from freqtrade import exchange
 from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
-from freqtrade.misc import load_config
-from freqtrade.optimize import load_data, preprocess
+import freqtrade.misc as misc
+from freqtrade.optimize import preprocess
+import freqtrade.optimize as optimize
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -149,7 +150,7 @@ def start(args):
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     logger.info('Using config: %s ...', args.config)
-    config = load_config(args.config)
+    config = misc.load_config(args.config)
 
     logger.info('Using ticker_interval: %s ...', args.ticker_interval)
 
@@ -161,8 +162,8 @@ def start(args):
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        data = load_data(pairs=pairs, ticker_interval=args.ticker_interval,
-                         refresh_pairs=args.refresh_pairs)
+        data = optimize.load_data(pairs=pairs, ticker_interval=args.ticker_interval,
+                                  refresh_pairs=args.refresh_pairs)
 
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
