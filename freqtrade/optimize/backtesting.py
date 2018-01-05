@@ -192,6 +192,6 @@ def start(args):
         use_sell_signal=config.get('experimental', {}).get('use_sell_signal', False)
     )
     logger.info(
-        '\n====================== BACKTESTING REPORT ================================\n%s',
+        '\n==================================== BACKTESTING REPORT ====================================\n%s', # noqa
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
