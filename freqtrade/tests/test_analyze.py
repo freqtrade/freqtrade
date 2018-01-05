@@ -9,7 +9,6 @@ from pandas import DataFrame
 from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, \
     get_signal, SignalType, populate_sell_trend
 
-
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
@@ -63,3 +62,10 @@ def test_returns_latest_sell_signal(mocker):
         return_value=DataFrame([{'sell': 0, 'date': arrow.utcnow()}])
     )
     assert not get_signal('BTC-ETH', SignalType.SELL)
+
+def test_get_signal_handles_exceptions(mocker):
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=MagicMock())
+    mocker.patch('freqtrade.analyze.analyze_ticker',
+                 side_effect=Exception('invalid ticker history '))
+
+    assert not get_signal('BTC-ETH', SignalType.BUY)
