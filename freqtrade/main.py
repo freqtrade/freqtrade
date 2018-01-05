@@ -130,7 +130,9 @@ def check_handle_timedout(timeoutvalue: int) -> None:
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
         order = exchange.get_order(trade.open_order_id)
-        if order['type'] == "LIMIT_BUY" and order['opened'] < timeoutthreashold:
+        ordertime = arrow.get(order['opened'])
+
+        if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
             # Buy timeout - cancel order
             exchange.cancel_order(trade.open_order_id)
             if order['remaining'] == order['amount']:
@@ -145,7 +147,7 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 trade.stake_amount = trade.amount * trade.open_rate
                 trade.open_order_id = None
                 logger.info('Partial buy order timeout for %s.', trade)
-        elif order['type'] == "LIMIT_SELL" and order['opened'] < timeoutthreashold:
+        elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
             # Sell timeout - cancel order and update trade
             if order['remaining'] == order['amount']:
                 # if trade is not partially completed, just cancel the trade

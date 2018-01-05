@@ -124,11 +124,11 @@ def limit_buy_order():
         'id': 'mocked_limit_buy',
         'type': 'LIMIT_BUY',
         'pair': 'mocked',
-        'opened': arrow.utcnow().datetime,
+        'opened': str(arrow.utcnow().datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': arrow.utcnow().datetime,
+        'closed': str(arrow.utcnow().datetime),
     }
 
 
@@ -138,7 +138,7 @@ def limit_buy_order_old():
         'id': 'mocked_limit_buy_old',
         'type': 'LIMIT_BUY',
         'pair': 'BTC_ETH',
-        'opened': arrow.utcnow().shift(minutes=-601).datetime,
+        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
@@ -151,7 +151,7 @@ def limit_sell_order_old():
         'id': 'mocked_limit_sell_old',
         'type': 'LIMIT_SELL',
         'pair': 'BTC_ETH',
-        'opened': arrow.utcnow().shift(minutes=-601).datetime,
+        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
@@ -164,7 +164,7 @@ def limit_buy_order_old_partial():
         'id': 'mocked_limit_buy_old_partial',
         'type': 'LIMIT_BUY',
         'pair': 'BTC_ETH',
-        'opened': arrow.utcnow().shift(minutes=-601).datetime,
+        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 67.99181073,
@@ -177,11 +177,11 @@ def limit_sell_order():
         'id': 'mocked_limit_sell',
         'type': 'LIMIT_SELL',
         'pair': 'mocked',
-        'opened': arrow.utcnow().datetime,
+        'opened': str(arrow.utcnow().datetime),
         'rate': 0.00001173,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': arrow.utcnow().datetime,
+        'closed': str(arrow.utcnow().datetime),
     }
 
 
