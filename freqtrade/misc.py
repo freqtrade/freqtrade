@@ -57,8 +57,8 @@ def load_config(path: str) -> Dict:
     try:
         validate(conf, CONF_SCHEMA)
         return conf
-    except ValidationError:
-        logger.fatal('Configuration is not valid! See config.json.example')
+    except ValidationError as ex:
+        logger.fatal('Invalid configuration. See config.json.example. Reason: %s', ex)
         raise ValidationError(
             best_match(Draft4Validator(CONF_SCHEMA).iter_errors(conf)).message
         )
