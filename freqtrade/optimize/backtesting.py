@@ -183,9 +183,13 @@ def start(args):
 
     # Execute backtest and print results
     results = backtest(
-        config['stake_amount'], preprocessed, max_open_trades, args.realistic_simulation,
-        config.get('experimental', {}).get('sell_profit_only', False), config.get('stoploss'),
-        config.get('experimental', {}).get('use_sell_signal', False)
+        stake_amount=config['stake_amount'],
+        processed=preprocessed,
+        max_open_trades=max_open_trades,
+        realistic=args.realistic_simulation,
+        sell_profit_only=config.get('experimental', {}).get('sell_profit_only', False),
+        stoploss=config.get('stoploss'),
+        use_sell_signal=config.get('experimental', {}).get('use_sell_signal', False)
     )
     logger.info(
         '\n====================== BACKTESTING REPORT ================================\n%s',
