@@ -5,7 +5,11 @@ import logging
 from shutil import copyfile
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
-from freqtrade.optimize.__init__ import testdata_path, download_pairs, download_backtesting_testdata
+from freqtrade.optimize.__init__ import testdata_path, download_pairs,\
+     download_backtesting_testdata, load_tickerdata_file
+
+# Change this if modifying BTC_UNITEST testdatafile
+_btc_unittest_length = 13681
 
 
 def _backup_file(file: str, copy_file: bool = False) -> None:
@@ -164,3 +168,9 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     download_backtesting_testdata(pair="BTC-STORJ", interval=5)
     assert os.path.isfile(file2) is True
     _clean_test_file(file2)
+
+
+def test_load_tickerdata_file():
+    assert not load_tickerdata_file('BTC_UNITEST', 7)
+    tickerdata = load_tickerdata_file('BTC_UNITEST', 1)
+    assert _btc_unittest_length == len(tickerdata)

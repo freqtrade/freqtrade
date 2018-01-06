@@ -12,6 +12,27 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 logger = logging.getLogger(__name__)
 
 
+def load_tickerdata_file(pair, ticker_interval):
+    """
+    Load a pair from file,
+    :return dict OR empty if unsuccesful
+    """
+    path = testdata_path()
+    file = '{abspath}/{pair}-{ticker_interval}.json'.format(
+        abspath=path,
+        pair=pair,
+        ticker_interval=ticker_interval,
+    )
+    # The file does not exist we download it
+    if not os.path.isfile(file):
+        return None
+
+    # Read the file, load the json
+    with open(file) as tickerdata:
+        pairdata = json.load(tickerdata)
+    return pairdata
+
+
 def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
     """
@@ -20,7 +41,6 @@ def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None,
     :param pairs: list of pairs
     :return: dict
     """
-    path = testdata_path()
     result = {}
 
     _pairs = pairs or hyperopt_optimize_conf()['exchange']['pair_whitelist']
@@ -31,18 +51,13 @@ def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None,
         download_pairs(_pairs)
 
     for pair in _pairs:
-        file = '{abspath}/{pair}-{ticker_interval}.json'.format(
-            abspath=path,
-            pair=pair,
-            ticker_interval=ticker_interval,
-        )
-        # The file does not exist we download it
-        if not os.path.isfile(file):
+        pairdata = load_tickerdata_file(pair, ticker_interval)
+        if not pairdata:
+            # download the tickerdata from exchange
             download_backtesting_testdata(pair=pair, interval=ticker_interval)
-
-        # Read the file, load the json
-        with open(file) as tickerdata:
-            result[pair] = json.load(tickerdata)
+            # and retry reading the pair
+            pairdata = load_tickerdata_file(pair, ticker_interval)
+        result[pair] = pairdata
     return result
 
 

@@ -1,13 +1,14 @@
 # pragma pylint: disable=missing-docstring,W0212
 
+import logging
 import math
 import pandas as pd
-# from unittest.mock import MagicMock
+from unittest.mock import MagicMock
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize import preprocess
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
-# import freqtrade.optimize.backtesting as backtesting
+import freqtrade.optimize.backtesting as backtesting
 
 
 def test_generate_text_table():
@@ -61,7 +62,6 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
 def trim_dictlist(dl, num):
     new = {}
     for pair, pair_data in dl.items():
-        # Can't figure out why -num wont work
         new[pair] = pair_data[num:]
     return new
 
@@ -148,21 +148,29 @@ def test_backtest_pricecontours(default_conf, mocker):
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
 
-# Please make this work, the load_config needs to be mocked
-# and cleanups.
-# def test_backtest_start(default_conf, mocker):
-#   default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
-#   mocker.patch.dict('freqtrade.main._CONF', default_conf)
-#   # see https://pypi.python.org/pypi/pytest-mock/
-#   # and http://www.voidspace.org.uk/python/mock/patch.html
-#   # No usage example of simple function mocking,
-#   # and no documentation of side_effect
-#   mocker.patch('freqtrade.misc.load_config', new=lambda s, t: {})
-#   args = MagicMock()
-#   args.level = 10
-#   #load_config('foo')
-#   backtesting.start(args)
-#
-#    Check what sideeffect backtstesting has done.
-#    Probably need to capture standard-output and
-#    check for the generated report table.
+
+def mocked_load_data(pairs=[], ticker_interval=0, refresh_pairs=False):
+    tickerdata = optimize.load_tickerdata_file('BTC_UNITEST', 1)
+    pairdata = {'BTC_UNITEST': tickerdata}
+    return trim_dictlist(pairdata, -100)
+
+
+def test_backtest_start(default_conf, mocker, caplog):
+    default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.misc.load_config', new=lambda s: default_conf)
+    mocker.patch.multiple('freqtrade.optimize',
+                          load_data=mocked_load_data)
+    args = MagicMock()
+    args.ticker_interval = 1
+    args.level = 10
+    args.live = False
+    backtesting.start(args)
+    # check the logs, that will contain the backtest result
+    exists = ['Using max_open_trades: 1 ...',
+              'Using stake_amount: 0.001 ...',
+              'Measuring data from 2017-11-14T21:17:00+00:00 up to 2017-11-14T22:59:00+00:00 ...']
+    for line in exists:
+        assert ('freqtrade.optimize.backtesting',
+                logging.INFO,
+                line) in caplog.record_tuples
