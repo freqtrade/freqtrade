@@ -107,21 +107,25 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     # Overlap Studies
     # ------------------------------------
 
+    # Previous Bollinger bands
+    # Because ta.BBANDS implementation is broken with small numbers, it actually
+    # returns middle band for all the three bands. Switch to qtpylib.bollinger_bands
+    # and use middle band instead.
+    dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
+    """
     # Bollinger bands
-    bollinger = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)
-    dataframe['bb_lowerband'] = bollinger['lowerband']
+    bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+    dataframe['bb_lowerband'] = bollinger['lower']
+    dataframe['bb_middleband'] = bollinger['mid']
+    dataframe['bb_upperband'] = bollinger['upper']
     """
-    dataframe['bb_middleband'] = bollinger['middleband']
-    dataframe['bb_upperband'] = bollinger['upperband']
-    """
+
     # EMA - Exponential Moving Average
     dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
     dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
     dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
     dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
-    """
-    dataframe['ema200'] = ta.EMA(dataframe, timeperiod=200)
-    """
+
     # SAR Parabol
     dataframe['sar'] = ta.SAR(dataframe)
 
