@@ -537,10 +537,13 @@ def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker)
 
 
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
-    default_conf['experimental'] = {}
-    default_conf['experimental']['sell_profit_only'] = True
+    default_conf['experimental'] = {
+        'use_sell_signal': True,
+        'sell_profit_only': True,
+    }
 
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
@@ -561,10 +564,13 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
-    default_conf['experimental'] = {}
-    default_conf['experimental']['sell_profit_only'] = False
+    default_conf['experimental'] = {
+        'use_sell_signal': True,
+        'sell_profit_only': False,
+    }
 
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
@@ -585,10 +591,13 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
-        default_conf['experimental'] = {}
-        default_conf['experimental']['sell_profit_only'] = True
+        default_conf['experimental'] = {
+            'use_sell_signal': True,
+            'sell_profit_only': True,
+        }
 
         mocker.patch.dict('freqtrade.main._CONF', default_conf)
+        mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
         mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
         mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
         mocker.patch.multiple('freqtrade.main.exchange',
@@ -609,10 +618,13 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
-        default_conf['experimental'] = {}
-        default_conf['experimental']['sell_profit_only'] = False
+        default_conf['experimental'] = {
+            'use_sell_signal': True,
+            'sell_profit_only': False,
+        }
 
         mocker.patch.dict('freqtrade.main._CONF', default_conf)
+        mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
         mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
         mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
         mocker.patch.multiple('freqtrade.main.exchange',
