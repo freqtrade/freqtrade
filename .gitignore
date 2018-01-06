@@ -85,3 +85,5 @@ target/
 .venv
 .idea
 .vscode
+
+hyperopt_trials.pickle
