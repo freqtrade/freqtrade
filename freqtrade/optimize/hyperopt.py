@@ -189,7 +189,7 @@ def buy_strategy_generator(params):
 
         # TRIGGERS
         triggers = {
-            'lower_bb': dataframe['tema'] <= dataframe['blower'],
+            'lower_bb': dataframe['tema'] <= dataframe['bb_lowerband'],
             'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
             'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
