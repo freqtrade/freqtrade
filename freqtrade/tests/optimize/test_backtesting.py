@@ -32,7 +32,7 @@ def test_generate_text_table():
 
 def test_get_timeframe():
     data = preprocess(optimize.load_data(
-        ticker_interval=1, pairs=['BTC_UNITEST']))
+        None, ticker_interval=1, pairs=['BTC_UNITEST']))
     min_date, max_date = get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
@@ -42,7 +42,7 @@ def test_backtest(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
     results = backtest(default_conf['stake_amount'],
                        optimize.preprocess(data), 10, True)
     assert not results.empty
@@ -53,7 +53,7 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     # Run a backtesting for an exiting 5min ticker_interval
-    data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
     results = backtest(default_conf['stake_amount'],
                        optimize.preprocess(data), 1, True)
     assert not results.empty
@@ -67,7 +67,7 @@ def trim_dictlist(dl, num):
 
 
 def load_data_test(what):
-    data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
     data = trim_dictlist(data, -100)
     pair = data['BTC_UNITEST']
     datalen = len(pair)
@@ -124,7 +124,7 @@ def simple_backtest(config, contour, num_results):
 
 def test_backtest2(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
     results = backtest(default_conf['stake_amount'],
                        optimize.preprocess(data), 10, True)
     assert not results.empty
@@ -149,8 +149,8 @@ def test_backtest_pricecontours(default_conf, mocker):
         simple_backtest(default_conf, contour, numres)
 
 
-def mocked_load_data(pairs=[], ticker_interval=0, refresh_pairs=False):
-    tickerdata = optimize.load_tickerdata_file('BTC_UNITEST', 1)
+def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False):
+    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1)
     pairdata = {'BTC_UNITEST': tickerdata}
     return trim_dictlist(pairdata, -100)
 
@@ -165,6 +165,7 @@ def test_backtest_start(default_conf, mocker, caplog):
     args.ticker_interval = 1
     args.level = 10
     args.live = False
+    args.datadir = None
     backtesting.start(args)
     # check the logs, that will contain the backtest result
     exists = ['Using max_open_trades: 1 ...',

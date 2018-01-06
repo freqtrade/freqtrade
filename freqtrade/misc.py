@@ -126,6 +126,15 @@ def parse_args(args: List[str]):
         action='store_true',
         dest='dry_run_db',
     )
+    parser.add_argument(
+        '-dd', '--datadir',
+        help='path to backtest data (default freqdata/tests/testdata',
+        dest='datadir',
+        default='freqtrade/tests/testdata',
+        type=str,
+        metavar='PATH',
+    )
+
     build_subcommands(parser)
     parsed_args = parser.parse_args(args)
 
