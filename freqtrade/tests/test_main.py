@@ -15,6 +15,39 @@ from freqtrade.main import create_trade, handle_trade, init, \
     get_target_bid, _process, execute_sell, check_handle_timedout
 from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
+import freqtrade.main as main
+
+
+# Test that main() can start backtesting or hyperopt.
+# and also ensure we can pass some specific arguments
+# argument parsing is done in test_misc.py
+
+def test_parse_args_backtesting(mocker):
+    backtesting_mock = mocker.patch(
+        'freqtrade.optimize.backtesting.start', MagicMock())
+    with pytest.raises(SystemExit, match=r'0'):
+        main.main(['backtesting'])
+    assert backtesting_mock.call_count == 1
+    call_args = backtesting_mock.call_args[0][0]
+    assert call_args.config == 'config.json'
+    assert call_args.live is False
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'backtesting'
+    assert call_args.func is not None
+    assert call_args.ticker_interval == 5
+
+
+def test_main_start_hyperopt(mocker):
+    hyperopt_mock = mocker.patch(
+        'freqtrade.optimize.hyperopt.start', MagicMock())
+    with pytest.raises(SystemExit, match=r'0'):
+        main.main(['hyperopt'])
+    assert hyperopt_mock.call_count == 1
+    call_args = hyperopt_mock.call_args[0][0]
+    assert call_args.config == 'config.json'
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'hyperopt'
+    assert call_args.func is not None
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, mocker):

@@ -3,7 +3,6 @@ import json
 import time
 import argparse
 from copy import deepcopy
-from unittest.mock import MagicMock
 
 import pytest
 from jsonschema import ValidationError
@@ -101,22 +100,6 @@ def test_parse_args_dynamic_whitelist_invalid_values():
         parse_args(['--dynamic-whitelist', 'abc'], '')
 
 
-def test_parse_args_backtesting(mocker):
-    backtesting_mock = mocker.patch(
-        'freqtrade.optimize.backtesting.start', MagicMock())
-    args = parse_args(['backtesting'], '')
-    assert args is None
-    assert backtesting_mock.call_count == 1
-
-    call_args = backtesting_mock.call_args[0][0]
-    assert call_args.config == 'config.json'
-    assert call_args.live is False
-    assert call_args.loglevel == 20
-    assert call_args.subparser == 'backtesting'
-    assert call_args.func is not None
-    assert call_args.ticker_interval == 5
-
-
 def test_parse_args_backtesting_invalid():
     with pytest.raises(SystemExit, match=r'2'):
         parse_args(['backtesting --ticker-interval'], '')
@@ -125,19 +108,14 @@ def test_parse_args_backtesting_invalid():
         parse_args(['backtesting --ticker-interval', 'abc'], '')
 
 
-def test_parse_args_backtesting_custom(mocker):
-    backtesting_mock = mocker.patch(
-        'freqtrade.optimize.backtesting.start', MagicMock())
-    args = parse_args([
+def test_parse_args_backtesting_custom():
+    args = [
         '-c', 'test_conf.json',
         'backtesting',
         '--live',
         '--ticker-interval', '1',
-        '--refresh-pairs-cached'], '')
-    assert args is None
-    assert backtesting_mock.call_count == 1
-
-    call_args = backtesting_mock.call_args[0][0]
+        '--refresh-pairs-cached']
+    call_args = parse_args(args, '')
     assert call_args.config == 'test_conf.json'
     assert call_args.live is True
     assert call_args.loglevel == 20
@@ -147,28 +125,9 @@ def test_parse_args_backtesting_custom(mocker):
     assert call_args.refresh_pairs is True
 
 
-def test_parse_args_hyperopt(mocker):
-    hyperopt_mock = mocker.patch(
-        'freqtrade.optimize.hyperopt.start', MagicMock())
-    args = parse_args(['hyperopt'], '')
-    assert args is None
-    assert hyperopt_mock.call_count == 1
-
-    call_args = hyperopt_mock.call_args[0][0]
-    assert call_args.config == 'config.json'
-    assert call_args.loglevel == 20
-    assert call_args.subparser == 'hyperopt'
-    assert call_args.func is not None
-
-
 def test_parse_args_hyperopt_custom(mocker):
-    hyperopt_mock = mocker.patch(
-        'freqtrade.optimize.hyperopt.start', MagicMock())
-    args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'], '')
-    assert args is None
-    assert hyperopt_mock.call_count == 1
-
-    call_args = hyperopt_mock.call_args[0][0]
+    args = ['-c', 'test_conf.json', 'hyperopt', '--epochs', '20']
+    call_args = parse_args(args, '')
     assert call_args.config == 'test_conf.json'
     assert call_args.epochs == 20
     assert call_args.loglevel == 20

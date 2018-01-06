@@ -136,14 +136,7 @@ def parse_args(args: List[str], description: str):
     )
 
     build_subcommands(parser)
-    parsed_args = parser.parse_args(args)
-
-    # No subcommand as been selected
-    if not hasattr(parsed_args, 'func'):
-        return parsed_args
-
-    parsed_args.func(parsed_args)
-    return None
+    return parser.parse_args(args)
 
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
