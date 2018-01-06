@@ -39,7 +39,7 @@ def test_throttle_with_assets():
 
 
 def test_parse_args_defaults():
-    args = parse_args([])
+    args = parse_args([], '')
     assert args is not None
     assert args.config == 'config.json'
     assert args.dynamic_whitelist is None
@@ -48,46 +48,46 @@ def test_parse_args_defaults():
 
 def test_parse_args_invalid():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['-c'])
+        parse_args(['-c'], '')
 
 
 def test_parse_args_config():
-    args = parse_args(['-c', '/dev/null'])
+    args = parse_args(['-c', '/dev/null'], '')
     assert args is not None
     assert args.config == '/dev/null'
 
-    args = parse_args(['--config', '/dev/null'])
+    args = parse_args(['--config', '/dev/null'], '')
     assert args is not None
     assert args.config == '/dev/null'
 
 
 def test_parse_args_verbose():
-    args = parse_args(['-v'])
+    args = parse_args(['-v'], '')
     assert args is not None
     assert args.loglevel == 10
 
 
 def test_parse_args_dynamic_whitelist():
-    args = parse_args(['--dynamic-whitelist'])
+    args = parse_args(['--dynamic-whitelist'], '')
     assert args is not None
     assert args.dynamic_whitelist is 20
 
 
 def test_parse_args_dynamic_whitelist_10():
-    args = parse_args(['--dynamic-whitelist', '10'])
+    args = parse_args(['--dynamic-whitelist', '10'], '')
     assert args is not None
     assert args.dynamic_whitelist is 10
 
 
 def test_parse_args_dynamic_whitelist_invalid_values():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--dynamic-whitelist', 'abc'])
+        parse_args(['--dynamic-whitelist', 'abc'], '')
 
 
 def test_parse_args_backtesting(mocker):
     backtesting_mock = mocker.patch(
         'freqtrade.optimize.backtesting.start', MagicMock())
-    args = parse_args(['backtesting'])
+    args = parse_args(['backtesting'], '')
     assert args is None
     assert backtesting_mock.call_count == 1
 
@@ -102,10 +102,10 @@ def test_parse_args_backtesting(mocker):
 
 def test_parse_args_backtesting_invalid():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['backtesting --ticker-interval'])
+        parse_args(['backtesting --ticker-interval'], '')
 
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['backtesting --ticker-interval', 'abc'])
+        parse_args(['backtesting --ticker-interval', 'abc'], '')
 
 
 def test_parse_args_backtesting_custom(mocker):
@@ -116,7 +116,7 @@ def test_parse_args_backtesting_custom(mocker):
         'backtesting',
         '--live',
         '--ticker-interval', '1',
-        '--refresh-pairs-cached'])
+        '--refresh-pairs-cached'], '')
     assert args is None
     assert backtesting_mock.call_count == 1
 
@@ -133,7 +133,7 @@ def test_parse_args_backtesting_custom(mocker):
 def test_parse_args_hyperopt(mocker):
     hyperopt_mock = mocker.patch(
         'freqtrade.optimize.hyperopt.start', MagicMock())
-    args = parse_args(['hyperopt'])
+    args = parse_args(['hyperopt'], '')
     assert args is None
     assert hyperopt_mock.call_count == 1
 
@@ -147,7 +147,7 @@ def test_parse_args_hyperopt(mocker):
 def test_parse_args_hyperopt_custom(mocker):
     hyperopt_mock = mocker.patch(
         'freqtrade.optimize.hyperopt.start', MagicMock())
-    args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'])
+    args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'], '')
     assert args is None
     assert hyperopt_mock.call_count == 1
 

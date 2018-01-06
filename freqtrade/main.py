@@ -405,7 +405,8 @@ def main() -> None:
     :return: None
     """
     global _CONF
-    args = parse_args(sys.argv[1:])
+    args = parse_args(sys.argv[1:],
+                      'Simple High Frequency Trading Bot for crypto currencies')
     if not args:
         exit(0)
 
