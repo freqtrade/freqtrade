@@ -119,6 +119,7 @@ def read_trials(trials_path=TRIALS_FILE):
     # os.remove(trials_path)
     return trials
 
+
 def log_results(results):
     """ log results if it is better than any previous evaluation """
     global CURRENT_BEST_LOSS
@@ -270,7 +271,11 @@ def start(args):
         # read trials file if we have one
         if os.path.exists(TRIALS_FILE):
             TRIALS = read_trials()
-            _CURRENT_TRIES = len([result for result in TRIALS.results if result['status'] == 'ok'])
+            _CURRENT_TRIES = len(TRIALS.results)
+            TOTAL_TRIES = TOTAL_TRIES + _CURRENT_TRIES
+            logger.info(
+                'Continuing with trials. Current: {}, Total: {}'
+                .format(_CURRENT_TRIES, TOTAL_TRIES))
 
     try:
         best_parameters = fmin(
