@@ -1,13 +1,15 @@
 # pragma pylint: disable=missing-docstring,C0103
 import json
 import time
+import argparse
 from copy import deepcopy
 from unittest.mock import MagicMock
 
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade.misc import throttle, parse_args, load_config
+from freqtrade.misc import throttle, parse_args, load_config,\
+     parse_args_common
 
 
 def test_throttle():
@@ -38,12 +40,41 @@ def test_throttle_with_assets():
     assert result == -1
 
 
+# Parse common command-line-arguments
+# used for all tools
+
+
+def test_parse_args_none():
+    args = parse_args_common([], '')
+    assert isinstance(args, argparse.ArgumentParser)
+
+
 def test_parse_args_defaults():
     args = parse_args([], '')
-    assert args is not None
     assert args.config == 'config.json'
     assert args.dynamic_whitelist is None
     assert args.loglevel == 20
+
+
+def test_parse_args_config():
+    args = parse_args(['-c', '/dev/null'], '')
+    assert args.config == '/dev/null'
+
+    args = parse_args(['--config', '/dev/null'], '')
+    assert args.config == '/dev/null'
+
+
+def test_parse_args_verbose():
+    args = parse_args(['-v'], '')
+    assert args.loglevel == 10
+
+    args = parse_args(['--verbose'], '')
+    assert args.loglevel == 10
+
+
+def test_parse_args_version():
+    with pytest.raises(SystemExit, match=r'0'):
+        parse_args(['--version'], '')
 
 
 def test_parse_args_invalid():
@@ -51,31 +82,17 @@ def test_parse_args_invalid():
         parse_args(['-c'], '')
 
 
-def test_parse_args_config():
-    args = parse_args(['-c', '/dev/null'], '')
-    assert args is not None
-    assert args.config == '/dev/null'
-
-    args = parse_args(['--config', '/dev/null'], '')
-    assert args is not None
-    assert args.config == '/dev/null'
-
-
-def test_parse_args_verbose():
-    args = parse_args(['-v'], '')
-    assert args is not None
-    assert args.loglevel == 10
+# Parse command-line-arguments
+# used for main, backtesting and hyperopt
 
 
 def test_parse_args_dynamic_whitelist():
     args = parse_args(['--dynamic-whitelist'], '')
-    assert args is not None
     assert args.dynamic_whitelist is 20
 
 
 def test_parse_args_dynamic_whitelist_10():
     args = parse_args(['--dynamic-whitelist', '10'], '')
-    assert args is not None
     assert args.dynamic_whitelist is 10
 
 
