@@ -120,6 +120,11 @@ def read_trials(trials_path=TRIALS_FILE):
     return trials
 
 
+def log_trials_result(trials):
+    vals = trials.best_trial['misc']['vals']
+    results = trials.best_trial['result']['result']
+    logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
+
 def log_results(results):
     """ log results if it is better than any previous evaluation """
     global CURRENT_BEST_LOSS
@@ -310,4 +315,5 @@ def signal_handler(sig, frame):
     logger.info('Hyperopt received {}'.format(signal.Signals(sig).name))
 
     save_trials(TRIALS)
+    log_trials_result(TRIALS)
     sys.exit(0)
