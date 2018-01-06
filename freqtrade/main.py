@@ -398,14 +398,18 @@ def cleanup() -> None:
     exit(0)
 
 
-def main() -> None:
+def main(sysargv=sys.argv[1:]) -> None:
     """
     Loads and validates the config and handles the main loop
     :return: None
     """
     global _CONF
-    args = parse_args(sys.argv[1:])
-    if not args:
+    args = parse_args(sysargv,
+                      'Simple High Frequency Trading Bot for crypto currencies')
+
+    # A subcommand has been issued
+    if hasattr(args, 'func'):
+        args.func(args)
         exit(0)
 
     # Initialize logger
