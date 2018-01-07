@@ -181,7 +181,7 @@ def test_get_ticker(mocker, ticker):
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
-    # force ticker refresh 
+    # force ticker refresh
     ticker = get_ticker(pair='BTC_ETH', refresh=True)
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
