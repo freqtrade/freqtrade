@@ -162,24 +162,27 @@ def test_get_balances_prod(default_conf, mocker):
 def test_get_ticker(mocker, ticker):
 
     api_mock = MagicMock()
-    api_mock.get_ticker = MagicMock(return_value=ticker())
-    mocker.patch('freqtrade.exchange._API', api_mock)
+    tick = {"success": True, 'result': {'Bid': 0.00001098, 'Ask': 0.00001099, 'Last': 0.0001}}
+    api_mock.get_ticker = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
 
     ticker = get_ticker(pair='BTC_ETH')
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
+    # change the ticker
+    tick = {"success": True, 'result': {"Bid": 0.5, "Ask": 1, "Last": 42}}
+    api_mock.get_ticker = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
+
     # if not caching the result we should get the same ticker
     ticker = get_ticker(pair='BTC_ETH', refresh=False)
+    print(str(ticker))
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
-    # change the ticker
-    api_mock.get_ticker = MagicMock(return_value={"bid": 0, "ask": 1})
-    mocker.patch('freqtrade.exchange._API', api_mock)
-
     ticker = get_ticker(pair='BTC_ETH', refresh=True)
-    assert ticker['bid'] == 0
+    assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
 
