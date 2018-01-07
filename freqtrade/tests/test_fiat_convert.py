@@ -72,8 +72,11 @@ def test_fiat_convert_find_price(mocker):
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
         fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
 
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=12345.0)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 12345.0
     assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 12345.0
+
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=13000.2)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
 
 
@@ -83,6 +86,7 @@ def test_fiat_convert_get_price(mocker):
         'price_eur': 15000.0
     })
     mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
 
     fiat_convert = CryptoToFiatConverter()
 
@@ -109,3 +113,12 @@ def test_fiat_convert_get_price(mocker):
     fiat_convert._pairs[0]._expiration = expiration
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
     assert fiat_convert._pairs[0]._expiration is not expiration
+
+
+def test_fiat_convert_without_network(mocker):
+    Pymarketcap = MagicMock(side_effect=ImportError('Oh boy, you have no network!'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', Pymarketcap)
+
+    fiat_convert = CryptoToFiatConverter()
+    assert fiat_convert._coinmarketcap is None
+    assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
