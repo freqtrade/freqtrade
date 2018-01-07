@@ -167,6 +167,7 @@ def test_profit_handle(
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     _profit(bot=MagicMock(), update=update)
@@ -422,6 +423,7 @@ def test_daily_handle(
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data

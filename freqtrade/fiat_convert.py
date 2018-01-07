@@ -57,7 +57,11 @@ class CryptoToFiatConverter():
     ]
 
     def __init__(self) -> None:
-        self._coinmarketcap = Pymarketcap()
+        try:
+            self._coinmarketcap = Pymarketcap()
+        except BaseException:
+            self._coinmarketcap = None
+
         self._pairs = []
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:
@@ -147,10 +151,12 @@ class CryptoToFiatConverter():
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
-
-        return float(
-            self._coinmarketcap.ticker(
-                currency=crypto_symbol,
-                convert=fiat_symbol
-            )['price_' + fiat_symbol.lower()]
-        )
+        try:
+            return float(
+                self._coinmarketcap.ticker(
+                    currency=crypto_symbol,
+                    convert=fiat_symbol
+                )['price_' + fiat_symbol.lower()]
+            )
+        except BaseException:
+            return 0.0

@@ -8,7 +8,7 @@ from functools import reduce
 from math import exp
 from operator import itemgetter
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL, space_eval
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
@@ -209,7 +209,7 @@ def buy_strategy_generator(params):
 
 
 def start(args):
-    global TOTAL_TRIES, PROCESSED
+    global TOTAL_TRIES, PROCESSED, SPACE
     TOTAL_TRIES = args.epochs
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -236,6 +236,11 @@ def start(args):
         trials = Trials()
 
     best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
+
+    # Improve best parameter logging display
+    if best:
+        best = space_eval(SPACE, best)
+
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
 
     results = sorted(trials.results, key=itemgetter('loss'))

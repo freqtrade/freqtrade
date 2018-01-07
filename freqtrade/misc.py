@@ -81,21 +81,12 @@ def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     return result
 
 
-def parse_args(args: List[str]):
+def parse_args_common(args: List[str], description: str):
     """
-    Parses given arguments and returns an argparse Namespace instance.
-    Returns None if a sub command has been selected and executed.
+    Parses given common arguments and returns them as a parsed object.
     """
     parser = argparse.ArgumentParser(
-        description='Simple High Frequency Trading Bot for crypto currencies'
-    )
-    parser.add_argument(
-        '-c', '--config',
-        help='specify configuration file (default: config.json)',
-        dest='config',
-        default='config.json',
-        type=str,
-        metavar='PATH',
+        description=description
     )
     parser.add_argument(
         '-v', '--verbose',
@@ -111,6 +102,30 @@ def parse_args(args: List[str]):
         version='%(prog)s {}'.format(__version__),
     )
     parser.add_argument(
+        '-c', '--config',
+        help='specify configuration file (default: config.json)',
+        dest='config',
+        default='config.json',
+        type=str,
+        metavar='PATH',
+    )
+    return parser
+
+
+def parse_args(args: List[str], description: str):
+    """
+    Parses given arguments and returns an argparse Namespace instance.
+    Returns None if a sub command has been selected and executed.
+    """
+    parser = parse_args_common(args, description)
+    parser.add_argument(
+        '--dry-run-db',
+        help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" instead of memory DB. Work only if dry_run is \
+             enabled.',  # noqa
+        action='store_true',
+        dest='dry_run_db',
+    )
+    parser.add_argument(
         '--dynamic-whitelist',
         help='dynamically generate and update whitelist based on 24h BaseVolume (Default 20 currencies)',  # noqa
         dest='dynamic_whitelist',
@@ -119,22 +134,9 @@ def parse_args(args: List[str]):
         metavar='INT',
         nargs='?',
     )
-    parser.add_argument(
-        '--dry-run-db',
-        help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" instead of memory DB. Work only if dry_run is \
-             enabled.',  # noqa
-        action='store_true',
-        dest='dry_run_db',
-    )
+
     build_subcommands(parser)
-    parsed_args = parser.parse_args(args)
-
-    # No subcommand as been selected
-    if not hasattr(parsed_args, 'func'):
-        return parsed_args
-
-    parsed_args.func(parsed_args)
-    return None
+    return parser.parse_args(args)
 
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:

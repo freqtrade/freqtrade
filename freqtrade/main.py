@@ -247,12 +247,6 @@ def handle_trade(trade: Trade) -> bool:
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
-    # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-    if _CONF.get('experimental', {}).get('sell_profit_only'):
-        logger.debug('Checking if trade is profitable ...')
-        if trade.calc_profit(rate=current_rate) <= 0:
-            return False
-
     # Check if minimal roi has been reached
     if min_roi_reached(trade, current_rate, datetime.utcnow()):
         logger.debug('Executing sell due to ROI ...')
@@ -261,6 +255,11 @@ def handle_trade(trade: Trade) -> bool:
 
     # Experimental: Check if sell signal has been enabled and triggered
     if _CONF.get('experimental', {}).get('use_sell_signal'):
+        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
+        if _CONF.get('experimental', {}).get('sell_profit_only'):
+            logger.debug('Checking if trade is profitable ...')
+            if trade.calc_profit(rate=current_rate) <= 0:
+                return False
         logger.debug('Checking sell_signal ...')
         if get_signal(trade.pair, SignalType.SELL):
             logger.debug('Executing sell due to sell signal ...')
@@ -399,14 +398,18 @@ def cleanup() -> None:
     exit(0)
 
 
-def main() -> None:
+def main(sysargv=sys.argv[1:]) -> None:
     """
     Loads and validates the config and handles the main loop
     :return: None
     """
     global _CONF
-    args = parse_args(sys.argv[1:])
-    if not args:
+    args = parse_args(sysargv,
+                      'Simple High Frequency Trading Bot for crypto currencies')
+
+    # A subcommand has been issued
+    if hasattr(args, 'func'):
+        args.func(args)
         exit(0)
 
     # Initialize logger

@@ -1,13 +1,14 @@
 # pragma pylint: disable=missing-docstring,C0103
 import json
 import time
+import argparse
 from copy import deepcopy
-from unittest.mock import MagicMock
 
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade.misc import throttle, parse_args, load_config
+from freqtrade.misc import throttle, parse_args, load_config,\
+     parse_args_common
 
 
 def test_throttle():
@@ -38,89 +39,83 @@ def test_throttle_with_assets():
     assert result == -1
 
 
+# Parse common command-line-arguments
+# used for all tools
+
+
+def test_parse_args_none():
+    args = parse_args_common([], '')
+    assert isinstance(args, argparse.ArgumentParser)
+
+
 def test_parse_args_defaults():
-    args = parse_args([])
-    assert args is not None
+    args = parse_args([], '')
     assert args.config == 'config.json'
     assert args.dynamic_whitelist is None
     assert args.loglevel == 20
 
 
-def test_parse_args_invalid():
-    with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['-c'])
-
-
 def test_parse_args_config():
-    args = parse_args(['-c', '/dev/null'])
-    assert args is not None
+    args = parse_args(['-c', '/dev/null'], '')
     assert args.config == '/dev/null'
 
-    args = parse_args(['--config', '/dev/null'])
-    assert args is not None
+    args = parse_args(['--config', '/dev/null'], '')
     assert args.config == '/dev/null'
 
 
 def test_parse_args_verbose():
-    args = parse_args(['-v'])
-    assert args is not None
+    args = parse_args(['-v'], '')
+    assert args.loglevel == 10
+
+    args = parse_args(['--verbose'], '')
     assert args.loglevel == 10
 
 
+def test_parse_args_version():
+    with pytest.raises(SystemExit, match=r'0'):
+        parse_args(['--version'], '')
+
+
+def test_parse_args_invalid():
+    with pytest.raises(SystemExit, match=r'2'):
+        parse_args(['-c'], '')
+
+
+# Parse command-line-arguments
+# used for main, backtesting and hyperopt
+
+
 def test_parse_args_dynamic_whitelist():
-    args = parse_args(['--dynamic-whitelist'])
-    assert args is not None
+    args = parse_args(['--dynamic-whitelist'], '')
     assert args.dynamic_whitelist is 20
 
 
 def test_parse_args_dynamic_whitelist_10():
-    args = parse_args(['--dynamic-whitelist', '10'])
-    assert args is not None
+    args = parse_args(['--dynamic-whitelist', '10'], '')
     assert args.dynamic_whitelist is 10
 
 
 def test_parse_args_dynamic_whitelist_invalid_values():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--dynamic-whitelist', 'abc'])
-
-
-def test_parse_args_backtesting(mocker):
-    backtesting_mock = mocker.patch(
-        'freqtrade.optimize.backtesting.start', MagicMock())
-    args = parse_args(['backtesting'])
-    assert args is None
-    assert backtesting_mock.call_count == 1
-
-    call_args = backtesting_mock.call_args[0][0]
-    assert call_args.config == 'config.json'
-    assert call_args.live is False
-    assert call_args.loglevel == 20
-    assert call_args.subparser == 'backtesting'
-    assert call_args.func is not None
-    assert call_args.ticker_interval == 5
+        parse_args(['--dynamic-whitelist', 'abc'], '')
 
 
 def test_parse_args_backtesting_invalid():
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['backtesting --ticker-interval'])
+        parse_args(['backtesting --ticker-interval'], '')
 
     with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['backtesting --ticker-interval', 'abc'])
+        parse_args(['backtesting --ticker-interval', 'abc'], '')
 
 
-def test_parse_args_backtesting_custom(mocker):
-    backtesting_mock = mocker.patch(
-        'freqtrade.optimize.backtesting.start', MagicMock())
-    args = parse_args([
+def test_parse_args_backtesting_custom():
+    args = [
         '-c', 'test_conf.json',
         'backtesting',
         '--live',
         '--ticker-interval', '1',
-        '--refresh-pairs-cached'])
-    assert args is None
-    assert backtesting_mock.call_count == 1
-
-    call_args = backtesting_mock.call_args[0][0]
+        '--refresh-pairs-cached']
+    call_args = parse_args(args, '')
     assert call_args.config == 'test_conf.json'
     assert call_args.live is True
     assert call_args.loglevel == 20
@@ -130,28 +125,9 @@ def test_parse_args_backtesting_custom(mocker):
     assert call_args.refresh_pairs is True
 
 
-def test_parse_args_hyperopt(mocker):
-    hyperopt_mock = mocker.patch(
-        'freqtrade.optimize.hyperopt.start', MagicMock())
-    args = parse_args(['hyperopt'])
-    assert args is None
-    assert hyperopt_mock.call_count == 1
-
-    call_args = hyperopt_mock.call_args[0][0]
-    assert call_args.config == 'config.json'
-    assert call_args.loglevel == 20
-    assert call_args.subparser == 'hyperopt'
-    assert call_args.func is not None
-
-
 def test_parse_args_hyperopt_custom(mocker):
-    hyperopt_mock = mocker.patch(
-        'freqtrade.optimize.hyperopt.start', MagicMock())
-    args = parse_args(['-c', 'test_conf.json', 'hyperopt', '--epochs', '20'])
-    assert args is None
-    assert hyperopt_mock.call_count == 1
-
-    call_args = hyperopt_mock.call_args[0][0]
+    args = ['-c', 'test_conf.json', 'hyperopt', '--epochs', '20']
+    call_args = parse_args(args, '')
     assert call_args.config == 'test_conf.json'
     assert call_args.epochs == 20
     assert call_args.loglevel == 20
