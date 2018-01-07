@@ -46,6 +46,11 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-c
 python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 ```
 
+**Using a different on-disk ticker-data source**
+```bash
+python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
+```
+
 For help about backtesting usage, please refer to 
 [Backtesting commands](#backtesting-commands).
 

@@ -163,6 +163,11 @@ We strongly recommend to use `screen` to prevent any connection loss.
 python3 ./freqtrade/main.py -c config.json hyperopt
 ```
 
+### Execute hyperopt with different ticker-data source
+If you would like to learn parameters using an alternate ticke-data that
+you have on-disk, use the --datadir PATH option. Default hyperopt will
+use data from directory freqtrade/tests/testdata.
+
 ### Hyperopt with MongoDB
 Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
 executing the previous command is the execution takes a long time. 
