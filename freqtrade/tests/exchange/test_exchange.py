@@ -11,7 +11,8 @@ from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get
 
 
 def test_init(default_conf, mocker, caplog):
-    mocker.patch('freqtrade.exchange.validate_pairs', side_effect=lambda s: True)
+    mocker.patch('freqtrade.exchange.validate_pairs',
+                 side_effect=lambda s: True)
     init(config=default_conf)
     assert ('freqtrade.exchange',
             logging.INFO,
@@ -25,7 +26,7 @@ def test_init_exception(default_conf, mocker):
     with pytest.raises(
             OperationalException,
             match='Exchange {} is not supported'.format(default_conf['exchange']['name'])):
-                init(config=default_conf)
+        init(config=default_conf)
 
 
 def test_validate_pairs(default_conf, mocker):
@@ -49,7 +50,8 @@ def test_validate_pairs_not_available(default_conf, mocker):
 
 def test_validate_pairs_not_compatible(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.get_markets = MagicMock(return_value=['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT'])
+    api_mock.get_markets = MagicMock(
+        return_value=['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT'])
     default_conf['stake_currency'] = 'ETH'
     mocker.patch('freqtrade.exchange._API', api_mock)
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
@@ -79,7 +81,8 @@ def test_buy_dry_run(default_conf, mocker):
 
 def test_buy_prod(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.buy = MagicMock(return_value='dry_run_buy_{}'.format(randint(0, 10**6)))
+    api_mock.buy = MagicMock(
+        return_value='dry_run_buy_{}'.format(randint(0, 10**6)))
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
@@ -97,7 +100,8 @@ def test_sell_dry_run(default_conf, mocker):
 
 def test_sell_prod(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.sell = MagicMock(return_value='dry_run_sell_{}'.format(randint(0, 10**6)))
+    api_mock.sell = MagicMock(
+        return_value='dry_run_sell_{}'.format(randint(0, 10**6)))
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
@@ -141,7 +145,8 @@ def test_get_balances_prod(default_conf, mocker):
     }
 
     api_mock = MagicMock()
-    api_mock.get_balances = MagicMock(return_value=[balance_item, balance_item, balance_item])
+    api_mock.get_balances = MagicMock(
+        return_value=[balance_item, balance_item, balance_item])
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
@@ -157,13 +162,29 @@ def test_get_balances_prod(default_conf, mocker):
 def test_get_ticker(mocker, ticker):
 
     api_mock = MagicMock()
-    api_mock.get_ticker = MagicMock(return_value=ticker())
-    mocker.patch('freqtrade.exchange._API', api_mock)
+    tick = {"success": True, 'result': {'Bid': 0.00001098, 'Ask': 0.00001099, 'Last': 0.0001}}
+    api_mock.get_ticker = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
 
+    # retrieve original ticker
     ticker = get_ticker(pair='BTC_ETH')
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
+
+    # change the ticker
+    tick = {"success": True, 'result': {"Bid": 0.5, "Ask": 1, "Last": 42}}
+    api_mock.get_ticker = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
+
+    # if not caching the result we should get the same ticker
+    ticker = get_ticker(pair='BTC_ETH', refresh=False)
     assert ticker['bid'] == 0.00001098
+    assert ticker['ask'] == 0.00001099
+
+    # force ticker refresh
+    ticker = get_ticker(pair='BTC_ETH', refresh=True)
+    assert ticker['bid'] == 0.5
+    assert ticker['ask'] == 1
 
 
 def test_cancel_order_dry_run(default_conf, mocker):
@@ -174,7 +195,8 @@ def test_cancel_order_dry_run(default_conf, mocker):
 
 
 def test_get_name(default_conf, mocker):
-    mocker.patch('freqtrade.exchange.validate_pairs', side_effect=lambda s: True)
+    mocker.patch('freqtrade.exchange.validate_pairs',
+                 side_effect=lambda s: True)
     default_conf['exchange']['name'] = 'bittrex'
     init(default_conf)
 
@@ -182,7 +204,8 @@ def test_get_name(default_conf, mocker):
 
 
 def test_get_fee(default_conf, mocker):
-    mocker.patch('freqtrade.exchange.validate_pairs', side_effect=lambda s: True)
+    mocker.patch('freqtrade.exchange.validate_pairs',
+                 side_effect=lambda s: True)
     init(default_conf)
 
     assert get_fee() == 0.0025
