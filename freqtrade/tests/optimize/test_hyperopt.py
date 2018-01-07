@@ -5,17 +5,22 @@ from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_
 
 
 def test_loss_calculation_prefer_correct_trade_count():
-    correct = calculate_loss(1, TARGET_TRADES)
-    over = calculate_loss(1, TARGET_TRADES + 100)
-    under = calculate_loss(1, TARGET_TRADES - 100)
+    correct = calculate_loss(1, TARGET_TRADES, 20)
+    over = calculate_loss(1, TARGET_TRADES + 100, 20)
+    under = calculate_loss(1, TARGET_TRADES - 100, 20)
     assert over > correct
     assert under > correct
 
+def test_loss_calculation_prefer_shorter_trades():
+    shorter = calculate_loss(1, 100, 20)
+    longer = calculate_loss(1, 100, 30)
+    assert shorter < longer
+
 
 def test_loss_calculation_has_limited_profit():
-    correct = calculate_loss(EXPECTED_MAX_PROFIT, TARGET_TRADES)
-    over = calculate_loss(EXPECTED_MAX_PROFIT * 2, TARGET_TRADES)
-    under = calculate_loss(EXPECTED_MAX_PROFIT / 2, TARGET_TRADES)
+    correct = calculate_loss(EXPECTED_MAX_PROFIT, TARGET_TRADES, 20)
+    over = calculate_loss(EXPECTED_MAX_PROFIT * 2, TARGET_TRADES, 20)
+    under = calculate_loss(EXPECTED_MAX_PROFIT / 2, TARGET_TRADES, 20)
     assert over == correct
     assert under > correct
 
@@ -93,7 +98,8 @@ def test_fmin_best_results(mocker, caplog):
       "trigger": 2,
       "uptrend_long_ema": 1,
       "uptrend_short_ema": 0,
-      "uptrend_sma": 0
+      "uptrend_sma": 0,
+      "stoploss": -10,
     }
 
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
@@ -109,7 +115,8 @@ def test_fmin_best_results(mocker, caplog):
         '"adx": {\n        "enabled": true,\n        "value": 15.0\n    },',
         '"green_candle": {\n        "enabled": true\n    },',
         '"mfi": {\n        "enabled": false\n    },',
-        '"trigger": {\n        "type": "ao_cross_zero"\n    },'
+        '"trigger": {\n        "type": "ao_cross_zero"\n    },',
+        '"stoploss": -10.0',
     ]
 
     for line in exists:

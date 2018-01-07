@@ -31,6 +31,10 @@ TOTAL_TRIES = None
 _CURRENT_TRIES = 0
 CURRENT_BEST_LOSS = 100
 
+# max average trade duration in minutes
+# if eval ends with higher value, we consider it a failed eval
+MAX_ACCEPTED_TRADE_DURATION = 240
+
 # this is expexted avg profit * expected trade count
 # for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
 EXPECTED_MAX_PROFIT = 3.85
@@ -91,6 +95,7 @@ SPACE = {
         {'type': 'stochf_cross'},
         {'type': 'ht_sine'},
     ]),
+    'stoploss': hp.quniform('stoploss', -30, -2, 1),
 }
 
 
@@ -109,11 +114,12 @@ def log_results(results):
         sys.stdout.flush()
 
 
-def calculate_loss(total_profit: float, trade_count: int):
+def calculate_loss(total_profit: float, trade_count: int, trade_duration: float):
     """ objective function, returns smaller number for more optimal results """
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-    return trade_loss + profit_loss
+    duration_loss = min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
+    return trade_loss + profit_loss + duration_loss
 
 
 def optimizer(params):
@@ -122,20 +128,21 @@ def optimizer(params):
     from freqtrade.optimize import backtesting
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
-    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED)
+    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED, stoploss=params['stoploss'])
     result_explanation = format_results(results)
 
     total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
+    trade_duration = results.duration.mean() * 5
 
-    if trade_count == 0:
+    if trade_count == 0 or trade_duration > MAX_ACCEPTED_TRADE_DURATION:
         print('.', end='')
         return {
             'status': STATUS_FAIL,
             'loss': float('inf')
         }
 
-    loss = calculate_loss(total_profit, trade_count)
+    loss = calculate_loss(total_profit, trade_count, trade_duration)
 
     _CURRENT_TRIES += 1
 
