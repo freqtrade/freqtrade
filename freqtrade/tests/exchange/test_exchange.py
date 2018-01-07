@@ -177,7 +177,6 @@ def test_get_ticker(mocker, ticker):
 
     # if not caching the result we should get the same ticker
     ticker = get_ticker(pair='BTC_ETH', refresh=False)
-    print(str(ticker))
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
