@@ -204,19 +204,39 @@ signal. Given following result from hyperopt:
 ```
 Best parameters:
 {
-  "adx": 1,
-  "adx-value": 15.0,
-  "fastd": 1,
-  "fastd-value": 40.0,
-  "green_candle": 1,
-  "mfi": 0,
-  "over_sar": 0,
-  "rsi": 1,
-  "rsi-value": 37.0,
-  "trigger": 0,
-  "uptrend_long_ema": 1,
-  "uptrend_short_ema": 0,
-  "uptrend_sma": 0
+    "adx": {
+        "enabled": true,
+        "value": 15.0
+    },
+    "fastd": {
+        "enabled": true,
+        "value": 40.0
+    },
+    "green_candle": {
+        "enabled": true
+    },
+    "mfi": {
+        "enabled": false
+    },
+    "over_sar": {
+        "enabled": false
+    },
+    "rsi": {
+        "enabled": true,
+        "value": 37.0
+    },
+    "trigger": {
+        "type": "lower_bb"
+    },
+    "uptrend_long_ema": {
+        "enabled": true
+    },
+    "uptrend_short_ema": {
+        "enabled": false
+    },
+    "uptrend_sma": {
+        "enabled": false
+    }
 }
 
 Best Result:
@@ -224,14 +244,14 @@ Best Result:
 ```
 
 You should understand this result like:
-- You should **consider** the guard "adx" (`"adx": 1,` = `adx` is true) 
-and the best value is `15.0` (`"adx-value": 15.0,`)
-- You should **consider** the guard "fastd" (`"fastd": 1,` = `fastd` 
-is true) and the best value is `40.0` (`"fastd-value": 40.0,`)
+- You should **consider** the guard "adx" (`"adx"` is `"enabled": true`) 
+and the best value is `15.0` (`"value": 15.0,`)
+- You should **consider** the guard "fastd" (`"fastd"` is `"enabled": 
+true`) and the best value is `40.0` (`"value": 40.0,`)
 - You should **consider** to enable the guard "green_candle" 
-(`"green_candle": 1,` = `candle` is true) but this guards as no 
+(`"green_candle"` is `"enabled": true`) but this guards as no 
 customizable value.
-- You should **ignore** the guard "mfi" (`"mfi": 0,` = `mfi` is false)
+- You should **ignore** the guard "mfi" (`"mfi"` is `"enabled": false`)
 - and so on...
 
 
@@ -239,8 +259,8 @@ You have to look from
 [freqtrade/optimize/hyperopt.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L170-L200) 
 what those values match to.   
   
-So for example you had `adx-value: 15.0` (and `adx: 1` was true) so we 
-would look at `adx`-block from 
+So for example you had `adx:` with the `value: 15.0` so we would look 
+at `adx`-block from 
 [freqtrade/optimize/hyperopt.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L178-L179). 
 That translates to the following code block to 
 [analyze.populate_buy_trend()](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/analyze.py#L73)

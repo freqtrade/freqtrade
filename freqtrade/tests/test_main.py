@@ -15,6 +15,39 @@ from freqtrade.main import create_trade, handle_trade, init, \
     get_target_bid, _process, execute_sell, check_handle_timedout
 from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
+import freqtrade.main as main
+
+
+# Test that main() can start backtesting or hyperopt.
+# and also ensure we can pass some specific arguments
+# argument parsing is done in test_misc.py
+
+def test_parse_args_backtesting(mocker):
+    backtesting_mock = mocker.patch(
+        'freqtrade.optimize.backtesting.start', MagicMock())
+    with pytest.raises(SystemExit, match=r'0'):
+        main.main(['backtesting'])
+    assert backtesting_mock.call_count == 1
+    call_args = backtesting_mock.call_args[0][0]
+    assert call_args.config == 'config.json'
+    assert call_args.live is False
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'backtesting'
+    assert call_args.func is not None
+    assert call_args.ticker_interval == 5
+
+
+def test_main_start_hyperopt(mocker):
+    hyperopt_mock = mocker.patch(
+        'freqtrade.optimize.hyperopt.start', MagicMock())
+    with pytest.raises(SystemExit, match=r'0'):
+        main.main(['hyperopt'])
+    assert hyperopt_mock.call_count == 1
+    call_args = hyperopt_mock.call_args[0][0]
+    assert call_args.config == 'config.json'
+    assert call_args.loglevel == 20
+    assert call_args.subparser == 'hyperopt'
+    assert call_args.func is not None
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, mocker):
@@ -331,7 +364,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, health, limit_buy_order
                           cancel_order=cancel_order_mock)
     init(default_conf, create_engine('sqlite://'))
 
-    tradeBuy = Trade(
+    trade_buy = Trade(
         pair='BTC_ETH',
         open_rate=0.00001099,
         exchange='BITTREX',
@@ -343,12 +376,12 @@ def test_check_handle_timedout_buy(default_conf, ticker, health, limit_buy_order
         is_open=True
     )
 
-    Trade.session.add(tradeBuy)
+    Trade.session.add(trade_buy)
 
     # check it does cancel buy orders over the time limit
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
-    trades = Trade.query.filter(Trade.open_order_id.is_(tradeBuy.open_order_id)).all()
+    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
     assert len(trades) == 0
 
 
@@ -363,7 +396,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, health, limit_sell_ord
                           cancel_order=cancel_order_mock)
     init(default_conf, create_engine('sqlite://'))
 
-    tradeSell = Trade(
+    trade_sell = Trade(
         pair='BTC_ETH',
         open_rate=0.00001099,
         exchange='BITTREX',
@@ -376,12 +409,12 @@ def test_check_handle_timedout_sell(default_conf, ticker, health, limit_sell_ord
         is_open=False
     )
 
-    Trade.session.add(tradeSell)
+    Trade.session.add(trade_sell)
 
     # check it does cancel sell orders over the time limit
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
-    assert tradeSell.is_open is True
+    assert trade_sell.is_open is True
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
@@ -396,7 +429,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
                           cancel_order=cancel_order_mock)
     init(default_conf, create_engine('sqlite://'))
 
-    tradeBuy = Trade(
+    trade_buy = Trade(
         pair='BTC_ETH',
         open_rate=0.00001099,
         exchange='BITTREX',
@@ -408,16 +441,16 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
         is_open=True
     )
 
-    Trade.session.add(tradeBuy)
+    Trade.session.add(trade_buy)
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
-    trades = Trade.query.filter(Trade.open_order_id.is_(tradeBuy.open_order_id)).all()
+    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
-    assert trades[0].stake_amount == tradeBuy.open_rate * trades[0].amount
+    assert trades[0].stake_amount == trade_buy.open_rate * trades[0].amount
 
 
 def test_balance_fully_ask_side(mocker):
@@ -537,10 +570,13 @@ def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker)
 
 
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
-    default_conf['experimental'] = {}
-    default_conf['experimental']['sell_profit_only'] = True
+    default_conf['experimental'] = {
+        'use_sell_signal': True,
+        'sell_profit_only': True,
+    }
 
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
@@ -561,10 +597,13 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
-    default_conf['experimental'] = {}
-    default_conf['experimental']['sell_profit_only'] = False
+    default_conf['experimental'] = {
+        'use_sell_signal': True,
+        'sell_profit_only': False,
+    }
 
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
@@ -585,10 +624,13 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
-        default_conf['experimental'] = {}
-        default_conf['experimental']['sell_profit_only'] = True
+        default_conf['experimental'] = {
+            'use_sell_signal': True,
+            'sell_profit_only': True,
+        }
 
         mocker.patch.dict('freqtrade.main._CONF', default_conf)
+        mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
         mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
         mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
         mocker.patch.multiple('freqtrade.main.exchange',
@@ -609,10 +651,13 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
-        default_conf['experimental'] = {}
-        default_conf['experimental']['sell_profit_only'] = False
+        default_conf['experimental'] = {
+            'use_sell_signal': True,
+            'sell_profit_only': False,
+        }
 
         mocker.patch.dict('freqtrade.main._CONF', default_conf)
+        mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
         mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
         mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
         mocker.patch.multiple('freqtrade.main.exchange',
