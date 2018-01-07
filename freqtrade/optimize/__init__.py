@@ -12,12 +12,12 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 logger = logging.getLogger(__name__)
 
 
-def load_tickerdata_file(pair, ticker_interval):
+def load_tickerdata_file(datadir, pair, ticker_interval):
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
     """
-    path = testdata_path()
+    path = make_testdata_path(datadir)
     file = '{abspath}/{pair}-{ticker_interval}.json'.format(
         abspath=path,
         pair=pair,
@@ -33,7 +33,7 @@ def load_tickerdata_file(pair, ticker_interval):
     return pairdata
 
 
-def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None,
+def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -47,16 +47,16 @@ def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None,
 
     # If the user force the refresh of pairs
     if refresh_pairs:
-        logger.info('Download data for all pairs and store them in freqtrade/tests/testsdata')
-        download_pairs(_pairs)
+        logger.info('Download data for all pairs and store them in %s', datadir)
+        download_pairs(datadir, _pairs)
 
     for pair in _pairs:
-        pairdata = load_tickerdata_file(pair, ticker_interval)
+        pairdata = load_tickerdata_file(datadir, pair, ticker_interval)
         if not pairdata:
             # download the tickerdata from exchange
-            download_backtesting_testdata(pair=pair, interval=ticker_interval)
+            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
             # and retry reading the pair
-            pairdata = load_tickerdata_file(pair, ticker_interval)
+            pairdata = load_tickerdata_file(datadir, pair, ticker_interval)
         result[pair] = pairdata
     return result
 
@@ -67,17 +67,18 @@ def preprocess(tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
             for pair, pair_data in tickerdata.items()}
 
 
-def testdata_path() -> str:
+def make_testdata_path(datadir: str) -> str:
     """Return the path where testdata files are stored"""
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tests', 'testdata'))
+    return datadir or os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                   '..', 'tests', 'testdata'))
 
 
-def download_pairs(pairs: List[str]) -> bool:
+def download_pairs(datadir, pairs: List[str]) -> bool:
     """For each pairs passed in parameters, download 1 and 5 ticker intervals"""
     for pair in pairs:
         try:
             for interval in [1, 5]:
-                download_backtesting_testdata(pair=pair, interval=interval)
+                download_backtesting_testdata(datadir, pair=pair, interval=interval)
         except BaseException:
             logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
                 pair=pair,
@@ -87,7 +88,7 @@ def download_pairs(pairs: List[str]) -> bool:
     return True
 
 
-def download_backtesting_testdata(pair: str, interval: int = 5) -> bool:
+def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> bool:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
@@ -95,7 +96,7 @@ def download_backtesting_testdata(pair: str, interval: int = 5) -> bool:
     :return: bool
     """
 
-    path = testdata_path()
+    path = make_testdata_path(datadir)
     logger.info('Download the pair: "{pair}", Interval: {interval} min'.format(
         pair=pair,
         interval=interval,

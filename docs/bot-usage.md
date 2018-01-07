@@ -26,6 +26,9 @@ optional arguments:
                         specify configuration file (default: config.json)
   -v, --verbose         be verbose
   --version             show program's version number and exit
+  -dd PATH, --datadir PATH
+                        Path is from where backtesting and hyperopt will load the
+                        ticker data files (default freqdata/tests/testdata).
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
                         BaseVolume (Default 20 currencies)

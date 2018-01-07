@@ -7,7 +7,7 @@ _pairs = ['BTC_ETH']
 
 
 def load_dataframe_pair(pairs):
-    ld = freqtrade.optimize.load_data(ticker_interval=5, pairs=pairs)
+    ld = freqtrade.optimize.load_data(None, ticker_interval=5, pairs=pairs)
     assert isinstance(ld, dict)
     assert isinstance(pairs[0], str)
     dataframe = ld[pairs[0]]
