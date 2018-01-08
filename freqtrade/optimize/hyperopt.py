@@ -95,7 +95,7 @@ SPACE = {
         {'type': 'stochf_cross'},
         {'type': 'ht_sine'},
     ]),
-    'stoploss': hp.quniform('stoploss', -30, -2, 1),
+    'stoploss': hp.uniform('stoploss', -0.5, -0.02),
 }
 
 
