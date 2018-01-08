@@ -116,8 +116,8 @@ def test_fiat_convert_get_price(mocker):
 
 
 def test_fiat_convert_without_network(mocker):
-    Pymarketcap = MagicMock(side_effect=ImportError('Oh boy, you have no network!'))
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap', Pymarketcap)
+    pymarketcap = MagicMock(side_effect=ImportError('Oh boy, you have no network!'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', pymarketcap)
 
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._coinmarketcap is None
