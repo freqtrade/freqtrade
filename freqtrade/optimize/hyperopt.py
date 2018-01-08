@@ -235,13 +235,26 @@ def start(args):
     else:
         trials = Trials()
 
-    best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
+    try:
+        best_parameters = fmin(
+            fn=optimizer,
+            space=SPACE,
+            algo=tpe.suggest,
+            max_evals=TOTAL_TRIES,
+            trials=trials
+        )
+
+        results = sorted(trials.results, key=itemgetter('loss'))
+        best_result = results[0]['result']
+
+    except ValueError:
+        best_parameters = {}
+        best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
+                      'try with more epochs (param: -e).'
 
     # Improve best parameter logging display
-    if best:
-        best = space_eval(SPACE, best)
+    if best_parameters:
+        best_parameters = space_eval(SPACE, best_parameters)
 
-    logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
-
-    results = sorted(trials.results, key=itemgetter('loss'))
-    logger.info('Best Result:\n%s', results[0]['result'])
+    logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
+    logger.info('Best Result:\n%s', best_result)

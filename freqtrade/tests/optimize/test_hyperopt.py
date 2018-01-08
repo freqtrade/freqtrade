@@ -114,3 +114,22 @@ def test_fmin_best_results(mocker, caplog):
 
     for line in exists:
         assert line in caplog.text
+
+
+def test_fmin_throw_value_error(mocker, caplog):
+    mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
+    mocker.patch('freqtrade.optimize.preprocess')
+    mocker.patch('freqtrade.optimize.load_data')
+    mocker.patch('freqtrade.optimize.hyperopt.fmin', side_effect=ValueError())
+
+    args = mocker.Mock(epochs=1, config='config.json.example')
+    start(args)
+
+    exists = [
+        'Best Result:',
+        'Sorry, Hyperopt was not able to find good parameters. Please try with more epochs '
+        '(param: -e).',
+    ]
+
+    for line in exists:
+        assert line in caplog.text
