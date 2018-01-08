@@ -11,6 +11,7 @@ def test_loss_calculation_prefer_correct_trade_count():
     assert over > correct
     assert under > correct
 
+
 def test_loss_calculation_prefer_shorter_trades():
     shorter = calculate_loss(1, 100, 20)
     longer = calculate_loss(1, 100, 30)
