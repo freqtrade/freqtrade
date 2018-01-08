@@ -87,20 +87,20 @@ def test_no_log_if_loss_does_not_improve(mocker):
 
 def test_fmin_best_results(mocker, caplog):
     fmin_result = {
-      "adx": 1,
-      "adx-value": 15.0,
-      "fastd": 1,
-      "fastd-value": 40.0,
-      "green_candle": 1,
-      "mfi": 0,
-      "over_sar": 0,
-      "rsi": 1,
-      "rsi-value": 37.0,
-      "trigger": 2,
-      "uptrend_long_ema": 1,
-      "uptrend_short_ema": 0,
-      "uptrend_sma": 0,
-      "stoploss": -10,
+        "adx": 1,
+        "adx-value": 15.0,
+        "fastd": 1,
+        "fastd-value": 40.0,
+        "green_candle": 1,
+        "mfi": 0,
+        "over_sar": 0,
+        "rsi": 1,
+        "rsi-value": 37.0,
+        "trigger": 2,
+        "uptrend_long_ema": 1,
+        "uptrend_short_ema": 0,
+        "uptrend_sma": 0,
+        "stoploss": -0.1,
     }
 
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
@@ -117,7 +117,7 @@ def test_fmin_best_results(mocker, caplog):
         '"green_candle": {\n        "enabled": true\n    },',
         '"mfi": {\n        "enabled": false\n    },',
         '"trigger": {\n        "type": "ao_cross_zero"\n    },',
-        '"stoploss": -10.0',
+        '"stoploss": -0.1',
     ]
 
     for line in exists:
