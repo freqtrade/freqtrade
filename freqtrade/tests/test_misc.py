@@ -8,7 +8,7 @@ import pytest
 from jsonschema import ValidationError
 
 from freqtrade.misc import throttle, parse_args, load_config,\
-    parse_args_common
+    common_args_parser
 
 
 def test_throttle():
@@ -39,12 +39,10 @@ def test_throttle_with_assets():
     assert result == -1
 
 
-# Parse common command-line-arguments
-# used for all tools
-
+# Parse common command-line-arguments. Used for all tools
 
 def test_parse_args_none():
-    args = parse_args_common([], '')
+    args = common_args_parser('')
     assert isinstance(args, argparse.ArgumentParser)
 
 
