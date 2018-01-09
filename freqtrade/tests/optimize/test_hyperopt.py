@@ -1,5 +1,8 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-
+import pickle
+import os
+import pytest
+import freqtrade.optimize.hyperopt
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
     log_results
 
@@ -27,16 +30,35 @@ def test_loss_calculation_has_limited_profit():
 
 
 def create_trials(mocker):
+    """
+    When creating trials, mock the hyperopt Trials so that *by default*
+      - we don't create any pickle'd files in the filesystem
+      - we might have a pickle'd file so make sure that we return
+        false when looking for it
+    """
+    mocker.patch('freqtrade.optimize.hyperopt.TRIALS_FILE',
+                 return_value='freqtrade/tests/optimize/ut_trials.pickle')
+    mocker.patch('freqtrade.optimize.hyperopt.os.path.exists',
+                 return_value=False)
+    mocker.patch('freqtrade.optimize.hyperopt.save_trials',
+                 return_value=None)
+    mocker.patch('freqtrade.optimize.hyperopt.read_trials',
+                 return_value=None)
     return mocker.Mock(
         results=[{
             'loss': 1,
-            'result': 'foo'
-        }]
+            'result': 'foo',
+            'status': 'ok'
+        }],
+        best_trial={'misc': {'vals': {'adx': 999}}}
     )
 
 
 def test_start_calls_fmin(mocker):
-    mocker.patch('freqtrade.optimize.hyperopt.Trials', return_value=create_trials(mocker))
+    trials = create_trials(mocker)
+    mocker.patch('freqtrade.optimize.hyperopt.TRIALS', return_value=trials)
+    mocker.patch('freqtrade.optimize.hyperopt.sorted',
+                 return_value=trials.results)
     mocker.patch('freqtrade.optimize.preprocess')
     mocker.patch('freqtrade.optimize.load_data')
     mock_fmin = mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
@@ -141,3 +163,39 @@ def test_fmin_throw_value_error(mocker, caplog):
 
     for line in exists:
         assert line in caplog.text
+
+
+def test_resuming_previous_hyperopt_results_succeeds(mocker):
+    import freqtrade.optimize.hyperopt as hyperopt
+    trials = create_trials(mocker)
+    mocker.patch('freqtrade.optimize.hyperopt.TRIALS',
+                 return_value=trials)
+    mocker.patch('freqtrade.optimize.hyperopt.os.path.exists',
+                 return_value=True)
+    mocker.patch('freqtrade.optimize.hyperopt.len',
+                 return_value=len(trials.results))
+    mock_read = mocker.patch('freqtrade.optimize.hyperopt.read_trials',
+                             return_value=trials)
+    mock_save = mocker.patch('freqtrade.optimize.hyperopt.save_trials',
+                             return_value=None)
+    mocker.patch('freqtrade.optimize.hyperopt.sorted',
+                 return_value=trials.results)
+    mocker.patch('freqtrade.optimize.preprocess')
+    mocker.patch('freqtrade.optimize.load_data')
+    mocker.patch('freqtrade.optimize.hyperopt.fmin',
+                 return_value={})
+    args = mocker.Mock(epochs=1,
+                       config='config.json.example',
+                       mongodb=False)
+
+    start(args)
+
+    mock_read.assert_called_once()
+    mock_save.assert_called_once()
+
+    current_tries = hyperopt._CURRENT_TRIES
+    total_tries = hyperopt.TOTAL_TRIES
+
+    assert current_tries == len(trials.results)
+    assert total_tries == (current_tries + len(trials.results))
+
