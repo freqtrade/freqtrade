@@ -121,7 +121,7 @@ def read_trials(trials_path=TRIALS_FILE):
 
 
 def log_trials_result(trials):
-    vals = trials.best_trial['misc']['vals']
+    vals = json.dumps(trials.best_trial['misc']['vals'], indent=4)
     results = trials.best_trial['result']['result']
     logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
 
@@ -289,7 +289,7 @@ def start(args):
             trials=TRIALS
         )
 
-        results = sorted(trials.results, key=itemgetter('loss'))
+        results = sorted(TRIALS.results, key=itemgetter('loss'))
         best_result = results[0]['result']
 
     except ValueError:
