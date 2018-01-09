@@ -159,6 +159,8 @@ optional arguments:
   --dry-run-db          Force dry run to use a local DB
                         "tradesv3.dry_run.sqlite" instead of memory DB. Work
                         only if dry_run is enabled.
+  -w, --watchdog        Run under watchdog (restart process if main loop is
+                        stalled)
 ```
 More details on:
 - [How to run the bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)

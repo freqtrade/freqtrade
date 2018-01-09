@@ -399,12 +399,10 @@ def cleanup() -> None:
     exit(0)
 
 
-def main(sysargv=sys.argv[1:]) -> None:
-    """
-    Loads and validates the config and handles the main loop
-    :return: None
-    """
+def init_args(sysargv) -> Watchdog:
+
     global _CONF
+
     args = parse_args(sysargv,
                       'Simple High Frequency Trading Bot for crypto currencies')
 
@@ -441,13 +439,24 @@ def main(sysargv=sys.argv[1:]) -> None:
             )
         else:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
-
     watchdog = Watchdog()
 
     if args.watchdog_enable:
         logger.info('Using watchdog to monitor process (--watchdog)')
         if not watchdog.start():
-            return
+            exit(0)
+
+    return args, watchdog
+
+
+def main(sysargv=sys.argv[1:]) -> None:
+    """
+    Loads and validates the config and handles the main loop
+    :return: None
+    """
+    global _CONF
+
+    args, watchdog = init_args(sysargv)
 
     try:
         init(_CONF)

@@ -37,6 +37,14 @@ def test_parse_args_backtesting(mocker):
     assert call_args.ticker_interval == 5
 
 
+def test_init_args():
+    sysargv = ['--config', 'config.json.example']
+    args, watchdog = main.init_args(sysargv)
+    assert args.config == 'config.json.example'
+    assert main._CONF['stake_currency'] == 'BTC'
+    assert watchdog.timeout == 300
+
+
 def test_main_start_hyperopt(mocker):
     hyperopt_mock = mocker.patch(
         'freqtrade.optimize.hyperopt.start', MagicMock())

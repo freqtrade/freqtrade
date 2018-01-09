@@ -14,6 +14,10 @@ class Watchdog:
     shared_heartbeat = Value('d', 0.0)
     kill_signal = None
 
+    def __init__(self, timeout=WATCHDOG_TIMEOUT):
+        self.timeout = timeout
+        self.heartbeat()
+
     def heartbeat(self) -> None:
         logger.debug("Heartbeat")
         self.shared_heartbeat.value = time.time()
@@ -24,11 +28,11 @@ class Watchdog:
 
     def kill(self, pid):
         logger.info("Stopping pid {}".format(pid))
-        os.kill(pid, signal.SIGTERM)  # Better use sigint and then sigterm?
-        os.wait()
+        if pid:
+            os.kill(pid, signal.SIGTERM)  # Better use sigint and then sigterm?
+            os.wait()
 
     def start(self) -> bool:
-        self.heartbeat()
         pid = os.fork()
         if pid != 0:
             # In watchdog proces, run it
@@ -54,8 +58,10 @@ class Watchdog:
 
                 timeout = time.time() - self.shared_heartbeat.value
 
-                if timeout > WATCHDOG_TIMEOUT:
+                if timeout > self.timeout:
                     logger.warning("Kill process due to timeout: {}".format(timeout))
+                    if not pid:
+                        return False
                     self.kill(pid)
                     new_pid = os.fork()
                     if new_pid == 0:
