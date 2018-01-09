@@ -194,7 +194,7 @@ def format_results(results: DataFrame):
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
                 results.duration.mean() * 5,
-            )
+    )
 
 
 def buy_strategy_generator(params):

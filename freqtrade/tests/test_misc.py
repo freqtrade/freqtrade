@@ -8,7 +8,7 @@ import pytest
 from jsonschema import ValidationError
 
 from freqtrade.misc import throttle, parse_args, load_config,\
-     parse_args_common
+    parse_args_common
 
 
 def test_throttle():

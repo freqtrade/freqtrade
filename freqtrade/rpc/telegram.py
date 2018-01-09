@@ -255,7 +255,7 @@ def _daily(bot: Bot, update: Update) -> None:
                 ),
                 symbol=_CONF['fiat_display_currency']
             )
-         ]
+        ]
         for key, value in profit_days.items()
     ]
     stats = tabulate(stats,
