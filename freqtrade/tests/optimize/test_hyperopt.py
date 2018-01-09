@@ -1,10 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import pickle
-import os
-import pytest
-import freqtrade.optimize.hyperopt
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
-    log_results
+    log_results, save_trials, read_trials
 
 
 def test_loss_calculation_prefer_correct_trade_count():
@@ -44,6 +40,8 @@ def create_trials(mocker):
                  return_value=None)
     mocker.patch('freqtrade.optimize.hyperopt.read_trials',
                  return_value=None)
+    mocker.patch('freqtrade.optimize.hyperopt.os.remove',
+                 return_value=True)
     return mocker.Mock(
         results=[{
             'loss': 1,
@@ -199,3 +197,27 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker):
     assert current_tries == len(trials.results)
     assert total_tries == (current_tries + len(trials.results))
 
+
+def test_save_trials_saves_trials(mocker):
+    trials = create_trials(mocker)
+    mock_dump = mocker.patch('freqtrade.optimize.hyperopt.pickle.dump',
+                             return_value=None)
+    trials_path = mocker.patch('freqtrade.optimize.hyperopt.TRIALS_FILE',
+                               return_value='ut_trials.pickle')
+    mocker.patch('freqtrade.optimize.hyperopt.open',
+                 return_value=trials_path)
+    save_trials(trials, trials_path)
+
+    mock_dump.assert_called_once_with(trials, trials_path)
+
+
+def test_read_trials_returns_trials_file(mocker):
+    trials = create_trials(mocker)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt.pickle.load',
+                             return_value=trials)
+    mock_open = mocker.patch('freqtrade.optimize.hyperopt.open',
+                             return_value=mock_load)
+
+    assert read_trials() == trials
+    mock_open.assert_called_once()
+    mock_load.assert_called_once()
