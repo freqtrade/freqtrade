@@ -139,7 +139,7 @@ This bot require Python 3.6 and TA-LIB
 ```bash
 sudo add-apt-repository ppa:jonathonf/python-3.6
 sudo apt-get update
-sudo apt-get install python3.6 python3.6-venv build-essential autoconf libtool pkg-config make wget git
+sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
 ```
 
 **2.1.2. Install TA-LIB**  
