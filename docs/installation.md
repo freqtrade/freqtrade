@@ -1,7 +1,7 @@
 # Install the bot
-This page explains how to prepare your environment for running the bot. 
-To understand how to set up the bot please read the Bot 
-[Bot configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) 
+This page explains how to prepare your environment for running the bot.
+To understand how to set up the bot please read the Bot
+[Bot configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)
 page.
 
 ## Table of Contents
@@ -21,14 +21,14 @@ Start by downloading Docker for your platform:
 - [Windows](https://www.docker.com/products/docker#/windows)
 - [Linux](https://www.docker.com/products/docker#/linux)
 
-Once you have Docker installed, simply create the config file 
-(e.g. `config.json`) and then create a Docker image for `freqtrade` 
+Once you have Docker installed, simply create the config file
+(e.g. `config.json`) and then create a Docker image for `freqtrade`
 using the Dockerfile in this repo.
 
 ### 1. Prepare the bot
-1. Clone the git 
+1. Clone the git
 ```bash
-git clone git@github.com:gcarq/freqtrade.git
+git clone https://github.com/gcarq/freqtrade.git
 ```
 2. (Optional) Checkout the develop branch
 ```bash
@@ -42,7 +42,7 @@ cd freqtrade
 ```bash
 cp config.json.example config.json
 ```
-To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page 
+To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page
 5. Create your DB file (Optional, the bot will create it if it is missing)
 ```bash
 # For Production
@@ -60,7 +60,7 @@ docker build -t freqtrade .
 
 For security reasons, your configuration file will not be included in the
 image, you will need to bind mount it. It is also advised to bind mount
-a sqlite database file (see the "5. Run a restartable docker image" 
+a sqlite database file (see the "5. Run a restartable docker image"
 section) to keep it between  updates.
 
 ### 3. Verify the docker image
@@ -100,7 +100,7 @@ docker run -d \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
   freqtrade
 ```
-If you are using `dry_run=True` it's not necessary to mount 
+If you are using `dry_run=True` it's not necessary to mount
 `tradesv3.sqlite`, but you can mount `tradesv3.dryrun.sqlite` if you
 plan to use the dry run mode with the param `--dry-run-db`.
 
@@ -116,14 +116,14 @@ docker stop freqtrade
 docker start freqtrade
 ```
 
-You do not need to rebuild the image for configuration changes, it will 
+You do not need to rebuild the image for configuration changes, it will
 suffice to edit `config.json` and restart the container.
 
 
 # Linux / MacOS
 ## 1. Requirements
 Click each one for install guide:
-- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/), 
+- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/),
 note the bot was not tested on Python >= 3.7.x
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
@@ -142,7 +142,7 @@ sudo apt-get update
 sudo apt-get install python3.6 python3.6-venv build-essential autoconf libtool pkg-config make wget git
 ```
 
-**2.1.2. Install TA-LIB**  
+**2.1.2. Install TA-LIB**
 Official webpage: https://mrjbq7.github.io/ta-lib/install.html
 ```
 wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
@@ -155,7 +155,7 @@ cd ..
 rm -rf ./ta-lib*
 ```
 
-**2.1.3. [Optional] Install MongoDB**  
+**2.1.3. [Optional] Install MongoDB**
 Install MongoDB if you plan to optimize your strategy with Hyperopt.
 
 ```bash
@@ -176,7 +176,7 @@ If you are on a different Linux OS you maybe have to adapt things like:
 brew install python3 git wget
 ```
 
-**2.3.2. [Optional] Install MongoDB**  
+**2.3.2. [Optional] Install MongoDB**
 Install MongoDB if you plan to optimize your strategy with Hyperopt.
 ```bash
 curl -O https://fastdl.mongodb.org/osx/mongodb-osx-ssl-x86_64-3.4.10.tgz
@@ -188,15 +188,15 @@ export PATH=<path_freqtrade>/env/mongodb/bin:$PATH
 
 ## 3. Clone the repo
 The following steps are made for Linux/mac environment
-1. Clone the git `git clone git@github.com:gcarq/freqtrade.git`
-2. (Optional) Checkout the develop branch `git checkout develop` 
+1. Clone the git `git clone https://github.com/gcarq/freqtrade.git`
+2. (Optional) Checkout the develop branch `git checkout develop`
 
 ## 4. Prepare the bot
 ```bash
 cd freqtrade
 cp config.json.example config.json
 ```
-To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) 
+To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)
 
 ## 5. Setup your virtual env
 ```bash
@@ -215,7 +215,7 @@ python3.6 ./freqtrade/main.py -c config.json
 ```
 
 ### Advanced Linux
-**systemd service file**  
+**systemd service file**
 Copy `./freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`)
 and update `WorkingDirectory` and `ExecStart` to match your setup.
 After that you can start the daemon with:
@@ -224,7 +224,7 @@ systemctl --user start freqtrade
 ```
 
 # Windows
-We do recommend Windows users to use [Docker](#docker) this will work 
+We do recommend Windows users to use [Docker](#docker) this will work
 much easier and smoother (also safer).
 
 ```cmd
@@ -242,5 +242,5 @@ much easier and smoother (also safer).
 *Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/gcarq/freqtrade/issues/222)*
 
 ## Next step
-Now you have an environment ready, the next step is to 
+Now you have an environment ready, the next step is to
 [configure your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md).
