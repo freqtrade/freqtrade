@@ -12,10 +12,9 @@ KILL_TIMEOUT = 60
 
 class Watchdog:
 
-    shared_heartbeat = Value('d', 0.0)
-    kill_signal = None
-
     def __init__(self, timeout=WATCHDOG_TIMEOUT, kill_timeout=KILL_TIMEOUT):
+        self.shared_heartbeat = Value('d', 0.0)
+        self.kill_signal = None
         self.timeout = timeout
         self.kill_timeout = kill_timeout
         self.heartbeat()
