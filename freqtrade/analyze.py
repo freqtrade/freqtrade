@@ -301,6 +301,7 @@ def get_signal(pair: str, signal: SignalType) -> bool:
         return False
 
     if dataframe.empty:
+        logger.warning('Empty dataframe for pair %s', pair)
         return False
 
     latest = dataframe.iloc[-1]
@@ -308,8 +309,12 @@ def get_signal(pair: str, signal: SignalType) -> bool:
     # Check if dataframe is out of date
     signal_date = arrow.get(latest['date'])
     if signal_date < arrow.now() - timedelta(minutes=10):
+        logger.warning('Too old dataframe for pair %s', pair)
         return False
 
+    # FIX: 20180109, there could be some confusion because we will make a
+    #      boolean result (execute the action or not depending on the signal).
+    #      But the above checks can also return False, and we hide that.
     result = latest[signal.value] == 1
     logger.debug('%s_trigger: %s (pair=%s, signal=%s)', signal.value, latest['date'], pair, result)
     return result
