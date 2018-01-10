@@ -20,10 +20,10 @@ def default_conf():
         "fiat_display_currency": "USD",
         "dry_run": True,
         "minimal_roi": {
-            "40":  0.0,
-            "30":  0.01,
-            "20":  0.02,
-            "0":  0.04
+            "40": 0.0,
+            "30": 0.01,
+            "20": 0.02,
+            "0": 0.04
         },
         "stoploss": -0.10,
         "unfilledtimeout": 600,

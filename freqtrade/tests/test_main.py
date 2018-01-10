@@ -18,7 +18,6 @@ from freqtrade.misc import State, get_state
 from freqtrade.persistence import Trade
 
 
-
 def test_parse_args_backtesting(mocker):
     """ Test that main() can start backtesting or hyperopt.
         and also ensure we can pass some specific arguments
