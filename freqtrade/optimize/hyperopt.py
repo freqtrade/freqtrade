@@ -47,7 +47,7 @@ PROCESSED = None  # optimize.preprocess(optimize.load_data())
 OPTIMIZE_CONFIG = hyperopt_optimize_conf()
 
 # Hyperopt Trials
-TRIALS_FILE = 'freqtrade/optimize/hyperopt_trials.pickle'
+TRIALS_FILE = os.path.join('freqtrade', 'optimize', 'hyperopt_trials.pickle')
 TRIALS = Trials()
 
 # Monkey patch config
@@ -107,13 +107,13 @@ SPACE = {
 
 
 def save_trials(trials, trials_path=TRIALS_FILE):
-    "Save hyperopt trials to file"
+    """Save hyperopt trials to file"""
     logger.info('Saving Trials to \'{}\''.format(trials_path))
     pickle.dump(trials, open(trials_path, 'wb'))
 
 
 def read_trials(trials_path=TRIALS_FILE):
-    "Read hyperopt trials file"
+    """Read hyperopt trials file"""
     logger.info('Reading Trials from \'{}\''.format(trials_path))
     trials = pickle.load(open(trials_path, 'rb'))
     os.remove(trials_path)
@@ -309,7 +309,7 @@ def start(args):
 
 
 def signal_handler(sig, frame):
-    "Hyperopt SIGINT handler"
+    """Hyperopt SIGINT handler"""
     logger.info('Hyperopt received {}'.format(signal.Signals(sig).name))
 
     save_trials(TRIALS)
