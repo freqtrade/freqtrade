@@ -51,6 +51,16 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
+**Running backtest with smaller testset**
+Use the --timeperiod argument to change how much of the testset
+you want to use. The last N ticks/timeframes will be used.
+Example:
+
+```bash
+python3 ./freqtrade/main.py backtesting --timeperiod -200
+```
+
+
 For help about backtesting usage, please refer to 
 [Backtesting commands](#backtesting-commands).
 
