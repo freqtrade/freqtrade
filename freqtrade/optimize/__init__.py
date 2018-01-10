@@ -61,6 +61,11 @@ def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]]
     return result
 
 
+def tickerdata_to_dataframe(data):
+    preprocessed = preprocess(data)
+    return preprocessed
+
+
 def preprocess(tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
     """Creates a dataframe and populates indicators for given ticker data"""
     return {pair: populate_indicators(parse_ticker_dataframe(pair_data))

@@ -230,8 +230,8 @@ def start(args):
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
-    PROCESSED = optimize.preprocess(optimize.load_data(
-        args.datadir, pairs=pairs, ticker_interval=args.ticker_interval))
+    data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=args.ticker_interval)
+    PROCESSED = optimize.tickerdata_to_dataframe(data)
 
     if args.mongodb:
         logger.info('Using mongodb ...')

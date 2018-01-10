@@ -13,7 +13,6 @@ from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 import freqtrade.misc as misc
-from freqtrade.optimize import preprocess
 import freqtrade.optimize as optimize
 from freqtrade.persistence import Trade
 
@@ -162,11 +161,11 @@ def start(args):
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=args.ticker_interval,
-                                  refresh_pairs=args.refresh_pairs)
-
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
+
+        data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=args.ticker_interval,
+                                  refresh_pairs=args.refresh_pairs)
 
     max_open_trades = 0
     if args.realistic_simulation:
@@ -177,7 +176,7 @@ def start(args):
     from freqtrade import main
     main._CONF = config
 
-    preprocessed = preprocess(data)
+    preprocessed = optimize.tickerdata_to_dataframe(data)
     # Print timeframe
     min_date, max_date = get_timeframe(preprocessed)
     logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
