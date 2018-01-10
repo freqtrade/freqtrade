@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring,C0103
 import copy
 from unittest.mock import MagicMock
+import freqtrade.tests.conftest as tt  # test tools
 
 import pytest
 import requests
@@ -48,6 +49,34 @@ def test_main_start_hyperopt(mocker):
     assert call_args.loglevel == 20
     assert call_args.subparser == 'hyperopt'
     assert call_args.func is not None
+
+
+def test_process_maybe_execute_buy(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.create_trade', return_value=True)
+    assert main.process_maybe_execute_buy(default_conf)
+    mocker.patch('freqtrade.main.create_trade', return_value=False)
+    assert not main.process_maybe_execute_buy(default_conf)
+
+
+def test_process_maybe_execute_sell(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.handle_trade', return_value=True)
+    mocker.patch('freqtrade.exchange.get_order', return_value=1)
+    trade = MagicMock()
+    trade.open_order_id = '123'
+    assert not main.process_maybe_execute_sell(trade)
+    trade.is_open = True
+    trade.open_order_id = None
+    # Assert we call handle_trade() if trade is feasible for execution
+    assert main.process_maybe_execute_sell(trade)
+
+
+def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
+    main.process_maybe_execute_buy(default_conf)
+    tt.log_has('Unable to create trade:', caplog.record_tuples)
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, mocker):

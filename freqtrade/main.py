@@ -72,12 +72,49 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     return final_list
 
 
+def process_maybe_execute_buy(conf):
+    """
+    Tries to execute a buy trade in a safe way
+    :return: True if executed
+    """
+    try:
+        # Create entity and execute trade
+        if create_trade(float(conf['stake_amount'])):
+            return True
+        else:
+            logger.info(
+                'Checked all whitelisted currencies. '
+                'Found no suitable entry positions for buying. Will keep looking ...'
+            )
+            return False
+    except DependencyException as exception:
+        logger.warning('Unable to create trade: %s', exception)
+        return False
+
+
+def process_maybe_execute_sell(trade):
+    """
+    Tries to execute a sell trade
+    :return: True if executed
+    """
+    # Get order details for actual price per unit
+    if trade.open_order_id:
+        # Update trade with order values
+        logger.info('Got open order for %s', trade)
+        trade.update(exchange.get_order(trade.open_order_id))
+
+    if trade.is_open and trade.open_order_id is None:
+        # Check if we can sell our current pair
+        return handle_trade(trade)
+    return False
+
+
 def _process(nb_assets: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
     :param: nb_assets: the maximum number of pairs to be traded at the same time
-    :return: True if a trade has been created or closed, False otherwise
+    :return: True if one or more trades has been created or closed, False otherwise
     """
     state_changed = False
     try:
@@ -95,33 +132,16 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
-            try:
-                # Create entity and execute trade
-                state_changed = create_trade(float(_CONF['stake_amount']))
-                if not state_changed:
-                    logger.info(
-                        'Checked all whitelisted currencies. '
-                        'Found no suitable entry positions for buying. Will keep looking ...'
-                    )
-            except DependencyException as exception:
-                logger.warning('Unable to create trade: %s', exception)
+            state_changed = process_maybe_execute_buy(_CONF)
 
         for trade in trades:
-            # Get order details for actual price per unit
-            if trade.open_order_id:
-                # Update trade with order values
-                logger.info('Got open order for %s', trade)
-                trade.update(exchange.get_order(trade.open_order_id))
-
-            if trade.is_open and trade.open_order_id is None:
-                # Check if we can sell our current pair
-                state_changed = handle_trade(trade) or state_changed
+            state_changed = process_maybe_execute_sell(trade) or state_changed
 
         if 'unfilledtimeout' in _CONF:
             # Check and handle any timed out open orders
             check_handle_timedout(_CONF['unfilledtimeout'])
-
             Trade.session.flush()
+
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         logger.warning(
             'Got %s in _process(), retrying in 30 seconds...',

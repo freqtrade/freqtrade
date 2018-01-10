@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring,W0621
 import json
-from functools import reduce
 from unittest.mock import MagicMock
+import freqtrade.tests.conftest as tt  # test tools
 
 import arrow
 import datetime
@@ -10,14 +10,6 @@ from pandas import DataFrame
 
 from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, \
     get_signal, SignalType, populate_sell_trend
-
-
-def log_has(line, logs):
-    # caplog mocker returns log as a tuple: ('freqtrade.analyze', logging.WARNING, 'foobar')
-    # and we want to match line against foobar in the tuple
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: x[2] == line, logs),
-                  False)
 
 
 @pytest.fixture
@@ -78,8 +70,8 @@ def test_returns_latest_sell_signal(mocker):
 def test_get_signal_empty(mocker, caplog):
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=None)
     assert not get_signal('foo', SignalType.BUY)
-    assert log_has('Empty ticker history for pair foo',
-                   caplog.record_tuples)
+    assert tt.log_has('Empty ticker history for pair foo',
+                      caplog.record_tuples)
 
 
 def test_get_signal_execption_valueerror(mocker, caplog):
@@ -87,8 +79,8 @@ def test_get_signal_execption_valueerror(mocker, caplog):
     mocker.patch('freqtrade.analyze.analyze_ticker',
                  side_effect=ValueError('xyz'))
     assert not get_signal('foo', SignalType.BUY)
-    assert log_has('Unable to analyze ticker for pair foo: xyz',
-                   caplog.record_tuples)
+    assert tt.log_has('Unable to analyze ticker for pair foo: xyz',
+                      caplog.record_tuples)
 
 
 # This error should never occur becase analyze_ticker is run first,
@@ -97,8 +89,8 @@ def test_get_signal_empty_dataframe(mocker, caplog):
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame([]))
     assert not get_signal('xyz', SignalType.BUY)
-    assert log_has('Empty dataframe for pair xyz',
-                   caplog.record_tuples)
+    assert tt.log_has('Empty dataframe for pair xyz',
+                      caplog.record_tuples)
 
 
 def test_get_signal_old_dataframe(mocker, caplog):
@@ -108,8 +100,8 @@ def test_get_signal_old_dataframe(mocker, caplog):
     ticks = DataFrame([{'buy': 1, 'date': oldtime}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame(ticks))
     assert not get_signal('xyz', SignalType.BUY)
-    assert log_has('Too old dataframe for pair xyz',
-                   caplog.record_tuples)
+    assert tt.log_has('Too old dataframe for pair xyz',
+                      caplog.record_tuples)
 
 
 def test_get_signal_handles_exceptions(mocker):
