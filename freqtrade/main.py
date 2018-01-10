@@ -158,6 +158,53 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
     return state_changed
 
 
+# FIX: 20180110, why is cancel.order unconditionally here, whereas
+#                it is conditionally called in the
+#                handle_timedout_limit_sell()?
+def handle_timedout_limit_buy(trade, order):
+    """Buy timeout - cancel order
+    :return: True if order was fully cancelled
+    """
+    exchange.cancel_order(trade.open_order_id)
+    if order['remaining'] == order['amount']:
+        # if trade is not partially completed, just delete the trade
+        Trade.session.delete(trade)
+        # FIX? do we really need to flush, caller of
+        #      check_handle_timedout will flush afterwards
+        Trade.session.flush()
+        logger.info('Buy order timeout for %s.', trade)
+        return True
+    else:
+        # if trade is partially complete, edit the stake details for the trade
+        # and close the order
+        trade.amount = order['amount'] - order['remaining']
+        trade.stake_amount = trade.amount * trade.open_rate
+        trade.open_order_id = None
+        logger.info('Partial buy order timeout for %s.', trade)
+        return False
+
+
+# FIX: 20180110, should cancel_order() be cond. or unconditionally called?
+def handle_timedout_limit_sell(trade, order):
+    """
+    Sell timeout - cancel order and update trade
+    :return: True if order was fully cancelled
+    """
+    if order['remaining'] == order['amount']:
+        # if trade is not partially completed, just cancel the trade
+        exchange.cancel_order(trade.open_order_id)
+        trade.close_rate = None
+        trade.close_profit = None
+        trade.close_date = None
+        trade.is_open = True
+        trade.open_order_id = None
+        logger.info('Sell order timeout for %s.', trade)
+        return True
+    else:
+        # TODO: figure out how to handle partially complete sell orders
+        return False
+
+
 def check_handle_timedout(timeoutvalue: int) -> None:
     """
     Check if any orders are timed out and cancel if neccessary
@@ -171,35 +218,16 @@ def check_handle_timedout(timeoutvalue: int) -> None:
         ordertime = arrow.get(order['opened'])
 
         if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
-            # Buy timeout - cancel order
-            exchange.cancel_order(trade.open_order_id)
-            if order['remaining'] == order['amount']:
-                # if trade is not partially completed, just delete the trade
-                Trade.session.delete(trade)
-                Trade.session.flush()
-                logger.info('Buy order timeout for %s.', trade)
-            else:
-                # if trade is partially complete, edit the stake details for the trade
-                # and close the order
-                trade.amount = order['amount'] - order['remaining']
-                trade.stake_amount = trade.amount * trade.open_rate
-                trade.open_order_id = None
-                logger.info('Partial buy order timeout for %s.', trade)
+            handle_timedout_limit_buy(trade, order)
+
         elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
-            # Sell timeout - cancel order and update trade
-            if order['remaining'] == order['amount']:
-                # if trade is not partially completed, just cancel the trade
-                exchange.cancel_order(trade.open_order_id)
-                trade.close_rate = None
-                trade.close_profit = None
-                trade.close_date = None
-                trade.is_open = True
-                trade.open_order_id = None
-                logger.info('Sell order timeout for %s.', trade)
+            if handle_timedout_limit_sell(trade, order):
+                # BUG? if there is more trades that are
+                #      timed out, shouldn't we collect and
+                #      then return all of them?
+                #      Also the function signature is return None.
+                #      But we return True here.
                 return True
-            else:
-                # TODO: figure out how to handle partially complete sell orders
-                pass
 
 
 def execute_sell(trade: Trade, limit: float) -> None:

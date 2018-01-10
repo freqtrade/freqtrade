@@ -18,10 +18,10 @@ from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 import freqtrade.main as main
 
-
 # Test that main() can start backtesting or hyperopt.
 # and also ensure we can pass some specific arguments
 # argument parsing is done in test_misc.py
+
 
 def test_parse_args_backtesting(mocker):
     backtesting_mock = mocker.patch(
@@ -261,6 +261,20 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
         create_trade(default_conf['stake_amount'])
 
 
+def test_create_trade_no_signal(default_conf, ticker, mocker):
+    default_conf['dry_run'] = True
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', MagicMock(return_value=False))
+    mocker.patch.multiple('freqtrade.exchange',
+                          get_ticker_history=MagicMock(return_value=20))
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_balance=MagicMock(return_value=20))
+    stake_amount = 10
+    Trade.query = MagicMock()
+    Trade.query.filter = MagicMock()
+    assert not create_trade(stake_amount)
+
+
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
@@ -414,6 +428,21 @@ def test_check_handle_timedout_buy(default_conf, ticker, health, limit_buy_order
     assert len(trades) == 0
 
 
+def test_handle_timedout_limit_buy(default_conf, mocker):
+    cancel_order = MagicMock()
+    mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
+    Trade.session = MagicMock()
+    trade = MagicMock()
+    order = {}
+    order['remaining'] = 1
+    order['amount'] = 1
+    assert main.handle_timedout_limit_buy(trade, order)
+    assert cancel_order.call_count == 1
+    order['amount'] = 2
+    assert not main.handle_timedout_limit_buy(trade, order)
+    assert cancel_order.call_count == 2
+
+
 def test_check_handle_timedout_sell(default_conf, ticker, health, limit_sell_order_old, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
@@ -444,6 +473,21 @@ def test_check_handle_timedout_sell(default_conf, ticker, health, limit_sell_ord
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
     assert trade_sell.is_open is True
+
+
+def test_handle_timedout_limit_sell(default_conf, mocker):
+    cancel_order = MagicMock()
+    mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
+    trade = MagicMock()
+    order = {}
+    order['remaining'] = 1
+    order['amount'] = 1
+    assert main.handle_timedout_limit_sell(trade, order)
+    assert cancel_order.call_count == 1
+    order['amount'] = 2
+    assert not main.handle_timedout_limit_sell(trade, order)
+    # Assert cancel_order was not called (callcount remains unchanged)
+    assert cancel_order.call_count == 1
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
