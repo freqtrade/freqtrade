@@ -17,11 +17,12 @@ from freqtrade.main import (_process, check_handle_timedout, create_trade,
 from freqtrade.misc import State, get_state
 from freqtrade.persistence import Trade
 
-# Test that main() can start backtesting or hyperopt.
-# and also ensure we can pass some specific arguments
-# argument parsing is done in test_misc.py
+
 
 def test_parse_args_backtesting(mocker):
+    """ Test that main() can start backtesting or hyperopt.
+        and also ensure we can pass some specific arguments
+        argument parsing is done in test_misc.py """
     backtesting_mock = mocker.patch(
         'freqtrade.optimize.backtesting.start', MagicMock())
     with pytest.raises(SystemExit, match=r'0'):
