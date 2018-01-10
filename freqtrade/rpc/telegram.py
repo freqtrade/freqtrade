@@ -1,21 +1,21 @@
 import logging
 import re
+from datetime import datetime, timedelta
 from decimal import Decimal
-from datetime import timedelta, datetime
-from typing import Callable, Any
+from typing import Any, Callable
 
 import arrow
 from pandas import DataFrame
 from sqlalchemy import and_, func, text
 from tabulate import tabulate
-from telegram import ParseMode, Bot, Update, ReplyKeyboardMarkup
+from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
-from freqtrade import exchange, __version__
-from freqtrade.misc import get_state, State, update_state
-from freqtrade.persistence import Trade
+from freqtrade import __version__, exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
+from freqtrade.misc import State, get_state, update_state
+from freqtrade.persistence import Trade
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)

@@ -2,10 +2,10 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
 import arrow
+import pytest
 from jsonschema import validate
-from telegram import Message, Chat, Update
+from telegram import Chat, Message, Update
 
 from freqtrade.misc import CONF_SCHEMA
 

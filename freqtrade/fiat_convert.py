@@ -1,5 +1,6 @@
 import logging
 import time
+
 from pymarketcap import Pymarketcap
 
 logger = logging.getLogger(__name__)

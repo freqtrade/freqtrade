@@ -5,21 +5,21 @@ import logging
 import sys
 import time
 import traceback
-import arrow
 from datetime import datetime
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
+import arrow
 import requests
 from requests.adapters import TimeoutSauce
 from cachetools import cached, TTLCache
 
-from freqtrade import __version__, exchange, persistence, rpc, DependencyException, \
-    OperationalException
-from freqtrade.analyze import get_signal, SignalType
-from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
-    load_config
-from freqtrade.persistence import Trade
+from freqtrade import (DependencyException, OperationalException, __version__,
+                       exchange, persistence, rpc)
+from freqtrade.analyze import SignalType, get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
+from freqtrade.misc import (State, get_state, load_config, parse_args,
+                            throttle, update_state)
+from freqtrade.persistence import Trade
 
 logger = logging.getLogger('freqtrade')
 

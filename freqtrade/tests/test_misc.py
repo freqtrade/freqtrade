@@ -1,14 +1,14 @@
 # pragma pylint: disable=missing-docstring,C0103
+import argparse
 import json
 import time
-import argparse
 from copy import deepcopy
 
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade.misc import throttle, parse_args, load_config,\
-    common_args_parser
+from freqtrade.misc import (common_args_parser, load_config, parse_args,
+                            throttle)
 
 
 def test_throttle():

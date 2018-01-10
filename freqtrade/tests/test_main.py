@@ -1,22 +1,21 @@
 # pragma pylint: disable=missing-docstring,C0103
 import copy
+import logging
 from unittest.mock import MagicMock
 
+import arrow
 import pytest
 import requests
-import logging
-import arrow
 from sqlalchemy import create_engine
 
+import freqtrade.main as main
 from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
 from freqtrade.exchange import Exchanges
-from freqtrade.main import create_trade, handle_trade, init, \
-    get_target_bid, _process, execute_sell, check_handle_timedout
-from freqtrade.misc import get_state, State
+from freqtrade.main import (_process, check_handle_timedout, create_trade,
+                            execute_sell, get_target_bid, handle_trade, init)
+from freqtrade.misc import State, get_state
 from freqtrade.persistence import Trade
-import freqtrade.main as main
-
 
 # Test that main() can start backtesting or hyperopt.
 # and also ensure we can pass some specific arguments

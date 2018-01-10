@@ -3,10 +3,10 @@ import enum
 import json
 import logging
 import time
-from typing import Any, Callable, List, Dict
+from typing import Any, Callable, Dict, List
 
-from jsonschema import validate, Draft4Validator
-from jsonschema.exceptions import best_match, ValidationError
+from jsonschema import Draft4Validator, validate
+from jsonschema.exceptions import ValidationError, best_match
 from wrapt import synchronized
 
 from freqtrade import __version__

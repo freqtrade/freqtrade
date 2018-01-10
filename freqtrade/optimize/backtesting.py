@@ -1,20 +1,19 @@
 # pragma pylint: disable=missing-docstring,W0212
 
-
 import logging
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
 
+import freqtrade.misc as misc
+import freqtrade.optimize as optimize
 from freqtrade import exchange
 from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
-import freqtrade.misc as misc
 from freqtrade.optimize import preprocess
-import freqtrade.optimize as optimize
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
