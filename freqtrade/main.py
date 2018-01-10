@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Dict, Optional, List
 
 import requests
+from requests.adapters import TimeoutSauce
 from cachetools import cached, TTLCache
 
 from freqtrade import __version__, exchange, persistence, rpc, DependencyException, \
@@ -23,6 +24,23 @@ from freqtrade.fiat_convert import CryptoToFiatConverter
 logger = logging.getLogger('freqtrade')
 
 _CONF = {}
+
+DEFAULT_TIMEOUT = 120
+
+
+# Set requests default timeout (fix for #127)
+class DefaultTimeout(TimeoutSauce):
+    def __init__(self, *args, **kwargs):
+        connect = kwargs.get('connect', DEFAULT_TIMEOUT)
+        read = kwargs.get('read', connect)
+        if connect is None:
+            connect = DEFAULT_TIMEOUT
+        if read is None:
+            read = connect
+        super(DefaultTimeout, self).__init__(connect=connect, read=read)
+
+
+requests.adapters.TimeoutSauce = DefaultTimeout
 
 
 def refresh_whitelist(whitelist: List[str]) -> List[str]:
