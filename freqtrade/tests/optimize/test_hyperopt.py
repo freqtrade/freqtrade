@@ -37,7 +37,7 @@ def create_trials(mocker):
 
 def test_start_calls_fmin(mocker):
     mocker.patch('freqtrade.optimize.hyperopt.Trials', return_value=create_trials(mocker))
-    mocker.patch('freqtrade.optimize.preprocess')
+    mocker.patch('freqtrade.optimize.tickerdata_to_dataframe')
     mocker.patch('freqtrade.optimize.load_data')
     mock_fmin = mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
 
@@ -50,7 +50,7 @@ def test_start_calls_fmin(mocker):
 def test_start_uses_mongotrials(mocker):
     mock_mongotrials = mocker.patch('freqtrade.optimize.hyperopt.MongoTrials',
                                     return_value=create_trials(mocker))
-    mocker.patch('freqtrade.optimize.preprocess')
+    mocker.patch('freqtrade.optimize.tickerdata_to_dataframe')
     mocker.patch('freqtrade.optimize.load_data')
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
 
@@ -104,7 +104,7 @@ def test_fmin_best_results(mocker, caplog):
     }
 
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
-    mocker.patch('freqtrade.optimize.preprocess')
+    mocker.patch('freqtrade.optimize.tickerdata_to_dataframe')
     mocker.patch('freqtrade.optimize.load_data')
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value=fmin_result)
 
@@ -126,7 +126,7 @@ def test_fmin_best_results(mocker, caplog):
 
 def test_fmin_throw_value_error(mocker, caplog):
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
-    mocker.patch('freqtrade.optimize.preprocess')
+    mocker.patch('freqtrade.optimize.tickerdata_to_dataframe')
     mocker.patch('freqtrade.optimize.load_data')
     mocker.patch('freqtrade.optimize.hyperopt.fmin', side_effect=ValueError())
 

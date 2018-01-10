@@ -176,7 +176,7 @@ def start(args):
     from freqtrade import main
     main._CONF = config
 
-    preprocessed = optimize.tickerdata_to_dataframe(data)
+    preprocessed = optimize.tickerdata_to_dataframe(data, timeperiod=args.timeperiod)
     # Print timeframe
     min_date, max_date = get_timeframe(preprocessed)
     logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())

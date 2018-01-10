@@ -12,6 +12,13 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 logger = logging.getLogger(__name__)
 
 
+def trim_tickerlist(dl, num):
+    new = {}
+    for pair, pair_data in dl.items():
+        new[pair] = pair_data[num:]
+    return new
+
+
 def load_tickerdata_file(datadir, pair, ticker_interval):
     """
     Load a pair from file,
@@ -61,7 +68,9 @@ def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]]
     return result
 
 
-def tickerdata_to_dataframe(data):
+def tickerdata_to_dataframe(data, timeperiod=None):
+    if timeperiod:
+        data = trim_tickerlist(data, timeperiod)
     preprocessed = preprocess(data)
     return preprocessed
 

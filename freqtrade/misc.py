@@ -183,6 +183,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         dest='refresh_pairs',
     )
+    backtesting_cmd.add_argument(
+        '-tp', '--timeperiod',
+        help='Use the last N ticks of data.',
+        default=None,
+        type=int,
+        dest='timeperiod',
+    )
 
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
@@ -208,6 +215,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         default=5,
         type=int,
         metavar='INT',
+    )
+    hyperopt_cmd.add_argument(
+        '-tp', '--timeperiod',
+        help='Use the last N ticks of data.',
+        default=None,
+        type=int,
+        dest='timeperiod',
     )
 
 

@@ -6,7 +6,7 @@ import pandas as pd
 from unittest.mock import MagicMock
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
-from freqtrade.optimize import preprocess
+from freqtrade.optimize import preprocess, trim_tickerlist
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
 import freqtrade.optimize.backtesting as backtesting
 
@@ -59,16 +59,9 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
     assert not results.empty
 
 
-def trim_dictlist(dl, num):
-    new = {}
-    for pair, pair_data in dl.items():
-        new[pair] = pair_data[num:]
-    return new
-
-
 def load_data_test(what):
     data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
-    data = trim_dictlist(data, -100)
+    data = trim_tickerlist(data, -100)
     pair = data['BTC_UNITEST']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
@@ -152,7 +145,7 @@ def test_backtest_pricecontours(default_conf, mocker):
 def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False):
     tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1)
     pairdata = {'BTC_UNITEST': tickerdata}
-    return trim_dictlist(pairdata, -100)
+    return trim_tickerlist(pairdata, -100)
 
 
 def test_backtest_start(default_conf, mocker, caplog):
@@ -166,6 +159,7 @@ def test_backtest_start(default_conf, mocker, caplog):
     args.level = 10
     args.live = False
     args.datadir = None
+    args.timeperiod = None  # needed due to MagicMock malleability
     backtesting.start(args)
     # check the logs, that will contain the backtest result
     exists = ['Using max_open_trades: 1 ...',
