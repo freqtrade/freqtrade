@@ -22,7 +22,6 @@ def custom_requests(request_url, apisign):
     """
     Set timeout for requests
     """
-    print("Dispatch", request_url, apisign)
     return requests.get(
         request_url,
         headers={"apisign": apisign},
