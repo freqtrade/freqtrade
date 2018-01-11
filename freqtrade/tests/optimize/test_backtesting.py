@@ -175,6 +175,7 @@ def test_backtest_start(default_conf, mocker, caplog):
     args.level = 10
     args.live = False
     args.datadir = None
+    args.export = None
     backtesting.start(args)
     # check the logs, that will contain the backtest result
     exists = ['Using max_open_trades: 1 ...',

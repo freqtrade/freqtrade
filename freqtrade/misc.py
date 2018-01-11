@@ -188,6 +188,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         dest='refresh_pairs',
     )
+    backtesting_cmd.add_argument(
+        '--export',
+        help='Export backtest results, argument are: trades\
+              Example --export trades',
+        type=str,
+        default=None,
+        dest='export',
+    )
 
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')

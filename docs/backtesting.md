@@ -51,6 +51,11 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
+**Exporting trades to file**
+```bash
+freqtrade backtesting --export trades
+```
+
 For help about backtesting usage, please refer to 
 [Backtesting commands](#backtesting-commands).
 

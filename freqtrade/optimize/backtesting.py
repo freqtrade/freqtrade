@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212
 
-
 import logging
 from typing import Tuple, Dict
 
@@ -121,6 +120,8 @@ def backtest(args) -> DataFrame:
     processed = args['processed']
     max_open_trades = args.get('max_open_trades', 0)
     realistic = args.get('realistic', True)
+    record = args.get('record', None)
+    records = []
     trades = []
     trade_count_lock: dict = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -148,6 +149,16 @@ def backtest(args) -> DataFrame:
             if ret:
                 lock_pair_until, trade_entry = ret
                 trades.append(trade_entry)
+                if record:
+                    # Note, need to be json.dump friendly
+                    # record a tuple of pair, current_profit_percent, entry-date, duration
+                    records.append((pair, trade_entry[1],
+                                    row.Index, trade_entry[3]))
+    # For now export inside backtest(), maybe change so that backtest()
+    # returns a tuple like: (dataframe, records, logs, etc)
+    if record and record.find('trades') >= 0:
+        logger.info('Dumping backtest results')
+        misc.file_dump_json('backtest-result.json', records)
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'profit', 'loss']
     return DataFrame.from_records(trades, columns=labels)
 
@@ -202,7 +213,8 @@ def start(args):
                         'realistic': args.realistic_simulation,
                         'sell_profit_only': sell_profit_only,
                         'use_sell_signal': use_sell_signal,
-                        'stoploss': config.get('stoploss')
+                        'stoploss': config.get('stoploss'),
+                        'record': args.export
                         })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s', # noqa
