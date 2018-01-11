@@ -1,9 +1,10 @@
 # pragma pylint: disable=missing-docstring
+import os
+
 import pytest
 
-import os
 from freqtrade.exchange import Exchanges
-from freqtrade.persistence import init, Trade
+from freqtrade.persistence import Trade, init
 
 
 def test_init_create_session(default_conf, mocker):

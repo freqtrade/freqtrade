@@ -32,7 +32,7 @@ def _stub_config():
             'secret': ''}
 
 
-class Fake_bittrex():
+class FakeBittrex():
     def __init__(self, success=True):
         self.success = True  # Believe in yourself
         self.result = None
@@ -145,7 +145,7 @@ def test_exchange_bittrex_fee():
 
 def test_exchange_bittrex_buy_good(mocker):
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     uuid = wb.buy('BTC_ETH', 1, 1)
     assert uuid == fb.fake_buysell_limit(1, 2, 3)['result']['uuid']
 
@@ -156,7 +156,7 @@ def test_exchange_bittrex_buy_good(mocker):
 
 def test_exchange_bittrex_sell_good(mocker):
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     uuid = wb.sell('BTC_ETH', 1, 1)
     assert uuid == fb.fake_buysell_limit(1, 2, 3)['result']['uuid']
 
@@ -167,7 +167,7 @@ def test_exchange_bittrex_sell_good(mocker):
 
 def test_exchange_bittrex_get_balance(mocker):
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     bal = wb.get_balance('BTC_ETH')
     assert bal == fb.fake_get_balance(1)['result']['Balance']
 
@@ -178,7 +178,7 @@ def test_exchange_bittrex_get_balance(mocker):
 
 def test_exchange_bittrex_get_balances():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     bals = wb.get_balances()
     assert bals == fb.fake_get_balances()['result']
 
@@ -189,7 +189,7 @@ def test_exchange_bittrex_get_balances():
 
 def test_exchange_bittrex_get_ticker():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
 
     # Poll ticker, which updates the cache
     tick = wb.get_ticker('BTC_ETH')
@@ -210,7 +210,7 @@ def test_exchange_bittrex_get_ticker():
 
 def test_exchange_bittrex_get_ticker_bad():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     fb.result = {'success': True,
                  'result': {'Bid': 1}}  # incomplete result
     with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
@@ -222,15 +222,15 @@ def test_exchange_bittrex_get_ticker_bad():
         wb.get_ticker('BTC_ETH')
 
 
-def test_exchange_bittrex_get_ticker_historyOne():
+def test_exchange_bittrex_get_ticker_history_one():
     wb = make_wrap_bittrex()
-    Fake_bittrex()
+    FakeBittrex()
     assert wb.get_ticker_history('BTC_ETH', 1)
 
 
 def test_exchange_bittrex_get_ticker_history():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     assert wb.get_ticker_history('BTC_ETH', 5)
     with pytest.raises(ValueError, match=r'.*Cannot parse tick_interval.*'):
         wb.get_ticker_history('BTC_ETH', 2)
@@ -253,7 +253,7 @@ def test_exchange_bittrex_get_ticker_history():
 
 def test_exchange_bittrex_get_order():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     order = wb.get_order('someUUID')
     assert order['id'] == 'ABC123'
     fb.success = False
@@ -263,7 +263,7 @@ def test_exchange_bittrex_get_order():
 
 def test_exchange_bittrex_cancel_order():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     wb.cancel_order('someUUID')
     with pytest.raises(btx.OperationalException, match=r'no such order'):
         fb.success = False
@@ -284,7 +284,7 @@ def test_exchange_get_pair_detail_url():
 
 def test_exchange_get_markets():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     x = wb.get_markets()
     assert x == ['__']
     with pytest.raises(btx.OperationalException, match=r'market gone'):
@@ -294,7 +294,7 @@ def test_exchange_get_markets():
 
 def test_exchange_get_market_summaries():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     assert ['sum'] == wb.get_market_summaries()
     with pytest.raises(btx.OperationalException, match=r'no summary'):
         fb.success = False
@@ -303,7 +303,7 @@ def test_exchange_get_market_summaries():
 
 def test_exchange_get_wallet_health():
     wb = make_wrap_bittrex()
-    fb = Fake_bittrex()
+    fb = FakeBittrex()
     x = wb.get_wallet_health()
     assert x[0]['Currency'] == 'BTC_ETH'
     with pytest.raises(btx.OperationalException, match=r'bad health'):

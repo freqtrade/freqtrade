@@ -1,20 +1,19 @@
 # pragma pylint: disable=missing-docstring,W0212
 
-
 import logging
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
 
+import freqtrade.misc as misc
+import freqtrade.optimize as optimize
 from freqtrade import exchange
 from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
-import freqtrade.misc as misc
 from freqtrade.optimize import preprocess
-import freqtrade.optimize as optimize
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -122,20 +121,20 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                 if min_roi_reached(trade, row2.close, row2.date) or \
                     (row2.sell == 1 and use_sell_signal) or \
                         current_profit_percent <= stoploss:
-                        current_profit_btc = trade.calc_profit(rate=row2.close)
-                        lock_pair_until = row2.Index
+                    current_profit_btc = trade.calc_profit(rate=row2.close)
+                    lock_pair_until = row2.Index
 
-                        trades.append(
-                            (
-                                pair,
-                                current_profit_percent,
-                                current_profit_btc,
-                                row2.Index - row.Index,
-                                current_profit_btc > 0,
-                                current_profit_btc < 0
-                            )
+                    trades.append(
+                        (
+                            pair,
+                            current_profit_percent,
+                            current_profit_btc,
+                            row2.Index - row.Index,
+                            current_profit_btc > 0,
+                            current_profit_btc < 0
                         )
-                        break
+                    )
+                    break
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'profit', 'loss']
     return DataFrame.from_records(trades, columns=labels)
 
@@ -193,6 +192,6 @@ def start(args):
         use_sell_signal=config.get('experimental', {}).get('use_sell_signal', False)
     )
     logger.info(
-        '\n==================================== BACKTESTING REPORT ====================================\n%s', # noqa
+        '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
