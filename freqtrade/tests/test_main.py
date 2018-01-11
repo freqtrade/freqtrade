@@ -1,29 +1,28 @@
 # pragma pylint: disable=missing-docstring,C0103
 import copy
+import logging
 from unittest.mock import MagicMock
 import freqtrade.tests.conftest as tt  # test tools
 
+import arrow
 import pytest
 import requests
-import logging
-import arrow
 from sqlalchemy import create_engine
 
+import freqtrade.main as main
 from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
 from freqtrade.exchange import Exchanges
-from freqtrade.main import create_trade, handle_trade, init, \
-    get_target_bid, _process, execute_sell, check_handle_timedout
-from freqtrade.misc import get_state, State
+from freqtrade.main import (_process, check_handle_timedout, create_trade,
+                            execute_sell, get_target_bid, handle_trade, init)
+from freqtrade.misc import State, get_state
 from freqtrade.persistence import Trade
-import freqtrade.main as main
-
-# Test that main() can start backtesting or hyperopt.
-# and also ensure we can pass some specific arguments
-# argument parsing is done in test_misc.py
 
 
 def test_parse_args_backtesting(mocker):
+    """ Test that main() can start backtesting or hyperopt.
+        and also ensure we can pass some specific arguments
+        further argument parsing is done in test_misc.py """
     backtesting_mock = mocker.patch(
         'freqtrade.optimize.backtesting.start', MagicMock())
     with pytest.raises(SystemExit, match=r'0'):
@@ -312,7 +311,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.close_date is not None
 
 
-def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog):
+def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -344,7 +343,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog)
     assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
 
 
-def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker, caplog):
+def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -396,7 +395,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
         handle_trade(trade)
 
 
-def test_check_handle_timedout_buy(default_conf, ticker, health, limit_buy_order_old, mocker):
+def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -443,7 +442,7 @@ def test_handle_timedout_limit_buy(default_conf, mocker):
     assert cancel_order.call_count == 2
 
 
-def test_check_handle_timedout_sell(default_conf, ticker, health, limit_sell_order_old, mocker):
+def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -491,7 +490,7 @@ def test_handle_timedout_limit_sell(default_conf, mocker):
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
-                                       health, mocker):
+                                       mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -697,54 +696,54 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
-        default_conf['experimental'] = {
-            'use_sell_signal': True,
-            'sell_profit_only': True,
-        }
+    default_conf['experimental'] = {
+        'use_sell_signal': True,
+        'sell_profit_only': True,
+    }
 
-        mocker.patch.dict('freqtrade.main._CONF', default_conf)
-        mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
-        mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
-        mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
-        mocker.patch.multiple('freqtrade.main.exchange',
-                              validate_pairs=MagicMock(),
-                              get_ticker=MagicMock(return_value={
-                                  'bid': 0.00000172,
-                                  'ask': 0.00000173,
-                                  'last': 0.00000172
-                              }),
-                              buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.00000172,
+                              'ask': 0.00000173,
+                              'last': 0.00000172
+                          }),
+                          buy=MagicMock(return_value='mocked_limit_buy'))
 
-        init(default_conf, create_engine('sqlite://'))
-        create_trade(0.001)
+    init(default_conf, create_engine('sqlite://'))
+    create_trade(0.001)
 
-        trade = Trade.query.first()
-        trade.update(limit_buy_order)
-        assert handle_trade(trade) is False
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    assert handle_trade(trade) is False
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
-        default_conf['experimental'] = {
-            'use_sell_signal': True,
-            'sell_profit_only': False,
-        }
+    default_conf['experimental'] = {
+        'use_sell_signal': True,
+        'sell_profit_only': False,
+    }
 
-        mocker.patch.dict('freqtrade.main._CONF', default_conf)
-        mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
-        mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
-        mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
-        mocker.patch.multiple('freqtrade.main.exchange',
-                              validate_pairs=MagicMock(),
-                              get_ticker=MagicMock(return_value={
-                                  'bid': 0.00000172,
-                                  'ask': 0.00000173,
-                                  'last': 0.00000172
-                              }),
-                              buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=MagicMock(return_value={
+                              'bid': 0.00000172,
+                              'ask': 0.00000173,
+                              'last': 0.00000172
+                          }),
+                          buy=MagicMock(return_value='mocked_limit_buy'))
 
-        init(default_conf, create_engine('sqlite://'))
-        create_trade(0.001)
+    init(default_conf, create_engine('sqlite://'))
+    create_trade(0.001)
 
-        trade = Trade.query.first()
-        trade.update(limit_buy_order)
-        assert handle_trade(trade) is True
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    assert handle_trade(trade) is True

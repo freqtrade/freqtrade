@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
 from decimal import Decimal, getcontext
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import arrow
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine
+from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
+                        create_engine)
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session

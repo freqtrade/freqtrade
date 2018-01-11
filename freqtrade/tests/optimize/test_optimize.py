@@ -7,7 +7,7 @@ from shutil import copyfile
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
-     download_backtesting_testdata, load_tickerdata_file
+    download_backtesting_testdata, load_tickerdata_file
 
 # Change this if modifying BTC_UNITEST testdatafile
 _btc_unittest_length = 13681

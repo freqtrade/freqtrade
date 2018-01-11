@@ -4,14 +4,14 @@ Functions to analyze ticker data with indicators and produce buy and sell signal
 import logging
 from datetime import timedelta
 from enum import Enum
-from typing import List, Dict
+from typing import Dict, List
 
 import arrow
 import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
-from freqtrade.exchange import get_ticker_history
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.exchange import get_ticker_history
 
 logger = logging.getLogger(__name__)
 
