@@ -14,6 +14,11 @@ from freqtrade import __version__
 logger = logging.getLogger(__name__)
 
 
+def file_dump_json(filename, data):
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
+
+
 class State(enum.Enum):
     RUNNING = 0
     STOPPED = 1

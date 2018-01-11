@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 """This script generate json data from bittrex"""
-import json
 from os import path
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex
+from freqtrade import misc
 
 PAIRS = [
     'BTC_BCC', 'BTC_ETH', 'BTC_MER', 'BTC_POWR', 'BTC_ETC',
@@ -25,5 +25,4 @@ for pair in PAIRS:
         pair,
         TICKER_INTERVAL,
     ))
-    with open(filename, 'w') as fp:
-        json.dump(data, fp)
+    misc.file_dump_json(filename, data)
