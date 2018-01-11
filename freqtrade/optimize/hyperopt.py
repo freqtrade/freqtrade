@@ -4,14 +4,18 @@
 import json
 import logging
 import sys
+import pickle
+import signal
+import os
 from functools import reduce
 from math import exp
 from operator import itemgetter
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, STATUS_FAIL, space_eval
+from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
+from freqtrade import main  # noqa
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
@@ -27,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
 TARGET_TRADES = 1100
-TOTAL_TRIES = None
+TOTAL_TRIES = 0
 _CURRENT_TRIES = 0
 CURRENT_BEST_LOSS = 100
 
@@ -42,6 +46,10 @@ EXPECTED_MAX_PROFIT = 3.85
 # Configuration and data used by hyperopt
 PROCESSED = None  # optimize.preprocess(optimize.load_data())
 OPTIMIZE_CONFIG = hyperopt_optimize_conf()
+
+# Hyperopt Trials
+TRIALS_FILE = os.path.join('freqtrade', 'optimize', 'hyperopt_trials.pickle')
+TRIALS = Trials()
 
 # Monkey patch config
 from freqtrade import main  # noqa
@@ -97,6 +105,26 @@ SPACE = {
     ]),
     'stoploss': hp.uniform('stoploss', -0.5, -0.02),
 }
+
+
+def save_trials(trials, trials_path=TRIALS_FILE):
+    """Save hyperopt trials to file"""
+    logger.info('Saving Trials to \'{}\''.format(trials_path))
+    pickle.dump(trials, open(trials_path, 'wb'))
+
+
+def read_trials(trials_path=TRIALS_FILE):
+    """Read hyperopt trials file"""
+    logger.info('Reading Trials from \'{}\''.format(trials_path))
+    trials = pickle.load(open(trials_path, 'rb'))
+    os.remove(trials_path)
+    return trials
+
+
+def log_trials_result(trials):
+    vals = json.dumps(trials.best_trial['misc']['vals'], indent=4)
+    results = trials.best_trial['result']['result']
+    logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
 
 
 def log_results(results):
@@ -167,7 +195,7 @@ def format_results(results: DataFrame):
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
                 results.duration.mean() * 5,
-            )
+    )
 
 
 def buy_strategy_generator(params):
@@ -216,7 +244,8 @@ def buy_strategy_generator(params):
 
 
 def start(args):
-    global TOTAL_TRIES, PROCESSED, SPACE
+    global TOTAL_TRIES, PROCESSED, SPACE, TRIALS, _CURRENT_TRIES
+
     TOTAL_TRIES = args.epochs
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -238,9 +267,19 @@ def start(args):
         logger.info('Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!')
 
         db_name = 'freqtrade_hyperopt'
-        trials = MongoTrials('mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
+        TRIALS = MongoTrials('mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
     else:
-        trials = Trials()
+        logger.info('Preparing Trials..')
+        signal.signal(signal.SIGINT, signal_handler)
+        # read trials file if we have one
+        if os.path.exists(TRIALS_FILE):
+            TRIALS = read_trials()
+
+            _CURRENT_TRIES = len(TRIALS.results)
+            TOTAL_TRIES = TOTAL_TRIES + _CURRENT_TRIES
+            logger.info(
+                'Continuing with trials. Current: {}, Total: {}'
+                .format(_CURRENT_TRIES, TOTAL_TRIES))
 
     try:
         best_parameters = fmin(
@@ -248,10 +287,10 @@ def start(args):
             space=SPACE,
             algo=tpe.suggest,
             max_evals=TOTAL_TRIES,
-            trials=trials
+            trials=TRIALS
         )
 
-        results = sorted(trials.results, key=itemgetter('loss'))
+        results = sorted(TRIALS.results, key=itemgetter('loss'))
         best_result = results[0]['result']
 
     except ValueError:
@@ -265,3 +304,15 @@ def start(args):
 
     logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
     logger.info('Best Result:\n%s', best_result)
+
+    # Store trials result to file to resume next time
+    save_trials(TRIALS)
+
+
+def signal_handler(sig, frame):
+    """Hyperopt SIGINT handler"""
+    logger.info('Hyperopt received {}'.format(signal.Signals(sig).name))
+
+    save_trials(TRIALS)
+    log_trials_result(TRIALS)
+    sys.exit(0)

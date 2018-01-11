@@ -15,10 +15,10 @@ def hyperopt_optimize_conf() -> dict:
         'stake_currency': 'BTC',
         'stake_amount': 0.01,
         "minimal_roi": {
-            '40':  0.0,
-            '30':  0.01,
-            '20':  0.02,
-            '0':  0.04,
+            '40': 0.0,
+            '30': 0.01,
+            '20': 0.02,
+            '0': 0.04,
         },
         'stoploss': -0.10,
         "bid_strategy": {

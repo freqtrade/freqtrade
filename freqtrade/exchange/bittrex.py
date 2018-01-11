@@ -1,7 +1,9 @@
 import logging
-from typing import List, Dict, Optional
+import requests
+from typing import Dict, List, Optional
 
-from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
+from bittrex.bittrex import Bittrex as _Bittrex
+from bittrex.bittrex import API_V1_1, API_V2_0
 from requests.exceptions import ContentDecodingError
 
 from freqtrade import OperationalException
@@ -12,6 +14,20 @@ logger = logging.getLogger(__name__)
 _API: _Bittrex = None
 _API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
+
+# API socket timeout
+API_TIMEOUT = 60
+
+
+def custom_requests(request_url, apisign):
+    """
+    Set timeout for requests
+    """
+    return requests.get(
+        request_url,
+        headers={"apisign": apisign},
+        timeout=API_TIMEOUT
+    ).json()
 
 
 class Bittrex(Exchange):
@@ -31,12 +47,14 @@ class Bittrex(Exchange):
             api_secret=_EXCHANGE_CONF['secret'],
             calls_per_second=1,
             api_version=API_V1_1,
+            dispatch=custom_requests
         )
         _API_V2 = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
             calls_per_second=1,
             api_version=API_V2_0,
+            dispatch=custom_requests
         )
         self.cached_ticker = {}
 

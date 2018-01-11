@@ -1,7 +1,7 @@
 import pandas
 
-from freqtrade import analyze
 import freqtrade.optimize
+from freqtrade import analyze
 
 _pairs = ['BTC_ETH']
 
