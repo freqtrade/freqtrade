@@ -2,10 +2,10 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
 import arrow
+import pytest
 from jsonschema import validate
-from telegram import Message, Chat, Update
+from telegram import Chat, Message, Update
 
 from freqtrade.misc import CONF_SCHEMA
 
@@ -20,10 +20,10 @@ def default_conf():
         "fiat_display_currency": "USD",
         "dry_run": True,
         "minimal_roi": {
-            "40":  0.0,
-            "30":  0.01,
-            "20":  0.02,
-            "0":  0.04
+            "40": 0.0,
+            "30": 0.01,
+            "20": 0.02,
+            "0": 0.04
         },
         "stoploss": -0.10,
         "unfilledtimeout": 600,

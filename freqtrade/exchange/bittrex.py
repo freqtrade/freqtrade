@@ -1,7 +1,8 @@
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from bittrex.bittrex import Bittrex as _Bittrex, API_V2_0, API_V1_1
+from bittrex.bittrex import Bittrex as _Bittrex
+from bittrex.bittrex import API_V1_1, API_V2_0
 from requests.exceptions import ContentDecodingError
 
 from freqtrade import OperationalException

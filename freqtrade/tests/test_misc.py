@@ -1,14 +1,14 @@
 # pragma pylint: disable=missing-docstring,C0103
+import argparse
 import json
 import time
-import argparse
 from copy import deepcopy
 
 import pytest
 from jsonschema import ValidationError
 
-from freqtrade.misc import throttle, parse_args, load_config,\
-     parse_args_common
+from freqtrade.misc import (common_args_parser, load_config, parse_args,
+                            throttle)
 
 
 def test_throttle():
@@ -39,12 +39,10 @@ def test_throttle_with_assets():
     assert result == -1
 
 
-# Parse common command-line-arguments
-# used for all tools
-
+# Parse common command-line-arguments. Used for all tools
 
 def test_parse_args_none():
-    args = parse_args_common([], '')
+    args = common_args_parser('')
     assert isinstance(args, argparse.ArgumentParser)
 
 
@@ -87,12 +85,12 @@ def test_parse_args_invalid():
 
 def test_parse_args_dynamic_whitelist():
     args = parse_args(['--dynamic-whitelist'], '')
-    assert args.dynamic_whitelist is 20
+    assert args.dynamic_whitelist == 20
 
 
 def test_parse_args_dynamic_whitelist_10():
     args = parse_args(['--dynamic-whitelist', '10'], '')
-    assert args.dynamic_whitelist is 10
+    assert args.dynamic_whitelist == 10
 
 
 def test_parse_args_dynamic_whitelist_invalid_values():
