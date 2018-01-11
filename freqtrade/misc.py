@@ -3,6 +3,7 @@ import enum
 import json
 import logging
 import time
+import os
 from typing import Any, Callable, Dict, List
 
 from jsonschema import Draft4Validator, validate
@@ -129,7 +130,7 @@ def parse_args(args: List[str], description: str):
         '-dd', '--datadir',
         help='path to backtest data (default freqdata/tests/testdata',
         dest='datadir',
-        default='freqtrade/tests/testdata',
+        default=os.path.join('freqtrade', 'tests', 'testdata'),
         type=str,
         metavar='PATH',
     )
