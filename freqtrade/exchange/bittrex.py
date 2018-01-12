@@ -141,6 +141,12 @@ class Bittrex(Exchange):
             interval = 'oneMin'
         elif tick_interval == 5:
             interval = 'fiveMin'
+        elif tick_interval == 30:
+            interval = 'thirtyMin'
+        elif tick_interval == 60:
+            interval = 'hour'
+        elif tick_interval == 1440:
+            interval = 'day'
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 

@@ -33,7 +33,7 @@ def load_tickerdata_file(datadir, pair, ticker_interval):
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]] = None,
+def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -77,7 +77,7 @@ def download_pairs(datadir, pairs: List[str]) -> bool:
     """For each pairs passed in parameters, download 1 and 5 ticker intervals"""
     for pair in pairs:
         try:
-            for interval in [1, 5]:
+            for interval in [1, 5, 30, 60, 1440]:
                 download_backtesting_testdata(datadir, pair=pair, interval=interval)
         except BaseException:
             logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(

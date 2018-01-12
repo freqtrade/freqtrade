@@ -42,6 +42,22 @@ def _clean_test_file(file: str) -> None:
     if os.path.isfile(file_swp):
         os.rename(file_swp, file)
 
+def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
+    mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+
+    exchange._API = Bittrex({'key': '', 'secret': ''})
+
+    file = 'freqtrade/tests/testdata/BTC_ETH-30.json'
+    _backup_file(file, copy_file=True)
+    optimize.load_data(None, pairs=['BTC_ETH'], ticker_interval=30)
+    assert os.path.isfile(file) is True
+    assert ('freqtrade.optimize',
+            logging.INFO,
+            'Download the pair: "BTC_ETH", Interval: 30 min'
+            ) not in caplog.record_tuples
+    _clean_test_file(file)
+
 
 def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
@@ -51,7 +67,7 @@ def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
 
     file = 'freqtrade/tests/testdata/BTC_ETH-5.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['BTC_ETH'])
+    optimize.load_data(None, pairs=['BTC_ETH'], ticker_interval=5)
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
