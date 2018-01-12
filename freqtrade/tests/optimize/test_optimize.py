@@ -48,9 +48,9 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/BTC_ETH-30.json'
+    file = 'freqtrade/tests/testdata/BTC_UNITTEST-30.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['BTC_ETH'], ticker_interval=30)
+    optimize.load_data(None, pairs=['BTC_UNITTEST'], ticker_interval=30)
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
