@@ -94,13 +94,13 @@ def get_trade_entry(pair, row, ticker, trade_count_lock, args):
             (row2.sell == 1 and use_sell_signal) or \
                 current_profit_percent <= stoploss:
             current_profit_btc = trade.calc_profit(rate=row2.close)
-            return row2.Index, (pair,
-                                current_profit_percent,
-                                current_profit_btc,
-                                row2.Index - row.Index,
-                                current_profit_btc > 0,
-                                current_profit_btc < 0
-                                )
+            return row2, (pair,
+                          current_profit_percent,
+                          current_profit_btc,
+                          row2.Index - row.Index,
+                          current_profit_btc > 0,
+                          current_profit_btc < 0
+                          )
 
 
 def backtest(args) -> DataFrame:
@@ -146,12 +146,16 @@ def backtest(args) -> DataFrame:
             ret = get_trade_entry(pair, row, ticker,
                                   trade_count_lock, args)
             if ret:
-                lock_pair_until, trade_entry = ret
+                row2, trade_entry = ret
+                lock_pair_until = row2.Index
                 trades.append(trade_entry)
                 if record:
                     # Note, need to be json.dump friendly
-                    # record a tuple of pair, current_profit_percent, entry-date, duration
+                    # record a tuple of pair, current_profit_percent,
+                    # entry-date, duration
                     records.append((pair, trade_entry[1],
+                                    row.date.strftime('%s'),
+                                    row2.date.strftime('%s'),
                                     row.Index, trade_entry[3]))
     # For now export inside backtest(), maybe change so that backtest()
     # returns a tuple like: (dataframe, records, logs, etc)
