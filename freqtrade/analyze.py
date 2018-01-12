@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Dict, List
 
 import arrow
+import numpy
 import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
