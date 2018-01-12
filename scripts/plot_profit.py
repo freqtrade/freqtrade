@@ -25,8 +25,10 @@ def plot_parse_args(args ):
     return parser.parse_args(args)
 
 
-# data:: [ pair,      profit-%,  time, duration]
-# data:: ['BTC_XMR', 0.00537847, 5057, 1]
+# data:: [ pair,      profit-%,  enter,         exit,        time, duration]
+# data:: ['BTC_XMR', 0.00537847, '1511176800', '1511178000', 5057, 1]
+# FIX: make use of the enter/exit dates to insert the
+# profit more precisely into the pg array
 def make_profit_array(data, px, filter_pairs=[]):
     pg = np.zeros(px)
     # Go through the trades
@@ -37,8 +39,8 @@ def make_profit_array(data, px, filter_pairs=[]):
         if filter_pairs and pair not in filter_pairs:
             continue
         profit = trade[1]
-        tim = trade[2]
-        dur = trade[3]
+        tim = trade[4]
+        dur = trade[5]
         pg[tim+dur-1] += profit
 
     # rewrite the pg array to go from
