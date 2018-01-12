@@ -111,7 +111,7 @@ def common_args_parser(description: str):
         metavar='PATH',
     )
     parser.add_argument(
-        '-dd', '--datadir',
+        '--datadir',
         help='path to backtest data (default freqdata/tests/testdata',
         dest='datadir',
         default=os.path.join('freqtrade', 'tests', 'testdata'),

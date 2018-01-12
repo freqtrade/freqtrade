@@ -14,40 +14,27 @@ import freqtrade.analyze  as analyze
 
 def plot_parse_args(args ):
     parser = misc.common_args_parser('Graph utility')
-    # FIX: perhaps delete those backtesting options that are not feasible
+    # FIX: perhaps delete those backtesting options that are not feasible (shows up in -h)
     misc.backtesting_options(parser)
-    # TODO: Make the pair argument take a comma separated list
     parser.add_argument(
         '-p', '--pair',
-        help = 'Show profits for only this pair',
+        help = 'Show profits for only this pairs. Pairs are comma-separated.',
         dest = 'pair',
         default = None
     )
-
     return parser.parse_args(args)
 
 
-def make_profit_array(data, filter_pair):
-    xmin = 0
-    xmax = 0
-
-    #  pair       profit-%    time  duration
-    # ['BTC_XMR', 0.00537847, 5057, 1]
-    for trade in data:
-        pair = trade[0]
-        profit = trade[1]
-        x = trade[2]
-        dur = trade[3]
-        xmax = max(xmax, x + dur)
-
-    pg = np.zeros(xmax)
-
+# data:: [ pair,      profit-%,  time, duration]
+# data:: ['BTC_XMR', 0.00537847, 5057, 1]
+def make_profit_array(data, px, filter_pairs=[]):
+    pg = np.zeros(px)
     # Go through the trades
     # and make an total profit
     # array
     for trade in data:
         pair = trade[0]
-        if filter_pair and pair != filter_pair:
+        if filter_pairs and pair not in filter_pairs:
             continue
         profit = trade[1]
         tim = trade[2]
@@ -78,13 +65,14 @@ def plot_profit(args) -> None:
     # and same timeperiod as used in backtesting
     # to match the tickerdata against the profits-results
 
-    filter_pair = args.pair
+    filter_pairs = args.pair
 
     config = misc.load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
-    if filter_pair:
-        print('Filtering out pair %s' % filter_pair)
-        pairs = list(filter(lambda pair: pair == filter_pair, pairs))
+    if filter_pairs:
+        filter_pairs = filter_pairs.split(',')
+        pairs = list(set(pairs) & set(filter_pairs))
+        print('Filter, keep pairs %s' % pairs)
 
     tickers = optimize.load_data(args.datadir, pairs=pairs,
                                  ticker_interval=args.ticker_interval,
@@ -99,23 +87,28 @@ def plot_profit(args) -> None:
     # But we dont have the date information in the
     # backtesting results, this is needed to match the dates
     # For now, assume the dataframes are aligned.
+    max_x = 0
+    for pair, pair_data in dataframes.items():
+        n = len(pair_data['close'])
+        max_x = max(max_x, n)
+    #    if max_x != n:
+    #        raise Exception('Please rerun script. Input data has different lengths %s'
+    #                         %('Different pair length: %s <=> %s' %(max_x, n)))
+    print('max_x: %s' %(max_x))
 
     # We are essentially saying:
     #  array <- sum dataframes[*]['close'] / num_items dataframes
     #  FIX: there should be some onliner numpy/panda for this
-
-    first = True
-    avgclose = None
+    avgclose = np.zeros(max_x)
     num = 0
     for pair, pair_data in dataframes.items():
-      close = pair_data['close']
-      print('Pair %s has length %s' %(pair, len(close)))
-      num += 1
-      if first:
-        first = False
-        avgclose = np.copy(close)
-      else:
-        avgclose += close
+        close = pair_data['close']
+        maxprice = max(close)  # Normalize price to [0,1]
+        print('Pair %s has length %s' %(pair, len(close)))
+        for x in range(0, len(close)):
+            avgclose[x] += close[x] / maxprice
+        # avgclose += close
+        num += 1
     avgclose /= num
 
     # Load the profits results
@@ -124,7 +117,7 @@ def plot_profit(args) -> None:
     filename = 'backtest-result.json'
     with open(filename) as file:
       data = json.load(file)
-    pg = make_profit_array(data, filter_pair)
+    pg = make_profit_array(data, max_x, filter_pairs)
 
     #
     # Plot the pairs average close prices, and total profit growth
@@ -134,17 +127,19 @@ def plot_profit(args) -> None:
     fig.suptitle('total profit')
     ax1.plot(avgclose, label='avgclose')
     ax2.plot(pg, label='profit')
-    ax1.legend()
-    ax2.legend()
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper left')
 
     # FIX if we have one line pair in paris
     #     then skip the plotting of the third graph,
     #     or change what we plot
     # In third graph, we plot each profit separately
     for pair in pairs:
-        pg = make_profit_array(data, pair)
+        pg = make_profit_array(data, max_x, pair)
         ax3.plot(pg, label=pair)
-    ax3.legend()
+    ax3.legend(loc='upper left')
+    # black background to easier see multiple colors
+    ax3.set_facecolor('black')
 
     # Fine-tune figure; make subplots close to each other and hide x ticks for
     # all but bottom plot.
