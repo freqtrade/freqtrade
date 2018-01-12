@@ -127,7 +127,7 @@ def parse_args(args: List[str], description: str):
         dest='dry_run_db',
     )
     parser.add_argument(
-        '-dd', '--datadir',
+        '--datadir',
         help='path to backtest data (default freqdata/tests/testdata',
         dest='datadir',
         default=os.path.join('freqtrade', 'tests', 'testdata'),
@@ -186,7 +186,7 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='refresh_pairs',
     )
     backtesting_cmd.add_argument(
-        '-tp', '--timeperiod',
+        '--timeperiod',
         help='Use the last N ticks of data.',
         default=None,
         type=int,
