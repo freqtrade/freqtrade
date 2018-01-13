@@ -538,7 +538,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
     assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker):
+def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_down, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t, i: True)
     mocker.patch('freqtrade.rpc.init', MagicMock())
@@ -565,10 +565,10 @@ def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker)
     assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
-    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
+    assert '-0.796 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_execute_sell_without_conf(default_conf, ticker, ticker_sell_up, mocker):
+def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t, i: True)
     mocker.patch('freqtrade.rpc.init', MagicMock())

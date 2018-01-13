@@ -136,11 +136,10 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     assert os.path.isfile(file1_5) is False
     assert os.path.isfile(file2_1) is True
     assert os.path.isfile(file2_5) is False
-    
+
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file2_1)
-
 
     assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=5) is True
     assert os.path.isfile(file1_1) is False
