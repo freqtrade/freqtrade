@@ -8,15 +8,16 @@ To understand how to set up the bot please read the [Bot Configuration](https://
 
 ## Table of Contents
 
-* [Docker Automatic Installation](#docker)
-* [Linux or Mac Manual Installation](#linux--mac)
-    - [Linux - Ubuntu 16.04](#21-linux---ubuntu-1604)
-    - [Linux - Other distro](#22-linux---other-distro)
-    - [MacOS Installation](#23-macos-installation)
-    - [Advanced Linux ](#advanced-linux)
-* [Windows manual Installation](#windows)
+* [Table of Contents](#table-of-contents)
+* [Automatic Installation - Docker](#automatic-installation-docker)
+* [Custom Installation](#custom-installation)
+	- [Requirements](#requirements)
+	- [Linux - Ubuntu 16.04](#linux-ubuntu-1604)
+	- [MacOS](#macos)
+	- [Windows](#windows)
+* [First Steps](#first-step)
 
-
+<!-- /TOC -->
 ------
 
 ## Automatic Installation - Docker
@@ -60,11 +61,14 @@ cat config.json.example >> config.json
 
 #### 1.5. Create your database file *(optional - the bot will create it if it is missing)*
 
-```bash
-# For Production
-touch tradesv3.sqlite
 
-# For Dry-Run
+Production
+```bash
+touch tradesv3.sqlite
+````
+
+Dry-Run
+```bash
 touch tradesv3.dryrun.sqlite
 ```
 
@@ -222,7 +226,7 @@ sudo loginctl enable-linger "$USER"
 ```
 
 
-### MacOS Installation
+### MacOS
 
 #### 1. Install Python 3.6, git, wget and ta-lib
 
@@ -262,10 +266,11 @@ git checkout develop
 We recommend that Windows users use [Docker](#docker) as this will work
 much easier and smoother (also more secure).
 
-## Install freqtrade
+#### 1. Install freqtrade
+
+copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 
 ```cmd
-#copy paste config.json to \path\freqtrade-develop\freqtrade
 >cd \path\freqtrade-develop
 >python -m venv .env
 >cd .env\Scripts
@@ -277,13 +282,15 @@ much easier and smoother (also more secure).
 >python main.py
 ```
 
-*Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/gcarq/freqtrade/issues/222)*
+> Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/gcarq/freqtrade/issues/222)
 
 
 ------
 
 
-## First Step
+## First Steps
+
+### 1. Initialize the configuration
 
 ```bash
 cd freqtrade
@@ -293,7 +300,8 @@ cp config.json.example config.json
 > *To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md).*
 
 
-### 5. Setup your Python virtual environment (virtualenv)
+### 2. Setup your Python virtual environment (virtualenv)
+
 ```bash
 python3.6 -m venv .env
 source .env/bin/activate
@@ -301,16 +309,13 @@ pip3.6 install -r requirements.txt
 pip3.6 install -e .
 ```
 
-### 6. Run the Bot
-If this is the first time you run the bot, ensure you are running it
-in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
+### 3. Run the Bot
+
+If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
 ```bash
 python3.6 ./freqtrade/main.py -c config.json
 ```
 
-------
-
-## Next Step
 Now you have an environment ready, the next step is
 [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)...
