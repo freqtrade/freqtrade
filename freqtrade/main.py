@@ -446,7 +446,7 @@ def cleanup() -> None:
     exit(0)
 
 
-def main(sysargv=sys.argv[1:]) -> None:
+def main(sysargv=sys.argv[1:]) -> int:
     """
     Loads and validates the config and handles the main loop
     :return: None
@@ -458,7 +458,7 @@ def main(sysargv=sys.argv[1:]) -> None:
     # A subcommand has been issued
     if hasattr(args, 'func'):
         args.func(args)
-        exit(0)
+        return 0
 
     # Initialize logger
     logging.basicConfig(
@@ -514,7 +514,8 @@ def main(sysargv=sys.argv[1:]) -> None:
         logger.exception('Got fatal exception!')
     finally:
         cleanup()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

@@ -25,8 +25,7 @@ def test_parse_args_backtesting(mocker):
         further argument parsing is done in test_misc.py """
     backtesting_mock = mocker.patch(
         'freqtrade.optimize.backtesting.start', MagicMock())
-    with pytest.raises(SystemExit, match=r'0'):
-        main.main(['backtesting'])
+    main.main(['backtesting'])
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
     assert call_args.config == 'config.json'
@@ -40,14 +39,25 @@ def test_parse_args_backtesting(mocker):
 def test_main_start_hyperopt(mocker):
     hyperopt_mock = mocker.patch(
         'freqtrade.optimize.hyperopt.start', MagicMock())
-    with pytest.raises(SystemExit, match=r'0'):
-        main.main(['hyperopt'])
+    main.main(['hyperopt'])
     assert hyperopt_mock.call_count == 1
     call_args = hyperopt_mock.call_args[0][0]
     assert call_args.config == 'config.json'
     assert call_args.loglevel == 20
     assert call_args.subparser == 'hyperopt'
     assert call_args.func is not None
+
+
+# def test_main_trader(mocker):
+#    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+#    mocker.patch('freqtrade.misc.get_state', return_value=True)
+#    mocker.patch.multiple('freqtrade.main',
+#                          init=MagicMock(),
+#                          cleanup=MagicMock(),
+#                          throttle=MagicMock()
+#                          )
+#    Cant run this yet because we have an unconditional while loop in main
+#    assert 0 == main.main([])
 
 
 def test_process_maybe_execute_buy(default_conf, mocker):
