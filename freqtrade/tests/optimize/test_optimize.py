@@ -130,17 +130,26 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     _backup_file(file2_1)
     _backup_file(file2_5)
 
-    assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI']) is True
+    assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=1) is True
 
     assert os.path.isfile(file1_1) is True
-    assert os.path.isfile(file1_5) is True
+    assert os.path.isfile(file1_5) is False
     assert os.path.isfile(file2_1) is True
+    assert os.path.isfile(file2_5) is False
+    
+    # clean files freshly downloaded
+    _clean_test_file(file1_1)
+    _clean_test_file(file2_1)
+
+
+    assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=5) is True
+    assert os.path.isfile(file1_1) is False
+    assert os.path.isfile(file1_5) is True
+    assert os.path.isfile(file2_1) is False
     assert os.path.isfile(file2_5) is True
 
     # clean files freshly downloaded
-    _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    _clean_test_file(file2_1)
     _clean_test_file(file2_5)
 
 
@@ -156,7 +165,7 @@ def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
     _backup_file(file1_1)
     _backup_file(file1_5)
 
-    download_pairs(None, pairs=['BTC-MEME'])
+    download_pairs(None, pairs=['BTC-MEME'], ticker_interval=1)
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
