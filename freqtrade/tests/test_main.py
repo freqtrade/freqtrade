@@ -558,14 +558,16 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker_sell_down)
+    mocker.patch('freqtrade.main._CONF', {})
 
     execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
+
+    print(rpc_mock.call_args_list[-1][0][0])
 
     assert rpc_mock.call_count == 2
     assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
-    assert '-0.796 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up, mocker):
