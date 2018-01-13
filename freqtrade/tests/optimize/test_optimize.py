@@ -42,6 +42,7 @@ def _clean_test_file(file: str) -> None:
     if os.path.isfile(file_swp):
         os.rename(file_swp, file)
 
+
 def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
