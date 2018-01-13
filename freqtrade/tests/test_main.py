@@ -432,9 +432,8 @@ def test_handle_timedout_limit_buy(default_conf, mocker):
     mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
     Trade.session = MagicMock()
     trade = MagicMock()
-    order = {}
-    order['remaining'] = 1
-    order['amount'] = 1
+    order = {'remaining': 1,
+             'amount': 1}
     assert main.handle_timedout_limit_buy(trade, order)
     assert cancel_order.call_count == 1
     order['amount'] = 2
@@ -478,9 +477,8 @@ def test_handle_timedout_limit_sell(default_conf, mocker):
     cancel_order = MagicMock()
     mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
     trade = MagicMock()
-    order = {}
-    order['remaining'] = 1
-    order['amount'] = 1
+    order = {'remaining': 1,
+             'amount': 1}
     assert main.handle_timedout_limit_sell(trade, order)
     assert cancel_order.call_count == 1
     order['amount'] = 2
