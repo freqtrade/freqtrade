@@ -1,5 +1,5 @@
 """ FreqTrade bot """
-__version__ = '0.14.3'
+__version__ = '0.15.1'
 
 
 class DependencyException(BaseException):
