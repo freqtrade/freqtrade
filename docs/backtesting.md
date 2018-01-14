@@ -51,6 +51,21 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
+To update your testdata directory, or download into another testdata directory:
+```bash
+mkdir freqtrade/tests/testdata-20180113
+cp freqtrade/tests/testdata/pairs.json freqtrade/tests/testdata-20180113
+cd freqtrade/tests/testdata-20180113
+
+Possibly edit pairs.json file to include/exclude pairs
+
+python download_backtest_data.py -p pairs.json
+```
+
+The script will read your pairs.json file, and download ticker data
+into the current working directory.
+
+
 For help about backtesting usage, please refer to 
 [Backtesting commands](#backtesting-commands).
 
