@@ -133,10 +133,11 @@ def log_results(results):
 
     if results['loss'] < CURRENT_BEST_LOSS:
         CURRENT_BEST_LOSS = results['loss']
-        logger.info('{:5d}/{}: {}'.format(
+        logger.info('{:5d}/{}: {}. Loss {:.5f}'.format(
             results['current_tries'],
             results['total_tries'],
-            results['result']))
+            results['result'],
+            results['loss']))
     else:
         print('.', end='')
         sys.stdout.flush()
