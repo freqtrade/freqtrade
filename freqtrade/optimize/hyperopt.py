@@ -41,6 +41,7 @@ MAX_ACCEPTED_TRADE_DURATION = 240
 
 # this is expexted avg profit * expected trade count
 # for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
+# check that the reported Σ% values do not exceed this!
 EXPECTED_MAX_PROFIT = 3.85
 
 # Configuration and data used by hyperopt
