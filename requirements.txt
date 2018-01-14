@@ -11,7 +11,7 @@ scikit-learn==0.19.1
 scipy==1.0.0
 jsonschema==2.6.0
 numpy==1.14.0
-TA-Lib==0.4.14
+TA-Lib==0.4.15
 pytest==3.3.2
 pytest-mock==1.6.3
 pytest-cov==2.5.1
@@ -19,7 +19,7 @@ hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
 networkx==1.11
 tabulate==0.8.2
-pymarketcap==3.3.145
+pymarketcap==3.3.148
 
 # Required for plotting data
 #matplotlib==2.1.0

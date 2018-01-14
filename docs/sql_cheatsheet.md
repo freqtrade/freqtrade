@@ -67,6 +67,18 @@ SET is_open=0, close_date='2017-12-20 03:08:45.103418', close_rate=0.19638016, c
 WHERE id=31;
 ```
 
+## Insert manually a new trade
+
+```sql
+INSERT 
+INTO trades (exchange, pair, is_open, fee, open_rate, stake_amount, amount, open_date) 
+VALUES ('BITTREX', 'BTC_<COIN>', 1, 0.0025, <open_rate>, <stake_amount>, <amount>, '<datetime>')
+```
+
+**Example:**
+```sql
+INSERT INTO trades (exchange, pair, is_open, fee, open_rate, stake_amount, amount, open_date) VALUES ('BITTREX', 'BTC_ETC', 1, 0.0025, 0.00258580, 0.002, 0.7715262081, '2017-11-28 12:44:24.000000')
+```
 
 ## Fix wrong fees in the table
 If your DB was created before 

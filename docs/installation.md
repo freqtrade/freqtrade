@@ -40,7 +40,7 @@ cd freqtrade
 ```
 4. Copy `config.sample` to `config.json`
 ```bash
-cp config.json.example config.json
+cp -n config.json.example config.json
 ```
 To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page
 5. Create your DB file (Optional, the bot will create it if it is missing)
@@ -194,7 +194,7 @@ The following steps are made for Linux/mac environment
 ## 4. Prepare the bot
 ```bash
 cd freqtrade
-cp config.json.example config.json
+cp -n config.json.example config.json
 ```
 To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)
 
