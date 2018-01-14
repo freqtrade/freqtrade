@@ -191,12 +191,13 @@ def optimizer(params):
 
 def format_results(results: DataFrame):
     return ('{:6d} trades. Avg profit {: 5.2f}%. '
-            'Total profit {: 11.8f} BTC. Avg duration {:5.1f} mins.').format(
+            'Total profit {: 11.8f} BTC ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
                 len(results.index),
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
+                results.profit_percent.sum(),
                 results.duration.mean() * 5,
-    )
+            )
 
 
 def buy_strategy_generator(params):
