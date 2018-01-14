@@ -54,7 +54,7 @@ cd freqtrade
 #### 1.4. Copy `config.json.example` to `config.json`
 
 ```bash
-cat config.json.example >> config.json
+cp -n config.json.example config.json
 ```
 
 > To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page.
