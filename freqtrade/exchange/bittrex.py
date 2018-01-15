@@ -146,7 +146,7 @@ class Bittrex(Exchange):
         elif tick_interval == 60:
             interval = 'hour'
         elif tick_interval == 1440:
-            interval = 'day'
+            interval = 'Day'
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 
