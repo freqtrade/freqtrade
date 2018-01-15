@@ -163,9 +163,10 @@ def start(args):
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
+        timerange = misc.parse_timerange(args.timerange)
         data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=args.ticker_interval,
-                                  refresh_pairs=args.refresh_pairs)
-
+                                  refresh_pairs=args.refresh_pairs,
+                                  timerange=timerange)
     max_open_trades = 0
     if args.realistic_simulation:
         logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
@@ -175,7 +176,7 @@ def start(args):
     from freqtrade import main
     main._CONF = config
 
-    preprocessed = optimize.tickerdata_to_dataframe(data, timerange=args.timerange)
+    preprocessed = optimize.tickerdata_to_dataframe(data)
     # Print timeframe
     min_date, max_date = get_timeframe(preprocessed)
     logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())

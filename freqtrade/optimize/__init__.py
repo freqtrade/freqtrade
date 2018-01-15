@@ -12,14 +12,20 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 logger = logging.getLogger(__name__)
 
 
-def trim_tickerlist(dl, num):
-    new = {}
-    for pair, pair_data in dl.items():
-        new[pair] = pair_data[num:]
-    return new
+def trim_tickerlist(tickerlist, timerange):
+    (stype, start, stop) = timerange
+    if stype == (None, 'line'):
+        return tickerlist[stop:]
+    elif stype == ('line', None):
+        return tickerlist[0:start]
+    elif stype == ('index', 'index'):
+        return tickerlist[start:stop]
+    else:
+        return tickerlist
 
 
-def load_tickerdata_file(datadir, pair, ticker_interval):
+def load_tickerdata_file(datadir, pair, ticker_interval,
+                         timerange=None):
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
@@ -37,11 +43,15 @@ def load_tickerdata_file(datadir, pair, ticker_interval):
     # Read the file, load the json
     with open(file) as tickerdata:
         pairdata = json.load(tickerdata)
+    if timerange:
+        pairdata = trim_tickerlist(pairdata, timerange)
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]] = None,
-              refresh_pairs: Optional[bool] = False) -> Dict[str, List]:
+def load_data(datadir: str, ticker_interval: int = 5,
+              pairs: Optional[List[str]] = None,
+              refresh_pairs: Optional[bool] = False,
+              timerange=None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :param ticker_interval: ticker interval in minutes
@@ -58,19 +68,17 @@ def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]]
         download_pairs(datadir, _pairs)
 
     for pair in _pairs:
-        pairdata = load_tickerdata_file(datadir, pair, ticker_interval)
+        pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         if not pairdata:
             # download the tickerdata from exchange
             download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
             # and retry reading the pair
-            pairdata = load_tickerdata_file(datadir, pair, ticker_interval)
+            pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         result[pair] = pairdata
     return result
 
 
-def tickerdata_to_dataframe(data, timerange=None):
-    if timerange:
-        data = trim_tickerlist(data, timerange)
+def tickerdata_to_dataframe(data):
     preprocessed = preprocess(data)
     return preprocessed
 

@@ -57,8 +57,21 @@ you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py backtesting --timerange -200
+python3 ./freqtrade/main.py backtesting --timerange=-200
 ```
+
+***Advanced use of timerange***
+  Doing --timerange=-200 will get the last 200 timeframes
+  from your inputdata. You can also specify specific dates,
+  or a range span indexed by start and stop.
+  The full timerange specification:
+  Not implemented yet! --timerange=-20180131
+  Not implemented yet! --timerange=20180101-
+  Not implemented yet! --timerange=20180101-20181231
+  Last 123 tickframes of data:  --timerange=-123
+  First 123 tickframes of data: --timerange=123-
+  Tickframes from line 123 through 456: --timerange=123-456
+
 
 **Update testdata directory
 To update your testdata directory, or download into another testdata directory:
