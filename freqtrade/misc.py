@@ -3,15 +3,21 @@ import enum
 import json
 import logging
 import time
-from typing import Any, Callable, List, Dict
+import os
+from typing import Any, Callable, Dict, List
 
-from jsonschema import validate, Draft4Validator
-from jsonschema.exceptions import best_match, ValidationError
+from jsonschema import Draft4Validator, validate
+from jsonschema.exceptions import ValidationError, best_match
 from wrapt import synchronized
 
 from freqtrade import __version__
 
 logger = logging.getLogger(__name__)
+
+
+def file_dump_json(filename, data):
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
 
 
 class State(enum.Enum):
@@ -57,8 +63,8 @@ def load_config(path: str) -> Dict:
     try:
         validate(conf, CONF_SCHEMA)
         return conf
-    except ValidationError as ex:
-        logger.fatal('Invalid configuration. See config.json.example. Reason: %s', ex)
+    except ValidationError as exception:
+        logger.fatal('Invalid configuration. See config.json.example. Reason: %s', exception)
         raise ValidationError(
             best_match(Draft4Validator(CONF_SCHEMA).iter_errors(conf)).message
         )
@@ -81,7 +87,7 @@ def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     return result
 
 
-def parse_args_common(args: List[str], description: str):
+def common_args_parser(description: str):
     """
     Parses given common arguments and returns them as a parsed object.
     """
@@ -117,11 +123,11 @@ def parse_args(args: List[str], description: str):
     Parses given arguments and returns an argparse Namespace instance.
     Returns None if a sub command has been selected and executed.
     """
-    parser = parse_args_common(args, description)
+    parser = common_args_parser(description)
     parser.add_argument(
         '--dry-run-db',
-        help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" instead of memory DB. Work only if dry_run is \
-             enabled.',  # noqa
+        help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" \
+             instead of memory DB. Work only if dry_run is enabled.',
         action='store_true',
         dest='dry_run_db',
     )
@@ -129,13 +135,14 @@ def parse_args(args: List[str], description: str):
         '-dd', '--datadir',
         help='path to backtest data (default freqdata/tests/testdata',
         dest='datadir',
-        default='freqtrade/tests/testdata',
+        default=os.path.join('freqtrade', 'tests', 'testdata'),
         type=str,
         metavar='PATH',
     )
     parser.add_argument(
         '--dynamic-whitelist',
-        help='dynamically generate and update whitelist based on 24h BaseVolume (Default 20 currencies)',  # noqa
+        help='dynamically generate and update whitelist \
+             based on 24h BaseVolume (Default 20 currencies)',  # noqa
         dest='dynamic_whitelist',
         const=20,
         type=int,

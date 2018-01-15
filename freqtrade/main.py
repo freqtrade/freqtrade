@@ -5,20 +5,20 @@ import logging
 import sys
 import time
 import traceback
-import arrow
 from datetime import datetime
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
+import arrow
 import requests
 from cachetools import cached, TTLCache
 
-from freqtrade import __version__, exchange, persistence, rpc, DependencyException, \
-    OperationalException
-from freqtrade.analyze import get_signal, SignalType
-from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
-    load_config
-from freqtrade.persistence import Trade
+from freqtrade import (DependencyException, OperationalException, __version__,
+                       exchange, persistence, rpc)
+from freqtrade.analyze import SignalType, get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
+from freqtrade.misc import (State, get_state, load_config, parse_args,
+                            throttle, update_state)
+from freqtrade.persistence import Trade
 
 logger = logging.getLogger('freqtrade')
 
@@ -179,11 +179,11 @@ def execute_sell(trade: Trade, limit: float) -> None:
     profit_trade = trade.calc_profit(rate=limit)
 
     message = '*{exchange}:* Selling [{pair}]({pair_url}) with limit `{limit:.8f}`'.format(
-                    exchange=trade.exchange,
-                    pair=trade.pair.replace('_', '/'),
-                    pair_url=exchange.get_pair_detail_url(trade.pair),
-                    limit=limit
-                )
+        exchange=trade.exchange,
+        pair=trade.pair.replace('_', '/'),
+        pair_url=exchange.get_pair_detail_url(trade.pair),
+        limit=limit
+    )
 
     # For regular case, when the configuration exists
     if 'stake_currency' in _CONF and 'fiat_display_currency' in _CONF:
@@ -195,12 +195,12 @@ def execute_sell(trade: Trade, limit: float) -> None:
         )
         message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
                    '` / {profit_fiat:.3f} {fiat})`'.format(
-                        gain="profit" if fmt_exp_profit > 0 else "loss",
-                        profit_percent=fmt_exp_profit,
-                        profit_coin=profit_trade,
-                        coin=_CONF['stake_currency'],
-                        profit_fiat=profit_fiat,
-                        fiat=_CONF['fiat_display_currency'],
+                       gain="profit" if fmt_exp_profit > 0 else "loss",
+                       profit_percent=fmt_exp_profit,
+                       profit_coin=profit_trade,
+                       coin=_CONF['stake_currency'],
+                       profit_fiat=profit_fiat,
+                       fiat=_CONF['fiat_display_currency'],
                    )
     # Because telegram._forcesell does not have the configuration
     # Ignore the FIAT value and does not show the stake_currency as well

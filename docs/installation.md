@@ -4,8 +4,6 @@ This page explains how to prepare your environment for running the bot.
 
 To understand how to set up the bot please read the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page.
 
-
-
 ## Table of Contents
 
 * [Table of Contents](#table-of-contents)
@@ -60,7 +58,6 @@ cp -n config.json.example config.json
 > To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page.
 
 #### 1.5. Create your database file *(optional - the bot will create it if it is missing)*
-
 
 Production
 ```bash
@@ -127,7 +124,6 @@ docker run -d \
 
 If you are using `dry_run=True` it's not necessary to mount `tradesv3.sqlite`, but you can mount `tradesv3.dryrun.sqlite` if you plan to use the dry run mode with the param `--dry-run-db`.
 
-
 ### 6. Monitor your Docker instance
 
 You can then use the following commands to monitor and manage your container:
@@ -142,9 +138,7 @@ docker start freqtrade
 
 You do not need to rebuild the image for configuration changes, it will suffice to edit `config.json` and restart the container.
 
-
 ------
-
 
 ## Custom Installation
 
@@ -153,7 +147,6 @@ We've included/collected install instructions for Ubuntu 16.04, MacOS, and Windo
 ### Requirements
 
 Click each one for install guide:
-
 * [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/), note the bot was not tested on Python >= 3.7.x
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
@@ -168,7 +161,7 @@ Click each one for install guide:
 ```bash
 sudo add-apt-repository ppa:jonathonf/python-3.6
 sudo apt-get update
-sudo apt-get install python3.6 python3.6-venv build-essential autoconf libtool pkg-config make wget git
+sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
 ```
 
 #### 2. Install TA-Lib
@@ -259,7 +252,6 @@ Optionally checkout the develop branch:
 ```bash
 git checkout develop
 ```
-
 
 ### Windows
 

@@ -6,8 +6,9 @@ import arrow
 import pytest
 from pandas import DataFrame
 
-from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, \
-    get_signal, SignalType, populate_sell_trend
+from freqtrade.analyze import (SignalType, get_signal, parse_ticker_dataframe,
+                               populate_buy_trend, populate_indicators,
+                               populate_sell_trend)
 
 
 @pytest.fixture
