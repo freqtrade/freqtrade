@@ -139,7 +139,7 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 
 @cached(TTLCache(maxsize=100, ttl=30))
-def get_ticker_history(pair: str, tick_interval: Optional[int] = 5) -> List[Dict]:
+def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
     return _API.get_ticker_history(pair, tick_interval)
 
 

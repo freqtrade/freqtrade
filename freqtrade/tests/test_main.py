@@ -64,7 +64,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
 
-    result = _process(interval=default_conf['ticker_interval'])
+    result = _process(interval=int(default_conf['ticker_interval']))
     assert result is True
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -90,7 +90,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
                           get_wallet_health=health,
                           buy=MagicMock(side_effect=requests.exceptions.RequestException))
     init(default_conf, create_engine('sqlite://'))
-    result = _process(interval=default_conf['ticker_interval'])
+    result = _process(interval=int(default_conf['ticker_interval']))
     assert result is False
     assert sleep_mock.has_calls()
 
@@ -108,7 +108,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker):
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
 
-    result = _process(interval=default_conf['ticker_interval'])
+    result = _process(interval=int(default_conf['ticker_interval']))
     assert result is False
     assert get_state() == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
@@ -129,12 +129,12 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
-    result = _process(interval=default_conf['ticker_interval'])
+    result = _process(interval=int(default_conf['ticker_interval']))
     assert result is True
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
 
-    result = _process(interval=default_conf['ticker_interval'])
+    result = _process(interval=int(default_conf['ticker_interval']))
     assert result is False
 
 
@@ -150,7 +150,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade is not None
@@ -180,7 +180,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
     min_stake_amount = 0.0005
-    create_trade(min_stake_amount, default_conf['ticker_interval'])
+    create_trade(min_stake_amount, int(default_conf['ticker_interval']))
     rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
     assert rate * amount >= min_stake_amount
 
@@ -195,7 +195,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        create_trade(default_conf['stake_amount'], default_conf['ticker_interval'])
+        create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker):
@@ -211,7 +211,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
-        create_trade(default_conf['stake_amount'], default_conf['ticker_interval'])
+        create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
@@ -228,7 +228,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
         conf['exchange']['pair_whitelist'] = ["BTC_ETH"]
         conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
         mocker.patch.dict('freqtrade.main._CONF', conf)
-        create_trade(default_conf['stake_amount'], default_conf['ticker_interval'])
+        create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
@@ -248,7 +248,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -256,7 +256,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     trade.update(limit_buy_order)
     assert trade.is_open is True
 
-    assert handle_trade(trade, default_conf['ticker_interval']) is True
+    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
     assert trade.open_order_id == 'mocked_limit_sell'
 
     # Simulate fulfilled LIMIT_SELL order for trade
@@ -281,7 +281,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     mocker.patch('freqtrade.main.min_roi_reached', return_value=True)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     trade.is_open = True
@@ -292,11 +292,11 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     #      executing
     # if ROI is reached we must sell
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t, i: False)
-    assert handle_trade(trade, interval=default_conf['ticker_interval'])
+    assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
     assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
     # if ROI is reached we must sell even if sell-signal is not signalled
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t, i: True)
-    assert handle_trade(trade, interval=default_conf['ticker_interval'])
+    assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
 
     assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
 
@@ -314,17 +314,17 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     trade.is_open = True
 
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t, i: False)
-    value_returned = handle_trade(trade, default_conf['ticker_interval'])
+    value_returned = handle_trade(trade, int(default_conf['ticker_interval']))
     assert ('freqtrade', logging.DEBUG, 'Checking sell_signal ...') in caplog.record_tuples
     assert value_returned is False
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t, i: True)
-    assert handle_trade(trade, default_conf['ticker_interval'])
+    assert handle_trade(trade, int(default_conf['ticker_interval']))
     s = 'Executing sell due to sell signal ...'
     assert ('freqtrade', logging.DEBUG, s) in caplog.record_tuples
 
@@ -340,7 +340,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -350,7 +350,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     assert trade.is_open is False
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
-        handle_trade(trade, default_conf['ticker_interval'])
+        handle_trade(trade, int(default_conf['ticker_interval']))
 
 
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mocker):
@@ -482,7 +482,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -519,7 +519,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -549,7 +549,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -581,7 +581,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -621,11 +621,11 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
-    assert handle_trade(trade, default_conf['ticker_interval']) is True
+    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
 
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
@@ -648,11 +648,11 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
-    assert handle_trade(trade, default_conf['ticker_interval']) is True
+    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
@@ -675,11 +675,11 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
-    assert handle_trade(trade, default_conf['ticker_interval']) is False
+    assert handle_trade(trade, int(default_conf['ticker_interval'])) is False
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
@@ -702,8 +702,8 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
-    assert handle_trade(trade, default_conf['ticker_interval']) is True
+    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True

@@ -102,7 +102,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
     # Trigger status while we have a fulfilled order for the open trade
     _status(bot=MagicMock(), update=update)
 
@@ -138,7 +138,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(15.0, default_conf['ticker_interval'])
+    create_trade(15.0, int(default_conf['ticker_interval']))
 
     _status_table(bot=MagicMock(), update=update)
 
@@ -176,7 +176,7 @@ def test_profit_handle(
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -225,7 +225,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -262,7 +262,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     # Decrease the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
@@ -324,7 +324,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
 
     # Create some test data
     for _ in range(4):
-        create_trade(0.001, default_conf['ticker_interval'])
+        create_trade(0.001, int(default_conf['ticker_interval']))
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
@@ -389,7 +389,7 @@ def test_performance_handle(
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
     trade = Trade.query.first()
     assert trade
 
@@ -427,7 +427,7 @@ def test_daily_handle(
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
     trade = Trade.query.first()
     assert trade
 
@@ -480,7 +480,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     update_state(State.RUNNING)
 
     # Create some test data
-    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, int(default_conf['ticker_interval']))
     msg_mock.reset_mock()
     _count(bot=MagicMock(), update=update)
 
