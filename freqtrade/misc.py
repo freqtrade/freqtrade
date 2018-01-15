@@ -218,7 +218,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
-        'ticker_interval': {'type': 'integer', 'minimum': 1, 'maximum': 1440},
+        'ticker_interval': {'type': 'string', 'enum': ['1', '5', '30', '60', '1440']},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',

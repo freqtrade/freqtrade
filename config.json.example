@@ -4,7 +4,7 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
-    "ticker_interval": 5,
+    "ticker_interval": "5",
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
