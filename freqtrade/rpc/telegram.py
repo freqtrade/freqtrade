@@ -1,21 +1,21 @@
 import logging
-import re
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Callable
 
 import arrow
-from pandas import DataFrame
 from sqlalchemy import and_, func, text
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
+from freqtrade.rpc.__init__ import rpc_status_table
 from freqtrade import __version__, exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import State, get_state, update_state
 from freqtrade.persistence import Trade
+
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -184,27 +184,10 @@ def _status_table(bot: Bot, update: Update) -> None:
     :return: None
     """
     # Fetch open trade
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    if get_state() != State.RUNNING:
-        send_msg('*Status:* `trader is not running`', bot=bot)
-    elif not trades:
-        send_msg('*Status:* `no active order`', bot=bot)
+    (err, df_statuses) = rpc_status_table()
+    if err:
+        send_msg(df_statuses, bot=bot)
     else:
-        trades_list = []
-        for trade in trades:
-            # calculate profit and send message to user
-            current_rate = exchange.get_ticker(trade.pair, False)['bid']
-            trades_list.append([
-                trade.id,
-                trade.pair,
-                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
-            ])
-
-        columns = ['ID', 'Pair', 'Since', 'Profit']
-        df_statuses = DataFrame.from_records(trades_list, columns=columns)
-        df_statuses = df_statuses.set_index(columns[0])
-
         message = tabulate(df_statuses, headers='keys', tablefmt='simple')
         message = "<pre>{}</pre>".format(message)
 
@@ -566,18 +549,6 @@ def _version(bot: Bot, update: Update) -> None:
     :return: None
     """
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
-
-
-def shorten_date(_date):
-    """
-    Trim the date so it fits on small screens
-    """
-    new_date = re.sub('seconds?', 'sec', _date)
-    new_date = re.sub('minutes?', 'min', new_date)
-    new_date = re.sub('hours?', 'h', new_date)
-    new_date = re.sub('days?', 'd', new_date)
-    new_date = re.sub('^an?', '1', new_date)
-    return new_date
 
 
 def _exec_forcesell(trade: Trade) -> None:
