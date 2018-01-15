@@ -391,7 +391,7 @@ def _balance(bot: Bot, update: Update) -> None:
             currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
         currency['BTC'] = currency["Rate"] * currency["Balance"]
         total = total + currency['BTC']
-        output += """{Currency}:
+        output += """*Currency*: {Currency}
 *Available*: {Available}
 *Balance*: {Balance}
 *Pending*: {Pending}
