@@ -280,13 +280,13 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     return dataframe
 
 
-def get_signal(pair: str, signal: SignalType) -> bool:
+def get_signal(pair: str, signal: SignalType, interval: int) -> bool:
     """
     Calculates current signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
     :return: True if pair is good for buying, False otherwise
     """
-    ticker_hist = get_ticker_history(pair)
+    ticker_hist = get_ticker_history(pair, interval)
     if not ticker_hist:
         logger.warning('Empty ticker history for pair %s', pair)
         return False

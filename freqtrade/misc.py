@@ -171,7 +171,7 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     )
     backtesting_cmd.add_argument(
         '-i', '--ticker-interval',
-        help='specify ticker interval in minutes (default: 5)',
+        help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
         dest='ticker_interval',
         default=5,
         type=int,
@@ -223,6 +223,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
+        'ticker_interval': {'type': 'integer', 'minimum': 1, 'maximum': 1440},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
@@ -276,7 +277,8 @@ CONF_SCHEMA = {
         'internals': {
             'type': 'object',
             'properties': {
-                'process_throttle_secs': {'type': 'number'}
+                'process_throttle_secs': {'type': 'number'},
+                'interval': {'type': 'integer'}
             }
         }
     },
@@ -312,6 +314,7 @@ CONF_SCHEMA = {
     ],
     'required': [
         'max_open_trades',
+        'ticker_interval',
         'stake_currency',
         'stake_amount',
         'fiat_display_currency',
