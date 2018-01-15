@@ -606,11 +606,15 @@ def test_balance_handle(default_conf, update, mocker):
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_balances=MagicMock(return_value=mock_balance))
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
 
     _balance(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert '*Currency*: BTC' in msg_mock.call_args_list[0][0][0]
     assert 'Balance' in msg_mock.call_args_list[0][0][0]
+    assert 'Est. BTC' in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker):
