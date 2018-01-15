@@ -260,7 +260,7 @@ def start(args):
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
     data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=args.ticker_interval)
-    PROCESSED = optimize.tickerdata_to_dataframe(data, timeperiod=args.timeperiod)
+    PROCESSED = optimize.tickerdata_to_dataframe(data, timerange=args.timerange)
 
     if args.mongodb:
         logger.info('Using mongodb ...')

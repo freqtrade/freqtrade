@@ -179,5 +179,5 @@ def test_load_tickerdata_file():
 def test_tickerdata_to_dataframe():
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}
-    data = optimize.tickerdata_to_dataframe(tickerlist, timeperiod=-100)
+    data = optimize.tickerdata_to_dataframe(tickerlist, timerange=-100)
     assert 100 == len(data['BTC_UNITEST'])

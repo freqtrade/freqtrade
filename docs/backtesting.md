@@ -52,12 +52,12 @@ python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180
 ```
 
 **Running backtest with smaller testset**
-Use the --timeperiod argument to change how much of the testset
+Use the --timerange argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py backtesting --timeperiod -200
+python3 ./freqtrade/main.py backtesting --timerange -200
 ```
 
 **Update testdata directory

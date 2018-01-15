@@ -68,9 +68,9 @@ def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]]
     return result
 
 
-def tickerdata_to_dataframe(data, timeperiod=None):
-    if timeperiod:
-        data = trim_tickerlist(data, timeperiod)
+def tickerdata_to_dataframe(data, timerange=None):
+    if timerange:
+        data = trim_tickerlist(data, timerange)
     preprocessed = preprocess(data)
     return preprocessed
 
