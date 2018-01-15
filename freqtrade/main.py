@@ -19,6 +19,7 @@ from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import (State, get_state, load_config, parse_args,
                             throttle, update_state)
 from freqtrade.persistence import Trade
+from freqtrade.strategy.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')
 
@@ -235,14 +236,16 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
+    strategy = Strategy()
+
     current_profit = trade.calc_profit_percent(current_rate)
-    if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
+    if strategy.stoploss is not None and current_profit < float(strategy.stoploss):
         logger.debug('Stop loss hit.')
         return True
 
     # Check if time matches and current rate is above threshold
     time_diff = (current_time - trade.open_date).total_seconds() / 60
-    for duration, threshold in sorted(_CONF['minimal_roi'].items()):
+    for duration, threshold in sorted(strategy.minimal_roi.items()):
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
@@ -378,6 +381,9 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     persistence.init(config, db_url)
     exchange.init(config)
 
+    strategy = Strategy()
+    strategy.init(config)
+
     # Set initial application state
     initial_state = config.get('initial_state')
     if initial_state:
@@ -445,6 +451,9 @@ def main(sysargv=sys.argv[1:]) -> None:
     # Load and validate configuration
     _CONF = load_config(args.config)
 
+    # Add the strategy file to use
+    _CONF.update({'strategy': args.strategy})
+
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
         logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
@@ -462,6 +471,7 @@ def main(sysargv=sys.argv[1:]) -> None:
     try:
         init(_CONF)
         old_state = None
+
         while True:
             new_state = get_state()
             # Log state transition

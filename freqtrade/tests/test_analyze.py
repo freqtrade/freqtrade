@@ -9,6 +9,7 @@ from pandas import DataFrame
 from freqtrade.analyze import (get_signal, parse_ticker_dataframe,
                                populate_buy_trend, populate_indicators,
                                populate_sell_trend)
+from freqtrade.strategy.strategy import Strategy
 
 
 @pytest.fixture
@@ -27,11 +28,17 @@ def test_dataframe_correct_length(result):
 
 
 def test_populates_buy_trend(result):
+    # Load the default strategy for the unit test, because this logic is done in main.py
+    Strategy().init({'strategy': 'default_strategy'})
+
     dataframe = populate_buy_trend(populate_indicators(result))
     assert 'buy' in dataframe.columns
 
 
 def test_populates_sell_trend(result):
+    # Load the default strategy for the unit test, because this logic is done in main.py
+    Strategy().init({'strategy': 'default_strategy'})
+
     dataframe = populate_sell_trend(populate_indicators(result))
     assert 'sell' in dataframe.columns
 
