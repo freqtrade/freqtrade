@@ -310,6 +310,6 @@ def get_signal(pair: str) -> (bool, bool):
     if signal_date < arrow.now() - timedelta(minutes=10):
         return (False, False)
 
-    (buy, sell) = latest[SignalType.BUY] == 1, latest[SignalType.SELL] == 1
-    logger.debug('%trigger: %s (pair=%s, buy=%s sell=%s)', latest['date'], pair, buy, sell)
+    (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+    logger.debug('trigger: %s (pair=%s) buy=%s sell=%s', latest['date'], pair, str(buy), str(sell))
     return (buy, sell)

@@ -267,6 +267,52 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.close_date is not None
 
 
+def test_handle_overlpapping_signals(default_conf, ticker, mocker, caplog):
+    default_conf.update({'experimental': {'use_sell_signal': True}})
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, True))
+    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker,
+                          buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
+
+    init(default_conf, create_engine('sqlite://'))
+    create_trade(0.001)
+
+    # Buy and Sell triggering, so doing nothing ...
+    trades = Trade.query.all()
+    assert len(trades) == 0
+
+    # Buy is triggering, so buying ...
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    create_trade(0.001)
+    trades = Trade.query.all()
+    assert len(trades) == 1
+    assert trades[0].is_open is True
+
+    # Buy and Sell are not triggering, so doing nothing ...
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (False, False))
+    assert handle_trade(trades[0]) is False
+    trades = Trade.query.all()
+    assert len(trades) == 1
+    assert trades[0].is_open is True
+
+    # Buy and Sell are triggering, so doing nothing ...
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, True))
+    assert handle_trade(trades[0]) is False
+    trades = Trade.query.all()
+    assert len(trades) == 1
+    assert trades[0].is_open is True
+
+    # Sell is triggering, guess what : we are Selling!
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (False, True))
+    trades = Trade.query.all()
+    assert handle_trade(trades[0]) is True
+
+
 def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
