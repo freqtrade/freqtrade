@@ -102,7 +102,6 @@ SPACE = {
         {'type': 'ema5_cross_ema10'},
         {'type': 'macd_cross_signal'},
         {'type': 'sar_reversal'},
-        {'type': 'stochf_cross'},
         {'type': 'ht_sine'},
     ]),
     'stoploss': hp.uniform('stoploss', -0.5, -0.02),
@@ -235,7 +234,6 @@ def buy_strategy_generator(params):
             'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
             'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
-            'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
             'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
