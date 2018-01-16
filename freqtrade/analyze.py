@@ -74,6 +74,8 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     # Plus Directional Indicator / Movement
     dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
     dataframe['plus_di'] = ta.PLUS_DI(dataframe)
+    dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+
     """
     # ROC
     dataframe['roc'] = ta.ROC(dataframe)

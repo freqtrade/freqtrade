@@ -108,6 +108,7 @@ SPACE = {
         {'type': 'sar_reversal'},
         {'type': 'ht_sine'},
         {'type': 'heiken_reversal_bull'},
+        {'type': 'di_cross'},
     ]),
     'stoploss': hp.uniform('stoploss', -0.5, -0.02),
 }
@@ -244,6 +245,7 @@ def buy_strategy_generator(params):
             'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
             'heiken_reversal_bull': (crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
                                     (dataframe['ha_low'] == dataframe['ha_open']),
+            'di_cross': (crossed_above(dataframe['plus_di'], dataframe['minus_di'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
