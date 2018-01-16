@@ -114,11 +114,11 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
     """
     # Bollinger bands
+    """
     bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
     dataframe['bb_lowerband'] = bollinger['lower']
     dataframe['bb_middleband'] = bollinger['mid']
     dataframe['bb_upperband'] = bollinger['upper']
-    """
 
     # EMA - Exponential Moving Average
     dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
