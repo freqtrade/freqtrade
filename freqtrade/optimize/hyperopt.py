@@ -58,6 +58,10 @@ main._CONF = OPTIMIZE_CONFIG
 
 
 SPACE = {
+    'macd_below_zero': hp.choice('macd_below_zero', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
     'mfi': hp.choice('mfi', [
         {'enabled': False},
         {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
@@ -207,6 +211,8 @@ def buy_strategy_generator(params):
         # GUARDS AND TRENDS
         if params['uptrend_long_ema']['enabled']:
             conditions.append(dataframe['ema50'] > dataframe['ema100'])
+        if params['macd_below_zero']['enabled']:
+            conditions.append(dataframe['macd'] < 0)
         if params['uptrend_short_ema']['enabled']:
             conditions.append(dataframe['ema5'] > dataframe['ema10'])
         if params['mfi']['enabled']:

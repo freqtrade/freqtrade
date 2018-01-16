@@ -107,6 +107,7 @@ def test_no_log_if_loss_does_not_improve(mocker):
 
 def test_fmin_best_results(mocker, caplog):
     fmin_result = {
+        "macd_below_zero": 0,
         "adx": 1,
         "adx-value": 15.0,
         "fastd": 1,
@@ -136,7 +137,7 @@ def test_fmin_best_results(mocker, caplog):
         '"adx": {\n        "enabled": true,\n        "value": 15.0\n    },',
         '"green_candle": {\n        "enabled": true\n    },',
         '"mfi": {\n        "enabled": false\n    },',
-        '"trigger": {\n        "type": "ao_cross_zero"\n    },',
+        '"trigger": {\n        "type": "faststoch10"\n    },',
         '"stoploss": -0.1',
     ]
 
