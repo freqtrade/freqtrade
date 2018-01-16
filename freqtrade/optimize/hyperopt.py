@@ -30,19 +30,19 @@ logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
-TARGET_TRADES = 1100
+TARGET_TRADES = 600
 TOTAL_TRIES = 0
 _CURRENT_TRIES = 0
 CURRENT_BEST_LOSS = 100
 
 # max average trade duration in minutes
 # if eval ends with higher value, we consider it a failed eval
-MAX_ACCEPTED_TRADE_DURATION = 240
+MAX_ACCEPTED_TRADE_DURATION = 300
 
 # this is expexted avg profit * expected trade count
 # for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
 # check that the reported Σ% values do not exceed this!
-EXPECTED_MAX_PROFIT = 3.85
+EXPECTED_MAX_PROFIT = 3.0
 
 # Configuration and data used by hyperopt
 PROCESSED = None  # optimize.preprocess(optimize.load_data())
