@@ -107,6 +107,7 @@ SPACE = {
         {'type': 'macd_cross_signal'},
         {'type': 'sar_reversal'},
         {'type': 'ht_sine'},
+        {'type': 'heiken_reversal_bull'},
     ]),
     'stoploss': hp.uniform('stoploss', -0.5, -0.02),
 }
@@ -241,6 +242,8 @@ def buy_strategy_generator(params):
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
             'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
             'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
+            'heiken_reversal_bull': (crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
+                                    (dataframe['ha_low'] == dataframe['ha_open']),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 

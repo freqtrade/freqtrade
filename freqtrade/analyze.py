@@ -211,14 +211,12 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
     # Chart type
     # ------------------------------------
-    """
     # Heikinashi stategy
     heikinashi = qtpylib.heikinashi(dataframe)
     dataframe['ha_open'] = heikinashi['open']
     dataframe['ha_close'] = heikinashi['close']
     dataframe['ha_high'] = heikinashi['high']
     dataframe['ha_low'] = heikinashi['low']
-    """
 
     return dataframe
 
