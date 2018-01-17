@@ -131,7 +131,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
         try:
             order = exchange.get_order(trade.open_order_id)
-        except OperationalException:
+        except requests.exceptions.RequestException:
+            logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
             continue
         ordertime = arrow.get(order['opened'])
 
