@@ -74,6 +74,8 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     # Plus Directional Indicator / Movement
     dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
     dataframe['plus_di'] = ta.PLUS_DI(dataframe)
+    dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+
     """
     # ROC
     dataframe['roc'] = ta.ROC(dataframe)
@@ -114,13 +116,14 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
     """
     # Bollinger bands
+    """
     bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
     dataframe['bb_lowerband'] = bollinger['lower']
     dataframe['bb_middleband'] = bollinger['mid']
     dataframe['bb_upperband'] = bollinger['upper']
-    """
 
     # EMA - Exponential Moving Average
+    dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
     dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
     dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
     dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
@@ -210,14 +213,12 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
     # Chart type
     # ------------------------------------
-    """
     # Heikinashi stategy
     heikinashi = qtpylib.heikinashi(dataframe)
     dataframe['ha_open'] = heikinashi['open']
     dataframe['ha_close'] = heikinashi['close']
     dataframe['ha_high'] = heikinashi['high']
     dataframe['ha_low'] = heikinashi['low']
-    """
 
     return dataframe
 
