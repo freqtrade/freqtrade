@@ -259,7 +259,7 @@ def handle_trade(trade: Trade) -> bool:
         return True
 
     # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-    if _CONF.get('experimental', {}).get('sell_profit_only'):
+    if _CONF.get('experimental', {}).get('sell_profit_only', False):
         logger.debug('Checking if trade is profitable ...')
         if not buy and trade.calc_profit(rate=current_rate) <= 0:
             return False
