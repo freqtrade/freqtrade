@@ -1,11 +1,13 @@
 import logging
 import re
 import arrow
+from datetime import datetime, timedelta
 from pandas import DataFrame
 
 from freqtrade.persistence import Trade
 from freqtrade.misc import State, get_state
 from freqtrade import exchange
+from freqtrade.fiat_convert import CryptoToFiatConverter
 from . import telegram
 
 logger = logging.getLogger(__name__)
@@ -142,3 +144,41 @@ def rpc_status_table():
         # Another approach would be to just return the
         # result, or raise error
         return (False, df_statuses)
+
+
+def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
+    today = datetime.utcnow().date()
+    profit_days = {}
+
+    if not (isinstance(timescale, int) and timescale > 0):
+        return (True, '*Daily [n]:* `must be an integer greater than 0`')
+
+    # FIX: we might not want to call CryptoToFiatConverter, for every call
+    fiat = CryptoToFiatConverter()
+    for day in range(0, timescale):
+        profitday = today - timedelta(days=day)
+        trades = Trade.query \
+            .filter(Trade.is_open.is_(False)) \
+            .filter(Trade.close_date >= profitday)\
+            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
+            .order_by(Trade.close_date)\
+            .all()
+        curdayprofit = sum(trade.calc_profit() for trade in trades)
+        profit_days[profitday] = format(curdayprofit, '.8f')
+
+    stats = [
+        [
+            key,
+            '{value:.8f} {symbol}'.format(value=float(value), symbol=stake_currency),
+            '{value:.3f} {symbol}'.format(
+                value=fiat.convert_amount(
+                    value,
+                    stake_currency,
+                    fiat_display_currency
+                ),
+                symbol=fiat_display_currency
+            )
+        ]
+        for key, value in profit_days.items()
+    ]
+    return (False, stats)

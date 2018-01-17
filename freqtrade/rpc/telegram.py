@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
 from typing import Any, Callable
 
@@ -10,7 +10,7 @@ from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
-from freqtrade.rpc.__init__ import rpc_status_table, rpc_trade_status
+from freqtrade.rpc.__init__ import rpc_status_table, rpc_trade_status, rpc_daily_profit
 from freqtrade import __version__, exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import State, get_state, update_state
@@ -166,54 +166,26 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    today = datetime.utcnow().date()
-    profit_days = {}
-
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
     except (TypeError, ValueError):
         timescale = 7
-
-    if not (isinstance(timescale, int) and timescale > 0):
-        send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
-        return
-
-    for day in range(0, timescale):
-        profitday = today - timedelta(days=day)
-        trades = Trade.query \
-            .filter(Trade.is_open.is_(False)) \
-            .filter(Trade.close_date >= profitday)\
-            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
-            .order_by(Trade.close_date)\
-            .all()
-        curdayprofit = sum(trade.calc_profit() for trade in trades)
-        profit_days[profitday] = format(curdayprofit, '.8f')
-
-    stats = [
-        [
-            key,
-            '{value:.8f} {symbol}'.format(value=float(value), symbol=_CONF['stake_currency']),
-            '{value:.3f} {symbol}'.format(
-                value=_FIAT_CONVERT.convert_amount(
-                    value,
-                    _CONF['stake_currency'],
-                    _CONF['fiat_display_currency']
-                ),
-                symbol=_CONF['fiat_display_currency']
-            )
-        ]
-        for key, value in profit_days.items()
-    ]
-    stats = tabulate(stats,
-                     headers=[
-                         'Day',
-                         'Profit {}'.format(_CONF['stake_currency']),
-                         'Profit {}'.format(_CONF['fiat_display_currency'])
-                     ],
-                     tablefmt='simple')
-
-    message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
-    send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+    (error, stats) = rpc_daily_profit(timescale,
+                                      _CONF['stake_currency'],
+                                      _CONF['fiat_display_currency'])
+    if error:
+        send_msg(stats, bot=bot)
+    else:
+        stats = tabulate(stats,
+                         headers=[
+                             'Day',
+                             'Profit {}'.format(_CONF['stake_currency']),
+                             'Profit {}'.format(_CONF['fiat_display_currency'])
+                         ],
+                         tablefmt='simple')
+        message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(
+                  timescale, stats)
+        send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
 
 
 @authorized_only
