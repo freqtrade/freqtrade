@@ -58,6 +58,10 @@ main._CONF = OPTIMIZE_CONFIG
 
 
 SPACE = {
+    'macd_below_zero': hp.choice('macd_below_zero', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
     'mfi': hp.choice('mfi', [
         {'enabled': False},
         {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
@@ -96,13 +100,15 @@ SPACE = {
     ]),
     'trigger': hp.choice('trigger', [
         {'type': 'lower_bb'},
+        {'type': 'lower_bb_tema'},
         {'type': 'faststoch10'},
         {'type': 'ao_cross_zero'},
-        {'type': 'ema5_cross_ema10'},
+        {'type': 'ema3_cross_ema10'},
         {'type': 'macd_cross_signal'},
         {'type': 'sar_reversal'},
-        {'type': 'stochf_cross'},
         {'type': 'ht_sine'},
+        {'type': 'heiken_reversal_bull'},
+        {'type': 'di_cross'},
     ]),
     'stoploss': hp.uniform('stoploss', -0.5, -0.02),
 }
@@ -207,6 +213,8 @@ def buy_strategy_generator(params):
         # GUARDS AND TRENDS
         if params['uptrend_long_ema']['enabled']:
             conditions.append(dataframe['ema50'] > dataframe['ema100'])
+        if params['macd_below_zero']['enabled']:
+            conditions.append(dataframe['macd'] < 0)
         if params['uptrend_short_ema']['enabled']:
             conditions.append(dataframe['ema5'] > dataframe['ema10'])
         if params['mfi']['enabled']:
@@ -227,14 +235,17 @@ def buy_strategy_generator(params):
 
         # TRIGGERS
         triggers = {
-            'lower_bb': dataframe['tema'] <= dataframe['blower'],
+            'lower_bb': (dataframe['close'] < dataframe['bb_lowerband']),
+            'lower_bb_tema': (dataframe['tema'] < dataframe['bb_lowerband']),
             'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
-            'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
+            'ema3_cross_ema10': (crossed_above(dataframe['ema3'], dataframe['ema10'])),
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
             'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
-            'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
             'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
+            'heiken_reversal_bull': (crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
+                                    (dataframe['ha_low'] == dataframe['ha_open']),
+            'di_cross': (crossed_above(dataframe['plus_di'], dataframe['minus_di'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
