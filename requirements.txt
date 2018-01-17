@@ -11,7 +11,7 @@ scikit-learn==0.19.1
 scipy==1.0.0
 jsonschema==2.6.0
 numpy==1.14.0
-TA-Lib==0.4.15
+TA-Lib==0.4.16
 pytest==3.3.2
 pytest-mock==1.6.3
 pytest-cov==2.5.1
