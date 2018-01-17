@@ -1,8 +1,10 @@
 import logging
 import re
 import arrow
+from decimal import Decimal
 from datetime import datetime, timedelta
 from pandas import DataFrame
+import sqlalchemy as sql
 
 from freqtrade.persistence import Trade
 from freqtrade.misc import State, get_state
@@ -182,3 +184,114 @@ def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
         for key, value in profit_days.items()
     ]
     return (False, stats)
+
+
+def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
+    """
+    :return: cumulative profit statistics.
+    """
+    trades = Trade.query.order_by(Trade.id).all()
+
+    profit_all_coin = []
+    profit_all_percent = []
+    profit_closed_coin = []
+    profit_closed_percent = []
+    durations = []
+
+    for trade in trades:
+        current_rate = None
+
+        if not trade.open_rate:
+            continue
+        if trade.close_date:
+            durations.append((trade.close_date - trade.open_date).total_seconds())
+
+        if not trade.is_open:
+            profit_percent = trade.calc_profit_percent()
+            profit_closed_coin.append(trade.calc_profit())
+            profit_closed_percent.append(profit_percent)
+        else:
+            # Get current rate
+            current_rate = exchange.get_ticker(trade.pair, False)['bid']
+            profit_percent = trade.calc_profit_percent(rate=current_rate)
+
+        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
+        profit_all_percent.append(profit_percent)
+
+    best_pair = Trade.session.query(Trade.pair,
+                                    sql.func.sum(Trade.close_profit).label('profit_sum')) \
+        .filter(Trade.is_open.is_(False)) \
+        .group_by(Trade.pair) \
+        .order_by(sql.text('profit_sum DESC')) \
+        .first()
+
+    if not best_pair:
+        return (True, '*Status:* `no closed trade`')
+
+    bp_pair, bp_rate = best_pair
+
+    # FIX: we want to keep fiatconverter in a state/environment,
+    #      doing this will utilize its caching functionallity, instead we reinitialize it here
+    fiat = CryptoToFiatConverter()
+    # Prepare data to display
+    profit_closed_coin = round(sum(profit_closed_coin), 8)
+    profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
+    profit_closed_fiat = fiat.convert_amount(
+        profit_closed_coin,
+        stake_currency,
+        fiat_display_currency
+    )
+    profit_all_coin = round(sum(profit_all_coin), 8)
+    profit_all_percent = round(sum(profit_all_percent) * 100, 2)
+    profit_all_fiat = fiat.convert_amount(
+        profit_all_coin,
+        stake_currency,
+        fiat_display_currency
+    )
+    return (False,
+            {'profit_closed_coin': profit_closed_coin,
+             'profit_closed_percent': profit_closed_percent,
+             'profit_closed_fiat': profit_closed_fiat,
+             'profit_all_coin': profit_all_coin,
+             'profit_all_percent': profit_all_percent,
+             'profit_all_fiat': profit_all_fiat,
+             'trade_count': len(trades),
+             'first_trade_date': arrow.get(trades[0].open_date).humanize(),
+             'latest_trade_date': arrow.get(trades[-1].open_date).humanize(),
+             'avg_duration': str(timedelta(seconds=sum(durations) /
+                                           float(len(durations)))).split('.')[0],
+             'best_pair': bp_pair,
+             'best_rate': round(bp_rate * 100, 2)
+             })
+
+    # Message to display
+    markdown_msg = """
+*ROI:* Close trades
+  ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`
+  ∙ `{profit_closed_fiat:.3f} {fiat}`
+*ROI:* All trades
+  ∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`
+  ∙ `{profit_all_fiat:.3f} {fiat}`
+
+*Total Trade Count:* `{trade_count}`
+*First Trade opened:* `{first_trade_date}`
+*Latest Trade opened:* `{latest_trade_date}`
+*Avg. Duration:* `{avg_duration}`
+*Best Performing:* `{best_pair}: {best_rate:.2f}%`
+    """.format(
+        coin=stake_currency,
+        fiat=fiat_display_currency,
+        profit_closed_coin=profit_closed_coin,
+        profit_closed_percent=profit_closed_percent,
+        profit_closed_fiat=profit_closed_fiat,
+        profit_all_coin=profit_all_coin,
+        profit_all_percent=profit_all_percent,
+        profit_all_fiat=profit_all_fiat,
+        trade_count=len(trades),
+        first_trade_date=arrow.get(trades[0].open_date).humanize(),
+        latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
+        avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
+        best_pair=bp_pair,
+        best_rate=round(bp_rate * 100, 2),
+    )
+    return markdown_msg

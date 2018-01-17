@@ -11,6 +11,13 @@ import freqtrade.misc as misc
 import freqtrade.rpc as rpc
 
 
+def prec_satoshi(a, b):
+    """
+    :return: True if A and B differs less than one satoshi.
+    """
+    return abs(a - b) < 0.00000001
+
+
 def test_init_telegram_enabled(default_conf, mocker):
     module_list = []
     mocker.patch('freqtrade.rpc.REGISTERED_MODULES', module_list)
@@ -142,3 +149,58 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
                                          fiat_display_currency)
     assert error
     assert days.find('must be an integer greater than 0') >= 0
+
+
+def test_rpc_trade_statistics(
+        default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: True)
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    main.init(default_conf, create_engine('sqlite://'))
+    stake_currency = default_conf['stake_currency']
+    fiat_display_currency = default_conf['fiat_display_currency']
+
+    (error, stats) = rpc.rpc_trade_statistics(stake_currency,
+                                              fiat_display_currency)
+    assert error
+    assert stats.find('no closed trade') >= 0
+
+    # Create some test data
+    main.create_trade(0.001)
+    trade = Trade.query.first()
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+    # Update the ticker with a market going up
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_up)
+    trade.update(limit_sell_order)
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+
+    (error, stats) = rpc.rpc_trade_statistics(stake_currency,
+                                              fiat_display_currency)
+    assert not error
+    assert prec_satoshi(stats['profit_closed_coin'], 6.217e-05)
+    assert prec_satoshi(stats['profit_closed_percent'], 6.2)
+    assert prec_satoshi(stats['profit_closed_fiat'], 0.93255)
+    assert prec_satoshi(stats['profit_all_coin'], 6.217e-05)
+    assert prec_satoshi(stats['profit_all_percent'], 6.2)
+    assert prec_satoshi(stats['profit_all_fiat'], 0.93255)
+    assert stats['trade_count'] == 1
+    assert stats['first_trade_date'] == 'just now'
+    assert stats['latest_trade_date'] == 'just now'
+    assert stats['avg_duration'] == '0:00:00'
+    assert stats['best_pair'] == 'BTC_ETH'
+    assert prec_satoshi(stats['best_rate'], 6.2)

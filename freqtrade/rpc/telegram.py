@@ -1,16 +1,18 @@
 import logging
-from datetime import timedelta
-from decimal import Decimal
 from typing import Any, Callable
 
-import arrow
 from sqlalchemy import and_, func, text
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
-from freqtrade.rpc.__init__ import rpc_status_table, rpc_trade_status, rpc_daily_profit
+from freqtrade.rpc.__init__ import (rpc_status_table,
+                                    rpc_trade_status,
+                                    rpc_daily_profit,
+                                    rpc_trade_statistics
+                                    )
+
 from freqtrade import __version__, exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import State, get_state, update_state
@@ -197,63 +199,12 @@ def _profit(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    trades = Trade.query.order_by(Trade.id).all()
-
-    profit_all_coin = []
-    profit_all_percent = []
-    profit_closed_coin = []
-    profit_closed_percent = []
-    durations = []
-
-    for trade in trades:
-        current_rate = None
-
-        if not trade.open_rate:
-            continue
-        if trade.close_date:
-            durations.append((trade.close_date - trade.open_date).total_seconds())
-
-        if not trade.is_open:
-            profit_percent = trade.calc_profit_percent()
-            profit_closed_coin.append(trade.calc_profit())
-            profit_closed_percent.append(profit_percent)
-        else:
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair, False)['bid']
-            profit_percent = trade.calc_profit_percent(rate=current_rate)
-
-        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
-        profit_all_percent.append(profit_percent)
-
-    best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
-        .filter(Trade.is_open.is_(False)) \
-        .group_by(Trade.pair) \
-        .order_by(text('profit_sum DESC')) \
-        .first()
-
-    if not best_pair:
-        send_msg('*Status:* `no closed trade`', bot=bot)
+    (error, stats) = rpc_trade_statistics(_CONF['stake_currency'],
+                                          _CONF['fiat_display_currency'])
+    if error:
+        send_msg(stats, bot=bot)
         return
 
-    bp_pair, bp_rate = best_pair
-
-    # Prepare data to display
-    profit_closed_coin = round(sum(profit_closed_coin), 8)
-    profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
-    profit_closed_fiat = _FIAT_CONVERT.convert_amount(
-        profit_closed_coin,
-        _CONF['stake_currency'],
-        _CONF['fiat_display_currency']
-    )
-    profit_all_coin = round(sum(profit_all_coin), 8)
-    profit_all_percent = round(sum(profit_all_percent) * 100, 2)
-    profit_all_fiat = _FIAT_CONVERT.convert_amount(
-        profit_all_coin,
-        _CONF['stake_currency'],
-        _CONF['fiat_display_currency']
-    )
-
-    # Message to display
     markdown_msg = """
 *ROI:* Close trades
   ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`
@@ -270,18 +221,18 @@ def _profit(bot: Bot, update: Update) -> None:
     """.format(
         coin=_CONF['stake_currency'],
         fiat=_CONF['fiat_display_currency'],
-        profit_closed_coin=profit_closed_coin,
-        profit_closed_percent=profit_closed_percent,
-        profit_closed_fiat=profit_closed_fiat,
-        profit_all_coin=profit_all_coin,
-        profit_all_percent=profit_all_percent,
-        profit_all_fiat=profit_all_fiat,
-        trade_count=len(trades),
-        first_trade_date=arrow.get(trades[0].open_date).humanize(),
-        latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
-        avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
-        best_pair=bp_pair,
-        best_rate=round(bp_rate * 100, 2),
+        profit_closed_coin=stats['profit_closed_coin'],
+        profit_closed_percent=stats['profit_closed_percent'],
+        profit_closed_fiat=stats['profit_closed_fiat'],
+        profit_all_coin=stats['profit_all_coin'],
+        profit_all_percent=stats['profit_all_percent'],
+        profit_all_fiat=stats['profit_all_fiat'],
+        trade_count=stats['trade_count'],
+        first_trade_date=stats['first_trade_date'],
+        latest_trade_date=stats['latest_trade_date'],
+        avg_duration=stats['avg_duration'],
+        best_pair=stats['best_pair'],
+        best_rate=stats['best_rate']
     )
     send_msg(markdown_msg, bot=bot)
 
