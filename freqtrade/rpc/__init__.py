@@ -67,6 +67,55 @@ def shorten_date(_date):
 # a remotely exposed function
 
 
+def rpc_trade_status():
+    # Fetch open trade
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    if get_state() != State.RUNNING:
+        return (True, '*Status:* `trader is not running`')
+    elif not trades:
+        return (True, '*Status:* `no active trade`')
+    else:
+        result = []
+        for trade in trades:
+            order = None
+            if trade.open_order_id:
+                order = exchange.get_order(trade.open_order_id)
+            # calculate profit and send message to user
+            current_rate = exchange.get_ticker(trade.pair, False)['bid']
+            current_profit = trade.calc_profit_percent(current_rate)
+            fmt_close_profit = '{:.2f}%'.format(
+                round(trade.close_profit * 100, 2)
+            ) if trade.close_profit else None
+            message = """
+*Trade ID:* `{trade_id}`
+*Current Pair:* [{pair}]({market_url})
+*Open Since:* `{date}`
+*Amount:* `{amount}`
+*Open Rate:* `{open_rate:.8f}`
+*Close Rate:* `{close_rate}`
+*Current Rate:* `{current_rate:.8f}`
+*Close Profit:* `{close_profit}`
+*Current Profit:* `{current_profit:.2f}%`
+*Open Order:* `{open_order}`
+            """.format(
+                trade_id=trade.id,
+                pair=trade.pair,
+                market_url=exchange.get_pair_detail_url(trade.pair),
+                date=arrow.get(trade.open_date).humanize(),
+                open_rate=trade.open_rate,
+                close_rate=trade.close_rate,
+                current_rate=current_rate,
+                amount=round(trade.amount, 8),
+                close_profit=fmt_close_profit,
+                current_profit=round(current_profit * 100, 2),
+                open_order='({} rem={:.8f})'.format(
+                    order['type'], order['remaining']
+                ) if order else None,
+            )
+            result.append(message)
+        return (False, result)
+
+
 def rpc_status_table():
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     if get_state() != State.RUNNING:
