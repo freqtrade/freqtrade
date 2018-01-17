@@ -295,3 +295,35 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
         best_rate=round(bp_rate * 100, 2),
     )
     return markdown_msg
+
+def rpc_balance(fiat_display_currency):
+    """
+    :return: current account balance per crypto
+    """
+    balances = [
+        c for c in exchange.get_balances()
+        if c['Balance'] or c['Available'] or c['Pending']
+    ]
+    if not balances:
+        return (True, '`All balances are zero.`')
+
+    output = []
+    total = 0.0
+    for currency in balances:
+        coin = currency['Currency']
+        if coin == 'BTC':
+            currency["Rate"] = 1.0
+        else:
+            currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
+        currency['BTC'] = currency["Rate"] * currency["Balance"]
+        total = total + currency['BTC']
+        output.append({'currency': currency['Currency'],
+                       'available': currency['Available'],
+                       'balance': currency['Balance'],
+                       'pending': currency['Pending'],
+                       'est_btc': currency['BTC']
+                       })
+    fiat = CryptoToFiatConverter()
+    symbol = fiat_display_currency
+    value = fiat.convert_amount(total, 'BTC', symbol)
+    return (output, total, symbol, value)
