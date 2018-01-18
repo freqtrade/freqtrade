@@ -22,19 +22,21 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c PATH, --config PATH
-                        specify configuration file (default: config.json)
   -v, --verbose         be verbose
   --version             show program's version number and exit
-  -dd PATH, --datadir PATH
-                        Path is from where backtesting and hyperopt will load the
-                        ticker data files (default freqdata/tests/testdata).
-  --dynamic-whitelist [INT]
-                        dynamically generate and update whitelist based on 24h
-                        BaseVolume (Default 20 currencies)
+  -c PATH, --config PATH
+                        specify configuration file (default: config.json)
+  -s PATH, --strategy PATH
+                        specify strategy file (default:
+                        freqtrade/strategy/default_strategy.py)
   --dry-run-db          Force dry run to use a local DB
                         "tradesv3.dry_run.sqlite" instead of memory DB. Work
                         only if dry_run is enabled.
+  -dd PATH, --datadir PATH
+                        path to backtest data (default freqdata/tests/testdata
+  --dynamic-whitelist [INT]
+                        dynamically generate and update whitelist based on 24h
+                        BaseVolume (Default 20 currencies)
 ```
 
 ### How to use a different config file?
@@ -44,6 +46,33 @@ default, the bot will load the file `./config.json`
 ```bash
 python3 ./freqtrade/main.py -c path/far/far/away/config.json 
 ```
+
+### How to use --strategy?
+This parameter will allow you to load your custom strategy file. Per 
+default without `--strategy` or `-s` the bol will load the 
+`default_strategy` included with the bot (`freqtrade/strategy/default_strategy.py`). 
+
+The bot will search your strategy file into `user_data/strategies` and 
+`freqtrade/strategy`.
+
+To load a strategy, simply pass the file name (without .py) in this 
+parameters.
+
+**Example:**  
+In `user_data/strategies` you have a file `my_awesome_strategy.py` to 
+load it:  
+```bash
+python3 ./freqtrade/main.py --strategy my_awesome_strategy
+```
+
+If the bot does not find your strategy file, it will fallback to the 
+`default_strategy`.
+
+Learn more about strategy file in [optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
+
+#### How to install a strategy?
+This is very simple. Copy paste your strategy file into the folder 
+`user_data/strategies`. And voila, the bot is ready to use it.
 
 ### How to use --dynamic-whitelist?
 Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
