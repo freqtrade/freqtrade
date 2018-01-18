@@ -14,6 +14,7 @@ def result():
 def test_default_strategy_class_name():
     assert class_name == DefaultStrategy.__name__
 
+
 def test_default_strategy_structure():
     assert hasattr(DefaultStrategy, 'minimal_roi')
     assert hasattr(DefaultStrategy, 'stoploss')
@@ -22,6 +23,7 @@ def test_default_strategy_structure():
     assert hasattr(DefaultStrategy, 'populate_sell_trend')
     assert hasattr(DefaultStrategy, 'hyperopt_space')
     assert hasattr(DefaultStrategy, 'buy_strategy_generator')
+
 
 def test_default_strategy(result):
     strategy = DefaultStrategy()

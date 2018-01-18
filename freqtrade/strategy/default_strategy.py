@@ -27,7 +27,6 @@ class DefaultStrategy(IStrategy):
     # Optimal stoploss designed for the strategy
     stoploss = -0.10
 
-
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame

@@ -120,6 +120,7 @@ def test_strategy_fallback_default_strategy():
     strategy._load_strategy('../../super_duper')
     assert not hasattr(Strategy, 'custom_strategy')
 
+
 def test_strategy_singleton():
     strategy1 = Strategy()
     strategy1.init({'strategy': 'default_strategy'})

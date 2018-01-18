@@ -152,6 +152,7 @@ def format_results(results: DataFrame):
                 results.duration.mean() * 5,
             )
 
+
 def start(args):
     global TOTAL_TRIES, PROCESSED, TRIALS, _CURRENT_TRIES
 
