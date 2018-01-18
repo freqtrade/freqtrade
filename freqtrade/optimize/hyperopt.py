@@ -48,7 +48,7 @@ PROCESSED = None  # optimize.preprocess(optimize.load_data())
 OPTIMIZE_CONFIG = hyperopt_optimize_conf()
 
 # Hyperopt Trials
-TRIALS_FILE = os.path.join('freqtrade', 'optimize', 'hyperopt_trials.pickle')
+TRIALS_FILE = os.path.join('user_data', 'hyperopt_trials.pickle')
 TRIALS = Trials()
 
 # Monkey patch config
