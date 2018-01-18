@@ -19,8 +19,8 @@ from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
 from freqtrade.optimize.backtesting import backtest
-from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
 from freqtrade.strategy.strategy import Strategy
+from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 # Remove noisy log messages
 logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
