@@ -129,8 +129,16 @@ def check_handle_timedout(timeoutvalue: int) -> None:
     timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
-        order = exchange.get_order(trade.open_order_id)
+        try:
+            order = exchange.get_order(trade.open_order_id)
+        except requests.exceptions.RequestException:
+            logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
+            continue
         ordertime = arrow.get(order['opened'])
+
+        # Check if trade is still actually open
+        if int(order['remaining']) == 0:
+            continue
 
         if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
             # Buy timeout - cancel order
@@ -140,6 +148,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 Trade.session.delete(trade)
                 Trade.session.flush()
                 logger.info('Buy order timeout for %s.', trade)
+                rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
+                             trade.pair.replace('_', '/')))
             else:
                 # if trade is partially complete, edit the stake details for the trade
                 # and close the order
@@ -147,6 +157,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 trade.stake_amount = trade.amount * trade.open_rate
                 trade.open_order_id = None
                 logger.info('Partial buy order timeout for %s.', trade)
+                rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
+                             trade.pair.replace('_', '/')))
         elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
             # Sell timeout - cancel order and update trade
             if order['remaining'] == order['amount']:
@@ -157,6 +169,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 trade.close_date = None
                 trade.is_open = True
                 trade.open_order_id = None
+                rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
+                             trade.pair.replace('_', '/')))
                 logger.info('Sell order timeout for %s.', trade)
                 return True
             else:

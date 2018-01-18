@@ -355,7 +355,8 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -380,6 +381,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     # check it does cancel buy orders over the time limit
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
     assert len(trades) == 0
 
@@ -387,7 +389,8 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
 def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -413,6 +416,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     # check it does cancel sell orders over the time limit
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
 
 
@@ -420,7 +424,8 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
                                        mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
@@ -446,6 +451,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     # note this is for a partially-complete buy order
     check_handle_timedout(600)
     assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
