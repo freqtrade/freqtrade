@@ -189,3 +189,11 @@ def test_init(mocker):
     conf = {'exchange': {'pair_whitelist': []}}
     mocker.patch('freqtrade.optimize.hyperopt_optimize_conf', return_value=conf)
     assert {} == optimize.load_data('', pairs=[], refresh_pairs=True)
+
+
+def test_tickerdata_to_dataframe():
+    timerange = ((None, 'line'), None, -100)
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
+    tickerlist = {'BTC_UNITEST': tick}
+    data = optimize.tickerdata_to_dataframe(tickerlist)
+    assert 100 == len(data['BTC_UNITEST'])

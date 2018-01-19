@@ -29,6 +29,7 @@ The table below will list all configuration parameters.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | No | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
+| `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required is `enable` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required is `enable` is `true`.

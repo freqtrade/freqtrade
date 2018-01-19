@@ -74,6 +74,8 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     # Plus Directional Indicator / Movement
     dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
     dataframe['plus_di'] = ta.PLUS_DI(dataframe)
+    dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+
     """
     # ROC
     dataframe['roc'] = ta.ROC(dataframe)
@@ -114,13 +116,14 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
     """
     # Bollinger bands
+    """
     bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
     dataframe['bb_lowerband'] = bollinger['lower']
     dataframe['bb_middleband'] = bollinger['mid']
     dataframe['bb_upperband'] = bollinger['upper']
-    """
 
     # EMA - Exponential Moving Average
+    dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
     dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
     dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
     dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
@@ -210,14 +213,12 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
     # Chart type
     # ------------------------------------
-    """
     # Heikinashi stategy
     heikinashi = qtpylib.heikinashi(dataframe)
     dataframe['ha_open'] = heikinashi['open']
     dataframe['ha_close'] = heikinashi['close']
     dataframe['ha_high'] = heikinashi['high']
     dataframe['ha_low'] = heikinashi['low']
-    """
 
     return dataframe
 
@@ -280,29 +281,38 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     return dataframe
 
 
-def get_signal(pair: str, signal: SignalType) -> bool:
+# FIX: 20180109, there could be some confusion because we will make a
+#      boolean result (execute the action or not depending on the signal).
+#      But the above checks can also return False, and we hide that.
+#      20180119 Update to above fix, after an code update we now return
+#               a tuple (buy, sell). We could take advantage of this
+#               To distinguish an error from an non-signal situation (False, False)
+#               by just returning False.
+#               In short, if we return False it is error, If a tuple we
+#               get the signal situation.
+def get_signal(pair: str) -> (bool, bool):
     """
     Calculates current signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
-    :return: True if pair is good for buying, False otherwise
+    :return: (True, False) if pair is good for buying and not for selling
     """
     ticker_hist = get_ticker_history(pair)
     if not ticker_hist:
         logger.warning('Empty ticker history for pair %s', pair)
-        return False
+        return (False, False)
 
     try:
         dataframe = analyze_ticker(ticker_hist)
     except ValueError as ex:
         logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
-        return False
+        return (False, False)
     except Exception as ex:
         logger.exception('Unexpected error when analyzing ticker for pair %s: %s', pair, str(ex))
-        return False
+        return (False, False)
 
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)
-        return False
+        return (False, False)
 
     latest = dataframe.iloc[-1]
 
@@ -310,11 +320,8 @@ def get_signal(pair: str, signal: SignalType) -> bool:
     signal_date = arrow.get(latest['date'])
     if signal_date < arrow.now() - timedelta(minutes=10):
         logger.warning('Too old dataframe for pair %s', pair)
-        return False
+        return (False, False)
 
-    # FIX: 20180109, there could be some confusion because we will make a
-    #      boolean result (execute the action or not depending on the signal).
-    #      But the above checks can also return False, and we hide that.
-    result = latest[signal.value] == 1
-    logger.debug('%s_trigger: %s (pair=%s, signal=%s)', signal.value, latest['date'], pair, result)
-    return result
+    (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+    logger.debug('trigger: %s (pair=%s) buy=%s sell=%s', latest['date'], pair, str(buy), str(sell))
+    return (buy, sell)
