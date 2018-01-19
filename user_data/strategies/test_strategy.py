@@ -260,12 +260,57 @@ class TestStrategy(IStrategy):
         :return: Dict
         """
         space = {
+            'macd_below_zero': hp.choice('macd_below_zero', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'mfi': hp.choice('mfi', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
+            ]),
+            'fastd': hp.choice('fastd', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
+            ]),
             'adx': hp.choice('adx', [
                 {'enabled': False},
                 {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
             ]),
+            'rsi': hp.choice('rsi', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
+            ]),
+            'uptrend_long_ema': hp.choice('uptrend_long_ema', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'uptrend_short_ema': hp.choice('uptrend_short_ema', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'over_sar': hp.choice('over_sar', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'green_candle': hp.choice('green_candle', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'uptrend_sma': hp.choice('uptrend_sma', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
             'trigger': hp.choice('trigger', [
                 {'type': 'lower_bb'},
+                {'type': 'lower_bb_tema'},
+                {'type': 'faststoch10'},
+                {'type': 'ao_cross_zero'},
+                {'type': 'ema3_cross_ema10'},
+                {'type': 'macd_cross_signal'},
+                {'type': 'sar_reversal'},
+                {'type': 'ht_sine'},
+                {'type': 'heiken_reversal_bull'},
+                {'type': 'di_cross'},
             ]),
             'stoploss': hp.uniform('stoploss', -0.5, -0.02),
         }
@@ -278,12 +323,61 @@ class TestStrategy(IStrategy):
         def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
             conditions = []
             # GUARDS AND TRENDS
-            if params['adx']['enabled']:
+            if 'uptrend_long_ema' in params and params['uptrend_long_ema']['enabled']:
+                conditions.append(dataframe['ema50'] > dataframe['ema100'])
+            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
+                conditions.append(dataframe['macd'] < 0)
+            if 'uptrend_short_ema' in params and params['uptrend_short_ema']['enabled']:
+                conditions.append(dataframe['ema5'] > dataframe['ema10'])
+            if 'mfi' in params and params['mfi']['enabled']:
+                conditions.append(dataframe['mfi'] < params['mfi']['value'])
+            if 'fastd' in params and params['fastd']['enabled']:
+                conditions.append(dataframe['fastd'] < params['fastd']['value'])
+            if 'adx' in params and params['adx']['enabled']:
                 conditions.append(dataframe['adx'] > params['adx']['value'])
+            if 'rsi' in params and params['rsi']['enabled']:
+                conditions.append(dataframe['rsi'] < params['rsi']['value'])
+            if 'over_sar' in params and params['over_sar']['enabled']:
+                conditions.append(dataframe['close'] > dataframe['sar'])
+            if 'green_candle' in params and params['green_candle']['enabled']:
+                conditions.append(dataframe['close'] > dataframe['open'])
+            if 'uptrend_sma' in params and params['uptrend_sma']['enabled']:
+                prevsma = dataframe['sma'].shift(1)
+                conditions.append(dataframe['sma'] > prevsma)
 
             # TRIGGERS
             triggers = {
-                'lower_bb': dataframe['tema'] <= dataframe['blower'],
+                'lower_bb': (
+                    dataframe['close'] < dataframe['bb_lowerband']
+                ),
+                'lower_bb_tema': (
+                    dataframe['tema'] < dataframe['bb_lowerband']
+                ),
+                'faststoch10': (qtpylib.crossed_above(
+                    dataframe['fastd'], 10.0
+                )),
+                'ao_cross_zero': (qtpylib.crossed_above(
+                    dataframe['ao'], 0.0
+                )),
+                'ema3_cross_ema10': (qtpylib.crossed_above(
+                    dataframe['ema3'], dataframe['ema10']
+                )),
+                'macd_cross_signal': (qtpylib.crossed_above(
+                    dataframe['macd'], dataframe['macdsignal']
+                )),
+                'sar_reversal': (qtpylib.crossed_above(
+                    dataframe['close'], dataframe['sar']
+                )),
+                'ht_sine': (qtpylib.crossed_above(
+                    dataframe['htleadsine'], dataframe['htsine']
+                )),
+                'heiken_reversal_bull': (
+                    (qtpylib.crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
+                    (dataframe['ha_low'] == dataframe['ha_open'])
+                ),
+                'di_cross': (qtpylib.crossed_above(
+                    dataframe['plus_di'], dataframe['minus_di']
+                )),
             }
             conditions.append(triggers.get(params['trigger']['type']))
 
