@@ -15,7 +15,7 @@ from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
-from freqtrade import main  # noqa
+from freqtrade import main, misc  # noqa
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
@@ -30,18 +30,19 @@ logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
-TARGET_TRADES = 1100
+TARGET_TRADES = 600
 TOTAL_TRIES = 0
 _CURRENT_TRIES = 0
 CURRENT_BEST_LOSS = 100
 
 # max average trade duration in minutes
 # if eval ends with higher value, we consider it a failed eval
-MAX_ACCEPTED_TRADE_DURATION = 240
+MAX_ACCEPTED_TRADE_DURATION = 300
 
 # this is expexted avg profit * expected trade count
 # for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
-EXPECTED_MAX_PROFIT = 3.85
+# check that the reported Σ% values do not exceed this!
+EXPECTED_MAX_PROFIT = 3.0
 
 # Configuration and data used by hyperopt
 PROCESSED = None  # optimize.preprocess(optimize.load_data())
@@ -57,6 +58,10 @@ main._CONF = OPTIMIZE_CONFIG
 
 
 SPACE = {
+    'macd_below_zero': hp.choice('macd_below_zero', [
+        {'enabled': False},
+        {'enabled': True}
+    ]),
     'mfi': hp.choice('mfi', [
         {'enabled': False},
         {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
@@ -95,13 +100,15 @@ SPACE = {
     ]),
     'trigger': hp.choice('trigger', [
         {'type': 'lower_bb'},
+        {'type': 'lower_bb_tema'},
         {'type': 'faststoch10'},
         {'type': 'ao_cross_zero'},
-        {'type': 'ema5_cross_ema10'},
+        {'type': 'ema3_cross_ema10'},
         {'type': 'macd_cross_signal'},
         {'type': 'sar_reversal'},
-        {'type': 'stochf_cross'},
         {'type': 'ht_sine'},
+        {'type': 'heiken_reversal_bull'},
+        {'type': 'di_cross'},
     ]),
     'stoploss': hp.uniform('stoploss', -0.5, -0.02),
 }
@@ -133,10 +140,11 @@ def log_results(results):
 
     if results['loss'] < CURRENT_BEST_LOSS:
         CURRENT_BEST_LOSS = results['loss']
-        logger.info('{:5d}/{}: {}'.format(
+        logger.info('{:5d}/{}: {}. Loss {:.5f}'.format(
             results['current_tries'],
             results['total_tries'],
-            results['result']))
+            results['result'],
+            results['loss']))
     else:
         print('.', end='')
         sys.stdout.flush()
@@ -144,9 +152,9 @@ def log_results(results):
 
 def calculate_loss(total_profit: float, trade_count: int, trade_duration: float):
     """ objective function, returns smaller number for more optimal results """
-    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+    trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-    duration_loss = min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
+    duration_loss = 0.7 + 0.3 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
     return trade_loss + profit_loss + duration_loss
 
 
@@ -192,12 +200,13 @@ def optimizer(params):
 
 def format_results(results: DataFrame):
     return ('{:6d} trades. Avg profit {: 5.2f}%. '
-            'Total profit {: 11.8f} BTC. Avg duration {:5.1f} mins.').format(
+            'Total profit {: 11.8f} BTC ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
                 len(results.index),
                 results.profit_percent.mean() * 100.0,
                 results.profit_BTC.sum(),
+                results.profit_percent.sum(),
                 results.duration.mean() * 5,
-    )
+            )
 
 
 def buy_strategy_generator(params):
@@ -206,6 +215,8 @@ def buy_strategy_generator(params):
         # GUARDS AND TRENDS
         if params['uptrend_long_ema']['enabled']:
             conditions.append(dataframe['ema50'] > dataframe['ema100'])
+        if params['macd_below_zero']['enabled']:
+            conditions.append(dataframe['macd'] < 0)
         if params['uptrend_short_ema']['enabled']:
             conditions.append(dataframe['ema5'] > dataframe['ema10'])
         if params['mfi']['enabled']:
@@ -226,14 +237,17 @@ def buy_strategy_generator(params):
 
         # TRIGGERS
         triggers = {
-            'lower_bb': dataframe['tema'] <= dataframe['blower'],
+            'lower_bb': (dataframe['close'] < dataframe['bb_lowerband']),
+            'lower_bb_tema': (dataframe['tema'] < dataframe['bb_lowerband']),
             'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
-            'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
+            'ema3_cross_ema10': (crossed_above(dataframe['ema3'], dataframe['ema10'])),
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
             'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
-            'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
             'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
+            'heiken_reversal_bull': (crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
+                                    (dataframe['ha_low'] == dataframe['ha_open']),
+            'di_cross': (crossed_above(dataframe['plus_di'], dataframe['minus_di'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 
@@ -261,8 +275,11 @@ def start(args):
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
-    PROCESSED = optimize.preprocess(optimize.load_data(
-        args.datadir, pairs=pairs, ticker_interval=args.ticker_interval))
+    timerange = misc.parse_timerange(args.timerange)
+    data = optimize.load_data(args.datadir, pairs=pairs,
+                              ticker_interval=args.ticker_interval,
+                              timerange=timerange)
+    PROCESSED = optimize.tickerdata_to_dataframe(data)
 
     if args.mongodb:
         logger.info('Using mongodb ...')

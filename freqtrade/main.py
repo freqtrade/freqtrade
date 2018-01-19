@@ -14,7 +14,7 @@ from cachetools import cached, TTLCache
 
 from freqtrade import (DependencyException, OperationalException, __version__,
                        exchange, persistence, rpc)
-from freqtrade.analyze import SignalType, get_signal
+from freqtrade.analyze import get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import (State, get_state, load_config, parse_args,
                             throttle, update_state)
@@ -129,8 +129,16 @@ def check_handle_timedout(timeoutvalue: int) -> None:
     timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
-        order = exchange.get_order(trade.open_order_id)
+        try:
+            order = exchange.get_order(trade.open_order_id)
+        except requests.exceptions.RequestException:
+            logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
+            continue
         ordertime = arrow.get(order['opened'])
+
+        # Check if trade is still actually open
+        if int(order['remaining']) == 0:
+            continue
 
         if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
             # Buy timeout - cancel order
@@ -140,6 +148,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 Trade.session.delete(trade)
                 Trade.session.flush()
                 logger.info('Buy order timeout for %s.', trade)
+                rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
+                             trade.pair.replace('_', '/')))
             else:
                 # if trade is partially complete, edit the stake details for the trade
                 # and close the order
@@ -147,6 +157,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 trade.stake_amount = trade.amount * trade.open_rate
                 trade.open_order_id = None
                 logger.info('Partial buy order timeout for %s.', trade)
+                rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
+                             trade.pair.replace('_', '/')))
         elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
             # Sell timeout - cancel order and update trade
             if order['remaining'] == order['amount']:
@@ -157,6 +169,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
                 trade.close_date = None
                 trade.is_open = True
                 trade.open_order_id = None
+                rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
+                             trade.pair.replace('_', '/')))
                 logger.info('Sell order timeout for %s.', trade)
                 return True
             else:
@@ -247,24 +261,28 @@ def handle_trade(trade: Trade) -> bool:
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
-    # Check if minimal roi has been reached
-    if min_roi_reached(trade, current_rate, datetime.utcnow()):
+    (buy, sell) = (False, False)
+
+    if _CONF.get('experimental', {}).get('use_sell_signal'):
+        (buy, sell) = get_signal(trade.pair)
+
+    # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
+    if not buy and min_roi_reached(trade, current_rate, datetime.utcnow()):
         logger.debug('Executing sell due to ROI ...')
         execute_sell(trade, current_rate)
         return True
 
+    # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
+    if _CONF.get('experimental', {}).get('sell_profit_only', False):
+        logger.debug('Checking if trade is profitable ...')
+        if not buy and trade.calc_profit(rate=current_rate) <= 0:
+            return False
+
     # Experimental: Check if sell signal has been enabled and triggered
-    if _CONF.get('experimental', {}).get('use_sell_signal'):
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if _CONF.get('experimental', {}).get('sell_profit_only'):
-            logger.debug('Checking if trade is profitable ...')
-            if trade.calc_profit(rate=current_rate) <= 0:
-                return False
-        logger.debug('Checking sell_signal ...')
-        if get_signal(trade.pair, SignalType.SELL):
-            logger.debug('Executing sell due to sell signal ...')
-            execute_sell(trade, current_rate)
-            return True
+    if sell and not buy:
+        logger.debug('Executing sell due to sell signal ...')
+        execute_sell(trade, current_rate)
+        return True
 
     return False
 
@@ -305,7 +323,8 @@ def create_trade(stake_amount: float) -> bool:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_signal(_pair, SignalType.BUY):
+        (buy, sell) = get_signal(_pair)
+        if buy and not sell:
             pair = _pair
             break
     else:

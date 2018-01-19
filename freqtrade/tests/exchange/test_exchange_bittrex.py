@@ -212,7 +212,18 @@ def test_exchange_bittrex_get_ticker_bad():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
     fb.result = {'success': True,
-                 'result': {'Bid': 1}}  # incomplete result
+                 'result': {'Bid': 1, 'Ask': 0}}  # incomplete result
+
+    with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
+        wb.get_ticker('BTC_ETH')
+    fb.result = {'success': False,
+                 'message': 'gone bad'
+                 }
+    with pytest.raises(btx.OperationalException, match=r'.*gone bad.*'):
+        wb.get_ticker('BTC_ETH')
+
+    fb.result = {'success': True,
+                 'result': {}}  # incomplete result
     with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
         wb.get_ticker('BTC_ETH')
     fb.result = {'success': False,

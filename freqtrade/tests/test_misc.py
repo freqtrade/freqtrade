@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 from jsonschema import ValidationError
 
 from freqtrade.misc import (common_args_parser, load_config, parse_args,
-                            throttle, file_dump_json)
+                            throttle, file_dump_json, parse_timerange)
 
 
 def test_throttle():
@@ -140,6 +140,13 @@ def test_file_dump_json(default_conf, mocker):
     file_dump_json('somefile', [1, 2, 3])
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
+
+
+def test_parse_timerange_incorrect():
+    assert ((None, 'line'), None, -200) == parse_timerange('-200')
+    assert (('line', None), 200, None) == parse_timerange('200-')
+    with pytest.raises(Exception, match=r'Incorrect syntax.*'):
+        parse_timerange('-')
 
 
 def test_load_config(default_conf, mocker):
