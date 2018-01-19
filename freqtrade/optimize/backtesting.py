@@ -222,7 +222,7 @@ def start(args):
                         'realistic': args.realistic_simulation,
                         'sell_profit_only': sell_profit_only,
                         'use_sell_signal': use_sell_signal,
-                        'stoploss': config.get('stoploss'),
+                        'stoploss': strategy.stoploss,
                         'record': args.export
                         })
     logger.info(
