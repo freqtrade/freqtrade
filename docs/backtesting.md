@@ -14,7 +14,7 @@ real data. This is what we call
 
 Backtesting will use the crypto-currencies (pair) from your config file
 and load static tickers located in 
-[/freqtrade/tests/testdata](https://github.com/gcarq/freqtrade/tree/develop/freqtrade/tests/testdata).
+[/freqtrade/tests/testdata](https://github.com/gcarq/freqtrade/tree/develop/freqtrade/tests/testdata).  
 If the 5 min and 1 min ticker for the crypto-currencies to test is not 
 already in the `testdata` folder, backtesting will download them 
 automatically. Testdata files will not be updated until you specify it.
@@ -50,6 +50,50 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 ```bash
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
+
+**Running backtest with smaller testset**  
+Use the `--timerange` argument to change how much of the testset
+you want to use. The last N ticks/timeframes will be used.
+
+Example:
+```bash
+python3 ./freqtrade/main.py backtesting --timerange=-200
+```
+
+***Advanced use of timerange***  
+Doing `--timerange=-200` will get the last 200 timeframes
+from your inputdata. You can also specify specific dates,
+or a range span indexed by start and stop.
+
+The full timerange specification:
+- Use last 123 tickframes of data: `--timerange=-123`
+- Use first 123 tickframes of data: `--timerange=123-`
+- Use tickframes from line 123 through 456: `--timerange=123-456`
+
+
+Incoming feature, not implemented yet:
+- `--timerange=-20180131`
+-  `--timerange=20180101-`
+- `--timerange=20180101-20181231`
+
+
+**Update testdata directory**
+To update your testdata directory, or download into another testdata directory:
+```bash
+mkdir -p user_data/data/testdata-20180113
+cp freqtrade/tests/testdata/pairs.json user_data/data-20180113
+cd user_data/data-20180113
+```
+
+Possibly edit pairs.json file to include/exclude pairs
+
+```bash
+python freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
+```
+
+The script will read your pairs.json file, and download ticker data
+into the current working directory.
+
 
 For help about backtesting usage, please refer to 
 [Backtesting commands](#backtesting-commands).

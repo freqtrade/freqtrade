@@ -8,7 +8,7 @@ import pytest
 from jsonschema import ValidationError
 
 from freqtrade.misc import (common_args_parser, load_config, parse_args,
-                            throttle)
+                            throttle, parse_timerange)
 
 
 def test_throttle():
@@ -131,6 +131,13 @@ def test_parse_args_hyperopt_custom(mocker):
     assert call_args.loglevel == 20
     assert call_args.subparser == 'hyperopt'
     assert call_args.func is not None
+
+
+def test_parse_timerange_incorrect():
+    assert ((None, 'line'), None, -200) == parse_timerange('-200')
+    assert (('line', None), 200, None) == parse_timerange('200-')
+    with pytest.raises(Exception, match=r'Incorrect syntax.*'):
+        parse_timerange('-')
 
 
 def test_load_config(default_conf, mocker):

@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import os
+import re
 from typing import Any, Callable, Dict, List
 
 from jsonschema import Draft4Validator, validate
@@ -13,6 +14,11 @@ from wrapt import synchronized
 from freqtrade import __version__
 
 logger = logging.getLogger(__name__)
+
+
+def file_dump_json(filename, data):
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
 
 
 class State(enum.Enum):
@@ -112,7 +118,7 @@ def common_args_parser(description: str):
     )
     parser.add_argument(
         '--datadir',
-        help='path to backtest data (default freqdata/tests/testdata',
+        help='path to backtest data (default freqdata/tests/testdata)',
         dest='datadir',
         default=os.path.join('freqtrade', 'tests', 'testdata'),
         type=str,
@@ -177,6 +183,13 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         dest='refresh_pairs',
     )
+    parser.add_argument(
+        '--timerange',
+        help='Specify what timerange of data to use.',
+        default=None,
+        type=str,
+        dest='timerange',
+    )
 
 
 def hyperopt_options(parser: argparse.ArgumentParser) -> None:
@@ -202,6 +215,43 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
+    parser.add_argument(
+        '--timerange',
+        help='Specify what timerange of data to use.',
+        default=None,
+        type=str,
+        dest='timerange',
+    )
+
+
+def parse_timerange(text):
+    if text is None:
+        return None
+    syntax = [('^-(\d{8})$',        (None,    'date')),
+              ('^(\d{8})-$',        ('date',  None)),
+              ('^(\d{8})-(\d{8})$', ('date',  'date')),
+              ('^(-\d+)$',          (None,    'line')),
+              ('^(\d+)-$',          ('line',  None)),
+              ('^(\d+)-(\d+)$',     ('index', 'index'))]
+    for rex, stype in syntax:
+        # Apply the regular expression to text
+        m = re.match(rex, text)
+        if m:  # Regex has matched
+            rvals = m.groups()
+            n = 0
+            start = None
+            stop = None
+            if stype[0]:
+                start = rvals[n]
+                if stype[0] != 'date':
+                    start = int(start)
+                n += 1
+            if stype[1]:
+                stop = rvals[n]
+                if stype[1] != 'date':
+                    stop = int(stop)
+            return (stype, start, stop)
+    raise Exception('Incorrect syntax for timerange "%s"' % text)
 
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
