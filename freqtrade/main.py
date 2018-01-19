@@ -14,7 +14,7 @@ from cachetools import cached, TTLCache
 
 from freqtrade import (DependencyException, OperationalException, __version__,
                        exchange, persistence, rpc)
-from freqtrade.analyze import SignalType, get_signal
+from freqtrade.analyze import get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import (State, get_state, load_config, parse_args,
                             throttle, update_state)
@@ -261,24 +261,28 @@ def handle_trade(trade: Trade) -> bool:
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
-    # Check if minimal roi has been reached
-    if min_roi_reached(trade, current_rate, datetime.utcnow()):
+    (buy, sell) = (False, False)
+
+    if _CONF.get('experimental', {}).get('use_sell_signal'):
+        (buy, sell) = get_signal(trade.pair)
+
+    # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
+    if not buy and min_roi_reached(trade, current_rate, datetime.utcnow()):
         logger.debug('Executing sell due to ROI ...')
         execute_sell(trade, current_rate)
         return True
 
+    # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
+    if _CONF.get('experimental', {}).get('sell_profit_only', False):
+        logger.debug('Checking if trade is profitable ...')
+        if not buy and trade.calc_profit(rate=current_rate) <= 0:
+            return False
+
     # Experimental: Check if sell signal has been enabled and triggered
-    if _CONF.get('experimental', {}).get('use_sell_signal'):
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if _CONF.get('experimental', {}).get('sell_profit_only'):
-            logger.debug('Checking if trade is profitable ...')
-            if trade.calc_profit(rate=current_rate) <= 0:
-                return False
-        logger.debug('Checking sell_signal ...')
-        if get_signal(trade.pair, SignalType.SELL):
-            logger.debug('Executing sell due to sell signal ...')
-            execute_sell(trade, current_rate)
-            return True
+    if sell and not buy:
+        logger.debug('Executing sell due to sell signal ...')
+        execute_sell(trade, current_rate)
+        return True
 
     return False
 
@@ -319,7 +323,8 @@ def create_trade(stake_amount: float) -> bool:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_signal(_pair, SignalType.BUY):
+        (buy, sell) = get_signal(_pair)
+        if buy and not sell:
             pair = _pair
             break
     else:
