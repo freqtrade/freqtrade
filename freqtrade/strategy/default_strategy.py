@@ -305,25 +305,25 @@ class DefaultStrategy(IStrategy):
         def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
             conditions = []
             # GUARDS AND TRENDS
-            if params['uptrend_long_ema']['enabled']:
+            if 'uptrend_long_ema' in params and params['uptrend_long_ema']['enabled']:
                 conditions.append(dataframe['ema50'] > dataframe['ema100'])
-            if params['macd_below_zero']['enabled']:
+            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
                 conditions.append(dataframe['macd'] < 0)
-            if params['uptrend_short_ema']['enabled']:
+            if 'uptrend_short_ema' in params and params['uptrend_short_ema']['enabled']:
                 conditions.append(dataframe['ema5'] > dataframe['ema10'])
-            if params['mfi']['enabled']:
+            if 'mfi' in params and params['mfi']['enabled']:
                 conditions.append(dataframe['mfi'] < params['mfi']['value'])
-            if params['fastd']['enabled']:
+            if 'fastd' in params and params['fastd']['enabled']:
                 conditions.append(dataframe['fastd'] < params['fastd']['value'])
-            if params['adx']['enabled']:
+            if 'adx' in params and params['adx']['enabled']:
                 conditions.append(dataframe['adx'] > params['adx']['value'])
-            if params['rsi']['enabled']:
+            if 'rsi' in params and params['rsi']['enabled']:
                 conditions.append(dataframe['rsi'] < params['rsi']['value'])
-            if params['over_sar']['enabled']:
+            if 'over_sar' in params and params['over_sar']['enabled']:
                 conditions.append(dataframe['close'] > dataframe['sar'])
-            if params['green_candle']['enabled']:
+            if 'green_candle' in params and params['green_candle']['enabled']:
                 conditions.append(dataframe['close'] > dataframe['open'])
-            if params['uptrend_sma']['enabled']:
+            if 'uptrend_sma' in params and params['uptrend_sma']['enabled']:
                 prevsma = dataframe['sma'].shift(1)
                 conditions.append(dataframe['sma'] > prevsma)
 
