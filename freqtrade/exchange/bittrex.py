@@ -122,9 +122,10 @@ class Bittrex(Exchange):
                 raise OperationalException('{message} params=({pair})'.format(
                     message=data['message'],
                     pair=pair))
-
+            keys = ['Bid', 'Ask', 'Last']
             if not data.get('result') or\
-                    not all(key in data.get('result', {}) for key in ['Bid', 'Ask', 'Last']):
+                    not all(key in data.get('result', {}) for key in keys) or\
+                    not all(data.get('result', {})[key] is not None for key in keys):
                 raise ContentDecodingError('{message} params=({pair})'.format(
                     message='Got invalid response from bittrex',
                     pair=pair))
