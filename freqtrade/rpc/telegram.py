@@ -156,6 +156,7 @@ def _status(bot: Bot, update: Update) -> None:
 *Close Profit:* `{close_profit}`
 *Current Profit:* `{current_profit:.2f}%`
 *Open Order:* `{open_order}`
+*Total Open Trades:* `{total_trades}`
             """.format(
                 trade_id=trade.id,
                 pair=trade.pair.replace('_', '/'),
@@ -170,6 +171,7 @@ def _status(bot: Bot, update: Update) -> None:
                 open_order='({} rem={:.8f})'.format(
                     order['type'], order['remaining']
                 ) if order else None,
+                total_trades=len(trades)
             )
             send_msg(message, bot=bot)
 
