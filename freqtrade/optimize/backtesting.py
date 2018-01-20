@@ -187,9 +187,6 @@ def start(args):
             data[pair] = exchange.get_ticker_history(pair, ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=ticker_interval,
-                                  refresh_pairs=args.refresh_pairs)
-
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
