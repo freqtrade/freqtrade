@@ -264,7 +264,7 @@ def handle_trade(trade: Trade, interval: int) -> bool:
     (buy, sell) = (False, False)
 
     if _CONF.get('experimental', {}).get('use_sell_signal'):
-        (buy, sell) = get_signal(trade.pair)
+        (buy, sell) = get_signal(trade.pair, interval)
 
     # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
     if not buy and min_roi_reached(trade, current_rate, datetime.utcnow()):
@@ -322,7 +322,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        (buy, sell) = get_signal(_pair)
+        (buy, sell) = get_signal(_pair, interval)
         if buy and not sell:
             pair = _pair
             break
