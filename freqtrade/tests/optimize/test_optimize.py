@@ -129,7 +129,7 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     _backup_file(file1_5)
     _backup_file(file2_1)
     _backup_file(file2_5)
-    
+
     assert os.path.isfile(file1_1) is False
     assert os.path.isfile(file2_1) is False
 
@@ -141,7 +141,7 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file2_1)
-    
+
     assert os.path.isfile(file1_5) is False
     assert os.path.isfile(file2_5) is False
 

@@ -48,7 +48,7 @@ def test_returns_latest_buy_signal(mocker):
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH',5) == (False, True)
+    assert get_signal('BTC-ETH', 5) == (False, True)
 
 
 def test_returns_latest_sell_signal(mocker):

@@ -589,7 +589,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
 
 def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_down, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s,: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
     mocker.patch('freqtrade.rpc.init', MagicMock())
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
