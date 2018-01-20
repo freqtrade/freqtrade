@@ -15,7 +15,7 @@ from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
-from freqtrade import main  # noqa
+from freqtrade import main, misc  # noqa
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
@@ -164,7 +164,9 @@ def optimizer(params):
     from freqtrade.optimize import backtesting
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
-    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED, stoploss=params['stoploss'])
+    results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
+                        'processed': PROCESSED,
+                        'stoploss': params['stoploss']})
     result_explanation = format_results(results)
 
     total_profit = results.profit_percent.sum()
@@ -273,8 +275,11 @@ def start(args):
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
-    PROCESSED = optimize.preprocess(optimize.load_data(
-        args.datadir, pairs=pairs, ticker_interval=args.ticker_interval))
+    timerange = misc.parse_timerange(args.timerange)
+    data = optimize.load_data(args.datadir, pairs=pairs,
+                              ticker_interval=args.ticker_interval,
+                              timerange=timerange)
+    PROCESSED = optimize.tickerdata_to_dataframe(data)
 
     if args.mongodb:
         logger.info('Using mongodb ...')

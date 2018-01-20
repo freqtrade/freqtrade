@@ -129,22 +129,25 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     _backup_file(file1_5)
     _backup_file(file2_1)
     _backup_file(file2_5)
+    
+    assert os.path.isfile(file1_1) is False
+    assert os.path.isfile(file2_1) is False
 
     assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=1) is True
 
     assert os.path.isfile(file1_1) is True
-    assert os.path.isfile(file1_5) is False
     assert os.path.isfile(file2_1) is True
-    assert os.path.isfile(file2_5) is False
 
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file2_1)
+    
+    assert os.path.isfile(file1_5) is False
+    assert os.path.isfile(file2_5) is False
 
     assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=5) is True
-    assert os.path.isfile(file1_1) is False
+
     assert os.path.isfile(file1_5) is True
-    assert os.path.isfile(file2_1) is False
     assert os.path.isfile(file2_5) is True
 
     # clean files freshly downloaded
@@ -199,3 +202,11 @@ def test_load_tickerdata_file():
     assert not load_tickerdata_file(None, 'BTC_UNITEST', 7)
     tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 1)
     assert _btc_unittest_length == len(tickerdata)
+
+
+def test_tickerdata_to_dataframe():
+    timerange = ((None, 'line'), None, -100)
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
+    tickerlist = {'BTC_UNITEST': tick}
+    data = optimize.tickerdata_to_dataframe(tickerlist)
+    assert 100 == len(data['BTC_UNITEST'])

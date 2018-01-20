@@ -168,6 +168,16 @@ If you would like to learn parameters using an alternate ticke-data that
 you have on-disk, use the --datadir PATH option. Default hyperopt will
 use data from directory freqtrade/tests/testdata.
 
+### Running hyperopt with smaller testset
+
+Use the --timeperiod argument to change how much of the testset
+you want to use. The last N ticks/timeframes will be used.
+Example:
+
+```bash
+python3 ./freqtrade/main.py hyperopt --timeperiod -200
+```
+
 ### Hyperopt with MongoDB
 Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
 executing the previous command is the execution takes a long time. 

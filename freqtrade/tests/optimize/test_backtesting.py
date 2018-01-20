@@ -11,6 +11,13 @@ from freqtrade.optimize.backtesting import backtest, generate_text_table, get_ti
 import freqtrade.optimize.backtesting as backtesting
 
 
+def trim_dictlist(dl, num):
+    new = {}
+    for pair, pair_data in dl.items():
+        new[pair] = pair_data[num:]
+    return new
+
+
 def test_generate_text_table():
     results = pd.DataFrame(
         {
@@ -43,8 +50,11 @@ def test_backtest(default_conf, mocker):
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
-    results = backtest(default_conf['stake_amount'],
-                       optimize.preprocess(data), 10, True)
+    data = trim_dictlist(data, -200)
+    results = backtest({'stake_amount': default_conf['stake_amount'],
+                        'processed': optimize.preprocess(data),
+                        'max_open_trades': 10,
+                        'realistic': True})
     assert not results.empty
 
 
@@ -54,21 +64,17 @@ def test_backtest_1min_ticker_interval(default_conf, mocker):
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
-    results = backtest(default_conf['stake_amount'],
-                       optimize.preprocess(data), 1, True)
+    data = trim_dictlist(data, -200)
+    results = backtest({'stake_amount': default_conf['stake_amount'],
+                        'processed': optimize.preprocess(data),
+                        'max_open_trades': 1,
+                        'realistic': True})
     assert not results.empty
 
 
-def trim_dictlist(dl, num):
-    new = {}
-    for pair, pair_data in dl.items():
-        new[pair] = pair_data[num:]
-    return new
-
-
 def load_data_test(what):
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
-    data = trim_dictlist(data, -100)
+    timerange = ((None, 'line'), None, -100)
+    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'], timerange=timerange)
     pair = data['BTC_UNITEST']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
@@ -113,7 +119,10 @@ def simple_backtest(config, contour, num_results):
     data = load_data_test(contour)
     processed = optimize.preprocess(data)
     assert isinstance(processed, dict)
-    results = backtest(config['stake_amount'], processed, 1, True)
+    results = backtest({'stake_amount': config['stake_amount'],
+                        'processed': processed,
+                        'max_open_trades': 1,
+                        'realistic': True})
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
 
@@ -125,8 +134,11 @@ def simple_backtest(config, contour, num_results):
 def test_backtest2(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
-    results = backtest(default_conf['stake_amount'],
-                       optimize.preprocess(data), 10, True)
+    data = trim_dictlist(data, -200)
+    results = backtest({'stake_amount': default_conf['stake_amount'],
+                        'processed': optimize.preprocess(data),
+                        'max_open_trades': 10,
+                        'realistic': True})
     assert not results.empty
 
 
@@ -149,10 +161,10 @@ def test_backtest_pricecontours(default_conf, mocker):
         simple_backtest(default_conf, contour, numres)
 
 
-def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False):
-    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1)
+def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, timerange=None):
+    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1, timerange=timerange)
     pairdata = {'BTC_UNITEST': tickerdata}
-    return trim_dictlist(pairdata, -100)
+    return pairdata
 
 
 def test_backtest_start(default_conf, mocker, caplog):
@@ -166,6 +178,8 @@ def test_backtest_start(default_conf, mocker, caplog):
     args.level = 10
     args.live = False
     args.datadir = None
+    args.export = None
+    args.timerange = '-100'  # needed due to MagicMock malleability
     backtesting.start(args)
     # check the logs, that will contain the backtest result
     exists = ['Using max_open_trades: 1 ...',

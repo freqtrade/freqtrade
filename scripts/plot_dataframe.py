@@ -28,7 +28,7 @@ def plot_parse_args(args ):
     return parser.parse_args(args)
 
 
-def plot_analyzed_dataframe(args) -> None:
+def plot_analyzed_dataframe(args):
     """
     Calls analyze() and plots the returned dataframe
     :param pair: pair as str
