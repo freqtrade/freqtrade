@@ -14,7 +14,7 @@ Since the version `0.16.0` the bot allows using custom strategy file.
 This is very simple. Copy paste your strategy file into the folder 
 `user_data/strategies`.
 
-Let guess you have a strategy file `awesome-strategy.py`:
+Let assume you have a strategy file `awesome-strategy.py`:
 1. Move your file into `user_data/strategies` (you should have `user_data/strategies/awesome-strategy.py`
 2. Start the bot with the param `--strategy awesome-strategy` (the parameter is the name of the file without '.py') 
 
@@ -132,7 +132,7 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 
 **Want more indicators example?**  
 Look into the [user_data/strategies/test_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py).  
-Then uncomment indicateur you need.
+Then uncomment indicators you need.
 
 
 ### Where is the default strategy?
