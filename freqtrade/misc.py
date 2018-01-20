@@ -383,7 +383,6 @@ CONF_SCHEMA = {
     ],
     'required': [
         'max_open_trades',
-        'ticker_interval',
         'stake_currency',
         'stake_amount',
         'fiat_display_currency',

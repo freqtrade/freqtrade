@@ -41,10 +41,23 @@ class Strategy(object):
 
         if 'stoploss' in config:
             self.custom_strategy.stoploss = config['stoploss']
-            self.logger.info("Override strategy \'stoploss\' with value in config file.")
+            self.logger.info(
+                "Override strategy \'stoploss\' with value in config file: {}.".format(
+                    config['stoploss']
+                )
+            )
+
+        if 'ticker_interval' in config:
+            self.custom_strategy.ticker_interval = config['ticker_interval']
+            self.logger.info(
+                "Override strategy \'ticker_interval\' with value in config file: {}.".format(
+                    config['ticker_interval']
+                )
+            )
 
         self.minimal_roi = self.custom_strategy.minimal_roi
         self.stoploss = self.custom_strategy.stoploss
+        self.ticker_interval = self.custom_strategy.ticker_interval
 
     def _load_strategy(self, strategy_name: str) -> None:
         """

@@ -15,7 +15,8 @@ class IStrategy(ABC):
     """
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
-        stoploss -> float: ptimal stoploss designed for the strategy
+        stoploss -> float: optimal stoploss designed for the strategy
+        ticker_interval -> int: value of the ticker interval to use for the strategy
     """
 
     @abstractmethod

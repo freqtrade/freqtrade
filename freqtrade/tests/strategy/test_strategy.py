@@ -108,7 +108,23 @@ def test_strategy_override_stoploss(caplog):
     assert strategy.stoploss == -0.5
     assert ('freqtrade.strategy.strategy',
             logging.INFO,
-            'Override strategy \'stoploss\' with value in config file.'
+            'Override strategy \'stoploss\' with value in config file: -0.5.'
+            ) in caplog.record_tuples
+
+
+def test_strategy_override_ticker_interval(caplog):
+    config = {
+        'strategy': 'default_strategy',
+        'ticker_interval': 60
+    }
+    strategy = Strategy()
+    strategy.init(config)
+
+    assert hasattr(strategy.custom_strategy, 'ticker_interval')
+    assert strategy.ticker_interval == 60
+    assert ('freqtrade.strategy.strategy',
+            logging.INFO,
+            'Override strategy \'ticker_interval\' with value in config file: 60.'
             ) in caplog.record_tuples
 
 
