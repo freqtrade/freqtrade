@@ -66,17 +66,60 @@ def generate_text_table(
     return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
 
-def backtest(stake_amount: float, processed: Dict[str, DataFrame],
-             max_open_trades: int = 0, realistic: bool = True, sell_profit_only: bool = False,
-             stoploss: int = -1.00, use_sell_signal: bool = False) -> DataFrame:
+def get_trade_entry(pair, row, ticker, trade_count_lock, args):
+    stake_amount = args['stake_amount']
+    max_open_trades = args.get('max_open_trades', 0)
+    sell_profit_only = args.get('sell_profit_only', False)
+    stoploss = args.get('stoploss', -1)
+    use_sell_signal = args.get('use_sell_signal', False)
+    trade = Trade(open_rate=row.close,
+                  open_date=row.date,
+                  stake_amount=stake_amount,
+                  amount=stake_amount / row.open,
+                  fee=exchange.get_fee()
+                  )
+
+    # calculate win/lose forwards from buy point
+    sell_subset = ticker[row.Index + 1:][['close', 'date', 'sell']]
+    for row2 in sell_subset.itertuples(index=True):
+        if max_open_trades > 0:
+            # Increase trade_count_lock for every iteration
+            trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
+
+        current_profit_percent = trade.calc_profit_percent(rate=row2.close)
+        if (sell_profit_only and current_profit_percent < 0):
+            continue
+        if min_roi_reached(trade, row2.close, row2.date) or \
+            (row2.sell == 1 and use_sell_signal) or \
+                current_profit_percent <= stoploss:
+            current_profit_btc = trade.calc_profit(rate=row2.close)
+            return row2, (pair,
+                          current_profit_percent,
+                          current_profit_btc,
+                          row2.Index - row.Index,
+                          current_profit_btc > 0,
+                          current_profit_btc < 0
+                          )
+
+
+def backtest(args) -> DataFrame:
     """
     Implements backtesting functionality
-    :param stake_amount: btc amount to use for each trade
-    :param processed: a processed dictionary with format {pair, data}
-    :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-    :param realistic: do we try to simulate realistic trades? (default: True)
+    :param args: a dict containing:
+        stake_amount: btc amount to use for each trade
+        processed: a processed dictionary with format {pair, data}
+        max_open_trades: maximum number of concurrent trades (default: 0, disabled)
+        realistic: do we try to simulate realistic trades? (default: True)
+        sell_profit_only: sell if profit only
+        use_sell_signal: act on sell-signal
+        stoploss: use stoploss
     :return: DataFrame
     """
+    processed = args['processed']
+    max_open_trades = args.get('max_open_trades', 0)
+    realistic = args.get('realistic', True)
+    record = args.get('record', None)
+    records = []
     trades = []
     trade_count_lock: dict = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -99,41 +142,25 @@ def backtest(stake_amount: float, processed: Dict[str, DataFrame],
                 # Increase lock
                 trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-            trade = Trade(
-                open_rate=row.close,
-                open_date=row.date,
-                stake_amount=stake_amount,
-                amount=stake_amount / row.open,
-                fee=exchange.get_fee()
-            )
-
-            # calculate win/lose forwards from buy point
-            sell_subset = ticker[row.Index + 1:][['close', 'date', 'sell']]
-            for row2 in sell_subset.itertuples(index=True):
-                if max_open_trades > 0:
-                    # Increase trade_count_lock for every iteration
-                    trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
-
-                current_profit_percent = trade.calc_profit_percent(rate=row2.close)
-                if (sell_profit_only and current_profit_percent < 0):
-                    continue
-                if min_roi_reached(trade, row2.close, row2.date) or \
-                    (row2.sell == 1 and use_sell_signal) or \
-                        current_profit_percent <= stoploss:
-                    current_profit_btc = trade.calc_profit(rate=row2.close)
-                    lock_pair_until = row2.Index
-
-                    trades.append(
-                        (
-                            pair,
-                            current_profit_percent,
-                            current_profit_btc,
-                            row2.Index - row.Index,
-                            current_profit_btc > 0,
-                            current_profit_btc < 0
-                        )
-                    )
-                    break
+            ret = get_trade_entry(pair, row, ticker,
+                                  trade_count_lock, args)
+            if ret:
+                row2, trade_entry = ret
+                lock_pair_until = row2.Index
+                trades.append(trade_entry)
+                if record:
+                    # Note, need to be json.dump friendly
+                    # record a tuple of pair, current_profit_percent,
+                    # entry-date, duration
+                    records.append((pair, trade_entry[1],
+                                    row.date.strftime('%s'),
+                                    row2.date.strftime('%s'),
+                                    row.Index, trade_entry[3]))
+    # For now export inside backtest(), maybe change so that backtest()
+    # returns a tuple like: (dataframe, records, logs, etc)
+    if record and record.find('trades') >= 0:
+        logger.info('Dumping backtest results')
+        misc.file_dump_json('backtest-result.json', records)
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'profit', 'loss']
     return DataFrame.from_records(trades, columns=labels)
 
@@ -180,17 +207,18 @@ def start(args):
     # Print timeframe
     min_date, max_date = get_timeframe(preprocessed)
     logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
-
     # Execute backtest and print results
-    results = backtest(
-        stake_amount=config['stake_amount'],
-        processed=preprocessed,
-        max_open_trades=max_open_trades,
-        realistic=args.realistic_simulation,
-        sell_profit_only=config.get('experimental', {}).get('sell_profit_only', False),
-        stoploss=config.get('stoploss'),
-        use_sell_signal=config.get('experimental', {}).get('use_sell_signal', False)
-    )
+    sell_profit_only = config.get('experimental', {}).get('sell_profit_only', False)
+    use_sell_signal = config.get('experimental', {}).get('use_sell_signal', False)
+    results = backtest({'stake_amount': config['stake_amount'],
+                        'processed': preprocessed,
+                        'max_open_trades': max_open_trades,
+                        'realistic': args.realistic_simulation,
+                        'sell_profit_only': sell_profit_only,
+                        'use_sell_signal': use_sell_signal,
+                        'stoploss': config.get('stoploss'),
+                        'record': args.export
+                        })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)

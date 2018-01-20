@@ -164,7 +164,9 @@ def optimizer(params):
     from freqtrade.optimize import backtesting
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
-    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED, stoploss=params['stoploss'])
+    results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
+                        'processed': PROCESSED,
+                        'stoploss': params['stoploss']})
     result_explanation = format_results(results)
 
     total_profit = results.profit_percent.sum()

@@ -51,6 +51,11 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
+**Exporting trades to file**
+```bash
+freqtrade backtesting --export trades
+```
+
 **Running backtest with smaller testset**  
 Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
