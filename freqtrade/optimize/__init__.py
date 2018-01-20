@@ -49,10 +49,8 @@ def load_tickerdata_file(datadir, pair, ticker_interval,
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int = 5,
-              pairs: Optional[List[str]] = None,
-              refresh_pairs: Optional[bool] = False,
-              timerange=None) -> Dict[str, List]:
+def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = None,
+              refresh_pairs: Optional[bool] = False, timerange=None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :param ticker_interval: ticker interval in minutes
@@ -66,7 +64,7 @@ def load_data(datadir: str, ticker_interval: int = 5,
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in %s', datadir)
-        download_pairs(datadir, _pairs)
+        download_pairs(datadir, _pairs, ticker_interval)
 
     for pair in _pairs:
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
@@ -96,16 +94,15 @@ def make_testdata_path(datadir: str) -> str:
                                                    '..', 'tests', 'testdata'))
 
 
-def download_pairs(datadir, pairs: List[str]) -> bool:
-    """For each pairs passed in parameters, download 1 and 5 ticker intervals"""
+def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
+    """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
-            for interval in [1, 5]:
-                download_backtesting_testdata(datadir, pair=pair, interval=interval)
+            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
         except BaseException:
             logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
                 pair=pair,
-                interval=interval,
+                interval=ticker_interval,
             ))
             return False
     return True

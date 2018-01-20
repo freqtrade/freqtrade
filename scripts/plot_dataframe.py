@@ -18,6 +18,13 @@ def plot_parse_args(args ):
         default = 'BTC_ETH',
         type = str,
     )
+    parser.add_argument(
+        '-i', '--interval',
+        help = 'what interval to use',
+        dest = 'interval',
+        default = '5',
+        type = int,
+    )
     return parser.parse_args(args)
 
 
@@ -27,11 +34,10 @@ def plot_analyzed_dataframe(args):
     :param pair: pair as str
     :return: None
     """
-    pair = args.pair
 
     # Init Bittrex to use public API
     exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
-    ticker = exchange.get_ticker_history(pair)
+    ticker = exchange.get_ticker_history(args.pair,args.interval)
     dataframe = analyze.analyze_ticker(ticker)
 
     dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
@@ -39,7 +45,7 @@ def plot_analyzed_dataframe(args):
 
     # Two subplots sharing x axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-    fig.suptitle(pair, fontsize=14, fontweight='bold')
+    fig.suptitle(args.pair + " " + str(args.interval), fontsize=14, fontweight='bold')
     ax1.plot(dataframe.index.values, dataframe['close'], label='close')
     # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dataframe.index.values, dataframe['sma'], '--', label='SMA')
