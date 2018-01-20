@@ -41,7 +41,9 @@ def make_profit_array(data, px, filter_pairs=[]):
         profit = trade[1]
         tim = trade[4]
         dur = trade[5]
-        pg[tim+dur-1] += profit
+        ix = tim + dur - 1
+        if ix < px:
+            pg[ix] += profit
 
     # rewrite the pg array to go from
     # total profits at each timeframe
@@ -76,9 +78,11 @@ def plot_profit(args) -> None:
         pairs = list(set(pairs) & set(filter_pairs))
         print('Filter, keep pairs %s' % pairs)
 
+    timerange = misc.parse_timerange(args.timerange)
     tickers = optimize.load_data(args.datadir, pairs=pairs,
                                  ticker_interval=args.ticker_interval,
-                                 refresh_pairs=False)
+                                 refresh_pairs=False,
+                                 timerange=timerange)
     dataframes = optimize.preprocess(tickers)
 
     # Make an average close price of all the pairs that was involved.
