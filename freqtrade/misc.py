@@ -116,6 +116,14 @@ def common_args_parser(description: str):
         type=str,
         metavar='PATH',
     )
+    parser.add_argument(
+        '--datadir',
+        help='path to backtest data (default freqdata/tests/testdata)',
+        dest='datadir',
+        default=os.path.join('freqtrade', 'tests', 'testdata'),
+        type=str,
+        metavar='PATH',
+    )
     return parser
 
 
@@ -133,14 +141,6 @@ def parse_args(args: List[str], description: str):
         dest='dry_run_db',
     )
     parser.add_argument(
-        '--datadir',
-        help='path to backtest data (default freqdata/tests/testdata',
-        dest='datadir',
-        default=os.path.join('freqtrade', 'tests', 'testdata'),
-        type=str,
-        metavar='PATH',
-    )
-    parser.add_argument(
         '--dynamic-whitelist',
         help='dynamically generate and update whitelist \
              based on 24h BaseVolume (Default 20 currencies)',  # noqa
@@ -155,22 +155,14 @@ def parse_args(args: List[str], description: str):
     return parser.parse_args(args)
 
 
-def build_subcommands(parser: argparse.ArgumentParser) -> None:
-    """ Builds and attaches all subcommands """
-    from freqtrade.optimize import backtesting, hyperopt
-
-    subparsers = parser.add_subparsers(dest='subparser')
-
-    # Add backtesting subcommand
-    backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
-    backtesting_cmd.set_defaults(func=backtesting.start)
-    backtesting_cmd.add_argument(
+def backtesting_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
         '-l', '--live',
         action='store_true',
         dest='live',
         help='using live data',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
@@ -178,28 +170,28 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '--realistic-simulation',
         help='uses max_open_trades from config to simulate real world limitations',
         action='store_true',
         dest='realistic_simulation',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '-r', '--refresh-pairs-cached',
         help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
               Use it if you want to run your backtesting with up-to-date data.',
         action='store_true',
         dest='refresh_pairs',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '--export',
         help='Export backtest results, argument are: trades\
-              Example --export trades',
+              Example --export=trades',
         type=str,
         default=None,
         dest='export',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '--timerange',
         help='Specify what timerange of data to use.',
         default=None,
@@ -207,10 +199,9 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='timerange',
     )
 
-    # Add hyperopt subcommand
-    hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
-    hyperopt_cmd.set_defaults(func=hyperopt.start)
-    hyperopt_cmd.add_argument(
+
+def hyperopt_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
         '-e', '--epochs',
         help='specify number of epochs (default: 100)',
         dest='epochs',
@@ -218,13 +209,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    hyperopt_cmd.add_argument(
+    parser.add_argument(
         '--use-mongodb',
         help='parallelize evaluations with mongodb (requires mongod in PATH)',
         dest='mongodb',
         action='store_true',
     )
-    hyperopt_cmd.add_argument(
+    parser.add_argument(
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
@@ -232,7 +223,7 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    hyperopt_cmd.add_argument(
+    parser.add_argument(
         '--timerange',
         help='Specify what timerange of data to use.',
         default=None,
@@ -269,6 +260,23 @@ def parse_timerange(text):
                     stop = int(stop)
             return (stype, start, stop)
     raise Exception('Incorrect syntax for timerange "%s"' % text)
+
+
+def build_subcommands(parser: argparse.ArgumentParser) -> None:
+    """ Builds and attaches all subcommands """
+    from freqtrade.optimize import backtesting, hyperopt
+
+    subparsers = parser.add_subparsers(dest='subparser')
+
+    # Add backtesting subcommand
+    backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
+    backtesting_cmd.set_defaults(func=backtesting.start)
+    backtesting_options(backtesting_cmd)
+
+    # Add hyperopt subcommand
+    hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+    hyperopt_cmd.set_defaults(func=hyperopt.start)
+    hyperopt_options(hyperopt_cmd)
 
 
 # Required json-schema for user specified config
