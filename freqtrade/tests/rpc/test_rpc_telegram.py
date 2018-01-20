@@ -448,6 +448,28 @@ def test_daily_handle(
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
     assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
+    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+
+    # Reset msg_mock
+    msg_mock.reset_mock()
+    # Add two other trades
+    create_trade(0.001)
+    create_trade(0.001)
+
+    trades = Trade.query.all()
+    for trade in trades:
+        trade.update(limit_buy_order)
+        trade.update(limit_sell_order)
+        trade.close_date = datetime.utcnow()
+        trade.is_open = False
+
+    update.message.text = '/daily 1'
+
+    _daily(bot=MagicMock(), update=update)
+    assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
     # Try invalid data
     msg_mock.reset_mock()

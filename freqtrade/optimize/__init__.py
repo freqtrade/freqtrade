@@ -8,6 +8,7 @@ from pandas import DataFrame
 from freqtrade.exchange import get_ticker_history
 from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
 from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
+from freqtrade import misc
 
 logger = logging.getLogger(__name__)
 
@@ -155,6 +156,6 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     logger.debug("New End: {}".format(data[-1:][0]['T']))
     data = sorted(data, key=lambda data: data['T'])
 
-    file_dump_json(filename, data)
+    misc.file_dump_json(filename, data)
 
     return True

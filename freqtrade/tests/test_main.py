@@ -47,18 +47,6 @@ def test_main_start_hyperopt(mocker):
     assert call_args.func is not None
 
 
-# def test_main_trader(mocker):
-#    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
-#    mocker.patch('freqtrade.misc.get_state', return_value=True)
-#    mocker.patch.multiple('freqtrade.main',
-#                          init=MagicMock(),
-#                          cleanup=MagicMock(),
-#                          throttle=MagicMock()
-#                          )
-#    Cant run this yet because we have an unconditional while loop in main
-#    assert 0 == main.main([])
-
-
 def test_process_maybe_execute_buy(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', return_value=True)

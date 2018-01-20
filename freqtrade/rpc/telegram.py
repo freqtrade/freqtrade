@@ -241,20 +241,27 @@ def _daily(bot: Bot, update: Update) -> None:
             .order_by(Trade.close_date)\
             .all()
         curdayprofit = sum(trade.calc_profit() for trade in trades)
-        profit_days[profitday] = format(curdayprofit, '.8f')
+        profit_days[profitday] = {
+            'amount': format(curdayprofit, '.8f'),
+            'trades': len(trades)
+        }
 
     stats = [
         [
             key,
-            '{value:.8f} {symbol}'.format(value=float(value), symbol=_CONF['stake_currency']),
+            '{value:.8f} {symbol}'.format(
+                value=float(value['amount']),
+                symbol=_CONF['stake_currency']
+            ),
             '{value:.3f} {symbol}'.format(
                 value=_FIAT_CONVERT.convert_amount(
-                    value,
+                    value['amount'],
                     _CONF['stake_currency'],
                     _CONF['fiat_display_currency']
                 ),
                 symbol=_CONF['fiat_display_currency']
-            )
+            ),
+            '{value} trade{s}'.format(value=value['trades'], s='' if value['trades'] < 2 else 's'),
         ]
         for key, value in profit_days.items()
     ]
@@ -262,7 +269,8 @@ def _daily(bot: Bot, update: Update) -> None:
                      headers=[
                          'Day',
                          'Profit {}'.format(_CONF['stake_currency']),
-                         'Profit {}'.format(_CONF['fiat_display_currency'])
+                         'Profit {}'.format(_CONF['fiat_display_currency']),
+                         '# Trades'
                      ],
                      tablefmt='simple')
 

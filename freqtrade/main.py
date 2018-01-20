@@ -143,7 +143,7 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
 # FIX: 20180110, why is cancel.order unconditionally here, whereas
 #                it is conditionally called in the
 #                handle_timedout_limit_sell()?
-def handle_timedout_limit_buy(trade, order):
+def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
     """Buy timeout - cancel order
     :return: True if order was fully cancelled
     """
@@ -171,7 +171,7 @@ def handle_timedout_limit_buy(trade, order):
 
 
 # FIX: 20180110, should cancel_order() be cond. or unconditionally called?
-def handle_timedout_limit_sell(trade, order):
+def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
     """
     Sell timeout - cancel order and update trade
     :return: True if order was fully cancelled
