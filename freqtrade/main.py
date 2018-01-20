@@ -54,14 +54,14 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     return final_list
 
 
-def process_maybe_execute_buy(conf):
+def process_maybe_execute_buy(conf, interval):
     """
     Tries to execute a buy trade in a safe way
     :return: True if executed
     """
     try:
         # Create entity and execute trade
-        if create_trade(float(conf['stake_amount'])):
+        if create_trade(float(_CONF['stake_amount']), interval):
             return True
         else:
             logger.info(
@@ -74,7 +74,7 @@ def process_maybe_execute_buy(conf):
         return False
 
 
-def process_maybe_execute_sell(trade):
+def process_maybe_execute_sell(trade, interval):
     """
     Tries to execute a sell trade
     :return: True if executed
@@ -87,11 +87,11 @@ def process_maybe_execute_sell(trade):
 
     if trade.is_open and trade.open_order_id is None:
         # Check if we can sell our current pair
-        return handle_trade(trade)
+        return handle_trade(trade, interval)
     return False
 
 
-def _process(nb_assets: Optional[int] = 0) -> bool:
+def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
@@ -114,10 +114,10 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
-            state_changed = process_maybe_execute_buy(_CONF)
+            state_changed = process_maybe_execute_buy(_CONF, interval)
 
         for trade in trades:
-            state_changed = process_maybe_execute_sell(trade) or state_changed
+            state_changed |= process_maybe_execute_sell(trade, interval)
 
         if 'unfilledtimeout' in _CONF:
             # Check and handle any timed out open orders
@@ -291,7 +291,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     return False
 
 
-def handle_trade(trade: Trade) -> bool:
+def handle_trade(trade: Trade, interval: int) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
     :return: True if trade has been sold, False otherwise
@@ -319,7 +319,6 @@ def handle_trade(trade: Trade) -> bool:
         if not buy and trade.calc_profit(rate=current_rate) <= 0:
             return False
 
-    # Experimental: Check if sell signal has been enabled and triggered
     if sell and not buy:
         logger.debug('Executing sell due to sell signal ...')
         execute_sell(trade, current_rate)
@@ -336,7 +335,7 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float) -> bool:
+def create_trade(stake_amount: float, interval: int) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
@@ -518,6 +517,7 @@ def main(sysargv=sys.argv[1:]) -> int:
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
                     nb_assets=args.dynamic_whitelist,
+                    interval=int(_CONF.get('ticker_interval', "5"))
                 )
             old_state = new_state
     except KeyboardInterrupt:

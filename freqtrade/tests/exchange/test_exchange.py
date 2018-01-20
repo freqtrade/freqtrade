@@ -200,14 +200,14 @@ def test_get_ticker(default_conf, mocker, ticker):
     assert ticker['ask'] == 1
 
 
-def test_get_ticker_history(mocker, ticker):
+def test_get_ticker_history(default_conf, mocker, ticker):
     api_mock = MagicMock()
     tick = 123
     api_mock.get_ticker_history = MagicMock(return_value=tick)
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     # retrieve original ticker
-    ticks = get_ticker_history(pair='BTC_ETH')
+    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
     assert ticks == 123
 
     # change the ticker
@@ -216,7 +216,7 @@ def test_get_ticker_history(mocker, ticker):
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     # ensure caching will still return the original ticker
-    get_ticker_history(pair='BTC_ETH')
+    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
     assert ticks == 123
 
 

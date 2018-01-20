@@ -122,9 +122,10 @@ class Bittrex(Exchange):
                 raise OperationalException('{message} params=({pair})'.format(
                     message=data['message'],
                     pair=pair))
-
+            keys = ['Bid', 'Ask', 'Last']
             if not data.get('result') or\
-                    not all(key in data.get('result', {}) for key in ['Bid', 'Ask', 'Last']):
+                    not all(key in data.get('result', {}) for key in keys) or\
+                    not all(data.get('result', {})[key] is not None for key in keys):
                 raise ContentDecodingError('{message} params=({pair})'.format(
                     message='Got invalid response from bittrex',
                     pair=pair))
@@ -141,6 +142,12 @@ class Bittrex(Exchange):
             interval = 'oneMin'
         elif tick_interval == 5:
             interval = 'fiveMin'
+        elif tick_interval == 30:
+            interval = 'thirtyMin'
+        elif tick_interval == 60:
+            interval = 'hour'
+        elif tick_interval == 1440:
+            interval = 'Day'
         else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 

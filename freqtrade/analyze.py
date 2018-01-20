@@ -281,38 +281,31 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     return dataframe
 
 
-# FIX: 20180109, there could be some confusion because we will make a
-#      boolean result (execute the action or not depending on the signal).
-#      But the above checks can also return False, and we hide that.
-#      20180119 Update to above fix, after an code update we now return
-#               a tuple (buy, sell). We could take advantage of this
-#               To distinguish an error from an non-signal situation (False, False)
-#               by just returning False.
-#               In short, if we return False it is error, If a tuple we
-#               get the signal situation.
-def get_signal(pair: str) -> (bool, bool):
+# FIX: Maybe return False, if an error has occured,
+#      Otherwise we might mask an error as an non-signal-scenario
+def get_signal(pair: str, interval: int) -> (bool, bool):
     """
     Calculates current signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
-    :return: (True, False) if pair is good for buying and not for selling
+    :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
     """
-    ticker_hist = get_ticker_history(pair)
+    ticker_hist = get_ticker_history(pair, interval)
     if not ticker_hist:
         logger.warning('Empty ticker history for pair %s', pair)
-        return (False, False)
+        return (False, False)  # return False ?
 
     try:
         dataframe = analyze_ticker(ticker_hist)
     except ValueError as ex:
         logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
-        return (False, False)
+        return (False, False)  # return False ?
     except Exception as ex:
         logger.exception('Unexpected error when analyzing ticker for pair %s: %s', pair, str(ex))
-        return (False, False)
+        return (False, False)  # return False ?
 
     if dataframe.empty:
         logger.warning('Empty dataframe for pair %s', pair)
-        return (False, False)
+        return (False, False)  # return False ?
 
     latest = dataframe.iloc[-1]
 
@@ -320,7 +313,7 @@ def get_signal(pair: str) -> (bool, bool):
     signal_date = arrow.get(latest['date'])
     if signal_date < arrow.now() - timedelta(minutes=10):
         logger.warning('Too old dataframe for pair %s', pair)
-        return (False, False)
+        return (False, False)  # return False ?
 
     (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
     logger.debug('trigger: %s (pair=%s) buy=%s sell=%s', latest['date'], pair, str(buy), str(sell))
