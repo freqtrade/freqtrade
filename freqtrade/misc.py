@@ -184,6 +184,14 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
         dest='refresh_pairs',
     )
     parser.add_argument(
+        '--export',
+        help='Export backtest results, argument are: trades\
+              Example --export=trades',
+        type=str,
+        default=None,
+        dest='export',
+    )
+    parser.add_argument(
         '--timerange',
         help='Specify what timerange of data to use.',
         default=None,
