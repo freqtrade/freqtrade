@@ -17,6 +17,19 @@ python script/plot_dataframe.py -p BTC_ETH,BTC_LTC
 The -p pair argument, can be used to specify what
 pair you would like to plot.
 
+**Advanced use**
+
+To plot the current live price use the --live flag:
+```
+python scripts/plot_dataframe.py -p BTC_ETH --live
+```
+
+To plot a timerange (to zoom in):
+```
+python scripts/plot_dataframe.py -p BTC_ETH --timerange=100-200
+```
+Timerange doesn't work with live data.
+
 
 ## Plot profit
 
@@ -46,3 +59,11 @@ Example
 ```
 python python scripts/plot_profit.py --datadir ../freqtrade/freqtrade/tests/testdata-20171221/ -p BTC_LTC
 ```
+
+**When it goes wrong**
+
+*** Linux: Can't display**
+
+If you are inside an python environment, you might want to set the
+DISPLAY variable as so:
+$ DISPLAY=:0 python scripts/plot_dataframe.py

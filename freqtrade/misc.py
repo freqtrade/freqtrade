@@ -5,8 +5,10 @@ import logging
 import time
 import os
 import re
+from datetime import datetime
 from typing import Any, Callable, Dict, List
 
+import numpy as np
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 from wrapt import synchronized
@@ -16,11 +18,6 @@ from freqtrade import __version__
 logger = logging.getLogger(__name__)
 
 
-def file_dump_json(filename, data):
-    with open(filename, 'w') as fp:
-        json.dump(data, fp)
-
-
 class State(enum.Enum):
     RUNNING = 0
     STOPPED = 1
@@ -28,6 +25,44 @@ class State(enum.Enum):
 
 # Current application state
 _STATE = State.STOPPED
+
+
+############################################
+# Used by scripts                          #
+# Matplotlib doesn't support ::datetime64, #
+# so we need to convert it into ::datetime #
+############################################
+
+def datesarray_to_datetimearray(dates):
+    """
+    Convert an pandas-array of timestamps into
+    An numpy-array of datetimes
+    :return: numpy-array of datetime
+    """
+    times = []
+    dates = dates.astype(datetime)
+    for i in range(0, dates.size):
+        date = dates[i].to_pydatetime()
+        times.append(date)
+    return np.array(times)
+
+
+def common_datearray(dfs):
+    alldates = {}
+    for pair, pair_data in dfs.items():
+        dates = datesarray_to_datetimearray(pair_data['date'])
+        for date in dates:
+            alldates[date] = 1
+    lst = []
+    for date, _ in alldates.items():
+        lst.append(date)
+    arr = np.array(lst)
+    return np.sort(arr, axis=0)
+
+
+def file_dump_json(filename, data):
+    with open(filename, 'w') as fp:
+        json.dump(data, fp)
 
 
 @synchronized
@@ -153,6 +188,15 @@ def parse_args(args: List[str], description: str):
 
     build_subcommands(parser)
     return parser.parse_args(args)
+
+
+def scripts_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        '-p', '--pair',
+        help='Show profits for only this pairs. Pairs are comma-separated.',
+        dest='pair',
+        default=None
+    )
 
 
 def backtesting_options(parser: argparse.ArgumentParser) -> None:
