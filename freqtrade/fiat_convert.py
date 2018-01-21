@@ -87,7 +87,7 @@ class CryptoToFiatConverter():
         fiat_symbol = fiat_symbol.upper()
 
         # Check if the fiat convertion you want is supported
-        if not self._is_supported_fiat(fiat=fiat_symbol):
+        if not CryptoToFiatConverter.is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
 
         # Get the pair that interest us and return the price in fiat
@@ -131,7 +131,7 @@ class CryptoToFiatConverter():
 
         return price
 
-    def _is_supported_fiat(self, fiat: str) -> bool:
+    def is_supported_fiat(fiat: str) -> bool:
         """
         Check if the FIAT your want to convert to is supported
         :param fiat: FIAT to check (e.g USD)
@@ -140,7 +140,7 @@ class CryptoToFiatConverter():
 
         fiat = fiat.upper()
 
-        return fiat in self.SUPPORTED_FIAT
+        return fiat in CryptoToFiatConverter.SUPPORTED_FIAT
 
     def _find_price(self, crypto_symbol: str, fiat_symbol: str) -> float:
         """
@@ -150,7 +150,7 @@ class CryptoToFiatConverter():
         :return: float, price of the crypto-currency in Fiat
         """
         # Check if the fiat convertion you want is supported
-        if not self._is_supported_fiat(fiat=fiat_symbol):
+        if not CryptoToFiatConverter.is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
         try:
             return float(

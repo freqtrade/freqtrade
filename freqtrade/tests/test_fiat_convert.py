@@ -36,12 +36,11 @@ def test_pair_convertion_object():
     assert pair_convertion.price == 30000.123
 
 
-def test_fiat_convert_is_supported():
-    fiat_convert = CryptoToFiatConverter()
-    assert fiat_convert._is_supported_fiat(fiat='USD') is True
-    assert fiat_convert._is_supported_fiat(fiat='usd') is True
-    assert fiat_convert._is_supported_fiat(fiat='abc') is False
-    assert fiat_convert._is_supported_fiat(fiat='ABC') is False
+def test_fiat_convert_is_supported(mocker):
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='USD') is True
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='usd') is True
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='abc') is False
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='ABC') is False
 
 
 def test_fiat_convert_add_pair():
