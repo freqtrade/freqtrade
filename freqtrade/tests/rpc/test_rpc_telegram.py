@@ -77,7 +77,7 @@ def test_authorized_only_exception(default_conf, mocker):
 
 def test_status_handle(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
@@ -102,7 +102,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
     # Trigger status while we have a fulfilled order for the open trade
     _status(bot=MagicMock(), update=update)
 
@@ -112,7 +112,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
 
 def test_status_table_handle(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple(
@@ -138,7 +138,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(15.0)
+    create_trade(15.0, int(default_conf['ticker_interval']))
 
     _status_table(bot=MagicMock(), update=update)
 
@@ -154,7 +154,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
 def test_profit_handle(
         default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
@@ -176,7 +176,7 @@ def test_profit_handle(
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -210,7 +210,7 @@ def test_profit_handle(
 
 def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -225,7 +225,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trade = Trade.query.first()
     assert trade
@@ -247,7 +247,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
 
 def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -262,7 +262,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     # Decrease the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
@@ -308,7 +308,7 @@ def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
 
 def test_forcesell_all_handle(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -324,7 +324,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
 
     # Create some test data
     for _ in range(4):
-        create_trade(0.001)
+        create_trade(0.001, int(default_conf['ticker_interval']))
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
@@ -339,7 +339,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
 
 def test_forcesell_handle_invalid(default_conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, True))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, True))
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -376,7 +376,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker):
 def test_performance_handle(
         default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
@@ -389,7 +389,7 @@ def test_performance_handle(
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
     trade = Trade.query.first()
     assert trade
 
@@ -410,7 +410,7 @@ def test_performance_handle(
 def test_daily_handle(
         default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
@@ -427,7 +427,7 @@ def test_daily_handle(
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
     trade = Trade.query.first()
     assert trade
 
@@ -454,8 +454,8 @@ def test_daily_handle(
     # Reset msg_mock
     msg_mock.reset_mock()
     # Add two other trades
-    create_trade(0.001)
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, int(default_conf['ticker_interval']))
 
     trades = Trade.query.all()
     for trade in trades:
@@ -482,7 +482,7 @@ def test_daily_handle(
 
 def test_count_handle(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, False))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram',
@@ -502,7 +502,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     update_state(State.RUNNING)
 
     # Create some test data
-    create_trade(0.001)
+    create_trade(0.001, int(default_conf['ticker_interval']))
     msg_mock.reset_mock()
     _count(bot=MagicMock(), update=update)
 
@@ -514,7 +514,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
 
 def test_performance_handle_invalid(default_conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s: (True, True))
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, True))
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,

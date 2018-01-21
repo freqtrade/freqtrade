@@ -53,7 +53,7 @@ def plot_analyzed_dataframe(args):
 
     # Two subplots sharing x axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-    fig.suptitle(pair, fontsize=14, fontweight='bold')
+    fig.suptitle(pair + " " + str(args.ticker_interval), fontsize=14, fontweight='bold')
     ax1.plot(dates, dataframe['close'], label='close')
     # ax1.plot(dates, dataframe['sell'], 'ro', label='sell')
     ax1.plot(dates, dataframe['sma'], '--', label='SMA')

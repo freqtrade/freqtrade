@@ -176,15 +176,15 @@ def start(args):
 
     logger.info('Using config: %s ...', args.config)
     config = misc.load_config(args.config)
-
-    logger.info('Using ticker_interval: %s ...', args.ticker_interval)
+    ticker_interval = config.get('ticker_interval', args.ticker_interval)
+    logger.info('Using ticker_interval: %s ...', ticker_interval)
 
     data = {}
     pairs = config['exchange']['pair_whitelist']
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
         for pair in pairs:
-            data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
+            data[pair] = exchange.get_ticker_history(pair, ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
