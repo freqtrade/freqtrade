@@ -43,7 +43,9 @@ def test_fiat_convert_is_supported(mocker):
     assert CryptoToFiatConverter.is_supported_fiat(fiat='ABC') is False
 
 
-def test_fiat_convert_add_pair():
+def test_fiat_convert_add_pair(mocker):
+    api_mock = MagicMock(return_value={})
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', api_mock)
     fiat_convert = CryptoToFiatConverter()
 
     assert len(fiat_convert._pairs) == 0
