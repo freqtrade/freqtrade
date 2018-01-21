@@ -87,6 +87,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
 
     update_state(State.STOPPED)
@@ -124,6 +125,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_order_id'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _status_table(bot=MagicMock(), update=update)
@@ -386,6 +388,7 @@ def test_performance_handle(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -493,6 +496,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_order_id'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _count(bot=MagicMock(), update=update)

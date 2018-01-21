@@ -36,15 +36,16 @@ def test_pair_convertion_object():
     assert pair_convertion.price == 30000.123
 
 
-def test_fiat_convert_is_supported():
-    fiat_convert = CryptoToFiatConverter()
-    assert fiat_convert._is_supported_fiat(fiat='USD') is True
-    assert fiat_convert._is_supported_fiat(fiat='usd') is True
-    assert fiat_convert._is_supported_fiat(fiat='abc') is False
-    assert fiat_convert._is_supported_fiat(fiat='ABC') is False
+def test_fiat_convert_is_supported(mocker):
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='USD') is True
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='usd') is True
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='abc') is False
+    assert CryptoToFiatConverter.is_supported_fiat(fiat='ABC') is False
 
 
-def test_fiat_convert_add_pair():
+def test_fiat_convert_add_pair(mocker):
+    api_mock = MagicMock(return_value={})
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', api_mock)
     fiat_convert = CryptoToFiatConverter()
 
     assert len(fiat_convert._pairs) == 0
@@ -64,10 +65,12 @@ def test_fiat_convert_add_pair():
 
 def test_fiat_convert_find_price(mocker):
     api_mock = MagicMock(return_value={
-        'price_usd': 12345.0,
-        'price_eur': 13000.2
+        'ticker': MagicMock(return_value={
+            'price_usd': 12345.0,
+            'price_eur': 13000.2
+        })
     })
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', api_mock)
     fiat_convert = CryptoToFiatConverter()
 
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
@@ -83,10 +86,12 @@ def test_fiat_convert_find_price(mocker):
 
 def test_fiat_convert_get_price(mocker):
     api_mock = MagicMock(return_value={
-        'price_usd': 28000.0,
-        'price_eur': 15000.0
+        'ticker': MagicMock(return_value={
+            'price_usd': 28000.0,
+            'price_eur': 15000.0
+        })
     })
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', api_mock)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
 
     fiat_convert = CryptoToFiatConverter()
