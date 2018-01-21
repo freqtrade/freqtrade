@@ -193,7 +193,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
     profit_trade = trade.calc_profit(rate=limit)
     current_rate = exchange.get_ticker(trade.pair, False)['bid']
     current_profit = trade.calc_profit_percent(current_rate)
-    
+
     message = """*{exchange}:* Selling
 *Current Pair:* [{pair}]({pair_url})
 *Limit:* `{limit}`
