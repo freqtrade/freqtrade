@@ -328,12 +328,25 @@ def create_trade(stake_amount: float, interval: int) -> bool:
             break
     else:
         return False
-
     # Calculate amount
     buy_limit = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / buy_limit
 
     order_id = exchange.buy(pair, buy_limit, amount)
+
+    # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+    trade = Trade(
+        pair=pair,
+        stake_amount=stake_amount,
+        amount=amount,
+        fee=exchange.get_fee(),
+        open_rate=buy_limit,
+        open_date=datetime.utcnow(),
+        exchange=exchange.get_name().upper(),
+        open_order_id=order_id
+    )
+    Trade.session.add(trade)
+    Trade.session.flush()
 
     fiat_converter = CryptoToFiatConverter()
     stake_amount_fiat = fiat_converter.convert_amount(
@@ -350,19 +363,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         buy_limit, stake_amount, _CONF['stake_currency'],
         stake_amount_fiat, _CONF['fiat_display_currency']
     ))
-    # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-    trade = Trade(
-        pair=pair,
-        stake_amount=stake_amount,
-        amount=amount,
-        fee=exchange.get_fee(),
-        open_rate=buy_limit,
-        open_date=datetime.utcnow(),
-        exchange=exchange.get_name().upper(),
-        open_order_id=order_id
-    )
-    Trade.session.add(trade)
-    Trade.session.flush()
+
     return True
 
 
