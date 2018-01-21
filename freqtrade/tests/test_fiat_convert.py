@@ -67,7 +67,7 @@ def test_fiat_convert_find_price(mocker):
     api_mock = MagicMock(return_value={
         'ticker': MagicMock(return_value={
             'price_usd': 12345.0,
-        'price_eur': 13000.2
+            'price_eur': 13000.2
         })
     })
     mocker.patch('freqtrade.fiat_convert.Pymarketcap', api_mock)

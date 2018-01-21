@@ -169,6 +169,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
 
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
+
 def test_create_trade_minimal_amount(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
