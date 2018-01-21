@@ -58,6 +58,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
                           get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -123,6 +124,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
                           get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -144,6 +146,8 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
+
     # Save state of current whitelist
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
@@ -165,7 +169,6 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
 
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
-
 def test_create_trade_minimal_amount(default_conf, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -176,6 +179,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
     min_stake_amount = 0.0005
     create_trade(min_stake_amount, int(default_conf['ticker_interval']))
@@ -278,6 +282,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker, caplog):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
     mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
@@ -324,6 +329,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
     mocker.patch('freqtrade.main.min_roi_reached', return_value=True)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
@@ -356,6 +362,7 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
     mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
@@ -380,6 +387,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
@@ -595,6 +603,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -627,6 +636,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -668,6 +678,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
                               'last': 0.00002172
                           }),
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
@@ -696,6 +707,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
                               'last': 0.00002172
                           }),
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
@@ -724,6 +736,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
                               'last': 0.00000172
                           }),
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
@@ -752,6 +765,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
                               'last': 0.00000172
                           }),
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', MagicMock())
 
     init(default_conf, create_engine('sqlite://'))
     create_trade(0.001, int(default_conf['ticker_interval']))
