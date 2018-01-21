@@ -72,3 +72,16 @@ def test_get_signal_handles_exceptions(mocker):
                  side_effect=Exception('invalid ticker history '))
 
     assert get_signal('BTC-ETH', 5) == (False, False)
+
+
+def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
+
+    columns = ['close', 'high', 'low', 'open', 'date', 'volume']
+
+    # Test file with BV data
+    dataframe = parse_ticker_dataframe(ticker_history)
+    assert dataframe.columns.tolist() == columns
+
+    # Test file without BV data
+    dataframe = parse_ticker_dataframe(ticker_history_without_bv)
+    assert dataframe.columns.tolist() == columns
