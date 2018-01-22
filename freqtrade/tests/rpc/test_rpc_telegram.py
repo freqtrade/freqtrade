@@ -219,9 +219,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -256,9 +254,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -317,9 +313,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
