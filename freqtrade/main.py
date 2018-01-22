@@ -476,7 +476,7 @@ def main(sysargv=sys.argv[1:]) -> None:
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
                     nb_assets=args.dynamic_whitelist,
-                    interval=int(_CONF.get('ticker_interval', "5"))
+                    interval=int(_CONF.get('ticker_interval', 5))
                 )
             old_state = new_state
     except KeyboardInterrupt:
