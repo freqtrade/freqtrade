@@ -143,7 +143,7 @@ def test_exchange_bittrex_fee():
     assert fee >= 0 and fee < 0.1  # Fee is 0-10 %
 
 
-def test_exchange_bittrex_buy_good(mocker):
+def test_exchange_bittrex_buy_good():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
     uuid = wb.buy('BTC_ETH', 1, 1)
@@ -154,7 +154,7 @@ def test_exchange_bittrex_buy_good(mocker):
         wb.buy('BAD', 1, 1)
 
 
-def test_exchange_bittrex_sell_good(mocker):
+def test_exchange_bittrex_sell_good():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
     uuid = wb.sell('BTC_ETH', 1, 1)
@@ -165,7 +165,7 @@ def test_exchange_bittrex_sell_good(mocker):
         uuid = wb.sell('BAD', 1, 1)
 
 
-def test_exchange_bittrex_get_balance(mocker):
+def test_exchange_bittrex_get_balance():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
     bal = wb.get_balance('BTC_ETH')
@@ -238,10 +238,12 @@ def test_exchange_bittrex_get_ticker_bad():
         wb.get_ticker('BTC_ETH')
 
 
-def test_exchange_bittrex_get_ticker_history_one():
+def test_exchange_bittrex_get_ticker_history_intervals():
     wb = make_wrap_bittrex()
     FakeBittrex()
-    assert wb.get_ticker_history('BTC_ETH', 1)
+    for tick_interval in [1, 5, 30, 60, 1440]:
+        assert ([{'C': 0, 'V': 0, 'O': 0, 'H': 0, 'L': 0, 'T': 0}] ==
+                wb.get_ticker_history('BTC_ETH', tick_interval))
 
 
 def test_exchange_bittrex_get_ticker_history():
