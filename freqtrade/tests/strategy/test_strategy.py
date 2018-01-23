@@ -33,8 +33,6 @@ def test_strategy_structure():
     assert hasattr(Strategy, 'populate_indicators')
     assert hasattr(Strategy, 'populate_buy_trend')
     assert hasattr(Strategy, 'populate_sell_trend')
-    assert hasattr(Strategy, 'hyperopt_space')
-    assert hasattr(Strategy, 'buy_strategy_generator')
 
 
 def test_load_strategy(result):
@@ -70,12 +68,6 @@ def test_strategy(result):
     assert hasattr(strategy.custom_strategy, 'populate_sell_trend')
     dataframe = strategy.populate_sell_trend(strategy.populate_indicators(result))
     assert 'sell' in dataframe.columns
-
-    assert hasattr(strategy.custom_strategy, 'hyperopt_space')
-    assert 'adx' in strategy.hyperopt_space()
-
-    assert hasattr(strategy.custom_strategy, 'buy_strategy_generator')
-    assert callable(strategy.buy_strategy_generator({}))
 
 
 def test_strategy_override_minimal_roi(caplog):
