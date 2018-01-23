@@ -4,7 +4,7 @@ import os
 import pytest
 
 from freqtrade.exchange import Exchanges
-from freqtrade.persistence import Trade, init
+from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
 def test_init_create_session(default_conf, mocker):
@@ -310,3 +310,50 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
 
     # Test with a custom fee rate on the close trade
     assert trade.calc_profit_percent(fee=0.003) == 0.0614782
+
+
+def test_clean_dry_run_db(default_conf, mocker):
+    init(default_conf)
+
+    # Simulate dry_run entries
+    trade = Trade(
+        pair='BTC_ETH',
+        stake_amount=0.001,
+        amount=123.0,
+        fee=0.0025,
+        open_rate=0.123,
+        exchange='BITTREX',
+        open_order_id='dry_run_buy_12345'
+    )
+    Trade.session.add(trade)
+
+    trade = Trade(
+        pair='BTC_ETC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee=0.0025,
+        open_rate=0.123,
+        exchange='BITTREX',
+        open_order_id='dry_run_sell_12345'
+    )
+    Trade.session.add(trade)
+
+    # Simulate prod entry
+    trade = Trade(
+        pair='BTC_ETC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee=0.0025,
+        open_rate=0.123,
+        exchange='BITTREX',
+        open_order_id='prod_buy_12345'
+    )
+    Trade.session.add(trade)
+
+    # We have 3 entries: 2 dry_run, 1 prod
+    assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 3
+
+    clean_dry_run_db()
+
+    # We have now only the prod
+    assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 1
