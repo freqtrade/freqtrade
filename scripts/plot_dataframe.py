@@ -1,32 +1,33 @@
 #!/usr/bin/env python3
 
 import sys
-import matplotlib  # Install PYQT5 manually if you want to test this helper function
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from pandas import DataFrame
 from freqtrade import exchange, analyze
 from freqtrade.misc import common_args_parser
 from freqtrade.strategy.strategy import Strategy
+import matplotlib.pyplot as plt
+import matplotlib  # Install PYQT5 manually if you want to test this helper function
+
+matplotlib.use("Qt5Agg")
 
 
 def plot_parse_args(args):
     parser = common_args_parser(description='Graph utility')
     parser.add_argument(
         '-p', '--pair',
-        help = 'What currency pair',
-        dest = 'pair',
-        default = 'BTC_ETH',
-        type = str,
+        help='What currency pair',
+        dest='pair',
+        default='BTC_ETH',
+        type=str,
     )
     parser.add_argument(
         '-i', '--interval',
-        help = 'what interval to use',
-        dest = 'interval',
-        default = 5,
-        type = int,
+        help='what interval to use',
+        dest='interval',
+        default=5,
+        type=int,
     )
     return parser.parse_args(args)
 
@@ -43,7 +44,7 @@ def plot_analyzed_dataframe(args) -> None:
 
     # Init Bittrex to use public API
     exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
-    ticker = exchange.get_ticker_history(args.pair,args.interval)
+    ticker = exchange.get_ticker_history(args.pair, args.interval)
     dataframe = analyze.analyze_ticker(ticker)
 
     dataframe = populate_indicator(dataframe)
@@ -74,6 +75,7 @@ def plot_analyzed_dataframe(args) -> None:
     fig.subplots_adjust(hspace=0)
     plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
     plt.show()
+
 
 def populate_indicator(dataframe: DataFrame) -> DataFrame:
 
