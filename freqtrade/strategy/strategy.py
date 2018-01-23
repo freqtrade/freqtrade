@@ -164,15 +164,3 @@ class Strategy(object):
         :return: DataFrame with buy column
         """
         return self.custom_strategy.populate_sell_trend(dataframe)
-
-    def hyperopt_space(self) -> Dict:
-        """
-        Define your Hyperopt space for the strategy
-        """
-        return self.custom_strategy.hyperopt_space()
-
-    def buy_strategy_generator(self, params) -> None:
-        """
-        Define the buy strategy parameters to be used by hyperopt
-        """
-        return self.custom_strategy.buy_strategy_generator(params)

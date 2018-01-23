@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from pandas import DataFrame
-from typing import Dict
 
 
 class IStrategy(ABC):
@@ -42,16 +41,4 @@ class IStrategy(ABC):
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
-        """
-
-    @abstractmethod
-    def hyperopt_space(self) -> Dict:
-        """
-        Define your Hyperopt space for the strategy
-        """
-
-    @abstractmethod
-    def buy_strategy_generator(self, params) -> None:
-        """
-        Define the buy strategy parameters to be used by hyperopt
         """
