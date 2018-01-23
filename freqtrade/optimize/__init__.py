@@ -127,7 +127,6 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         pair=filepair,
         interval=interval,
     ))
-    filename = filename.replace('USDT_BTC', 'BTC_FAKEBULL')
 
     if os.path.isfile(filename):
         with open(filename, "rt") as fp:
