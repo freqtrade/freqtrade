@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
 
 import sys
-import argparse
 import json
 import matplotlib.pyplot as plt
 import numpy as np
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
-import freqtrade.exchange as exchange
-import freqtrade.analyze  as analyze
 from freqtrade.strategy.strategy import Strategy
 
 
-def plot_parse_args(args ):
+def plot_parse_args(args):
     parser = misc.common_args_parser('Graph utility')
     # FIX: perhaps delete those backtesting options that are not feasible (shows up in -h)
     misc.backtesting_options(parser)
     parser.add_argument(
         '-p', '--pair',
-        help = 'Show profits for only this pairs. Pairs are comma-separated.',
-        dest = 'pair',
-        default = None
+        help='Show profits for only this pairs. Pairs are comma-separated.',
+        dest='pair',
+        default=None
     )
     return parser.parse_args(args)
 
@@ -48,7 +45,7 @@ def make_profit_array(data, px, filter_pairs=[]):
     # total profits at each timeframe
     # to accumulated profits
     pa = 0
-    for x in range(0,len(pg)):
+    for x in range(0, len(pg)):
         p = pg[x]  # Get current total percent
         pa += p  # Add to the accumulated percent
         pg[x] = pa  # write back to save memory
@@ -104,7 +101,7 @@ def plot_profit(args) -> None:
     #    if max_x != n:
     #        raise Exception('Please rerun script. Input data has different lengths %s'
     #                         %('Different pair length: %s <=> %s' %(max_x, n)))
-    print('max_x: %s' %(max_x))
+    print('max_x: %s' % (max_x))
 
     # We are essentially saying:
     #  array <- sum dataframes[*]['close'] / num_items dataframes
@@ -114,7 +111,7 @@ def plot_profit(args) -> None:
     for pair, pair_data in dataframes.items():
         close = pair_data['close']
         maxprice = max(close)  # Normalize price to [0,1]
-        print('Pair %s has length %s' %(pair, len(close)))
+        print('Pair %s has length %s' % (pair, len(close)))
         for x in range(0, len(close)):
             avgclose[x] += close[x] / maxprice
         # avgclose += close
@@ -126,7 +123,7 @@ def plot_profit(args) -> None:
 
     filename = 'backtest-result.json'
     with open(filename) as file:
-      data = json.load(file)
+        data = json.load(file)
     pg = make_profit_array(data, max_x, filter_pairs)
 
     #
