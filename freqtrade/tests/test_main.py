@@ -545,9 +545,9 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Current Profit' in rpc_mock.call_args_list[-1][0][0]
+    assert 'Profit' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
     assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
@@ -585,7 +585,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
@@ -618,7 +618,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
 
@@ -649,7 +649,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert '(profit: 6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]

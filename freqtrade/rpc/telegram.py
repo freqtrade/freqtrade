@@ -159,7 +159,7 @@ def _status(bot: Bot, update: Update) -> None:
 *Total Open Trades:* `{total_trades}`
             """.format(
                 trade_id=trade.id,
-                pair=trade.pair.replace('_', '/'),
+                pair=trade.pair,
                 pair_url=exchange.get_pair_detail_url(trade.pair),
                 date=arrow.get(trade.open_date).humanize(),
                 open_rate=trade.open_rate,

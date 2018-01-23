@@ -192,7 +192,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
     profit_trade = trade.calc_profit(rate=limit)
     current_rate = exchange.get_ticker(trade.pair, False)['bid']
-    current_profit = trade.calc_profit_percent(current_rate)
+    profit = trade.calc_profit_percent(current_rate)
 
     message = """*{exchange}:* Selling
 *Current Pair:* [{pair}]({pair_url})
@@ -200,16 +200,16 @@ def execute_sell(trade: Trade, limit: float) -> None:
 *Amount:* `{amount}`
 *Open Rate:* `{open_rate:.8f}`
 *Current Rate:* `{current_rate:.8f}`
-*Current Profit:* `{current_profit:.2f}%`
+*Profit:* `{profit:.2f}%`
     """.format(
         exchange=trade.exchange,
-        pair=trade.pair.replace('_', '/'),
+        pair=trade.pair,
         pair_url=exchange.get_pair_detail_url(trade.pair),
         limit=limit,
         open_rate=trade.open_rate,
         current_rate=current_rate,
         amount=round(trade.amount, 8),
-        current_profit=round(current_profit * 100, 2),
+        profit=round(profit * 100, 2),
     )
 
     # For regular case, when the configuration exists

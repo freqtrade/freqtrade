@@ -107,7 +107,7 @@ def test_status_handle(default_conf, update, ticker, mocker):
     _status(bot=MagicMock(), update=update)
 
     assert msg_mock.call_count == 1
-    assert '[BTC/ETH]' in msg_mock.call_args_list[0][0][0]
+    assert '[BTC_ETH]' in msg_mock.call_args_list[0][0][0]
 
 
 def test_status_table_handle(default_conf, update, ticker, mocker):
@@ -240,7 +240,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
@@ -279,7 +279,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
