@@ -10,6 +10,7 @@ import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 import freqtrade.exchange as exchange
 import freqtrade.analyze  as analyze
+from freqtrade.strategy.strategy import Strategy
 
 
 def plot_parse_args(args ):
@@ -70,14 +71,21 @@ def plot_profit(args) -> None:
     filter_pairs = args.pair
 
     config = misc.load_config(args.config)
+    config.update({'strategy': args.strategy})
+
+    # Init strategy
+    strategy = Strategy()
+    strategy.init(config)
+
     pairs = config['exchange']['pair_whitelist']
+
     if filter_pairs:
         filter_pairs = filter_pairs.split(',')
         pairs = list(set(pairs) & set(filter_pairs))
         print('Filter, keep pairs %s' % pairs)
 
     tickers = optimize.load_data(args.datadir, pairs=pairs,
-                                 ticker_interval=args.ticker_interval,
+                                 ticker_interval=strategy.ticker_interval,
                                  refresh_pairs=False)
     dataframes = optimize.preprocess(tickers)
 
