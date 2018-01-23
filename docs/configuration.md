@@ -20,8 +20,8 @@ The table below will list all configuration parameters.
 | `ticker_interval` | [1, 5, 30, 60, 1440] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Defaut is 5 minutes
 | `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below. 
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. 
-| `minimal_roi` | See below | Yes | Set the threshold in percent the bot will use to sell a trade. More information below. 
-| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. 
+| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. 
+| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `unfilledtimeout` | 0 | No | How long (in minutes) the bot will wait for an unfilled order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use.
@@ -53,10 +53,18 @@ See the example below:
 },
 ```
 
+Most of the strategy files already include the optimal `minimal_roi`
+value. This parameter is optional. If you use it, it will take over the
+`minimal_roi` value from the strategy file.
+
 ### Understand stoploss
 `stoploss` is loss in percentage that should trigger a sale.
 For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
+
+Most of the strategy files already include the optimal `stoploss`
+value. This parameter is optional. If you use it, it will take over the
+`stoploss` value from the strategy file.
 
 ### Understand initial_state
 `initial_state` is an optional field that defines the initial application state.

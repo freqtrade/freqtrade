@@ -124,6 +124,14 @@ def common_args_parser(description: str):
         type=str,
         metavar='PATH',
     )
+    parser.add_argument(
+        '-s', '--strategy',
+        help='specify strategy file (default: freqtrade/strategy/default_strategy.py)',
+        dest='strategy',
+        default='.default_strategy',
+        type=str,
+        metavar='PATH',
+    )
     return parser
 
 
@@ -375,12 +383,10 @@ CONF_SCHEMA = {
     ],
     'required': [
         'max_open_trades',
-        'ticker_interval',
         'stake_currency',
         'stake_amount',
         'fiat_display_currency',
         'dry_run',
-        'minimal_roi',
         'bid_strategy',
         'telegram'
     ]

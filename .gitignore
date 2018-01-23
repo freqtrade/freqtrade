@@ -5,6 +5,8 @@ config.json
 *.sqlite
 .hyperopt
 logfile.txt
+hyperopt_trials.pickle
+user_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -85,5 +87,3 @@ target/
 .venv
 .idea
 .vscode
-
-hyperopt_trials.pickle
