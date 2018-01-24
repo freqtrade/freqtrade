@@ -9,6 +9,13 @@ from freqtrade.exchange import Bittrex
 from freqtrade.optimize import preprocess
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
 import freqtrade.optimize.backtesting as backtesting
+from freqtrade.strategy.strategy import Strategy
+
+
+def setup_strategy():
+    strategy = Strategy()
+    strategy.init({'strategy': 'default_strategy'})
+    return strategy
 
 
 def trim_dictlist(dl, num):
@@ -46,6 +53,7 @@ def test_get_timeframe():
 
 
 def test_backtest(default_conf, mocker):
+    setup_strategy()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
@@ -61,6 +69,7 @@ def test_backtest(default_conf, mocker):
 def test_backtest_1min_ticker_interval(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
+    setup_strategy()
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
@@ -116,6 +125,7 @@ def load_data_test(what):
 
 
 def simple_backtest(config, contour, num_results):
+    setup_strategy()
     data = load_data_test(contour)
     processed = optimize.preprocess(data)
     assert isinstance(processed, dict)
@@ -132,6 +142,7 @@ def simple_backtest(config, contour, num_results):
 
 
 def test_backtest2(default_conf, mocker):
+    setup_strategy()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
     data = trim_dictlist(data, -200)
@@ -143,6 +154,7 @@ def test_backtest2(default_conf, mocker):
 
 
 def test_processed(default_conf, mocker):
+    setup_strategy()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     dict_of_tickerrows = load_data_test('raise')
     dataframes = optimize.preprocess(dict_of_tickerrows)
