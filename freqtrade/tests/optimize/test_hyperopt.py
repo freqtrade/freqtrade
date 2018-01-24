@@ -125,6 +125,12 @@ def test_fmin_best_results(mocker, caplog):
         "uptrend_short_ema": 0,
         "uptrend_sma": 0,
         "stoploss": -0.1,
+        "roi_t1": 1,
+        "roi_t2": 2,
+        "roi_t3": 3,
+        "roi_p1": 1,
+        "roi_p2": 2,
+        "roi_p3": 3,
     }
 
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))

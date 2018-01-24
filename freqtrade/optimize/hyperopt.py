@@ -225,11 +225,22 @@ def calculate_loss(total_profit: float, trade_count: int, trade_duration: float)
     return trade_loss + profit_loss + duration_loss
 
 
-def hyperopt_space() -> List[Dict]:
+def roi_space() -> List[Dict]:
+    return {
+        'roi_t1': hp.quniform('roi_t1', 10, 220, 10),
+        'roi_t2': hp.quniform('roi_t2', 10, 120, 10),
+        'roi_t3': hp.quniform('roi_t3', 10, 120, 10),
+        'roi_p1': hp.quniform('roi_p1', 1, 5, 1),
+        'roi_p2': hp.quniform('roi_p2', 1, 5, 1),
+        'roi_p3': hp.quniform('roi_p3', 1, 10, 1),
+    }
+
+
+def indicator_space() -> List[Dict]:
     """
     Define your Hyperopt space for searching strategy parameters
     """
-    space = {
+    return {
         'macd_below_zero': hp.choice('macd_below_zero', [
             {'enabled': False},
             {'enabled': True}
@@ -284,7 +295,10 @@ def hyperopt_space() -> List[Dict]:
         ]),
         'stoploss': hp.uniform('stoploss', -0.5, -0.02),
     }
-    return space
+
+
+def hyperopt_space() -> List[Dict]:
+    return {**indicator_space(), **roi_space()}
 
 
 def buy_strategy_generator(params) -> None:
