@@ -3,6 +3,7 @@
 import logging
 import math
 import pandas as pd
+import pytest
 from unittest.mock import MagicMock
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
@@ -12,7 +13,8 @@ import freqtrade.optimize.backtesting as backtesting
 from freqtrade.strategy.strategy import Strategy
 
 
-def setup_strategy():
+@pytest.fixture
+def default_strategy():
     strategy = Strategy()
     strategy.init({'strategy': 'default_strategy'})
     return strategy
@@ -44,7 +46,7 @@ def test_generate_text_table():
         'TOTAL              2           15.00          0.60000000           100.0         2       0')  # noqa
 
 
-def test_get_timeframe():
+def test_get_timeframe(default_strategy):
     data = preprocess(optimize.load_data(
         None, ticker_interval=1, pairs=['BTC_UNITEST']))
     min_date, max_date = get_timeframe(data)
@@ -52,8 +54,7 @@ def test_get_timeframe():
     assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
 
 
-def test_backtest(default_conf, mocker):
-    setup_strategy()
+def test_backtest(default_strategy, default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
@@ -66,10 +67,9 @@ def test_backtest(default_conf, mocker):
     assert not results.empty
 
 
-def test_backtest_1min_ticker_interval(default_conf, mocker):
+def test_backtest_1min_ticker_interval(default_strategy, default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
-    setup_strategy()
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
@@ -125,7 +125,6 @@ def load_data_test(what):
 
 
 def simple_backtest(config, contour, num_results):
-    setup_strategy()
     data = load_data_test(contour)
     processed = optimize.preprocess(data)
     assert isinstance(processed, dict)
@@ -141,8 +140,7 @@ def simple_backtest(config, contour, num_results):
 # loaded by freqdata/optimize/__init__.py::load_data()
 
 
-def test_backtest2(default_conf, mocker):
-    setup_strategy()
+def test_backtest2(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
     data = trim_dictlist(data, -200)
@@ -153,8 +151,7 @@ def test_backtest2(default_conf, mocker):
     assert not results.empty
 
 
-def test_processed(default_conf, mocker):
-    setup_strategy()
+def test_processed(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     dict_of_tickerrows = load_data_test('raise')
     dataframes = optimize.preprocess(dict_of_tickerrows)
@@ -166,7 +163,7 @@ def test_processed(default_conf, mocker):
         assert col in cols
 
 
-def test_backtest_pricecontours(default_conf, mocker):
+def test_backtest_pricecontours(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
