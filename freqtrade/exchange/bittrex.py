@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 _API: _Bittrex = None
 _API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
+_cache: dict = dict()
 
 # API socket timeout
 API_TIMEOUT = 60
@@ -137,6 +138,28 @@ class Bittrex(Exchange):
             }
         return self.cached_ticker[pair]
 
+    def update_with_latest_ticker(self, pair: str, interval) -> List[Dict]:
+        # pair is in cache retrieve latest candle
+        sdata = _API_V2.get_latest_candle(pair.replace('_', '-'), interval)
+        if not sdata.get('result'):
+            raise ContentDecodingError('{message} params=({pair})'.format(
+                message='Got invalid response from bittrex',
+                pair=pair))
+        data = _cache[pair]
+        # this is the latest results we had
+        old_ticker = data['result'][-1]
+        # check timestamp is newer ...
+        if (sdata['result'][0]['T'] > old_ticker['T']):
+            data['result'].append(sdata['result'][0])
+            # avoid having to much data to analyze
+            data['result'].pop(0)
+        elif (sdata['result'][0]['T'] == old_ticker['T']):
+            # if volume has changed, update the latest result with the new
+            # one
+            if (sdata['result'][0]['V'] > old_ticker['V']):
+                data['result'][-1] = sdata['result'][0]
+        return data
+
     def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         if tick_interval == 1:
             interval = 'oneMin'
@@ -149,22 +172,29 @@ class Bittrex(Exchange):
         elif tick_interval == 1440:
             interval = 'Day'
         else:
-            raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
-
-        data = _API_V2.get_candles(pair.replace('_', '-'), interval)
-
-        # These sanity check are necessary because bittrex cannot keep their API stable.
+            raise ValueError(
+                'Cannot parse tick_interval: {}'.format(tick_interval))
+        if pair in _cache.keys():
+            data = self.update_with_latest_ticker(pair, interval)
+        else:
+            data = _API_V2.get_candles(pair.replace('_', '-'), interval)
+        # These sanity check are necessary because bittrex cannot keep their
+        # API stable.
         if not data.get('result'):
             raise ContentDecodingError('{message} params=({pair})'.format(
                 message='Got invalid response from bittrex',
                 pair=pair))
+        
+        # Update the value in cache
+        _cache[pair] = data
 
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
             for tick in data['result']:
                 if prop not in tick.keys():
-                    raise ContentDecodingError('{message} params=({pair})'.format(
-                        message='Required property {} not present in response'.format(prop),
-                        pair=pair))
+                    raise ContentDecodingError(
+                        '{message} params=({pair})'.format(
+                            message='Required property {} not present in response'.format(prop),
+                            pair=pair))
 
         if not data['success']:
             Bittrex._validate_response(data)
@@ -202,7 +232,8 @@ class Bittrex(Exchange):
                 order_id=order_id))
 
     def get_pair_detail_url(self, pair: str) -> str:
-        return self.PAIR_DETAIL_METHOD + '?MarketName={}'.format(pair.replace('_', '-'))
+        return self.PAIR_DETAIL_METHOD + \
+            '?MarketName={}'.format(pair.replace('_', '-'))
 
     def get_markets(self) -> List[str]:
         data = _API.get_markets()
