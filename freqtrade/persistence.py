@@ -47,6 +47,10 @@ def init(config: dict, engine: Optional[Engine] = None) -> None:
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)
 
+    # Clean dry_run DB
+    if _CONF.get('dry_run', False) and _CONF.get('dry_run_db', False):
+        clean_dry_run_db()
+
 
 def cleanup() -> None:
     """
@@ -54,6 +58,17 @@ def cleanup() -> None:
     :return: None
     """
     Trade.session.flush()
+
+
+def clean_dry_run_db() -> None:
+    """
+    Remove open_order_id from a Dry_run DB
+    :return: None
+    """
+    for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+        # Check we are updating only a dry_run order not a prod one
+        if 'dry_run' in trade.open_order_id:
+            trade.open_order_id = None
 
 
 class Trade(_DECL_BASE):
