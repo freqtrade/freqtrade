@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
-    log_results, save_trials, read_trials
+    log_results, save_trials, read_trials, generate_roi_table
 
 
 def test_loss_calculation_prefer_correct_trade_count():
@@ -125,6 +125,12 @@ def test_fmin_best_results(mocker, caplog):
         "uptrend_short_ema": 0,
         "uptrend_sma": 0,
         "stoploss": -0.1,
+        "roi_t1": 1,
+        "roi_t2": 2,
+        "roi_t3": 3,
+        "roi_p1": 1,
+        "roi_p2": 2,
+        "roi_p3": 3,
     }
 
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
@@ -228,3 +234,15 @@ def test_read_trials_returns_trials_file(mocker):
     assert read_trials() == trials
     mock_open.assert_called_once()
     mock_load.assert_called_once()
+
+
+def test_roi_table_generation():
+    params = {
+        'roi_t1': 5,
+        'roi_t2': 10,
+        'roi_t3': 15,
+        'roi_p1': 1,
+        'roi_p2': 2,
+        'roi_p3': 3,
+    }
+    assert generate_roi_table(params) == {'0': 6, '15': 3, '25': 1, '30': 0}

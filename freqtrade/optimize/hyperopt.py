@@ -225,11 +225,38 @@ def calculate_loss(total_profit: float, trade_count: int, trade_duration: float)
     return trade_loss + profit_loss + duration_loss
 
 
-def hyperopt_space() -> List[Dict]:
+def generate_roi_table(params):
+    roi_table = {}
+    roi_table["0"] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
+    roi_table[str(params['roi_t3'])] = params['roi_p1'] + params['roi_p2']
+    roi_table[str(params['roi_t3'] + params['roi_t2'])] = params['roi_p1']
+    roi_table[str(params['roi_t3'] + params['roi_t2'] + params['roi_t1'])] = 0
+
+    return roi_table
+
+
+def roi_space() -> List[Dict]:
+    return {
+        'roi_t1': hp.quniform('roi_t1', 10, 220, 10),
+        'roi_t2': hp.quniform('roi_t2', 10, 120, 10),
+        'roi_t3': hp.quniform('roi_t3', 10, 120, 10),
+        'roi_p1': hp.quniform('roi_p1', 1, 5, 1),
+        'roi_p2': hp.quniform('roi_p2', 1, 5, 1),
+        'roi_p3': hp.quniform('roi_p3', 1, 10, 1),
+    }
+
+
+def stoploss_space() -> Dict:
+    return {
+        'stoploss': hp.uniform('stoploss', -0.5, -0.02),
+    }
+
+
+def indicator_space() -> List[Dict]:
     """
     Define your Hyperopt space for searching strategy parameters
     """
-    space = {
+    return {
         'macd_below_zero': hp.choice('macd_below_zero', [
             {'enabled': False},
             {'enabled': True}
@@ -282,9 +309,11 @@ def hyperopt_space() -> List[Dict]:
             {'type': 'heiken_reversal_bull'},
             {'type': 'di_cross'},
         ]),
-        'stoploss': hp.uniform('stoploss', -0.5, -0.02),
     }
-    return space
+
+
+def hyperopt_space() -> List[Dict]:
+    return {**indicator_space(), **roi_space(), **stoploss_space()}
 
 
 def buy_strategy_generator(params) -> None:
@@ -363,6 +392,10 @@ def buy_strategy_generator(params) -> None:
 
 def optimizer(params):
     global _CURRENT_TRIES
+
+    if 'roi_t1' in params:
+        strategy = Strategy()
+        strategy.minimal_roi = generate_roi_table(params)
 
     backtesting.populate_buy_trend = buy_strategy_generator(params)
 
@@ -484,6 +517,8 @@ def start(args):
         )
 
     logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
+    if 'roi_t1' in best_parameters:
+        logger.info('ROI table:\n%s', generate_roi_table(best_parameters))
     logger.info('Best Result:\n%s', best_result)
 
     # Store trials result to file to resume next time
