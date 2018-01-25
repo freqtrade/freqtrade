@@ -109,6 +109,12 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
     return True
 
 
+def file_dump_json(filename, data):
+    with open(filename, "wt") as fp:
+        json.dump(data, fp)
+
+
+# FIX: 20180110, suggest rename interval to tick_interval
 def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> bool:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters

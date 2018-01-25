@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring
 from datetime import datetime
 from unittest.mock import MagicMock
+from functools import reduce
 
 import arrow
 import pytest
@@ -8,6 +9,14 @@ from jsonschema import validate
 from telegram import Chat, Message, Update
 
 from freqtrade.misc import CONF_SCHEMA
+
+
+def log_has(line, logs):
+    # caplog mocker returns log as a tuple: ('freqtrade.analyze', logging.WARNING, 'foobar')
+    # and we want to match line against foobar in the tuple
+    return reduce(lambda a, b: a or b,
+                  filter(lambda x: x[2] == line, logs),
+                  False)
 
 
 @pytest.fixture(scope="module")

@@ -2,6 +2,7 @@
 import copy
 import logging
 from unittest.mock import MagicMock
+import freqtrade.tests.conftest as tt  # test tools
 
 import arrow
 import pytest
@@ -20,11 +21,10 @@ from freqtrade.persistence import Trade
 def test_parse_args_backtesting(mocker):
     """ Test that main() can start backtesting or hyperopt.
         and also ensure we can pass some specific arguments
-        argument parsing is done in test_misc.py """
+        further argument parsing is done in test_misc.py """
     backtesting_mock = mocker.patch(
         'freqtrade.optimize.backtesting.start', MagicMock())
-    with pytest.raises(SystemExit, match=r'0'):
-        main.main(['backtesting'])
+    main.main(['backtesting'])
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
     assert call_args.config == 'config.json'
@@ -38,14 +38,41 @@ def test_parse_args_backtesting(mocker):
 def test_main_start_hyperopt(mocker):
     hyperopt_mock = mocker.patch(
         'freqtrade.optimize.hyperopt.start', MagicMock())
-    with pytest.raises(SystemExit, match=r'0'):
-        main.main(['hyperopt'])
+    main.main(['hyperopt'])
     assert hyperopt_mock.call_count == 1
     call_args = hyperopt_mock.call_args[0][0]
     assert call_args.config == 'config.json'
     assert call_args.loglevel == 20
     assert call_args.subparser == 'hyperopt'
     assert call_args.func is not None
+
+
+def test_process_maybe_execute_buy(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.create_trade', return_value=True)
+    assert main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    mocker.patch('freqtrade.main.create_trade', return_value=False)
+    assert not main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+
+
+def test_process_maybe_execute_sell(default_conf, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.handle_trade', return_value=True)
+    mocker.patch('freqtrade.exchange.get_order', return_value=1)
+    trade = MagicMock()
+    trade.open_order_id = '123'
+    assert not main.process_maybe_execute_sell(trade, int(default_conf['ticker_interval']))
+    trade.is_open = True
+    trade.open_order_id = None
+    # Assert we call handle_trade() if trade is feasible for execution
+    assert main.process_maybe_execute_sell(trade, int(default_conf['ticker_interval']))
+
+
+def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
+    main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    tt.log_has('Unable to create trade:', caplog.record_tuples)
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, mocker):
@@ -227,6 +254,20 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
         conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
         mocker.patch.dict('freqtrade.main._CONF', conf)
         create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
+
+
+def test_create_trade_no_signal(default_conf, ticker, mocker):
+    default_conf['dry_run'] = True
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', MagicMock(return_value=(False, False)))
+    mocker.patch.multiple('freqtrade.exchange',
+                          get_ticker_history=MagicMock(return_value=20))
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_balance=MagicMock(return_value=20))
+    stake_amount = 10
+    Trade.query = MagicMock()
+    Trade.query.filter = MagicMock()
+    assert not create_trade(stake_amount, int(default_conf['ticker_interval']))
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
@@ -430,6 +471,20 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     assert len(trades) == 0
 
 
+def test_handle_timedout_limit_buy(default_conf, mocker):
+    cancel_order = MagicMock()
+    mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
+    Trade.session = MagicMock()
+    trade = MagicMock()
+    order = {'remaining': 1,
+             'amount': 1}
+    assert main.handle_timedout_limit_buy(trade, order)
+    assert cancel_order.call_count == 1
+    order['amount'] = 2
+    assert not main.handle_timedout_limit_buy(trade, order)
+    assert cancel_order.call_count == 2
+
+
 def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
@@ -462,6 +517,20 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
+
+
+def test_handle_timedout_limit_sell(default_conf, mocker):
+    cancel_order = MagicMock()
+    mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
+    trade = MagicMock()
+    order = {'remaining': 1,
+             'amount': 1}
+    assert main.handle_timedout_limit_sell(trade, order)
+    assert cancel_order.call_count == 1
+    order['amount'] = 2
+    assert not main.handle_timedout_limit_sell(trade, order)
+    # Assert cancel_order was not called (callcount remains unchanged)
+    assert cancel_order.call_count == 1
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,

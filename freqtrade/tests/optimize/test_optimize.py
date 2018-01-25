@@ -2,6 +2,7 @@
 
 import os
 import logging
+# from unittest.mock import MagicMock
 from shutil import copyfile
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
@@ -198,10 +199,25 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     _clean_test_file(file2)
 
 
+def test_download_backtesting_testdata2(default_conf, mocker):
+    tick = [{'T': 'bar'}, {'T': 'foo'}]
+    mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
+    assert download_backtesting_testdata(None, pair="BTC-UNITEST", interval=1)
+    assert download_backtesting_testdata(None, pair="BTC-UNITEST", interval=3)
+
+
 def test_load_tickerdata_file():
     assert not load_tickerdata_file(None, 'BTC_UNITEST', 7)
     tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 1)
     assert _btc_unittest_length == len(tickerdata)
+
+
+def test_init(default_conf, mocker):
+    conf = {'exchange': {'pair_whitelist': []}}
+    mocker.patch('freqtrade.optimize.hyperopt_optimize_conf', return_value=conf)
+    assert {} == optimize.load_data('', pairs=[], refresh_pairs=True,
+                                    ticker_interval=int(default_conf['ticker_interval']))
 
 
 def test_tickerdata_to_dataframe():

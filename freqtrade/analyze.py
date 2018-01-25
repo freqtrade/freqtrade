@@ -82,35 +82,39 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     return dataframe
 
 
+# FIX: Maybe return False, if an error has occured,
+#      Otherwise we might mask an error as an non-signal-scenario
 def get_signal(pair: str, interval: int) -> (bool, bool):
     """
     Calculates current signal based several technical analysis indicators
     :param pair: pair in format BTC_ANT or BTC-ANT
-    :return: (True, False) if pair is good for buying and not for selling
+    :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
     """
     ticker_hist = get_ticker_history(pair, interval)
     if not ticker_hist:
         logger.warning('Empty ticker history for pair %s', pair)
-        return (False, False)
+        return (False, False)  # return False ?
 
     try:
         dataframe = analyze_ticker(ticker_hist)
     except ValueError as ex:
         logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
-        return (False, False)
+        return (False, False)  # return False ?
     except Exception as ex:
         logger.exception('Unexpected error when analyzing ticker for pair %s: %s', pair, str(ex))
-        return (False, False)
+        return (False, False)  # return False ?
 
     if dataframe.empty:
-        return (False, False)
+        logger.warning('Empty dataframe for pair %s', pair)
+        return (False, False)  # return False ?
 
     latest = dataframe.iloc[-1]
 
     # Check if dataframe is out of date
     signal_date = arrow.get(latest['date'])
     if signal_date < arrow.now() - timedelta(minutes=10):
-        return (False, False)
+        logger.warning('Too old dataframe for pair %s', pair)
+        return (False, False)  # return False ?
 
     (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
     logger.debug('trigger: %s (pair=%s) buy=%s sell=%s', latest['date'], pair, str(buy), str(sell))

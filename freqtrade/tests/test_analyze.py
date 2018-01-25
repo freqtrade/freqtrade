@@ -1,8 +1,10 @@
 # pragma pylint: disable=missing-docstring,W0621
 import json
 from unittest.mock import MagicMock
+import freqtrade.tests.conftest as tt  # test tools
 
 import arrow
+import datetime
 import pytest
 from pandas import DataFrame
 
@@ -71,6 +73,41 @@ def test_returns_latest_sell_signal(mocker):
         return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
     )
     assert get_signal('BTC-ETH', 5) == (True, False)
+
+
+def test_get_signal_empty(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=None)
+    assert (False, False) == get_signal('foo', int(default_conf['ticker_interval']))
+    assert tt.log_has('Empty ticker history for pair foo',
+                      caplog.record_tuples)
+
+
+def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
+    mocker.patch('freqtrade.analyze.analyze_ticker',
+                 side_effect=ValueError('xyz'))
+    assert (False, False) == get_signal('foo', int(default_conf['ticker_interval']))
+    assert tt.log_has('Unable to analyze ticker for pair foo: xyz',
+                      caplog.record_tuples)
+
+
+def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame([]))
+    assert (False, False) == get_signal('xyz', int(default_conf['ticker_interval']))
+    assert tt.log_has('Empty dataframe for pair xyz',
+                      caplog.record_tuples)
+
+
+def test_get_signal_old_dataframe(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
+    # FIX: The get_signal function has hardcoded 10, which we must inturn hardcode
+    oldtime = arrow.utcnow() - datetime.timedelta(minutes=11)
+    ticks = DataFrame([{'buy': 1, 'date': oldtime}])
+    mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame(ticks))
+    assert (False, False) == get_signal('xyz', int(default_conf['ticker_interval']))
+    assert tt.log_has('Too old dataframe for pair xyz',
+                      caplog.record_tuples)
 
 
 def test_get_signal_handles_exceptions(mocker):
