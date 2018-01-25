@@ -32,8 +32,8 @@ The table below will list all configuration parameters.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
-| `telegram.token` | token | No | Your Telegram bot token. Only required is `enable` is `true`.
-| `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required is `enable` is `true`.
+| `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
+| `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
