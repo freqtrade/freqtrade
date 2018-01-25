@@ -240,9 +240,9 @@ def roi_space() -> List[Dict]:
         'roi_t1': hp.quniform('roi_t1', 10, 220, 10),
         'roi_t2': hp.quniform('roi_t2', 10, 120, 10),
         'roi_t3': hp.quniform('roi_t3', 10, 120, 10),
-        'roi_p1': hp.quniform('roi_p1', 1, 5, 1),
-        'roi_p2': hp.quniform('roi_p2', 1, 5, 1),
-        'roi_p3': hp.quniform('roi_p3', 1, 10, 1),
+        'roi_p1': hp.quniform('roi_p1', 0.01, 0.05, 0.01),
+        'roi_p2': hp.quniform('roi_p2', 0.01, 0.10, 0.01),
+        'roi_p3': hp.quniform('roi_p3', 0.01, 0.30, 0.01),
     }
 
 
