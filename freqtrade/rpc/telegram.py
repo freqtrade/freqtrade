@@ -11,13 +11,15 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_status,
                                     rpc_daily_profit,
                                     rpc_trade_statistics,
-                                    rpc_balance
+                                    rpc_balance,
+                                    rpc_start,
+                                    rpc_stop
                                     )
 
 from freqtrade import __version__, exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
-from freqtrade.misc import State, get_state, update_state
 from freqtrade.persistence import Trade
+from freqtrade.misc import State, get_state
 
 
 # Remove noisy log messages
@@ -276,10 +278,9 @@ def _start(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() == State.RUNNING:
-        send_msg('*Status:* `already running`', bot=bot)
-    else:
-        update_state(State.RUNNING)
+    (error, msg) = rpc_start()
+    if error:
+        send_msg(msg, bot=bot)
 
 
 @authorized_only
@@ -291,11 +292,8 @@ def _stop(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() == State.RUNNING:
-        send_msg('`Stopping trader ...`', bot=bot)
-        update_state(State.STOPPED)
-    else:
-        send_msg('*Status:* `already stopped`', bot=bot)
+    (error, msg) = rpc_stop()
+    send_msg(msg, bot=bot)
 
 
 @authorized_only

@@ -7,7 +7,7 @@ from pandas import DataFrame
 import sqlalchemy as sql
 
 from freqtrade.persistence import Trade
-from freqtrade.misc import State, get_state
+from freqtrade.misc import State, get_state, update_state
 from freqtrade import exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from . import telegram
@@ -334,3 +334,24 @@ def rpc_balance(fiat_display_currency):
     symbol = fiat_display_currency
     value = fiat.convert_amount(total, 'BTC', symbol)
     return (False, (output, total, symbol, value))
+
+
+def rpc_start():
+    """
+    Handler for start.
+    """
+    if get_state() == State.RUNNING:
+        return (True, '*Status:* `already running`')
+    else:
+        update_state(State.RUNNING)
+
+
+def rpc_stop():
+    """
+    Handler for stop.
+    """
+    if get_state() == State.RUNNING:
+        update_state(State.STOPPED)
+        return (False, '`Stopping trader ...`')
+    else:
+        return (True, '*Status:* `already stopped`')
