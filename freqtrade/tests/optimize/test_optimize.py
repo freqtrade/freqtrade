@@ -198,7 +198,7 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     _clean_test_file(file2)
 
 
-def test_download_backtesting_testdata2(default_conf, mocker):
+def test_download_backtesting_testdata2(mocker):
     tick = [{'T': 'bar'}, {'T': 'foo'}]
     mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)

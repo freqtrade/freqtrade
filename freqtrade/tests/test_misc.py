@@ -124,7 +124,7 @@ def test_parse_args_backtesting_custom():
     assert call_args.refresh_pairs is True
 
 
-def test_parse_args_hyperopt_custom(mocker):
+def test_parse_args_hyperopt_custom():
     args = ['-c', 'test_conf.json', 'hyperopt', '--epochs', '20']
     call_args = parse_args(args, '')
     assert call_args.config == 'test_conf.json'
@@ -134,7 +134,7 @@ def test_parse_args_hyperopt_custom(mocker):
     assert call_args.func is not None
 
 
-def test_file_dump_json(default_conf, mocker):
+def test_file_dump_json(mocker):
     file_open = mocker.patch('freqtrade.misc.open', MagicMock())
     json_dump = mocker.patch('json.dump', MagicMock())
     file_dump_json('somefile', [1, 2, 3])
