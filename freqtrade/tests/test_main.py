@@ -50,9 +50,9 @@ def test_main_start_hyperopt(mocker):
 def test_process_maybe_execute_buy(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', return_value=True)
-    assert main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    assert main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
     mocker.patch('freqtrade.main.create_trade', return_value=False)
-    assert not main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    assert not main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
 
 
 def test_process_maybe_execute_sell(default_conf, mocker):
@@ -71,7 +71,7 @@ def test_process_maybe_execute_sell(default_conf, mocker):
 def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
-    main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
     tt.log_has('Unable to create trade:', caplog.record_tuples)
 
 
