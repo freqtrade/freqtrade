@@ -1,13 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0621
+import datetime
 import json
 from unittest.mock import MagicMock
-import freqtrade.tests.conftest as tt  # test tools
 
 import arrow
-import datetime
 import pytest
 from pandas import DataFrame
 
+import freqtrade.tests.conftest as tt  # test tools
 from freqtrade.analyze import (get_signal, parse_ticker_dataframe,
                                populate_buy_trend, populate_indicators,
                                populate_sell_trend)

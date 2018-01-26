@@ -2,7 +2,6 @@
 
 import os
 import logging
-# from unittest.mock import MagicMock
 from shutil import copyfile
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex

@@ -2,7 +2,6 @@
 import copy
 import logging
 from unittest.mock import MagicMock
-import freqtrade.tests.conftest as tt  # test tools
 
 import arrow
 import pytest
@@ -10,6 +9,7 @@ import requests
 from sqlalchemy import create_engine
 
 import freqtrade.main as main
+import freqtrade.tests.conftest as tt  # test tools
 from freqtrade import DependencyException, OperationalException
 from freqtrade.exchange import Exchanges
 from freqtrade.main import (_process, check_handle_timedout, create_trade,

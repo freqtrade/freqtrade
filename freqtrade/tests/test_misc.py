@@ -3,13 +3,13 @@ import argparse
 import json
 import time
 from copy import deepcopy
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 from jsonschema import ValidationError
 
-from freqtrade.misc import (common_args_parser, load_config, parse_args,
-                            throttle, file_dump_json, parse_timerange)
+from freqtrade.misc import (common_args_parser, file_dump_json, load_config,
+                            parse_args, parse_timerange, throttle)
 
 
 def test_throttle():
