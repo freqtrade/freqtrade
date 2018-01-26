@@ -14,11 +14,12 @@ from cachetools import cached, TTLCache
 
 from freqtrade import (DependencyException, OperationalException, __version__,
                        exchange, persistence, rpc)
-from freqtrade.analyze import SignalType, get_signal
+from freqtrade.analyze import get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import (State, get_state, load_config, parse_args,
                             throttle, update_state)
 from freqtrade.persistence import Trade
+from freqtrade.strategy.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')
 
@@ -54,12 +55,49 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     return final_list
 
 
-def _process(nb_assets: Optional[int] = 0) -> bool:
+def process_maybe_execute_buy(conf, interval):
+    """
+    Tries to execute a buy trade in a safe way
+    :return: True if executed
+    """
+    try:
+        # Create entity and execute trade
+        if create_trade(float(_CONF['stake_amount']), interval):
+            return True
+        else:
+            logger.info(
+                'Checked all whitelisted currencies. '
+                'Found no suitable entry positions for buying. Will keep looking ...'
+            )
+            return False
+    except DependencyException as exception:
+        logger.warning('Unable to create trade: %s', exception)
+        return False
+
+
+def process_maybe_execute_sell(trade, interval):
+    """
+    Tries to execute a sell trade
+    :return: True if executed
+    """
+    # Get order details for actual price per unit
+    if trade.open_order_id:
+        # Update trade with order values
+        logger.info('Got open order for %s', trade)
+        trade.update(exchange.get_order(trade.open_order_id))
+
+    if trade.is_open and trade.open_order_id is None:
+        # Check if we can sell our current pair
+        return handle_trade(trade, interval)
+    return False
+
+
+def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
     :param: nb_assets: the maximum number of pairs to be traded at the same time
-    :return: True if a trade has been created or closed, False otherwise
+    :return: True if one or more trades has been created or closed, False otherwise
     """
     state_changed = False
     try:
@@ -77,33 +115,16 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
-            try:
-                # Create entity and execute trade
-                state_changed = create_trade(float(_CONF['stake_amount']))
-                if not state_changed:
-                    logger.info(
-                        'Checked all whitelisted currencies. '
-                        'Found no suitable entry positions for buying. Will keep looking ...'
-                    )
-            except DependencyException as exception:
-                logger.warning('Unable to create trade: %s', exception)
+            state_changed = process_maybe_execute_buy(_CONF, interval)
 
         for trade in trades:
-            # Get order details for actual price per unit
-            if trade.open_order_id:
-                # Update trade with order values
-                logger.info('Got open order for %s', trade)
-                trade.update(exchange.get_order(trade.open_order_id))
-
-            if trade.is_open and trade.open_order_id is None:
-                # Check if we can sell our current pair
-                state_changed = handle_trade(trade) or state_changed
+            state_changed |= process_maybe_execute_sell(trade, interval)
 
         if 'unfilledtimeout' in _CONF:
             # Check and handle any timed out open orders
             check_handle_timedout(_CONF['unfilledtimeout'])
-
             Trade.session.flush()
+
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         logger.warning(
             'Got %s in _process(), retrying in 30 seconds...',
@@ -120,6 +141,59 @@ def _process(nb_assets: Optional[int] = 0) -> bool:
     return state_changed
 
 
+# FIX: 20180110, why is cancel.order unconditionally here, whereas
+#                it is conditionally called in the
+#                handle_timedout_limit_sell()?
+def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
+    """Buy timeout - cancel order
+    :return: True if order was fully cancelled
+    """
+    exchange.cancel_order(trade.open_order_id)
+    if order['remaining'] == order['amount']:
+        # if trade is not partially completed, just delete the trade
+        Trade.session.delete(trade)
+        # FIX? do we really need to flush, caller of
+        #      check_handle_timedout will flush afterwards
+        Trade.session.flush()
+        logger.info('Buy order timeout for %s.', trade)
+        rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
+                     trade.pair.replace('_', '/')))
+        return True
+    else:
+        # if trade is partially complete, edit the stake details for the trade
+        # and close the order
+        trade.amount = order['amount'] - order['remaining']
+        trade.stake_amount = trade.amount * trade.open_rate
+        trade.open_order_id = None
+        logger.info('Partial buy order timeout for %s.', trade)
+        rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
+                     trade.pair.replace('_', '/')))
+        return False
+
+
+# FIX: 20180110, should cancel_order() be cond. or unconditionally called?
+def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
+    """
+    Sell timeout - cancel order and update trade
+    :return: True if order was fully cancelled
+    """
+    if order['remaining'] == order['amount']:
+        # if trade is not partially completed, just cancel the trade
+        exchange.cancel_order(trade.open_order_id)
+        trade.close_rate = None
+        trade.close_profit = None
+        trade.close_date = None
+        trade.is_open = True
+        trade.open_order_id = None
+        rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
+                     trade.pair.replace('_', '/')))
+        logger.info('Sell order timeout for %s.', trade)
+        return True
+    else:
+        # TODO: figure out how to handle partially complete sell orders
+        return False
+
+
 def check_handle_timedout(timeoutvalue: int) -> None:
     """
     Check if any orders are timed out and cancel if neccessary
@@ -129,39 +203,21 @@ def check_handle_timedout(timeoutvalue: int) -> None:
     timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
-        order = exchange.get_order(trade.open_order_id)
+        try:
+            order = exchange.get_order(trade.open_order_id)
+        except requests.exceptions.RequestException:
+            logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
+            continue
         ordertime = arrow.get(order['opened'])
 
+        # Check if trade is still actually open
+        if int(order['remaining']) == 0:
+            continue
+
         if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
-            # Buy timeout - cancel order
-            exchange.cancel_order(trade.open_order_id)
-            if order['remaining'] == order['amount']:
-                # if trade is not partially completed, just delete the trade
-                Trade.session.delete(trade)
-                Trade.session.flush()
-                logger.info('Buy order timeout for %s.', trade)
-            else:
-                # if trade is partially complete, edit the stake details for the trade
-                # and close the order
-                trade.amount = order['amount'] - order['remaining']
-                trade.stake_amount = trade.amount * trade.open_rate
-                trade.open_order_id = None
-                logger.info('Partial buy order timeout for %s.', trade)
+            handle_timedout_limit_buy(trade, order)
         elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
-            # Sell timeout - cancel order and update trade
-            if order['remaining'] == order['amount']:
-                # if trade is not partially completed, just cancel the trade
-                exchange.cancel_order(trade.open_order_id)
-                trade.close_rate = None
-                trade.close_profit = None
-                trade.close_date = None
-                trade.is_open = True
-                trade.open_order_id = None
-                logger.info('Sell order timeout for %s.', trade)
-                return True
-            else:
-                # TODO: figure out how to handle partially complete sell orders
-                pass
+            handle_timedout_limit_sell(trade, order)
 
 
 def execute_sell(trade: Trade, limit: float) -> None:
@@ -177,12 +233,25 @@ def execute_sell(trade: Trade, limit: float) -> None:
 
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
     profit_trade = trade.calc_profit(rate=limit)
+    current_rate = exchange.get_ticker(trade.pair, False)['bid']
+    profit = trade.calc_profit_percent(current_rate)
 
-    message = '*{exchange}:* Selling [{pair}]({pair_url}) with limit `{limit:.8f}`'.format(
+    message = """*{exchange}:* Selling
+*Current Pair:* [{pair}]({pair_url})
+*Limit:* `{limit}`
+*Amount:* `{amount}`
+*Open Rate:* `{open_rate:.8f}`
+*Current Rate:* `{current_rate:.8f}`
+*Profit:* `{profit:.2f}%`
+    """.format(
         exchange=trade.exchange,
-        pair=trade.pair.replace('_', '/'),
+        pair=trade.pair,
         pair_url=exchange.get_pair_detail_url(trade.pair),
-        limit=limit
+        limit=limit,
+        open_rate=trade.open_rate,
+        current_rate=current_rate,
+        amount=round(trade.amount, 8),
+        profit=round(profit * 100, 2),
     )
 
     # For regular case, when the configuration exists
@@ -221,14 +290,16 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
+    strategy = Strategy()
+
     current_profit = trade.calc_profit_percent(current_rate)
-    if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
+    if strategy.stoploss is not None and current_profit < float(strategy.stoploss):
         logger.debug('Stop loss hit.')
         return True
 
     # Check if time matches and current rate is above threshold
     time_diff = (current_time - trade.open_date).total_seconds() / 60
-    for duration, threshold in sorted(_CONF['minimal_roi'].items()):
+    for duration, threshold in sorted(strategy.minimal_roi.items()):
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
@@ -236,7 +307,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     return False
 
 
-def handle_trade(trade: Trade) -> bool:
+def handle_trade(trade: Trade, interval: int) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
     :return: True if trade has been sold, False otherwise
@@ -247,24 +318,27 @@ def handle_trade(trade: Trade) -> bool:
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
-    # Check if minimal roi has been reached
-    if min_roi_reached(trade, current_rate, datetime.utcnow()):
+    (buy, sell) = (False, False)
+
+    if _CONF.get('experimental', {}).get('use_sell_signal'):
+        (buy, sell) = get_signal(trade.pair, interval)
+
+    # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
+    if not buy and min_roi_reached(trade, current_rate, datetime.utcnow()):
         logger.debug('Executing sell due to ROI ...')
         execute_sell(trade, current_rate)
         return True
 
-    # Experimental: Check if sell signal has been enabled and triggered
-    if _CONF.get('experimental', {}).get('use_sell_signal'):
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if _CONF.get('experimental', {}).get('sell_profit_only'):
-            logger.debug('Checking if trade is profitable ...')
-            if trade.calc_profit(rate=current_rate) <= 0:
-                return False
-        logger.debug('Checking sell_signal ...')
-        if get_signal(trade.pair, SignalType.SELL):
-            logger.debug('Executing sell due to sell signal ...')
-            execute_sell(trade, current_rate)
-            return True
+    # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
+    if _CONF.get('experimental', {}).get('sell_profit_only', False):
+        logger.debug('Checking if trade is profitable ...')
+        if not buy and trade.calc_profit(rate=current_rate) <= 0:
+            return False
+
+    if sell and not buy:
+        logger.debug('Executing sell due to sell signal ...')
+        execute_sell(trade, current_rate)
+        return True
 
     return False
 
@@ -277,7 +351,7 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float) -> bool:
+def create_trade(stake_amount: float, interval: int) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
@@ -305,7 +379,8 @@ def create_trade(stake_amount: float) -> bool:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_signal(_pair, SignalType.BUY):
+        (buy, sell) = get_signal(_pair, interval)
+        if buy and not sell:
             pair = _pair
             break
     else:
@@ -360,6 +435,9 @@ def init(config: dict, db_url: Optional[str] = None) -> None:
     persistence.init(config, db_url)
     exchange.init(config)
 
+    strategy = Strategy()
+    strategy.init(config)
+
     # Set initial application state
     initial_state = config.get('initial_state')
     if initial_state:
@@ -398,7 +476,7 @@ def cleanup() -> None:
     exit(0)
 
 
-def main(sysargv=sys.argv[1:]) -> None:
+def main(sysargv=sys.argv[1:]) -> int:
     """
     Loads and validates the config and handles the main loop
     :return: None
@@ -410,7 +488,7 @@ def main(sysargv=sys.argv[1:]) -> None:
     # A subcommand has been issued
     if hasattr(args, 'func'):
         args.func(args)
-        exit(0)
+        return 0
 
     # Initialize logger
     logging.basicConfig(
@@ -426,6 +504,9 @@ def main(sysargv=sys.argv[1:]) -> None:
 
     # Load and validate configuration
     _CONF = load_config(args.config)
+
+    # Add the strategy file to use
+    _CONF.update({'strategy': args.strategy})
 
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
@@ -444,6 +525,7 @@ def main(sysargv=sys.argv[1:]) -> None:
     try:
         init(_CONF)
         old_state = None
+
         while True:
             new_state = get_state()
             # Log state transition
@@ -458,6 +540,7 @@ def main(sysargv=sys.argv[1:]) -> None:
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
                     nb_assets=args.dynamic_whitelist,
+                    interval=int(_CONF.get('ticker_interval', 5))
                 )
             old_state = new_state
     except KeyboardInterrupt:
@@ -466,7 +549,8 @@ def main(sysargv=sys.argv[1:]) -> None:
         logger.exception('Got fatal exception!')
     finally:
         cleanup()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

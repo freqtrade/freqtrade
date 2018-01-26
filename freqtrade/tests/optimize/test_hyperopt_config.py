@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212
 
-from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
+from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 
 def test_hyperopt_optimize_conf():

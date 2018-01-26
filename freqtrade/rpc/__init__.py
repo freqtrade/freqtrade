@@ -155,7 +155,6 @@ def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
     if not (isinstance(timescale, int) and timescale > 0):
         return (True, '*Daily [n]:* `must be an integer greater than 0`')
 
-    # FIX: we might not want to call CryptoToFiatConverter, for every call
     fiat = CryptoToFiatConverter()
     for day in range(0, timescale):
         profitday = today - timedelta(days=day)
@@ -166,20 +165,27 @@ def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
             .order_by(Trade.close_date)\
             .all()
         curdayprofit = sum(trade.calc_profit() for trade in trades)
-        profit_days[profitday] = format(curdayprofit, '.8f')
+        profit_days[profitday] = {
+            'amount': format(curdayprofit, '.8f'),
+            'trades': len(trades)
+        }
 
     stats = [
         [
             key,
-            '{value:.8f} {symbol}'.format(value=float(value), symbol=stake_currency),
+            '{value:.8f} {symbol}'.format(
+                value=float(value['amount']),
+                symbol=stake_currency
+            ),
             '{value:.3f} {symbol}'.format(
                 value=fiat.convert_amount(
-                    value,
+                    value['amount'],
                     stake_currency,
                     fiat_display_currency
                 ),
                 symbol=fiat_display_currency
-            )
+            ),
+            '{value} trade{s}'.format(value=value['trades'], s='' if value['trades'] < 2 else 's'),
         ]
         for key, value in profit_days.items()
     ]
@@ -296,6 +302,7 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
     )
     return markdown_msg
 
+
 def rpc_balance(fiat_display_currency):
     """
     :return: current account balance per crypto
@@ -326,4 +333,4 @@ def rpc_balance(fiat_display_currency):
     fiat = CryptoToFiatConverter()
     symbol = fiat_display_currency
     value = fiat.convert_amount(total, 'BTC', symbol)
-    return (output, total, symbol, value)
+    return (False, (output, total, symbol, value))

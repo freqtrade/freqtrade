@@ -116,9 +116,9 @@ def test_fiat_convert_get_price(mocker):
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
-def test_fiat_convert_without_network(mocker):
-    pymarketcap = MagicMock(side_effect=ImportError('Oh boy, you have no network!'))
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap', pymarketcap)
+def test_fiat_convert_without_network():
+    # Because CryptoToFiatConverter is a Singleton we reset the value of _coinmarketcap
+    CryptoToFiatConverter._coinmarketcap = None
 
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._coinmarketcap is None

@@ -136,8 +136,8 @@ def _status(bot: Bot, update: Update) -> None:
     if error:
         send_msg(trades, bot=bot)
     else:
-        for message in trades:
-            send_msg(message, bot=bot)
+        for trademsg in trades:
+            send_msg(trademsg, bot=bot)
 
 
 @authorized_only
@@ -252,11 +252,11 @@ def _balance(bot: Bot, update: Update) -> None:
     (currencys, total, symbol, value) = result
     output = ''
     for currency in currencys:
-        output += """*Currency*: {Currency}
-*Available*: {Available}
-*Balance*: {Balance}
-*Pending*: {Pending}
-*Est. BTC*: {BTC: .8f}
+        output += """*Currency*: {currency}
+*Available*: {available}
+*Balance*: {balance}
+*Pending*: {pending}
+*Est. BTC*: {est_btc: .8f}
 
 """.format(**currency)
 

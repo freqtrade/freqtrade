@@ -7,13 +7,23 @@ import pytest
 
 from freqtrade import OperationalException
 from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
-    get_ticker, cancel_order, get_name, get_fee
+    get_ticker, get_ticker_history, cancel_order, get_name, get_fee
+import freqtrade.exchange as exchange
+
+API_INIT = False
+
+
+def maybe_init_api(conf, mocker):
+    global API_INIT
+    if not API_INIT:
+        mocker.patch('freqtrade.exchange.validate_pairs',
+                     side_effect=lambda s: True)
+        init(config=conf)
+        API_INIT = True
 
 
 def test_init(default_conf, mocker, caplog):
-    mocker.patch('freqtrade.exchange.validate_pairs',
-                 side_effect=lambda s: True)
-    init(config=default_conf)
+    maybe_init_api(default_conf, mocker)
     assert ('freqtrade.exchange',
             logging.INFO,
             'Instance is running with dry_run enabled'
@@ -159,8 +169,10 @@ def test_get_balances_prod(default_conf, mocker):
     assert get_balances()[0]['Pending'] == 0.0
 
 
-def test_get_ticker(mocker, ticker):
-
+# This test is somewhat redundant with
+# test_exchange_bittrex.py::test_exchange_bittrex_get_ticker
+def test_get_ticker(default_conf, mocker, ticker):
+    maybe_init_api(default_conf, mocker)
     api_mock = MagicMock()
     tick = {"success": True, 'result': {'Bid': 0.00001098, 'Ask': 0.00001099, 'Last': 0.0001}}
     api_mock.get_ticker = MagicMock(return_value=tick)
@@ -177,6 +189,7 @@ def test_get_ticker(mocker, ticker):
     mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
 
     # if not caching the result we should get the same ticker
+    # if not fetching a new result we should get the cached ticker
     ticker = get_ticker(pair='BTC_ETH', refresh=False)
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
@@ -187,11 +200,58 @@ def test_get_ticker(mocker, ticker):
     assert ticker['ask'] == 1
 
 
+def test_get_ticker_history(default_conf, mocker, ticker):
+    api_mock = MagicMock()
+    tick = 123
+    api_mock.get_ticker_history = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange._API', api_mock)
+
+    # retrieve original ticker
+    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
+    assert ticks == 123
+
+    # change the ticker
+    tick = 999
+    api_mock.get_ticker_history = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange._API', api_mock)
+
+    # ensure caching will still return the original ticker
+    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
+    assert ticks == 123
+
+
 def test_cancel_order_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
     assert cancel_order(order_id='123') is None
+
+
+# Ensure that if not dry_run, we should call API
+def test_cancel_order(default_conf, mocker):
+    default_conf['dry_run'] = False
+    mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
+    api_mock = MagicMock()
+    api_mock.cancel_order = MagicMock(return_value=123)
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    assert cancel_order(order_id='_') == 123
+
+
+def test_get_order(default_conf, mocker):
+    default_conf['dry_run'] = True
+    mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
+    order = MagicMock()
+    order.myid = 123
+    exchange._DRY_RUN_OPEN_ORDERS['X'] = order
+    print(exchange.get_order('X'))
+    assert exchange.get_order('X').myid == 123
+
+    default_conf['dry_run'] = False
+    mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
+    api_mock = MagicMock()
+    api_mock.get_order = MagicMock(return_value=456)
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    assert 456 == exchange.get_order('X')
 
 
 def test_get_name(default_conf, mocker):
@@ -209,3 +269,18 @@ def test_get_fee(default_conf, mocker):
     init(default_conf)
 
     assert get_fee() == 0.0025
+
+
+def test_exchange_misc(default_conf, mocker):
+    api_mock = MagicMock()
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    exchange.get_markets()
+    assert 1 == api_mock.get_markets.call_count
+    exchange.get_market_summaries()
+    assert 1 == api_mock.get_market_summaries.call_count
+    api_mock.name = 123
+    assert 123 == exchange.get_name()
+    api_mock.fee = 456
+    assert 456 == exchange.get_fee()
+    exchange.get_wallet_health()
+    assert 1 == api_mock.get_wallet_health.call_count

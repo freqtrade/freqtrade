@@ -5,10 +5,11 @@ import time
 from copy import deepcopy
 
 import pytest
+from unittest.mock import MagicMock
 from jsonschema import ValidationError
 
 from freqtrade.misc import (common_args_parser, load_config, parse_args,
-                            throttle)
+                            throttle, file_dump_json, parse_timerange)
 
 
 def test_throttle():
@@ -131,6 +132,21 @@ def test_parse_args_hyperopt_custom(mocker):
     assert call_args.loglevel == 20
     assert call_args.subparser == 'hyperopt'
     assert call_args.func is not None
+
+
+def test_file_dump_json(default_conf, mocker):
+    file_open = mocker.patch('freqtrade.misc.open', MagicMock())
+    json_dump = mocker.patch('json.dump', MagicMock())
+    file_dump_json('somefile', [1, 2, 3])
+    assert file_open.call_count == 1
+    assert json_dump.call_count == 1
+
+
+def test_parse_timerange_incorrect():
+    assert ((None, 'line'), None, -200) == parse_timerange('-200')
+    assert (('line', None), 200, None) == parse_timerange('200-')
+    with pytest.raises(Exception, match=r'Incorrect syntax.*'):
+        parse_timerange('-')
 
 
 def test_load_config(default_conf, mocker):
