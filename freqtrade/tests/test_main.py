@@ -2,7 +2,6 @@
 import copy
 import logging
 from unittest.mock import MagicMock
-import freqtrade.tests.conftest as tt  # test tools
 
 import arrow
 import pytest
@@ -10,6 +9,7 @@ import requests
 from sqlalchemy import create_engine
 
 import freqtrade.main as main
+import freqtrade.tests.conftest as tt  # test tools
 from freqtrade import DependencyException, OperationalException
 from freqtrade.exchange import Exchanges
 from freqtrade.main import (_process, check_handle_timedout, create_trade,
@@ -50,9 +50,9 @@ def test_main_start_hyperopt(mocker):
 def test_process_maybe_execute_buy(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', return_value=True)
-    assert main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    assert main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
     mocker.patch('freqtrade.main.create_trade', return_value=False)
-    assert not main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    assert not main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
 
 
 def test_process_maybe_execute_sell(default_conf, mocker):
@@ -71,7 +71,7 @@ def test_process_maybe_execute_sell(default_conf, mocker):
 def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
-    main.process_maybe_execute_buy(default_conf, int(default_conf['ticker_interval']))
+    main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
     tt.log_has('Unable to create trade:', caplog.record_tuples)
 
 
@@ -256,7 +256,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
         create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
-def test_create_trade_no_signal(default_conf, ticker, mocker):
+def test_create_trade_no_signal(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', MagicMock(return_value=(False, False)))
@@ -308,7 +308,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.close_date is not None
 
 
-def test_handle_overlpapping_signals(default_conf, ticker, mocker, caplog):
+def test_handle_overlpapping_signals(default_conf, ticker, mocker):
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -471,7 +471,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     assert len(trades) == 0
 
 
-def test_handle_timedout_limit_buy(default_conf, mocker):
+def test_handle_timedout_limit_buy(mocker):
     cancel_order = MagicMock()
     mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
     Trade.session = MagicMock()
@@ -519,7 +519,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     assert trade_sell.is_open is True
 
 
-def test_handle_timedout_limit_sell(default_conf, mocker):
+def test_handle_timedout_limit_sell(mocker):
     cancel_order = MagicMock()
     mocker.patch('freqtrade.exchange.cancel_order', cancel_order)
     trade = MagicMock()

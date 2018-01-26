@@ -2,7 +2,6 @@
 
 import os
 import logging
-# from unittest.mock import MagicMock
 from shutil import copyfile
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
@@ -10,7 +9,7 @@ from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file
 
 # Change this if modifying BTC_UNITEST testdatafile
-_btc_unittest_length = 13681
+_BTC_UNITTEST_LENGTH = 13681
 
 
 def _backup_file(file: str, copy_file: bool = False) -> None:
@@ -199,7 +198,7 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     _clean_test_file(file2)
 
 
-def test_download_backtesting_testdata2(default_conf, mocker):
+def test_download_backtesting_testdata2(mocker):
     tick = [{'T': 'bar'}, {'T': 'foo'}]
     mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
@@ -210,7 +209,7 @@ def test_download_backtesting_testdata2(default_conf, mocker):
 def test_load_tickerdata_file():
     assert not load_tickerdata_file(None, 'BTC_UNITEST', 7)
     tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 1)
-    assert _btc_unittest_length == len(tickerdata)
+    assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
 def test_init(default_conf, mocker):
@@ -225,4 +224,4 @@ def test_tickerdata_to_dataframe():
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
     tickerlist = {'BTC_UNITEST': tick}
     data = optimize.tickerdata_to_dataframe(tickerlist)
-    assert 100 == len(data['BTC_UNITEST'])
+    assert len(data['BTC_UNITEST']) == 100
