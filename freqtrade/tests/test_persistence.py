@@ -1,8 +1,7 @@
 # pragma pylint: disable=missing-docstring
 import os
-
 import pytest
-
+from sqlalchemy import create_engine
 from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
@@ -312,8 +311,8 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     assert trade.calc_profit_percent(fee=0.003) == 0.0614782
 
 
-def test_clean_dry_run_db(default_conf, mocker):
-    init(default_conf)
+def test_clean_dry_run_db(default_conf):
+    init(default_conf, create_engine('sqlite://'))
 
     # Simulate dry_run entries
     trade = Trade(
