@@ -18,7 +18,7 @@ def default_conf():
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": "5",
+        "ticker_interval": 5,
         "dry_run": True,
         "minimal_roi": {
             "40": 0.0,
@@ -215,5 +215,35 @@ def ticker_history():
             "V": 7920.73570705,
             "T": "2017-11-26T09:00:00",
             "BV": 0.7039405
+        }
+    ]
+
+
+@pytest.fixture
+def ticker_history_without_bv():
+    return [
+        {
+            "O": 8.794e-05,
+            "H": 8.948e-05,
+            "L": 8.794e-05,
+            "C": 8.88e-05,
+            "V": 991.09056638,
+            "T": "2017-11-26T08:50:00"
+        },
+        {
+            "O": 8.88e-05,
+            "H": 8.942e-05,
+            "L": 8.88e-05,
+            "C": 8.893e-05,
+            "V": 658.77935965,
+            "T": "2017-11-26T08:55:00"
+        },
+        {
+            "O": 8.891e-05,
+            "H": 8.893e-05,
+            "L": 8.875e-05,
+            "C": 8.877e-05,
+            "V": 7920.73570705,
+            "T": "2017-11-26T09:00:00"
         }
     ]

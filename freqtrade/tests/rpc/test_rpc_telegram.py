@@ -219,9 +219,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -239,7 +237,9 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     _forcesell(bot=MagicMock(), update=update)
 
     assert rpc_mock.call_count == 2
-    assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
     assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
@@ -256,9 +256,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
@@ -276,7 +274,9 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     _forcesell(bot=MagicMock(), update=update)
 
     assert rpc_mock.call_count == 2
-    assert 'Selling [BTC/ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
+    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
     assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
@@ -317,9 +317,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data

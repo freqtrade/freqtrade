@@ -6,9 +6,10 @@ import os
 from typing import Optional, List, Dict
 from pandas import DataFrame
 from freqtrade.exchange import get_ticker_history
-from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
 from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
+
 from freqtrade import misc
+from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,6 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         pair=filepair,
         interval=interval,
     ))
-    filename = filename.replace('USDT_BTC', 'BTC_FAKEBULL')
 
     if os.path.isfile(filename):
         with open(filename, "rt") as fp:

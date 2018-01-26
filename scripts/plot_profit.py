@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import argparse
 import json
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -10,6 +9,7 @@ import numpy as np
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 import freqtrade.exchange as exchange
+from freqtrade.strategy.strategy import Strategy
 
 
 def plot_parse_args(args):
@@ -44,7 +44,7 @@ def make_profit_array(data, px, filter_pairs=[]):
     # total profits at each timeframe
     # to accumulated profits
     pa = 0
-    for x in range(0,len(pg)):
+    for x in range(0, len(pg)):
         p = pg[x]  # Get current total percent
         pa += p  # Add to the accumulated percent
         pg[x] = pa  # write back to save memory
@@ -67,7 +67,14 @@ def plot_profit(args) -> None:
     filter_pairs = args.pair
 
     config = misc.load_config(args.config)
+    config.update({'strategy': args.strategy})
+
+    # Init strategy
+    strategy = Strategy()
+    strategy.init(config)
+
     pairs = config['exchange']['pair_whitelist']
+
     if filter_pairs:
         filter_pairs = filter_pairs.split(',')
         pairs = list(set(pairs) & set(filter_pairs))
@@ -75,7 +82,7 @@ def plot_profit(args) -> None:
 
     timerange = misc.parse_timerange(args.timerange)
     tickers = optimize.load_data(args.datadir, pairs=pairs,
-                                 ticker_interval=args.ticker_interval,
+                                 ticker_interval=strategy.ticker_interval,
                                  refresh_pairs=False,
                                  timerange=timerange)
     dataframes = optimize.preprocess(tickers)
@@ -96,7 +103,7 @@ def plot_profit(args) -> None:
     for pair, pair_data in dataframes.items():
         close = pair_data['close']
         maxprice = max(close)  # Normalize price to [0,1]
-        print('Pair %s has length %s' %(pair, len(close)))
+        print('Pair %s has length %s' % (pair, len(close)))
         for x in range(0, len(close)):
             avgclose[x] += close[x] / maxprice
         # avgclose += close
@@ -108,7 +115,7 @@ def plot_profit(args) -> None:
 
     filename = 'backtest-result.json'
     with open(filename) as file:
-      data = json.load(file)
+        data = json.load(file)
     pg = make_profit_array(data, max_x, filter_pairs)
 
     #

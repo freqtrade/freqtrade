@@ -159,6 +159,14 @@ def common_args_parser(description: str):
         type=str,
         metavar='PATH',
     )
+    parser.add_argument(
+        '-s', '--strategy',
+        help='specify strategy file (default: freqtrade/strategy/default_strategy.py)',
+        dest='strategy',
+        default='.default_strategy',
+        type=str,
+        metavar='PATH',
+    )
     return parser
 
 
@@ -328,7 +336,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
-        'ticker_interval': {'type': 'string', 'enum': ['1', '5', '30', '60', '1440']},
+        'ticker_interval': {'type': 'integer', 'enum': [1, 5, 30, 60, 1440]},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
@@ -419,12 +427,10 @@ CONF_SCHEMA = {
     ],
     'required': [
         'max_open_trades',
-        'ticker_interval',
         'stake_currency',
         'stake_amount',
         'fiat_display_currency',
         'dry_run',
-        'minimal_roi',
         'bid_strategy',
         'telegram'
     ]

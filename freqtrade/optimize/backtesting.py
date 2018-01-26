@@ -14,6 +14,7 @@ from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 from freqtrade.persistence import Trade
+from freqtrade.strategy.strategy import Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +200,11 @@ def start(args):
         logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
         max_open_trades = config['max_open_trades']
 
+    # init the strategy to use
+    config.update({'strategy': args.strategy})
+    strategy = Strategy()
+    strategy.init(config)
+
     # Monkey patch config
     from freqtrade import main
     main._CONF = config
@@ -216,7 +222,7 @@ def start(args):
                         'realistic': args.realistic_simulation,
                         'sell_profit_only': sell_profit_only,
                         'use_sell_signal': use_sell_signal,
-                        'stoploss': config.get('stoploss'),
+                        'stoploss': strategy.stoploss,
                         'record': args.export
                         })
     logger.info(
