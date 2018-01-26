@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Callable
 
-from sqlalchemy import and_, func, text
+from sqlalchemy import func, text
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
@@ -13,7 +13,8 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_statistics,
                                     rpc_balance,
                                     rpc_start,
-                                    rpc_stop
+                                    rpc_stop,
+                                    rpc_forcesell,
                                     )
 
 from freqtrade import __version__, exchange
@@ -296,6 +297,7 @@ def _stop(bot: Bot, update: Update) -> None:
     send_msg(msg, bot=bot)
 
 
+# FIX: no test for this!!!!
 @authorized_only
 def _forcesell(bot: Bot, update: Update) -> None:
     """
@@ -305,28 +307,12 @@ def _forcesell(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() != State.RUNNING:
-        send_msg('`trader is not running`', bot=bot)
-        return
 
     trade_id = update.message.text.replace('/forcesell', '').strip()
-    if trade_id == 'all':
-        # Execute sell for all open orders
-        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
-            _exec_forcesell(trade)
+    (error, message) = rpc_forcesell(trade_id)
+    if error:
+        send_msg(message, bot=bot)
         return
-
-    # Query for trade
-    trade = Trade.query.filter(and_(
-        Trade.id == trade_id,
-        Trade.is_open.is_(True)
-    )).first()
-    if not trade:
-        send_msg('Invalid argument. See `/help` to view usage')
-        logger.warning('/forcesell: Invalid argument received')
-        return
-
-    _exec_forcesell(trade)
 
 
 @authorized_only

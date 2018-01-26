@@ -5,6 +5,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from pandas import DataFrame
 import sqlalchemy as sql
+# from sqlalchemy import and_, func, text
 
 from freqtrade.persistence import Trade
 from freqtrade.misc import State, get_state, update_state
@@ -62,6 +63,28 @@ def shorten_date(_date):
     new_date = re.sub('days?', 'd', new_date)
     new_date = re.sub('^an?', '1', new_date)
     return new_date
+
+
+def _exec_forcesell(trade: Trade) -> None:
+    # Check if there is there is an open order
+    if trade.open_order_id:
+        order = exchange.get_order(trade.open_order_id)
+
+        # Cancel open LIMIT_BUY orders and close trade
+        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
+            exchange.cancel_order(trade.open_order_id)
+            trade.close(order.get('rate') or trade.open_rate)
+            # TODO: sell amount which has been bought already
+            return
+
+        # Ignore trades with an attached LIMIT_SELL order
+        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+            return
+
+    # Get current rate and execute sell
+    current_rate = exchange.get_ticker(trade.pair, False)['bid']
+    from freqtrade.main import execute_sell
+    execute_sell(trade, current_rate)
 
 
 #
@@ -355,3 +378,30 @@ def rpc_stop():
         return (False, '`Stopping trader ...`')
     else:
         return (True, '*Status:* `already stopped`')
+
+
+def rpc_forcesell(trade_id) -> None:
+    """
+    Handler for forcesell <id>.
+    Sells the given trade at current price
+    :return: error or None
+    """
+    if get_state() != State.RUNNING:
+        return (True, '`trader is not running`')
+
+    if trade_id == 'all':
+        # Execute sell for all open orders
+        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+            _exec_forcesell(trade)
+        return (False, '')
+
+    # Query for trade
+    trade = Trade.query.filter(sql.and_(
+        Trade.id == trade_id,
+        Trade.is_open.is_(True)
+    )).first()
+    if not trade:
+        logger.warning('/forcesell: Invalid argument received')
+        return (True, 'Invalid argument. See `/help` to view usage')
+
+    _exec_forcesell(trade)
