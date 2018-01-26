@@ -26,7 +26,7 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
     :return: tuple containing min_date, max_date
     """
     all_dates = Series([])
-    for pair, pair_data in data.items():
+    for pair_data in data.values():
         all_dates = all_dates.append(pair_data['date'])
     all_dates.sort_values(inplace=True)
     return arrow.get(all_dates.iloc[0]), arrow.get(all_dates.iloc[-1])
