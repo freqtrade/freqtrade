@@ -212,7 +212,10 @@ def start(args):
     preprocessed = optimize.tickerdata_to_dataframe(data)
     # Print timeframe
     min_date, max_date = get_timeframe(preprocessed)
-    logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
+    logger.info('Measuring data from %s up to %s (%s days)..',
+                min_date.isoformat(),
+                max_date.isoformat(),
+                (max_date-min_date).days)
     # Execute backtest and print results
     sell_profit_only = config.get('experimental', {}).get('sell_profit_only', False)
     use_sell_signal = config.get('experimental', {}).get('use_sell_signal', False)
