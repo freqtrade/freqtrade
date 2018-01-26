@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Callable
 
-from sqlalchemy import func, text
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
@@ -15,6 +14,7 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_start,
                                     rpc_stop,
                                     rpc_forcesell,
+                                    rpc_performance,
                                     )
 
 from freqtrade import __version__, exchange
@@ -324,26 +324,18 @@ def _performance(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() != State.RUNNING:
-        send_msg('`trader is not running`', bot=bot)
+    (error, trades) = rpc_performance()
+    if error:
+        send_msg(trades, bot=bot)
         return
-
-    pair_rates = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum'),
-                                     func.count(Trade.pair).label('count')) \
-        .filter(Trade.is_open.is_(False)) \
-        .group_by(Trade.pair) \
-        .order_by(text('profit_sum DESC')) \
-        .all()
 
     stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
         index=i + 1,
-        pair=pair,
-        profit=round(rate * 100, 2),
-        count=count
-    ) for i, (pair, rate, count) in enumerate(pair_rates))
-
+        pair=trade['pair'],
+        profit=trade['profit'],
+        count=trade['count']
+    ) for i, trade in enumerate(trades))
     message = '<b>Performance:</b>\n{}'.format(stats)
-    logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
 
