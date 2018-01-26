@@ -224,4 +224,4 @@ def test_tickerdata_to_dataframe():
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
     tickerlist = {'BTC_UNITEST': tick}
     data = optimize.tickerdata_to_dataframe(tickerlist)
-    assert 100 == len(data['BTC_UNITEST'])
+    assert len(data['BTC_UNITEST']) == 100
