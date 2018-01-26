@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import arrow
 import requests
@@ -23,7 +23,7 @@ from freqtrade.strategy.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')
 
-_CONF = {}
+_CONF: Dict[str, Any] = {}
 
 
 def refresh_whitelist(whitelist: List[str]) -> List[str]:
