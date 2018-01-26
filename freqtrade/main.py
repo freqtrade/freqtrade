@@ -64,12 +64,12 @@ def process_maybe_execute_buy(interval):
         # Create entity and execute trade
         if create_trade(float(_CONF['stake_amount']), interval):
             return True
-        else:
-            logger.info(
-                'Checked all whitelisted currencies. '
-                'Found no suitable entry positions for buying. Will keep looking ...'
-            )
-            return False
+
+        logger.info(
+            'Checked all whitelisted currencies. '
+            'Found no suitable entry positions for buying. Will keep looking ...'
+        )
+        return False
     except DependencyException as exception:
         logger.warning('Unable to create trade: %s', exception)
         return False
@@ -159,16 +159,16 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
         rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
                      trade.pair.replace('_', '/')))
         return True
-    else:
-        # if trade is partially complete, edit the stake details for the trade
-        # and close the order
-        trade.amount = order['amount'] - order['remaining']
-        trade.stake_amount = trade.amount * trade.open_rate
-        trade.open_order_id = None
-        logger.info('Partial buy order timeout for %s.', trade)
-        rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
-                     trade.pair.replace('_', '/')))
-        return False
+
+    # if trade is partially complete, edit the stake details for the trade
+    # and close the order
+    trade.amount = order['amount'] - order['remaining']
+    trade.stake_amount = trade.amount * trade.open_rate
+    trade.open_order_id = None
+    logger.info('Partial buy order timeout for %s.', trade)
+    rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
+                 trade.pair.replace('_', '/')))
+    return False
 
 
 # FIX: 20180110, should cancel_order() be cond. or unconditionally called?
@@ -189,9 +189,9 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
                      trade.pair.replace('_', '/')))
         logger.info('Sell order timeout for %s.', trade)
         return True
-    else:
-        # TODO: figure out how to handle partially complete sell orders
-        return False
+
+    # TODO: figure out how to handle partially complete sell orders
+    return False
 
 
 def check_handle_timedout(timeoutvalue: int) -> None:
