@@ -9,7 +9,7 @@ from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file
 
 # Change this if modifying BTC_UNITEST testdatafile
-_btc_unittest_length = 13681
+_BTC_UNITTEST_LENGTH = 13681
 
 
 def _backup_file(file: str, copy_file: bool = False) -> None:
@@ -209,7 +209,7 @@ def test_download_backtesting_testdata2(default_conf, mocker):
 def test_load_tickerdata_file():
     assert not load_tickerdata_file(None, 'BTC_UNITEST', 7)
     tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 1)
-    assert _btc_unittest_length == len(tickerdata)
+    assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
 def test_init(default_conf, mocker):
