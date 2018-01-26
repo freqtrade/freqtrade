@@ -428,3 +428,15 @@ def rpc_performance() -> None:
         trades.append({'pair': pair, 'profit': round(rate * 100, 2), 'count': count})
 
     return (False, trades)
+
+
+def rpc_count() -> None:
+    """
+    Returns the number of trades running
+    :return: None
+    """
+    if get_state() != State.RUNNING:
+        return (True, '`trader is not running`')
+
+    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+    return (False, trades)

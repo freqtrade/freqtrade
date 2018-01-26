@@ -15,12 +15,12 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_stop,
                                     rpc_forcesell,
                                     rpc_performance,
+                                    rpc_count,
                                     )
 
 from freqtrade import __version__, exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
-from freqtrade.misc import State, get_state
 
 
 # Remove noisy log messages
@@ -348,11 +348,10 @@ def _count(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() != State.RUNNING:
-        send_msg('`trader is not running`', bot=bot)
+    (error, trades) = rpc_count()
+    if error:
+        send_msg(trades, bot=bot)
         return
-
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
     message = tabulate({
         'current': [len(trades)],
