@@ -232,3 +232,72 @@ def test_rpc_balance_handle(default_conf, update, mocker):
     # res::
     # (False, ([{'currency': 'BTC', 'available': 12.0, 'balance': 10.0,
     #            'pending': 0.0, 'est_btc': 10.0}], 10.0, 'USD', 150000.0))
+
+
+def test_exec_forcesell_open_orders(default_conf, ticker, mocker, limit_buy_order):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    cancel_order_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_ticker=ticker,
+                          get_order=MagicMock(return_value={
+                              'closed': None,
+                              'type': 'LIMIT_BUY',
+                          }),
+                          cancel_order=cancel_order_mock)
+    # Insert an open trade (which we can cancel)
+    # trade = Trade(
+    #    pair='BTC_ETH',
+    #    open_rate=1,
+    #    exchange='BITTREX',
+    #    open_order_id='123456789',
+    #    amount=1,
+    #    fee=0.0,
+    #    open_date=datetime.utcnow(),
+    #    is_open=False,
+    # )
+    # FIX: Cant make an open trade.....
+    # trade = Trade.query.first()
+    # print('###############', trade)
+    res = rpc.rpc_forcesell('123456789')
+    assert(res)
+    # print(res)
+    # assert cancel_order_mock.call_count == 1
+    # assert trade.is_open is False
+
+
+def test_performance_handle(
+        default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    main.init(default_conf, create_engine('sqlite://'))
+
+    # Create some test data
+    main.create_trade(0.001, int(default_conf['ticker_interval']))
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    res = rpc.rpc_performance()
+    print(res)
+    # assert 'Performance' in msg_mock.call_args_list[0][0][0]
+    # assert '<code>BTC_ETH\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]

@@ -256,3 +256,9 @@ def ticker_history_without_bv():
             "T": "2017-11-26T09:00:00"
         }
     ]
+
+# FIX:
+# Create an fixture/function
+# that inserts a trade of some type and open-status
+# return the open-order-id
+# See tests in rpc/main that could use this

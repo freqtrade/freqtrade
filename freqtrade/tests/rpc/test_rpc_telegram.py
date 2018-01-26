@@ -14,8 +14,7 @@ from freqtrade.misc import update_state, State, get_state
 from freqtrade.persistence import Trade
 from freqtrade.rpc import telegram
 from freqtrade.rpc.telegram import authorized_only, is_enabled, send_msg, _status, _status_table, \
-    _profit, _forcesell, _performance, _daily, _count, _start, _stop, _balance, _version, _help, \
-    _exec_forcesell
+    _profit, _forcesell, _performance, _daily, _count, _start, _stop, _balance, _version, _help
 
 
 def test_is_enabled(default_conf, mocker):
@@ -280,30 +279,6 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
     assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
-
-
-def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    cancel_order_mock = MagicMock()
-    mocker.patch.multiple('freqtrade.main.exchange',
-                          get_ticker=ticker,
-                          get_order=MagicMock(return_value={
-                              'closed': None,
-                              'type': 'LIMIT_BUY',
-                          }),
-                          cancel_order=cancel_order_mock)
-    trade = Trade(
-        pair='BTC_ETH',
-        open_rate=1,
-        exchange='BITTREX',
-        open_order_id='123456789',
-        amount=1,
-        fee=0.0,
-    )
-    _exec_forcesell(trade)
-
-    assert cancel_order_mock.call_count == 1
-    assert trade.is_open is False
 
 
 def test_forcesell_all_handle(default_conf, update, ticker, mocker):

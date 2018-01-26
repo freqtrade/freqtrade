@@ -18,9 +18,8 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_count,
                                     )
 
-from freqtrade import __version__, exchange
+from freqtrade import __version__
 from freqtrade.fiat_convert import CryptoToFiatConverter
-from freqtrade.persistence import Trade
 
 
 # Remove noisy log messages
@@ -398,28 +397,6 @@ def _version(bot: Bot, update: Update) -> None:
     :return: None
     """
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
-
-
-def _exec_forcesell(trade: Trade) -> None:
-    # Check if there is there is an open order
-    if trade.open_order_id:
-        order = exchange.get_order(trade.open_order_id)
-
-        # Cancel open LIMIT_BUY orders and close trade
-        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
-            exchange.cancel_order(trade.open_order_id)
-            trade.close(order.get('rate') or trade.open_rate)
-            # TODO: sell amount which has been bought already
-            return
-
-        # Ignore trades with an attached LIMIT_SELL order
-        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
-            return
-
-    # Get current rate and execute sell
-    current_rate = exchange.get_ticker(trade.pair, False)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:

@@ -65,28 +65,6 @@ def shorten_date(_date):
     return new_date
 
 
-def _exec_forcesell(trade: Trade) -> None:
-    # Check if there is there is an open order
-    if trade.open_order_id:
-        order = exchange.get_order(trade.open_order_id)
-
-        # Cancel open LIMIT_BUY orders and close trade
-        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
-            exchange.cancel_order(trade.open_order_id)
-            trade.close(order.get('rate') or trade.open_rate)
-            # TODO: sell amount which has been bought already
-            return
-
-        # Ignore trades with an attached LIMIT_SELL order
-        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
-            return
-
-    # Get current rate and execute sell
-    current_rate = exchange.get_ticker(trade.pair, False)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
-
-
 #
 # Below follows the RPC backend
 # it is prefixed with rpc_
@@ -387,6 +365,27 @@ def rpc_forcesell(trade_id) -> None:
     Sells the given trade at current price
     :return: error or None
     """
+    def _exec_forcesell(trade: Trade) -> None:
+        # Check if there is there is an open order
+        if trade.open_order_id:
+            order = exchange.get_order(trade.open_order_id)
+
+            # Cancel open LIMIT_BUY orders and close trade
+            if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
+                exchange.cancel_order(trade.open_order_id)
+                trade.close(order.get('rate') or trade.open_rate)
+                # TODO: sell amount which has been bought already
+                return
+
+            # Ignore trades with an attached LIMIT_SELL order
+            if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+                return
+
+        # Get current rate and execute sell
+        current_rate = exchange.get_ticker(trade.pair, False)['bid']
+        from freqtrade.main import execute_sell
+        execute_sell(trade, current_rate)
+
     if get_state() != State.RUNNING:
         return (True, '`trader is not running`')
 
@@ -402,8 +401,8 @@ def rpc_forcesell(trade_id) -> None:
         Trade.is_open.is_(True)
     )).first()
     if not trade:
-        logger.warning('/forcesell: Invalid argument received')
-        return (True, 'Invalid argument. See `/help` to view usage')
+        logger.warning('forcesell: Invalid argument received')
+        return (True, 'Invalid argument.')
 
     _exec_forcesell(trade)
 
