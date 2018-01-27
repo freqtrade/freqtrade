@@ -50,6 +50,7 @@ class Strategy(object):
         if 'strategy' in config:
             strategy = config['strategy']
         else:
+            print(config)
             strategy = self.DEFAULT_STRATEGY
 
         # Load the strategy
