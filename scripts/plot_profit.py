@@ -3,23 +3,20 @@
 import sys
 import json
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import numpy as np
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
+import freqtrade.exchange as exchange
 from freqtrade.strategy.strategy import Strategy
 
 
 def plot_parse_args(args):
-    parser = misc.common_args_parser('Graph utility')
+    parser = misc.common_args_parser('Graph profits')
     # FIX: perhaps delete those backtesting options that are not feasible (shows up in -h)
     misc.backtesting_options(parser)
-    parser.add_argument(
-        '-p', '--pair',
-        help='Show profits for only this pairs. Pairs are comma-separated.',
-        dest='pair',
-        default=None
-    )
+    misc.scripts_options(parser)
     return parser.parse_args(args)
 
 
@@ -39,7 +36,9 @@ def make_profit_array(data, px, filter_pairs=[]):
         profit = trade[1]
         tim = trade[4]
         dur = trade[5]
-        pg[tim+dur-1] += profit
+        ix = tim + dur - 1
+        if ix < px:
+            pg[ix] += profit
 
     # rewrite the pg array to go from
     # total profits at each timeframe
@@ -81,28 +80,21 @@ def plot_profit(args) -> None:
         pairs = list(set(pairs) & set(filter_pairs))
         print('Filter, keep pairs %s' % pairs)
 
+    timerange = misc.parse_timerange(args.timerange)
     tickers = optimize.load_data(args.datadir, pairs=pairs,
                                  ticker_interval=strategy.ticker_interval,
-                                 refresh_pairs=False)
+                                 refresh_pairs=False,
+                                 timerange=timerange)
     dataframes = optimize.preprocess(tickers)
+
+    # NOTE: the dataframes are of unequal length,
+    # 'dates' is an merged date array of them all.
+
+    dates = misc.common_datearray(dataframes)
+    max_x = dates.size
 
     # Make an average close price of all the pairs that was involved.
     # this could be useful to gauge the overall market trend
-
-    # FIX: since the dataframes are of unequal length,
-    # andor has different dates, we need to merge them
-    # But we dont have the date information in the
-    # backtesting results, this is needed to match the dates
-    # For now, assume the dataframes are aligned.
-    max_x = 0
-    for pair, pair_data in dataframes.items():
-        n = len(pair_data['close'])
-        max_x = max(max_x, n)
-    #    if max_x != n:
-    #        raise Exception('Please rerun script. Input data has different lengths %s'
-    #                         %('Different pair length: %s <=> %s' %(max_x, n)))
-    print('max_x: %s' % (max_x))
-
     # We are essentially saying:
     #  array <- sum dataframes[*]['close'] / num_items dataframes
     #  FIX: there should be some onliner numpy/panda for this
@@ -132,8 +124,9 @@ def plot_profit(args) -> None:
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
     fig.suptitle('total profit')
-    ax1.plot(avgclose, label='avgclose')
-    ax2.plot(pg, label='profit')
+
+    ax1.plot(dates, avgclose, label='avgclose')
+    ax2.plot(dates, pg, label='profit')
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper left')
 
@@ -143,15 +136,15 @@ def plot_profit(args) -> None:
     # In third graph, we plot each profit separately
     for pair in pairs:
         pg = make_profit_array(data, max_x, pair)
-        ax3.plot(pg, label=pair)
+        ax3.plot(dates, pg, label=pair)
     ax3.legend(loc='upper left')
     # black background to easier see multiple colors
     ax3.set_facecolor('black')
+    xfmt = mdates.DateFormatter('%d-%m-%y %H:%M')  # Dont let matplotlib autoformat date
+    ax3.xaxis.set_major_formatter(xfmt)
 
-    # Fine-tune figure; make subplots close to each other and hide x ticks for
-    # all but bottom plot.
     fig.subplots_adjust(hspace=0)
-    plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
+    fig.autofmt_xdate()  # Rotate the dates
     plt.show()
 
 
