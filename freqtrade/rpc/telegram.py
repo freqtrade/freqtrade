@@ -398,7 +398,10 @@ def _balance(bot: Bot, update: Update) -> None:
         if coin == 'BTC':
             currency["Rate"] = 1.0
         else:
-            currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
+            if coin == 'USDT':
+                currency["Rate"] = 1.0 / exchange.get_ticker('USDT_BTC', False)['bid']
+            else:
+                currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
         currency['BTC'] = currency["Rate"] * currency["Balance"]
         total = total + currency['BTC']
         output += """*Currency*: {Currency}
