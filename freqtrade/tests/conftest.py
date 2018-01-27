@@ -72,6 +72,15 @@ def ticker():
 
 
 @pytest.fixture
+def ticker_usdt():
+    return MagicMock(return_value={
+        'bid': 10000.00,
+        'ask': 10000.00,
+        'last': 10000.00,
+    })
+
+
+@pytest.fixture
 def ticker_sell_up():
     return MagicMock(return_value={
         'bid': 0.00001172,
