@@ -237,8 +237,8 @@ def generate_roi_table(params) -> Dict[str, float]:
 
 def roi_space() -> Dict[str, Any]:
     return {
-        'roi_t1': hp.quniform('roi_t1', 10, 220, 10),
-        'roi_t2': hp.quniform('roi_t2', 10, 120, 10),
+        'roi_t1': hp.quniform('roi_t1', 10, 220, 20),
+        'roi_t2': hp.quniform('roi_t2', 10, 120, 15),
         'roi_t3': hp.quniform('roi_t3', 10, 120, 10),
         'roi_p1': hp.quniform('roi_p1', 0.01, 0.05, 0.01),
         'roi_p2': hp.quniform('roi_p2', 0.01, 0.10, 0.01),
@@ -248,7 +248,7 @@ def roi_space() -> Dict[str, Any]:
 
 def stoploss_space() -> Dict[str, Any]:
     return {
-        'stoploss': hp.uniform('stoploss', -0.5, -0.02),
+        'stoploss': hp.quniform('stoploss', -0.5, -0.02, 0.02),
     }
 
 
@@ -263,19 +263,19 @@ def indicator_space() -> Dict[str, Any]:
         ]),
         'mfi': hp.choice('mfi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
+            {'enabled': True, 'value': hp.quniform('mfi-value', 10, 25, 5)}
         ]),
         'fastd': hp.choice('fastd', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
+            {'enabled': True, 'value': hp.quniform('fastd-value', 15, 45, 5)}
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
+            {'enabled': True, 'value': hp.quniform('adx-value', 20, 50, 5)}
         ]),
         'rsi': hp.choice('rsi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
+            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 5)}
         ]),
         'uptrend_long_ema': hp.choice('uptrend_long_ema', [
             {'enabled': False},
