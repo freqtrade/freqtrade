@@ -1,12 +1,13 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import os
+import json
 import logging
 from shutil import copyfile
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
-    download_backtesting_testdata, load_tickerdata_file
+    download_backtesting_testdata, load_tickerdata_file, trim_tickerlist
 
 # Change this if modifying BTC_UNITEST testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -220,3 +221,40 @@ def test_tickerdata_to_dataframe():
     tickerlist = {'BTC_UNITEST': tick}
     data = optimize.tickerdata_to_dataframe(tickerlist)
     assert len(data['BTC_UNITEST']) == 100
+
+
+def test_trim_tickerlist():
+    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
+        ticker_list = json.load(data_file)
+    ticker_list_len = len(ticker_list)
+
+    # Test the pattern ^(-\d+)$
+    # This pattern remove X element from the beginning
+    timerange = ((None, 'line'), None, 5)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_list_len == ticker_len + 5
+    assert ticker_list[0] is not ticker[0]  # The first element should be different
+    assert ticker_list[-1] is ticker[-1]  # The last element must be the same
+
+    # Test the pattern ^(\d+)-$
+    # This pattern keep X element from the end
+    timerange = (('line', None), 5, None)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_len == 5
+    assert ticker_list[0] is ticker[0]  # The first element must be the same
+    assert ticker_list[-1] is not ticker[-1]  # The last element should be different
+
+    # Test the pattern ^(\d+)-(\d+)$
+    # This pattern extract a window
+    timerange = (('index', 'index'), 5, 10)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_len == 5
+    assert ticker_list[0] is not ticker[0]  # The first element should be different
+    assert ticker_list[5] is ticker[0]  # The list starts at the index 5
+    assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
