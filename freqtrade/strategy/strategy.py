@@ -1,3 +1,5 @@
+# pragma pylint: disable=attribute-defined-outside-init
+
 """
 This module load custom strategies
 """
@@ -21,7 +23,7 @@ class Strategy(object):
 
     DEFAULT_STRATEGY = 'default_strategy'
 
-    def __new__(cls):
+    def __new__(cls) -> object:
         """
         Used to create the Singleton
         :return: Strategy object
@@ -30,15 +32,7 @@ class Strategy(object):
             Strategy.__instance = object.__new__(cls)
         return Strategy.__instance
 
-    def __init__(self):
-        if Strategy.__instance is None:
-            self.logger = None
-            self.minimal_roi = None
-            self.stoploss = None
-            self.ticker_interval = None
-            self.custom_strategy = None
-
-    def init(self, config):
+    def init(self, config: dict) -> None:
         """
         Load the custom class from config parameter
         :param config:
