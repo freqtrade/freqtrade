@@ -51,6 +51,11 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
+**With a (custom) strategy file**
+```bash
+python3 ./freqtrade/main.py backtesting -s your-strategy-filename-without-py-extention
+```
+
 **Exporting trades to file**
 ```bash
 freqtrade backtesting --export trades
