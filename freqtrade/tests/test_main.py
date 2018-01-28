@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring,C0103
+# pragma pylint: disable=missing-docstring, C0103
 import copy
 import logging
 from unittest.mock import MagicMock
@@ -325,27 +325,31 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
 
     # Buy and Sell triggering, so doing nothing ...
     trades = Trade.query.all()
-    assert len(trades) == 0
+    nb_trades = len(trades)
+    assert nb_trades == 0
 
     # Buy is triggering, so buying ...
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     create_trade(0.001, int(default_conf['ticker_interval']))
     trades = Trade.query.all()
-    assert len(trades) == 1
+    nb_trades = len(trades)
+    assert nb_trades == 1
     assert trades[0].is_open is True
 
     # Buy and Sell are not triggering, so doing nothing ...
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, False))
     assert handle_trade(trades[0], int(default_conf['ticker_interval'])) is False
     trades = Trade.query.all()
-    assert len(trades) == 1
+    nb_trades = len(trades)
+    assert nb_trades == 1
     assert trades[0].is_open is True
 
     # Buy and Sell are triggering, so doing nothing ...
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, True))
     assert handle_trade(trades[0], int(default_conf['ticker_interval'])) is False
     trades = Trade.query.all()
-    assert len(trades) == 1
+    nb_trades = len(trades)
+    assert nb_trades == 1
     assert trades[0].is_open is True
 
     # Sell is triggering, guess what : we are Selling!
@@ -468,7 +472,8 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
-    assert len(trades) == 0
+    nb_trades = len(trades)
+    assert nb_trades == 0
 
 
 def test_handle_timedout_limit_buy(mocker):

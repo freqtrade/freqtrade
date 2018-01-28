@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
+# pragma pylint: disable=unused-argument
 import re
 from datetime import datetime
 from random import randint

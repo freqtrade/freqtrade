@@ -1,8 +1,9 @@
-# pragma pylint: disable=missing-docstring,C0103
+# pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
+# pragma pylint: disable=protected-access
 from unittest.mock import MagicMock
-from requests.exceptions import RequestException
 from random import randint
 import logging
+from requests.exceptions import RequestException
 import pytest
 
 from freqtrade import OperationalException
@@ -30,7 +31,7 @@ def test_init(default_conf, mocker, caplog):
             ) in caplog.record_tuples
 
 
-def test_init_exception(default_conf, mocker):
+def test_init_exception(default_conf):
     default_conf['exchange']['name'] = 'wrong_exchange_name'
 
     with pytest.raises(
@@ -171,7 +172,7 @@ def test_get_balances_prod(default_conf, mocker):
 
 # This test is somewhat redundant with
 # test_exchange_bittrex.py::test_exchange_bittrex_get_ticker
-def test_get_ticker(default_conf, mocker, ticker):
+def test_get_ticker(default_conf, mocker):
     maybe_init_api(default_conf, mocker)
     api_mock = MagicMock()
     tick = {"success": True, 'result': {'Bid': 0.00001098, 'Ask': 0.00001099, 'Last': 0.0001}}
@@ -200,7 +201,7 @@ def test_get_ticker(default_conf, mocker, ticker):
     assert ticker['ask'] == 1
 
 
-def test_get_ticker_history(default_conf, mocker, ticker):
+def test_get_ticker_history(default_conf, mocker):
     api_mock = MagicMock()
     tick = 123
     api_mock.get_ticker_history = MagicMock(return_value=tick)
@@ -251,7 +252,7 @@ def test_get_order(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.get_order = MagicMock(return_value=456)
     mocker.patch('freqtrade.exchange._API', api_mock)
-    assert 456 == exchange.get_order('X')
+    assert exchange.get_order('X') == 456
 
 
 def test_get_name(default_conf, mocker):
@@ -271,16 +272,16 @@ def test_get_fee(default_conf, mocker):
     assert get_fee() == 0.0025
 
 
-def test_exchange_misc(default_conf, mocker):
+def test_exchange_misc(mocker):
     api_mock = MagicMock()
     mocker.patch('freqtrade.exchange._API', api_mock)
     exchange.get_markets()
-    assert 1 == api_mock.get_markets.call_count
+    assert api_mock.get_markets.call_count == 1
     exchange.get_market_summaries()
-    assert 1 == api_mock.get_market_summaries.call_count
+    assert api_mock.get_market_summaries.call_count == 1
     api_mock.name = 123
-    assert 123 == exchange.get_name()
+    assert exchange.get_name() == 123
     api_mock.fee = 456
-    assert 456 == exchange.get_fee()
+    assert exchange.get_fee() == 456
     exchange.get_wallet_health()
-    assert 1 == api_mock.get_wallet_health.call_count
+    assert api_mock.get_wallet_health.call_count == 1

@@ -1,3 +1,5 @@
+# pragma pylint: disable=missing-docstring,C0103
+
 from freqtrade.main import refresh_whitelist, gen_pair_whitelist
 
 # whitelist, blacklist, filtering, all of that will
@@ -73,16 +75,9 @@ def get_market_summaries():
 
 
 def get_health():
-    return [{'Currency': 'ETH',
-             'IsActive': True
-             },
-            {'Currency': 'TKN',
-             'IsActive': True
-             },
-            {'Currency': 'BLK',
-             'IsActive': True
-             }
-            ]
+    return [{'Currency': 'ETH', 'IsActive': True},
+            {'Currency': 'TKN', 'IsActive': True},
+            {'Currency': 'BLK', 'IsActive': True}]
 
 
 def get_health_empty():
