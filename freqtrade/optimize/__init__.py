@@ -26,8 +26,7 @@ def trim_tickerlist(tickerlist, timerange):
     return tickerlist
 
 
-def load_tickerdata_file(datadir, pair, ticker_interval,
-                         timerange=None):
+def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
