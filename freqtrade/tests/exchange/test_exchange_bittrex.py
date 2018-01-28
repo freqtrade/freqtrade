@@ -1,9 +1,8 @@
-# pragma pylint: disable=missing-docstring,C0103
+# pragma pylint: disable=missing-docstring, C0103, protected-access, unused-argument
 
-import pytest
 from unittest.mock import MagicMock
+import pytest
 from requests.exceptions import ContentDecodingError
-
 from freqtrade.exchange.bittrex import Bittrex
 import freqtrade.exchange.bittrex as btx
 
@@ -88,8 +87,7 @@ class FakeBittrex():
                            'PricePerUnit': 1,
                            'Quantity': 1,
                            'QuantityRemaining': 1,
-                           'Closed': True
-                           },
+                           'Closed': True},
                 'message': 'lost'}
 
     def fake_cancel_order(self, uuid):
@@ -211,24 +209,18 @@ def test_exchange_bittrex_get_ticker():
 def test_exchange_bittrex_get_ticker_bad():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
-    fb.result = {'success': True,
-                 'result': {'Bid': 1, 'Ask': 0}}  # incomplete result
+    fb.result = {'success': True, 'result': {'Bid': 1, 'Ask': 0}}  # incomplete result
 
     with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
         wb.get_ticker('BTC_ETH')
-    fb.result = {'success': False,
-                 'message': 'gone bad'
-                 }
+    fb.result = {'success': False, 'message': 'gone bad'}
     with pytest.raises(btx.OperationalException, match=r'.*gone bad.*'):
         wb.get_ticker('BTC_ETH')
 
-    fb.result = {'success': True,
-                 'result': {}}  # incomplete result
+    fb.result = {'success': True, 'result': {}}  # incomplete result
     with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
         wb.get_ticker('BTC_ETH')
-    fb.result = {'success': False,
-                 'message': 'gone bad'
-                 }
+    fb.result = {'success': False, 'message': 'gone bad'}
     with pytest.raises(btx.OperationalException, match=r'.*gone bad.*'):
         wb.get_ticker('BTC_ETH')
 

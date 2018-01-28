@@ -1,12 +1,19 @@
+"""
+Module that define classes to convert Crypto-currency to FIAT
+e.g BTC to USD
+"""
+
 import logging
 import time
-
 from pymarketcap import Pymarketcap
 
 logger = logging.getLogger(__name__)
 
 
 class CryptoFiat():
+    """
+    Object to describe what is the price of Crypto-currency in a FIAT
+    """
     # Constants
     CACHE_DURATION = 6 * 60 * 60  # 6 hours
 
@@ -49,6 +56,11 @@ class CryptoFiat():
 
 
 class CryptoToFiatConverter(object):
+    """
+    Main class to initiate Crypto to FIAT.
+    This object contains a list of pair Crypto, FIAT
+    This object is also a Singleton
+    """
     __instance = None
     _coinmarketcap = None
 

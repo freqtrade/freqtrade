@@ -1,10 +1,12 @@
+"""
+This module load custom strategies
+"""
 import os
 import sys
 import logging
 import importlib
 
 from pandas import DataFrame
-from typing import Dict
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -12,16 +14,36 @@ sys.path.insert(0, r'../../user_data/strategies')
 
 
 class Strategy(object):
+    """
+    This class contains all the logic to load custom strategy class
+    """
     __instance = None
 
     DEFAULT_STRATEGY = 'default_strategy'
 
     def __new__(cls):
+        """
+        Used to create the Singleton
+        :return: Strategy object
+        """
         if Strategy.__instance is None:
             Strategy.__instance = object.__new__(cls)
         return Strategy.__instance
 
+    def __init__(self):
+        if Strategy.__instance is None:
+            self.logger = None
+            self.minimal_roi = None
+            self.stoploss = None
+            self.ticker_interval = None
+            self.custom_strategy = None
+
     def init(self, config):
+        """
+        Load the custom class from config parameter
+        :param config:
+        :return:
+        """
         self.logger = logging.getLogger(__name__)
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
@@ -42,21 +64,22 @@ class Strategy(object):
         if 'stoploss' in config:
             self.custom_strategy.stoploss = config['stoploss']
             self.logger.info(
-                "Override strategy \'stoploss\' with value in config file: {}.".format(
-                    config['stoploss']
-                )
+                "Override strategy \'stoploss\' with value in config file: %s.", config['stoploss']
             )
 
         if 'ticker_interval' in config:
             self.custom_strategy.ticker_interval = config['ticker_interval']
             self.logger.info(
-                "Override strategy \'ticker_interval\' with value in config file: {}.".format(
-                    config['ticker_interval']
-                )
+                "Override strategy \'ticker_interval\' with value in config file: %s.",
+                config['ticker_interval']
             )
 
+        # Minimal ROI designed for the strategy
         self.minimal_roi = self.custom_strategy.minimal_roi
+
+        # Optimal stoploss designed for the strategy
         self.stoploss = self.custom_strategy.stoploss
+
         self.ticker_interval = self.custom_strategy.ticker_interval
 
     def _load_strategy(self, strategy_name: str) -> None:
@@ -90,7 +113,7 @@ class Strategy(object):
         module = importlib.import_module(filename, __package__)
         custom_strategy = getattr(module, module.class_name)
 
-        self.logger.info("Load strategy class: {} ({}.py)".format(module.class_name, filename))
+        self.logger.info("Load strategy class: %s (%s.py)", module.class_name, filename)
         return custom_strategy()
 
     @staticmethod
@@ -125,20 +148,6 @@ class Strategy(object):
             path = '.'
 
         return path
-
-    def minimal_roi(self) -> Dict:
-        """
-        Minimal ROI designed for the strategy
-        :return: Dict: Value for the Minimal ROI
-        """
-        return
-
-    def stoploss(self) -> float:
-        """
-        Optimal stoploss designed for the strategy
-        :return: float | return None to disable it
-        """
-        return self.custom_strategy.stoploss
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """
