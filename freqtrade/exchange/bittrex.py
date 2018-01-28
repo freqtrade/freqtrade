@@ -15,20 +15,6 @@ _API: _Bittrex = None
 _API_V2: _Bittrex = None
 _EXCHANGE_CONF: dict = {}
 
-# API socket timeout
-API_TIMEOUT = 60
-
-
-def custom_requests(request_url, apisign):
-    """
-    Set timeout for requests
-    """
-    return requests.get(
-        request_url,
-        headers={"apisign": apisign},
-        timeout=API_TIMEOUT
-    ).json()
-
 
 class Bittrex(Exchange):
     """
@@ -47,14 +33,12 @@ class Bittrex(Exchange):
             api_secret=_EXCHANGE_CONF['secret'],
             calls_per_second=1,
             api_version=API_V1_1,
-            dispatch=custom_requests
         )
         _API_V2 = _Bittrex(
             api_key=_EXCHANGE_CONF['key'],
             api_secret=_EXCHANGE_CONF['secret'],
             calls_per_second=1,
             api_version=API_V2_0,
-            dispatch=custom_requests
         )
         self.cached_ticker = {}
 
