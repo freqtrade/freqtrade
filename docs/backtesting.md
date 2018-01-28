@@ -53,8 +53,9 @@ python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180
 
 **With a (custom) strategy file**
 ```bash
-python3 ./freqtrade/main.py backtesting -s your-strategy-filename-without-py-extention
+python3.6 ./freqtrade/main.py -s currentstrategy backtesting
 ```
+Where `-s currentstrategy` refers to a filename `currentstrategy.py` in `freqtrade/user_data/strategies`
 
 **Exporting trades to file**
 ```bash
