@@ -1,14 +1,7 @@
-import json
+# pragma pylint: disable=missing-docstring, protected-access, C0103
+
 import logging
-import pytest
 from freqtrade.strategy.strategy import Strategy
-from freqtrade.analyze import parse_ticker_dataframe
-
-
-@pytest.fixture
-def result():
-    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file))
 
 
 def test_sanitize_module_name():
@@ -28,8 +21,6 @@ def test_search_strategy():
 
 def test_strategy_structure():
     assert hasattr(Strategy, 'init')
-    assert hasattr(Strategy, 'minimal_roi')
-    assert hasattr(Strategy, 'stoploss')
     assert hasattr(Strategy, 'populate_indicators')
     assert hasattr(Strategy, 'populate_buy_trend')
     assert hasattr(Strategy, 'populate_sell_trend')

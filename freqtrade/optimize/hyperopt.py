@@ -10,7 +10,7 @@ import sys
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, List
+from typing import Dict, Any, Callable
 
 import numpy
 import talib.abstract as ta
@@ -35,7 +35,7 @@ logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-# set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
+# set TARGET_TRADES to suit your number concurrent trades so its realistic to the number of days
 TARGET_TRADES = 600
 TOTAL_TRIES = 0
 _CURRENT_TRIES = 0
@@ -221,11 +221,11 @@ def calculate_loss(total_profit: float, trade_count: int, trade_duration: float)
     """ objective function, returns smaller number for more optimal results """
     trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-    duration_loss = 0.7 + 0.3 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
+    duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
     return trade_loss + profit_loss + duration_loss
 
 
-def generate_roi_table(params):
+def generate_roi_table(params) -> Dict[str, float]:
     roi_table = {}
     roi_table["0"] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
     roi_table[str(params['roi_t3'])] = params['roi_p1'] + params['roi_p2']
@@ -235,24 +235,24 @@ def generate_roi_table(params):
     return roi_table
 
 
-def roi_space() -> List[Dict]:
+def roi_space() -> Dict[str, Any]:
     return {
-        'roi_t1': hp.quniform('roi_t1', 10, 220, 10),
-        'roi_t2': hp.quniform('roi_t2', 10, 120, 10),
-        'roi_t3': hp.quniform('roi_t3', 10, 120, 10),
-        'roi_p1': hp.quniform('roi_p1', 0.01, 0.05, 0.01),
-        'roi_p2': hp.quniform('roi_p2', 0.01, 0.10, 0.01),
-        'roi_p3': hp.quniform('roi_p3', 0.01, 0.30, 0.01),
+        'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
+        'roi_t2': hp.quniform('roi_t2', 10, 60, 15),
+        'roi_t3': hp.quniform('roi_t3', 10, 40, 10),
+        'roi_p1': hp.quniform('roi_p1', 0.01, 0.04, 0.01),
+        'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
+        'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
     }
 
 
-def stoploss_space() -> Dict:
+def stoploss_space() -> Dict[str, Any]:
     return {
-        'stoploss': hp.uniform('stoploss', -0.5, -0.02),
+        'stoploss': hp.quniform('stoploss', -0.5, -0.02, 0.02),
     }
 
 
-def indicator_space() -> List[Dict]:
+def indicator_space() -> Dict[str, Any]:
     """
     Define your Hyperopt space for searching strategy parameters
     """
@@ -263,19 +263,19 @@ def indicator_space() -> List[Dict]:
         ]),
         'mfi': hp.choice('mfi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
+            {'enabled': True, 'value': hp.quniform('mfi-value', 10, 25, 5)}
         ]),
         'fastd': hp.choice('fastd', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
+            {'enabled': True, 'value': hp.quniform('fastd-value', 15, 45, 5)}
         ]),
         'adx': hp.choice('adx', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
+            {'enabled': True, 'value': hp.quniform('adx-value', 20, 50, 5)}
         ]),
         'rsi': hp.choice('rsi', [
             {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
+            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 5)}
         ]),
         'uptrend_long_ema': hp.choice('uptrend_long_ema', [
             {'enabled': False},
@@ -312,11 +312,11 @@ def indicator_space() -> List[Dict]:
     }
 
 
-def hyperopt_space() -> List[Dict]:
+def hyperopt_space() -> Dict[str, Any]:
     return {**indicator_space(), **roi_space(), **stoploss_space()}
 
 
-def buy_strategy_generator(params) -> None:
+def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
     """
     Define the buy strategy parameters to be used by hyperopt
     """
