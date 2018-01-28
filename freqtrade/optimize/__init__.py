@@ -41,15 +41,13 @@ def load_tickerdata_file(datadir, pair, ticker_interval,
     )
     gzipfile = file + '.gz'
 
-    # The file does not exist we download it
+    # If the file does not exist we download it when None is returned.
     # If file exists, read the file, load the json
     if os.path.isfile(gzipfile):
         with gzip.open(gzipfile) as tickerdata:
-            print("Found gzip file. Using that.")
             pairdata = json.load(tickerdata)
     elif os.path.isfile(file):
         with open(file) as tickerdata:
-            print("Found json file. Using that.")
             pairdata = json.load(tickerdata)
     else:
         return None
