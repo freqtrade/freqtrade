@@ -1,5 +1,4 @@
 import logging
-import requests
 from typing import Dict, List, Optional
 
 from bittrex.bittrex import Bittrex as _Bittrex
