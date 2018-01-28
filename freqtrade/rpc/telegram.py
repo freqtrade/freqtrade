@@ -390,7 +390,8 @@ def _balance(bot: Bot, update: Update) -> None:
         if c['Balance'] or c['Available'] or c['Pending']
     ]
     if not balances:
-        output = '`All balances are zero.`'
+        send_msg('`All balances are zero.`')
+        return
 
     total = 0.0
     for currency in balances:
