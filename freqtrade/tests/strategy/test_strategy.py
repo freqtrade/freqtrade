@@ -16,6 +16,7 @@ def test_sanitize_module_name():
 
 def test_search_strategy():
     assert Strategy._search_strategy('default_strategy') == '.'
+    assert Strategy._search_strategy('test_strategy') == 'user_data.strategies.'
     assert Strategy._search_strategy('super_duper') is None
 
 
