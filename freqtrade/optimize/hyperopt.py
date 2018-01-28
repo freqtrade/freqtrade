@@ -221,7 +221,7 @@ def calculate_loss(total_profit: float, trade_count: int, trade_duration: float)
     """ objective function, returns smaller number for more optimal results """
     trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-    duration_loss = 0.7 + 0.3 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
+    duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
     return trade_loss + profit_loss + duration_loss
 
 
@@ -237,12 +237,12 @@ def generate_roi_table(params) -> Dict[str, float]:
 
 def roi_space() -> Dict[str, Any]:
     return {
-        'roi_t1': hp.quniform('roi_t1', 10, 220, 20),
-        'roi_t2': hp.quniform('roi_t2', 10, 120, 15),
-        'roi_t3': hp.quniform('roi_t3', 10, 120, 10),
-        'roi_p1': hp.quniform('roi_p1', 0.01, 0.05, 0.01),
-        'roi_p2': hp.quniform('roi_p2', 0.01, 0.10, 0.01),
-        'roi_p3': hp.quniform('roi_p3', 0.01, 0.30, 0.01),
+        'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
+        'roi_t2': hp.quniform('roi_t2', 10, 60, 15),
+        'roi_t3': hp.quniform('roi_t3', 10, 40, 10),
+        'roi_p1': hp.quniform('roi_p1', 0.01, 0.04, 0.01),
+        'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
+        'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
     }
 
 
