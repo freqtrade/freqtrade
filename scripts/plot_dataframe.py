@@ -3,13 +3,15 @@
 import sys
 import logging
 import argparse
+import os
 
-import matplotlib
-# matplotlib.use("Qt5Agg")
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
 from pandas import DataFrame
 import talib.abstract as ta
+
+import plotly
+from plotly import tools
+from plotly.offline import plot
+import plotly.graph_objs as go
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade import exchange, analyze
@@ -36,8 +38,7 @@ def plot_analyzed_dataframe(args) -> None:
     :param pair: pair as str
     :return: None
     """
-    pair = args.pair
-    pairs = [pair]
+    pair = args.pair.replace('-', '_')
     timerange = misc.parse_timerange(args.timerange)
 
     # Init strategy
@@ -52,7 +53,7 @@ def plot_analyzed_dataframe(args) -> None:
         exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
         tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
     else:
-        tickers = optimize.load_data(args.datadir, pairs=pairs,
+        tickers = optimize.load_data(args.datadir, pairs=[pair],
                                      ticker_interval=tick_interval,
                                      refresh_pairs=False,
                                      timerange=timerange)
@@ -62,38 +63,84 @@ def plot_analyzed_dataframe(args) -> None:
     dataframe = analyze.populate_sell_trend(dataframe)
     dates = misc.datesarray_to_datetimearray(dataframe['date'])
 
-    # Two subplots sharing x axis
-    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-    fig.suptitle(pair + " " +     str(tick_interval), fontsize=14, fontweight='bold')
+    if (len(dataframe.index) > 750):
+        logger.warn('Ticker contained more than 750 candles, clipping.')
+    df = dataframe.tail(750)
 
-    ax1.plot(dates, dataframe['close'], label='close')
-    # ax1.plot(dates, dataframe['sell'], 'ro', label='sell')
-    ax1.plot(dates, dataframe['sma'], '--', label='SMA')
-    ax1.plot(dates, dataframe['tema'], ':', label='TEMA')
-    ax1.plot(dates, dataframe['blower'], '-.', label='BB low')
-    ax1.plot(dates, dataframe['close'] * dataframe['buy'], 'bo', label='buy')
-    ax1.plot(dates, dataframe['close'] * dataframe['sell'], 'ro', label='sell')
+    candles = go.Candlestick(x=df.date,
+                        open=df.open,
+                        high=df.high,
+                        low=df.low,
+                        close=df.close,
+                        name='Price')
 
-    ax1.legend()
+    df_buy = df[df['buy'] == 1]
+    buys = go.Scattergl(
+        x=df_buy.date,
+        y=df_buy.close,
+        mode='markers',
+        name='buy',
+        marker=dict(symbol='x-dot')
+    )
+    df_sell = df[df['sell'] == 1]
+    sells = go.Scattergl(
+        x=df_sell.date,
+        y=df_sell.close,
+        mode='markers',
+        name='sell',
+        marker=dict(symbol='diamond')
+    )
 
-    ax2.plot(dates, dataframe['adx'], label='ADX')
-    ax2.plot(dates, dataframe['mfi'], label='MFI')
-    # ax2.plot(dates, [25] * len(dataframe.index.values))
-    ax2.legend()
+    bb_lower = go.Scatter(
+        x=df.date,
+        y=df.bb_lowerband,
+        name='BB lower',
+        line={'color': "transparent"},
+    )
+    bb_upper = go.Scatter(
+        x=df.date,
+        y=df.bb_upperband,
+        name='BB upper',
+        fill="tonexty",
+        fillcolor="rgba(0,176,246,0.2)", 
+        line={'color': "transparent"},
+    )
 
-    ax3.plot(dates, dataframe['fastk'], label='k')
-    ax3.plot(dates, dataframe['fastd'], label='d')
-    ax3.plot(dates, [20] * len(dataframe.index.values))
-    ax3.legend()
-    xfmt = mdates.DateFormatter('%d-%m-%y %H:%M')  # Dont let matplotlib autoformat date
-    ax3.xaxis.set_major_formatter(xfmt)
+    macd = go.Scattergl(
+        x=df['date'],
+        y=df['macd'],
+        name='MACD'
+    )
+    macdsignal = go.Scattergl(
+        x=df['date'],
+        y=df['macdsignal'],
+        name='MACD signal'
+    )
 
-    # Fine-tune figure; make subplots close to each other and hide x ticks for
-    # all but bottom plot.
-    fig.subplots_adjust(hspace=0)
-    fig.autofmt_xdate()  # Rotate the dates
-    plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
-    plt.show()
+    volume = go.Bar(
+        x=df['date'],
+        y=df['volume'],
+        name='Volume'
+    )
+
+    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 4])
+
+    fig.append_trace(candles, 1, 1)
+    fig.append_trace(bb_lower, 1, 1)
+    fig.append_trace(bb_upper, 1, 1)
+    fig.append_trace(buys, 1, 1)
+    fig.append_trace(sells, 1, 1)
+    fig.append_trace(volume, 2, 1)
+    fig.append_trace(macd, 3, 1)
+    fig.append_trace(macdsignal, 3, 1)
+
+    fig['layout'].update(title=args.pair)
+    fig['layout']['yaxis1'].update(title='Price')
+    fig['layout']['yaxis2'].update(title='Volume')
+    fig['layout']['yaxis3'].update(title='MACD')
+
+    plot(fig, filename='freqtrade-plot.html')
+
 
 if __name__ == '__main__':
     args = plot_parse_args(sys.argv[1:])
