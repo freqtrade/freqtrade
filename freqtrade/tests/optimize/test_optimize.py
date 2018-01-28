@@ -264,7 +264,7 @@ def test_trim_tickerlist():
 def test_file_dump_json():
 
     file = 'freqtrade/tests/testdata/test_{id}.json'.format(id=str(uuid.uuid4()))
-    data = { 'bar': 'foo'}
+    data = {'bar': 'foo'}
 
     # check the file we will create does not exist
     assert os.path.isfile(file) is False
