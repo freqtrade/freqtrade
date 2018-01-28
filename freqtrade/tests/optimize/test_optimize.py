@@ -260,6 +260,14 @@ def test_trim_tickerlist():
     assert ticker_list[5] is ticker[0]  # The list starts at the index 5
     assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
 
+    # Test a wrong pattern
+    # This pattern must return the list unchanged
+    timerange = ((None, None), None, 5)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_list_len == ticker_len
+
 
 def test_file_dump_json():
 
