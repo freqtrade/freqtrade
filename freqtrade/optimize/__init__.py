@@ -22,8 +22,8 @@ def trim_tickerlist(tickerlist, timerange):
         return tickerlist[0:start]
     elif stype == ('index', 'index'):
         return tickerlist[start:stop]
-    else:
-        return tickerlist
+
+    return tickerlist
 
 
 def load_tickerdata_file(datadir, pair, ticker_interval,

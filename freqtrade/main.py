@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import arrow
 import requests
@@ -23,7 +23,7 @@ from freqtrade.strategy.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')
 
-_CONF = {}
+_CONF: Dict[str, Any] = {}
 
 
 def refresh_whitelist(whitelist: List[str]) -> List[str]:
@@ -55,7 +55,7 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     return final_list
 
 
-def process_maybe_execute_buy(conf, interval):
+def process_maybe_execute_buy(interval):
     """
     Tries to execute a buy trade in a safe way
     :return: True if executed
@@ -64,12 +64,12 @@ def process_maybe_execute_buy(conf, interval):
         # Create entity and execute trade
         if create_trade(float(_CONF['stake_amount']), interval):
             return True
-        else:
-            logger.info(
-                'Checked all whitelisted currencies. '
-                'Found no suitable entry positions for buying. Will keep looking ...'
-            )
-            return False
+
+        logger.info(
+            'Checked all whitelisted currencies. '
+            'Found no suitable entry positions for buying. Will keep looking ...'
+        )
+        return False
     except DependencyException as exception:
         logger.warning('Unable to create trade: %s', exception)
         return False
@@ -115,7 +115,7 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
-            state_changed = process_maybe_execute_buy(_CONF, interval)
+            state_changed = process_maybe_execute_buy(interval)
 
         for trade in trades:
             state_changed |= process_maybe_execute_sell(trade, interval)
@@ -159,16 +159,16 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
         rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
                      trade.pair.replace('_', '/')))
         return True
-    else:
-        # if trade is partially complete, edit the stake details for the trade
-        # and close the order
-        trade.amount = order['amount'] - order['remaining']
-        trade.stake_amount = trade.amount * trade.open_rate
-        trade.open_order_id = None
-        logger.info('Partial buy order timeout for %s.', trade)
-        rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
-                     trade.pair.replace('_', '/')))
-        return False
+
+    # if trade is partially complete, edit the stake details for the trade
+    # and close the order
+    trade.amount = order['amount'] - order['remaining']
+    trade.stake_amount = trade.amount * trade.open_rate
+    trade.open_order_id = None
+    logger.info('Partial buy order timeout for %s.', trade)
+    rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
+                 trade.pair.replace('_', '/')))
+    return False
 
 
 # FIX: 20180110, should cancel_order() be cond. or unconditionally called?
@@ -189,9 +189,9 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
                      trade.pair.replace('_', '/')))
         logger.info('Sell order timeout for %s.', trade)
         return True
-    else:
-        # TODO: figure out how to handle partially complete sell orders
-        return False
+
+    # TODO: figure out how to handle partially complete sell orders
+    return False
 
 
 def check_handle_timedout(timeoutvalue: int) -> None:

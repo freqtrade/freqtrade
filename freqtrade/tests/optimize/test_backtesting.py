@@ -1,28 +1,19 @@
-# pragma pylint: disable=missing-docstring,W0212
+# pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103
 
 import logging
 import math
-import pandas as pd
-import pytest
 from unittest.mock import MagicMock
+import pandas as pd
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize import preprocess
 from freqtrade.optimize.backtesting import backtest, generate_text_table, get_timeframe
 import freqtrade.optimize.backtesting as backtesting
-from freqtrade.strategy.strategy import Strategy
 
 
-@pytest.fixture
-def default_strategy():
-    strategy = Strategy()
-    strategy.init({'strategy': 'default_strategy'})
-    return strategy
-
-
-def trim_dictlist(dl, num):
+def trim_dictlist(dict_list, num):
     new = {}
-    for pair, pair_data in dl.items():
+    for pair, pair_data in dict_list.items():
         new[pair] = pair_data[num:]
     return new
 
@@ -193,7 +184,8 @@ def test_backtest_start(default_conf, mocker, caplog):
     # check the logs, that will contain the backtest result
     exists = ['Using max_open_trades: 1 ...',
               'Using stake_amount: 0.001 ...',
-              'Measuring data from 2017-11-14T21:17:00+00:00 up to 2017-11-14T22:59:00+00:00 ...']
+              'Measuring data from 2017-11-14T21:17:00+00:00 '
+              'up to 2017-11-14T22:59:00+00:00 (0 days)..']
     for line in exists:
         assert ('freqtrade.optimize.backtesting',
                 logging.INFO,

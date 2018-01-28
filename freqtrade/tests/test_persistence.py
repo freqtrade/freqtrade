@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring, C0103
 import os
 import pytest
 from sqlalchemy import create_engine
@@ -12,7 +12,7 @@ def test_init_create_session(default_conf, mocker):
     # Check if init create a session
     init(default_conf)
     assert hasattr(Trade, 'session')
-    assert type(Trade.session).__name__ is 'Session'
+    assert 'Session' in type(Trade.session).__name__
 
 
 def test_init_dry_run_db(default_conf, mocker):
