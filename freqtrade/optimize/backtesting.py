@@ -67,7 +67,7 @@ def generate_text_table(
     return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
 
-def get_sell_trade_entry(pair, row, rows, ticker, trade_count_lock, args):
+def get_sell_trade_entry(pair, row, buy_subset, ticker, trade_count_lock, args):
     stake_amount = args['stake_amount']
     max_open_trades = args.get('max_open_trades', 0)
     trade = Trade(open_rate=row.close,
@@ -84,14 +84,14 @@ def get_sell_trade_entry(pair, row, rows, ticker, trade_count_lock, args):
             # Increase trade_count_lock for every iteration
             trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
-        buy_signal = rows[rows.date == row2.date].empty
+        buy_signal = buy_subset[buy_subset.date == row2.date].empty
         if(should_sell(trade, row2.close, row2.date, buy_signal, row2.sell)):
             return row2, (pair,
                           trade.calc_profit_percent(rate=row2.close),
                           trade.calc_profit(rate=row2.close),
                           row2.Index - row.Index
                           ), row2.date
-    return False
+    return None
 
 
 def backtest(args) -> DataFrame:
@@ -120,7 +120,8 @@ def backtest(args) -> DataFrame:
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
         # for each buy point
         lock_pair_until = None
-        buy_subset = ticker[(ticker.buy == 1) & (ticker.sell == 0)][['buy', 'open', 'close', 'date', 'sell']]
+        headers = ['buy', 'open', 'close', 'date', 'sell']
+        buy_subset = ticker[(ticker.buy == 1) & (ticker.sell == 0)][headers]
         for row in buy_subset.itertuples(index=True):
             if realistic:
                 if lock_pair_until is not None and row.date <= lock_pair_until:

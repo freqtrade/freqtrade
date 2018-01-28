@@ -309,11 +309,12 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
 
 def should_sell(trade: Trade, rate: float, date: datetime, buy: bool, sell: bool) -> bool:
     """
-    Sells the current pair if the threshold is reached and updates the trade record.
-    :return: True if trade has been sold, False otherwise
+    This function evaluate if on the condition required to trigger a sell has been reached
+    if the threshold is reached and updates the trade record.
+    :return: True if trade should be sold, False otherwise
     """
     # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-    if not buy and min_roi_reached(trade, rate, date):
+    if min_roi_reached(trade, rate, date):
         logger.debug('Executing sell due to ROI ...')
         return True
 
