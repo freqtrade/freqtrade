@@ -345,8 +345,3 @@ def test_validate_response_min_trade_requirement_not_met():
     }
     with pytest.raises(ContentDecodingError, match=r'.*MIN_TRADE_REQUIREMENT_NOT_MET.*'):
         Bittrex._validate_response(response)
-
-
-def test_custom_requests(mocker):
-    mocker.patch('freqtrade.exchange.bittrex.requests', MagicMock())
-    btx.custom_requests('http://', '')
