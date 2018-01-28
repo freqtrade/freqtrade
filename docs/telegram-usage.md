@@ -15,7 +15,7 @@ official commands. You can ask at any moment for help with `/help`.
 |  Command | Default | Description |
 |----------|---------|-------------|
 | `/start` | | Starts the trader
-| `/stop` | | Starts the trader
+| `/stop` | | Stops the trader
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format
 | `/count` | | Displays number of trades used and available
