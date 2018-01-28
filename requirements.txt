@@ -22,5 +22,4 @@ tabulate==0.8.2
 pymarketcap==3.3.153
 
 # Required for plotting data
-#matplotlib==2.1.0
-#PYQT5==5.9
+#plotly==2.3.0
