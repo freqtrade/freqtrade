@@ -2,9 +2,12 @@
 
 import sys
 import json
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import numpy as np
+
+import plotly
+from plotly import tools
+from plotly.offline import plot
+import plotly.graph_objs as go
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
@@ -122,30 +125,32 @@ def plot_profit(args) -> None:
     # Plot the pairs average close prices, and total profit growth
     #
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-    fig.suptitle('total profit')
+    avgclose = go.Scattergl(
+        x=dates,
+        y=avgclose,
+        name='Avg close price',
+    )
+    profit = go.Scattergl(
+        x=dates,
+        y=pg,
+        name='Profit',
+    )
 
-    ax1.plot(dates, avgclose, label='avgclose')
-    ax2.plot(dates, pg, label='profit')
-    ax1.legend(loc='upper left')
-    ax2.legend(loc='upper left')
+    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
 
-    # FIX if we have one line pair in paris
-    #     then skip the plotting of the third graph,
-    #     or change what we plot
-    # In third graph, we plot each profit separately
+    fig.append_trace(avgclose, 1, 1)
+    fig.append_trace(profit, 2, 1)
+
     for pair in pairs:
         pg = make_profit_array(data, max_x, pair)
-        ax3.plot(dates, pg, label=pair)
-    ax3.legend(loc='upper left')
-    # black background to easier see multiple colors
-    ax3.set_facecolor('black')
-    xfmt = mdates.DateFormatter('%d-%m-%y %H:%M')  # Dont let matplotlib autoformat date
-    ax3.xaxis.set_major_formatter(xfmt)
+        pair_profit = go.Scattergl(
+            x=dates,
+            y=pg,
+            name=pair,
+        )
+        fig.append_trace(pair_profit, 3, 1)
 
-    fig.subplots_adjust(hspace=0)
-    fig.autofmt_xdate()  # Rotate the dates
-    plt.show()
+    plot(fig, filename='freqtrade-profit-plot.html')
 
 
 if __name__ == '__main__':
