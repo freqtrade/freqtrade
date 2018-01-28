@@ -5,21 +5,34 @@ This page explains how to plot prices, indicator, profits.
 - [Plot price and indicators](#plot-price-and-indicators)
 - [Plot profit](#plot-profit)
 
+## Installation
+
+Plotting scripts use Plotly library. Install/upgrade it with:
+
+```
+pip install --upgrade plotly
+```
+
+At least version 2.3.0 is required.
+
 ## Plot price and indicators
 Usage for the price plotter:
-script/plot_dataframe.py [-h] [-p pair]
+
+```
+script/plot_dataframe.py [-h] [-p pair] [--live]
+```
 
 Example
 ```
-python script/plot_dataframe.py -p BTC_ETH,BTC_LTC
+python script/plot_dataframe.py -p BTC_ETH
 ```
 
-The -p pair argument, can be used to specify what
+The `-p` pair argument, can be used to specify what
 pair you would like to plot.
 
 **Advanced use**
 
-To plot the current live price use the --live flag:
+To plot the current live price use the `--live` flag:
 ```
 python scripts/plot_dataframe.py -p BTC_ETH --live
 ```
@@ -51,19 +64,14 @@ The third graph can be useful to spot outliers, events in pairs
 that makes profit spikes.
 
 Usage for the profit plotter:
-script/plot_profit.py [-h] [-p pair] [--datadir directory] [--ticker_interval num]
 
-The -p pair argument, can be used to plot a single pair
+```
+script/plot_profit.py [-h] [-p pair] [--datadir directory] [--ticker_interval num]
+```
+
+The `-p` pair argument, can be used to plot a single pair
 
 Example
 ```
 python python scripts/plot_profit.py --datadir ../freqtrade/freqtrade/tests/testdata-20171221/ -p BTC_LTC
 ```
-
-**When it goes wrong**
-
-*** Linux: Can't display**
-
-If you are inside an python environment, you might want to set the
-DISPLAY variable as so:
-$ DISPLAY=:0 python scripts/plot_dataframe.py
