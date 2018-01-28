@@ -28,8 +28,6 @@ def test_search_strategy():
 
 def test_strategy_structure():
     assert hasattr(Strategy, 'init')
-    assert hasattr(Strategy, 'minimal_roi')
-    assert hasattr(Strategy, 'stoploss')
     assert hasattr(Strategy, 'populate_indicators')
     assert hasattr(Strategy, 'populate_buy_trend')
     assert hasattr(Strategy, 'populate_sell_trend')
