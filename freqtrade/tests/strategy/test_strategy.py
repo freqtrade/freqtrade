@@ -1,14 +1,7 @@
-import json
+# pragma pylint: disable=missing-docstring, protected-access, C0103
+
 import logging
-import pytest
 from freqtrade.strategy.strategy import Strategy
-from freqtrade.analyze import parse_ticker_dataframe
-
-
-@pytest.fixture
-def result():
-    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file))
 
 
 def test_sanitize_module_name():

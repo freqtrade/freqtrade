@@ -3,10 +3,13 @@ from datetime import datetime
 from unittest.mock import MagicMock
 from functools import reduce
 
+import json
 import arrow
 import pytest
 from jsonschema import validate
 from telegram import Chat, Message, Update
+from freqtrade.analyze import parse_ticker_dataframe
+from freqtrade.strategy.strategy import Strategy
 
 from freqtrade.misc import CONF_SCHEMA
 
@@ -256,3 +259,16 @@ def ticker_history_without_bv():
             "T": "2017-11-26T09:00:00"
         }
     ]
+
+
+@pytest.fixture
+def result():
+    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
+        return parse_ticker_dataframe(json.load(data_file))
+
+
+@pytest.fixture
+def default_strategy():
+    strategy = Strategy()
+    strategy.init({'strategy': 'default_strategy'})
+    return strategy
