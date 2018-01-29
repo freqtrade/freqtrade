@@ -297,6 +297,7 @@ cp config.json.example config.json
 ```bash
 python3.6 -m venv .env
 source .env/bin/activate
+pip3.6 install --upgrade pip
 pip3.6 install -r requirements.txt
 pip3.6 install -e .
 ```
