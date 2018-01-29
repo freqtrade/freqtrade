@@ -10,6 +10,7 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 
 from freqtrade import misc
 from user_data.hyperopt_conf import hyperopt_optimize_conf
+import gzip
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +39,19 @@ def load_tickerdata_file(datadir, pair, ticker_interval,
         pair=pair,
         ticker_interval=ticker_interval,
     )
-    # The file does not exist we download it
-    if not os.path.isfile(file):
+    gzipfile = file + '.gz'
+
+    # If the file does not exist we download it when None is returned.
+    # If file exists, read the file, load the json
+    if os.path.isfile(gzipfile):
+        with gzip.open(gzipfile) as tickerdata:
+            pairdata = json.load(tickerdata)
+    elif os.path.isfile(file):
+        with open(file) as tickerdata:
+            pairdata = json.load(tickerdata)
+    else:
         return None
 
-    # Read the file, load the json
-    with open(file) as tickerdata:
-        pairdata = json.load(tickerdata)
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
     return pairdata
