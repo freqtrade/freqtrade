@@ -798,7 +798,6 @@ def test_status(default_conf, update, mocker):
                           rpc_trade_status=MagicMock(return_value=(False, [1, 2, 3])),
                           _status_table=status_table,
                           send_msg=msg_mock)
-    print(update)
     _status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 3
     update.message.text = MagicMock()
