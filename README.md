@@ -80,6 +80,13 @@ bot in dry-run. We invite you to read the
 [bot documentation](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md) 
 to ensure you understand how the bot is working.
 
+### Easy installation
+The script below will install all dependencies and help you to configure the bot.
+```bash
+./setup.sh --install
+```
+
+### Manual installation
 The following steps are made for Linux/MacOS environment
 
 **1. Clone the repo**
