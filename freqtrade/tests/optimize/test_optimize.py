@@ -202,8 +202,13 @@ def test_download_backtesting_testdata2(mocker):
 
 
 def test_load_tickerdata_file():
+    #7 does not exist in either format.
     assert not load_tickerdata_file(None, 'BTC_UNITEST', 7)
+    #1 exists only as a .json
     tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    assert _BTC_UNITTEST_LENGTH == len(tickerdata)
+    #8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
+    tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 8)
     assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
