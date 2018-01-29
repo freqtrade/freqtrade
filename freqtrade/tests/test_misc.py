@@ -5,11 +5,12 @@ import time
 from copy import deepcopy
 from unittest.mock import MagicMock
 
+import datetime
 import pytest
 from jsonschema import ValidationError
-
+from freqtrade.analyze import parse_ticker_dataframe
 from freqtrade.misc import (common_args_parser, file_dump_json, load_config,
-                            parse_args, parse_timerange, throttle)
+                            parse_args, parse_timerange, throttle, datesarray_to_datetimearray)
 
 
 def test_throttle():
@@ -178,3 +179,18 @@ def test_load_config_missing_attributes(default_conf, mocker):
             read_data=json.dumps(conf)))
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
         load_config('somefile')
+
+
+def test_datesarray_to_datetimearray(ticker_history):
+    dataframes = parse_ticker_dataframe(ticker_history)
+    dates = datesarray_to_datetimearray(dataframes['date'])
+
+    assert isinstance(dates[0], datetime.datetime)
+    assert dates[0].year == 2017
+    assert dates[0].month == 11
+    assert dates[0].day == 26
+    assert dates[0].hour == 8
+    assert dates[0].minute == 50
+
+    date_len = len(dates)
+    assert date_len == 3

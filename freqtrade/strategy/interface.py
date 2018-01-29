@@ -17,13 +17,6 @@ class IStrategy(ABC):
         stoploss -> float: optimal stoploss designed for the strategy
         ticker_interval -> int: value of the ticker interval to use for the strategy
     """
-    @property
-    def name(self) -> str:
-        """
-        Name of the strategy.
-        :return: str representation of the class name
-        """
-        return self.__class__.__name__
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:

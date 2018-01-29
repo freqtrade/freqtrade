@@ -381,8 +381,7 @@ def test_performance_handle(
     assert '<code>BTC_ETH\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
-def test_daily_handle(
-        default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+def test_daily_handle(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
@@ -445,6 +444,25 @@ def test_daily_handle(
     assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
+
+def test_daily_wrong_input(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    init(default_conf, create_engine('sqlite://'))
+
     # Try invalid data
     msg_mock.reset_mock()
     update_state(State.RUNNING)
@@ -452,6 +470,13 @@ def test_daily_handle(
     _daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'must be an integer greater than 0' in msg_mock.call_args_list[0][0][0]
+
+    # Try invalid data
+    msg_mock.reset_mock()
+    update_state(State.RUNNING)
+    update.message.text = '/daily today'
+    _daily(bot=MagicMock(), update=update)
+    assert str('Daily Profit over the last 7 days') in msg_mock.call_args_list[0][0][0]
 
 
 def test_count_handle(default_conf, update, ticker, mocker):
@@ -593,7 +618,34 @@ def test_telegram_balance_handle(default_conf, update, mocker):
         'Available': 0.0,
         'Pending': 0.0,
         'CryptoAddress': 'XXXX',
+    }, {
+        'Currency': 'USDT',
+        'Balance': 10000.0,
+        'Available': 0.0,
+        'Pending': 0.0,
+        'CryptoAddress': 'XXXX',
+    }, {
+        'Currency': 'LTC',
+        'Balance': 10.0,
+        'Available': 10.0,
+        'Pending': 0.0,
+        'CryptoAddress': 'XXXX',
     }]
+
+    def mock_ticker(symbol, refresh):
+        if symbol == 'USDT_BTC':
+            return {
+                'bid': 10000.00,
+                'ask': 10000.00,
+                'last': 10000.00,
+            }
+        else:
+            return {
+                'bid': 0.1,
+                'ask': 0.1,
+                'last': 0.1,
+            }
+
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc.telegram',
@@ -605,12 +657,32 @@ def test_telegram_balance_handle(default_conf, update, mocker):
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.main.exchange.get_ticker', side_effect=mock_ticker)
 
     _balance(bot=MagicMock(), update=update)
+    result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert '*Currency*: BTC' in msg_mock.call_args_list[0][0][0]
-    assert 'Balance' in msg_mock.call_args_list[0][0][0]
-    assert 'Est. BTC' in msg_mock.call_args_list[0][0][0]
+    assert '*Currency*: BTC' in result
+    assert '*Currency*: ETH' not in result
+    assert '*Currency*: USDT' in result
+    assert 'Balance' in result
+    assert 'Est. BTC' in result
+    assert '*BTC*:  12.00000000' in result
+
+
+def test_zero_balance_handle(default_conf, update, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    msg_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_balances=MagicMock(return_value=[]))
+    _balance(bot=MagicMock(), update=update)
+    result = msg_mock.call_args_list[0][0][0]
+    assert msg_mock.call_count == 1
+    assert '`All balances are zero.`' in result
 
 
 def test_help_handle(default_conf, update, mocker):
@@ -666,3 +738,18 @@ def test_send_msg_network_error(default_conf, mocker):
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
+
+
+def test_init(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, create_engine('sqlite://'))

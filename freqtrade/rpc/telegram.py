@@ -244,7 +244,6 @@ def _profit(bot: Bot, update: Update) -> None:
 def _balance(bot: Bot, update: Update) -> None:
     """
     Handler for /balance
-    Returns current account balance per crypto
     """
     (error, result) = rpc_balance(_CONF['fiat_display_currency'])
     if error:
@@ -259,7 +258,6 @@ def _balance(bot: Bot, update: Update) -> None:
 *Balance*: {balance}
 *Pending*: {pending}
 *Est. BTC*: {est_btc: .8f}
-
 """.format(**currency)
 
     output += """*Estimated Value*:
