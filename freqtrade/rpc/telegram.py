@@ -19,7 +19,6 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     )
 
 from freqtrade import __version__
-from freqtrade.fiat_convert import CryptoToFiatConverter
 
 
 # Remove noisy log messages
@@ -29,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
-_FIAT_CONVERT = CryptoToFiatConverter()
 
 
 def init(config: dict) -> None:

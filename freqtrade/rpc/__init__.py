@@ -15,7 +15,7 @@ from . import telegram
 
 logger = logging.getLogger(__name__)
 
-
+#_FIAT_CONVERT = CryptoToFiatConverter()
 REGISTERED_MODULES = []
 
 
