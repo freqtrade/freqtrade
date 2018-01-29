@@ -17,6 +17,8 @@ from freqtrade.rpc import telegram
 from freqtrade.rpc.telegram import authorized_only, is_enabled, send_msg, _status, _status_table, \
     _profit, _forcesell, _performance, _daily, _count, _start, _stop, _balance, _version, _help
 
+import freqtrade.rpc.telegram as tg
+
 
 def test_is_enabled(default_conf, mocker):
     mocker.patch.dict('freqtrade.rpc.telegram._CONF', default_conf)
@@ -741,15 +743,20 @@ def test_send_msg_network_error(default_conf, mocker):
 
 
 def test_init(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
-    mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
-    msg_mock = MagicMock()
-    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    start_polling = MagicMock()
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
-                          init=MagicMock(),
-                          send_msg=msg_mock)
-    mocker.patch.multiple('freqtrade.main.exchange',
-                          validate_pairs=MagicMock(),
-                          get_ticker=ticker)
-    init(default_conf, create_engine('sqlite://'))
+                          # mock telegram.ext.Updater
+                          Updater=MagicMock(return_value=start_polling))
+    # not enabled
+    tg.init(default_conf)
+    assert start_polling.call_count == 0
+    # number of handles registered
+    assert start_polling.dispatcher.add_handler.call_count == 11
+    assert start_polling.start_polling.call_count == 1
+
+    # enabled
+    default_conf['telegram'] = {}
+    default_conf['telegram']['enabled'] = True
+    default_conf['telegram']['token'] = ''
+    tg.init(default_conf)
