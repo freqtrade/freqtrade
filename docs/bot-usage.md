@@ -49,7 +49,7 @@ python3 ./freqtrade/main.py -c path/far/far/away/config.json
 
 ### How to use --strategy?
 This parameter will allow you to load your custom strategy file. Per 
-default without `--strategy` or `-s` the bol will load the 
+default without `--strategy` or `-s` the bot will load the 
 `default_strategy` included with the bot (`freqtrade/strategy/default_strategy.py`). 
 
 The bot will search your strategy file into `user_data/strategies` and 
