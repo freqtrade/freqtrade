@@ -206,6 +206,7 @@ def _profit(bot: Bot, update: Update) -> None:
         send_msg(stats, bot=bot)
         return
 
+    # Message to display
     markdown_msg = """
 *ROI:* Close trades
   ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`

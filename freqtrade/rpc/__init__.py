@@ -272,38 +272,6 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
              'best_rate': round(bp_rate * 100, 2)
              })
 
-    # Message to display
-    markdown_msg = """
-*ROI:* Close trades
-  ∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`
-  ∙ `{profit_closed_fiat:.3f} {fiat}`
-*ROI:* All trades
-  ∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`
-  ∙ `{profit_all_fiat:.3f} {fiat}`
-
-*Total Trade Count:* `{trade_count}`
-*First Trade opened:* `{first_trade_date}`
-*Latest Trade opened:* `{latest_trade_date}`
-*Avg. Duration:* `{avg_duration}`
-*Best Performing:* `{best_pair}: {best_rate:.2f}%`
-    """.format(
-        coin=stake_currency,
-        fiat=fiat_display_currency,
-        profit_closed_coin=profit_closed_coin,
-        profit_closed_percent=profit_closed_percent,
-        profit_closed_fiat=profit_closed_fiat,
-        profit_all_coin=profit_all_coin,
-        profit_all_percent=profit_all_percent,
-        profit_all_fiat=profit_all_fiat,
-        trade_count=len(trades),
-        first_trade_date=arrow.get(trades[0].open_date).humanize(),
-        latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
-        avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
-        best_pair=bp_pair,
-        best_rate=round(bp_rate * 100, 2),
-    )
-    return markdown_msg
-
 
 def rpc_balance(fiat_display_currency):
     """
@@ -369,7 +337,7 @@ def rpc_forcesell(trade_id) -> None:
     Sells the given trade at current price
     :return: error or None
     """
-    def _exec_forcesell(trade: Trade) -> None:
+    def _exec_forcesell(trade: Trade) -> str:
         # Check if there is there is an open order
         if trade.open_order_id:
             order = exchange.get_order(trade.open_order_id)
@@ -389,6 +357,7 @@ def rpc_forcesell(trade_id) -> None:
         current_rate = exchange.get_ticker(trade.pair, False)['bid']
         from freqtrade.main import execute_sell
         execute_sell(trade, current_rate)
+    # ---- EOF def _exec_forcesell ----
 
     if get_state() != State.RUNNING:
         return (True, '`trader is not running`')
@@ -409,6 +378,7 @@ def rpc_forcesell(trade_id) -> None:
         return (True, 'Invalid argument.')
 
     _exec_forcesell(trade)
+    return (False, '')
 
 
 def rpc_performance() -> None:

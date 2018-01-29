@@ -70,6 +70,86 @@ def test_send_msg_telegram_disabled(mocker):
     assert telegram_mock.call_count == 0
 
 
+def test_rpc_forcesell(default_conf, update, ticker, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock())
+    cancel_order_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker,
+                          cancel_order=cancel_order_mock,
+                          get_order=MagicMock(return_value={
+                              'closed': True,
+                              'type': 'LIMIT_BUY',
+                          }))
+    main.init(default_conf, create_engine('sqlite://'))
+
+    misc.update_state(misc.State.STOPPED)
+    (error, res) = rpc.rpc_forcesell(None)
+    assert error
+    assert res == '`trader is not running`'
+    misc.update_state(misc.State.RUNNING)
+    (error, res) = rpc.rpc_forcesell(None)
+    assert error
+    assert res == 'Invalid argument.'
+
+    (error, res) = rpc.rpc_forcesell('all')
+    assert not error
+    assert res == ''
+
+    main.create_trade(0.001, 5)
+    (error, res) = rpc.rpc_forcesell('all')
+    assert not error
+    assert res == ''
+
+    (error, res) = rpc.rpc_forcesell('1')
+    assert not error
+    assert res == ''
+
+    misc.update_state(misc.State.STOPPED)
+
+    (error, res) = rpc.rpc_forcesell(None)
+    assert error
+    assert res == '`trader is not running`'
+
+    (error, res) = rpc.rpc_forcesell('all')
+    assert error
+    assert res == '`trader is not running`'
+
+    misc.update_state(misc.State.RUNNING)
+
+    assert cancel_order_mock.call_count == 0
+    # make an limit-buy open trade
+    mocker.patch.multiple('freqtrade.exchange',
+                          get_order=MagicMock(return_value={
+                              'closed': None,
+                              'type': 'LIMIT_BUY'
+                          }))
+    # check that the trade is called, which is done
+    # by ensuring exchange.cancel_order is called
+    (error, res) = rpc.rpc_forcesell('1')
+    assert not error
+    assert res == ''
+    assert cancel_order_mock.call_count == 1
+
+    main.create_trade(0.001, 5)
+    # make an limit-sell open trade
+    mocker.patch.multiple('freqtrade.exchange',
+                          get_order=MagicMock(return_value={
+                              'closed': None,
+                              'type': 'LIMIT_SELL'
+                          }))
+    (error, res) = rpc.rpc_forcesell('2')
+    assert not error
+    assert res == ''
+    # status quo, no exchange calls
+    assert cancel_order_mock.call_count == 1
+
+
 def test_rpc_trade_status(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
