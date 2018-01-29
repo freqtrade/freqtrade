@@ -196,18 +196,19 @@ def _status_table(bot: Bot, update: Update) -> None:
         for trade in trades:
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair, False)['bid']
+            _shortenedpair = trade.pair.split('_',1)[-1]
             trades_list.append([
                 trade.id,
-                trade.pair,
-                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
+                _shortenedpair,
+                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)).replace(" ", "").replace("min", "m").strip(),
+                '{:0.1f}%'.format(100 * trade.calc_profit_percent(current_rate))
             ])
 
-        columns = ['ID', 'Pair', 'Since', 'Profit']
+        columns = ['Id', 'Pair', '\u0394t', 'P/L']
         df_statuses = DataFrame.from_records(trades_list, columns=columns)
         df_statuses = df_statuses.set_index(columns[0])
 
-        message = tabulate(df_statuses, headers='keys', tablefmt='simple')
+        message = tabulate(df_statuses, headers='keys', tablefmt='simple', numalign="left", stralign="left")
         message = "<pre>{}</pre>".format(message)
 
         send_msg(message, parse_mode=ParseMode.HTML)
