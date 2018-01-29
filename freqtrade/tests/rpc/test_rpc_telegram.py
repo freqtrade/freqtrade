@@ -605,7 +605,8 @@ def test_stop_handle_already_stopped(default_conf, update, mocker):
     assert 'already stopped' in msg_mock.call_args_list[0][0][0]
 
 
-def test_balance_handle(default_conf, update, ticker_usdt, mocker):
+def test_balance_handle(default_conf, update, mocker):
+
     mock_balance = [{
         'Currency': 'BTC',
         'Balance': 10.0,
@@ -624,7 +625,28 @@ def test_balance_handle(default_conf, update, ticker_usdt, mocker):
         'Available': 0.0,
         'Pending': 0.0,
         'CryptoAddress': 'XXXX',
+    }, {
+        'Currency': 'LTC',
+        'Balance': 10.0,
+        'Available': 10.0,
+        'Pending': 0.0,
+        'CryptoAddress': 'XXXX',
     }]
+
+    def mock_ticker(symbol, refresh):
+        if symbol == 'USDT_BTC':
+            return {
+                'bid': 10000.00,
+                'ask': 10000.00,
+                'last': 10000.00,
+            }
+        else:
+            return {
+                'bid': 0.1,
+                'ask': 0.1,
+                'last': 0.1,
+            }
+
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     msg_mock = MagicMock()
     mocker.patch.multiple('freqtrade.rpc.telegram',
@@ -632,11 +654,11 @@ def test_balance_handle(default_conf, update, ticker_usdt, mocker):
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
-                          get_balances=MagicMock(return_value=mock_balance),
-                          get_ticker=ticker_usdt)
+                          get_balances=MagicMock(return_value=mock_balance))
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.main.exchange.get_ticker', side_effect=mock_ticker)
 
     _balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
@@ -646,7 +668,22 @@ def test_balance_handle(default_conf, update, ticker_usdt, mocker):
     assert '*Currency*: USDT' in result
     assert 'Balance' in result
     assert 'Est. BTC' in result
-    assert '*BTC*:  11.00000000' in result
+    assert '*BTC*:  12.00000000' in result
+
+
+def test_zero_balance_handle(default_conf, update, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    msg_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          get_balances=MagicMock(return_value=[]))
+    _balance(bot=MagicMock(), update=update)
+    result = msg_mock.call_args_list[0][0][0]
+    assert msg_mock.call_count == 1
+    assert '`All balances are zero.`' in result
 
 
 def test_help_handle(default_conf, update, mocker):
