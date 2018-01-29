@@ -205,6 +205,60 @@ def test_rpc_trade_statistics(
     assert prec_satoshi(stats['best_rate'], 6.2)
 
 
+# Test that rpc_trade_statistics can handle trades that lacks
+# trade.open_rate (it is set to None)
+def test_rpc_trade_statistics_closed(
+        default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    main.init(default_conf, create_engine('sqlite://'))
+    stake_currency = default_conf['stake_currency']
+    fiat_display_currency = default_conf['fiat_display_currency']
+
+    # Create some test data
+    main.create_trade(0.001, 5)
+    trade = Trade.query.first()
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+    # Update the ticker with a market going up
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker_sell_up)
+    trade.update(limit_sell_order)
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+
+    for trade in Trade.query.order_by(Trade.id).all():
+        trade.open_rate = None
+
+    (error, stats) = rpc.rpc_trade_statistics(stake_currency,
+                                              fiat_display_currency)
+    assert not error
+    assert prec_satoshi(stats['profit_closed_coin'], 0)
+    assert prec_satoshi(stats['profit_closed_percent'], 0)
+    assert prec_satoshi(stats['profit_closed_fiat'], 0)
+    assert prec_satoshi(stats['profit_all_coin'], 0)
+    assert prec_satoshi(stats['profit_all_percent'], 0)
+    assert prec_satoshi(stats['profit_all_fiat'], 0)
+    assert stats['trade_count'] == 1
+    assert stats['first_trade_date'] == 'just now'
+    assert stats['latest_trade_date'] == 'just now'
+    assert stats['avg_duration'] == '0:00:00'
+    assert stats['best_pair'] == 'BTC_ETH'
+    assert prec_satoshi(stats['best_rate'], 6.2)
+
+
 def test_rpc_balance_handle(default_conf, update, mocker):
     mock_balance = [{
         'Currency': 'BTC',

@@ -255,6 +255,7 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
         stake_currency,
         fiat_display_currency
     )
+    num = float(len(durations) or 1)
     return (False,
             {'profit_closed_coin': profit_closed_coin,
              'profit_closed_percent': profit_closed_percent,
@@ -266,7 +267,7 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
              'first_trade_date': arrow.get(trades[0].open_date).humanize(),
              'latest_trade_date': arrow.get(trades[-1].open_date).humanize(),
              'avg_duration': str(timedelta(seconds=sum(durations) /
-                                           float(len(durations)))).split('.')[0],
+                                           num)).split('.')[0],
              'best_pair': bp_pair,
              'best_rate': round(bp_rate * 100, 2)
              })
