@@ -742,7 +742,7 @@ def test_send_msg_network_error(default_conf, mocker):
     assert len(bot.method_calls) == 2
 
 
-def test_init(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+def test_init(default_conf, mocker):
     start_polling = MagicMock()
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -760,3 +760,48 @@ def test_init(default_conf, update, ticker, limit_buy_order, limit_sell_order, m
     default_conf['telegram']['enabled'] = True
     default_conf['telegram']['token'] = ''
     tg.init(default_conf)
+
+
+def test_cleanup(default_conf, mocker):
+    default_conf['telegram'] = {}
+    default_conf['telegram']['enabled'] = False
+    updater_mock = MagicMock()
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          _UPDATER=updater_mock)
+    # not enabled
+    tg.cleanup()
+    assert updater_mock.stop.call_count == 0
+
+    # enabled
+    default_conf['telegram']['enabled'] = True
+    tg.cleanup()
+    assert updater_mock.stop.call_count == 1
+
+
+def test_status(default_conf, update, mocker):
+    update.message.chat.id = 123
+    default_conf['telegram'] = {}
+    default_conf['telegram']['chat_id'] = 123
+    mocker.patch('telegram.update', MagicMock())
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock())
+    msg_mock = MagicMock()
+    status_table = MagicMock()
+    mocker.patch.multiple('freqtrade.rpc',
+                          send_msg=MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          rpc_trade_status=MagicMock(return_value=(False, [1, 2, 3])),
+                          _status_table=status_table,
+                          send_msg=msg_mock)
+    print(update)
+    _status(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 3
+    update.message.text = MagicMock()
+    update.message.text.replace = MagicMock(return_value='table 2 3')
+    _status(bot=MagicMock(), update=update)
+    assert status_table.call_count == 1
