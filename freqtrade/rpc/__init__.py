@@ -15,7 +15,7 @@ from . import telegram
 
 logger = logging.getLogger(__name__)
 
-#_FIAT_CONVERT = CryptoToFiatConverter()
+_FIAT_CONVERT = CryptoToFiatConverter()
 REGISTERED_MODULES = []
 
 
@@ -156,7 +156,7 @@ def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
     if not (isinstance(timescale, int) and timescale > 0):
         return (True, '*Daily [n]:* `must be an integer greater than 0`')
 
-    fiat = CryptoToFiatConverter()
+    fiat = _FIAT_CONVERT
     for day in range(0, timescale):
         profitday = today - timedelta(days=day)
         trades = Trade.query \
@@ -239,7 +239,7 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
 
     # FIX: we want to keep fiatconverter in a state/environment,
     #      doing this will utilize its caching functionallity, instead we reinitialize it here
-    fiat = CryptoToFiatConverter()
+    fiat = _FIAT_CONVERT
     # Prepare data to display
     profit_closed_coin = round(sum(profit_closed_coin), 8)
     profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
@@ -334,7 +334,7 @@ def rpc_balance(fiat_display_currency):
                        'pending': currency['Pending'],
                        'est_btc': currency['BTC']
                        })
-    fiat = CryptoToFiatConverter()
+    fiat = _FIAT_CONVERT
     symbol = fiat_display_currency
     value = fiat.convert_amount(total, 'BTC', symbol)
     return (False, (output, total, symbol, value))
