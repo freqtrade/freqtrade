@@ -60,7 +60,7 @@ def common_datearray(dfs):
     return np.sort(arr, axis=0)
 
 
-def file_dump_json(filename, data):
+def file_dump_json(filename, data) -> None:
     with open(filename, 'w') as fp:
         json.dump(data, fp)
 
@@ -287,27 +287,27 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
 def parse_timerange(text):
     if text is None:
         return None
-    syntax = [('^-(\d{8})$',        (None,    'date')),
-              ('^(\d{8})-$',        ('date',  None)),
-              ('^(\d{8})-(\d{8})$', ('date',  'date')),
-              ('^(-\d+)$',          (None,    'line')),
-              ('^(\d+)-$',          ('line',  None)),
-              ('^(\d+)-(\d+)$',     ('index', 'index'))]
+    syntax = [(r'^-(\d{8})$', (None, 'date')),
+              (r'^(\d{8})-$', ('date', None)),
+              (r'^(\d{8})-(\d{8})$', ('date', 'date')),
+              (r'^(-\d+)$', (None, 'line')),
+              (r'^(\d+)-$', ('line', None)),
+              (r'^(\d+)-(\d+)$', ('index', 'index'))]
     for rex, stype in syntax:
         # Apply the regular expression to text
-        m = re.match(rex, text)
-        if m:  # Regex has matched
-            rvals = m.groups()
-            n = 0
+        match = re.match(rex, text)
+        if match:  # Regex has matched
+            rvals = match.groups()
+            index = 0
             start = None
             stop = None
             if stype[0]:
-                start = rvals[n]
+                start = rvals[index]
                 if stype[0] != 'date':
                     start = int(start)
-                n += 1
+                index += 1
             if stype[1]:
-                stop = rvals[n]
+                stop = rvals[index]
                 if stype[1] != 'date':
                     stop = int(stop)
             return (stype, start, stop)
