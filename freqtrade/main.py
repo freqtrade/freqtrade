@@ -321,7 +321,7 @@ def should_sell(trade: Trade, rate: float, date: datetime, buy: bool, sell: bool
     # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
     if _CONF.get('experimental', {}).get('sell_profit_only', False):
         logger.debug('Checking if trade is profitable ...')
-        if not buy and trade.calc_profit(rate=rate) <= 0:
+        if trade.calc_profit(rate=rate) <= 0:
             return False
 
     if sell and not buy and _CONF.get('experimental', {}).get('use_sell_signal', False):
