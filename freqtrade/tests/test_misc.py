@@ -10,8 +10,7 @@ import pytest
 from jsonschema import ValidationError
 from freqtrade.analyze import parse_ticker_dataframe
 from freqtrade.misc import (common_args_parser, file_dump_json, load_config,
-                            parse_args, parse_timerange, throttle, datesarray_to_datetimearray,
-                            common_datearray)
+                            parse_args, parse_timerange, throttle, datesarray_to_datetimearray)
 
 
 def test_throttle():
