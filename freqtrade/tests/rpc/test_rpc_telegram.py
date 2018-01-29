@@ -716,3 +716,18 @@ def test_send_msg_network_error(default_conf, mocker):
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
+
+
+def test_init(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.rpc.telegram',
+                          _CONF=default_conf,
+                          init=MagicMock(),
+                          send_msg=msg_mock)
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker)
+    init(default_conf, create_engine('sqlite://'))
