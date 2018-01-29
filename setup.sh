@@ -193,12 +193,22 @@ config
 echo "You can now use the bot by executing 'source .env/bin/activate; python3 freqtrade/main.py'."
 }
 
+function plot () {
+echo "
+-----------------------------------------
+Install dependencies for Plotting scripts
+-----------------------------------------
+"
+pip install plotly
+}
+
 function help () {
 echo "usage:"
 echo "	-i,--install    Install freqtrade from scratch"
 echo "	-u,--update     Command git pull to update."
 echo "	-r,--reset      Hard reset your develop/master branch."
 echo "	-c,--config     Easy config generator (Will override your existing file)."
+echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
 
 case $* in
@@ -213,6 +223,9 @@ update
 ;;
 --reset|-r)
 reset
+;;
+--plot|-p)
+plot
 ;;
 *)
 help
