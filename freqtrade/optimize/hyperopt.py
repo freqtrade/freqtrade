@@ -461,6 +461,11 @@ def start(args):
     config = load_config(args.config)
     pairs = config['exchange']['pair_whitelist']
 
+    # If -i/--ticker-interval is use we override the configuration parameter
+    # (that will override the strategy configuration)
+    if args.ticker_interval:
+        config.update({'ticker_interval': args.ticker_interval})
+
     # init the strategy to use
     config.update({'strategy': args.strategy})
     strategy = Strategy()
@@ -468,7 +473,7 @@ def start(args):
 
     timerange = misc.parse_timerange(args.timerange)
     data = optimize.load_data(args.datadir, pairs=pairs,
-                              ticker_interval=args.ticker_interval,
+                              ticker_interval=strategy.ticker_interval,
                               timerange=timerange)
     optimize.populate_indicators = populate_indicators
     PROCESSED = optimize.tickerdata_to_dataframe(data)
