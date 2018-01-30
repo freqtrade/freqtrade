@@ -59,3 +59,17 @@ class IStrategy(ABC):
         we are notified that a given pair was sold
         :param pair: the pair that was is concerned by the dataframe
         """
+
+    @abstractmethod
+    def did_cancel_buy(self, pair: str):
+        """
+        we are notified that a given buy for a pair was cancelled
+        :param pair: the pair that was is concerned by the dataframe
+        """
+
+    @abstractmethod
+    def did_cancel_sell(self, pair: str):
+        """
+        we are notified that a given sell for a pair was cancelled
+        :param pair: the pair that was is concerned by the dataframe
+        """

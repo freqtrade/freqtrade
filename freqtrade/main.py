@@ -158,6 +158,8 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
         logger.info('Buy order timeout for %s.', trade)
         rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
                      trade.pair.replace('_', '/')))
+        strategy = Strategy()
+        strategy.did_cancel_buy(trade.pair)
         return True
 
     # if trade is partially complete, edit the stake details for the trade
@@ -188,6 +190,8 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
         rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
                      trade.pair.replace('_', '/')))
         logger.info('Sell order timeout for %s.', trade)
+        strategy = Strategy()
+        strategy.did_cancel_sell(trade.pair)
         return True
 
     # TODO: figure out how to handle partially complete sell orders
