@@ -115,9 +115,9 @@ def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     :return: Any
     """
     start = time.time()
-    result = func(*args, **kwargs)
+    (result, extra_time)  = func(*args, **kwargs)
     end = time.time()
-    duration = max(min_secs - (end - start), 0.0)
+    duration = max(max(min_secs - (end - start), 0.0), extra_time)
     logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
     time.sleep(duration)
     return result

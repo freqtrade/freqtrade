@@ -91,7 +91,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     assert not trades
 
     result = _process(interval=int(default_conf['ticker_interval']))
-    assert result is True
+    assert result == (True, 0)
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
@@ -117,7 +117,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
                           buy=MagicMock(side_effect=requests.exceptions.RequestException))
     init(default_conf, create_engine('sqlite://'))
     result = _process(interval=int(default_conf['ticker_interval']))
-    assert result is False
+    assert result == (False, 30)
     assert sleep_mock.has_calls()
 
 
@@ -135,7 +135,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker):
     assert get_state() == State.RUNNING
 
     result = _process(interval=int(default_conf['ticker_interval']))
-    assert result is False
+    assert result == (False, 0)
     assert get_state() == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
 
@@ -155,12 +155,12 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
     result = _process(interval=int(default_conf['ticker_interval']))
-    assert result is True
+    assert result == (True, 0)
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
 
     result = _process(interval=int(default_conf['ticker_interval']))
-    assert result is False
+    assert result == (False, 0)
 
 
 def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
