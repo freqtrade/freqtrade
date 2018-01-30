@@ -250,15 +250,15 @@ class DefaultStrategy(IStrategy):
         we are notified that a given pair was sold
         :param pair: the pair that was is concerned by the dataframe
         """
-    
+
     def did_cancel_buy(self, pair: str):
         """
-        we are notified that a given pair was bought
+        we are notified that a given pair buy was not filled
         :param pair: the pair that was is concerned by the dataframe
         """
 
     def did_cancel_sell(self, pair: str):
         """
-        we are notified that a given pair was sold
+        we are notified that a given pair was not sold 
         :param pair: the pair that was is concerned by the dataframe
         """
