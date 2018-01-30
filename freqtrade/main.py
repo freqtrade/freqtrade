@@ -55,7 +55,7 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     return final_list
 
 
-def process_maybe_execute_buy(interval):
+def process_maybe_execute_buy(interval: int) -> bool:
     """
     Tries to execute a buy trade in a safe way
     :return: True if executed
@@ -75,7 +75,7 @@ def process_maybe_execute_buy(interval):
         return False
 
 
-def process_maybe_execute_sell(trade, interval):
+def process_maybe_execute_sell(trade: Trade, interval: int) -> bool:
     """
     Tries to execute a sell trade
     :return: True if executed
@@ -114,11 +114,14 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
 
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if len(trades) < _CONF['max_open_trades']:
-            state_changed = process_maybe_execute_buy(interval)
 
+        # First process current opened trades
         for trade in trades:
             state_changed |= process_maybe_execute_sell(trade, interval)
+
+        # Then looking for buy opportunities
+        if len(trades) < _CONF['max_open_trades']:
+            state_changed = process_maybe_execute_buy(interval)
 
         if 'unfilledtimeout' in _CONF:
             # Check and handle any timed out open orders
