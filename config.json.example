@@ -10,8 +10,8 @@
     },
     "exchange": {
         "name": "bittrex",
-        "key": "your_echange_key",
-        "secret": "your_echange_secret",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_secret",
         "pair_whitelist": [
             "BTC_ETH",
             "BTC_LTC",
