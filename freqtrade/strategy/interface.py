@@ -23,6 +23,7 @@ class IStrategy(ABC):
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param pair: the pair that was is concerned by the dataframe
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
@@ -31,6 +32,7 @@ class IStrategy(ABC):
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
+        :param pair: the pair that was is concerned by the dataframe
         :return: DataFrame with buy column
         :return:
         """
@@ -40,5 +42,6 @@ class IStrategy(ABC):
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
+        :param pair: the pair that was is concerned by the dataframe
         :return: DataFrame with buy column
         """
