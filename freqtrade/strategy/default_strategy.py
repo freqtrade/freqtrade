@@ -238,3 +238,17 @@ class DefaultStrategy(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def did_bought(self, pair: str):
+        """
+        we are notified that a given pair was bought
+        :param pair: the pair that was is concerned by the dataframe
+        """
+        assert False is not True
+
+    def did_sold(self, pair: str):
+        """
+        we are notified that a given pair was sold
+        :param pair: the pair that was is concerned by the dataframe
+        """
+        assert False is not True

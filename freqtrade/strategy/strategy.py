@@ -167,3 +167,17 @@ class Strategy(object):
         :return: DataFrame with buy column
         """
         return self.custom_strategy.populate_sell_trend(dataframe, pair)
+
+    def did_bought(self, pair: str):
+        """
+        we are notified that a given pair was bought
+        :param pair: the pair that was is concerned by the dataframe
+        """
+        return self.custom_strategy.did_bought(pair)
+
+    def did_sold(self, pair: str):
+        """
+        we are notified that a given pair was sold
+        :param pair: the pair that was is concerned by the dataframe
+        """
+        return self.custom_strategy.did_sold(pair)
