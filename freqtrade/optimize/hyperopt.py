@@ -61,7 +61,7 @@ TRIALS = Trials()
 main._CONF = OPTIMIZE_CONFIG
 
 
-def populate_indicators(dataframe: DataFrame) -> DataFrame:
+def populate_indicators(dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
@@ -320,7 +320,7 @@ def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
     """
     Define the buy strategy parameters to be used by hyperopt
     """
-    def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+    def populate_buy_trend(dataframe: DataFrame, pair: str) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
         if 'uptrend_long_ema' in params and params['uptrend_long_ema']['enabled']:

@@ -143,27 +143,27 @@ class Strategy(object):
 
         return path
 
-    def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        return self.custom_strategy.populate_indicators(dataframe)
+        return self.custom_strategy.populate_indicators(dataframe, pair)
 
-    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         :return:
         """
-        return self.custom_strategy.populate_buy_trend(dataframe)
+        return self.custom_strategy.populate_buy_trend(dataframe, pair)
 
-    def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        return self.custom_strategy.populate_sell_trend(dataframe)
+        return self.custom_strategy.populate_sell_trend(dataframe, pair)

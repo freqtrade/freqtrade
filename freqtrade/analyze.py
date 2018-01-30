@@ -37,7 +37,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     return frame
 
 
-def populate_indicators(dataframe: DataFrame) -> DataFrame:
+def populate_indicators(dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
 
@@ -46,39 +46,39 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
     """
     strategy = Strategy()
-    return strategy.populate_indicators(dataframe=dataframe)
+    return strategy.populate_indicators(dataframe=dataframe, pair=pair)
 
 
-def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+def populate_buy_trend(dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
     strategy = Strategy()
-    return strategy.populate_buy_trend(dataframe=dataframe)
+    return strategy.populate_buy_trend(dataframe=dataframe, pair=pair)
 
 
-def populate_sell_trend(dataframe: DataFrame) -> DataFrame:
+def populate_sell_trend(dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Based on TA indicators, populates the sell signal for the given dataframe
     :param dataframe: DataFrame
     :return: DataFrame with buy column
     """
     strategy = Strategy()
-    return strategy.populate_sell_trend(dataframe=dataframe)
+    return strategy.populate_sell_trend(dataframe=dataframe, pair=pair)
 
 
-def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
+def analyze_ticker(ticker_history: List[Dict], pair: str) -> DataFrame:
     """
     Parses the given ticker history and returns a populated DataFrame
     add several TA indicators and buy signal to it
     :return DataFrame with ticker data and indicator data
     """
     dataframe = parse_ticker_dataframe(ticker_history)
-    dataframe = populate_indicators(dataframe)
-    dataframe = populate_buy_trend(dataframe)
-    dataframe = populate_sell_trend(dataframe)
+    dataframe = populate_indicators(dataframe, pair)
+    dataframe = populate_buy_trend(dataframe, pair)
+    dataframe = populate_sell_trend(dataframe, pair)
     return dataframe
 
 
@@ -96,7 +96,7 @@ def get_signal(pair: str, interval: int) -> (bool, bool):
         return (False, False)  # return False ?
 
     try:
-        dataframe = analyze_ticker(ticker_hist)
+        dataframe = analyze_ticker(ticker_hist, pair)
     except ValueError as ex:
         logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
         return (False, False)  # return False ?

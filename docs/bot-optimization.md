@@ -51,7 +51,7 @@ update your buy strategy.
 
 Sample from `user_data/strategies/test_strategy.py`:  
 ```python
-def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+def populate_buy_trend(self, dataframe: DataFrame, pair : str) -> DataFrame:
     """
     Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame
@@ -74,7 +74,7 @@ update your sell strategy.
 
 Sample from `user_data/strategies/test_strategy.py`:  
 ```python
-def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
+def populate_sell_trend(self, dataframe: DataFrame, pair : str) -> DataFrame:
     """
     Based on TA indicators, populates the sell signal for the given dataframe
     :param dataframe: DataFrame
@@ -97,7 +97,7 @@ the method `populate_indicators()` from your strategy file.
 
 Sample:
 ```python
-def populate_indicators(dataframe: DataFrame) -> DataFrame:
+def populate_indicators(dataframe: DataFrame, pair : str) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
