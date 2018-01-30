@@ -229,5 +229,5 @@ def start(args):
                         })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
-        generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
+        generate_text_table(data, results, config['stake_currency'], strategy.ticker_interval)
     )
