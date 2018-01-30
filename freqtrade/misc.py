@@ -218,7 +218,6 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
         dest='ticker_interval',
-        default=5,
         type=int,
         metavar='INT',
     )
@@ -269,9 +268,8 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         '-i', '--ticker-interval',
-        help='specify ticker interval in minutes (default: 5)',
+        help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
         dest='ticker_interval',
-        default=5,
         type=int,
         metavar='INT',
     )
