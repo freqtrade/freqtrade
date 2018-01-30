@@ -7,15 +7,50 @@ To understand how to set up the bot please read the [Bot Configuration](https://
 ## Table of Contents
 
 * [Table of Contents](#table-of-contents)
-* [Automatic Installation - Docker](#automatic-installation-docker)
-* [Custom Installation](#custom-installation)
+* [Easy Installation - Linux Script](#easy-installation---linux-script)
+* [Automatic Installation - Docker](#automatic-installation---docker)
+* [Custom Linux MacOS Installation](#custom-installation)
 	- [Requirements](#requirements)
-	- [Linux - Ubuntu 16.04](#linux-ubuntu-1604)
+	- [Linux - Ubuntu 16.04](#linux---ubuntu-1604)
 	- [MacOS](#macos)
-	- [Windows](#windows)
-* [First Steps](#first-step)
+	- [Setup Config and virtual env](#setup-config-and-virtual-env)
+* [Windows](#windows)
+	
 
 <!-- /TOC -->
+
+------
+
+## Easy Installation - Linux Script
+
+If you are on Debian, Ubuntu or MacOS a freqtrade provides a script to Install, Update, Configure, and Reset your bot.
+
+```bash
+$ ./setup.sh
+usage:
+	-i,--install    Install freqtrade from scratch
+	-u,--update     Command git pull to update.
+	-r,--reset      Hard reset your develop/master branch.
+	-c,--config     Easy config generator (Will override your existing file).
+```
+
+### --install
+This script will install everything you need to run the bot:
+* Mandatory software as: `Python3`, `ta-lib`, `wget`
+* Setup your virtualenv
+* Configure your `config.json` file
+
+This script is a combination of `install script` `--reset`, `--config`
+
+### --update
+Update parameter will pull the last version of your current branch and update your virtualenv.
+
+### --reset
+Reset parameter will hard reset your branch (only if you are on `master` or `develop`) and recreate your virtualenv.
+
+### --config
+Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
+
 ------
 
 ## Automatic Installation - Docker
@@ -253,12 +288,45 @@ Optionally checkout the develop branch:
 git checkout develop
 ```
 
-### Windows
+
+### Setup Config and virtual env
+
+#### 1. Initialize the configuration
+
+```bash
+cd freqtrade
+cp config.json.example config.json
+```
+
+> *To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md).*
+
+
+#### 2. Setup your Python virtual environment (virtualenv)
+
+```bash
+python3.6 -m venv .env
+source .env/bin/activate
+pip3.6 install --upgrade pip
+pip3.6 install -r requirements.txt
+pip3.6 install -e .
+```
+
+#### 3. Run the Bot
+
+If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
+
+```bash
+python3.6 ./freqtrade/main.py -c config.json
+```
+
+------
+
+## Windows
 
 We recommend that Windows users use [Docker](#docker) as this will work
 much easier and smoother (also more secure).
 
-#### 1. Install freqtrade
+### Install freqtrade
 
 copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 
@@ -276,39 +344,6 @@ copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 
 > Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/gcarq/freqtrade/issues/222)
 
-
-------
-
-
-## First Steps
-
-### 1. Initialize the configuration
-
-```bash
-cd freqtrade
-cp config.json.example config.json
-```
-
-> *To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md).*
-
-
-### 2. Setup your Python virtual environment (virtualenv)
-
-```bash
-python3.6 -m venv .env
-source .env/bin/activate
-pip3.6 install --upgrade pip
-pip3.6 install -r requirements.txt
-pip3.6 install -e .
-```
-
-### 3. Run the Bot
-
-If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
-
-```bash
-python3.6 ./freqtrade/main.py -c config.json
-```
 
 Now you have an environment ready, the next step is
 [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)...

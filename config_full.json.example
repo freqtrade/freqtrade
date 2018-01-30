@@ -4,6 +4,14 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
+    "ticker_interval": 5,
+    "minimal_roi": {
+        "40":  0.0,
+        "30":  0.01,
+        "20":  0.02,
+        "0":  0.04
+    },
+    "stoploss": -0.10,
     "unfilledtimeout": 600,
     "bid_strategy": {
         "ask_last_balance": 0.0
