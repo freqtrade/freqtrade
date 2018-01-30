@@ -39,8 +39,10 @@ Use this token to access the HTTP API:
 
 For a description of the Bot API, see this page: https://core.telegram.org/bots/api
 ```
+**1.6. Don't forget to start the conversation with your bot, by clicking /START button**  
 
 ### 2. Get your user id
 **2.1. Talk to https://telegram.me/userinfobot**  
 **2.2. Get your "Id", you will use it for the config parameter 
 `chat_id`.**
+
