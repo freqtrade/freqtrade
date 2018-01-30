@@ -231,6 +231,9 @@ def execute_sell(trade: Trade, limit: float) -> None:
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
     trade.open_order_id = order_id
 
+    strategy = Strategy()
+    strategy.did_sold(trade.pair)
+
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
     profit_trade = trade.calc_profit(rate=limit)
     current_rate = exchange.get_ticker(trade.pair, False)['bid']
@@ -409,6 +412,8 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         _CONF['stake_currency'],
         _CONF['fiat_display_currency']
     )
+    strategy = Strategy()
+    strategy.did_bought(pair)
 
     # Create trade entity and return
     rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '.format(
