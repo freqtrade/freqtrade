@@ -32,7 +32,7 @@ def test_parse_args_backtesting(mocker):
     assert call_args.loglevel == 20
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
-    assert call_args.ticker_interval == None
+    assert call_args.ticker_interval is None
 
 
 def test_main_start_hyperopt(mocker):
