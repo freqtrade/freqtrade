@@ -24,7 +24,7 @@ script/plot_dataframe.py [-h] [-p pair] [--live]
 
 Example
 ```
-python script/plot_dataframe.py -p BTC_ETH
+python scripts/plot_dataframe.py -p BTC_ETH
 ```
 
 The `-p` pair argument, can be used to specify what
