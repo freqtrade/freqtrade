@@ -171,33 +171,40 @@ def start(args):
 
     logger.info('Using config: %s ...', args.config)
     config = misc.load_config(args.config)
-    ticker_interval = config.get('ticker_interval', args.ticker_interval)
-    logger.info('Using ticker_interval: %s ...', ticker_interval)
+
+    # If -i/--ticker-interval is use we override the configuration parameter
+    # (that will override the strategy configuration)
+    if args.ticker_interval:
+        config.update({'ticker_interval': args.ticker_interval})
+
+    # init the strategy to use
+    config.update({'strategy': args.strategy})
+    strategy = Strategy()
+    strategy.init(config)
+
+    logger.info('Using ticker_interval: %d ...', strategy.ticker_interval)
 
     data = {}
     pairs = config['exchange']['pair_whitelist']
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
         for pair in pairs:
-            data[pair] = exchange.get_ticker_history(pair, ticker_interval)
+            data[pair] = exchange.get_ticker_history(pair, strategy.ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
         logger.info('Using stake_currency: %s ...', config['stake_currency'])
         logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
         timerange = misc.parse_timerange(args.timerange)
-        data = optimize.load_data(args.datadir, pairs=pairs, ticker_interval=args.ticker_interval,
+        data = optimize.load_data(args.datadir,
+                                  pairs=pairs,
+                                  ticker_interval=strategy.ticker_interval,
                                   refresh_pairs=args.refresh_pairs,
                                   timerange=timerange)
     max_open_trades = 0
     if args.realistic_simulation:
         logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
         max_open_trades = config['max_open_trades']
-
-    # init the strategy to use
-    config.update({'strategy': args.strategy})
-    strategy = Strategy()
-    strategy.init(config)
 
     # Monkey patch config
     from freqtrade import main
@@ -224,5 +231,5 @@ def start(args):
                         })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
-        generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
+        generate_text_table(data, results, config['stake_currency'], strategy.ticker_interval)
     )
