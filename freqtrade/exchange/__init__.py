@@ -2,6 +2,7 @@
 """ Cryptocurrency Exchanges support """
 import enum
 import logging
+import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
 
@@ -10,7 +11,6 @@ import requests
 from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException
-from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
@@ -49,13 +49,21 @@ def init(config: dict) -> None:
 
     # Find matching class for the given exchange name
     name = exchange_config['name']
+
+    # TODO add check for a list of supported exchanges
+
     try:
-        exchange_class = Exchanges[name.upper()].value
+        # exchange_class = Exchanges[name.upper()].value
+        _API = getattr(ccxt, name.lower())({
+            'apiKey': exchange_config.get('key'),
+            'secret': exchange_config.get('secret'),
+        })
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
-    _API = exchange_class(exchange_config)
-
+    # we need load api markets
+    _API.load_markets()
+    
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
 

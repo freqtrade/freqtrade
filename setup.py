@@ -21,7 +21,7 @@ setup(name='freqtrade',
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
       install_requires=[
-          'python-bittrex',
+          'ccxt',
           'SQLAlchemy',
           'python-telegram-bot',
           'arrow',
