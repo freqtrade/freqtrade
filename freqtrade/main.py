@@ -84,7 +84,7 @@ def process_maybe_execute_sell(trade: Trade, interval: int) -> bool:
     if trade.open_order_id:
         # Update trade with order values
         logger.info('Got open order for %s', trade)
-        trade.update(exchange.get_order(trade.open_order_id))
+        trade.update(exchange.get_order(trade.open_order_id, trade.pair))
 
     if trade.is_open and trade.open_order_id is None:
         # Check if we can sell our current pair
@@ -151,7 +151,7 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
     """Buy timeout - cancel order
     :return: True if order was fully cancelled
     """
-    exchange.cancel_order(trade.open_order_id)
+    exchange.cancel_order(trade.open_order_id, trade.pair)
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just delete the trade
         Trade.session.delete(trade)
@@ -182,7 +182,7 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
     """
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just cancel the trade
-        exchange.cancel_order(trade.open_order_id)
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         trade.close_rate = None
         trade.close_profit = None
         trade.close_date = None
@@ -207,7 +207,7 @@ def check_handle_timedout(timeoutvalue: int) -> None:
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
         try:
-            order = exchange.get_order(trade.open_order_id)
+            order = exchange.get_order(trade.open_order_id, trade.pair)
         except requests.exceptions.RequestException:
             logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
             continue
@@ -400,15 +400,42 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     else:
         return False
 
-    # Calculate amount
+    min_qty = None
+    max_qty = None
+    step_qty = None
+
+    (min_qty, max_qty, step_qty) = exchange.get_trade_qty(pair)
+
+    # Calculate bid price
     buy_limit = get_target_bid(exchange.get_ticker(pair))
+
+    # Calculate base amount
     amount = stake_amount / buy_limit
 
-    order_id = exchange.buy(pair, buy_limit, amount)
+    # if amount above max qty: just buy max qty
+    if max_qty:
+        if amount > max_qty:
+            amount = max_qty
+
+    if min_qty:
+        if amount < min_qty:
+            raise DependencyException(
+                'stake amount is too low (min_qty={})'.format(min_qty)
+            )
+
+    # make trade exact amount of step qty
+    if step_qty:
+        real_amount = (amount // step_qty) * step_qty
+    else:
+        real_amount = amount
+
+    order_id = exchange.buy(pair, buy_limit, real_amount)
+
+    real_stake_amount = buy_limit * real_amount
 
     fiat_converter = CryptoToFiatConverter()
     stake_amount_fiat = fiat_converter.convert_amount(
-        stake_amount,
+        real_stake_amount,
         _CONF['stake_currency'],
         _CONF['fiat_display_currency']
     )
@@ -418,7 +445,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
-        buy_limit, stake_amount, _CONF['stake_currency'],
+        buy_limit, real_stake_amount, _CONF['stake_currency'],
         stake_amount_fiat, _CONF['fiat_display_currency']
     ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL

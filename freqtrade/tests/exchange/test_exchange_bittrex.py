@@ -264,27 +264,27 @@ def test_exchange_bittrex_get_ticker_history():
 def test_exchange_bittrex_get_order():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
-    order = wb.get_order('someUUID')
+    order = wb.get_order('someUUID','somePAIR')
     assert order['id'] == 'ABC123'
     fb.success = False
     with pytest.raises(btx.OperationalException, match=r'lost'):
-        wb.get_order('someUUID')
+        wb.get_order('someUUID','somePAIR')
 
 
 def test_exchange_bittrex_cancel_order():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
-    wb.cancel_order('someUUID')
+    wb.cancel_order('someUUID','somePAIR')
     with pytest.raises(btx.OperationalException, match=r'no such order'):
         fb.success = False
-        wb.cancel_order('someUUID')
+        wb.cancel_order('someUUID','somePAIR')
     # Note: this can be a bug in exchange.bittrex._validate_response
     with pytest.raises(KeyError):
         fb.result = {'success': False}  # message is missing!
-        wb.cancel_order('someUUID')
+        wb.cancel_order('someUUID','somePAIR')
     with pytest.raises(btx.OperationalException, match=r'foo'):
         fb.result = {'success': False, 'message': 'foo'}
-        wb.cancel_order('someUUID')
+        wb.cancel_order('someUUID','somePAIR')
 
 
 def test_exchange_get_pair_detail_url():

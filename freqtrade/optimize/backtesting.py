@@ -6,12 +6,12 @@ from typing import Dict, Tuple
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
+from freqtrade import OperationalException
 
 import freqtrade.misc as misc
 import freqtrade.optimize as optimize
 from freqtrade import exchange
 from freqtrade.analyze import populate_buy_trend, populate_sell_trend
-from freqtrade.exchange import Bittrex
 from freqtrade.main import should_sell
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy import Strategy
@@ -116,7 +116,19 @@ def backtest(args) -> DataFrame:
     records = []
     trades = []
     trade_count_lock: dict = {}
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+
+    # Monkey patch config
+    from freqtrade import main
+    exchange_config = main._CONF['exchange']
+
+    exchange_name = exchange_config['name']
+    try:
+        exchange_class = exchange.Exchanges[exchange_name.upper()].value
+    except KeyError:
+        raise OperationalException('Exchange {} is not supported'.format(
+            exchange_name))
+
+    exchange._API = exchange_class({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
@@ -167,8 +179,6 @@ def start(args):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
-
     logger.info('Using config: %s ...', args.config)
     config = misc.load_config(args.config)
 
@@ -183,6 +193,15 @@ def start(args):
     strategy.init(config)
 
     logger.info('Using ticker_interval: %d ...', strategy.ticker_interval)
+
+    exchange_name = config['exchange']['name']
+    try:
+        exchange_class = exchange.Exchanges[exchange_name.upper()].value
+    except KeyError:
+        raise OperationalException('Exchange {} is not supported'.format(
+            exchange_name))
+
+    exchange._API = exchange_class({'key': '', 'secret': ''})
 
     data = {}
     pairs = config['exchange']['pair_whitelist']
