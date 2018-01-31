@@ -3,6 +3,7 @@ import datetime
 from unittest.mock import MagicMock
 
 import arrow
+import logging
 from pandas import DataFrame
 
 import freqtrade.tests.conftest as tt  # test tools
@@ -69,6 +70,7 @@ def test_returns_latest_sell_signal(mocker):
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=None)
     assert (False, False) == get_signal('foo', int(default_conf['ticker_interval']))
     assert tt.log_has('Empty ticker history for pair foo',
@@ -76,6 +78,7 @@ def test_get_signal_empty(default_conf, mocker, caplog):
 
 
 def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
     mocker.patch('freqtrade.analyze.analyze_ticker',
                  side_effect=ValueError('xyz'))
@@ -85,6 +88,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
 
 
 def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame([]))
     assert (False, False) == get_signal('xyz', int(default_conf['ticker_interval']))
@@ -93,6 +97,7 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
     # FIX: The get_signal function has hardcoded 10, which we must inturn hardcode
     oldtime = arrow.utcnow() - datetime.timedelta(minutes=11)
@@ -112,7 +117,6 @@ def test_get_signal_handles_exceptions(mocker):
 
 
 def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
-
     columns = ['close', 'high', 'low', 'open', 'date', 'volume']
 
     # Test file with BV data

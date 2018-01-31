@@ -24,6 +24,7 @@ def maybe_init_api(conf, mocker):
 
 
 def test_init(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     maybe_init_api(default_conf, mocker)
     assert ('freqtrade.exchange',
             logging.INFO,
@@ -71,6 +72,7 @@ def test_validate_pairs_not_compatible(default_conf, mocker):
 
 
 def test_validate_pairs_exception(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     api_mock = MagicMock()
     api_mock.get_markets = MagicMock(side_effect=RequestException())
     mocker.patch('freqtrade.exchange._API', api_mock)

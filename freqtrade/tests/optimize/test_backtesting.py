@@ -168,6 +168,7 @@ def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, 
 
 
 def test_backtest_start(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.misc.load_config', new=lambda s: default_conf)

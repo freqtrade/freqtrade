@@ -46,6 +46,7 @@ def _clean_test_file(file: str) -> None:
 
 
 def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -62,6 +63,7 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
 
 
 def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -78,6 +80,7 @@ def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
 
 
 def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -94,6 +97,7 @@ def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
 
 
 def test_load_data_with_new_pair_1min(default_conf, ticker_history, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -154,6 +158,7 @@ def test_download_pairs(default_conf, ticker_history, mocker):
 
 
 def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
     mocker.patch('freqtrade.optimize.__init__.download_backtesting_testdata',
                  side_effect=BaseException('File Error'))

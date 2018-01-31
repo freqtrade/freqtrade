@@ -69,6 +69,7 @@ def test_process_maybe_execute_sell(default_conf, mocker):
 
 
 def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
     main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
@@ -359,6 +360,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
 
 
 def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
@@ -391,6 +393,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
 
 
 def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
     default_conf.update({'experimental': {'use_sell_signal': True}})
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
