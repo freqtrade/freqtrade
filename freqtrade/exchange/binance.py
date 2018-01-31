@@ -6,7 +6,10 @@ from typing import List, Dict, Optional
 
 from binance.client import Client as _Binance
 from binance.exceptions import BinanceAPIException
-from binance.enums import *
+from binance.enums import (KLINE_INTERVAL_1MINUTE, KLINE_INTERVAL_5MINUTE,
+                           KLINE_INTERVAL_30MINUTE, KLINE_INTERVAL_1HOUR,
+                           KLINE_INTERVAL_1DAY)
+
 from decimal import Decimal
 
 from freqtrade import OperationalException
@@ -193,9 +196,17 @@ class Binance(Exchange):
 
     def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
 
-        INTERVAL_ENUM = eval('KLINE_INTERVAL_' + str(tick_interval) + 'MINUTE')
-
-        if INTERVAL_ENUM in ['', None]:
+        if tick_interval == 1:
+            INTERVAL_ENUM = KLINE_INTERVAL_1MINUTE
+        elif tick_interval == 5:
+            INTERVAL_ENUM = KLINE_INTERVAL_5MINUTE
+        elif tick_interval == 30:
+            INTERVAL_ENUM = KLINE_INTERVAL_30MINUTE
+        elif tick_interval == 60:
+            INTERVAL_ENUM = KLINE_INTERVAL_1HOUR
+        elif tick_interval == 1440:
+            INTERVAL_ENUM = KLINE_INTERVAL_1DAY
+        else:
             raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
 
         symbol = self._pair_to_symbol(pair)
