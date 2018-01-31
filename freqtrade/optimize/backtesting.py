@@ -113,15 +113,11 @@ def backtest(args) -> DataFrame:
     max_open_trades = args.get('max_open_trades', 0)
     realistic = args.get('realistic', True)
     record = args.get('record', None)
+    exchange_name = args.get('exchange_name', 'bittrex')
     records = []
     trades = []
     trade_count_lock: dict = {}
 
-    # Monkey patch config
-    from freqtrade import main
-    exchange_config = main._CONF['exchange']
-
-    exchange_name = exchange_config['name']
     try:
         exchange_class = exchange.Exchanges[exchange_name.upper()].value
     except KeyError:
@@ -246,7 +242,8 @@ def start(args):
                         'sell_profit_only': sell_profit_only,
                         'use_sell_signal': use_sell_signal,
                         'stoploss': strategy.stoploss,
-                        'record': args.export
+                        'record': args.export,
+                        'exchange_name': exchange_name
                         })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
