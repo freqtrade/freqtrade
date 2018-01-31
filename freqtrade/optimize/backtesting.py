@@ -11,7 +11,6 @@ import freqtrade.misc as misc
 import freqtrade.optimize as optimize
 from freqtrade import exchange
 from freqtrade.analyze import populate_buy_trend, populate_sell_trend
-from freqtrade.exchange import Bittrex
 from freqtrade.main import should_sell
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy import Strategy

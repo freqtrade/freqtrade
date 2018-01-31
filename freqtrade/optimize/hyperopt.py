@@ -22,7 +22,6 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 # Monkey patch config
 from freqtrade import main  # noqa; noqa
 from freqtrade import exchange, misc, optimize
-from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
 from freqtrade.optimize import backtesting
 from freqtrade.optimize.backtesting import backtest

@@ -23,13 +23,6 @@ _CONF: dict = {}
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
 
-class Exchanges(enum.Enum):
-    """
-    Maps supported exchange names to correspondent classes.
-    """
-    BITTREX = Bittrex
-
-
 def init(config: dict) -> None:
     """
     Initializes this module with the given config,
@@ -63,9 +56,12 @@ def init(config: dict) -> None:
 
     # we need load api markets
     _API.load_markets()
-    
+
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
+
+    print("*"*20)
+
 
 
 def validate_pairs(pairs: List[str]) -> None:
@@ -75,15 +71,22 @@ def validate_pairs(pairs: List[str]) -> None:
     :param pairs: list of pairs
     :return: None
     """
+    # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
+    if not _API.markets:
+        _API.load_markets()
+
     try:
-        markets = _API.get_markets()
+        markets = _API.markets
     except requests.exceptions.RequestException as e:
         logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
         return
 
     stake_cur = _CONF['stake_currency']
     for pair in pairs:
-        if not pair.startswith(stake_cur):
+        # TODO: ccxt expects pairs in BTC/USD format
+        pair = pair.replace('_', '/')
+
+        if not pair.endswith(stake_cur):
             raise OperationalException(
                 'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
             )
