@@ -71,7 +71,7 @@ your current trades.
 
 ### Exchange supported
 - [x] Bittrex
-- [ ] Binance
+- [x] Binance
 - [ ] Others
 
 ## Quick start
