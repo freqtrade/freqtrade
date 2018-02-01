@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock
 import pytest
+import datetime
+import dateutil
 from freqtrade.exchange.binance import Binance
 import freqtrade.exchange.binance as bin
 
@@ -298,10 +300,12 @@ def test_exchange_binance_get_ticker_history_intervals():
     wb = make_wrap_binance()
     FakeBinance()
     for tick_interval in [1, 5]:
-        assert ([{'O': 0.0, 'H': 0.0,
+        h = wb.get_ticker_history('BTC_ETH', tick_interval)
+        assert type(dateutil.parser.parse(h[0]['T'])) is datetime.datetime
+        del h[0]['T']
+        assert [{'O': 0.0, 'H': 0.0,
                   'L': 0.0, 'C': 0.0,
-                  'V': 0.0, 'T': '1970-01-01T01:00:00', 'BV': 0.0}] ==
-                wb.get_ticker_history('BTC_ETH', tick_interval))
+                  'V': 0.0, 'BV': 0.0}] == h
 
 
 def test_exchange_binance_get_ticker_history():
