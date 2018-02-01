@@ -60,9 +60,6 @@ def init(config: dict) -> None:
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
 
-    print("*"*20)
-
-
 
 def validate_pairs(pairs: List[str]) -> None:
     """
@@ -71,7 +68,7 @@ def validate_pairs(pairs: List[str]) -> None:
     :param pairs: list of pairs
     :return: None
     """
-    # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
+
     if not _API.markets:
         _API.load_markets()
 
@@ -83,9 +80,10 @@ def validate_pairs(pairs: List[str]) -> None:
 
     stake_cur = _CONF['stake_currency']
     for pair in pairs:
-        # TODO: ccxt expects pairs in BTC/USD format
+        # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
         pair = pair.replace('_', '/')
 
+        # TODO: add a support for having coins in BTC/USDT format
         if not pair.endswith(stake_cur):
             raise OperationalException(
                 'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
@@ -135,14 +133,14 @@ def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
-    return _API.get_balance(currency)
+    return _API.fetch_balance()[currency]
 
 
 def get_balances():
     if _CONF['dry_run']:
         return []
 
-    return _API.get_balances()
+    return _API.fetch_balance()
 
 
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
@@ -181,7 +179,7 @@ def get_markets() -> List[str]:
 
 
 def get_market_summaries() -> List[Dict]:
-    return _API.get_market_summaries()
+    return _API.public_get_marketsummaries()['result']
 
 
 def get_name() -> str:
@@ -193,4 +191,12 @@ def get_fee() -> float:
 
 
 def get_wallet_health() -> List[Dict]:
-    return _API.get_wallet_health()
+    data =  _API.request('Currencies/GetWalletHealth', api='v2')
+    if not data['success']:
+        raise OperationalException('{}'.format(data['message']))
+    return [{
+        'Currency': entry['Health']['Currency'],
+        'IsActive': entry['Health']['IsActive'],
+        'LastChecked': entry['Health']['LastChecked'],
+        'Notice': entry['Currency'].get('Notice'),
+    } for entry in data['result']]

@@ -52,6 +52,7 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
 
     # We need to remove pairs that are unknown
     final_list = [x for x in sanitized_whitelist if x in known_pairs]
+
     return final_list
 
 
@@ -465,8 +466,9 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
+    
     summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
+        (s for s in exchange.get_market_summaries() if s['MarketName'].endswith(base_currency)),
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
