@@ -63,6 +63,7 @@ def test_strategy(result):
 
 
 def test_strategy_override_minimal_roi(caplog):
+    caplog.set_level(logging.INFO)
     config = {
         'strategy': 'default_strategy',
         'minimal_roi': {
@@ -81,6 +82,7 @@ def test_strategy_override_minimal_roi(caplog):
 
 
 def test_strategy_override_stoploss(caplog):
+    caplog.set_level(logging.INFO)
     config = {
         'strategy': 'default_strategy',
         'stoploss': -0.5
@@ -97,6 +99,8 @@ def test_strategy_override_stoploss(caplog):
 
 
 def test_strategy_override_ticker_interval(caplog):
+    caplog.set_level(logging.INFO)
+
     config = {
         'strategy': 'default_strategy',
         'ticker_interval': 60

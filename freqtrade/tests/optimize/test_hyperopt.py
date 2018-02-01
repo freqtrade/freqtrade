@@ -1,4 +1,6 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+import logging
+
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
     log_results, save_trials, read_trials, generate_roi_table
 
@@ -109,6 +111,7 @@ def test_no_log_if_loss_does_not_improve(mocker):
 
 
 def test_fmin_best_results(mocker, caplog):
+    caplog.set_level(logging.INFO)
     fmin_result = {
         "macd_below_zero": 0,
         "adx": 1,
@@ -156,6 +159,7 @@ def test_fmin_best_results(mocker, caplog):
 
 
 def test_fmin_throw_value_error(mocker, caplog):
+    caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
     mocker.patch('freqtrade.optimize.tickerdata_to_dataframe')
     mocker.patch('freqtrade.optimize.load_data')
