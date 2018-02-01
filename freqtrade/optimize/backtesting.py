@@ -118,11 +118,7 @@ def backtest(args) -> DataFrame:
     trades = []
     trade_count_lock: dict = {}
 
-    try:
-        exchange_class = exchange.Exchanges[exchange_name.upper()].value
-    except KeyError:
-        raise OperationalException('Exchange {} is not supported'.format(
-            exchange_name))
+    exchange_class = exchange.Exchanges[exchange_name.upper()].value
 
     exchange._API = exchange_class({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
