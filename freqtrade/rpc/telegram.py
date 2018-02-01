@@ -1,21 +1,25 @@
 import logging
-import re
-from datetime import datetime, timedelta
-from decimal import Decimal
 from typing import Any, Callable
 
-import arrow
-from pandas import DataFrame
-from sqlalchemy import and_, func, text
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
-from freqtrade import __version__, exchange
-from freqtrade.fiat_convert import CryptoToFiatConverter
-from freqtrade.misc import State, get_state, update_state
-from freqtrade.persistence import Trade
+from freqtrade.rpc.__init__ import (rpc_status_table,
+                                    rpc_trade_status,
+                                    rpc_daily_profit,
+                                    rpc_trade_statistics,
+                                    rpc_balance,
+                                    rpc_start,
+                                    rpc_stop,
+                                    rpc_forcesell,
+                                    rpc_performance,
+                                    rpc_count,
+                                    )
+
+from freqtrade import __version__
+
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -24,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
-_FIAT_CONVERT = CryptoToFiatConverter()
 
 
 def init(config: dict) -> None:
@@ -129,51 +132,12 @@ def _status(bot: Bot, update: Update) -> None:
         return
 
     # Fetch open trade
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    if get_state() != State.RUNNING:
-        send_msg('*Status:* `trader is not running`', bot=bot)
-    elif not trades:
-        send_msg('*Status:* `no active trade`', bot=bot)
+    (error, trades) = rpc_trade_status()
+    if error:
+        send_msg(trades, bot=bot)
     else:
-        for trade in trades:
-            order = None
-            if trade.open_order_id:
-                order = exchange.get_order(trade.open_order_id)
-            # calculate profit and send message to user
-            current_rate = exchange.get_ticker(trade.pair, False)['bid']
-            current_profit = trade.calc_profit_percent(current_rate)
-            fmt_close_profit = '{:.2f}%'.format(
-                round(trade.close_profit * 100, 2)
-            ) if trade.close_profit else None
-            message = """
-*Trade ID:* `{trade_id}`
-*Current Pair:* [{pair}]({pair_url})
-*Open Since:* `{date}`
-*Amount:* `{amount}`
-*Open Rate:* `{open_rate:.8f}`
-*Close Rate:* `{close_rate}`
-*Current Rate:* `{current_rate:.8f}`
-*Close Profit:* `{close_profit}`
-*Current Profit:* `{current_profit:.2f}%`
-*Open Order:* `{open_order}`
-*Total Open Trades:* `{total_trades}`
-            """.format(
-                trade_id=trade.id,
-                pair=trade.pair,
-                pair_url=exchange.get_pair_detail_url(trade.pair),
-                date=arrow.get(trade.open_date).humanize(),
-                open_rate=trade.open_rate,
-                close_rate=trade.close_rate,
-                current_rate=current_rate,
-                amount=round(trade.amount, 8),
-                close_profit=fmt_close_profit,
-                current_profit=round(current_profit * 100, 2),
-                open_order='({} rem={:.8f})'.format(
-                    order['type'], order['remaining']
-                ) if order else None,
-                total_trades=len(trades)
-            )
-            send_msg(message, bot=bot)
+        for trademsg in trades:
+            send_msg(trademsg, bot=bot)
 
 
 @authorized_only
@@ -186,27 +150,10 @@ def _status_table(bot: Bot, update: Update) -> None:
     :return: None
     """
     # Fetch open trade
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-    if get_state() != State.RUNNING:
-        send_msg('*Status:* `trader is not running`', bot=bot)
-    elif not trades:
-        send_msg('*Status:* `no active order`', bot=bot)
+    (err, df_statuses) = rpc_status_table()
+    if err:
+        send_msg(df_statuses, bot=bot)
     else:
-        trades_list = []
-        for trade in trades:
-            # calculate profit and send message to user
-            current_rate = exchange.get_ticker(trade.pair, False)['bid']
-            trades_list.append([
-                trade.id,
-                trade.pair,
-                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
-            ])
-
-        columns = ['ID', 'Pair', 'Since', 'Profit']
-        df_statuses = DataFrame.from_records(trades_list, columns=columns)
-        df_statuses = df_statuses.set_index(columns[0])
-
         message = tabulate(df_statuses, headers='keys', tablefmt='simple')
         message = "<pre>{}</pre>".format(message)
 
@@ -222,62 +169,26 @@ def _daily(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    today = datetime.utcnow().date()
-    profit_days = {}
-
     try:
         timescale = int(update.message.text.replace('/daily', '').strip())
     except (TypeError, ValueError):
         timescale = 7
-
-    if not (isinstance(timescale, int) and timescale > 0):
-        send_msg('*Daily [n]:* `must be an integer greater than 0`', bot=bot)
-        return
-
-    for day in range(0, timescale):
-        profitday = today - timedelta(days=day)
-        trades = Trade.query \
-            .filter(Trade.is_open.is_(False)) \
-            .filter(Trade.close_date >= profitday)\
-            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
-            .order_by(Trade.close_date)\
-            .all()
-        curdayprofit = sum(trade.calc_profit() for trade in trades)
-        profit_days[profitday] = {
-            'amount': format(curdayprofit, '.8f'),
-            'trades': len(trades)
-        }
-
-    stats = [
-        [
-            key,
-            '{value:.8f} {symbol}'.format(
-                value=float(value['amount']),
-                symbol=_CONF['stake_currency']
-            ),
-            '{value:.3f} {symbol}'.format(
-                value=_FIAT_CONVERT.convert_amount(
-                    value['amount'],
-                    _CONF['stake_currency'],
-                    _CONF['fiat_display_currency']
-                ),
-                symbol=_CONF['fiat_display_currency']
-            ),
-            '{value} trade{s}'.format(value=value['trades'], s='' if value['trades'] < 2 else 's'),
-        ]
-        for key, value in profit_days.items()
-    ]
-    stats = tabulate(stats,
-                     headers=[
-                         'Day',
-                         'Profit {}'.format(_CONF['stake_currency']),
-                         'Profit {}'.format(_CONF['fiat_display_currency']),
-                         '# Trades'
-                     ],
-                     tablefmt='simple')
-
-    message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(timescale, stats)
-    send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+    (error, stats) = rpc_daily_profit(timescale,
+                                      _CONF['stake_currency'],
+                                      _CONF['fiat_display_currency'])
+    if error:
+        send_msg(stats, bot=bot)
+    else:
+        stats = tabulate(stats,
+                         headers=[
+                             'Day',
+                             'Profit {}'.format(_CONF['stake_currency']),
+                             'Profit {}'.format(_CONF['fiat_display_currency'])
+                         ],
+                         tablefmt='simple')
+        message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'.format(
+                  timescale, stats)
+        send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
 
 
 @authorized_only
@@ -289,61 +200,11 @@ def _profit(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    trades = Trade.query.order_by(Trade.id).all()
-
-    profit_all_coin = []
-    profit_all_percent = []
-    profit_closed_coin = []
-    profit_closed_percent = []
-    durations = []
-
-    for trade in trades:
-        current_rate = None
-
-        if not trade.open_rate:
-            continue
-        if trade.close_date:
-            durations.append((trade.close_date - trade.open_date).total_seconds())
-
-        if not trade.is_open:
-            profit_percent = trade.calc_profit_percent()
-            profit_closed_coin.append(trade.calc_profit())
-            profit_closed_percent.append(profit_percent)
-        else:
-            # Get current rate
-            current_rate = exchange.get_ticker(trade.pair, False)['bid']
-            profit_percent = trade.calc_profit_percent(rate=current_rate)
-
-        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
-        profit_all_percent.append(profit_percent)
-
-    best_pair = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum')) \
-        .filter(Trade.is_open.is_(False)) \
-        .group_by(Trade.pair) \
-        .order_by(text('profit_sum DESC')) \
-        .first()
-
-    if not best_pair:
-        send_msg('*Status:* `no closed trade`', bot=bot)
+    (error, stats) = rpc_trade_statistics(_CONF['stake_currency'],
+                                          _CONF['fiat_display_currency'])
+    if error:
+        send_msg(stats, bot=bot)
         return
-
-    bp_pair, bp_rate = best_pair
-
-    # Prepare data to display
-    profit_closed_coin = round(sum(profit_closed_coin), 8)
-    profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
-    profit_closed_fiat = _FIAT_CONVERT.convert_amount(
-        profit_closed_coin,
-        _CONF['stake_currency'],
-        _CONF['fiat_display_currency']
-    )
-    profit_all_coin = round(sum(profit_all_coin), 8)
-    profit_all_percent = round(sum(profit_all_percent) * 100, 2)
-    profit_all_fiat = _FIAT_CONVERT.convert_amount(
-        profit_all_coin,
-        _CONF['stake_currency'],
-        _CONF['fiat_display_currency']
-    )
 
     # Message to display
     markdown_msg = """
@@ -362,18 +223,18 @@ def _profit(bot: Bot, update: Update) -> None:
     """.format(
         coin=_CONF['stake_currency'],
         fiat=_CONF['fiat_display_currency'],
-        profit_closed_coin=profit_closed_coin,
-        profit_closed_percent=profit_closed_percent,
-        profit_closed_fiat=profit_closed_fiat,
-        profit_all_coin=profit_all_coin,
-        profit_all_percent=profit_all_percent,
-        profit_all_fiat=profit_all_fiat,
-        trade_count=len(trades),
-        first_trade_date=arrow.get(trades[0].open_date).humanize(),
-        latest_trade_date=arrow.get(trades[-1].open_date).humanize(),
-        avg_duration=str(timedelta(seconds=sum(durations) / float(len(durations)))).split('.')[0],
-        best_pair=bp_pair,
-        best_rate=round(bp_rate * 100, 2),
+        profit_closed_coin=stats['profit_closed_coin'],
+        profit_closed_percent=stats['profit_closed_percent'],
+        profit_closed_fiat=stats['profit_closed_fiat'],
+        profit_all_coin=stats['profit_all_coin'],
+        profit_all_percent=stats['profit_all_percent'],
+        profit_all_fiat=stats['profit_all_fiat'],
+        trade_count=stats['trade_count'],
+        first_trade_date=stats['first_trade_date'],
+        latest_trade_date=stats['latest_trade_date'],
+        avg_duration=stats['avg_duration'],
+        best_pair=stats['best_pair'],
+        best_rate=stats['best_rate']
     )
     send_msg(markdown_msg, bot=bot)
 
@@ -382,41 +243,22 @@ def _profit(bot: Bot, update: Update) -> None:
 def _balance(bot: Bot, update: Update) -> None:
     """
     Handler for /balance
-    Returns current account balance per crypto
     """
-    output = ''
-    balances = [
-        c for c in exchange.get_balances()
-        if c['Balance'] or c['Available'] or c['Pending']
-    ]
-    if not balances:
+    (error, result) = rpc_balance(_CONF['fiat_display_currency'])
+    if error:
         send_msg('`All balances are zero.`')
         return
 
-    total = 0.0
-    for currency in balances:
-        coin = currency['Currency']
-        if coin == 'BTC':
-            currency["Rate"] = 1.0
-        else:
-            if coin == 'USDT':
-                currency["Rate"] = 1.0 / exchange.get_ticker('USDT_BTC', False)['bid']
-            else:
-                currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
-        currency['BTC'] = currency["Rate"] * currency["Balance"]
-        total = total + currency['BTC']
-        output += """*Currency*: {Currency}
-*Available*: {Available}
-*Balance*: {Balance}
-*Pending*: {Pending}
-*Est. BTC*: {BTC: .8f}
-
+    (currencys, total, symbol, value) = result
+    output = ''
+    for currency in currencys:
+        output += """*Currency*: {currency}
+*Available*: {available}
+*Balance*: {balance}
+*Pending*: {pending}
+*Est. BTC*: {est_btc: .8f}
 """.format(**currency)
 
-    symbol = _CONF['fiat_display_currency']
-    value = _FIAT_CONVERT.convert_amount(
-        total, 'BTC', symbol
-    )
     output += """*Estimated Value*:
 *BTC*: {0: .8f}
 *{1}*: {2: .2f}
@@ -433,10 +275,9 @@ def _start(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() == State.RUNNING:
-        send_msg('*Status:* `already running`', bot=bot)
-    else:
-        update_state(State.RUNNING)
+    (error, msg) = rpc_start()
+    if error:
+        send_msg(msg, bot=bot)
 
 
 @authorized_only
@@ -448,13 +289,11 @@ def _stop(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() == State.RUNNING:
-        send_msg('`Stopping trader ...`', bot=bot)
-        update_state(State.STOPPED)
-    else:
-        send_msg('*Status:* `already stopped`', bot=bot)
+    (error, msg) = rpc_stop()
+    send_msg(msg, bot=bot)
 
 
+# FIX: no test for this!!!!
 @authorized_only
 def _forcesell(bot: Bot, update: Update) -> None:
     """
@@ -464,28 +303,12 @@ def _forcesell(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() != State.RUNNING:
-        send_msg('`trader is not running`', bot=bot)
-        return
 
     trade_id = update.message.text.replace('/forcesell', '').strip()
-    if trade_id == 'all':
-        # Execute sell for all open orders
-        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
-            _exec_forcesell(trade)
+    (error, message) = rpc_forcesell(trade_id)
+    if error:
+        send_msg(message, bot=bot)
         return
-
-    # Query for trade
-    trade = Trade.query.filter(and_(
-        Trade.id == trade_id,
-        Trade.is_open.is_(True)
-    )).first()
-    if not trade:
-        send_msg('Invalid argument. See `/help` to view usage')
-        logger.warning('/forcesell: Invalid argument received')
-        return
-
-    _exec_forcesell(trade)
 
 
 @authorized_only
@@ -497,26 +320,18 @@ def _performance(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() != State.RUNNING:
-        send_msg('`trader is not running`', bot=bot)
+    (error, trades) = rpc_performance()
+    if error:
+        send_msg(trades, bot=bot)
         return
-
-    pair_rates = Trade.session.query(Trade.pair, func.sum(Trade.close_profit).label('profit_sum'),
-                                     func.count(Trade.pair).label('count')) \
-        .filter(Trade.is_open.is_(False)) \
-        .group_by(Trade.pair) \
-        .order_by(text('profit_sum DESC')) \
-        .all()
 
     stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
         index=i + 1,
-        pair=pair,
-        profit=round(rate * 100, 2),
-        count=count
-    ) for i, (pair, rate, count) in enumerate(pair_rates))
-
+        pair=trade['pair'],
+        profit=trade['profit'],
+        count=trade['count']
+    ) for i, trade in enumerate(trades))
     message = '<b>Performance:</b>\n{}'.format(stats)
-    logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)
 
 
@@ -529,11 +344,10 @@ def _count(bot: Bot, update: Update) -> None:
     :param update: message update
     :return: None
     """
-    if get_state() != State.RUNNING:
-        send_msg('`trader is not running`', bot=bot)
+    (error, trades) = rpc_count()
+    if error:
+        send_msg(trades, bot=bot)
         return
-
-    trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
     message = tabulate({
         'current': [len(trades)],
@@ -580,40 +394,6 @@ def _version(bot: Bot, update: Update) -> None:
     :return: None
     """
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
-
-
-def shorten_date(_date):
-    """
-    Trim the date so it fits on small screens
-    """
-    new_date = re.sub('seconds?', 'sec', _date)
-    new_date = re.sub('minutes?', 'min', new_date)
-    new_date = re.sub('hours?', 'h', new_date)
-    new_date = re.sub('days?', 'd', new_date)
-    new_date = re.sub('^an?', '1', new_date)
-    return new_date
-
-
-def _exec_forcesell(trade: Trade) -> None:
-    # Check if there is there is an open order
-    if trade.open_order_id:
-        order = exchange.get_order(trade.open_order_id)
-
-        # Cancel open LIMIT_BUY orders and close trade
-        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
-            exchange.cancel_order(trade.open_order_id)
-            trade.close(order.get('rate') or trade.open_rate)
-            # TODO: sell amount which has been bought already
-            return
-
-        # Ignore trades with an attached LIMIT_SELL order
-        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
-            return
-
-    # Get current rate and execute sell
-    current_rate = exchange.get_ticker(trade.pair, False)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
 
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:

@@ -272,3 +272,10 @@ def default_strategy():
     strategy = Strategy()
     strategy.init({'strategy': 'default_strategy'})
     return strategy
+
+
+# FIX:
+# Create an fixture/function
+# that inserts a trade of some type and open-status
+# return the open-order-id
+# See tests in rpc/main that could use this
