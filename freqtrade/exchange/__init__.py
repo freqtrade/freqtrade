@@ -56,6 +56,7 @@ def init(config: dict) -> None:
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
+    exchange_config['stake_currency'] = config['stake_currency']
     _API = exchange_class(exchange_config)
 
     # Check if all pairs are available

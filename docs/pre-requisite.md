@@ -1,14 +1,22 @@
 # Pre-requisite
 Before running your bot in production you will need to setup few
-external API. In production mode, the bot required valid Bittrex API
+external API. In production mode, the bot requires valid exchange API
 credentials and a Telegram bot (optional but recommended).
 
 ## Table of Contents
-- [Setup your Bittrex account](#setup-your-bittrex-account)
+- [Setup your Exchange account](#setup-your-exchange-account)
 - [Backtesting commands](#setup-your-telegram-bot)
 
-## Setup your Bittrex account
+## Setup your exchange account
+
+### Bittrex
 *To be completed, please feel free to complete this section.*
+
+### Binance
+- Go to: https://www.binance.com/userCenter/createApi.html
+- Enter API key label: "freqtrade bot" and click "Create New Key"
+- Check the "Enable Trading" checkbox
+- Write down the API key and secret to put in: config.json
 
 ## Setup your Telegram bot
 The only things you need is a working Telegram bot and its API token.

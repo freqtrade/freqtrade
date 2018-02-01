@@ -107,13 +107,14 @@ def backtest(args) -> DataFrame:
         sell_profit_only: sell if profit only
         use_sell_signal: act on sell-signal
         stoploss: use stoploss
+        exchange_name: which exchange to use
     :return: DataFrame
     """
     processed = args['processed']
     max_open_trades = args.get('max_open_trades', 0)
     realistic = args.get('realistic', True)
     record = args.get('record', None)
-    exchange_name = args.get('exchange_name', 'bittrex')
+    exchange_name = args.get('exchange_name', None)
     records = []
     trades = []
     trade_count_lock: dict = {}
