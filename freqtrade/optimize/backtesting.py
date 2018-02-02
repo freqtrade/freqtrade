@@ -186,14 +186,15 @@ def start(args):
 
     data = {}
     pairs = config['exchange']['pair_whitelist']
+    logger.info('Using stake_currency: %s ...', config['stake_currency'])
+    logger.info('Using stake_amount: %s ...', config['stake_amount'])
+
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
         for pair in pairs:
             data[pair] = exchange.get_ticker_history(pair, strategy.ticker_interval)
     else:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        logger.info('Using stake_currency: %s ...', config['stake_currency'])
-        logger.info('Using stake_amount: %s ...', config['stake_amount'])
 
         timerange = misc.parse_timerange(args.timerange)
         data = optimize.load_data(args.datadir,
