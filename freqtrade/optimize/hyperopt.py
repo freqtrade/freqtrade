@@ -19,10 +19,10 @@ from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade import OperationalException
 # Monkey patch config
 from freqtrade import main  # noqa; noqa
 from freqtrade import exchange, misc, optimize
-from freqtrade.exchange import Bittrex
 from freqtrade.misc import load_config
 from freqtrade.optimize import backtesting
 from freqtrade.optimize.backtesting import backtest
@@ -401,7 +401,8 @@ def optimizer(params):
 
     results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
                         'processed': PROCESSED,
-                        'stoploss': params['stoploss']})
+                        'stoploss': params['stoploss'],
+                        'exchange_name': _CONFIG['exchange']['name']})
     result_explanation = format_results(results)
 
     total_profit = results.profit_percent.sum()
@@ -445,11 +446,9 @@ def format_results(results: DataFrame):
 
 
 def start(args):
-    global TOTAL_TRIES, PROCESSED, TRIALS, _CURRENT_TRIES
+    global TOTAL_TRIES, PROCESSED, TRIALS, _CURRENT_TRIES, _CONFIG
 
     TOTAL_TRIES = args.epochs
-
-    exchange._API = Bittrex({'key': '', 'secret': ''})
 
     # Initialize logger
     logging.basicConfig(
@@ -458,18 +457,27 @@ def start(args):
     )
 
     logger.info('Using config: %s ...', args.config)
-    config = load_config(args.config)
-    pairs = config['exchange']['pair_whitelist']
+    _CONFIG = load_config(args.config)
+    pairs = _CONFIG['exchange']['pair_whitelist']
+
+    exchange_name = _CONFIG['exchange']['name']
+    try:
+        exchange_class = exchange.Exchanges[exchange_name.upper()].value
+    except KeyError:
+        raise OperationalException('Exchange {} is not supported'.format(
+            exchange_name))
+
+    exchange._API = exchange_class({'key': '', 'secret': ''})
 
     # If -i/--ticker-interval is use we override the configuration parameter
     # (that will override the strategy configuration)
     if args.ticker_interval:
-        config.update({'ticker_interval': args.ticker_interval})
+        _CONFIG.update({'ticker_interval': args.ticker_interval})
 
     # init the strategy to use
-    config.update({'strategy': args.strategy})
+    _CONFIG.update({'strategy': args.strategy})
     strategy = Strategy()
-    strategy.init(config)
+    strategy.init(_CONFIG)
 
     timerange = misc.parse_timerange(args.timerange)
     data = optimize.load_data(args.datadir, pairs=pairs,
