@@ -163,7 +163,7 @@ def common_args_parser(description: str):
         '-s', '--strategy',
         help='specify strategy file (default: freqtrade/strategy/default_strategy.py)',
         dest='strategy',
-        default='.default_strategy',
+        default='default_strategy',
         type=str,
         metavar='PATH',
     )

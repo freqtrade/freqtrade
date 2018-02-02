@@ -95,8 +95,16 @@ class Strategy(object):
             self.custom_strategy = self._load_class(path + strategy_name)
 
         # Fallback to the default strategy
-        except (ImportError, TypeError):
-            self.custom_strategy = self._load_class('.' + self.DEFAULT_STRATEGY)
+        except (ImportError, TypeError) as error:
+            self.logger.error(
+                "Impossible to load Strategy 'user_data/strategies/%s.py'. This file does not exist"
+                " or contains Python code errors",
+                strategy_name
+            )
+            self.logger.error(
+                "The error is:\n%s.",
+                error
+            )
 
     def _load_class(self, filename: str) -> IStrategy:
         """

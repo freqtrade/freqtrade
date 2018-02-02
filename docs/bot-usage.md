@@ -32,7 +32,7 @@ optional arguments:
   --dry-run-db          Force dry run to use a local DB
                         "tradesv3.dry_run.sqlite" instead of memory DB. Work
                         only if dry_run is enabled.
-  -dd PATH, --datadir PATH
+  --datadir PATH
                         path to backtest data (default freqdata/tests/testdata
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
@@ -65,8 +65,8 @@ load it:
 python3 ./freqtrade/main.py --strategy my_awesome_strategy
 ```
 
-If the bot does not find your strategy file, it will fallback to the 
-`default_strategy`.
+If the bot does not find your strategy file, it will display in an error
+ message the reason (File not found, or errors in your code).
 
 Learn more about strategy file in [optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
 

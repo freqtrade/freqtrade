@@ -24,7 +24,7 @@ python3 ./freqtrade/main.py --strategy awesome_strategy
 
 ## Change your strategy
 The bot includes a default strategy file. However, we recommend you to 
-use your own file to not have to lose your parameters everytime the default
+use your own file to not have to lose your parameters every time the default
 strategy file will be updated on Github. Put your custom strategy file
 into the folder `user_data/strategies`.
 
