@@ -12,14 +12,14 @@ def whitelist_conf():
         'stake_currency': 'BTC',
         'exchange': {
             'pair_whitelist': [
-                'BTC_ETH',
-                'BTC_TKN',
-                'BTC_TRST',
-                'BTC_SWT',
-                'BTC_BCC'
+                'ETH/BTC',
+                'TKN/BTC',
+                'TRST/BTC',
+                'SWT/BTC',
+                'BCC/BTC'
             ],
             'pair_blacklist': [
-                'BTC_BLK'
+                'BLK/BTC'
             ],
         },
     }
@@ -90,9 +90,9 @@ def test_refresh_market_pair_not_in_whitelist(mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_wallet_health=get_health)
     refreshedwhitelist = refresh_whitelist(
-        conf['exchange']['pair_whitelist'] + ['BTC_XXX'])
+        conf['exchange']['pair_whitelist'] + ['XXX/BTC'])
     # List ordered by BaseVolume
-    whitelist = ['BTC_ETH', 'BTC_TKN']
+    whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
     assert whitelist == refreshedwhitelist
 
@@ -104,7 +104,7 @@ def test_refresh_whitelist(mocker):
                           get_wallet_health=get_health)
     refreshedwhitelist = refresh_whitelist(conf['exchange']['pair_whitelist'])
     # List ordered by BaseVolume
-    whitelist = ['BTC_ETH', 'BTC_TKN']
+    whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
     assert whitelist == refreshedwhitelist
 
@@ -117,7 +117,7 @@ def test_refresh_whitelist_dynamic(mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_market_summaries=get_market_summaries)
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['BTC_TKN', 'BTC_ETH']
+    whitelist = ['TKN/BTC', 'ETH/BTC']
     refreshedwhitelist = refresh_whitelist(
         gen_pair_whitelist(conf['stake_currency']))
     assert whitelist == refreshedwhitelist

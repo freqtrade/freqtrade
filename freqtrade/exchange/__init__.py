@@ -45,6 +45,9 @@ def init(config: dict) -> None:
 
     # TODO add check for a list of supported exchanges
 
+    if name not in ccxt.exchanges:
+        raise OperationalException('Exchange {} is not supported'.format(name))
+
     try:
         # exchange_class = Exchanges[name.upper()].value
         _API = getattr(ccxt, name.lower())({
@@ -81,7 +84,7 @@ def validate_pairs(pairs: List[str]) -> None:
     stake_cur = _CONF['stake_currency']
     for pair in pairs:
         # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
-        pair = pair.replace('_', '/')
+        # pair = pair.replace('_', '/')
 
         # TODO: add a support for having coins in BTC/USDT format
         if not pair.endswith(stake_cur):

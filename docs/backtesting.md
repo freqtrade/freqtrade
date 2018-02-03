@@ -117,7 +117,7 @@ A backtesting result will look like that:
 ====================== BACKTESTING REPORT ================================
 pair        buy count    avg profit %    total profit BTC    avg duration
 --------  -----------  --------------  ------------------  --------------
-BTC_ETH            56           -0.67         -0.00075455            62.3
+ETH/BTC            56           -0.67         -0.00075455            62.3
 BTC_LTC            38           -0.48         -0.00036315            57.9
 BTC_ETC            42           -1.15         -0.00096469            67.0
 BTC_DASH           72           -0.62         -0.00089368            39.9

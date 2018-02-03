@@ -42,8 +42,8 @@ def test_init_exception(default_conf):
 
 def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.get_markets = MagicMock(return_value=[
-        'BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT', 'BTC_BCC',
+    api_mock.load_markets = MagicMock(return_value=[
+        'ETH/BTC', 'TKN/BTC', 'TRST/BTC', 'SWT/BTC', 'BCC/BTC',
     ])
     mocker.patch('freqtrade.exchange._API', api_mock)
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
@@ -62,7 +62,7 @@ def test_validate_pairs_not_available(default_conf, mocker):
 def test_validate_pairs_not_compatible(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.get_markets = MagicMock(
-        return_value=['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT'])
+        return_value=['ETH/BTC', 'TKN/BTC', 'TRST/BTC', 'SWT/BTC'])
     default_conf['stake_currency'] = 'ETH'
     mocker.patch('freqtrade.exchange._API', api_mock)
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
@@ -87,38 +87,38 @@ def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_buy_' in buy(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_buy_' in buy(pair='ETH/BTC', rate=200, amount=1)
 
 
 def test_buy_prod(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.buy = MagicMock(
-        return_value='dry_run_buy_{}'.format(randint(0, 10**6)))
+        return_value='dry_run_buy_{}'.format(randint(0, 10 ** 6)))
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_buy_' in buy(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_buy_' in buy(pair='ETH/BTC', rate=200, amount=1)
 
 
 def test_sell_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_sell_' in sell(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_sell_' in sell(pair='ETH/BTC', rate=200, amount=1)
 
 
 def test_sell_prod(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.sell = MagicMock(
-        return_value='dry_run_sell_{}'.format(randint(0, 10**6)))
+        return_value='dry_run_sell_{}'.format(randint(0, 10 ** 6)))
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_sell_' in sell(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_sell_' in sell(pair='ETH/BTC', rate=200, amount=1)
 
 
 def test_get_balance_dry_run(default_conf, mocker):
@@ -180,7 +180,7 @@ def test_get_ticker(default_conf, mocker):
     mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
 
     # retrieve original ticker
-    ticker = get_ticker(pair='BTC_ETH')
+    ticker = get_ticker(pair='ETH/BTC')
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
@@ -191,12 +191,12 @@ def test_get_ticker(default_conf, mocker):
 
     # if not caching the result we should get the same ticker
     # if not fetching a new result we should get the cached ticker
-    ticker = get_ticker(pair='BTC_ETH', refresh=False)
+    ticker = get_ticker(pair='ETH/BTC', refresh=False)
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
     # force ticker refresh
-    ticker = get_ticker(pair='BTC_ETH', refresh=True)
+    ticker = get_ticker(pair='ETH/BTC', refresh=True)
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
@@ -208,7 +208,7 @@ def test_get_ticker_history(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     # retrieve original ticker
-    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
+    ticks = get_ticker_history('ETH/BTC', int(default_conf['ticker_interval']))
     assert ticks == 123
 
     # change the ticker
@@ -217,7 +217,7 @@ def test_get_ticker_history(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     # ensure caching will still return the original ticker
-    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
+    ticks = get_ticker_history('ETH/BTC', int(default_conf['ticker_interval']))
     assert ticks == 123
 
 

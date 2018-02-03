@@ -117,7 +117,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     """
 
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -144,7 +144,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
 
 def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -166,7 +166,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
 
 def test_calc_close_trade_price_exception(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -179,7 +179,7 @@ def test_calc_close_trade_price_exception(limit_buy_order):
 
 def test_update_open_order(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=1.00,
         fee=0.1,
         exchange=Exchanges.BITTREX,
@@ -201,7 +201,7 @@ def test_update_open_order(limit_buy_order):
 
 def test_update_invalid_order(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=1.00,
         fee=0.1,
         exchange=Exchanges.BITTREX,
@@ -213,7 +213,7 @@ def test_update_invalid_order(limit_buy_order):
 
 def test_calc_open_trade_price(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -230,7 +230,7 @@ def test_calc_open_trade_price(limit_buy_order):
 
 def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -251,7 +251,7 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
 
 def test_calc_profit(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -285,7 +285,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
 
 def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange=Exchanges.BITTREX,
@@ -316,7 +316,7 @@ def test_clean_dry_run_db(default_conf):
 
     # Simulate dry_run entries
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
         fee=0.0025,
@@ -327,7 +327,7 @@ def test_clean_dry_run_db(default_conf):
     Trade.session.add(trade)
 
     trade = Trade(
-        pair='BTC_ETC',
+        pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
         fee=0.0025,
@@ -339,7 +339,7 @@ def test_clean_dry_run_db(default_conf):
 
     # Simulate prod entry
     trade = Trade(
-        pair='BTC_ETC',
+        pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
         fee=0.0025,

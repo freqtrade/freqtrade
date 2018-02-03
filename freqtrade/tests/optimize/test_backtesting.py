@@ -21,7 +21,7 @@ def trim_dictlist(dict_list, num):
 def test_generate_text_table():
     results = pd.DataFrame(
         {
-            'currency': ['BTC_ETH', 'BTC_ETH'],
+            'currency': ['ETH/BTC', 'ETH/BTC'],
             'profit_percent': [0.1, 0.2],
             'profit_BTC': [0.2, 0.4],
             'duration': [10, 30],
@@ -29,17 +29,17 @@ def test_generate_text_table():
             'loss': [0, 0]
         }
     )
-    print(generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5))
-    assert generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5) == (
+    print(generate_text_table({'ETH/BTC': {}}, results, 'BTC', 5))
+    assert generate_text_table({'ETH/BTC': {}}, results, 'BTC', 5) == (
         'pair       buy count    avg profit %    total profit BTC    avg duration    profit    loss\n'  # noqa
         '-------  -----------  --------------  ------------------  --------------  --------  ------\n'  # noqa
-        'BTC_ETH            2           15.00          0.60000000           100.0         2       0\n'  # noqa
+        'ETH/BTC            2           15.00          0.60000000           100.0         2       0\n'  # noqa
         'TOTAL              2           15.00          0.60000000           100.0         2       0')  # noqa
 
 
 def test_get_timeframe(default_strategy):
     data = preprocess(optimize.load_data(
-        None, ticker_interval=1, pairs=['BTC_UNITEST']))
+        None, ticker_interval=1, pairs=['UNITTEST/BTC']))
     min_date, max_date = get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
@@ -49,7 +49,7 @@ def test_backtest(default_strategy, default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data(None, ticker_interval=5, pairs=['ETH/BTC'])
     data = trim_dictlist(data, -200)
     results = backtest({'stake_amount': default_conf['stake_amount'],
                         'processed': optimize.preprocess(data),
@@ -63,7 +63,7 @@ def test_backtest_1min_ticker_interval(default_strategy, default_conf, mocker):
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     # Run a backtesting for an exiting 5min ticker_interval
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     results = backtest({'stake_amount': default_conf['stake_amount'],
                         'processed': optimize.preprocess(data),
@@ -74,8 +74,8 @@ def test_backtest_1min_ticker_interval(default_strategy, default_conf, mocker):
 
 def load_data_test(what):
     timerange = ((None, 'line'), None, -100)
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'], timerange=timerange)
-    pair = data['BTC_UNITEST']
+    data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'], timerange=timerange)
+    pair = data['UNITTEST/BTC']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
     # loaded data looks:
@@ -84,7 +84,7 @@ def load_data_test(what):
     #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
     base = 0.001
     if what == 'raise':
-        return {'BTC_UNITEST':
+        return {'UNITTEST/BTC':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
@@ -93,7 +93,7 @@ def load_data_test(what):
                   'L': x * base - 0.0001,
                   'C': x * base} for x in range(0, datalen)]}
     if what == 'lower':
-        return {'BTC_UNITEST':
+        return {'UNITTEST/BTC':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
@@ -103,7 +103,7 @@ def load_data_test(what):
                   'C': 1 - x * base} for x in range(0, datalen)]}
     if what == 'sine':
         hz = 0.1  # frequency
-        return {'BTC_UNITEST':
+        return {'UNITTEST/BTC':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
@@ -133,7 +133,7 @@ def simple_backtest(config, contour, num_results):
 
 def test_backtest2(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data(None, ticker_interval=5, pairs=['ETH/BTC'])
     data = trim_dictlist(data, -200)
     results = backtest({'stake_amount': default_conf['stake_amount'],
                         'processed': optimize.preprocess(data),
@@ -146,7 +146,7 @@ def test_processed(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     dict_of_tickerrows = load_data_test('raise')
     dataframes = optimize.preprocess(dict_of_tickerrows)
-    dataframe = dataframes['BTC_UNITEST']
+    dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
     for col in ['close', 'high', 'low', 'open', 'date',
@@ -162,13 +162,13 @@ def test_backtest_pricecontours(default_conf, mocker, default_strategy):
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, timerange=None):
-    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1, timerange=timerange)
-    pairdata = {'BTC_UNITEST': tickerdata}
+    tickerdata = optimize.load_tickerdata_file(datadir, 'UNITTEST/BTC', 1, timerange=timerange)
+    pairdata = {'UNITTEST/BTC': tickerdata}
     return pairdata
 
 
 def test_backtest_start(default_conf, mocker, caplog):
-    default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.misc.load_config', new=lambda s: default_conf)
     mocker.patch.multiple('freqtrade.optimize',

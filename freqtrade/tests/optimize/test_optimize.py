@@ -10,7 +10,7 @@ from freqtrade.exchange import Bittrex
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, file_dump_json
 
-# Change this if modifying BTC_UNITEST testdatafile
+# Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
 
 
@@ -51,13 +51,13 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/BTC_UNITTEST-30.json'
+    file = 'freqtrade/tests/testdata/UNITTEST_BTC-30.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['BTC_UNITTEST'], ticker_interval=30)
+    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval=30)
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "BTC_ETH", Interval: 30 min') not in caplog.record_tuples
+            'Download the pair: "ETH/BTC", Interval: 30 min') not in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -67,13 +67,13 @@ def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/BTC_ETH-5.json'
+    file = 'freqtrade/tests/testdata/ETH_BTC-5.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['BTC_ETH'], ticker_interval=5)
+    optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval=5)
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "BTC_ETH", Interval: 5 min') not in caplog.record_tuples
+            'Download the pair: "ETH/BTC", Interval: 5 min') not in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -83,13 +83,13 @@ def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/BTC_ETH-1.json'
+    file = 'freqtrade/tests/testdata/ETH_BTC-1.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, ticker_interval=1, pairs=['BTC_ETH'])
+    optimize.load_data(None, ticker_interval=1, pairs=['ETH/BTC'])
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "BTC_ETH", Interval: 1 min') not in caplog.record_tuples
+            'Download the pair: "ETH/BTC", Interval: 1 min') not in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -99,13 +99,13 @@ def test_load_data_with_new_pair_1min(default_conf, ticker_history, mocker, capl
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/BTC_MEME-1.json'
+    file = 'freqtrade/tests/testdata/MEME/BTC-1.json'
     _backup_file(file)
-    optimize.load_data(None, ticker_interval=1, pairs=['BTC_MEME'])
+    optimize.load_data(None, ticker_interval=1, pairs=['MEME/BTC'])
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "BTC_MEME", Interval: 1 min') in caplog.record_tuples
+            'Download the pair: "MEME/BTC", Interval: 1 min') in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -118,10 +118,10 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file1_1 = 'freqtrade/tests/testdata/BTC_MEME-1.json'
-    file1_5 = 'freqtrade/tests/testdata/BTC_MEME-5.json'
-    file2_1 = 'freqtrade/tests/testdata/BTC_CFI-1.json'
-    file2_5 = 'freqtrade/tests/testdata/BTC_CFI-5.json'
+    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1.json'
+    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5.json'
+    file2_1 = 'freqtrade/tests/testdata/CFI_BTC-1.json'
+    file2_5 = 'freqtrade/tests/testdata/CFI_BTC-5.json'
 
     _backup_file(file1_1)
     _backup_file(file1_5)
@@ -160,8 +160,8 @@ def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
-    file1_1 = 'freqtrade/tests/testdata/BTC_MEME-1.json'
-    file1_5 = 'freqtrade/tests/testdata/BTC_MEME-5.json'
+    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1.json'
+    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5.json'
     _backup_file(file1_1)
     _backup_file(file1_5)
 
@@ -180,7 +180,7 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     # Download a 1 min ticker file
-    file1 = 'freqtrade/tests/testdata/BTC_XEL-1.json'
+    file1 = 'freqtrade/tests/testdata/XEL_BTC-1.json'
     _backup_file(file1)
     download_backtesting_testdata(None, pair="BTC-XEL", interval=1)
     assert os.path.isfile(file1) is True
@@ -205,12 +205,12 @@ def test_download_backtesting_testdata2(mocker):
 
 def test_load_tickerdata_file():
     # 7 does not exist in either format.
-    assert not load_tickerdata_file(None, 'BTC_UNITEST', 7)
+    assert not load_tickerdata_file(None, 'UNITTEST/BTC', 7)
     # 1 exists only as a .json
-    tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tickerdata = load_tickerdata_file(None, 'UNITTEST/BTC', 1)
     assert _BTC_UNITTEST_LENGTH == len(tickerdata)
     # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
-    tickerdata = load_tickerdata_file(None, 'BTC_UNITEST', 8)
+    tickerdata = load_tickerdata_file(None, 'UNITTEST/BTC', 8)
     assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
@@ -223,14 +223,14 @@ def test_init(default_conf, mocker):
 
 def test_tickerdata_to_dataframe():
     timerange = ((None, 'line'), None, -100)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', 1, timerange=timerange)
+    tickerlist = {'UNITTEST/BTC': tick}
     data = optimize.tickerdata_to_dataframe(tickerlist)
-    assert len(data['BTC_UNITEST']) == 100
+    assert len(data['UNITTEST/BTC']) == 100
 
 
 def test_trim_tickerlist():
-    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
+    with open('freqtrade/tests/testdata/ETH_BTC-1.json') as data_file:
         ticker_list = json.load(data_file)
     ticker_list_len = len(ticker_list)
 

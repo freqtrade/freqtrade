@@ -22,7 +22,7 @@ class Exchange(ABC):
     def buy(self, pair: str, rate: float, amount: float) -> str:
         """
         Places a limit buy order.
-        :param pair: Pair as str, format: BTC_ETH
+        :param pair: Pair as str, format: ETH/BTC
         :param rate: Rate limit for order
         :param amount: The amount to purchase
         :return: order_id of the placed buy order
@@ -32,7 +32,7 @@ class Exchange(ABC):
     def sell(self, pair: str, rate: float, amount: float) -> str:
         """
         Places a limit sell order.
-        :param pair: Pair as str, format: BTC_ETH
+        :param pair: Pair as str, format: ETH/BTC
         :param rate: Rate limit for order
         :param amount: The amount to sell
         :return: order_id of the placed sell order
@@ -65,7 +65,7 @@ class Exchange(ABC):
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         """
         Gets ticker for given pair.
-        :param pair: Pair as str, format: BTC_ETC
+        :param pair: Pair as str, format: ETC/BTC
         :param refresh: Shall we query a new value or a cached value is enough
         :return: dict, format: {
             'bid': float,
@@ -78,7 +78,7 @@ class Exchange(ABC):
     def get_ticker_history(self, pair: str, tick_interval: int) -> List[Dict]:
         """
         Gets ticker history for given pair.
-        :param pair: Pair as str, format: BTC_ETC
+        :param pair: Pair as str, format: ETC/BTC
         :param tick_interval: ticker interval in minutes
         :return: list, format: [
             {
@@ -122,7 +122,7 @@ class Exchange(ABC):
     def get_pair_detail_url(self, pair: str) -> str:
         """
         Returns the market detail url for the given pair.
-        :param pair: Pair as str, format: BTC_ETC
+        :param pair: Pair as str, format: ETC/BTC
         :return: URL as str
         """
 

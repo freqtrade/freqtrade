@@ -87,7 +87,7 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
 def get_signal(pair: str, interval: int) -> (bool, bool):
     """
     Calculates current signal based several technical analysis indicators
-    :param pair: pair in format BTC_ANT or BTC-ANT
+    :param pair: pair in format ANT/BTC
     :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
     """
     ticker_hist = get_ticker_history(pair, interval)
