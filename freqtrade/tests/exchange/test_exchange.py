@@ -272,10 +272,10 @@ def test_get_order(default_conf, mocker):
 def test_get_name(default_conf, mocker):
     mocker.patch('freqtrade.exchange.validate_pairs',
                  side_effect=lambda s: True)
-    default_conf['exchange']['name'] = 'bittrex'
+    default_conf['exchange']['name'] = 'binance'
     init(default_conf)
 
-    assert get_name() == 'Bittrex'
+    assert get_name() == 'Binance'
 
 
 def test_get_fee(default_conf, mocker):

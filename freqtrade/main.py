@@ -429,7 +429,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         fee=exchange.get_fee(),
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
-        exchange=exchange.get_name().upper(),
+        exchange=exchange.get_name().lower(),
         open_order_id=order_id
     )
     Trade.session.add(trade)

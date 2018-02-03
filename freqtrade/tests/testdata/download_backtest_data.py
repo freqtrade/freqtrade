@@ -3,9 +3,9 @@
 """This script generate json data from bittrex"""
 import sys
 import json
+import ccxt
 
 from freqtrade import exchange
-from freqtrade.exchange import Bittrex
 from freqtrade import misc
 
 parser = misc.common_args_parser('download utility')
@@ -28,7 +28,7 @@ PAIRS = list(set(PAIRS))
 print('About to download pairs:', PAIRS)
 
 # Init Bittrex exchange
-exchange._API = Bittrex({'key': '', 'secret': ''})
+exchange._API = ccxt.bittrex()
 
 for pair in PAIRS:
     for tick_interval in TICKER_INTERVALS:

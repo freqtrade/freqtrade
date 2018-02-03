@@ -296,7 +296,7 @@ def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
     trade = Trade(
         pair='ETH/BTC',
         open_rate=1,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=1,
         fee=0.0,

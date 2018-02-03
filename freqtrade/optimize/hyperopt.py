@@ -17,6 +17,7 @@ import talib.abstract as ta
 from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
+import ccxt
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 # Monkey patch config
@@ -448,7 +449,7 @@ def start(args):
 
     TOTAL_TRIES = args.epochs
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance()
 
     # Initialize logger
     logging.basicConfig(

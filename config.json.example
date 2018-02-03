@@ -9,7 +9,7 @@
         "ask_last_balance": 0.0
     },
     "exchange": {
-        "name": "bittrex",
+        "name": "binance",
         "key": "your_echange_key",
         "secret": "your_echange_secret",
         "pair_whitelist": [

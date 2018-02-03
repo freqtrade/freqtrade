@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import copy
 import logging
+import ccxt
 from unittest.mock import MagicMock
 
 import arrow
@@ -81,7 +82,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
+                          #get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))
@@ -99,7 +100,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     assert trade.stake_amount == default_conf['stake_amount']
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'binance'
     assert trade.open_rate == 0.00001099
     assert trade.amount == 90.99181073703367
 
@@ -112,7 +113,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
+                          #get_wallet_health=health,
                           buy=MagicMock(side_effect=requests.exceptions.RequestException))
     init(default_conf, create_engine('sqlite://'))
     result = _process(interval=int(default_conf['ticker_interval']))
@@ -128,7 +129,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
+                          #get_wallet_health=health,
                           buy=MagicMock(side_effect=OperationalException))
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
@@ -146,7 +147,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
+                          #get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))
@@ -181,7 +182,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     assert trade.stake_amount == 0.001
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'binance'
 
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
@@ -455,7 +456,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     trade_buy = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -504,7 +505,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     trade_sell = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -553,7 +554,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     trade_buy = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,

@@ -44,7 +44,7 @@ def default_conf():
             "ask_last_balance": 0.0
         },
         "exchange": {
-            "name": "bittrex",
+            "name": "binance",
             "enabled": True,
             "key": "key",
             "secret": "secret",
