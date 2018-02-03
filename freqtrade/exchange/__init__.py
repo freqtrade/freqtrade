@@ -16,7 +16,7 @@ from freqtrade.exchange.interface import Exchange
 logger = logging.getLogger(__name__)
 
 # Current selected exchange
-_API: Exchange = None
+_API: ccxt.Exchange = None
 _CONF: dict = {}
 
 # Holds all open sell orders for dry_run
@@ -49,7 +49,6 @@ def init(config: dict) -> None:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
     try:
-        # exchange_class = Exchanges[name.upper()].value
         _API = getattr(ccxt, name.lower())({
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
@@ -72,12 +71,9 @@ def validate_pairs(pairs: List[str]) -> None:
     :return: None
     """
 
-    if not _API.markets:
-        _API.load_markets()
-
     try:
-        markets = _API.markets
-    except requests.exceptions.RequestException as e:
+        markets = _API.load_markets()
+    except ccxt.BaseError as e:
         logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
         return
 
@@ -93,7 +89,7 @@ def validate_pairs(pairs: List[str]) -> None:
             )
         if pair not in markets:
             raise OperationalException(
-                'Pair {} is not available at {}'.format(pair, _API.name.lower()))
+                'Pair {} is not available at {}'.format(pair, _API.id.lower()))
 
 
 def buy(pair: str, rate: float, amount: float) -> str:
@@ -136,7 +132,7 @@ def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
-    return _API.fetch_balance()[currency]
+    return _API.fetch_balance()[currency]['free']
 
 
 def get_balances():
@@ -147,12 +143,14 @@ def get_balances():
 
 
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
-    return _API.get_ticker(pair, refresh)
+    # TODO: add caching
+    return _API.fetch_ticker(pair)
 
 
 @cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
-    return _API.get_ticker_history(pair, tick_interval)
+    # TODO: check if exchange supports fetch_ohlcv
+    return _API.fetch_ohlcv(pair, timeframe=tick_interval)
 
 
 def cancel_order(order_id: str) -> None:
@@ -190,7 +188,7 @@ def get_name() -> str:
 
 
 def get_fee() -> float:
-    return _API.fee
+    return _API.calculate_fee('ETH/BTC', '', '', 1, 1)['rate']
 
 
 def get_wallet_health() -> List[Dict]:
