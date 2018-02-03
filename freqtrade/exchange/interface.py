@@ -156,17 +156,3 @@ class Exchange(ABC):
             ...
         ]
         """
-
-    @abstractmethod
-    def get_wallet_health(self) -> List[Dict]:
-        """
-        Returns a list of all wallet health information
-        :return: list, format: [
-            {
-                'Currency': str,
-                'IsActive': bool,
-                'LastChecked': str,
-                'Notice': str
-            },
-            ...
-        """

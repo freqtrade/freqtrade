@@ -175,8 +175,8 @@ def get_pair_detail_url(pair: str) -> str:
     return _API.get_pair_detail_url(pair)
 
 
-def get_markets() -> List[str]:
-    return _API.get_markets()
+def get_markets() -> List[dict]:
+    return _API.fetch_markets()
 
 
 def get_market_summaries() -> List[Dict]:
@@ -189,15 +189,3 @@ def get_name() -> str:
 
 def get_fee() -> float:
     return _API.calculate_fee('ETH/BTC', '', '', 1, 1)['rate']
-
-
-def get_wallet_health() -> List[Dict]:
-    data =  _API.request('Currencies/GetWalletHealth', api='v2')
-    if not data['success']:
-        raise OperationalException('{}'.format(data['message']))
-    return [{
-        'Currency': entry['Health']['Currency'],
-        'IsActive': entry['Health']['IsActive'],
-        'LastChecked': entry['Health']['LastChecked'],
-        'Notice': entry['Currency'].get('Notice'),
-    } for entry in data['result']]

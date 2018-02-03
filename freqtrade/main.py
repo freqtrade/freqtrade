@@ -33,21 +33,23 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     :return: the list of pairs the user wants to trade without the one unavailable or black_listed
     """
     sanitized_whitelist = whitelist
-    health = exchange.get_wallet_health()
+    markets = exchange.get_markets()
+
+    markets = [m for m in markets if m['quote'] == _CONF['stake_currency']]
     known_pairs = set()
-    for status in health:
-        pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+    for market in markets:
+        pair = market['symbol']
         # pair is not int the generated dynamic market, or in the blacklist ... ignore it
         if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
         # else the pair is valid
         known_pairs.add(pair)
         # Market is not active
-        if not status['IsActive']:
+        if not market['active']:
             sanitized_whitelist.remove(pair)
             logger.info(
-                'Ignoring %s from whitelist (reason: %s).',
-                pair, status.get('Notice') or 'wallet is not active'
+                'Ignoring %s from whitelist. Market is not active.',
+                pair
             )
 
     # We need to remove pairs that are unknown
