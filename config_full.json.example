@@ -42,8 +42,8 @@
     },
     "telegram": {
         "enabled": true,
-        "token": "your_instagram_token",
-        "chat_id": "your_instagram_chat_id"
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id"
     },
     "initial_state": "running",
     "internals": {
