@@ -2,6 +2,7 @@
 
 from freqtrade.main import refresh_whitelist, gen_pair_whitelist
 
+
 # whitelist, blacklist, filtering, all of that will
 # eventually become some rules to run on a generic ACL engine
 # perhaps try to anticipate that by using some python package
@@ -25,59 +26,78 @@ def whitelist_conf():
     }
 
 
-def get_market_summaries():
-    return [{
-        'MarketName': 'BTC-TKN',
-        'High': 0.00000919,
-        'Low': 0.00000820,
-        'Volume': 74339.61396015,
-        'Last': 0.00000820,
-        'BaseVolume': 1664,
-        'TimeStamp': '2014-07-09T07:19:30.15',
-        'Bid': 0.00000820,
-        'Ask': 0.00000831,
-        'OpenBuyOrders': 15,
-        'OpenSellOrders': 15,
-        'PrevDay': 0.00000821,
-        'Created': '2014-03-20T06:00:00',
-        'DisplayMarketName': ''
-    }, {
-        'MarketName': 'BTC-ETH',
-        'High': 0.00000072,
-        'Low': 0.00000001,
-        'Volume': 166340678.42280999,
-        'Last': 0.00000005,
-        'BaseVolume': 42,
-        'TimeStamp': '2014-07-09T07:21:40.51',
-        'Bid': 0.00000004,
-        'Ask': 0.00000005,
-        'OpenBuyOrders': 18,
-        'OpenSellOrders': 18,
-        'PrevDay': 0.00000002,
-        'Created': '2014-05-30T07:57:49.637',
-        'DisplayMarketName': ''
-    }, {
-        'MarketName': 'BTC-BLK',
-        'High': 0.00000072,
-        'Low': 0.00000001,
-        'Volume': 166340678.42280999,
-        'Last': 0.00000005,
-        'BaseVolume': 3,
-        'TimeStamp': '2014-07-09T07:21:40.51',
-        'Bid': 0.00000004,
-        'Ask': 0.00000005,
-        'OpenBuyOrders': 18,
-        'OpenSellOrders': 18,
-        'PrevDay': 0.00000002,
-        'Created': '2014-05-30T07:57:49.637',
-        'DisplayMarketName': ''
-    }]
-
-
 def get_markets():
-    return [{'symbol': 'ETH/BTC', 'base': 'ETH', 'quote':'BTC', 'active': True},
-            {'symbol': 'TKN/BTC', 'base': 'TKN', 'quote':'BTC', 'active': True},
-            {'symbol': 'BLK/BTC', 'base': 'BLK', 'quote':'BTC', 'active': True}]
+    return [
+        {
+            'id': 'ethbtc',
+            'symbol': 'ETH/BTC',
+            'base': 'ETH',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
+        },
+        {
+            'id': 'tknbtc',
+            'symbol': 'TKN/BTC',
+            'base': 'TKN',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
+        },
+        {
+            'id': 'blkbtc',
+            'symbol': 'BLK/BTC',
+            'base': 'BLK',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
+        }
+    ]
 
 
 def get_markets_empty():
@@ -114,8 +134,6 @@ def test_refresh_whitelist_dynamic(mocker):
     mocker.patch.dict('freqtrade.main._CONF', conf)
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_markets=get_markets)
-    mocker.patch.multiple('freqtrade.main.exchange',
-                          get_market_summaries=get_market_summaries)
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = ['TKN/BTC', 'ETH/BTC']
     refreshedwhitelist = refresh_whitelist(

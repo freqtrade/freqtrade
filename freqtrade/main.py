@@ -469,13 +469,13 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :return: List of pairs
     """
     
-    summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].endswith(base_currency)),
+    pairs = sorted(
+        (s['symbol'] for s in exchange.get_markets() if s['quote'] == base_currency),
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
 
-    return [s['MarketName'].replace('-', '_') for s in summaries]
+    return pairs
 
 
 def cleanup() -> None:

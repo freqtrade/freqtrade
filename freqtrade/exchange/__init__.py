@@ -171,16 +171,13 @@ def get_order(order_id: str) -> Dict:
     return _API.get_order(order_id)
 
 
+# TODO: reimplement, not part of ccxt
 def get_pair_detail_url(pair: str) -> str:
-    return _API.get_pair_detail_url(pair)
+    return ""
 
 
 def get_markets() -> List[dict]:
     return _API.fetch_markets()
-
-
-def get_market_summaries() -> List[Dict]:
-    return _API.public_get_marketsummaries()['result']
 
 
 def get_name() -> str:
