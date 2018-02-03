@@ -3,10 +3,10 @@
 import os
 import json
 import logging
+import ccxt
 import uuid
 from shutil import copyfile
 from freqtrade import exchange, optimize
-from freqtrade.exchange import Bittrex
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, file_dump_json
 
@@ -49,7 +49,7 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     file = 'freqtrade/tests/testdata/UNITTEST_BTC-30.json'
     _backup_file(file, copy_file=True)
@@ -65,7 +65,7 @@ def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     file = 'freqtrade/tests/testdata/ETH_BTC-5.json'
     _backup_file(file, copy_file=True)
@@ -81,7 +81,7 @@ def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     file = 'freqtrade/tests/testdata/ETH_BTC-1.json'
     _backup_file(file, copy_file=True)
@@ -97,7 +97,7 @@ def test_load_data_with_new_pair_1min(default_conf, ticker_history, mocker, capl
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     file = 'freqtrade/tests/testdata/MEME/BTC-1.json'
     _backup_file(file)
@@ -116,7 +116,7 @@ def test_testdata_path():
 def test_download_pairs(default_conf, ticker_history, mocker):
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1.json'
     file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5.json'
@@ -158,7 +158,7 @@ def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
     mocker.patch('freqtrade.optimize.__init__.download_backtesting_testdata',
                  side_effect=BaseException('File Error'))
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1.json'
     file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5.json'
@@ -177,7 +177,7 @@ def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
 def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     # Download a 1 min ticker file
     file1 = 'freqtrade/tests/testdata/XEL_BTC-1.json'
