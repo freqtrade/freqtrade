@@ -33,6 +33,7 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     :return dict OR empty if unsuccesful
     """
     path = make_testdata_path(datadir)
+    pair = pair.replace('/', '_')
     file = '{abspath}/{pair}-{ticker_interval}.json'.format(
         abspath=path,
         pair=pair,
@@ -135,7 +136,7 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         interval=interval,
     ))
 
-    filepair = pair.replace("-", "_")
+    filepair = pair.replace("/", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
         pair=filepair,
         interval=interval,

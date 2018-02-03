@@ -44,13 +44,13 @@ def test_returns_latest_buy_signal(mocker):
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH', 5) == (True, False)
+    assert get_signal('ETH/BTC', 5) == (True, False)
 
     mocker.patch(
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH', 5) == (False, True)
+    assert get_signal('ETH/BTC', 5) == (False, True)
 
 
 def test_returns_latest_sell_signal(mocker):
@@ -59,13 +59,13 @@ def test_returns_latest_sell_signal(mocker):
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'sell': 1, 'buy': 0, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH', 5) == (False, True)
+    assert get_signal('ETH/BTC', 5) == (False, True)
 
     mocker.patch(
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH', 5) == (True, False)
+    assert get_signal('ETH/BTC', 5) == (True, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
@@ -108,7 +108,7 @@ def test_get_signal_handles_exceptions(mocker):
     mocker.patch('freqtrade.analyze.analyze_ticker',
                  side_effect=Exception('invalid ticker history '))
 
-    assert get_signal('BTC-ETH', 5) == (False, False)
+    assert get_signal('ETH/BTC', 5) == (False, False)
 
 
 def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
