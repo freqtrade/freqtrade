@@ -34,7 +34,7 @@ logger = Logger(name="Graph profits").get_logger()
 
 
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
-# data:: ["BTC_ETH", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
+# data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
 def make_profit_array(
         data: List, px: int, min_date: int,
         interval: int, filter_pairs: Optional[List] = None) -> np.ndarray:

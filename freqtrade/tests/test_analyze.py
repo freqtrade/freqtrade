@@ -74,7 +74,7 @@ def test_returns_latest_buy_signal(mocker):
             return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
         )
     )
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (True, False)
+    assert _ANALYZE.get_signal('ETH/BTC', 5) == (True, False)
 
     mocker.patch.multiple(
         'freqtrade.analyze.Analyze',
@@ -82,7 +82,7 @@ def test_returns_latest_buy_signal(mocker):
             return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
         )
     )
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (False, True)
+    assert _ANALYZE.get_signal('ETH/BTC', 5) == (False, True)
 
 
 def test_returns_latest_sell_signal(mocker):
@@ -94,7 +94,7 @@ def test_returns_latest_sell_signal(mocker):
         )
     )
 
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (False, True)
+    assert _ANALYZE.get_signal('ETH/BTC', 5) == (False, True)
 
     mocker.patch.multiple(
         'freqtrade.analyze.Analyze',
@@ -102,7 +102,7 @@ def test_returns_latest_sell_signal(mocker):
             return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
         )
     )
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (True, False)
+    assert _ANALYZE.get_signal('ETH/BTC', 5) == (True, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
@@ -166,7 +166,7 @@ def test_get_signal_handles_exceptions(mocker):
         )
     )
 
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (False, False)
+    assert _ANALYZE.get_signal('ETH/BTC', 5) == (False, False)
 
 
 def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
@@ -188,7 +188,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     analyze = Analyze(default_conf)
 
     timerange = ((None, 'line'), None, -100)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', 1, timerange=timerange)
+    tickerlist = {'UNITTEST/BTC': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)
-    assert len(data['BTC_UNITEST']) == 100
+    assert len(data['UNITTEST/BTC']) == 100

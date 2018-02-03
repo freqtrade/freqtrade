@@ -262,9 +262,9 @@ class RPC(object):
                 currency["Rate"] = 1.0
             else:
                 if coin == 'USDT':
-                    currency["Rate"] = 1.0 / exchange.get_ticker('USDT_BTC', False)['bid']
+                    currency["Rate"] = 1.0 / exchange.get_ticker('BTC/USDT', False)['bid']
                 else:
-                    currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
+                    currency["Rate"] = exchange.get_ticker(coin + '/BTC', False)['bid']
             currency['BTC'] = currency["Rate"] * currency["Balance"]
             total = total + currency['BTC']
             output.append(

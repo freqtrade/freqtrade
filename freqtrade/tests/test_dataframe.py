@@ -6,7 +6,7 @@ from freqtrade.analyze import Analyze
 from freqtrade.optimize import load_data
 from freqtrade.strategy.strategy import Strategy
 
-_pairs = ['BTC_ETH']
+_pairs = ['ETH/BTC']
 
 
 def load_dataframe_pair(pairs):

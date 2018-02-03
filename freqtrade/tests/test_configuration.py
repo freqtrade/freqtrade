@@ -34,7 +34,7 @@ def test_load_config_invalid_pair(default_conf) -> None:
     Test the configuration validator with an invalid PAIR format
     """
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('BTC-ETH')
+    conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         configuration = Configuration([])
@@ -232,7 +232,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--strategy', 'default_strategy',
         '--datadir', '/foo/bar',
         'backtesting',
-        '--ticker-interval', '1',
+        '--ticker-interval', '1m',
         '--live',
         '--realistic-simulation',
         '--refresh-pairs-cached',

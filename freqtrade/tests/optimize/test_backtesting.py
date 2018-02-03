@@ -34,8 +34,8 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what):
     timerange = ((None, 'line'), None, -100)
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'], timerange=timerange)
-    pair = data['BTC_UNITEST']
+    data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'], timerange=timerange)
+    pair = data['UNITTEST/BTC']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
     # loaded data looks:
@@ -44,7 +44,7 @@ def load_data_test(what):
     #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
     base = 0.001
     if what == 'raise':
-        return {'BTC_UNITEST':
+        return {'UNITTEST/BTC':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
@@ -53,7 +53,7 @@ def load_data_test(what):
                   'L': x * base - 0.0001,
                   'C': x * base} for x in range(0, datalen)]}
     if what == 'lower':
-        return {'BTC_UNITEST':
+        return {'UNITTEST/BTC':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
@@ -63,7 +63,7 @@ def load_data_test(what):
                   'C': 1 - x * base} for x in range(0, datalen)]}
     if what == 'sine':
         hz = 0.1  # frequency
-        return {'BTC_UNITEST':
+        return {'UNITTEST/BTC':
                 [{'T': pair[x]['T'],  # Keep old dates
                   'V': pair[x]['V'],  # Keep old volume
                   'BV': pair[x]['BV'],  # keep too
@@ -94,8 +94,8 @@ def simple_backtest(config, contour, num_results) -> None:
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, timerange=None):
-    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1, timerange=timerange)
-    pairdata = {'BTC_UNITEST': tickerdata}
+    tickerdata = optimize.load_tickerdata_file(datadir, 'UNITTEST/BTC', 1, timerange=timerange)
+    pairdata = {'UNITTEST/BTC': tickerdata}
     return pairdata
 
 
@@ -107,7 +107,7 @@ def _load_pair_as_ticks(pair, tickfreq):
 
 
 # FIX: fixturize this?
-def _make_backtest_conf(conf=None, pair='BTC_UNITEST', record=None):
+def _make_backtest_conf(conf=None, pair='UNITTEST/BTC', record=None):
     data = optimize.load_data(None, ticker_interval=8, pairs=[pair])
     data = trim_dictlist(data, -200)
     return {
@@ -325,17 +325,17 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     """
 
     timerange = ((None, 'line'), None, -100)
-    tick = optimize.load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', 1, timerange=timerange)
+    tickerlist = {'UNITTEST/BTC': tick}
 
     backtesting = _BACKTESTING
     data = backtesting.tickerdata_to_dataframe(tickerlist)
-    assert len(data['BTC_UNITEST']) == 100
+    assert len(data['UNITTEST/BTC']) == 100
 
     # Load Analyze to compare the result between Backtesting function and Analyze are the same
     analyze = Analyze(default_conf)
     data2 = analyze.tickerdata_to_dataframe(tickerlist)
-    assert data['BTC_UNITEST'].equals(data2['BTC_UNITEST'])
+    assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
 
 def test_get_timeframe() -> None:
@@ -348,7 +348,7 @@ def test_get_timeframe() -> None:
         optimize.load_data(
             None,
             ticker_interval=1,
-            pairs=['BTC_UNITEST']
+            pairs=['UNITTEST/BTC']
         )
     )
     min_date, max_date = backtesting.get_timeframe(data)
@@ -364,7 +364,7 @@ def test_generate_text_table():
 
     results = pd.DataFrame(
         {
-            'currency': ['BTC_ETH', 'BTC_ETH'],
+            'currency': ['ETH/BTC', 'ETH/BTC'],
             'profit_percent': [0.1, 0.2],
             'profit_BTC': [0.2, 0.4],
             'duration': [10, 30],
@@ -378,13 +378,13 @@ def test_generate_text_table():
         'total profit BTC    avg duration    profit    loss\n'
         '-------  -----------  --------------  '
         '------------------  --------------  --------  ------\n'
-        'BTC_ETH            2           15.00          '
+        'ETH/BTC            2           15.00          '
         '0.60000000            20.0         2       0\n'
         'TOTAL              2           15.00          '
         '0.60000000            20.0         2       0'
     )
 
-    assert backtesting._generate_text_table(data={'BTC_ETH': {}}, results=results) == result_str
+    assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
@@ -405,7 +405,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     )
 
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     conf['ticker_interval'] = 1
     conf['live'] = False
     conf['datadir'] = None
@@ -432,7 +432,7 @@ def test_backtest(default_conf) -> None:
     """
     backtesting = _BACKTESTING
 
-    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data(None, ticker_interval=5, pairs=['ETH/BTC'])
     data = trim_dictlist(data, -200)
     results = backtesting.backtest(
         {
@@ -452,7 +452,7 @@ def test_backtest_1min_ticker_interval(default_conf) -> None:
     backtesting = _BACKTESTING
 
     # Run a backtesting for an exiting 5min ticker_interval
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     results = backtesting.backtest(
         {
@@ -473,7 +473,7 @@ def test_processed() -> None:
 
     dict_of_tickerrows = load_data_test('raise')
     dataframes = backtesting.tickerdata_to_dataframe(dict_of_tickerrows)
-    dataframe = dataframes['BTC_UNITEST']
+    dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
     for col in ['close', 'high', 'low', 'open', 'date',
@@ -522,7 +522,7 @@ def test_backtest_only_sell(default_conf):
 
 
 def test_backtest_alternate_buy_sell(default_conf):
-    backtest_conf = _make_backtest_conf(conf=default_conf, pair='BTC_UNITEST')
+    backtest_conf = _make_backtest_conf(conf=default_conf, pair='UNITTEST/BTC')
     results = _run_backtest_1(_trend_alternate, backtest_conf)
     assert len(results) == 3
 
@@ -536,7 +536,7 @@ def test_backtest_record(default_conf, mocker):
     )
     backtest_conf = _make_backtest_conf(
         conf=default_conf,
-        pair='BTC_UNITEST',
+        pair='UNITTEST/BTC',
         record="trades"
     )
     results = _run_backtest_1(_trend_alternate, backtest_conf)
@@ -546,11 +546,11 @@ def test_backtest_record(default_conf, mocker):
     records = records[0]
     # Ensure records are of correct type
     assert len(records) == 3
-    # ('BTC_UNITEST', 0.00331158, '1510684320', '1510691700', 0, 117)
+    # ('UNITTEST/BTC', 0.00331158, '1510684320', '1510691700', 0, 117)
     # Below follows just a typecheck of the schema/type of trade-records
     oix = None
     for (pair, profit, date_buy, date_sell, buy_index, dur) in records:
-        assert pair == 'BTC_UNITEST'
+        assert pair == 'UNITTEST/BTC'
         isinstance(profit, float)
         # FIX: buy/sell should be converted to ints
         isinstance(date_buy, str)
@@ -563,7 +563,7 @@ def test_backtest_record(default_conf, mocker):
 
 
 def test_backtest_start_live(default_conf, mocker, caplog):
-    default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     mocker.patch('freqtrade.exchange.get_ticker_history',
                  new=lambda n, i: _load_pair_as_ticks(n, i))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
