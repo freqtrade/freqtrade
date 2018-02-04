@@ -135,11 +135,18 @@ def get_balance(currency: str) -> float:
     return _API.fetch_balance()[currency]['free']
 
 
-def get_balances():
+def get_balances() -> dict:
     if _CONF['dry_run']:
-        return []
+        return {}
 
-    return _API.fetch_balance()
+    balances = _API.fetch_balance()
+    # Remove additional info from ccxt results
+    balances.pop("info", None)
+    balances.pop("free", None)
+    balances.pop("total", None)
+    balances.pop("used", None)
+
+    return balances
 
 
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:

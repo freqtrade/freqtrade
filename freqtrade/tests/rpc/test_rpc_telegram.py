@@ -639,35 +639,31 @@ def test_stop_handle_already_stopped(default_conf, update, mocker):
 
 
 def test_balance_handle(default_conf, update, mocker):
-
-    mock_balance = [{
-        'Currency': 'BTC',
-        'Balance': 10.0,
-        'Available': 12.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }, {
-        'Currency': 'ETH',
-        'Balance': 0.0,
-        'Available': 0.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }, {
-        'Currency': 'USDT',
-        'Balance': 10000.0,
-        'Available': 0.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }, {
-        'Currency': 'LTC',
-        'Balance': 10.0,
-        'Available': 10.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }]
+    mock_balance = {
+        'BTC': {
+            'total': 12.0,
+            'free': 12.0,
+            'used': 0.0,
+        },
+        'ETH': {
+            'total': 0.0,
+            'free': 0.0,
+            'used': 0.0,
+        },
+        'USDT': {
+            'total': 10000.0,
+            'free': 0.0,
+            'used': 0.0,
+        },
+        'LTC': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0,
+        }
+    }
 
     def mock_ticker(symbol, refresh):
-        if symbol == 'USDT_BTC':
+        if symbol == 'BTC/USDT':
             return {
                 'bid': 10000.00,
                 'ask': 10000.00,
@@ -701,7 +697,7 @@ def test_balance_handle(default_conf, update, mocker):
     assert '*Currency*: USDT' in result
     assert 'Balance' in result
     assert 'Est. BTC' in result
-    assert '*BTC*:  12.00000000' in result
+    assert '*BTC*:  14.00000000' in result
 
 
 def test_zero_balance_handle(default_conf, update, mocker):
@@ -712,7 +708,7 @@ def test_zero_balance_handle(default_conf, update, mocker):
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
-                          get_balances=MagicMock(return_value=[]))
+                          get_balances=MagicMock(return_value={}))
     _balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1

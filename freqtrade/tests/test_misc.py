@@ -161,7 +161,7 @@ def test_load_config(default_conf, mocker):
 
 def test_load_config_invalid_pair(default_conf, mocker):
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('ETH/BTC')
+    conf['exchange']['pair_whitelist'].append('ETH_BTC')  # Should have format ETH/BTC
     mocker.patch(
         'freqtrade.misc.open',
         mocker.mock_open(

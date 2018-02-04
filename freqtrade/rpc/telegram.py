@@ -94,6 +94,7 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     :param command_handler: Telegram CommandHandler
     :return: decorated function
     """
+
     def wrapper(*args, **kwargs):
         update = kwargs.get('update') or args[1]
 
@@ -108,6 +109,7 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
             return command_handler(*args, **kwargs)
         except BaseException:
             logger.exception('Exception occurred within Telegram module')
+
     return wrapper
 
 
@@ -238,9 +240,9 @@ def _daily(bot: Bot, update: Update) -> None:
         profitday = today - timedelta(days=day)
         trades = Trade.query \
             .filter(Trade.is_open.is_(False)) \
-            .filter(Trade.close_date >= profitday)\
-            .filter(Trade.close_date < (profitday + timedelta(days=1)))\
-            .order_by(Trade.close_date)\
+            .filter(Trade.close_date >= profitday) \
+            .filter(Trade.close_date < (profitday + timedelta(days=1))) \
+            .order_by(Trade.close_date) \
             .all()
         curdayprofit = sum(trade.calc_profit() for trade in trades)
         profit_days[profitday] = {
@@ -385,42 +387,42 @@ def _balance(bot: Bot, update: Update) -> None:
     Returns current account balance per crypto
     """
     output = ''
-    balances = [
-        c for c in exchange.get_balances()
-        if c['Balance'] or c['Available'] or c['Pending']
-    ]
+    balances = {
+        k: c for k, c in exchange.get_balances().items()
+        if c['total'] or c['free'] or c['used']
+    }
     if not balances:
         send_msg('`All balances are zero.`')
         return
 
     total = 0.0
-    for currency in balances:
-        coin = currency['Currency']
+    for coin, balance in balances.items():
         if coin == 'BTC':
-            currency["Rate"] = 1.0
+            balance["rate"] = 1.0
         else:
             if coin == 'USDT':
-                currency["Rate"] = 1.0 / exchange.get_ticker('BTC/USDT', False)['bid']
+                balance["rate"] = 1.0 / exchange.get_ticker('BTC/USDT', False)['bid']
             else:
-                currency["Rate"] = exchange.get_ticker(coin + '/BTC', False)['bid']
-        currency['BTC'] = currency["Rate"] * currency["Balance"]
-        total = total + currency['BTC']
-        output += """*Currency*: {Currency}
-*Available*: {Available}
-*Balance*: {Balance}
-*Pending*: {Pending}
-*Est. BTC*: {BTC: .8f}
-
-""".format(**currency)
+                balance["rate"] = exchange.get_ticker(coin + '/BTC', False)['bid']
+        balance['BTCequiv'] = balance["rate"] * balance["total"]
+        balance['coin'] = coin
+        total = total + balance['BTCequiv']
+        output += """*Currency*: {coin}
+                    *Available*: {free}
+                    *Balance*: {total}
+                    *Pending*: {used}
+                    *Est. BTC*: {BTCequiv: .8f}
+                    
+                    """.format(**balance)
 
     symbol = _CONF['fiat_display_currency']
     value = _FIAT_CONVERT.convert_amount(
         total, 'BTC', symbol
     )
     output += """*Estimated Value*:
-*BTC*: {0: .8f}
-*{1}*: {2: .2f}
-""".format(total, symbol, value)
+                *BTC*: {0: .8f}
+                *{1}*: {2: .2f}
+                """.format(total, symbol, value)
     send_msg(output)
 
 

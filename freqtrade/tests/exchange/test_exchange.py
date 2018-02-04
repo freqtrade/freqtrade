@@ -147,7 +147,7 @@ def test_get_balances_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert get_balances() == []
+    assert get_balances() == {}
 
 
 def test_get_balances_prod(default_conf, mocker):
