@@ -19,7 +19,7 @@ hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
 networkx==1.11
 tabulate==0.8.2
-pymarketcap==3.3.155
+pymarketcap==3.3.158
 
 # Required for plotting data
 #plotly==2.3.0
