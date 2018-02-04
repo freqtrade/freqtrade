@@ -30,7 +30,7 @@ def default_conf():
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": 5,
+        "ticker_interval": "5m",
         "dry_run": True,
         "minimal_roi": {
             "40": 0.0,
@@ -199,6 +199,36 @@ def limit_sell_order():
 
 
 @pytest.fixture
+def ticker_history_api():
+    return [
+        [
+            1511686200000,  # unix timestamp ms
+            8.794e-05,  # open
+            8.948e-05,  # high
+            8.794e-05,  # low
+            8.88e-05,  # close
+            0.0877869,  # volume (in quote currency)
+        ],
+        [
+            1511686500000,
+            8.88e-05,
+            8.942e-05,
+            8.88e-05,
+            8.893e-05,
+            0.05874751,
+        ],
+        [
+            1511686800,
+            8.891e-05,
+            8.893e-05,
+            8.875e-05,
+            8.877e-05,
+            0.7039405
+        ]
+    ]
+
+
+@pytest.fixture
 def ticker_history():
     return [
         {
@@ -263,7 +293,7 @@ def ticker_history_without_bv():
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/ETH_BTC-1.json') as data_file:
+    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
         return parse_ticker_dataframe(json.load(data_file))
 
 

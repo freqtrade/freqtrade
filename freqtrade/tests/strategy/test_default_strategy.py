@@ -7,7 +7,7 @@ from freqtrade.analyze import parse_ticker_dataframe
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/ETH_BTC-1.json') as data_file:
+    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
         return parse_ticker_dataframe(json.load(data_file))
 
 

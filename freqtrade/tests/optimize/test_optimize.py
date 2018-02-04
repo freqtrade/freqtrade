@@ -6,8 +6,9 @@ import logging
 import ccxt
 import uuid
 from shutil import copyfile
+from freqtrade.strategy.strategy import Strategy
 from freqtrade import exchange, optimize
-from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
+from freqtrade.optimize.__init__ import make_testdata_path, download_pairs, \
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, file_dump_json
 
 # Change this if modifying UNITTEST/BTC testdatafile
@@ -53,11 +54,11 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
 
     file = 'freqtrade/tests/testdata/UNITTEST_BTC-30m.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval=30)
+    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "ETH/BTC", Interval: 30 min') not in caplog.record_tuples
+            'Downloading the pair: "ETH/BTC", Interval: 30 min') not in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -67,13 +68,13 @@ def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/ETH_BTC-5.json'
+    file = 'freqtrade/tests/testdata/ETH_BTC-5m.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval=5)
+    optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval='5m')
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "ETH/BTC", Interval: 5 min') not in caplog.record_tuples
+            'Downloading the pair: "ETH/BTC", Interval: 5 min') not in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -83,9 +84,9 @@ def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/ETH_BTC-1.json'
+    file = 'freqtrade/tests/testdata/ETH_BTC-1m.json'
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, ticker_interval=1, pairs=['ETH/BTC'])
+    optimize.load_data(None, ticker_interval='1m', pairs=['ETH/BTC'])
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
@@ -99,13 +100,13 @@ def test_load_data_with_new_pair_1min(default_conf, ticker_history, mocker, capl
 
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/MEME_BTC-1.json'
+    file = 'freqtrade/tests/testdata/MEME_BTC-1m.json'
     _backup_file(file)
-    optimize.load_data(None, ticker_interval=1, pairs=['MEME/BTC'])
+    optimize.load_data(None, ticker_interval='1m', pairs=['MEME/BTC'])
     assert os.path.isfile(file) is True
     assert ('freqtrade.optimize',
             logging.INFO,
-            'Download the pair: "MEME/BTC", Interval: 1 min') in caplog.record_tuples
+            'Downloading the pair: "MEME/BTC", Interval: 1m') in caplog.record_tuples
     _clean_test_file(file)
 
 
@@ -118,10 +119,10 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
-    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1.json'
-    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5.json'
-    file2_1 = 'freqtrade/tests/testdata/CFI_BTC-1.json'
-    file2_5 = 'freqtrade/tests/testdata/CFI_BTC-5.json'
+    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1m.json'
+    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5m.json'
+    file2_1 = 'freqtrade/tests/testdata/CFI_BTC-1m.json'
+    file2_5 = 'freqtrade/tests/testdata/CFI_BTC-5m.json'
 
     _backup_file(file1_1)
     _backup_file(file1_5)
@@ -131,7 +132,7 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     assert os.path.isfile(file1_1) is False
     assert os.path.isfile(file2_1) is False
 
-    assert download_pairs(None, pairs=['MEME/BTC', 'CFI/BTC'], ticker_interval=1) is True
+    assert download_pairs(None, pairs=['MEME/BTC', 'CFI/BTC'], ticker_interval='1m') is True
 
     assert os.path.isfile(file1_1) is True
     assert os.path.isfile(file2_1) is True
@@ -143,7 +144,7 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     assert os.path.isfile(file1_5) is False
     assert os.path.isfile(file2_5) is False
 
-    assert download_pairs(None, pairs=['MEME/BTC', 'CFI/BTC'], ticker_interval=5) is True
+    assert download_pairs(None, pairs=['MEME/BTC', 'CFI/BTC'], ticker_interval='5m') is True
 
     assert os.path.isfile(file1_5) is True
     assert os.path.isfile(file2_5) is True
@@ -160,18 +161,18 @@ def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
-    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1.json'
-    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5.json'
+    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1m.json'
+    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5m.json'
     _backup_file(file1_1)
     _backup_file(file1_5)
 
-    download_pairs(None, pairs=['MEME/BTC'], ticker_interval=1)
+    download_pairs(None, pairs=['MEME/BTC'], ticker_interval='1m')
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
     assert ('freqtrade.optimize.__init__',
             logging.INFO,
-            'Failed to download the pair: "MEME/BTC", Interval: 1 min') in caplog.record_tuples
+            'Failed to download the pair: "MEME/BTC", Interval: 1m') in caplog.record_tuples
 
 
 def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
@@ -180,37 +181,37 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
     # Download a 1 min ticker file
-    file1 = 'freqtrade/tests/testdata/XEL_BTC-1.json'
+    file1 = 'freqtrade/tests/testdata/XEL_BTC-1m.json'
     _backup_file(file1)
-    download_backtesting_testdata(None, pair="XEL/BTC", interval=1)
+    download_backtesting_testdata(None, pair="XEL/BTC", interval='1m')
     assert os.path.isfile(file1) is True
     _clean_test_file(file1)
 
     # Download a 5 min ticker file
-    file2 = 'freqtrade/tests/testdata/STORJ_BTC-5.json'
+    file2 = 'freqtrade/tests/testdata/STORJ_BTC-5m.json'
     _backup_file(file2)
 
-    download_backtesting_testdata(None, pair="STORJ/BTC", interval=5)
+    download_backtesting_testdata(None, pair="STORJ/BTC", interval='5m')
     assert os.path.isfile(file2) is True
     _clean_test_file(file2)
 
 
 def test_download_backtesting_testdata2(mocker):
-    tick = [{'T': 'bar'}, {'T': 'foo'}]
+    tick = [{'T': 'foo'}, {'T': 'bar'}]  # invalid response
     mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
-    assert download_backtesting_testdata(None, pair="UNITEST/BTC", interval=1)
-    assert download_backtesting_testdata(None, pair="UNITEST/BTC", interval=3)
+    assert download_backtesting_testdata(None, pair="UNITEST/BTC", interval='1m')
+    assert download_backtesting_testdata(None, pair="UNITEST/BTC", interval='3m')
 
 
 def test_load_tickerdata_file():
-    # 7 does not exist in either format.
-    assert not load_tickerdata_file(None, 'UNITTEST/BTC', 7)
-    # 1 exists only as a .json
-    tickerdata = load_tickerdata_file(None, 'UNITTEST/BTC', 1)
+    # 7m does not exist in either format.
+    assert not load_tickerdata_file(None, 'UNITTEST/BTC', '7m')
+    # 1m exists only as a .json
+    tickerdata = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     assert _BTC_UNITTEST_LENGTH == len(tickerdata)
-    # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
-    tickerdata = load_tickerdata_file(None, 'UNITTEST/BTC', 8)
+    # 8m.json is empty and will fail if it's loaded. 8m.json.gz is a copy of 1m.json
+    tickerdata = load_tickerdata_file(None, 'UNITTEST/BTC', '8m')
     assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
@@ -218,19 +219,22 @@ def test_init(default_conf, mocker):
     conf = {'exchange': {'pair_whitelist': []}}
     mocker.patch('freqtrade.optimize.hyperopt_optimize_conf', return_value=conf)
     assert {} == optimize.load_data('', pairs=[], refresh_pairs=True,
-                                    ticker_interval=int(default_conf['ticker_interval']))
+                                    ticker_interval=default_conf['ticker_interval'])
 
 
 def test_tickerdata_to_dataframe():
     timerange = ((None, 'line'), None, -100)
-    tick = load_tickerdata_file(None, 'UNITTEST/BTC', 1, timerange=timerange)
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
+
+    strategy = Strategy()
+    strategy.init({})
     data = optimize.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 100
 
 
 def test_trim_tickerlist():
-    with open('freqtrade/tests/testdata/ETH_BTC-1.json') as data_file:
+    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
         ticker_list = json.load(data_file)
     ticker_list_len = len(ticker_list)
 
@@ -275,7 +279,6 @@ def test_trim_tickerlist():
 
 
 def test_file_dump_json():
-
     file = 'freqtrade/tests/testdata/test_{id}.json'.format(id=str(uuid.uuid4()))
     data = {'bar': 'foo'}
 

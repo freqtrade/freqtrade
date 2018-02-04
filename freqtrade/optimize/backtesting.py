@@ -49,7 +49,7 @@ def generate_text_table(
             len(result.index),
             result.profit_percent.mean() * 100.0,
             result.profit_BTC.sum(),
-            result.duration.mean() * ticker_interval,
+            result.duration.mean() * misc.ticker_interval_to_minutes(ticker_interval),
             len(result[result.profit_BTC > 0]),
             len(result[result.profit_BTC < 0])
         ])
@@ -60,7 +60,7 @@ def generate_text_table(
         len(results.index),
         results.profit_percent.mean() * 100.0,
         results.profit_BTC.sum(),
-        results.duration.mean() * ticker_interval,
+        results.duration.mean() * misc.ticker_interval_to_minutes(ticker_interval),
         len(results[results.profit_BTC > 0]),
         len(results[results.profit_BTC < 0])
     ])
