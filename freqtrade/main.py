@@ -180,21 +180,66 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
     Sell timeout - cancel order and update trade
     :return: True if order was fully cancelled
     """
-    if order['remaining'] == order['amount']:
-        # if trade is not partially completed, just cancel the trade
-        exchange.cancel_order(trade.open_order_id, trade.pair)
-        trade.close_rate = None
-        trade.close_profit = None
-        trade.close_date = None
-        trade.is_open = True
-        trade.open_order_id = None
-        rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
-                     trade.pair.replace('_', '/')))
-        logger.info('Sell order timeout for %s.', trade)
-        return True
+    logger.info('Sell order timeout for %s.', trade)
 
-    # TODO: figure out how to handle partially complete sell orders
-    return False
+    # Partial filled sell order timed out
+    if order['remaining'] < order['amount']:
+
+        (min_qty, max_qty, step_qty) = exchange.get_trade_qty(trade.pair)
+
+        # Create new trade for partial filled amount and close that new trade
+        new_trade_amount = order['amount'] - order['remaining']
+
+        if min_qty:
+            # Remaining amount must be exchange minimum order quantity to be able to sell it
+            if new_trade_amount < min_qty:
+                logger.info('Wont cancel partial filled sell order that timed out for {}:'.format(
+                            trade) +
+                            'remaining amount {} too low for new order '.format(new_trade_amount) +
+                            '(minimum order quantity: {})'.format(new_trade_amount, min_qty))
+                return False
+
+        exchange.cancel_order(trade.open_order_id, trade.pair)
+
+        new_trade_stake_amount = new_trade_amount * trade.open_rate
+
+        # but give it half fee: because we share buy order with current trade
+        # this trade only costs sell fee
+        new_trade = Trade(
+            pair=trade.pair,
+            stake_amount=new_trade_stake_amount,
+            amount=new_trade_amount,
+            fee=(trade.fee/2),
+            open_rate=trade.open_rate,
+            open_date=trade.open_date,
+            exchange=trade.exchange,
+            open_order_id=None
+        )
+        new_trade.close(order['rate'])
+
+        # Update stake and amount leftover of current trade to still be handled
+        trade.amount = order['remaining']
+        trade.stake_amount = trade.amount * trade.open_rate
+        trade.open_order_id = None
+
+        rpc.send_msg('*Timeout:* Partially filled sell order for {} cancelled: '.format(
+                         trade.pair.replace('_', '/')) +
+                     '{} amount remains'.format(trade.amount))
+
+        return False
+
+    # Order is not partially filled: full amount remains
+    # Just remove the order and the trade remains to be handled
+    exchange.cancel_order(trade.open_order_id, trade.pair)
+    trade.close_rate = None
+    trade.close_profit = None
+    trade.close_date = None
+    trade.is_open = True
+    trade.open_order_id = None
+    rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
+                 trade.pair.replace('_', '/')))
+
+    return True
 
 
 def check_handle_timedout(timeoutvalue: int) -> None:
