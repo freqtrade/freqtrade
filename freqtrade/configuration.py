@@ -21,12 +21,14 @@ class Configuration(object):
         self.args = args
         self.logger = Logger(name=__name__).get_logger()
         self.config = self._load_config()
+        self.show_info()
 
     def _load_config(self) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load the bot configuration
         :return: Configuration dictionary
         """
+        self.logger.info('Using config: %s ...', self.args.config)
         config = self._load_config_file(self.args.config)
 
         # Add the strategy file to use

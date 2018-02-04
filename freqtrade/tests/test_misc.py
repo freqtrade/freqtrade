@@ -39,7 +39,7 @@ def test_datesarray_to_datetimearray(ticker_history):
     assert date_len == 3
 
 
-def test_file_dump_json(mocker):
+def test_file_dump_json(mocker) -> None:
     """
     Test file_dump_json()
     :return: None
