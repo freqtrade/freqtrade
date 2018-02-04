@@ -32,7 +32,6 @@ def hyperopt_optimize_conf() -> dict:
                 "DASH/BTC",
                 "ZEC/BTC",
                 "XLM/BTC",
-                "NXT/BTC",
                 "POWR/BTC",
                 "ADA/BTC",
                 "XMR/BTC"
