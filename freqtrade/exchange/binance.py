@@ -2,6 +2,7 @@ import logging
 import datetime
 import json
 import http
+from time import sleep
 from typing import List, Dict, Optional
 
 from binance.client import Client as _Binance
@@ -65,32 +66,117 @@ class Binance(Exchange):
         return '{0}_{1}'.format(symbol_stake_currency, symbol_currency)
 
     @staticmethod
-    def _handle_exception(excepter) -> None:
+    def _handle_exception(excepter) -> Dict:
         """
         Validates the given Binance response/exception
         and raises a ContentDecodingError if a non-fatal issue happened.
         """
-        # Could to alternate exception handling for specific exceptions/errors
-        # See: http://python-binance.readthedocs.io/en/latest/binance.html#module-binance.exceptions
+        # Python exceptions:
+        # http://python-binance.readthedocs.io/en/latest/binance.html#module-binance.exceptions
+
+        handle = {}
+
         if type(excepter) == http.client.RemoteDisconnected:
             logger.info(
-                'Got HTTP error from Binance: %s' % excepter
+                'Retrying: got disconnected from Binance: %s' % excepter
             )
-            return True
+            handle['retry'] = True
+            handle['retry_max'] = 3
+            handle['fatal'] = False
+            return handle
 
         if type(excepter) == json.decoder.JSONDecodeError:
             logger.info(
-                'Got JSON error from Binance: %s' % excepter
+                'Retrying: got JSON error from Binance: %s' % excepter
             )
-            return True
+            handle['retry'] = True
+            handle['retry_max'] = 3
+            handle['fatal'] = False
+            return handle
 
+        # API errors:
+        # https://github.com/binance-exchange/binance-official-api-docs/blob/master/errors.md
         if type(excepter) == BinanceAPIException:
 
-            logger.info(
-                'Got API error from Binance: %s' % excepter
-            )
+            if excepter.code == -1000:
+                logger.info(
+                    'Retrying: General unknown API error from Binance: %s' % excepter
+                )
+                handle['retry'] = True
+                handle['retry_max'] = 3
+                handle['fatal'] = False
+                return handle
 
-            return True
+            if excepter.code == -1003:
+                logger.error(
+                    'Binance API Rate limiter hit: %s' % excepter
+                )
+                # Panic: this is bad: we don't want to get banned
+                # TODO: automatic request throttling respecting API rate limits?
+                handle['retry'] = False
+                handle['retry_max'] = None
+                handle['fatal'] = True
+                return handle
+
+            if excepter.code == -1021:
+                logger.error(
+                    "Binance reports invalid timestamp, " +
+                    "check your machine (NTP) time synchronisation: {}".format(
+                        excepter)
+                )
+                handle['retry'] = False
+                handle['retry_max'] = None
+                handle['fatal'] = True
+                return handle
+
+            if excepter.code == -1015:
+                logger.error(
+                    'Binance says we have too many orders: %s' % excepter
+                )
+                handle['retry'] = False
+                handle['retry_max'] = None
+                handle['fatal'] = True
+                return handle
+
+            if excepter.code == -2014:
+                logger.error(
+                    "Binance reports bad api key format, " +
+                    "you're probably trying to use the API with an empty key/secret: {}".format(
+                         excepter)
+                )
+                handle['retry'] = False
+                handle['retry_max'] = None
+                handle['fatal'] = True
+                return handle
+
+            if excepter.code == -2015:
+                logger.error(
+                    "Binance reports invalid api key, source IP or permission, " +
+                    "check your API key settings in config.json and on binance.com: {}".format(
+                        excepter)
+                )
+                handle['retry'] = False
+                handle['retry_max'] = None
+                handle['fatal'] = True
+                return handle
+
+            if excepter.code == -2011:
+                logger.error(
+                    "Binance rejected order cancellation: %s" % excepter
+                )
+                handle['retry'] = False
+                handle['retry_max'] = None
+                handle['fatal'] = True
+                return handle
+
+            # All other exceptions we don't know about
+            logger.info(
+                'Got error: %s' % excepter
+            )
+            handle['retry'] = False
+            handle['retry_max'] = None
+            handle['fatal'] = True
+            return handle
 
         raise type(excepter)(excepter.args)
 
@@ -104,18 +190,28 @@ class Binance(Exchange):
 
         symbol = self._pair_to_symbol(pair)
 
-        try:
-            data = _API.order_limit_buy(
-                       symbol=symbol,
-                       quantity="{0:.8f}".format(amount),
-                       price="{0:.8f}".format(rate))
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
-                message=str(e),
-                pair=pair,
-                rate=Decimal(rate),
-                amount=Decimal(amount)))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.order_limit_buy(
+                           symbol=symbol,
+                           quantity="{0:.8f}".format(amount),
+                           price="{0:.8f}".format(rate))
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal'] or tries == max_tries:
+                    raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
+                        message=str(e),
+                        pair=pair,
+                        rate=Decimal(rate),
+                        amount=Decimal(amount)))
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         return data['orderId']
 
@@ -123,19 +219,29 @@ class Binance(Exchange):
 
         symbol = self._pair_to_symbol(pair)
 
-        try:
-            data = _API.order_limit_sell(
-                       symbol=symbol,
-                       quantity="{0:.8f}".format(amount),
-                       price="{0:.8f}".format(rate))
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException(
-                '{message} params=({pair}, {rate}, {amount})'.format(
-                    message=str(e),
-                    pair=pair,
-                    rate=rate,
-                    amount=amount))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.order_limit_sell(
+                           symbol=symbol,
+                           quantity="{0:.8f}".format(amount),
+                           price="{0:.8f}".format(rate))
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal']:
+                    raise OperationalException(
+                        '{message} params=({pair}, {rate}, {amount})'.format(
+                            message=str(e),
+                            pair=pair,
+                            rate=rate,
+                            amount=amount))
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         return data['orderId']
 
@@ -144,10 +250,11 @@ class Binance(Exchange):
         try:
             data = _API.get_asset_balance(asset=currency)
         except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message} params=({currency})'.format(
-                message=str(e),
-                currency=currency))
+            h = Binance._handle_exception(e)
+            if h['fatal']:
+                raise OperationalException('{message} params=({currency})'.format(
+                    message=str(e),
+                    currency=currency))
 
         return float(data['free'] or 0.0)
 
@@ -156,8 +263,9 @@ class Binance(Exchange):
         try:
             data = _API.get_account()
         except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message}'.format(message=str(e)))
+            h = Binance._handle_exception(e)
+            if h['fatal']:
+                raise OperationalException('{message}'.format(message=str(e)))
 
         balances = data['balances']
 
@@ -180,13 +288,24 @@ class Binance(Exchange):
 
         symbol = self._pair_to_symbol(pair)
 
-        try:
-            data = _API.get_ticker(symbol=symbol)
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message} params=({pair})'.format(
-                message=str(e),
-                pair=pair))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.get_ticker(symbol=symbol)
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal']:
+                    raise OperationalException('{message} params=({pair} {refresh})'.format(
+                        message=str(e),
+                        pair=pair,
+                        refresh=refresh))
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         return {
             'bid': float(data['bidPrice']),
@@ -211,13 +330,24 @@ class Binance(Exchange):
 
         symbol = self._pair_to_symbol(pair)
 
-        try:
-            data = _API.get_klines(symbol=symbol, interval=INTERVAL_ENUM)
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message} params=({pair})'.format(
-                message=str(e),
-                pair=pair))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.get_klines(symbol=symbol, interval=INTERVAL_ENUM)
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal']:
+                    raise OperationalException('{message} params=({pair} {tick_interval})'.format(
+                        message=str(e),
+                        pair=pair,
+                        tick_interval=tick_interval))
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         tick_data = []
 
@@ -239,15 +369,25 @@ class Binance(Exchange):
 
         symbol = self._pair_to_symbol(pair)
 
-        try:
-            data = _API.get_all_orders(symbol=symbol, orderId=order_id)
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException(
-                '{message} params=({symbol},{order_id})'.format(
-                    message=str(e),
-                    symbol=symbol,
-                    order_id=order_id))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.get_all_orders(symbol=symbol, orderId=order_id)
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal']:
+                    raise OperationalException(
+                        '{message} params=({symbol},{order_id})'.format(
+                            message=str(e),
+                            symbol=symbol,
+                            order_id=order_id))
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         order = {}
 
@@ -273,13 +413,24 @@ class Binance(Exchange):
 
         symbol = self._pair_to_symbol(pair)
 
-        try:
-            data = _API.cancel_order(symbol=symbol, orderId=order_id)
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message} params=({order_id})'.format(
-                message=str(e),
-                order_id=order_id))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.cancel_order(symbol=symbol, orderId=order_id)
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal']:
+                    raise OperationalException('{message} params=({order_id}, {pair})'.format(
+                        message=str(e),
+                        order_id=order_id),
+                        pair=pair)
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         return data
 
@@ -291,8 +442,9 @@ class Binance(Exchange):
         try:
             data = _API.get_all_tickers()
         except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message}'.format(message=str(e)))
+            h = Binance._handle_exception(e)
+            if h['fatal']:
+                raise OperationalException('{message}'.format(message=str(e)))
 
         markets = []
 
@@ -313,8 +465,9 @@ class Binance(Exchange):
         try:
             data = _API.get_ticker()
         except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message}'.format(message=str(e)))
+            h = Binance._handle_exception(e)
+            if h['fatal']:
+                raise OperationalException('{message}'.format(message=str(e)))
 
         market_summaries = []
 
@@ -343,11 +496,21 @@ class Binance(Exchange):
 
     def get_trade_qty(self, pair: str) -> tuple:
 
-        try:
-            data = _API.get_exchange_info()
-        except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message}'.format(message=str(e)))
+        api_try = True
+        tries = 0
+        max_tries = 1
+
+        while api_try and tries < max_tries:
+            try:
+                tries = tries + 1
+                data = _API.get_exchange_info()
+            except Exception as e:
+                h = Binance._handle_exception(e)
+                if h['fatal']:
+                    raise OperationalException('{message}'.format(message=str(e)))
+                api_try = h['retry']
+                max_tries = h['retry_max']
+                sleep(0.1)
 
         symbol = self._pair_to_symbol(pair)
 
@@ -368,8 +531,9 @@ class Binance(Exchange):
         try:
             data = _API.get_exchange_info()
         except Exception as e:
-            Binance._handle_exception(e)
-            raise OperationalException('{message}'.format(message=str(e)))
+            h = Binance._handle_exception(e)
+            if h['fatal']:
+                raise OperationalException('{message}'.format(message=str(e)))
 
         wallet_health = []
 
