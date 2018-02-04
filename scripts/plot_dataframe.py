@@ -80,7 +80,14 @@ def plot_analyzed_dataframe(args) -> None:
         y=df_buy.close,
         mode='markers',
         name='buy',
-        marker=dict(symbol='x-dot')
+        marker=dict(
+            symbol='triangle-up-dot',
+            size=9,
+            line=dict(
+                width=1,
+            ),
+            color='green',
+        )
     )
     df_sell = df[df['sell'] == 1]
     sells = go.Scattergl(
@@ -88,7 +95,14 @@ def plot_analyzed_dataframe(args) -> None:
         y=df_sell.close,
         mode='markers',
         name='sell',
-        marker=dict(symbol='diamond')
+        marker=dict(
+            symbol='triangle-down-dot',
+            size=9,
+            line=dict(
+                width=1,
+            ),
+            color='red',
+        )
     )
 
     bb_lower = go.Scatter(
