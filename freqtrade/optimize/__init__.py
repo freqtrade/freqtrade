@@ -108,7 +108,7 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: str) -> bool:
         try:
             download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
         except BaseException:
-            logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
+            logger.info('Failed to download the pair: "{pair}", Interval: {interval}'.format(
                 pair=pair,
                 interval=ticker_interval,
             ))
@@ -153,20 +153,11 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: str = '5m')
         logger.debug("Current End: None")
 
     new_data = get_ticker_history(pair=pair, tick_interval=interval)
-    data_json = []
-    for candlestick in new_data:
-        data_json.append({
-            'T': candlestick[0],
-            'O': candlestick[1],
-            'H': candlestick[2],
-            'L': candlestick[3],
-            'C': candlestick[4],
-            'V': candlestick[5],
-        })
-    logger.debug("New Start: {}".format(data_json[1]['T']))
-    logger.debug("New End: {}".format(data_json[-1]['T']))
+
+    logger.debug("New Start: {}".format(new_data[1]['T']))
+    logger.debug("New End: {}".format(new_data[-1]['T']))
     data = sorted(data, key=lambda data_json: data_json['T'])
 
-    misc.file_dump_json(filename, data_json)
+    misc.file_dump_json(filename, new_data)
 
     return True

@@ -4,6 +4,7 @@ import logging
 import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 
 import arrow
 from cachetools import cached, TTLCache
@@ -150,9 +151,24 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 
 @cached(TTLCache(maxsize=100, ttl=30))
-def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
+def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
     # TODO: check if exchange supports fetch_ohlcv
-    return _API.fetch_ohlcv(pair, timeframe=tick_interval)
+    history = _API.fetch_ohlcv(pair, timeframe=tick_interval)
+    history_json = []
+    try:
+        for candlestick in history:
+            history_json.append({
+                'T': datetime.fromtimestamp(candlestick[0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S.%f'),
+                'O': candlestick[1],
+                'H': candlestick[2],
+                'L': candlestick[3],
+                'C': candlestick[4],
+                'V': candlestick[5],
+            })
+        return history_json
+    except IndexError as e:
+        logger.warning('Empty ticker history. Msg %s', str(e))
+        return []
 
 
 def cancel_order(order_id: str) -> None:
