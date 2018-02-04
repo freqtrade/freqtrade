@@ -19,8 +19,11 @@ def test_dataframe_correct_columns(result):
 
 
 def test_dataframe_correct_length(result):
-    # no idea what this check truly does - should we just remove it?
-    assert len(result.index) == 14397
+    # FIX: no idea what this check truly does - should we just remove it?
+    # magic needs to change everytime testdata/* is updated.
+    # Perhaps change result fixture to use BTC_UNITEST instead?
+    magic = 14397
+    assert len(result.index) == magic
 
 
 def test_populates_buy_trend(result):
