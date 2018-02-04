@@ -145,15 +145,15 @@ def common_args_parser(description: str):
     )
     parser.add_argument(
         '-c', '--config',
-        help='specify configuration file (default: config.json)',
+        help='specify configuration file (default: %(default)s)',
         dest='config',
         default='config.json',
         type=str,
         metavar='PATH',
     )
     parser.add_argument(
-        '--datadir',
-        help='path to backtest data (default freqdata/tests/testdata)',
+        '-d', '--datadir',
+        help='path to backtest data (default: %(default)s',
         dest='datadir',
         default=os.path.join('freqtrade', 'tests', 'testdata'),
         type=str,
@@ -161,7 +161,7 @@ def common_args_parser(description: str):
     )
     parser.add_argument(
         '-s', '--strategy',
-        help='specify strategy file (default: freqtrade/strategy/default_strategy.py)',
+        help='specify strategy file (default: %(default)s)',
         dest='strategy',
         default='default_strategy',
         type=str,
@@ -254,7 +254,7 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
 def hyperopt_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '-e', '--epochs',
-        help='specify number of epochs (default: 100)',
+        help='specify number of epochs (default: %(default)d)',
         dest='epochs',
         default=100,
         type=int,
