@@ -43,8 +43,6 @@ def init(config: dict) -> None:
     # Find matching class for the given exchange name
     name = exchange_config['name']
 
-    # TODO add check for a list of supported exchanges
-
     if name not in ccxt.exchanges:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
