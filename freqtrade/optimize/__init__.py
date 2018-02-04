@@ -57,7 +57,7 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = None,
+def load_data(datadir: str, ticker_interval: str, pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False, timerange=None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -102,7 +102,7 @@ def make_testdata_path(datadir: str) -> str:
                                                    '..', 'tests', 'testdata'))
 
 
-def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
+def download_pairs(datadir, pairs: List[str], ticker_interval: str) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
@@ -122,7 +122,7 @@ def file_dump_json(filename, data):
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
-def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> bool:
+def download_backtesting_testdata(datadir: str, pair: str, interval: str = '5m') -> bool:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
@@ -131,7 +131,7 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     """
 
     path = make_testdata_path(datadir)
-    logger.info('Download the pair: "{pair}", Interval: {interval} min'.format(
+    logger.info('Downloading the pair: "{pair}", Interval: {interval}'.format(
         pair=pair,
         interval=interval,
     ))
@@ -152,14 +152,21 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         logger.debug("Current Start: None")
         logger.debug("Current End: None")
 
-    new_data = get_ticker_history(pair=pair, tick_interval=int(interval))
-    for row in new_data:
-        if row not in data:
-            data.append(row)
-    logger.debug("New Start: {}".format(data[1]['T']))
-    logger.debug("New End: {}".format(data[-1:][0]['T']))
-    data = sorted(data, key=lambda data: data['T'])
+    new_data = get_ticker_history(pair=pair, tick_interval=interval)
+    data_json = []
+    for candlestick in new_data:
+        data_json.append({
+            'T': candlestick[0],
+            'O': candlestick[1],
+            'H': candlestick[2],
+            'L': candlestick[3],
+            'C': candlestick[4],
+            'V': candlestick[5],
+        })
+    logger.debug("New Start: {}".format(data_json[1]['T']))
+    logger.debug("New End: {}".format(data_json[-1]['T']))
+    data = sorted(data, key=lambda data_json: data_json['T'])
 
-    misc.file_dump_json(filename, data)
+    misc.file_dump_json(filename, data_json)
 
     return True

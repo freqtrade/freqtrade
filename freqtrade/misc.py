@@ -271,9 +271,8 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
-        default=5,
-        type=int,
-        metavar='INT',
+        default='5m',
+        type=str,
     )
     parser.add_argument(
         '--timerange',
@@ -336,7 +335,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
-        'ticker_interval': {'type': 'integer', 'enum': [1, 5, 30, 60, 1440]},
+        'ticker_interval': {'type': 'string', 'enum': ['1m', '5m', '30m', '1h', '12h']},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',

@@ -32,7 +32,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
         .rename(columns=columns)
     if 'BV' in frame:
         frame.drop('BV', 1, inplace=True)
-    frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+    frame['date'] = to_datetime(frame['date'], unit='ms')
     frame.sort_values('date', inplace=True)
     return frame
 

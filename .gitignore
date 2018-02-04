@@ -1,5 +1,5 @@
 # Freqtrade rules
-freqtrade/tests/testdata/*.json
+#freqtrade/tests/testdata/*.json
 hyperopt_conf.py
 config.json
 *.sqlite

@@ -187,4 +187,7 @@ def get_name() -> str:
 
 
 def get_fee() -> float:
+    if not _API.markets:
+        _API.load_markets()
+
     return _API.calculate_fee('ETH/BTC', '', '', 1, 1)['rate']

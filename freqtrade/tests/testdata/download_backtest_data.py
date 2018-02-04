@@ -4,6 +4,7 @@
 import sys
 import json
 import ccxt
+import datetime
 
 from freqtrade import exchange
 from freqtrade import misc
@@ -17,7 +18,7 @@ parser.add_argument(
 )
 args = parser.parse_args(sys.argv[1:])
 
-TICKER_INTERVALS = [1, 5]  # ticker interval in minutes (currently implemented: 1 and 5)
+TICKER_INTERVALS = ['1m', '5m']  # ticker interval in minutes (currently implemented: 1 and 5)
 PAIRS = []
 
 if args.pair:
@@ -36,4 +37,18 @@ for pair in PAIRS:
         data = exchange.get_ticker_history(pair, tick_interval)
         pair_print = pair.replace('/', '_')
         filename = '{}-{}.json'.format(pair_print, tick_interval)
-        misc.file_dump_json(filename, data)
+
+        data_json = []
+        for candlestick in data:
+            # Timestamp in unix milliseconds formatted
+            data_json.append({
+                'T': datetime.datetime.fromtimestamp(candlestick[0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S.%f'),
+                'O': candlestick[1],
+                'H': candlestick[2],
+                'L': candlestick[3],
+                'C': candlestick[4],
+                'V': candlestick[5],
+            })
+        data_json = sorted(data_json, key=lambda d: d['T'])
+
+        misc.file_dump_json(filename, data_json)

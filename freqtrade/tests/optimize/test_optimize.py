@@ -51,7 +51,7 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
 
     exchange._API = ccxt.binance({'key': '', 'secret': ''})
 
-    file = 'freqtrade/tests/testdata/UNITTEST_BTC-30.json'
+    file = 'freqtrade/tests/testdata/UNITTEST_BTC-30m.json'
     _backup_file(file, copy_file=True)
     optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval=30)
     assert os.path.isfile(file) is True
