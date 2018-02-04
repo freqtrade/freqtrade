@@ -468,7 +468,7 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
-    
+
     pairs = sorted(
         [s['symbol'] for s in exchange.get_markets() if s['quote'] == base_currency],
         reverse=True

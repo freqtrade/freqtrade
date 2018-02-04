@@ -1,10 +1,9 @@
 # pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
 # pragma pylint: disable=protected-access
-from unittest.mock import Mock, MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock
 from random import randint
 import logging
 import ccxt
-from requests.exceptions import RequestException
 import pytest
 
 from freqtrade import OperationalException
@@ -226,13 +225,13 @@ def test_get_ticker_history(default_conf, mocker):
     assert ticks == 123
 
     # change the ticker
-    #tick = 999
-    #api_mock.get_ticker_history = MagicMock(return_value=tick)
-    #mocker.patch('freqtrade.exchange._API', api_mock)
+    # tick = 999
+    # api_mock.get_ticker_history = MagicMock(return_value=tick)
+    # mocker.patch('freqtrade.exchange._API', api_mock)
 
     # ensure caching will still return the original ticker
-    #ticks = get_ticker_history('ETH/BTC', int(default_conf['ticker_interval']))
-    #assert ticks == 123
+    # ticks = get_ticker_history('ETH/BTC', int(default_conf['ticker_interval']))
+    # assert ticks == 123
 
 
 def test_cancel_order_dry_run(default_conf, mocker):
@@ -280,7 +279,12 @@ def test_get_name(default_conf, mocker):
 
 def test_get_fee(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.calculate_fee = MagicMock(return_value={'type': 'taker', 'currency': 'BTC', 'rate': 0.025, 'cost': 0.05})
+    api_mock.calculate_fee = MagicMock(return_value={
+        'type': 'taker',
+        'currency': 'BTC',
+        'rate': 0.025,
+        'cost': 0.05
+    })
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert get_fee() == 0.025
 

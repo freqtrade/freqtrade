@@ -412,7 +412,7 @@ def _balance(bot: Bot, update: Update) -> None:
                     *Balance*: {total}
                     *Pending*: {used}
                     *Est. BTC*: {BTCequiv: .8f}
-                    
+
                     """.format(**balance)
 
     symbol = _CONF['fiat_display_currency']

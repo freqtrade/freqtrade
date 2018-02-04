@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import copy
 import logging
-import ccxt
 from unittest.mock import MagicMock
 
 import arrow
@@ -82,7 +81,6 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          #get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))
@@ -113,7 +111,6 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          #get_wallet_health=health,
                           buy=MagicMock(side_effect=requests.exceptions.RequestException))
     init(default_conf, create_engine('sqlite://'))
     result = _process(interval=int(default_conf['ticker_interval']))
@@ -129,7 +126,6 @@ def test_process_operational_exception(default_conf, ticker, health, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          #get_wallet_health=health,
                           buy=MagicMock(side_effect=OperationalException))
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
@@ -147,7 +143,6 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          #get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))

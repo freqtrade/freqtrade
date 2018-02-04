@@ -1,17 +1,14 @@
 # pragma pylint: disable=W0603
 """ Cryptocurrency Exchanges support """
-import enum
 import logging
 import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
 
 import arrow
-import requests
 from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException
-from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 
