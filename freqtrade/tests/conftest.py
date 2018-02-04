@@ -2,16 +2,18 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 from functools import reduce
-
+import logging
 import json
 import arrow
 import pytest
 from jsonschema import validate
 from telegram import Chat, Message, Update
-from freqtrade.analyze import parse_ticker_dataframe
+
+from freqtrade.analyze import Analyze
+from freqtrade.constants import Constants
 from freqtrade.strategy.strategy import Strategy
 
-from freqtrade.misc import CONF_SCHEMA
+logging.getLogger('').setLevel(logging.INFO)
 
 
 def log_has(line, logs):
@@ -63,7 +65,7 @@ def default_conf():
         },
         "initial_state": "running"
     }
-    validate(configuration, CONF_SCHEMA)
+    validate(configuration, Constants.CONF_SCHEMA)
     return configuration
 
 
@@ -264,7 +266,7 @@ def ticker_history_without_bv():
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file))
+        return Analyze.parse_ticker_dataframe(json.load(data_file))
 
 
 @pytest.fixture
