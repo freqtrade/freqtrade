@@ -165,7 +165,20 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
 
     # if trade is partially complete, edit the stake details for the trade
     # and close the order
-    trade.amount = order['amount'] - order['remaining']
+
+    new_trade_amount = order['amount'] - order['remaining']
+    (min_qty, max_qty, step_qty) = exchange.get_trade_qty(trade.pair)
+
+    if min_qty:
+        # Remaining amount must be exchange minimum order quantity to be able to sell it
+        if new_trade_amount < min_qty:
+            logger.info('Wont cancel partial filled buy order that timed out for {}:'.format(
+                        trade) +
+                        'remaining amount {} too low for new order '.format(new_trade_amount) +
+                        '(minimum order quantity: {})'.format(new_trade_amount, min_qty))
+            return False
+
+    trade.amount = new_trade_amount
     trade.stake_amount = trade.amount * trade.open_rate
     trade.open_order_id = None
     logger.info('Partial buy order timeout for %s.', trade)
