@@ -280,9 +280,9 @@ def test_get_name(default_conf, mocker):
 
 def test_get_fee(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.calculate_fee = MagicMock(return_value={'type': 'taker', 'currency': 'BTC', 'rate': 0.001, 'cost': 0.002})
+    api_mock.calculate_fee = MagicMock(return_value={'type': 'taker', 'currency': 'BTC', 'rate': 0.025, 'cost': 0.05})
     mocker.patch('freqtrade.exchange._API', api_mock)
-    assert get_fee() == 0.001
+    assert get_fee() == 0.025
 
 
 # TODO: disable until caching implemented

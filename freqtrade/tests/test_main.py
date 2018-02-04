@@ -281,6 +281,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                               'ask': 0.00001173,
                               'last': 0.00001172
                           }),
+                          get_fee=MagicMock(return_value=0.0025),
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           sell=MagicMock(return_value='mocked_limit_sell'))
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
@@ -598,6 +599,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
@@ -611,6 +613,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
     # Increase the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_up)
 
     execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
@@ -636,6 +639,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
                           send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
@@ -669,6 +673,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
@@ -681,6 +686,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     # Decrease the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_down)
     mocker.patch('freqtrade.main._CONF', {})
 
@@ -700,6 +706,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
@@ -712,6 +719,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     # Increase the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_up)
     mocker.patch('freqtrade.main._CONF', {})
 
@@ -743,6 +751,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
                               'ask': 0.00002173,
                               'last': 0.00002172
                           }),
+                          get_fee=MagicMock(return_value=0.0025),
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
@@ -771,6 +780,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
                               'ask': 0.00002173,
                               'last': 0.00002172
                           }),
+                          get_fee=MagicMock(return_value=0.0025),
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
@@ -799,6 +809,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
                               'ask': 0.00000173,
                               'last': 0.00000172
                           }),
+                          get_fee=MagicMock(return_value=0.0025),
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))
@@ -827,6 +838,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
                               'ask': 0.00000173,
                               'last': 0.00000172
                           }),
+                          get_fee=MagicMock(return_value=0.0025),
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
     init(default_conf, create_engine('sqlite://'))

@@ -47,7 +47,9 @@ def test_get_timeframe(default_strategy):
 
 def test_backtest(default_strategy, default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    exchange._API = ccxt.binance({'key': '', 'secret': ''})
+    mocker.patch.multiple('freqtrade.optimize.backtesting.exchange',
+                          get_fee=MagicMock(return_value=0.0025))
+    exchange._API = ccxt.binance()
 
     data = optimize.load_data(None, ticker_interval=5, pairs=['ETH/BTC'])
     data = trim_dictlist(data, -200)
@@ -60,7 +62,9 @@ def test_backtest(default_strategy, default_conf, mocker):
 
 def test_backtest_1min_ticker_interval(default_strategy, default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    exchange._API = ccxt.binance({'key': '', 'secret': ''})
+    mocker.patch.multiple('freqtrade.optimize.backtesting.exchange',
+                          get_fee=MagicMock(return_value=0.0025))
+    exchange._API = ccxt.binance()
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'])
@@ -133,6 +137,8 @@ def simple_backtest(config, contour, num_results):
 
 def test_backtest2(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch.multiple('freqtrade.optimize.backtesting.exchange',
+                          get_fee=MagicMock(return_value=0.0025))
     data = optimize.load_data(None, ticker_interval=5, pairs=['ETH/BTC'])
     data = trim_dictlist(data, -200)
     results = backtest({'stake_amount': default_conf['stake_amount'],
@@ -156,6 +162,8 @@ def test_processed(default_conf, mocker, default_strategy):
 
 def test_backtest_pricecontours(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch.multiple('freqtrade.optimize.backtesting.exchange',
+                          get_fee=MagicMock(return_value=0.0025))
     tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
