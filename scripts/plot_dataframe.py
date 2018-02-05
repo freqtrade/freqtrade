@@ -137,7 +137,7 @@ def plot_analyzed_dataframe(args) -> None:
         name='Volume'
     )
 
-    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 4])
+    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 4],vertical_spacing=0.0001)
 
     fig.append_trace(candles, 1, 1)
     fig.append_trace(bb_lower, 1, 1)
