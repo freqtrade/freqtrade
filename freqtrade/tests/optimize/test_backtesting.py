@@ -29,12 +29,12 @@ def test_generate_text_table():
             'loss': [0, 0]
         }
     )
-    print(generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5))
-    assert generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5) == (
+    print(generate_text_table({'BTC_ETH': {}}, results, 'BTC'))
+    assert generate_text_table({'BTC_ETH': {}}, results, 'BTC') == (
         'pair       buy count    avg profit %    total profit BTC    avg duration    profit    loss\n'  # noqa
         '-------  -----------  --------------  ------------------  --------------  --------  ------\n'  # noqa
-        'BTC_ETH            2           15.00          0.60000000           100.0         2       0\n'  # noqa
-        'TOTAL              2           15.00          0.60000000           100.0         2       0')  # noqa
+        'BTC_ETH            2           15.00          0.60000000            20.0         2       0\n'  # noqa
+        'TOTAL              2           15.00          0.60000000            20.0         2       0')  # noqa
 
 
 def test_get_timeframe(default_strategy):

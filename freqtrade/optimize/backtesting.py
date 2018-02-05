@@ -33,7 +33,7 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
 
 
 def generate_text_table(
-        data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
+        data: Dict[str, Dict], results: DataFrame, stake_currency) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
@@ -49,7 +49,7 @@ def generate_text_table(
             len(result.index),
             result.profit_percent.mean() * 100.0,
             result.profit_BTC.sum(),
-            result.duration.mean() * ticker_interval,
+            result.duration.mean(),
             len(result[result.profit_BTC > 0]),
             len(result[result.profit_BTC < 0])
         ])
@@ -60,7 +60,7 @@ def generate_text_table(
         len(results.index),
         results.profit_percent.mean() * 100.0,
         results.profit_BTC.sum(),
-        results.duration.mean() * ticker_interval,
+        results.duration.mean(),
         len(results[results.profit_BTC > 0]),
         len(results[results.profit_BTC < 0])
     ])
@@ -91,7 +91,7 @@ def get_sell_trade_entry(pair, row, buy_subset, ticker, trade_count_lock, args):
             return row2, (pair,
                           trade.calc_profit_percent(rate=row2.close),
                           trade.calc_profit(rate=row2.close),
-                          row2.Index - row.Index
+                          (row2.date - row.date).seconds // 60
                           ), row2.date
     return None
 
@@ -231,5 +231,5 @@ def start(args):
                         })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
-        generate_text_table(data, results, config['stake_currency'], strategy.ticker_interval)
+        generate_text_table(data, results, config['stake_currency'])
     )
