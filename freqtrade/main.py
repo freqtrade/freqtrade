@@ -435,10 +435,15 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         stake_amount
     )
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
-    # Check if stake_amount is fulfilled
-    if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
+
+    # We need minimum funds of: stake amount + 2x transaction (buy+sell) fee to create a trade
+    min_required_funds = stake_amount + (stake_amount * (exchange.get_fee() * 2))
+
+    # Check if we have enough funds to be able to trade
+    if exchange.get_balance(_CONF['stake_currency']) < min_required_funds:
         raise DependencyException(
-            'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
+            'not enough funds to create trade (balance={}, required={})'.format(
+                _CONF['stake_currency'], min_required_funds)
         )
 
     # Remove currently opened and latest pairs from whitelist

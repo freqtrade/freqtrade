@@ -220,7 +220,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
-    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
+    with pytest.raises(DependencyException, match=r'.*not enough funds.*'):
         create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
