@@ -438,12 +438,13 @@ def create_trade(stake_amount: float, interval: int) -> bool:
 
     # We need minimum funds of: stake amount + 2x transaction (buy+sell) fee to create a trade
     min_required_funds = stake_amount + (stake_amount * (exchange.get_fee() * 2))
+    fund_balance = exchange.get_balance(_CONF['stake_currency'])
 
     # Check if we have enough funds to be able to trade
-    if exchange.get_balance(_CONF['stake_currency']) < min_required_funds:
+    if fund_balance < min_required_funds:
         raise DependencyException(
             'not enough funds to create trade (balance={}, required={})'.format(
-                _CONF['stake_currency'], min_required_funds)
+                fund_balance, min_required_funds)
         )
 
     # Remove currently opened and latest pairs from whitelist
