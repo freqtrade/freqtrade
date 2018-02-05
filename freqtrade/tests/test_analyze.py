@@ -27,7 +27,7 @@ def test_populates_buy_trend(result):
     # Load the default strategy for the unit test, because this logic is done in main.py
     Strategy().init({'strategy': 'default_strategy'})
 
-    dataframe = populate_buy_trend(populate_indicators(result))
+    dataframe = populate_buy_trend(populate_indicators(result, None), None)
     assert 'buy' in dataframe.columns
 
 
@@ -35,7 +35,7 @@ def test_populates_sell_trend(result):
     # Load the default strategy for the unit test, because this logic is done in main.py
     Strategy().init({'strategy': 'default_strategy'})
 
-    dataframe = populate_sell_trend(populate_indicators(result))
+    dataframe = populate_sell_trend(populate_indicators(result, None), None)
     assert 'sell' in dataframe.columns
 
 

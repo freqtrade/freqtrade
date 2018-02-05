@@ -12,7 +12,7 @@ def load_dataframe_pair(pairs):
     assert isinstance(ld, dict)
     assert isinstance(pairs[0], str)
     dataframe = ld[pairs[0]]
-    dataframe = analyze.analyze_ticker(dataframe)
+    dataframe = analyze.analyze_ticker(dataframe, pairs[0])
     return dataframe
 
 

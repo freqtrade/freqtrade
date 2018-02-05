@@ -37,7 +37,7 @@ def test_load_strategy(result):
     assert not hasattr(Strategy, 'custom_strategy')
 
     assert hasattr(strategy.custom_strategy, 'populate_indicators')
-    assert 'adx' in strategy.populate_indicators(result)
+    assert 'adx' in strategy.populate_indicators(result, None)
 
 
 def test_load_not_found_strategy(caplog):
@@ -63,14 +63,14 @@ def test_strategy(result):
     assert strategy.stoploss == -0.10
 
     assert hasattr(strategy.custom_strategy, 'populate_indicators')
-    assert 'adx' in strategy.populate_indicators(result)
+    assert 'adx' in strategy.populate_indicators(result, None)
 
     assert hasattr(strategy.custom_strategy, 'populate_buy_trend')
-    dataframe = strategy.populate_buy_trend(strategy.populate_indicators(result))
+    dataframe = strategy.populate_buy_trend(strategy.populate_indicators(result, None), None)
     assert 'buy' in dataframe.columns
 
     assert hasattr(strategy.custom_strategy, 'populate_sell_trend')
-    dataframe = strategy.populate_sell_trend(strategy.populate_indicators(result))
+    dataframe = strategy.populate_sell_trend(strategy.populate_indicators(result, None), None)
     assert 'sell' in dataframe.columns
 
 

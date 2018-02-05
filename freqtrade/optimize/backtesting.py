@@ -119,7 +119,7 @@ def backtest(args) -> DataFrame:
     exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
-        ticker = populate_sell_trend(populate_buy_trend(pair_data))
+        ticker = populate_sell_trend(populate_buy_trend(pair_data, pair), pair)
         # for each buy point
         lock_pair_until = None
         headers = ['buy', 'open', 'close', 'date', 'sell']

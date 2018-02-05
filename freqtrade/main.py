@@ -161,6 +161,8 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
         logger.info('Buy order timeout for %s.', trade)
         rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
                      trade.pair.replace('_', '/')))
+        strategy = Strategy()
+        strategy.did_cancel_buy(trade.pair)
         return True
 
     # if trade is partially complete, edit the stake details for the trade
@@ -191,6 +193,8 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
         rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
                      trade.pair.replace('_', '/')))
         logger.info('Sell order timeout for %s.', trade)
+        strategy = Strategy()
+        strategy.did_cancel_sell(trade.pair)
         return True
 
     # TODO: figure out how to handle partially complete sell orders
@@ -233,6 +237,9 @@ def execute_sell(trade: Trade, limit: float) -> None:
     # Execute sell and update trade record
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
     trade.open_order_id = order_id
+
+    strategy = Strategy()
+    strategy.did_sold(trade.pair)
 
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
     profit_trade = trade.calc_profit(rate=limit)
@@ -412,6 +419,8 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         _CONF['stake_currency'],
         _CONF['fiat_display_currency']
     )
+    strategy = Strategy()
+    strategy.did_bought(pair)
 
     # Create trade entity and return
     rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '.format(

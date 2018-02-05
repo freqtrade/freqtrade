@@ -30,7 +30,7 @@ def test_default_strategy(result):
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float
     assert type(strategy.ticker_interval) is int
-    indicators = strategy.populate_indicators(result)
+    indicators = strategy.populate_indicators(result, None)
     assert type(indicators) is DataFrame
-    assert type(strategy.populate_buy_trend(indicators)) is DataFrame
-    assert type(strategy.populate_sell_trend(indicators)) is DataFrame
+    assert type(strategy.populate_buy_trend(indicators, None)) is DataFrame
+    assert type(strategy.populate_sell_trend(indicators, None)) is DataFrame

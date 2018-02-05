@@ -91,7 +91,7 @@ def tickerdata_to_dataframe(data):
 
 def preprocess(tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
     """Creates a dataframe and populates indicators for given ticker data"""
-    return {pair: populate_indicators(parse_ticker_dataframe(pair_data))
+    return {pair: populate_indicators(parse_ticker_dataframe(pair_data), pair)
             for pair, pair_data in tickerdata.items()}
 
 

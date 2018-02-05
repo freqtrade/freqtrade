@@ -42,7 +42,7 @@ If you have updated the buy strategy, means change the content of
 
 As for an example if your `populate_buy_trend()` method is:
 ```python
-def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+def populate_buy_trend(dataframe: DataFrame, pair: str) -> DataFrame:
     dataframe.loc[
         (dataframe['rsi'] < 35) &
         (dataframe['adx'] > 65),
@@ -81,7 +81,7 @@ space = {
 
 ... 
 
-def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
         if params['adx']['enabled']:
@@ -280,7 +280,7 @@ at `adx`-block, that translates to the following code block:
 So translating your whole hyperopt result to as the new buy-signal 
 would be the following:
 ```
-def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
     dataframe.loc[
         (
             (dataframe['adx'] > 15.0) & # adx-value
