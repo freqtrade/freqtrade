@@ -306,7 +306,6 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
-    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', float(current_profit) * 100.0)
     return False
 
 
