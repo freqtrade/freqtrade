@@ -33,7 +33,7 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
 
 
 def generate_text_table(
-        data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
+        data: Dict[str, Dict], results: DataFrame, stake_currency) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
@@ -49,7 +49,7 @@ def generate_text_table(
             len(result.index),
             result.profit_percent.mean() * 100.0,
             result.profit_BTC.sum(),
-            result.duration.mean() * ticker_interval,
+            result.duration.mean(),
             len(result[result.profit_BTC > 0]),
             len(result[result.profit_BTC < 0])
         ])
@@ -60,7 +60,7 @@ def generate_text_table(
         len(results.index),
         results.profit_percent.mean() * 100.0,
         results.profit_BTC.sum(),
-        results.duration.mean() * ticker_interval,
+        results.duration.mean(),
         len(results[results.profit_BTC > 0]),
         len(results[results.profit_BTC < 0])
     ])
@@ -71,28 +71,28 @@ def get_sell_trade_entry(pair, row, buy_subset, ticker, trade_count_lock, args):
     stake_amount = args['stake_amount']
     max_open_trades = args.get('max_open_trades', 0)
     trade = Trade(open_rate=row.close,
-                  open_date=row.date,
+                  open_date=row.Index,
                   stake_amount=stake_amount,
                   amount=stake_amount / row.open,
                   fee=exchange.get_fee()
                   )
 
     # calculate win/lose forwards from buy point
-    sell_subset = ticker[ticker.date > row.date][['close', 'date', 'sell']]
+    sell_subset = ticker[ticker.index > row.Index][['close', 'sell']]
     for row2 in sell_subset.itertuples(index=True):
         if max_open_trades > 0:
             # Increase trade_count_lock for every iteration
-            trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
+            trade_count_lock[row2.Index] = trade_count_lock.get(row2.Index, 0) + 1
 
         # Buy is on is in the buy_subset there is a row that matches the date
         # of the sell event
-        buy_signal = not buy_subset[buy_subset.date == row2.date].empty
-        if(should_sell(trade, row2.close, row2.date, buy_signal, row2.sell)):
+        buy_signal = (buy_subset.index == row2.Index).any()
+        if(should_sell(trade, row2.close, row2.Index, buy_signal, row2.sell)):
             return row2, (pair,
                           trade.calc_profit_percent(rate=row2.close),
                           trade.calc_profit(rate=row2.close),
-                          row2.Index - row.Index
-                          ), row2.date
+                          (row2.Index - row.Index).seconds // 60
+                          ), row2.Index
     return None
 
 
@@ -120,22 +120,24 @@ def backtest(args) -> DataFrame:
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
+        if 'date' in ticker:
+            ticker.set_index('date', inplace=True)
         # for each buy point
         lock_pair_until = None
-        headers = ['buy', 'open', 'close', 'date', 'sell']
+        headers = ['buy', 'open', 'close', 'sell']
         buy_subset = ticker[(ticker.buy == 1) & (ticker.sell == 0)][headers]
         for row in buy_subset.itertuples(index=True):
             if realistic:
-                if lock_pair_until is not None and row.date <= lock_pair_until:
+                if lock_pair_until is not None and row.Index <= lock_pair_until:
                     continue
             if max_open_trades > 0:
                 # Check if max_open_trades has already been reached for the given date
-                if not trade_count_lock.get(row.date, 0) < max_open_trades:
+                if not trade_count_lock.get(row.Index, 0) < max_open_trades:
                     continue
 
             if max_open_trades > 0:
                 # Increase lock
-                trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
+                trade_count_lock[row.Index] = trade_count_lock.get(row.Index, 0) + 1
 
             ret = get_sell_trade_entry(pair, row, buy_subset, ticker,
                                        trade_count_lock, args)
@@ -148,8 +150,8 @@ def backtest(args) -> DataFrame:
                     # record a tuple of pair, current_profit_percent,
                     # entry-date, duration
                     records.append((pair, trade_entry[1],
-                                    row.date.strftime('%s'),
-                                    row2.date.strftime('%s'),
+                                    row.Index.strftime('%s'),
+                                    row2.Index.strftime('%s'),
                                     row.Index, trade_entry[3]))
     # For now export inside backtest(), maybe change so that backtest()
     # returns a tuple like: (dataframe, records, logs, etc)
@@ -231,5 +233,5 @@ def start(args):
                         })
     logger.info(
         '\n==================================== BACKTESTING REPORT ====================================\n%s',  # noqa
-        generate_text_table(data, results, config['stake_currency'], strategy.ticker_interval)
+        generate_text_table(data, results, config['stake_currency'])
     )
