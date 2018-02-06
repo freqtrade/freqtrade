@@ -120,7 +120,8 @@ def backtest(args) -> DataFrame:
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
-        ticker.set_index('date', inplace=True)
+        if 'date' in ticker:
+            ticker.set_index('date', inplace=True)
         # for each buy point
         lock_pair_until = None
         headers = ['buy', 'open', 'close', 'sell']
