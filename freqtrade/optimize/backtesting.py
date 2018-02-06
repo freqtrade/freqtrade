@@ -78,15 +78,13 @@ def get_sell_trade_entry(pair, row, buy_subset, ticker, trade_count_lock, args):
                   )
 
     # calculate win/lose forwards from buy point
-    sell_subset = ticker[ticker.index > row.Index][['close', 'sell']]
+    sell_subset = ticker[ticker.index > row.Index][['close', 'sell', 'buy']]
     for row2 in sell_subset.itertuples(index=True):
         if max_open_trades > 0:
             # Increase trade_count_lock for every iteration
             trade_count_lock[row2.Index] = trade_count_lock.get(row2.Index, 0) + 1
 
-        # Buy is on is in the buy_subset there is a row that matches the date
-        # of the sell event
-        buy_signal = (buy_subset.index == row2.Index).any()
+        buy_signal = row2.buy
         if(should_sell(trade, row2.close, row2.Index, buy_signal, row2.sell)):
             return row2, (pair,
                           trade.calc_profit_percent(rate=row2.close),
