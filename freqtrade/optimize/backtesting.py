@@ -86,7 +86,7 @@ def get_sell_trade_entry(pair, row, buy_subset, ticker, trade_count_lock, args):
 
         # Buy is on is in the buy_subset there is a row that matches the date
         # of the sell event
-        buy_signal = not buy_subset[buy_subset.index == row2.Index].empty
+        buy_signal = (buy_subset.index == row2.Index).any()
         if(should_sell(trade, row2.close, row2.Index, buy_signal, row2.sell)):
             return row2, (pair,
                           trade.calc_profit_percent(rate=row2.close),
