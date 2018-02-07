@@ -209,22 +209,43 @@ def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
         return []
 
 
-def cancel_order(order_id: str) -> None:
+def cancel_order(order_id: str, pair: str) -> None:
     if _CONF['dry_run']:
         return
 
-    return _API.cancel_order(order_id)
+    try:
+        return _API.cancel_order(order_id, pair)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not get order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not cancel order. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
-def get_order(order_id: str) -> Dict:
+def get_order(order_id: str, pair: str) -> Dict:
     if _CONF['dry_run']:
         order = _DRY_RUN_OPEN_ORDERS[order_id]
         order.update({
             'id': order_id
         })
         return order
-
-    return _API.get_order(order_id)
+    try:
+        return _API.fetch_order(order_id, pair)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not get order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not get order. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 # TODO: reimplement, not part of ccxt

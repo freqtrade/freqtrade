@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 import arrow
-import requests
 from cachetools import cached, TTLCache
 
 from freqtrade import (DependencyException, OperationalException, NetworkException, __version__,
@@ -86,7 +85,7 @@ def process_maybe_execute_sell(trade, interval):
     if trade.open_order_id:
         # Update trade with order values
         logger.info('Got open order for %s', trade)
-        trade.update(exchange.get_order(trade.open_order_id))
+        trade.update(exchange.get_order(trade.open_order_id, trade.pair))
 
     if trade.is_open and trade.open_order_id is None:
         # Check if we can sell our current pair
@@ -150,7 +149,7 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
     """Buy timeout - cancel order
     :return: True if order was fully cancelled
     """
-    exchange.cancel_order(trade.open_order_id)
+    exchange.cancel_order(trade.open_order_id, trade.pair)
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just delete the trade
         Trade.session.delete(trade)
@@ -181,7 +180,7 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
     """
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just cancel the trade
-        exchange.cancel_order(trade.open_order_id)
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         trade.close_rate = None
         trade.close_profit = None
         trade.close_date = None
@@ -206,8 +205,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
         try:
-            order = exchange.get_order(trade.open_order_id)
-        except requests.exceptions.RequestException:
+            order = exchange.get_order(trade.open_order_id, trade.pair)
+        except (NetworkException, DependencyException):
             logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
             continue
         ordertime = arrow.get(order['opened'])

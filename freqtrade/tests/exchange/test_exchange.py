@@ -271,7 +271,7 @@ def test_cancel_order_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert cancel_order(order_id='123') is None
+    assert cancel_order(order_id='123', pair='TKN/BTC') is None
 
 
 # Ensure that if not dry_run, we should call API
@@ -281,7 +281,7 @@ def test_cancel_order(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(return_value=123)
     mocker.patch('freqtrade.exchange._API', api_mock)
-    assert cancel_order(order_id='_') == 123
+    assert cancel_order(order_id='_',  pair='TKN/BTC') == 123
 
 
 def test_get_order(default_conf, mocker):
@@ -290,15 +290,15 @@ def test_get_order(default_conf, mocker):
     order = MagicMock()
     order.myid = 123
     exchange._DRY_RUN_OPEN_ORDERS['X'] = order
-    print(exchange.get_order('X'))
-    assert exchange.get_order('X').myid == 123
+    print(exchange.get_order('X', 'TKN/BTC'))
+    assert exchange.get_order('X', 'TKN/BTC').myid == 123
 
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
     api_mock = MagicMock()
-    api_mock.get_order = MagicMock(return_value=456)
+    api_mock.fetch_order = MagicMock(return_value=456)
     mocker.patch('freqtrade.exchange._API', api_mock)
-    assert exchange.get_order('X') == 456
+    assert exchange.get_order('X', 'TKN/BTC') == 456
 
 
 def test_get_name(default_conf, mocker):
