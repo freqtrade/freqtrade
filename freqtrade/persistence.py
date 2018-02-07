@@ -187,8 +187,8 @@ class Trade(_DECL_BASE):
         """
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
-            rate=Decimal(rate or self.close_rate),
-            fee=Decimal(fee or self.fee)
+            rate=(rate or self.close_rate),
+            fee=(fee or self.fee)
         )
         return float("{0:.8f}".format(close_trade_price - open_trade_price))
 
@@ -206,8 +206,8 @@ class Trade(_DECL_BASE):
 
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
-            rate=Decimal(rate or self.close_rate),
-            fee=Decimal(fee or self.fee)
+            rate=(rate or self.close_rate),
+            fee=(fee or self.fee)
         )
 
         return float("{0:.8f}".format((close_trade_price / open_trade_price) - 1))
