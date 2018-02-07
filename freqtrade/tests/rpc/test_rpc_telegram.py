@@ -124,7 +124,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          buy=MagicMock(return_value={'id': 'mocked_order_id'}))
     init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _status_table(bot=MagicMock(), update=update)
@@ -524,7 +524,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          buy=MagicMock(return_value={'id': 'mocked_order_id'}))
     init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _count(bot=MagicMock(), update=update)

@@ -9,7 +9,7 @@ from datetime import datetime
 import arrow
 from cachetools import cached, TTLCache
 
-from freqtrade import OperationalException
+from freqtrade import OperationalException, DependencyException, NetworkException
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ def validate_pairs(pairs: List[str]) -> None:
                 'Pair {} is not available at {}'.format(pair, _API.id.lower()))
 
 
-def buy(pair: str, rate: float, amount: float) -> str:
+def buy(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
         order_id = 'dry_run_buy_{}'.format(randint(0, 10**6))
@@ -101,12 +101,31 @@ def buy(pair: str, rate: float, amount: float) -> str:
             'opened': arrow.utcnow().datetime,
             'closed': arrow.utcnow().datetime,
         }
-        return order_id
+        return {'id': order_id}
 
-    return _API.buy(pair, rate, amount)
+    try:
+        return _API.create_limit_buy_order(pair, amount, rate)
+    except ccxt.InsufficientFunds as e:
+        raise DependencyException(
+            'Insufficient funds to create limit buy order on market {}.'
+            'Tried to buy amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not create limit buy order on market {}.'
+            'Tried to buy amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not place buy order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
-def sell(pair: str, rate: float, amount: float) -> str:
+def sell(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
         order_id = 'dry_run_sell_{}'.format(randint(0, 10**6))
@@ -119,9 +138,28 @@ def sell(pair: str, rate: float, amount: float) -> str:
             'opened': arrow.utcnow().datetime,
             'closed': arrow.utcnow().datetime,
         }
-        return order_id
+        return {'id': order_id}
 
-    return _API.sell(pair, rate, amount)
+    try:
+        return _API.create_limit_sell_order(pair, amount, rate)
+    except ccxt.InsufficientFunds as e:
+        raise DependencyException(
+            'Insufficient funds to create limit sell order on market {}.'
+            'Tried to sell amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not create limit sell order on market {}.'
+            'Tried to sell amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not place sell order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_balance(currency: str) -> float:

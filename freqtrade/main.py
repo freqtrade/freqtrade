@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import copy
-import json
 import logging
 import sys
 import time
@@ -12,7 +11,7 @@ import arrow
 import requests
 from cachetools import cached, TTLCache
 
-from freqtrade import (DependencyException, OperationalException, __version__,
+from freqtrade import (DependencyException, OperationalException, NetworkException, __version__,
                        exchange, persistence, rpc)
 from freqtrade.analyze import get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
@@ -128,7 +127,7 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
             check_handle_timedout(_CONF['unfilledtimeout'])
             Trade.session.flush()
 
-    except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+    except (NetworkException, DependencyException) as error:
         logger.warning(
             'Got %s in _process(), retrying in 30 seconds...',
             error
@@ -231,7 +230,8 @@ def execute_sell(trade: Trade, limit: float) -> None:
     :return: None
     """
     # Execute sell and update trade record
-    order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+    order = exchange.sell(str(trade.pair), limit, trade.amount)
+    order_id = order['id']
     trade.open_order_id = order_id
 
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
@@ -404,7 +404,8 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     buy_limit = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / buy_limit
 
-    order_id = exchange.buy(pair, buy_limit, amount)
+    order = exchange.buy(pair, buy_limit, amount)
+    order_id = order['id']
 
     fiat_converter = CryptoToFiatConverter()
     stake_amount_fiat = fiat_converter.convert_amount(

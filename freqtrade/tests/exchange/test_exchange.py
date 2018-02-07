@@ -90,38 +90,58 @@ def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_buy_' in buy(pair='ETH/BTC', rate=200, amount=1)
+    order = buy(pair='ETH/BTC', rate=200, amount=1)
+    assert 'id' in order
+    assert 'dry_run_buy_' in order['id']
 
 
 def test_buy_prod(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.buy = MagicMock(
-        return_value='dry_run_buy_{}'.format(randint(0, 10 ** 6)))
+    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    api_mock.create_limit_buy_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_buy_' in buy(pair='ETH/BTC', rate=200, amount=1)
+    order = buy(pair='ETH/BTC', rate=200, amount=1)
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
 
 
 def test_sell_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_sell_' in sell(pair='ETH/BTC', rate=200, amount=1)
+    order = sell(pair='ETH/BTC', rate=200, amount=1)
+    assert 'id' in order
+    assert 'dry_run_sell_' in order['id']
 
 
 def test_sell_prod(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.sell = MagicMock(
-        return_value='dry_run_sell_{}'.format(randint(0, 10 ** 6)))
+    order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    api_mock.create_limit_sell_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_sell_' in sell(pair='ETH/BTC', rate=200, amount=1)
+    order = sell(pair='ETH/BTC', rate=200, amount=1)
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
 
 
 def test_get_balance_dry_run(default_conf, mocker):
@@ -300,7 +320,6 @@ def test_get_fee(default_conf, mocker):
     })
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert get_fee() == 0.025
-
 
 # TODO: disable until caching implemented
 # def test_exchange_misc(mocker):
