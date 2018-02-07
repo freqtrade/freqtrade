@@ -10,13 +10,14 @@ def test_constant_object() -> None:
     Test the Constants object has the mandatory Constants
     :return: None
     """
-    constant = Constants()
-    assert hasattr(constant, 'CONF_SCHEMA')
-    assert hasattr(constant, 'DYNAMIC_WHITELIST')
-    assert hasattr(constant, 'PROCESS_THROTTLE_SECS')
-    assert hasattr(constant, 'TICKER_INTERVAL')
-    assert hasattr(constant, 'HYPEROPT_EPOCH')
-    assert hasattr(constant, 'RETRY_TIMEOUT')
+    assert hasattr(Constants, 'CONF_SCHEMA')
+    assert hasattr(Constants, 'DYNAMIC_WHITELIST')
+    assert hasattr(Constants, 'PROCESS_THROTTLE_SECS')
+    assert hasattr(Constants, 'TICKER_INTERVAL')
+    assert hasattr(Constants, 'HYPEROPT_EPOCH')
+    assert hasattr(Constants, 'RETRY_TIMEOUT')
+    assert hasattr(Constants, 'DEFAULT_STRATEGY')
+
 
 
 def test_conf_schema() -> None:

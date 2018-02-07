@@ -3,12 +3,12 @@
 """
 This module load custom strategies
 """
+import importlib
 import os
 import sys
-import logging
-import importlib
-
 from pandas import DataFrame
+from freqtrade.logger import Logger
+from freqtrade.constants import Constants
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -19,32 +19,19 @@ class Strategy(object):
     """
     This class contains all the logic to load custom strategy class
     """
-    __instance = None
-
-    DEFAULT_STRATEGY = 'default_strategy'
-
-    def __new__(cls) -> object:
-        """
-        Used to create the Singleton
-        :return: Strategy object
-        """
-        if Strategy.__instance is None:
-            Strategy.__instance = object.__new__(cls)
-        return Strategy.__instance
-
-    def init(self, config: dict) -> None:
+    def __init__(self, config: dict={}) -> None:
         """
         Load the custom class from config parameter
         :param config:
         :return:
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = Logger(name=__name__).get_logger()
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         if 'strategy' in config:
             strategy = config['strategy']
         else:
-            strategy = self.DEFAULT_STRATEGY
+            strategy = Constants.DEFAULT_STRATEGY
 
         # Load the strategy
         self._load_strategy(strategy)

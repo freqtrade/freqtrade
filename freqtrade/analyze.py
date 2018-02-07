@@ -33,8 +33,7 @@ class Analyze(object):
         self.logger = Logger(name=__name__).get_logger()
 
         self.config = config
-        self.strategy = Strategy()
-        self.strategy.init(self.config)
+        self.strategy = Strategy(self.config)
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:
@@ -60,7 +59,6 @@ class Analyze(object):
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
         """
-
         return self.strategy.populate_indicators(dataframe=dataframe)
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
@@ -97,6 +95,7 @@ class Analyze(object):
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format BTC_ANT or BTC-ANT
+        :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
         ticker_hist = get_ticker_history(pair, interval)
@@ -188,3 +187,11 @@ class Analyze(object):
             float(current_profit) * 100.0
         )
         return False
+
+
+    def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
+        """
+        Creates a dataframe and populates indicators for given ticker data
+        """
+        return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data))
+                for pair, pair_data in tickerdata.items()}
