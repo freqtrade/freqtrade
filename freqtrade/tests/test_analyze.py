@@ -19,11 +19,8 @@ def test_dataframe_correct_columns(result):
 
 
 def test_dataframe_correct_length(result):
-    # FIX: no idea what this check truly does - should we just remove it?
-    # magic needs to change everytime testdata/* is updated.
-    # Perhaps change result fixture to use BTC_UNITEST instead?
-    magic = 14397
-    assert len(result.index) == magic
+    dataframe = parse_ticker_dataframe(result)
+    assert len(result.index) == len(dataframe.index)
 
 
 def test_populates_buy_trend(result):
