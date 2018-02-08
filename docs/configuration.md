@@ -24,7 +24,7 @@ The table below will list all configuration parameters.
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `unfilledtimeout` | 0 | No | How long (in minutes) the bot will wait for an unfilled order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
-| `exchange.name` | bittrex | Yes | Name of the exchange class to use.
+| `exchange.name` | bittrex | Yes | Name of the exchange class to use. Valid values are: `bittrex` or `binance`
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
@@ -94,7 +94,7 @@ creating trades.
 "dry_run": true,
 ```
 
-3. Remove your Bittrex API key (change them by fake api credentials)
+3. Remove your exchange API key (change them by fake api credentials)
 ```json
 "exchange": {
         "name": "bittrex",
@@ -120,7 +120,7 @@ you run it in production mode.
 "dry_run": false,
 ```
 
-3. Insert your Bittrex API key (change them by fake api keys)
+3. Insert your exchange API key (change them by fake api keys)
 ```json
 "exchange": {
         "name": "bittrex",
@@ -129,7 +129,7 @@ you run it in production mode.
         ...
 }       
 ```
-If you have not your Bittrex API key yet, 
+If you have not your exchange API key yet,
 [see our tutorial](https://github.com/gcarq/freqtrade/blob/develop/docs/pre-requisite.md).
 
 

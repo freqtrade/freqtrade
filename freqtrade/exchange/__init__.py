@@ -11,6 +11,7 @@ from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException
 from freqtrade.exchange.bittrex import Bittrex
+from freqtrade.exchange.binance import Binance
 from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class Exchanges(enum.Enum):
     Maps supported exchange names to correspondent classes.
     """
     BITTREX = Bittrex
+    BINANCE = Binance
 
 
 def init(config: dict) -> None:
@@ -54,6 +56,7 @@ def init(config: dict) -> None:
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
+    exchange_config['stake_currency'] = config['stake_currency']
     _API = exchange_class(exchange_config)
 
     # Check if all pairs are available
@@ -143,14 +146,14 @@ def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
     return _API.get_ticker_history(pair, tick_interval)
 
 
-def cancel_order(order_id: str) -> None:
+def cancel_order(order_id: str, pair: str) -> None:
     if _CONF['dry_run']:
         return
 
-    return _API.cancel_order(order_id)
+    return _API.cancel_order(order_id, pair)
 
 
-def get_order(order_id: str) -> Dict:
+def get_order(order_id: str, pair: str) -> Dict:
     if _CONF['dry_run']:
         order = _DRY_RUN_OPEN_ORDERS[order_id]
         order.update({
@@ -158,7 +161,7 @@ def get_order(order_id: str) -> Dict:
         })
         return order
 
-    return _API.get_order(order_id)
+    return _API.get_order(order_id, pair)
 
 
 def get_pair_detail_url(pair: str) -> str:
@@ -183,3 +186,7 @@ def get_fee() -> float:
 
 def get_wallet_health() -> List[Dict]:
     return _API.get_wallet_health()
+
+
+def get_trade_qty(pair: str) -> tuple:
+    return _API.get_trade_qty(pair)

@@ -84,7 +84,7 @@ def process_maybe_execute_sell(trade: Trade, interval: int) -> bool:
     if trade.open_order_id:
         # Update trade with order values
         logger.info('Got open order for %s', trade)
-        trade.update(exchange.get_order(trade.open_order_id))
+        trade.update(exchange.get_order(trade.open_order_id, trade.pair))
 
     if trade.is_open and trade.open_order_id is None:
         # Check if we can sell our current pair
@@ -151,7 +151,7 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
     """Buy timeout - cancel order
     :return: True if order was fully cancelled
     """
-    exchange.cancel_order(trade.open_order_id)
+    exchange.cancel_order(trade.open_order_id, trade.pair)
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just delete the trade
         Trade.session.delete(trade)
@@ -165,7 +165,20 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
 
     # if trade is partially complete, edit the stake details for the trade
     # and close the order
-    trade.amount = order['amount'] - order['remaining']
+
+    new_trade_amount = order['amount'] - order['remaining']
+    (min_qty, max_qty, step_qty) = exchange.get_trade_qty(trade.pair)
+
+    if min_qty:
+        # Remaining amount must be exchange minimum order quantity to be able to sell it
+        if new_trade_amount < min_qty:
+            logger.info('Wont cancel partial filled buy order that timed out for {}:'.format(
+                        trade) +
+                        'remaining amount {} too low for new order '.format(new_trade_amount) +
+                        '(minimum order quantity: {})'.format(new_trade_amount, min_qty))
+            return False
+
+    trade.amount = new_trade_amount
     trade.stake_amount = trade.amount * trade.open_rate
     trade.open_order_id = None
     logger.info('Partial buy order timeout for %s.', trade)
@@ -180,21 +193,66 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
     Sell timeout - cancel order and update trade
     :return: True if order was fully cancelled
     """
-    if order['remaining'] == order['amount']:
-        # if trade is not partially completed, just cancel the trade
-        exchange.cancel_order(trade.open_order_id)
-        trade.close_rate = None
-        trade.close_profit = None
-        trade.close_date = None
-        trade.is_open = True
-        trade.open_order_id = None
-        rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
-                     trade.pair.replace('_', '/')))
-        logger.info('Sell order timeout for %s.', trade)
-        return True
+    logger.info('Sell order timeout for %s.', trade)
 
-    # TODO: figure out how to handle partially complete sell orders
-    return False
+    # Partial filled sell order timed out
+    if order['remaining'] < order['amount']:
+
+        (min_qty, max_qty, step_qty) = exchange.get_trade_qty(trade.pair)
+
+        # Create new trade for partial filled amount and close that new trade
+        new_trade_amount = order['amount'] - order['remaining']
+
+        if min_qty:
+            # Remaining amount must be exchange minimum order quantity to be able to sell it
+            if new_trade_amount < min_qty:
+                logger.info('Wont cancel partial filled sell order that timed out for {}:'.format(
+                            trade) +
+                            'remaining amount {} too low for new order '.format(new_trade_amount) +
+                            '(minimum order quantity: {})'.format(new_trade_amount, min_qty))
+                return False
+
+        exchange.cancel_order(trade.open_order_id, trade.pair)
+
+        new_trade_stake_amount = new_trade_amount * trade.open_rate
+
+        # but give it half fee: because we share buy order with current trade
+        # this trade only costs sell fee
+        new_trade = Trade(
+            pair=trade.pair,
+            stake_amount=new_trade_stake_amount,
+            amount=new_trade_amount,
+            fee=(trade.fee/2),
+            open_rate=trade.open_rate,
+            open_date=trade.open_date,
+            exchange=trade.exchange,
+            open_order_id=None
+        )
+        new_trade.close(order['rate'])
+
+        # Update stake and amount leftover of current trade to still be handled
+        trade.amount = order['remaining']
+        trade.stake_amount = trade.amount * trade.open_rate
+        trade.open_order_id = None
+
+        rpc.send_msg('*Timeout:* Partially filled sell order for {} cancelled: '.format(
+                         trade.pair.replace('_', '/')) +
+                     '{} amount remains'.format(trade.amount))
+
+        return False
+
+    # Order is not partially filled: full amount remains
+    # Just remove the order and the trade remains to be handled
+    exchange.cancel_order(trade.open_order_id, trade.pair)
+    trade.close_rate = None
+    trade.close_profit = None
+    trade.close_date = None
+    trade.is_open = True
+    trade.open_order_id = None
+    rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
+                 trade.pair.replace('_', '/')))
+
+    return True
 
 
 def check_handle_timedout(timeoutvalue: int) -> None:
@@ -207,7 +265,7 @@ def check_handle_timedout(timeoutvalue: int) -> None:
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
         try:
-            order = exchange.get_order(trade.open_order_id)
+            order = exchange.get_order(trade.open_order_id, trade.pair)
         except requests.exceptions.RequestException:
             logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
             continue
@@ -378,10 +436,16 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         stake_amount
     )
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
-    # Check if stake_amount is fulfilled
-    if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
+
+    # We need minimum funds of: stake amount + 2x transaction (buy+sell) fee to create a trade
+    min_required_funds = stake_amount + (stake_amount * (exchange.get_fee() * 2))
+    fund_balance = exchange.get_balance(_CONF['stake_currency'])
+
+    # Check if we have enough funds to be able to trade
+    if fund_balance < min_required_funds:
         raise DependencyException(
-            'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
+            'not enough funds to create trade (balance={}, required={})'.format(
+                fund_balance, min_required_funds)
         )
 
     # Remove currently opened and latest pairs from whitelist
@@ -401,15 +465,42 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     else:
         return False
 
-    # Calculate amount
+    min_qty = None
+    max_qty = None
+    step_qty = None
+
+    (min_qty, max_qty, step_qty) = exchange.get_trade_qty(pair)
+
+    # Calculate bid price
     buy_limit = get_target_bid(exchange.get_ticker(pair))
+
+    # Calculate base amount
     amount = stake_amount / buy_limit
 
-    order_id = exchange.buy(pair, buy_limit, amount)
+    # if amount above max qty: just buy max qty
+    if max_qty:
+        if amount > max_qty:
+            amount = max_qty
+
+    if min_qty:
+        if amount < min_qty:
+            raise DependencyException(
+                'stake amount is too low (min_qty={})'.format(min_qty)
+            )
+
+    # make trade exact amount of step qty
+    if step_qty:
+        real_amount = (amount // step_qty) * step_qty
+    else:
+        real_amount = amount
+
+    order_id = exchange.buy(pair, buy_limit, real_amount)
+
+    real_stake_amount = buy_limit * real_amount
 
     fiat_converter = CryptoToFiatConverter()
     stake_amount_fiat = fiat_converter.convert_amount(
-        stake_amount,
+        real_stake_amount,
         _CONF['stake_currency'],
         _CONF['fiat_display_currency']
     )
@@ -419,7 +510,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         exchange.get_name().upper(),
         pair.replace('_', '/'),
         exchange.get_pair_detail_url(pair),
-        buy_limit, stake_amount, _CONF['stake_currency'],
+        buy_limit, real_stake_amount, _CONF['stake_currency'],
         stake_amount_fiat, _CONF['fiat_display_currency']
     ))
     # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL

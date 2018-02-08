@@ -5,6 +5,7 @@ import logging
 import time
 import os
 import re
+import sys
 from datetime import datetime
 from typing import Any, Callable, Dict, List
 
@@ -91,8 +92,14 @@ def load_config(path: str) -> Dict:
     :param path: path as str
     :return: configuration as dictionary
     """
-    with open(path) as file:
-        conf = json.load(file)
+    try:
+        with open(path) as file:
+            conf = json.load(file)
+    except json.decoder.JSONDecodeError as e:
+        logger.fatal('Syntax configuration error: invalid JSON format in {path}: {error}'.format(
+            path=path, error=e))
+        sys.exit(1)
+
     if 'internals' not in conf:
         conf['internals'] = {}
     logger.info('Validating configuration ...')

@@ -84,7 +84,7 @@ def rpc_trade_status():
         for trade in trades:
             order = None
             if trade.open_order_id:
-                order = exchange.get_order(trade.open_order_id)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
             # calculate profit and send message to user
             current_rate = exchange.get_ticker(trade.pair, False)['bid']
             current_profit = trade.calc_profit_percent(current_rate)
@@ -340,11 +340,11 @@ def rpc_forcesell(trade_id) -> None:
     def _exec_forcesell(trade: Trade) -> str:
         # Check if there is there is an open order
         if trade.open_order_id:
-            order = exchange.get_order(trade.open_order_id)
+            order = exchange.get_order(trade.open_order_id, trade.pair)
 
             # Cancel open LIMIT_BUY orders and close trade
             if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
-                exchange.cancel_order(trade.open_order_id)
+                exchange.cancel_order(trade.open_order_id, trade.pair)
                 trade.close(order.get('rate') or trade.open_rate)
                 # TODO: sell amount which has been bought already
                 return

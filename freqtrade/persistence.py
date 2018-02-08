@@ -133,7 +133,7 @@ class Trade(_DECL_BASE):
         self.is_open = False
         self.open_order_id = None
         logger.info(
-            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+            'Marking %s as closed since found no open orders for it.',
             self
         )
 

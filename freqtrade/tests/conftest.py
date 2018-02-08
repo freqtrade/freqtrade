@@ -185,6 +185,19 @@ def limit_buy_order_old_partial():
 
 
 @pytest.fixture
+def limit_sell_order_old_partial():
+    return {
+        'id': 'mocked_limit_sell_old_partial',
+        'type': 'LIMIT_SELL',
+        'pair': 'BTC_ETH',
+        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'rate': 0.00001099,
+        'amount': 90.99181073,
+        'remaining': 67.99181073,
+    }
+
+
+@pytest.fixture
 def limit_sell_order():
     return {
         'id': 'mocked_limit_sell',

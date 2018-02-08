@@ -220,7 +220,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
-    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
+    with pytest.raises(DependencyException, match=r'.*not enough funds.*'):
         create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
@@ -535,14 +535,50 @@ def test_handle_timedout_limit_sell(mocker):
              'amount': 1}
     assert main.handle_timedout_limit_sell(trade, order)
     assert cancel_order.call_count == 1
-    order['amount'] = 2
-    assert not main.handle_timedout_limit_sell(trade, order)
-    # Assert cancel_order was not called (callcount remains unchanged)
-    assert cancel_order.call_count == 1
 
 
-def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
-                                       mocker):
+def test_check_handle_timedout_partial_sell(default_conf, ticker, limit_sell_order_old_partial,
+                                            mocker):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    cancel_order_mock = MagicMock()
+    get_trade_qty_mock = MagicMock(return_value=(None, None, None))
+    mocker.patch('freqtrade.rpc.init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
+    mocker.patch.multiple('freqtrade.main.exchange',
+                          validate_pairs=MagicMock(),
+                          get_ticker=ticker,
+                          get_order=MagicMock(return_value=limit_sell_order_old_partial),
+                          cancel_order=cancel_order_mock,
+                          get_trade_qty=get_trade_qty_mock)
+    init(default_conf, create_engine('sqlite://'))
+
+    trade_sell = Trade(
+        pair='BTC_ETH',
+        open_rate=0.00001099,
+        exchange='BITTREX',
+        open_order_id='123456789',
+        amount=90.99181073,
+        fee=0.0,
+        stake_amount=1,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )
+
+    Trade.session.add(trade_sell)
+
+    # check it does cancel sell orders over the time limit
+    # note this is for a partially-complete sell order
+    check_handle_timedout(600)
+    assert cancel_order_mock.call_count == 1
+    assert rpc_mock.call_count == 1
+    trades = Trade.query.filter(Trade.open_order_id.is_(trade_sell.open_order_id)).all()
+    assert len(trades) == 1
+    assert trades[0].amount == 67.99181073
+    assert trades[0].stake_amount == trade_sell.open_rate * trades[0].amount
+
+
+def test_check_handle_timedout_partial_buy(default_conf, ticker, limit_buy_order_old_partial,
+                                           mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     cancel_order_mock = MagicMock()
     mocker.patch('freqtrade.rpc.init', MagicMock())

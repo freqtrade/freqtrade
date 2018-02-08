@@ -98,7 +98,7 @@ function config_generator () {
     read -p "Fiat currency: (Default: USD) " fiat_currency
 
     echo "------------------------"
-    echo "Bittrex config generator"
+    echo "Exchange config generator"
     echo "------------------------"
     echo
     read -p "Exchange API key: " api_key
