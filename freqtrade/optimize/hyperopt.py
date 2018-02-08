@@ -406,7 +406,7 @@ def optimizer(params):
 
     total_profit = results.profit_percent.sum()
     trade_count = len(results.index)
-    trade_duration = results.duration.mean() * 5
+    trade_duration = results.duration.mean()
 
     if trade_count == 0 or trade_duration > MAX_ACCEPTED_TRADE_DURATION:
         print('.', end='')

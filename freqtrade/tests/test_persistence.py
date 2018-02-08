@@ -271,10 +271,6 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
     # Lower than open rate
     assert trade.calc_profit(rate=0.00000123, fee=0.003) == -0.00089092
 
-    # Only custom fee without sell order applied
-    with pytest.raises(TypeError):
-        trade.calc_profit(fee=0.003)
-
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)
     assert trade.calc_profit() == 0.00006217
@@ -298,10 +294,6 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
 
     # Get percent of profit with a custom rate (Lower than open rate)
     assert trade.calc_profit_percent(rate=0.00000123) == -0.88863827
-
-    # Only custom fee without sell order applied
-    with pytest.raises(TypeError):
-        trade.calc_profit_percent(fee=0.003)
 
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)

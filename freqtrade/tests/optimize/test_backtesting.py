@@ -94,12 +94,12 @@ def test_generate_text_table():
             'loss': [0, 0]
         }
     )
-    print(generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5))
-    assert generate_text_table({'BTC_ETH': {}}, results, 'BTC', 5) == (
+    print(generate_text_table({'BTC_ETH': {}}, results, 'BTC'))
+    assert generate_text_table({'BTC_ETH': {}}, results, 'BTC') == (
         'pair       buy count    avg profit %    total profit BTC    avg duration    profit    loss\n'  # noqa
         '-------  -----------  --------------  ------------------  --------------  --------  ------\n'  # noqa
-        'BTC_ETH            2           15.00          0.60000000           100.0         2       0\n'  # noqa
-        'TOTAL              2           15.00          0.60000000           100.0         2       0')  # noqa
+        'BTC_ETH            2           15.00          0.60000000            20.0         2       0\n'  # noqa
+        'TOTAL              2           15.00          0.60000000            20.0         2       0')  # noqa
 
 
 def test_get_timeframe(default_strategy):
@@ -262,14 +262,16 @@ def test_backtest_record(default_conf, mocker, default_strategy):
     assert len(records) == 3
     # ('BTC_UNITEST', 0.00331158, '1510684320', '1510691700', 0, 117)
     # Below follows just a typecheck of the schema/type of trade-records
-    oix = -1
+    oix = None
     for (pair, profit, date_buy, date_sell, buy_index, dur) in records:
         assert pair == 'BTC_UNITEST'
         isinstance(profit, float)
         # FIX: buy/sell should be converted to ints
         isinstance(date_buy, str)
         isinstance(date_sell, str)
-        assert buy_index > oix
+        isinstance(buy_index, pd._libs.tslib.Timestamp)
+        if oix:
+            assert buy_index > oix
         oix = buy_index
         assert dur > 0
 

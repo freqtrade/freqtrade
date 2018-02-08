@@ -7,6 +7,7 @@ import os
 import sys
 import logging
 import importlib
+from collections import OrderedDict
 
 from pandas import DataFrame
 from freqtrade.strategy.interface import IStrategy
@@ -69,7 +70,9 @@ class Strategy(object):
             )
 
         # Minimal ROI designed for the strategy
-        self.minimal_roi = self.custom_strategy.minimal_roi
+        self.minimal_roi = OrderedDict(sorted(
+            self.custom_strategy.minimal_roi.items(),
+            key=lambda tuple: float(tuple[0])))  # sort after converting to number
 
         # Optimal stoploss designed for the strategy
         self.stoploss = self.custom_strategy.stoploss
