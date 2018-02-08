@@ -149,6 +149,7 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 @cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
+    ## implement https://github.com/ccxt/ccxt/blob/master/python/ccxt/bittrex.py#L394-L400
     return _API.get_ticker_history(pair, tick_interval)
 
 
@@ -179,7 +180,13 @@ def get_markets() -> List[str]:
 
 
 def get_market_summaries() -> List[Dict]:
-    return _API.public_get_marketsummaries()['result']
+    # TODO: check other exchanges how they implement market summaries
+    summaries = _API.public_get_marketsummaries()['result']
+    for market in summaries:
+        name = market['MarketName'].split('-')
+        market['MarketName'] = name[-1] + '/' + name[0]
+    return summaries
+        
 
 
 def get_name() -> str:

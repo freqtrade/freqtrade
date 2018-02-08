@@ -35,8 +35,9 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     sanitized_whitelist = whitelist
     health = exchange.get_wallet_health()
     known_pairs = set()
+
     for status in health:
-        pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+        pair = '{}/{}'.format(status['Currency'], _CONF['stake_currency'])
         # pair is not int the generated dynamic market, or in the blacklist ... ignore it
         if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
@@ -374,7 +375,10 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         'Checking buy signals to create a new trade with stake_amount: %f ...',
         stake_amount
     )
+
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
+    print('*******whitelist {}*****'.format(whitelist))
+    
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise DependencyException(
@@ -466,14 +470,12 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
-    
     summaries = sorted(
         (s for s in exchange.get_market_summaries() if s['MarketName'].endswith(base_currency)),
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
-
-    return [s['MarketName'].replace('-', '_') for s in summaries]
+    return [s['MarketName'] for s in summaries]
 
 
 def cleanup() -> None:
