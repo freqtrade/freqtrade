@@ -192,15 +192,7 @@ def simple_backtest(config, contour, num_results):
     assert len(results) == num_results
 
 
-# Test backtest on offline data
-# loaded by freqdata/optimize/__init__.py::load_data()
-# Note alot of tests has:
-#   '''
-#   102 ERROR    Impossible to load Strategy
-#    'user_data/strategies/agicMock name='mock.strategy'
-#    id='139693411744512'>.py'. This file does not exist
-#    or contains Python code errors
-#   '''
+# Test backtest using offline data (testdata directory)
 
 
 def test_backtest_ticks(default_conf, mocker, default_strategy):
