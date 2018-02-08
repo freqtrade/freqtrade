@@ -4,14 +4,12 @@ import sys
 import json
 import numpy as np
 
-import plotly
 from plotly import tools
 from plotly.offline import plot
 import plotly.graph_objs as go
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
-import freqtrade.exchange as exchange
 from freqtrade.strategy.strategy import Strategy
 
 
