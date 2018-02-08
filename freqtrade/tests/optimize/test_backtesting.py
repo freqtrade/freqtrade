@@ -1,9 +1,10 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103
-
+import random
 import logging
 import math
 from unittest.mock import MagicMock
 import pandas as pd
+import numpy as np
 from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize import preprocess
@@ -16,6 +17,70 @@ def trim_dictlist(dict_list, num):
     for pair, pair_data in dict_list.items():
         new[pair] = pair_data[num:]
     return new
+
+
+# use for mock freqtrade.exchange.get_ticker_history'
+def _load_pair_as_ticks(pair, tickfreq):
+    ticks = optimize.load_data(None, ticker_interval=8, pairs=[pair])
+    ticks = trim_dictlist(ticks, -200)
+    return ticks[pair]
+
+
+# FIX: fixturize this?
+def _make_backtest_conf(conf=None,
+                        pair='BTC_UNITEST',
+                        record=None):
+    data = optimize.load_data(None, ticker_interval=8, pairs=[pair])
+    data = trim_dictlist(data, -200)
+    return {'stake_amount': conf['stake_amount'],
+            'processed': optimize.preprocess(data),
+            'max_open_trades': 10,
+            'realistic': True,
+            'record': record}
+
+
+def _trend(signals, buy_value, sell_value):
+    n = len(signals['low'])
+    buy = np.zeros(n)
+    sell = np.zeros(n)
+    for i in range(0, len(signals['buy'])):
+        if random.random() > 0.5:  # Both buy and sell signals at same timeframe
+            buy[i] = buy_value
+            sell[i] = sell_value
+    signals['buy'] = buy
+    signals['sell'] = sell
+    return signals
+
+
+def _trend_alternate(dataframe=None):
+    signals = dataframe
+    low = signals['low']
+    n = len(low)
+    buy = np.zeros(n)
+    sell = np.zeros(n)
+    for i in range(0, len(buy)):
+        if i % 2 == 0:
+            buy[i] = 1
+        else:
+            sell[i] = 1
+    signals['buy'] = buy
+    signals['sell'] = sell
+    return dataframe
+
+
+def _run_backtest_1(strategy, fun, backtest_conf):
+    # strategy is a global (hidden as a singleton), so we
+    # emulate strategy being pure, by override/restore here
+    # if we dont do this, the override in strategy will carry over
+    # to other tests
+    old_buy = strategy.populate_buy_trend
+    old_sell = strategy.populate_sell_trend
+    strategy.populate_buy_trend = fun  # Override
+    strategy.populate_sell_trend = fun  # Override
+    results = backtest(backtest_conf)
+    strategy.populate_buy_trend = old_buy  # restore override
+    strategy.populate_sell_trend = old_sell  # restore override
+    return results
 
 
 def test_generate_text_table():
@@ -127,19 +192,88 @@ def simple_backtest(config, contour, num_results):
     assert len(results) == num_results
 
 
-# Test backtest on offline data
-# loaded by freqdata/optimize/__init__.py::load_data()
+# Test backtest using offline data (testdata directory)
 
 
-def test_backtest2(default_conf, mocker, default_strategy):
+def test_backtest_ticks(default_conf, mocker, default_strategy):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
-    data = trim_dictlist(data, -200)
-    results = backtest({'stake_amount': default_conf['stake_amount'],
-                        'processed': optimize.preprocess(data),
-                        'max_open_trades': 10,
-                        'realistic': True})
-    assert not results.empty
+    ticks = [1, 5]
+    fun = default_strategy.populate_buy_trend
+    for tick in ticks:
+        backtest_conf = _make_backtest_conf(conf=default_conf)
+        results = _run_backtest_1(default_strategy, fun, backtest_conf)
+        assert not results.empty
+
+
+def test_backtest_clash_buy_sell(default_conf, mocker, default_strategy):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+
+    # Override the default buy trend function in our default_strategy
+    def fun(dataframe=None):
+        buy_value = 1
+        sell_value = 1
+        return _trend(dataframe, buy_value, sell_value)
+
+    backtest_conf = _make_backtest_conf(conf=default_conf)
+    results = _run_backtest_1(default_strategy, fun, backtest_conf)
+    assert results.empty
+
+
+def test_backtest_only_sell(default_conf, mocker, default_strategy):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+
+    # Override the default buy trend function in our default_strategy
+    def fun(dataframe=None):
+        buy_value = 0
+        sell_value = 1
+        return _trend(dataframe, buy_value, sell_value)
+
+    backtest_conf = _make_backtest_conf(conf=default_conf)
+    results = _run_backtest_1(default_strategy, fun, backtest_conf)
+    assert results.empty
+
+
+def test_backtest_alternate_buy_sell(default_conf, mocker, default_strategy):
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    backtest_conf = _make_backtest_conf(conf=default_conf, pair='BTC_UNITEST')
+    results = _run_backtest_1(default_strategy, _trend_alternate,
+                              backtest_conf)
+    assert len(results) == 3
+
+
+def test_backtest_record(default_conf, mocker, default_strategy):
+    names = []
+    records = []
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.misc.file_dump_json',
+                 new=lambda n, r: (names.append(n), records.append(r)))
+    backtest_conf = _make_backtest_conf(
+        conf=default_conf,
+        pair='BTC_UNITEST',
+        record="trades"
+    )
+    results = _run_backtest_1(default_strategy, _trend_alternate,
+                              backtest_conf)
+    assert len(results) == 3
+    # Assert file_dump_json was only called once
+    assert names == ['backtest-result.json']
+    records = records[0]
+    # Ensure records are of correct type
+    assert len(records) == 3
+    # ('BTC_UNITEST', 0.00331158, '1510684320', '1510691700', 0, 117)
+    # Below follows just a typecheck of the schema/type of trade-records
+    oix = None
+    for (pair, profit, date_buy, date_sell, buy_index, dur) in records:
+        assert pair == 'BTC_UNITEST'
+        isinstance(profit, float)
+        # FIX: buy/sell should be converted to ints
+        isinstance(date_buy, str)
+        isinstance(date_sell, str)
+        isinstance(buy_index, pd._libs.tslib.Timestamp)
+        if oix:
+            assert buy_index > oix
+        oix = buy_index
+        assert dur > 0
 
 
 def test_processed(default_conf, mocker, default_strategy):
@@ -186,6 +320,32 @@ def test_backtest_start(default_conf, mocker, caplog):
     exists = ['Using max_open_trades: 1 ...',
               'Using stake_amount: 0.001 ...',
               'Measuring data from 2017-11-14T21:17:00+00:00 '
+              'up to 2017-11-14T22:59:00+00:00 (0 days)..']
+    for line in exists:
+        assert ('freqtrade.optimize.backtesting',
+                logging.INFO,
+                line) in caplog.record_tuples
+
+
+def test_backtest_start_live(default_strategy, default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    default_conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']
+    mocker.patch('freqtrade.exchange.get_ticker_history',
+                 new=lambda n, i: _load_pair_as_ticks(n, i))
+    mocker.patch.dict('freqtrade.main._CONF', default_conf)
+    mocker.patch('freqtrade.misc.load_config', new=lambda s: default_conf)
+    args = MagicMock()
+    args.ticker_interval = 1
+    args.level = 10
+    args.live = True
+    args.datadir = None
+    args.export = None
+    args.timerange = '-100'  # needed due to MagicMock malleability
+    backtesting.start(args)
+    # check the logs, that will contain the backtest result
+    exists = ['Using max_open_trades: 1 ...',
+              'Using stake_amount: 0.001 ...',
+              'Measuring data from 2017-11-14T19:32:00+00:00 '
               'up to 2017-11-14T22:59:00+00:00 (0 days)..']
     for line in exists:
         assert ('freqtrade.optimize.backtesting',

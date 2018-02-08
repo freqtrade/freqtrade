@@ -19,8 +19,8 @@ def test_dataframe_correct_columns(result):
 
 
 def test_dataframe_correct_length(result):
-    # no idea what this check truly does - should we just remove it?
-    assert len(result.index) == 14397
+    dataframe = parse_ticker_dataframe(result)
+    assert len(result.index) == len(dataframe.index)
 
 
 def test_populates_buy_trend(result):

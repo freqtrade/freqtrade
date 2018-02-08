@@ -1,8 +1,14 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import logging
 
+from unittest.mock import MagicMock
+
+import pandas as pd
+
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
     log_results, save_trials, read_trials, generate_roi_table
+
+import freqtrade.optimize.hyperopt as hyperopt
 
 
 def test_loss_calculation_prefer_correct_trade_count():
@@ -250,3 +256,26 @@ def test_roi_table_generation():
         'roi_p3': 3,
     }
     assert generate_roi_table(params) == {'0': 6, '15': 3, '25': 1, '30': 0}
+
+
+# test log_trials_result
+# test buy_strategy_generator def populate_buy_trend
+# test optimizer if 'ro_t1' in params
+
+def test_format_results():
+    trades = [('BTC_ETH', 2, 2, 123),
+              ('BTC_LTC', 1, 1, 123),
+              ('BTC_XRP', -1, -2, -246)]
+    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+    df = pd.DataFrame.from_records(trades, columns=labels)
+    x = hyperopt.format_results(df)
+    assert x.find(' 66.67%')
+
+
+def test_signal_handler(mocker):
+    m = MagicMock()
+    mocker.patch('sys.exit', m)
+    mocker.patch('freqtrade.optimize.hyperopt.save_trials', m)
+    mocker.patch('freqtrade.optimize.hyperopt.log_trials_result', m)
+    hyperopt.signal_handler(9, None)
+    assert m.call_count == 3
