@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 _API: ccxt.Exchange = None
 _CONF: dict = {}
 
+# Cache for ticker data
+_TICKER_CACHE: dict = {}
+
 # Holds all open sell orders for dry_run
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
@@ -190,9 +193,13 @@ def get_balances() -> dict:
 
 
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
+    global _TICKER_CACHE
     try:
-        # TODO: add caching
-        return _API.fetch_ticker(pair)
+        if not refresh:
+            if _TICKER_CACHE:
+                return _TICKER_CACHE
+        _TICKER_CACHE = _API.fetch_ticker(pair)
+        return _TICKER_CACHE
     except ccxt.NetworkError as e:
         raise NetworkException(
             'Could not load tickers due to networking error. Message: {}'.format(e)

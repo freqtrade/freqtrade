@@ -224,9 +224,9 @@ def test_get_ticker(default_conf, mocker):
 
     # if not caching the result we should get the same ticker
     # if not fetching a new result we should get the cached ticker
-    # ticker = get_ticker(pair='ETH/BTC', refresh=False)
-    # assert ticker['bid'] == 0.00001098
-    # assert ticker['ask'] == 0.00001099
+    ticker = get_ticker(pair='ETH/BTC', refresh=False)
+    assert ticker['bid'] == 0.00001098
+    assert ticker['ask'] == 0.00001099
 
     # force ticker refresh
     ticker = get_ticker(pair='ETH/BTC', refresh=True)
@@ -259,13 +259,26 @@ def test_get_ticker_history(default_conf, mocker):
     assert ticks[0]['V'] == 5
 
     # change the ticker
-    # tick = 999
-    # api_mock.get_ticker_history = MagicMock(return_value=tick)
-    # mocker.patch('freqtrade.exchange._API', api_mock)
+    new_tick = [
+        [
+            1511686200000,  # unix timestamp ms
+            6,  # open
+            7,  # high
+            8,  # low
+            9,  # close
+            10,  # volume (in quote currency)
+        ]
+    ]
+    api_mock.get_ticker_history = MagicMock(return_value=new_tick)
+    mocker.patch('freqtrade.exchange._API', api_mock)
 
     # ensure caching will still return the original ticker
-    # ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])
-    # assert ticks == 123
+    ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])
+    assert ticks[0]['O'] == 1
+    assert ticks[0]['H'] == 2
+    assert ticks[0]['L'] == 3
+    assert ticks[0]['C'] == 4
+    assert ticks[0]['V'] == 5
 
 
 def test_cancel_order_dry_run(default_conf, mocker):
