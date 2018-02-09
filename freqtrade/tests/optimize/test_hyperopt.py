@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
-    log_results, save_trials, read_trials, generate_roi_table
+    log_results, save_trials, read_trials, generate_roi_table, has_space
 
 import freqtrade.optimize.hyperopt as hyperopt
 
@@ -71,7 +71,7 @@ def test_start_calls_fmin(mocker):
     mock_fmin = mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
 
     args = mocker.Mock(epochs=1, config='config.json.example', mongodb=False,
-                       timerange=None)
+                       timerange=None, spaces='all')
     start(args)
 
     mock_fmin.assert_called_once()
@@ -85,7 +85,7 @@ def test_start_uses_mongotrials(mocker):
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
 
     args = mocker.Mock(epochs=1, config='config.json.example', mongodb=True,
-                       timerange=None)
+                       timerange=None, spaces='all')
     start(args)
 
     mock_mongotrials.assert_called_once()
@@ -148,7 +148,7 @@ def test_fmin_best_results(mocker, caplog):
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value=fmin_result)
 
     args = mocker.Mock(epochs=1, config='config.json.example',
-                       timerange=None)
+                       timerange=None, spaces='all')
     start(args)
 
     exists = [
@@ -172,7 +172,7 @@ def test_fmin_throw_value_error(mocker, caplog):
     mocker.patch('freqtrade.optimize.hyperopt.fmin', side_effect=ValueError())
 
     args = mocker.Mock(epochs=1, config='config.json.example',
-                       timerange=None)
+                       timerange=None, spaces='all')
     start(args)
 
     exists = [
@@ -207,7 +207,8 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker):
     args = mocker.Mock(epochs=1,
                        config='config.json.example',
                        mongodb=False,
-                       timerange=None)
+                       timerange=None,
+                       spaces='all')
 
     start(args)
 
@@ -279,3 +280,10 @@ def test_signal_handler(mocker):
     mocker.patch('freqtrade.optimize.hyperopt.log_trials_result', m)
     hyperopt.signal_handler(9, None)
     assert m.call_count == 3
+
+
+def test_has_space():
+    assert has_space('buy,roi', 'roi')
+    assert has_space('buy,roi', 'buy')
+    assert not has_space('buy,roi', 'stoploss')
+    assert has_space('all', 'buy')
