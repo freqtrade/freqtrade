@@ -210,7 +210,7 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 @cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
-    if not _API.hasFetchOHLCV():
+    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
         raise OperationalException(
             'Exhange {} does not support fetching historical candlestick data.'.format(_API.name)
         )

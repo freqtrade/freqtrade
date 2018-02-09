@@ -313,7 +313,8 @@ def test_get_ticker_history(default_conf, mocker):
             5,  # volume (in quote currency)
         ]
     ]
-    api_mock.hasFetchOHLVC = MagicMock(return_value=True)
+    has = PropertyMock(return_value={'fetchOHLCV': True})
+    type(api_mock).has = has
     api_mock.fetch_ohlcv = MagicMock(return_value=tick)
     mocker.patch('freqtrade.exchange._API', api_mock)
 
