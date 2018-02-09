@@ -52,9 +52,6 @@ def init(config: dict) -> None:
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
-    # we need load api markets
-    _API.load_markets()
-
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
 
@@ -166,34 +163,54 @@ def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
-    return _API.fetch_balance()[currency]['free']
+    # ccxt exception is already handled by get_balances
+    balances = get_balances()
+    return balances[currency]['free']
 
 
 def get_balances() -> dict:
     if _CONF['dry_run']:
         return {}
 
-    balances = _API.fetch_balance()
-    # Remove additional info from ccxt results
-    balances.pop("info", None)
-    balances.pop("free", None)
-    balances.pop("total", None)
-    balances.pop("used", None)
+    try:
+        balances = _API.fetch_balance()
+        # Remove additional info from ccxt results
+        balances.pop("info", None)
+        balances.pop("free", None)
+        balances.pop("total", None)
+        balances.pop("used", None)
 
-    return balances
+        return balances
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not get balance due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
-    # TODO: add caching
-    return _API.fetch_ticker(pair)
+    try:
+        # TODO: add caching
+        return _API.fetch_ticker(pair)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load tickers due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 @cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
-    # TODO: check if exchange supports fetch_ohlcv
-    history = _API.fetch_ohlcv(pair, timeframe=tick_interval)
-    history_json = []
+    if not _API.hasFetchOHLCV():
+        raise OperationalException(
+            'Exhange {} does not support fetching historical candlestick data.'.format(_API.name)
+        )
+
     try:
+        history = _API.fetch_ohlcv(pair, timeframe=tick_interval)
+        history_json = []
         for candlestick in history:
             history_json.append({
                 'T': datetime.fromtimestamp(candlestick[0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S.%f'),
@@ -207,6 +224,12 @@ def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
     except IndexError as e:
         logger.warning('Empty ticker history. Msg %s', str(e))
         return []
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load ticker history due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
 
 
 def cancel_order(order_id: str, pair: str) -> None:
@@ -254,7 +277,14 @@ def get_pair_detail_url(pair: str) -> str:
 
 
 def get_markets() -> List[dict]:
-    return _API.fetch_markets()
+    try:
+        return _API.fetch_markets()
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load markets due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_name() -> str:
