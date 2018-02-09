@@ -30,7 +30,7 @@ def default_conf():
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": 5,
+        "ticker_interval": "5m",
         "dry_run": True,
         "minimal_roi": {
             "40": 0.0,
@@ -44,16 +44,16 @@ def default_conf():
             "ask_last_balance": 0.0
         },
         "exchange": {
-            "name": "bittrex",
+            "name": "binance",
             "enabled": True,
             "key": "key",
             "secret": "secret",
             "pair_whitelist": [
-                "BTC_ETH",
-                "BTC_TKN",
-                "BTC_TRST",
-                "BTC_SWT",
-                "BTC_BCC"
+                "ETH/BTC",
+                "TKN/BTC",
+                "TRST/BTC",
+                "SWT/BTC",
+                "BCC/BTC"
             ]
         },
         "telegram": {
@@ -150,7 +150,7 @@ def limit_buy_order_old():
     return {
         'id': 'mocked_limit_buy_old',
         'type': 'LIMIT_BUY',
-        'pair': 'BTC_ETH',
+        'pair': 'ETH/BTC',
         'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
@@ -163,7 +163,7 @@ def limit_sell_order_old():
     return {
         'id': 'mocked_limit_sell_old',
         'type': 'LIMIT_SELL',
-        'pair': 'BTC_ETH',
+        'pair': 'ETH/BTC',
         'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
@@ -176,7 +176,7 @@ def limit_buy_order_old_partial():
     return {
         'id': 'mocked_limit_buy_old_partial',
         'type': 'LIMIT_BUY',
-        'pair': 'BTC_ETH',
+        'pair': 'ETH/BTC',
         'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
@@ -196,6 +196,36 @@ def limit_sell_order():
         'remaining': 0.0,
         'closed': str(arrow.utcnow().datetime),
     }
+
+
+@pytest.fixture
+def ticker_history_api():
+    return [
+        [
+            1511686200000,  # unix timestamp ms
+            8.794e-05,  # open
+            8.948e-05,  # high
+            8.794e-05,  # low
+            8.88e-05,  # close
+            0.0877869,  # volume (in quote currency)
+        ],
+        [
+            1511686500000,
+            8.88e-05,
+            8.942e-05,
+            8.88e-05,
+            8.893e-05,
+            0.05874751,
+        ],
+        [
+            1511686800,
+            8.891e-05,
+            8.893e-05,
+            8.875e-05,
+            8.877e-05,
+            0.7039405
+        ]
+    ]
 
 
 @pytest.fixture
@@ -263,7 +293,7 @@ def ticker_history_without_bv():
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
+    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
         return parse_ticker_dataframe(json.load(data_file))
 
 

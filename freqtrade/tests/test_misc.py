@@ -113,7 +113,7 @@ def test_parse_args_backtesting_custom():
         '-c', 'test_conf.json',
         'backtesting',
         '--live',
-        '--ticker-interval', '1',
+        '--ticker-interval', '1m',
         '--refresh-pairs-cached']
     call_args = parse_args(args, '')
     assert call_args.config == 'test_conf.json'
@@ -121,7 +121,7 @@ def test_parse_args_backtesting_custom():
     assert call_args.loglevel == 20
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
-    assert call_args.ticker_interval == 1
+    assert call_args.ticker_interval == '1m'
     assert call_args.refresh_pairs is True
 
 
@@ -161,7 +161,7 @@ def test_load_config(default_conf, mocker):
 
 def test_load_config_invalid_pair(default_conf, mocker):
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('BTC-ETH')
+    conf['exchange']['pair_whitelist'].append('ETH_BTC')  # Should have format ETH/BTC
     mocker.patch(
         'freqtrade.misc.open',
         mocker.mock_open(

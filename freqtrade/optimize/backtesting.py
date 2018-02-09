@@ -3,6 +3,7 @@
 import logging
 from typing import Dict, Tuple
 
+import ccxt
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
@@ -48,7 +49,7 @@ def generate_text_table(
             len(result.index),
             result.profit_percent.mean() * 100.0,
             result.profit_BTC.sum(),
-            result.duration.mean() * ticker_interval,
+            result.duration.mean() * misc.ticker_interval_to_minutes(ticker_interval),
             len(result[result.profit_BTC > 0]),
             len(result[result.profit_BTC < 0])
         ])
@@ -59,7 +60,7 @@ def generate_text_table(
         len(results.index),
         results.profit_percent.mean() * 100.0,
         results.profit_BTC.sum(),
-        results.duration.mean() * ticker_interval,
+        results.duration.mean() * misc.ticker_interval_to_minutes(ticker_interval),
         len(results[results.profit_BTC > 0]),
         len(results[results.profit_BTC < 0])
     ])
@@ -113,7 +114,7 @@ def backtest(args) -> DataFrame:
     records = []
     trades = []
     trade_count_lock: dict = {}
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance()
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
@@ -164,7 +165,7 @@ def start(args):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    exchange._API = ccxt.binance()
 
     logger.info('Using config: %s ...', args.config)
     config = misc.load_config(args.config)

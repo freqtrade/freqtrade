@@ -14,3 +14,11 @@ class OperationalException(BaseException):
     Requires manual intervention.
     This happens when an exchange returns an unexpected error during runtime.
     """
+
+
+class NetworkException(BaseException):
+    """
+    Network related error.
+    This could happen when an exchange is congested, unavailable, or the user
+    has networking problems. Usually resolves itself after a time.
+    """

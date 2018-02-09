@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import copy
-import json
 import logging
 import sys
 import time
@@ -9,10 +8,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 import arrow
-import requests
 from cachetools import cached, TTLCache
 
-from freqtrade import (DependencyException, OperationalException, __version__,
+from freqtrade import (DependencyException, OperationalException, NetworkException, __version__,
                        exchange, persistence, rpc)
 from freqtrade.analyze import get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
@@ -33,21 +31,23 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     :return: the list of pairs the user wants to trade without the one unavailable or black_listed
     """
     sanitized_whitelist = whitelist
-    health = exchange.get_wallet_health()
+    markets = exchange.get_markets()
+
+    markets = [m for m in markets if m['quote'] == _CONF['stake_currency']]
     known_pairs = set()
-    for status in health:
-        pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+    for market in markets:
+        pair = market['symbol']
         # pair is not int the generated dynamic market, or in the blacklist ... ignore it
         if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
         # else the pair is valid
         known_pairs.add(pair)
         # Market is not active
-        if not status['IsActive']:
+        if not market['active']:
             sanitized_whitelist.remove(pair)
             logger.info(
-                'Ignoring %s from whitelist (reason: %s).',
-                pair, status.get('Notice') or 'wallet is not active'
+                'Ignoring %s from whitelist. Market is not active.',
+                pair
             )
 
     # We need to remove pairs that are unknown
@@ -85,7 +85,7 @@ def process_maybe_execute_sell(trade, interval):
     if trade.open_order_id:
         # Update trade with order values
         logger.info('Got open order for %s', trade)
-        trade.update(exchange.get_order(trade.open_order_id))
+        trade.update(exchange.get_order(trade.open_order_id, trade.pair))
 
     if trade.is_open and trade.open_order_id is None:
         # Check if we can sell our current pair
@@ -126,7 +126,7 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
             check_handle_timedout(_CONF['unfilledtimeout'])
             Trade.session.flush()
 
-    except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+    except (NetworkException, DependencyException) as error:
         logger.warning(
             'Got %s in _process(), retrying in 30 seconds...',
             error
@@ -149,7 +149,7 @@ def handle_timedout_limit_buy(trade: Trade, order: Dict) -> bool:
     """Buy timeout - cancel order
     :return: True if order was fully cancelled
     """
-    exchange.cancel_order(trade.open_order_id)
+    exchange.cancel_order(trade.open_order_id, trade.pair)
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just delete the trade
         Trade.session.delete(trade)
@@ -180,7 +180,7 @@ def handle_timedout_limit_sell(trade: Trade, order: Dict) -> bool:
     """
     if order['remaining'] == order['amount']:
         # if trade is not partially completed, just cancel the trade
-        exchange.cancel_order(trade.open_order_id)
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         trade.close_rate = None
         trade.close_profit = None
         trade.close_date = None
@@ -205,8 +205,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
 
     for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
         try:
-            order = exchange.get_order(trade.open_order_id)
-        except requests.exceptions.RequestException:
+            order = exchange.get_order(trade.open_order_id, trade.pair)
+        except (NetworkException, DependencyException):
             logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
             continue
         ordertime = arrow.get(order['opened'])
@@ -229,7 +229,8 @@ def execute_sell(trade: Trade, limit: float) -> None:
     :return: None
     """
     # Execute sell and update trade record
-    order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+    order = exchange.sell(str(trade.pair), limit, trade.amount)
+    order_id = order['id']
     trade.open_order_id = order_id
 
     fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
@@ -301,7 +302,7 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     # Check if time matches and current rate is above threshold
     time_diff = (current_time - trade.open_date).total_seconds() / 60
     for duration, threshold in sorted(strategy.minimal_roi.items()):
-        if time_diff > float(duration) and current_profit > threshold:
+        if time_diff >= float(duration) and current_profit > threshold:
             return True
 
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', float(current_profit) * 100.0)
@@ -402,7 +403,8 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     buy_limit = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / buy_limit
 
-    order_id = exchange.buy(pair, buy_limit, amount)
+    order = exchange.buy(pair, buy_limit, amount)
+    order_id = order['id']
 
     fiat_converter = CryptoToFiatConverter()
     stake_amount_fiat = fiat_converter.convert_amount(
@@ -427,7 +429,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         fee=exchange.get_fee(),
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
-        exchange=exchange.get_name().upper(),
+        exchange=exchange.get_name().lower(),
         open_order_id=order_id
     )
     Trade.session.add(trade)
@@ -466,14 +468,13 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :param key: sort key (defaults to 'BaseVolume')
     :return: List of pairs
     """
-    
-    summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].endswith(base_currency)),
-        key=lambda s: s.get(key) or 0.0,
+
+    pairs = sorted(
+        [s['symbol'] for s in exchange.get_markets() if s['quote'] == base_currency],
         reverse=True
     )
 
-    return [s['MarketName'].replace('-', '_') for s in summaries]
+    return pairs
 
 
 def cleanup() -> None:
@@ -553,7 +554,7 @@ def main(sysargv=sys.argv[1:]) -> int:
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
                     nb_assets=args.dynamic_whitelist,
-                    interval=int(_CONF.get('ticker_interval', 5))
+                    interval=_CONF.get('ticker_interval', '5m')
                 )
             old_state = new_state
     except KeyboardInterrupt:

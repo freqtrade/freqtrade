@@ -33,6 +33,7 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     :return dict OR empty if unsuccesful
     """
     path = make_testdata_path(datadir)
+    pair = pair.replace('/', '_')
     file = '{abspath}/{pair}-{ticker_interval}.json'.format(
         abspath=path,
         pair=pair,
@@ -56,7 +57,7 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = None,
+def load_data(datadir: str, ticker_interval: str, pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False, timerange=None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -101,13 +102,13 @@ def make_testdata_path(datadir: str) -> str:
                                                    '..', 'tests', 'testdata'))
 
 
-def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
+def download_pairs(datadir, pairs: List[str], ticker_interval: str) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
             download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
         except BaseException:
-            logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
+            logger.info('Failed to download the pair: "{pair}", Interval: {interval}'.format(
                 pair=pair,
                 interval=ticker_interval,
             ))
@@ -121,7 +122,7 @@ def file_dump_json(filename, data):
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
-def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> bool:
+def download_backtesting_testdata(datadir: str, pair: str, interval: str = '5m') -> bool:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
@@ -130,12 +131,12 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     """
 
     path = make_testdata_path(datadir)
-    logger.info('Download the pair: "{pair}", Interval: {interval} min'.format(
+    logger.info('Downloading the pair: "{pair}", Interval: {interval}'.format(
         pair=pair,
         interval=interval,
     ))
 
-    filepair = pair.replace("-", "_")
+    filepair = pair.replace("/", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
         pair=filepair,
         interval=interval,
@@ -151,14 +152,12 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         logger.debug("Current Start: None")
         logger.debug("Current End: None")
 
-    new_data = get_ticker_history(pair=pair, tick_interval=int(interval))
-    for row in new_data:
-        if row not in data:
-            data.append(row)
-    logger.debug("New Start: {}".format(data[1]['T']))
-    logger.debug("New End: {}".format(data[-1:][0]['T']))
-    data = sorted(data, key=lambda data: data['T'])
+    new_data = get_ticker_history(pair=pair, tick_interval=interval)
 
-    misc.file_dump_json(filename, data)
+    logger.debug("New Start: {}".format(new_data[1]['T']))
+    logger.debug("New End: {}".format(new_data[-1]['T']))
+    data = sorted(data, key=lambda data_json: data_json['T'])
+
+    misc.file_dump_json(filename, new_data)
 
     return True

@@ -5,13 +5,11 @@ from unittest.mock import MagicMock
 
 import arrow
 import pytest
-import requests
 from sqlalchemy import create_engine
 
 import freqtrade.main as main
 import freqtrade.tests.conftest as tt  # test tools
-from freqtrade import DependencyException, OperationalException
-from freqtrade.exchange import Exchanges
+from freqtrade import DependencyException, OperationalException, NetworkException
 from freqtrade.main import (_process, check_handle_timedout, create_trade,
                             execute_sell, get_target_bid, handle_trade, init)
 from freqtrade.misc import State, get_state
@@ -32,7 +30,7 @@ def test_parse_args_backtesting(mocker):
     assert call_args.loglevel == 20
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
-    assert call_args.ticker_interval == 5
+    assert call_args.ticker_interval == '5m'
 
 
 def test_main_start_hyperopt(mocker):
@@ -50,9 +48,9 @@ def test_main_start_hyperopt(mocker):
 def test_process_maybe_execute_buy(default_conf, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', return_value=True)
-    assert main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
+    assert main.process_maybe_execute_buy(default_conf['ticker_interval'])
     mocker.patch('freqtrade.main.create_trade', return_value=False)
-    assert not main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
+    assert not main.process_maybe_execute_buy(default_conf['ticker_interval'])
 
 
 def test_process_maybe_execute_sell(default_conf, mocker):
@@ -61,17 +59,17 @@ def test_process_maybe_execute_sell(default_conf, mocker):
     mocker.patch('freqtrade.exchange.get_order', return_value=1)
     trade = MagicMock()
     trade.open_order_id = '123'
-    assert not main.process_maybe_execute_sell(trade, int(default_conf['ticker_interval']))
+    assert not main.process_maybe_execute_sell(trade, default_conf['ticker_interval'])
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    assert main.process_maybe_execute_sell(trade, int(default_conf['ticker_interval']))
+    assert main.process_maybe_execute_sell(trade, default_conf['ticker_interval'])
 
 
 def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
-    main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
+    main.process_maybe_execute_buy(default_conf['ticker_interval'])
     tt.log_has('Unable to create trade:', caplog.record_tuples)
 
 
@@ -82,15 +80,14 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
-                          buy=MagicMock(return_value='mocked_limit_buy'),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
 
-    result = _process(interval=int(default_conf['ticker_interval']))
+    result = _process(interval=default_conf['ticker_interval'])
     assert result is True
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -100,7 +97,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     assert trade.stake_amount == default_conf['stake_amount']
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'binance'
     assert trade.open_rate == 0.00001099
     assert trade.amount == 90.99181073703367
 
@@ -113,10 +110,9 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
-                          buy=MagicMock(side_effect=requests.exceptions.RequestException))
+                          buy=MagicMock(side_effect=NetworkException))
     init(default_conf, create_engine('sqlite://'))
-    result = _process(interval=int(default_conf['ticker_interval']))
+    result = _process(interval=default_conf['ticker_interval'])
     assert result is False
     assert sleep_mock.has_calls()
 
@@ -129,12 +125,11 @@ def test_process_operational_exception(default_conf, ticker, health, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
                           buy=MagicMock(side_effect=OperationalException))
     init(default_conf, create_engine('sqlite://'))
     assert get_state() == State.RUNNING
 
-    result = _process(interval=int(default_conf['ticker_interval']))
+    result = _process(interval=default_conf['ticker_interval'])
     assert result is False
     assert get_state() == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
@@ -147,19 +142,18 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          get_wallet_health=health,
-                          buy=MagicMock(return_value='mocked_limit_buy'),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}),
                           get_order=MagicMock(return_value=limit_buy_order))
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
-    result = _process(interval=int(default_conf['ticker_interval']))
+    result = _process(interval=default_conf['ticker_interval'])
     assert result is True
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
 
-    result = _process(interval=int(default_conf['ticker_interval']))
+    result = _process(interval=default_conf['ticker_interval'])
     assert result is False
 
 
@@ -170,19 +164,19 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
     # Save state of current whitelist
     whitelist = copy.deepcopy(default_conf['exchange']['pair_whitelist'])
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade is not None
     assert trade.stake_amount == 0.001
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'binance'
 
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
@@ -198,14 +192,14 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
     buy_mock = mocker.patch(
-        'freqtrade.main.exchange.buy', MagicMock(return_value='mocked_limit_buy')
+        'freqtrade.main.exchange.buy', MagicMock(return_value={'id': 'mocked_limit_buy'})
     )
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
     min_stake_amount = 0.0005
-    create_trade(min_stake_amount, int(default_conf['ticker_interval']))
+    create_trade(min_stake_amount, default_conf['ticker_interval'])
     rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
     assert rate * amount >= min_stake_amount
 
@@ -217,10 +211,10 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}),
                           get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5))
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
+        create_trade(default_conf['stake_amount'], default_conf['ticker_interval'])
 
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker):
@@ -230,13 +224,13 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
-        create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
+        create_trade(default_conf['stake_amount'], default_conf['ticker_interval'])
 
 
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
@@ -246,14 +240,14 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
         conf = copy.deepcopy(default_conf)
-        conf['exchange']['pair_whitelist'] = ["BTC_ETH"]
-        conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
+        conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
+        conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
         mocker.patch.dict('freqtrade.main._CONF', conf)
-        create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
+        create_trade(default_conf['stake_amount'], default_conf['ticker_interval'])
 
 
 def test_create_trade_no_signal(default_conf, mocker):
@@ -267,7 +261,7 @@ def test_create_trade_no_signal(default_conf, mocker):
     stake_amount = 10
     Trade.query = MagicMock()
     Trade.query.filter = MagicMock()
-    assert not create_trade(stake_amount, int(default_conf['ticker_interval']))
+    assert not create_trade(stake_amount, default_conf['ticker_interval'])
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
@@ -281,13 +275,14 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
                               'ask': 0.00001173,
                               'last': 0.00001172
                           }),
-                          buy=MagicMock(return_value='mocked_limit_buy'),
-                          sell=MagicMock(return_value='mocked_limit_sell'))
+                          get_fee=MagicMock(return_value=0.0025),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}),
+                          sell=MagicMock(return_value={'id': 'mocked_limit_sell'}))
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -296,7 +291,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
     assert trade.is_open is True
 
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert handle_trade(trade, default_conf['ticker_interval']) is True
     assert trade.open_order_id == 'mocked_limit_sell'
 
     # Simulate fulfilled LIMIT_SELL order for trade
@@ -317,11 +312,11 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
     mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     # Buy and Sell triggering, so doing nothing ...
     trades = Trade.query.all()
@@ -330,7 +325,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
 
     # Buy is triggering, so buying ...
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
     trades = Trade.query.all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -338,7 +333,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
 
     # Buy and Sell are not triggering, so doing nothing ...
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, False))
-    assert handle_trade(trades[0], int(default_conf['ticker_interval'])) is False
+    assert handle_trade(trades[0], default_conf['ticker_interval']) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -346,7 +341,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
 
     # Buy and Sell are triggering, so doing nothing ...
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, True))
-    assert handle_trade(trades[0], int(default_conf['ticker_interval'])) is False
+    assert handle_trade(trades[0], default_conf['ticker_interval']) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -355,7 +350,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker):
     # Sell is triggering, guess what : we are Selling!
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     trades = Trade.query.all()
-    assert handle_trade(trades[0], int(default_conf['ticker_interval'])) is True
+    assert handle_trade(trades[0], default_conf['ticker_interval']) is True
 
 
 def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
@@ -367,11 +362,11 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
     mocker.patch('freqtrade.main.min_roi_reached', return_value=True)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     trade.is_open = True
@@ -382,11 +377,11 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     #      executing
     # if ROI is reached we must sell
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
+    assert handle_trade(trade, interval=default_conf['ticker_interval'])
     assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
     # if ROI is reached we must sell even if sell-signal is not signalled
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
+    assert handle_trade(trade, interval=default_conf['ticker_interval'])
     assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
 
 
@@ -399,20 +394,20 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
     mocker.patch('freqtrade.main.min_roi_reached', return_value=False)
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     trade.is_open = True
 
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, False))
-    value_returned = handle_trade(trade, int(default_conf['ticker_interval']))
+    value_returned = handle_trade(trade, default_conf['ticker_interval'])
     assert value_returned is False
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, int(default_conf['ticker_interval']))
+    assert handle_trade(trade, default_conf['ticker_interval'])
     s = 'Executing sell due to sell signal ...'
     assert ('freqtrade', logging.DEBUG, s) in caplog.record_tuples
 
@@ -424,11 +419,11 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     # Create trade and sell it
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -438,7 +433,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     assert trade.is_open is False
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
-        handle_trade(trade, int(default_conf['ticker_interval']))
+        handle_trade(trade, default_conf['ticker_interval'])
 
 
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mocker):
@@ -454,9 +449,9 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     init(default_conf, create_engine('sqlite://'))
 
     trade_buy = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -503,9 +498,9 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     init(default_conf, create_engine('sqlite://'))
 
     trade_sell = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -552,9 +547,9 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     init(default_conf, create_engine('sqlite://'))
 
     trade_buy = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -598,12 +593,13 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -611,13 +607,14 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker):
     # Increase the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_up)
 
     execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert 'Profit' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
@@ -636,12 +633,13 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
                           send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -655,7 +653,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
@@ -669,11 +667,12 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -681,6 +680,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
     # Decrease the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_down)
     mocker.patch('freqtrade.main._CONF', {})
 
@@ -688,7 +688,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, ticker_sell_d
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
 
@@ -700,11 +700,12 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     rpc_mock = mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -712,6 +713,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     # Increase the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_up)
     mocker.patch('freqtrade.main._CONF', {})
 
@@ -719,7 +721,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert '(profit: 6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
@@ -743,15 +745,16 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker):
                               'ask': 0.00002173,
                               'last': 0.00002172
                           }),
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          get_fee=MagicMock(return_value=0.0025),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert handle_trade(trade, default_conf['ticker_interval']) is True
 
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
@@ -771,15 +774,16 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker):
                               'ask': 0.00002173,
                               'last': 0.00002172
                           }),
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          get_fee=MagicMock(return_value=0.0025),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert handle_trade(trade, default_conf['ticker_interval']) is True
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
@@ -799,15 +803,16 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker):
                               'ask': 0.00000173,
                               'last': 0.00000172
                           }),
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          get_fee=MagicMock(return_value=0.0025),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, int(default_conf['ticker_interval'])) is False
+    assert handle_trade(trade, default_conf['ticker_interval']) is False
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
@@ -827,12 +832,13 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker):
                               'ask': 0.00000173,
                               'last': 0.00000172
                           }),
-                          buy=MagicMock(return_value='mocked_limit_buy'))
+                          get_fee=MagicMock(return_value=0.0025),
+                          buy=MagicMock(return_value={'id': 'mocked_limit_buy'}))
 
     init(default_conf, create_engine('sqlite://'))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
-    assert handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert handle_trade(trade, default_conf['ticker_interval']) is True

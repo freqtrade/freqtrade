@@ -9,6 +9,7 @@ from typing import Dict, List
 import arrow
 from pandas import DataFrame, to_datetime
 
+from freqtrade.misc import ticker_interval_to_minutes
 from freqtrade.exchange import get_ticker_history
 from freqtrade.strategy.strategy import Strategy
 
@@ -32,7 +33,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
         .rename(columns=columns)
     if 'BV' in frame:
         frame.drop('BV', 1, inplace=True)
-    frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+    frame['date'] = to_datetime(frame['date'], format='%Y-%m-%dT%H:%M:%S.%f')
     frame.sort_values('date', inplace=True)
     return frame
 
@@ -84,10 +85,11 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
 
 # FIX: Maybe return False, if an error has occured,
 #      Otherwise we might mask an error as an non-signal-scenario
-def get_signal(pair: str, interval: int) -> (bool, bool):
+def get_signal(pair: str, interval: str) -> (bool, bool):
     """
     Calculates current signal based several technical analysis indicators
-    :param pair: pair in format BTC_ANT or BTC-ANT
+    :param pair: pair in format ANT/BTC
+    :param interval: interval in string format (1m, 5m, 1h,...)
     :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
     """
     ticker_hist = get_ticker_history(pair, interval)
@@ -112,7 +114,7 @@ def get_signal(pair: str, interval: int) -> (bool, bool):
 
     # Check if dataframe is out of date
     signal_date = arrow.get(latest['date'])
-    if signal_date < arrow.now() - timedelta(minutes=(interval + 5)):
+    if signal_date < arrow.now() - timedelta(minutes=(ticker_interval_to_minutes(interval) + 5)):
         logger.warning('Too old dataframe for pair %s', pair)
         return (False, False)  # return False ?
 

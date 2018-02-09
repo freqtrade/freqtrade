@@ -103,12 +103,12 @@ def test_status_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
     # Trigger status while we have a fulfilled order for the open trade
     _status(bot=MagicMock(), update=update)
 
     assert msg_mock.call_count == 1
-    assert '[BTC_ETH]' in msg_mock.call_args_list[0][0][0]
+    assert '[ETH/BTC]' in msg_mock.call_args_list[0][0][0]
 
 
 def test_status_table_handle(default_conf, update, ticker, mocker):
@@ -124,7 +124,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          buy=MagicMock(return_value={'id': 'mocked_order_id'}))
     init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _status_table(bot=MagicMock(), update=update)
@@ -139,7 +139,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(15.0, int(default_conf['ticker_interval']))
+    create_trade(15.0, default_conf['ticker_interval'])
 
     _status_table(bot=MagicMock(), update=update)
 
@@ -148,7 +148,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker):
     fields = re.sub('[ ]+', ' ', line[2].strip()).split(' ')
 
     assert int(fields[0]) == 1
-    assert fields[1] == 'BTC_ETH'
+    assert fields[1] == 'ETH/BTC'
     assert msg_mock.call_count == 1
 
 
@@ -164,6 +164,7 @@ def test_profit_handle(
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
@@ -177,7 +178,7 @@ def test_profit_handle(
     msg_mock.reset_mock()
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -206,7 +207,7 @@ def test_profit_handle(
     assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
     assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
 
-    assert '*Best Performing:* `BTC_ETH: 6.20%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
@@ -219,12 +220,13 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
                           send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trade = Trade.query.first()
     assert trade
@@ -232,6 +234,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
     # Increase the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_up)
 
     update.message.text = '/forcesell 1'
@@ -239,7 +242,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker):
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
@@ -256,16 +259,18 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
                           send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
 
     # Decrease the price and sell it
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker_sell_down)
 
     trade = Trade.query.first()
@@ -276,7 +281,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
@@ -294,9 +299,9 @@ def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
                           }),
                           cancel_order=cancel_order_mock)
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=1,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='123456789',
         amount=1,
         fee=0.0,
@@ -317,13 +322,14 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
                           send_msg=MagicMock())
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
     for _ in range(4):
-        create_trade(0.001, int(default_conf['ticker_interval']))
+        create_trade(0.001, default_conf['ticker_interval'])
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
@@ -384,11 +390,12 @@ def test_performance_handle(
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
     trade = Trade.query.first()
     assert trade
 
@@ -403,7 +410,7 @@ def test_performance_handle(
     _performance(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>BTC_ETH\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_daily_handle(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
@@ -417,6 +424,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, limit_sell_
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
+                          get_fee=MagicMock(return_value=0.0025),
                           get_ticker=ticker)
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
                           ticker=MagicMock(return_value={'price_usd': 15000.0}),
@@ -425,7 +433,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, limit_sell_
     init(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
     trade = Trade.query.first()
     assert trade
 
@@ -452,8 +460,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, limit_sell_
     # Reset msg_mock
     msg_mock.reset_mock()
     # Add two other trades
-    create_trade(0.001, int(default_conf['ticker_interval']))
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
+    create_trade(0.001, default_conf['ticker_interval'])
 
     trades = Trade.query.all()
     for trade in trades:
@@ -516,7 +524,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
-                          buy=MagicMock(return_value='mocked_order_id'))
+                          buy=MagicMock(return_value={'id': 'mocked_order_id'}))
     init(default_conf, create_engine('sqlite://'))
     update_state(State.STOPPED)
     _count(bot=MagicMock(), update=update)
@@ -526,7 +534,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     update_state(State.RUNNING)
 
     # Create some test data
-    create_trade(0.001, int(default_conf['ticker_interval']))
+    create_trade(0.001, default_conf['ticker_interval'])
     msg_mock.reset_mock()
     _count(bot=MagicMock(), update=update)
 
@@ -631,35 +639,31 @@ def test_stop_handle_already_stopped(default_conf, update, mocker):
 
 
 def test_balance_handle(default_conf, update, mocker):
-
-    mock_balance = [{
-        'Currency': 'BTC',
-        'Balance': 10.0,
-        'Available': 12.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }, {
-        'Currency': 'ETH',
-        'Balance': 0.0,
-        'Available': 0.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }, {
-        'Currency': 'USDT',
-        'Balance': 10000.0,
-        'Available': 0.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }, {
-        'Currency': 'LTC',
-        'Balance': 10.0,
-        'Available': 10.0,
-        'Pending': 0.0,
-        'CryptoAddress': 'XXXX',
-    }]
+    mock_balance = {
+        'BTC': {
+            'total': 12.0,
+            'free': 12.0,
+            'used': 0.0,
+        },
+        'ETH': {
+            'total': 0.0,
+            'free': 0.0,
+            'used': 0.0,
+        },
+        'USDT': {
+            'total': 10000.0,
+            'free': 0.0,
+            'used': 0.0,
+        },
+        'LTC': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0,
+        }
+    }
 
     def mock_ticker(symbol, refresh):
-        if symbol == 'USDT_BTC':
+        if symbol == 'BTC/USDT':
             return {
                 'bid': 10000.00,
                 'ask': 10000.00,
@@ -693,7 +697,7 @@ def test_balance_handle(default_conf, update, mocker):
     assert '*Currency*: USDT' in result
     assert 'Balance' in result
     assert 'Est. BTC' in result
-    assert '*BTC*:  12.00000000' in result
+    assert '*BTC*:  14.00000000' in result
 
 
 def test_zero_balance_handle(default_conf, update, mocker):
@@ -704,7 +708,7 @@ def test_zero_balance_handle(default_conf, update, mocker):
                           init=MagicMock(),
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
-                          get_balances=MagicMock(return_value=[]))
+                          get_balances=MagicMock(return_value={}))
     _balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1

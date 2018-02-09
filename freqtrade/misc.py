@@ -60,6 +60,10 @@ def common_datearray(dfs):
     return np.sort(arr, axis=0)
 
 
+def ticker_interval_to_minutes(interval) -> int:
+    return TICKER_INTERVAL_MINUTES[interval]
+
+
 def file_dump_json(filename, data) -> None:
     with open(filename, 'w') as fp:
         json.dump(data, fp)
@@ -216,11 +220,10 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         '-i', '--ticker-interval',
-        help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
+        help='specify ticker interval (1m, 5m, 30m, 1h, 12h)',
         dest='ticker_interval',
-        default=5,
-        type=int,
-        metavar='INT',
+        default='5m',
+        type=str
     )
     parser.add_argument(
         '--realistic-simulation',
@@ -271,9 +274,8 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
-        default=5,
-        type=int,
-        metavar='INT',
+        default='5m',
+        type=str,
     )
     parser.add_argument(
         '--timerange',
@@ -331,12 +333,26 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     hyperopt_options(hyperopt_cmd)
 
 
+TICKER_INTERVAL_MINUTES = {
+    '1m': 1,
+    '5m': 5,
+    '15m': 15,
+    '30m': 30,
+    '1h': 60,
+    '2h': 120,
+    '4h': 240,
+    '6h': 360,
+    '12h': 720,
+    '1d': 1440,
+    '1w': 10080,
+}
+
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
-        'ticker_interval': {'type': 'integer', 'enum': [1, 5, 30, 60, 1440]},
+        'ticker_interval': {'type': 'string', 'enum': ['1m', '5m', '30m', '1h', '12h']},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
