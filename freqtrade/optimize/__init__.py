@@ -1,18 +1,16 @@
 # pragma pylint: disable=missing-docstring
 
-import logging
 import json
 import os
 from typing import Optional, List, Dict
-from pandas import DataFrame
+import gzip
 from freqtrade.exchange import get_ticker_history
-from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 
 from freqtrade import misc
+from freqtrade.logger import Logger
 from user_data.hyperopt_conf import hyperopt_optimize_conf
-import gzip
 
-logger = logging.getLogger(__name__)
+logger = Logger(name=__name__).get_logger()
 
 
 def trim_tickerlist(tickerlist, timerange):
@@ -84,21 +82,13 @@ def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = N
     return result
 
 
-def tickerdata_to_dataframe(data):
-    preprocessed = preprocess(data)
-    return preprocessed
-
-
-def preprocess(tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
-    """Creates a dataframe and populates indicators for given ticker data"""
-    return {pair: populate_indicators(parse_ticker_dataframe(pair_data))
-            for pair, pair_data in tickerdata.items()}
-
-
 def make_testdata_path(datadir: str) -> str:
     """Return the path where testdata files are stored"""
-    return datadir or os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                   '..', 'tests', 'testdata'))
+    return datadir or os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), '..', 'tests', 'testdata'
+        )
+    )
 
 
 def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
@@ -113,11 +103,6 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
             ))
             return False
     return True
-
-
-def file_dump_json(filename, data):
-    with open(filename, "wt") as fp:
-        json.dump(data, fp)
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
@@ -142,8 +127,8 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     ))
 
     if os.path.isfile(filename):
-        with open(filename, "rt") as fp:
-            data = json.load(fp)
+        with open(filename, "rt") as file:
+            data = json.load(file)
         logger.debug("Current Start: {}".format(data[1]['T']))
         logger.debug("Current End: {}".format(data[-1:][0]['T']))
     else:

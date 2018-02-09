@@ -269,13 +269,6 @@ def result():
         return Analyze.parse_ticker_dataframe(json.load(data_file))
 
 
-@pytest.fixture
-def default_strategy():
-    strategy = Strategy()
-    strategy.init({'strategy': 'default_strategy'})
-    return strategy
-
-
 # FIX:
 # Create an fixture/function
 # that inserts a trade of some type and open-status

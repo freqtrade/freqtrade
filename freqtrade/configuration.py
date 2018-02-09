@@ -42,6 +42,9 @@ class Configuration(object):
         if self.args.dry_run_db and config.get('dry_run', False):
             config.update({'dry_run_db': True})
 
+        # Load Backtesting / Hyperopt
+        config = self._load_backtesting_config(config)
+
         return config
 
     def _load_config_file(self, path: str) -> Dict[str, Any]:
@@ -58,6 +61,51 @@ class Configuration(object):
         self.logger.info('Validating configuration ...')
 
         return self._validate_config(conf)
+
+    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load Backtesting and Hyperopt configuration
+        :return: configuration as dictionary
+        """
+        # If -i/--ticker-interval is used we override the configuration parameter
+        # (that will override the strategy configuration)
+        if 'ticker_interval' in self.args and self.args.ticker_interval:
+            config.update({'ticker_interval': self.args.ticker_interval})
+            self.logger.info('Parameter -i/--ticker-interval detected ...')
+            self.logger.info('Using ticker_interval: %d ...', config.get('ticker_interval'))
+
+        # If -l/--live is used we add it to the configuration
+        if 'live' in self.args and self.args.live:
+            config.update({'live': True})
+            self.logger.info('Parameter -l/--live detected ...')
+
+        # If --realistic-simulation is used we add it to the configuration
+        if 'realistic_simulation' in self.args and self.args.realistic_simulation:
+            config.update({'realistic_simulation': True})
+            self.logger.info('Parameter --realistic-simulation detected ...')
+            self.logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+
+        # If --timerange is used we add it to the configuration
+        if 'timerange' in self.args and self.args.timerange:
+            config.update({'timerange': self.args.timerange})
+            self.logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+
+        # If --datadir is used we add it to the configuration
+        if 'datadir' in self.args and self.args.datadir:
+            config.update({'datadir': self.args.datadir})
+            self.logger.info('Parameter --datadir detected: %s ...', self.args.datadir)
+
+        # If -r/--refresh-pairs-cached is used we add it to the configuration
+        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
+            config.update({'refresh_pairs': True})
+            self.logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+
+        # If --export is used we add it to the configuration
+        if 'export' in self.args and self.args.export:
+            config.update({'export': self.args.export})
+            self.logger.info('Parameter --export detected: %s ...', self.args.export)
+
+        return config
 
     def _validate_config(self, conf: Dict[str, Any]) -> Dict[str, Any]:
         """
