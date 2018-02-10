@@ -27,12 +27,13 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     :param ticker: See exchange.get_ticker_history
     :return: DataFrame
     """
-    columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
-    frame = DataFrame(ticker) \
-        .rename(columns=columns)
-    if 'BV' in frame:
-        frame.drop('BV', 1, inplace=True)
-    frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+    cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+    frame = DataFrame(ticker, columns=cols)
+
+    frame['date'] = to_datetime(frame['date'],
+                                unit='ms',
+                                utc=True,
+                                infer_datetime_format=True)
     frame.sort_values('date', inplace=True)
     return frame
 
@@ -82,8 +83,6 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     return dataframe
 
 
-# FIX: Maybe return False, if an error has occured,
-#      Otherwise we might mask an error as an non-signal-scenario
 def get_signal(pair: str, interval: int) -> (bool, bool):
     """
     Calculates current signal based several technical analysis indicators
