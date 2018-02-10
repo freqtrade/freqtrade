@@ -5,10 +5,10 @@ import logging
 import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
+from cachetools import cached, TTLCache
 
 import arrow
 import requests
-from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException
 from freqtrade.exchange.interface import Exchange
@@ -142,20 +142,20 @@ def get_balances():
 
     return _API.fetch_balance()
 
-
+@cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
-    return _API.get_ticker(pair, refresh)
+    return _API.fetch_ticker(pair)
 
 
 @cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
     # TODO: tickers need to be in format 1m,5m
     # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
-    _API.load_markets()
-    # if not _API.markets.get(pair):
-    #     logger.warning('Pair {} doesnt exist in exchange' % pair)
-    #     return []
-    return _API.fetch_ohlcv(pair, str(tick_interval)+'m')
+    if not _API.markets:
+        _API.load_markets()
+    ohlcv = _API.fetch_ohlcv(pair, str(tick_interval)+'m')
+
+    return ohlcv
 
 
 def cancel_order(order_id: str) -> None:
@@ -177,7 +177,10 @@ def get_order(order_id: str) -> Dict:
 
 
 def get_pair_detail_url(pair: str) -> str:
-    return _API.get_pair_detail_url(pair)
+    # base_url = _API.urls.get('www')
+    # details = base_url + '/Market/Index'
+    # pair_url = details + '?MarketName={}'
+    return "PAIR {} URL".format(pair)
 
 
 def get_markets() -> List[str]:
@@ -192,17 +195,20 @@ def get_name() -> str:
     return _API.name
 
 
+def get_fee_maker() -> float:
+    return _API.fees['trading']['maker']
+
+
+def get_fee_taker() -> float:
+    return _API.fees['trading']['taker']
+
+
 def get_fee() -> float:
-    return _API.fee
+    return _API.fees['trading']
 
 
 def get_wallet_health() -> List[Dict]:
-    data =  _API.request('Currencies/GetWalletHealth', api='v2')
-    if not data['success']:
-        raise OperationalException('{}'.format(data['message']))
-    return [{
-        'Currency': entry['Health']['Currency'],
-        'IsActive': entry['Health']['IsActive'],
-        'LastChecked': entry['Health']['LastChecked'],
-        'Notice': entry['Currency'].get('Notice'),
-    } for entry in data['result']]
+    if not _API.markets:
+        _API.load_markets()
+
+    return _API.markets

@@ -32,19 +32,20 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
     :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to trade
     :return: the list of pairs the user wants to trade without the one unavailable or black_listed
     """
+    # TODO: rename variables
     sanitized_whitelist = whitelist
     health = exchange.get_wallet_health()
     known_pairs = set()
 
-    for status in health:
-        pair = '{}/{}'.format(status['Currency'], _CONF['stake_currency'])
+    for symbol, status in health.items():
+        pair = '{}/{}'.format(status['base'], _CONF['stake_currency'])
         # pair is not int the generated dynamic market, or in the blacklist ... ignore it
         if pair not in whitelist or pair in _CONF['exchange'].get('pair_blacklist', []):
             continue
         # else the pair is valid
         known_pairs.add(pair)
         # Market is not active
-        if not status['IsActive']:
+        if not status['active']:
             sanitized_whitelist.remove(pair)
             logger.info(
                 'Ignoring %s from whitelist (reason: %s).',
@@ -426,7 +427,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
         pair=pair,
         stake_amount=stake_amount,
         amount=amount,
-        fee=exchange.get_fee(),
+        fee=exchange.get_fee_maker(),
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
         exchange=exchange.get_name().upper(),
