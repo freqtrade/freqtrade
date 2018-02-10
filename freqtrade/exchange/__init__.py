@@ -149,8 +149,13 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 @cached(TTLCache(maxsize=100, ttl=30))
 def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
-    ## implement https://github.com/ccxt/ccxt/blob/master/python/ccxt/bittrex.py#L394-L400
-    return _API.get_ticker_history(pair, tick_interval)
+    # TODO: tickers need to be in format 1m,5m
+    # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
+    _API.load_markets()
+    # if not _API.markets.get(pair):
+    #     logger.warning('Pair {} doesnt exist in exchange' % pair)
+    #     return []
+    return _API.fetch_ohlcv(pair, str(tick_interval)+'m')
 
 
 def cancel_order(order_id: str) -> None:
@@ -180,13 +185,7 @@ def get_markets() -> List[str]:
 
 
 def get_market_summaries() -> List[Dict]:
-    # TODO: check other exchanges how they implement market summaries
-    summaries = _API.public_get_marketsummaries()['result']
-    for market in summaries:
-        name = market['MarketName'].split('-')
-        market['MarketName'] = name[-1] + '/' + name[0]
-    return summaries
-        
+    return _API.fetch_tickers()
 
 
 def get_name() -> str:

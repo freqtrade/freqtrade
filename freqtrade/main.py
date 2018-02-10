@@ -377,8 +377,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     )
 
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
-    print('*******whitelist {}*****'.format(whitelist))
-    
+
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise DependencyException(
@@ -393,7 +392,6 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     if not whitelist:
         raise DependencyException('No pair in whitelist')
 
-    # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
         (buy, sell) = get_signal(_pair, interval)
         if buy and not sell:
@@ -471,11 +469,11 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :return: List of pairs
     """
     summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].endswith(base_currency)),
-        key=lambda s: s.get(key) or 0.0,
+        (v for s,v in exchange.get_market_summaries().items() if v['symbol'].endswith(base_currency)),
+        key=lambda v: v.get('info').get(key) or 0.0,
         reverse=True
     )
-    return [s['MarketName'] for s in summaries]
+    return [s['symbol'] for s in summaries]
 
 
 def cleanup() -> None:
