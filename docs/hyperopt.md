@@ -179,6 +179,22 @@ Example:
 python3 ./freqtrade/main.py hyperopt --timeperiod -200
 ```
 
+### Running hyperopt with smaller search space
+Use the `--spaces` argument to limit the search space used by hyperopt.
+Letting Hyperopt optimize everything is a huuuuge search space. Often it 
+might make more sense to start by just searching for initial buy algorithm. 
+Or maybe you just want to optimize your stoploss or roi table for that awesome 
+new buy strategy you have.
+
+Legal values are:
+
+- `all`: optimize everything
+- `buy`: just search for a new buy strategy
+- `sell`: not supported yet
+- `roi`: just optimize the minimal profit table for your strategy
+- `stoploss`: search for the best stoploss value
+- comma-separated list of any of the above values for example `--spaces roi,stoploss`
+
 ### Hyperopt with MongoDB
 Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
 executing the previous command is the execution takes a long time. 
