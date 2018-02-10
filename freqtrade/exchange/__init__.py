@@ -18,9 +18,28 @@ logger = logging.getLogger(__name__)
 # Current selected exchange
 _API: Exchange = None
 _CONF: dict = {}
+API_RETRY_COUNT = 4
 
 # Holds all open sell orders for dry_run
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
+
+def retrier(f):
+    def wrapper(*args, **kwargs):
+        count = kwargs.pop('count', API_RETRY_COUNT)
+        try:
+            return f(*args, **kwargs)
+        # TODO dont be a gotta-catch-them-all pokemon collector
+        except Exception as ex:
+            logger.warn('%s returned exception: "%s"', f, ex)
+            if count > 0:
+                count -= 1
+                kwargs.update({'count': count})
+                logger.warn('retrying %s still for %s times', f, count)
+                return wrapper(*args, **kwargs)
+            else:
+                raise OperationalException('Giving up retrying: %s', f)
+    return wrapper
+
 
 
 def init(config: dict) -> None:
@@ -142,12 +161,14 @@ def get_balances():
 
     return _API.fetch_balance()
 
-@cached(TTLCache(maxsize=100, ttl=30))
+# @cached(TTLCache(maxsize=100, ttl=30))
+@retrier
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
     return _API.fetch_ticker(pair)
 
 
-@cached(TTLCache(maxsize=100, ttl=30))
+# @cached(TTLCache(maxsize=100, ttl=30))
+@retrier
 def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
     # TODO: tickers need to be in format 1m,5m
     # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
