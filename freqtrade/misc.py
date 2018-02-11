@@ -282,10 +282,11 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         '-s', '--spaces',
-        help='Specify which parameters to hyperopt. Comma separate list. \
-              Allowed values: all, buy, sell, roi, stoploss. Default: $(default)s',
+        help='Specify which parameters to hyperopt. Space separate list. \
+              Default: %(default)s',
+        choices=['all', 'buy', 'roi', 'stoploss'],
         default='all',
-        type=str,
+        nargs='+',
         dest='spaces',
     )
 
