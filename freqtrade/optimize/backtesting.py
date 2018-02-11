@@ -133,9 +133,6 @@ def backtest(args) -> DataFrame:
                 # Check if max_open_trades has already been reached for the given date
                 if not trade_count_lock.get(row.date, 0) < max_open_trades:
                     continue
-
-            if max_open_trades > 0:
-                # Increase lock
                 trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
             ret = get_sell_trade_entry(pair, row, ticker[index+1:], trade_count_lock, args)
