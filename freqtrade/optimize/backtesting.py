@@ -67,29 +67,29 @@ def generate_text_table(
     return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
 
-def get_sell_trade_entry(pair, row, partial_ticker, trade_count_lock, args):
+def get_sell_trade_entry(pair, buy_row, partial_ticker, trade_count_lock, args):
     stake_amount = args['stake_amount']
     max_open_trades = args.get('max_open_trades', 0)
-    trade = Trade(open_rate=row.close,
-                  open_date=row.date,
+    trade = Trade(open_rate=buy_row.close,
+                  open_date=buy_row.date,
                   stake_amount=stake_amount,
-                  amount=stake_amount / row.open,
+                  amount=stake_amount / buy_row.open,
                   fee=exchange.get_fee()
                   )
 
     # calculate win/lose forwards from buy point
-    for row2 in partial_ticker:
+    for sell_row in partial_ticker:
         if max_open_trades > 0:
             # Increase trade_count_lock for every iteration
-            trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
+            trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
-        buy_signal = row2.buy
-        if should_sell(trade, row2.close, row2.date, buy_signal, row2.sell):
-            return row2, (pair,
-                          trade.calc_profit_percent(rate=row2.close),
-                          trade.calc_profit(rate=row2.close),
-                          (row2.date - row.date).seconds // 60
-                          ), row2.date
+        buy_signal = sell_row.buy
+        if should_sell(trade, sell_row.close, sell_row.date, buy_signal, sell_row.sell):
+            return sell_row, (pair,
+                              trade.calc_profit_percent(rate=sell_row.close),
+                              trade.calc_profit(rate=sell_row.close),
+                              (sell_row.date - buy_row.date).seconds // 60
+                              ), sell_row.date
     return None
 
 
