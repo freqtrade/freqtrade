@@ -304,10 +304,10 @@ def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -
     time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
     for duration_string, threshold in strategy.minimal_roi.items():
         duration = float(duration_string)
-        if time_diff > duration and current_profit > threshold:
-            return True
         if time_diff < duration:
             return False
+        if time_diff > duration and current_profit > threshold:
+            return True
     return False
 
 
