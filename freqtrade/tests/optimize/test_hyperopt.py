@@ -283,7 +283,7 @@ def test_signal_handler(mocker):
 
 
 def test_has_space():
-    assert has_space('buy,roi', 'roi')
-    assert has_space('buy,roi', 'buy')
-    assert not has_space('buy,roi', 'stoploss')
-    assert has_space('all', 'buy')
+    assert has_space(['buy', 'roi'], 'roi')
+    assert has_space(['buy', 'roi'], 'buy')
+    assert not has_space(['buy', 'roi'], 'stoploss')
+    assert has_space(['all'], 'buy')
