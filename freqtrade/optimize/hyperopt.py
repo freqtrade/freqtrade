@@ -225,12 +225,12 @@ def calculate_loss(total_profit: float, trade_count: int, trade_duration: float)
     return trade_loss + profit_loss + duration_loss
 
 
-def generate_roi_table(params) -> Dict[str, float]:
+def generate_roi_table(params) -> Dict[int, float]:
     roi_table = {}
-    roi_table["0"] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
-    roi_table[str(params['roi_t3'])] = params['roi_p1'] + params['roi_p2']
-    roi_table[str(params['roi_t3'] + params['roi_t2'])] = params['roi_p1']
-    roi_table[str(params['roi_t3'] + params['roi_t2'] + params['roi_t1'])] = 0
+    roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
+    roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
+    roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
+    roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
 
     return roi_table
 

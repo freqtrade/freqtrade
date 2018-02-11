@@ -255,7 +255,7 @@ def test_roi_table_generation():
         'roi_p2': 2,
         'roi_p3': 3,
     }
-    assert generate_roi_table(params) == {'0': 6, '15': 3, '25': 1, '30': 0}
+    assert generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
 # test log_trials_result
