@@ -190,10 +190,9 @@ Legal values are:
 
 - `all`: optimize everything
 - `buy`: just search for a new buy strategy
-- `sell`: not supported yet
 - `roi`: just optimize the minimal profit table for your strategy
 - `stoploss`: search for the best stoploss value
-- comma-separated list of any of the above values for example `--spaces roi,stoploss`
+- space-separated list of any of the above values for example `--spaces roi stoploss`
 
 ### Hyperopt with MongoDB
 Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
