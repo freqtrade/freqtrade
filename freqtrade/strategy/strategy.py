@@ -71,11 +71,11 @@ class Strategy(object):
 
         # Minimal ROI designed for the strategy
         self.minimal_roi = OrderedDict(sorted(
-            self.custom_strategy.minimal_roi.items(),
-            key=lambda tuple: float(tuple[0])))  # sort after converting to number
+            {int(key): value for (key, value) in self.custom_strategy.minimal_roi.items()}.items(),
+            key=lambda tuple: tuple[0]))  # sort after converting to number
 
         # Optimal stoploss designed for the strategy
-        self.stoploss = self.custom_strategy.stoploss
+        self.stoploss = float(self.custom_strategy.stoploss)
 
         self.ticker_interval = self.custom_strategy.ticker_interval
 

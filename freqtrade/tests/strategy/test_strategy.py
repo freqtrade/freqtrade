@@ -57,7 +57,7 @@ def test_strategy(result):
     strategy.init({'strategy': 'default_strategy'})
 
     assert hasattr(strategy.custom_strategy, 'minimal_roi')
-    assert strategy.minimal_roi['0'] == 0.04
+    assert strategy.minimal_roi[0] == 0.04
 
     assert hasattr(strategy.custom_strategy, 'stoploss')
     assert strategy.stoploss == -0.10
@@ -86,7 +86,7 @@ def test_strategy_override_minimal_roi(caplog):
     strategy.init(config)
 
     assert hasattr(strategy.custom_strategy, 'minimal_roi')
-    assert strategy.minimal_roi['0'] == 0.5
+    assert strategy.minimal_roi[0] == 0.5
     assert ('freqtrade.strategy.strategy',
             logging.INFO,
             'Override strategy \'minimal_roi\' with value in config file.'
@@ -142,8 +142,8 @@ def test_strategy_singleton():
     strategy1.init({'strategy': 'default_strategy'})
 
     assert hasattr(strategy1.custom_strategy, 'minimal_roi')
-    assert strategy1.minimal_roi['0'] == 0.04
+    assert strategy1.minimal_roi[0] == 0.04
 
     strategy2 = Strategy()
     assert hasattr(strategy2.custom_strategy, 'minimal_roi')
-    assert strategy2.minimal_roi['0'] == 0.04
+    assert strategy2.minimal_roi[0] == 0.04
