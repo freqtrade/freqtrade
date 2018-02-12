@@ -494,7 +494,7 @@ def start(args):
     data = optimize.load_data(args.datadir, pairs=pairs,
                               ticker_interval=strategy.ticker_interval,
                               timerange=timerange)
-    if has_space(args.spaces, 'buy') or has_space(args.spaces, 'sell'):
+    if has_space(args.spaces, 'buy'):
         optimize.populate_indicators = populate_indicators
     PROCESSED = optimize.tickerdata_to_dataframe(data)
 
