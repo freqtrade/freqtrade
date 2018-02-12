@@ -312,8 +312,21 @@ def indicator_space() -> Dict[str, Any]:
     }
 
 
-def hyperopt_space() -> Dict[str, Any]:
-    return {**indicator_space(), **roi_space(), **stoploss_space()}
+def has_space(spaces, space):
+    if space in spaces or 'all' in spaces:
+        return True
+    return False
+
+
+def hyperopt_space(selected_spaces: str) -> Dict[str, Any]:
+    spaces = {}
+    if has_space(selected_spaces, 'buy'):
+        spaces = {**spaces, **indicator_space()}
+    if has_space(selected_spaces, 'roi'):
+        spaces = {**spaces, **roi_space()}
+    if has_space(selected_spaces, 'stoploss'):
+        spaces = {**spaces, **stoploss_space()}
+    return spaces
 
 
 def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
@@ -393,15 +406,21 @@ def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
 def optimizer(params):
     global _CURRENT_TRIES
 
+    strategy = Strategy()
     if 'roi_t1' in params:
-        strategy = Strategy()
         strategy.minimal_roi = generate_roi_table(params)
 
-    backtesting.populate_buy_trend = buy_strategy_generator(params)
+    if 'trigger' in params:
+        backtesting.populate_buy_trend = buy_strategy_generator(params)
+
+    if 'stoploss' in params:
+        stoploss = params['stoploss']
+    else:
+        stoploss = strategy.stoploss
 
     results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
                         'processed': PROCESSED,
-                        'stoploss': params['stoploss']})
+                        'stoploss': stoploss})
     result_explanation = format_results(results)
 
     total_profit = results.profit_percent.sum()
@@ -475,7 +494,8 @@ def start(args):
     data = optimize.load_data(args.datadir, pairs=pairs,
                               ticker_interval=strategy.ticker_interval,
                               timerange=timerange)
-    optimize.populate_indicators = populate_indicators
+    if has_space(args.spaces, 'buy'):
+        optimize.populate_indicators = populate_indicators
     PROCESSED = optimize.tickerdata_to_dataframe(data)
 
     if args.mongodb:
@@ -500,7 +520,7 @@ def start(args):
     try:
         best_parameters = fmin(
             fn=optimizer,
-            space=hyperopt_space(),
+            space=hyperopt_space(args.spaces),
             algo=tpe.suggest,
             max_evals=TOTAL_TRIES,
             trials=TRIALS
@@ -517,7 +537,7 @@ def start(args):
     # Improve best parameter logging display
     if best_parameters:
         best_parameters = space_eval(
-            hyperopt_space(),
+            hyperopt_space(args.spaces),
             best_parameters
         )
 

@@ -280,6 +280,15 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         type=str,
         dest='timerange',
     )
+    parser.add_argument(
+        '-s', '--spaces',
+        help='Specify which parameters to hyperopt. Space separate list. \
+              Default: %(default)s',
+        choices=['all', 'buy', 'roi', 'stoploss'],
+        default='all',
+        nargs='+',
+        dest='spaces',
+    )
 
 
 def parse_timerange(text):
