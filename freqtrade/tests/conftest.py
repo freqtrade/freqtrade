@@ -11,7 +11,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
-from freqtrade.strategy.strategy import Strategy
+from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -22,6 +22,26 @@ def log_has(line, logs):
     return reduce(lambda a, b: a or b,
                   filter(lambda x: x[2] == line, logs),
                   False)
+
+
+# Functions for recurrent object patching
+def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    """
+    This function patch _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: None
+    """
+    mocker.patch('freqtrade.fiat_convert.Pymarketcap', {'price_usd': 12345.0})
+    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
+
+    return FreqtradeBot(config)
 
 
 @pytest.fixture(scope="module")
