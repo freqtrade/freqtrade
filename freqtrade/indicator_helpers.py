@@ -1,5 +1,7 @@
 from math import exp, pi, sqrt, cos
 
+import numpy
+import talib as ta
 from pandas import Series
 
 
@@ -25,3 +27,14 @@ def ehlers_super_smoother(series: Series, smoothing: float = 6):
             coeff2 * filtered.iloc[i-1] + coeff3 * filtered.iloc[i-2]
 
     return filtered
+
+
+def fishers_inverse(series: Series, smoothing: float = 0):
+    """ Does a smoothed fishers inverse transformation.
+        Can be used with any oscillator that goes from 0 to 100 like RSI or MFI """
+    v1 = 0.1 * (series - 50)
+    if smoothing > 0:
+        v2 = ta.WMA(v1.values, timeperiod=smoothing)
+    else:
+        v2 = v1
+    return (numpy.exp(2 * v2)-1) / (numpy.exp(2 * v2) + 1)
