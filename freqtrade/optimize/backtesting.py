@@ -109,7 +109,7 @@ def backtest(args) -> DataFrame:
     headers = ['date', 'buy', 'open', 'close', 'sell']
     processed = args['processed']
     max_open_trades = args.get('max_open_trades', 0)
-    realistic = args.get('realistic', True)
+    realistic = args.get('realistic', False)
     record = args.get('record', None)
     records = []
     trades = []
