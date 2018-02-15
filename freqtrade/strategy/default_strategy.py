@@ -4,7 +4,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy.interface import IStrategy
-
+from freqtrade.indicator_helpers import fishers_inverse
 
 class_name = 'DefaultStrategy'
 
@@ -74,17 +74,18 @@ class DefaultStrategy(IStrategy):
         """
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
-        """
+
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
-        rsi = 0.1 * (dataframe['rsi'] - 50)
-        dataframe['fisher_rsi'] = (numpy.exp(2 * rsi) - 1) / (numpy.exp(2 * rsi) + 1)
+        dataframe['fisher_rsi'] = fishers_inverse(dataframe['rsi'])
+
         # Inverse Fisher transform on RSI normalized, value [0.0, 100.0] (https://goo.gl/2JGGoy)
         dataframe['fisher_rsi_norma'] = 50 * (dataframe['fisher_rsi'] + 1)
+
         # Stoch
         stoch = ta.STOCH(dataframe)
         dataframe['slowd'] = stoch['slowd']
         dataframe['slowk'] = stoch['slowk']
-        """
+
         # Stoch fast
         stoch_fast = ta.STOCHF(dataframe)
         dataframe['fastd'] = stoch_fast['fastd']
