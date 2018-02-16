@@ -403,53 +403,58 @@ def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
     return populate_buy_trend
 
 
-def optimizer(params):
-    global _CURRENT_TRIES
+def generate_optimizer(args):
+    def optimizer(params):
+        global _CURRENT_TRIES
 
-    strategy = Strategy()
-    if 'roi_t1' in params:
-        strategy.minimal_roi = generate_roi_table(params)
+        strategy = Strategy()
+        if has_space(args.spaces, 'roi'):
+            strategy.minimal_roi = generate_roi_table(params)
 
-    if 'trigger' in params:
-        backtesting.populate_buy_trend = buy_strategy_generator(params)
+        if has_space(args.spaces, 'buy'):
+            backtesting.populate_buy_trend = buy_strategy_generator(params)
 
-    if 'stoploss' in params:
-        stoploss = params['stoploss']
-    else:
-        stoploss = strategy.stoploss
+        if has_space(args.spaces, 'stoploss'):
+            stoploss = params['stoploss']
+        else:
+            stoploss = strategy.stoploss
 
-    results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
-                        'processed': PROCESSED,
-                        'stoploss': stoploss})
-    result_explanation = format_results(results)
+        results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
+                            'processed': PROCESSED,
+                            'stoploss': stoploss,
+                            'realistic': args.realistic_simulation,
+                            })
+        result_explanation = format_results(results)
 
-    total_profit = results.profit_percent.sum()
-    trade_count = len(results.index)
-    trade_duration = results.duration.mean()
+        total_profit = results.profit_percent.sum()
+        trade_count = len(results.index)
+        trade_duration = results.duration.mean()
 
-    if trade_count == 0 or trade_duration > MAX_ACCEPTED_TRADE_DURATION:
-        print('.', end='')
+        if trade_count == 0 or trade_duration > MAX_ACCEPTED_TRADE_DURATION:
+            print('.', end='')
+            return {
+                'status': STATUS_FAIL,
+                'loss': float('inf')
+            }
+
+        loss = calculate_loss(total_profit, trade_count, trade_duration)
+
+        _CURRENT_TRIES += 1
+
+        log_results({
+            'loss': loss,
+            'current_tries': _CURRENT_TRIES,
+            'total_tries': TOTAL_TRIES,
+            'result': result_explanation,
+        })
+
         return {
-            'status': STATUS_FAIL,
-            'loss': float('inf')
+            'loss': loss,
+            'status': STATUS_OK,
+            'result': result_explanation,
         }
 
-    loss = calculate_loss(total_profit, trade_count, trade_duration)
-
-    _CURRENT_TRIES += 1
-
-    log_results({
-        'loss': loss,
-        'current_tries': _CURRENT_TRIES,
-        'total_tries': TOTAL_TRIES,
-        'result': result_explanation,
-    })
-
-    return {
-        'loss': loss,
-        'status': STATUS_OK,
-        'result': result_explanation,
-    }
+    return optimizer
 
 
 def format_results(results: DataFrame):
@@ -519,7 +524,7 @@ def start(args):
 
     try:
         best_parameters = fmin(
-            fn=optimizer,
+            fn=generate_optimizer(args),
             space=hyperopt_space(args.spaces),
             algo=tpe.suggest,
             max_evals=TOTAL_TRIES,
