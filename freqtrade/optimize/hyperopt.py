@@ -415,13 +415,10 @@ def generate_optimizer(args):
             backtesting.populate_buy_trend = buy_strategy_generator(params)
 
         if has_space(args.spaces, 'stoploss'):
-            stoploss = params['stoploss']
-        else:
-            stoploss = strategy.stoploss
+            strategy.stoploss = params['stoploss']
 
         results = backtest({'stake_amount': OPTIMIZE_CONFIG['stake_amount'],
                             'processed': PROCESSED,
-                            'stoploss': stoploss,
                             'realistic': args.realistic_simulation,
                             })
         result_explanation = format_results(results)
