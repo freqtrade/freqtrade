@@ -207,13 +207,7 @@ def scripts_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def backtesting_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        '-l', '--live',
-        action='store_true',
-        dest='live',
-        help='using live data',
-    )
+def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
@@ -226,6 +220,22 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
         help='uses max_open_trades from config to simulate real world limitations',
         action='store_true',
         dest='realistic_simulation',
+    )
+    parser.add_argument(
+        '--timerange',
+        help='Specify what timerange of data to use.',
+        default=None,
+        type=str,
+        dest='timerange',
+    )
+
+
+def backtesting_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        '-l', '--live',
+        action='store_true',
+        dest='live',
+        help='using live data',
     )
     parser.add_argument(
         '-r', '--refresh-pairs-cached',
@@ -241,13 +251,6 @@ def backtesting_options(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=None,
         dest='export',
-    )
-    parser.add_argument(
-        '--timerange',
-        help='Specify what timerange of data to use.',
-        default=None,
-        type=str,
-        dest='timerange',
     )
 
 
@@ -265,20 +268,6 @@ def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         help='parallelize evaluations with mongodb (requires mongod in PATH)',
         dest='mongodb',
         action='store_true',
-    )
-    parser.add_argument(
-        '-i', '--ticker-interval',
-        help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
-        dest='ticker_interval',
-        type=int,
-        metavar='INT',
-    )
-    parser.add_argument(
-        '--timerange',
-        help='Specify what timerange of data to use.',
-        default=None,
-        type=str,
-        dest='timerange',
     )
     parser.add_argument(
         '-s', '--spaces',
@@ -330,11 +319,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     # Add backtesting subcommand
     backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
     backtesting_cmd.set_defaults(func=backtesting.start)
+    optimizer_shared_options(backtesting_cmd)
     backtesting_options(backtesting_cmd)
 
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
     hyperopt_cmd.set_defaults(func=hyperopt.start)
+    optimizer_shared_options(hyperopt_cmd)
     hyperopt_options(hyperopt_cmd)
 
 
