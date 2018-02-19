@@ -41,6 +41,18 @@ def retrier(f):
     return wrapper
 
 
+def _get_market_url(exchange):
+    "get market url for exchange"
+    # TODO: PR to ccxt
+    base = exchange.urls.get('www')
+    market = ""
+    if 'bittrex' in get_name():
+        market = base + '/Market/Index?MarketName={}'
+    if 'binance' in get_name():
+        market = base + '/trade.html?symbol={}'
+
+    return market
+
 
 def init(config: dict) -> None:
     """
@@ -198,10 +210,9 @@ def get_order(order_id: str) -> Dict:
 
 
 def get_pair_detail_url(pair: str) -> str:
-    # base_url = _API.urls.get('www')
-    # details = base_url + '/Market/Index'
-    # pair_url = details + '?MarketName={}'
-    return "PAIR {} URL".format(pair)
+    return _get_market_url(_API).format(
+        _API.markets[pair]['id']
+    )
 
 
 def get_markets() -> List[str]:
@@ -213,7 +224,7 @@ def get_market_summaries() -> List[Dict]:
 
 
 def get_name() -> str:
-    return _API.name
+    return _API.__class__.__name__
 
 
 def get_fee_maker() -> float:
