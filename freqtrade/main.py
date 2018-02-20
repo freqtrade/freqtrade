@@ -92,14 +92,17 @@ def process_maybe_execute_sell(trade: Trade, interval: int) -> bool:
     return False
 
 
-def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
+def _process(interval: int, nb_assets: Optional[int] = 0) -> (bool, int):
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
     :param: nb_assets: the maximum number of pairs to be traded at the same time
-    :return: True if one or more trades has been created or closed, False otherwise
+    :return: a pair, the first value is True if one or more trades has been created
+    or closed, False otherwise, the second argument is a requested sleep time in
+     seconds to be used when exchange is having problems
     """
     state_changed = False
+    extra_time = 0
     try:
         # Refresh whitelist based on wallet maintenance
         sanitized_list = refresh_whitelist(
@@ -133,7 +136,7 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
             'Got %s in _process(), retrying in 30 seconds...',
             error
         )
-        time.sleep(30)
+        extra_time = 30
     except OperationalException:
         rpc.send_msg('*Status:* Got OperationalException:\n```\n{traceback}```{hint}'.format(
             traceback=traceback.format_exc(),
@@ -141,7 +144,7 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
         ))
         logger.exception('Got OperationalException. Stopping trader ...')
         update_state(State.STOPPED)
-    return state_changed
+    return state_changed, extra_time
 
 
 # FIX: 20180110, why is cancel.order unconditionally here, whereas

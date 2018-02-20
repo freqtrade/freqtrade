@@ -16,7 +16,7 @@ from freqtrade.misc import (common_args_parser, file_dump_json, load_config,
 def test_throttle():
 
     def func():
-        return 42
+        return (42, 1)
 
     start = time.time()
     result = throttle(func, min_secs=0.1)
@@ -32,7 +32,7 @@ def test_throttle():
 def test_throttle_with_assets():
 
     def func(nb_assets=-1):
-        return nb_assets
+        return (nb_assets, 0)
 
     result = throttle(func, min_secs=0.1, nb_assets=666)
     assert result == 666
