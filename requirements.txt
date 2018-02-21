@@ -10,7 +10,7 @@ pandas==0.22.0
 scikit-learn==0.19.1
 scipy==1.0.0
 jsonschema==2.6.0
-numpy==1.14.0
+numpy==1.14.1
 TA-Lib==0.4.16
 pytest==3.4.1
 pytest-mock==1.7.0
