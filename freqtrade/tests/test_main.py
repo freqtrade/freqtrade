@@ -233,7 +233,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
-    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
@@ -249,7 +249,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
-    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = ["BTC_ETH"]
         conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
@@ -385,11 +385,11 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     # if ROI is reached we must sell
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
-    assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
+    assert ('freqtrade', logging.DEBUG, 'Required profit reached. Selling..') in caplog.record_tuples
     # if ROI is reached we must sell even if sell-signal is not signalled
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
-    assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
+    assert ('freqtrade', logging.DEBUG, 'Required profit reached. Selling..') in caplog.record_tuples
 
 
 def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
@@ -416,7 +416,7 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     assert value_returned is False
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     assert handle_trade(trade, int(default_conf['ticker_interval']))
-    s = 'Executing sell due to sell signal ...'
+    s = 'Sell signal received. Selling..'
     assert ('freqtrade', logging.DEBUG, s) in caplog.record_tuples
 
 

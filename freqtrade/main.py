@@ -312,17 +312,17 @@ def should_sell(trade: Trade, rate: float, date: datetime, buy: bool, sell: bool
     """
     # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
     if min_roi_reached(trade, rate, date):
-        logger.debug('Executing sell due to ROI ...')
+        logger.debug('Required profit reached. Selling..')
         return True
 
     # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
     if _CONF.get('experimental', {}).get('sell_profit_only', False):
-        logger.debug('Checking if trade is profitable ...')
+        logger.debug('Checking if trade is profitable..')
         if trade.calc_profit(rate=rate) <= 0:
             return False
 
     if sell and not buy and _CONF.get('experimental', {}).get('use_sell_signal', False):
-        logger.debug('Executing sell due to sell signal ...')
+        logger.debug('Sell signal received. Selling..')
         return True
 
     return False
@@ -383,7 +383,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
-        raise DependencyException('No pair in whitelist')
+        raise DependencyException('No currency pairs in whitelist')
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
