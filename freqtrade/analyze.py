@@ -113,7 +113,7 @@ def get_signal(pair: str, interval: int) -> (bool, bool):
     # Check if dataframe is out of date
     signal_date = arrow.get(latest['date'])
     if signal_date < arrow.utcnow() - timedelta(minutes=(interval + 5)):
-        logger.warning('Too old dataframe for pair %s. Last ticker is %s minutes old',
+        logger.warning('Outdated history for pair %s. Last tick is %s minutes old',
                        pair, (arrow.utcnow() - signal_date).seconds // 60)
         return (False, False)  # return False ?
 
