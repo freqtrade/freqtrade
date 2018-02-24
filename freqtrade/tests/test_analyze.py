@@ -104,7 +104,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
     ticks = DataFrame([{'buy': 1, 'date': oldtime}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame(ticks))
     assert (False, False) == get_signal('xyz', int(default_conf['ticker_interval']))
-    assert tt.log_has('Too old dataframe for pair xyz',
+    assert tt.log_has('Too old dataframe for pair xyz. Last ticker is 11 minutes old',
                       caplog.record_tuples)
 
 

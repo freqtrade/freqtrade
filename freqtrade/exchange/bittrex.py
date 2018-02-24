@@ -52,7 +52,7 @@ class Bittrex(Exchange):
             'MIN_TRADE_REQUIREMENT_NOT_MET',
         ]
         if response['message'] in temp_error_messages:
-            raise ContentDecodingError('Got {}'.format(response['message']))
+            raise ContentDecodingError(response['message'])
 
     @property
     def fee(self) -> float:
@@ -110,7 +110,7 @@ class Bittrex(Exchange):
                     not all(key in data.get('result', {}) for key in keys) or\
                     not all(data.get('result', {})[key] is not None for key in keys):
                 raise ContentDecodingError('{message} params=({pair})'.format(
-                    message='Got invalid response from bittrex',
+                    message='Invalid response from Bittrex',
                     pair=pair))
             # Update the pair
             self.cached_ticker[pair] = {
@@ -132,14 +132,14 @@ class Bittrex(Exchange):
         elif tick_interval == 1440:
             interval = 'Day'
         else:
-            raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
+            raise ValueError('Unknown tick_interval: {}'.format(tick_interval))
 
         data = _API_V2.get_candles(pair.replace('_', '-'), interval)
 
         # These sanity check are necessary because bittrex cannot keep their API stable.
         if not data.get('result'):
             raise ContentDecodingError('{message} params=({pair})'.format(
-                message='Got invalid response from bittrex',
+                message='Invalid response from Bittrex',
                 pair=pair))
 
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:

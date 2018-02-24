@@ -425,7 +425,7 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
             # Sometimes the telegram server resets the current connection,
             # if this is the case we send the message again.
             logger.warning(
-                'Got Telegram NetworkError: %s! Trying one more time.',
+                'Telegram NetworkError: %s! Trying one more time.',
                 network_err.message
             )
             bot.send_message(
@@ -433,4 +433,4 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
                 parse_mode=parse_mode, reply_markup=reply_markup
             )
     except TelegramError as telegram_err:
-        logger.warning('Got TelegramError: %s! Giving up on that message.', telegram_err.message)
+        logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
