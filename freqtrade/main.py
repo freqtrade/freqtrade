@@ -126,10 +126,7 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
             Trade.session.flush()
 
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
-        logger.warning(
-            '%s in _process(), retrying in 30 seconds...',
-            error
-        )
+        logger.warning('%s, retrying in 30 seconds...', error)
         time.sleep(30)
     except OperationalException:
         rpc.send_msg('*Status:* OperationalException:\n```\n{traceback}```{hint}'.format(
