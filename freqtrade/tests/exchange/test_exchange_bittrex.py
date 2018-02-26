@@ -211,14 +211,14 @@ def test_exchange_bittrex_get_ticker_bad():
     fb = FakeBittrex()
     fb.result = {'success': True, 'result': {'Bid': 1, 'Ask': 0}}  # incomplete result
 
-    with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
+    with pytest.raises(ContentDecodingError, match=r'.*Invalid response from Bittrex params.*'):
         wb.get_ticker('BTC_ETH')
     fb.result = {'success': False, 'message': 'gone bad'}
     with pytest.raises(btx.OperationalException, match=r'.*gone bad.*'):
         wb.get_ticker('BTC_ETH')
 
     fb.result = {'success': True, 'result': {}}  # incomplete result
-    with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
+    with pytest.raises(ContentDecodingError, match=r'.*Invalid response from Bittrex params.*'):
         wb.get_ticker('BTC_ETH')
     fb.result = {'success': False, 'message': 'gone bad'}
     with pytest.raises(btx.OperationalException, match=r'.*gone bad.*'):
@@ -226,7 +226,7 @@ def test_exchange_bittrex_get_ticker_bad():
 
     fb.result = {'success': True,
                  'result': {'Bid': 1, 'Ask': 0, 'Last': None}}  # incomplete result
-    with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex params.*'):
+    with pytest.raises(ContentDecodingError, match=r'.*Invalid response from Bittrex params.*'):
         wb.get_ticker('BTC_ETH')
 
 
@@ -242,7 +242,7 @@ def test_exchange_bittrex_get_ticker_history():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
     assert wb.get_ticker_history('BTC_ETH', 5)
-    with pytest.raises(ValueError, match=r'.*Cannot parse tick_interval.*'):
+    with pytest.raises(ValueError, match=r'.*Unknown tick_interval.*'):
         wb.get_ticker_history('BTC_ETH', 2)
 
     fb.success = False
@@ -250,7 +250,7 @@ def test_exchange_bittrex_get_ticker_history():
         wb.get_ticker_history('BTC_ETH', 5)
 
     fb.success = True
-    with pytest.raises(ContentDecodingError, match=r'.*Got invalid response from bittrex.*'):
+    with pytest.raises(ContentDecodingError, match=r'.*Invalid response from Bittrex.*'):
         fb.result = {'bad': 0}
         wb.get_ticker_history('BTC_ETH', 5)
 

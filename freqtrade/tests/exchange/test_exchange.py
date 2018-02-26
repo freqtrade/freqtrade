@@ -10,6 +10,7 @@ from freqtrade import OperationalException
 from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
     get_ticker, get_ticker_history, cancel_order, get_name, get_fee
 import freqtrade.exchange as exchange
+from freqtrade.tests.conftest import log_has
 
 API_INIT = False
 
@@ -26,10 +27,7 @@ def maybe_init_api(conf, mocker):
 def test_init(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     maybe_init_api(default_conf, mocker)
-    assert ('freqtrade.exchange',
-            logging.INFO,
-            'Instance is running with dry_run enabled'
-            ) in caplog.record_tuples
+    assert log_has('Instance is running with dry_run enabled', caplog.record_tuples)
 
 
 def test_init_exception(default_conf):
@@ -79,10 +77,8 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 
     # with pytest.raises(RequestException, match=r'Unable to validate pairs'):
     validate_pairs(default_conf['exchange']['pair_whitelist'])
-    assert ('freqtrade.exchange',
-            logging.WARNING,
-            'Unable to validate pairs (assuming they are correct). Reason: '
-            ) in caplog.record_tuples
+    assert log_has('Unable to validate pairs (assuming they are correct). Reason: ',
+                   caplog.record_tuples)
 
 
 def test_buy_dry_run(default_conf, mocker):

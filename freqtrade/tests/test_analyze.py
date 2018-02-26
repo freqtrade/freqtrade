@@ -6,7 +6,7 @@ import arrow
 import logging
 from pandas import DataFrame
 
-import freqtrade.tests.conftest as tt  # test tools
+from freqtrade.tests.conftest import log_has
 from freqtrade.analyze import (get_signal, parse_ticker_dataframe,
                                populate_buy_trend, populate_indicators,
                                populate_sell_trend)
@@ -73,8 +73,7 @@ def test_get_signal_empty(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=None)
     assert (False, False) == get_signal('foo', int(default_conf['ticker_interval']))
-    assert tt.log_has('Empty ticker history for pair foo',
-                      caplog.record_tuples)
+    assert log_has('Empty ticker history for pair foo', caplog.record_tuples)
 
 
 def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
@@ -83,8 +82,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
     mocker.patch('freqtrade.analyze.analyze_ticker',
                  side_effect=ValueError('xyz'))
     assert (False, False) == get_signal('foo', int(default_conf['ticker_interval']))
-    assert tt.log_has('Unable to analyze ticker for pair foo: xyz',
-                      caplog.record_tuples)
+    assert log_has('Unable to analyze ticker for pair foo: xyz', caplog.record_tuples)
 
 
 def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
@@ -92,8 +90,7 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame([]))
     assert (False, False) == get_signal('xyz', int(default_conf['ticker_interval']))
-    assert tt.log_has('Empty dataframe for pair xyz',
-                      caplog.record_tuples)
+    assert log_has('Empty dataframe for pair xyz', caplog.record_tuples)
 
 
 def test_get_signal_old_dataframe(default_conf, mocker, caplog):
@@ -104,8 +101,8 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
     ticks = DataFrame([{'buy': 1, 'date': oldtime}])
     mocker.patch('freqtrade.analyze.analyze_ticker', return_value=DataFrame(ticks))
     assert (False, False) == get_signal('xyz', int(default_conf['ticker_interval']))
-    assert tt.log_has('Too old dataframe for pair xyz',
-                      caplog.record_tuples)
+    assert log_has('Outdated history for pair xyz. Last tick is 11 minutes old',
+                   caplog.record_tuples)
 
 
 def test_get_signal_handles_exceptions(mocker):

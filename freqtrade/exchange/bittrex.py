@@ -52,7 +52,7 @@ class Bittrex(Exchange):
             'MIN_TRADE_REQUIREMENT_NOT_MET',
         ]
         if response['message'] in temp_error_messages:
-            raise ContentDecodingError('Got {}'.format(response['message']))
+            raise ContentDecodingError(response['message'])
 
     @property
     def fee(self) -> float:
@@ -109,8 +109,7 @@ class Bittrex(Exchange):
             if not data.get('result') or\
                     not all(key in data.get('result', {}) for key in keys) or\
                     not all(data.get('result', {})[key] is not None for key in keys):
-                raise ContentDecodingError('{message} params=({pair})'.format(
-                    message='Got invalid response from bittrex',
+                raise ContentDecodingError('Invalid response from Bittrex params=({pair})'.format(
                     pair=pair))
             # Update the pair
             self.cached_ticker[pair] = {
@@ -132,22 +131,20 @@ class Bittrex(Exchange):
         elif tick_interval == 1440:
             interval = 'Day'
         else:
-            raise ValueError('Cannot parse tick_interval: {}'.format(tick_interval))
+            raise ValueError('Unknown tick_interval: {}'.format(tick_interval))
 
         data = _API_V2.get_candles(pair.replace('_', '-'), interval)
 
         # These sanity check are necessary because bittrex cannot keep their API stable.
         if not data.get('result'):
-            raise ContentDecodingError('{message} params=({pair})'.format(
-                message='Got invalid response from bittrex',
+            raise ContentDecodingError('Invalid response from Bittrex params=({pair})'.format(
                 pair=pair))
 
         for prop in ['C', 'V', 'O', 'H', 'L', 'T']:
             for tick in data['result']:
                 if prop not in tick.keys():
-                    raise ContentDecodingError('{message} params=({pair})'.format(
-                        message='Required property {} not present in response'.format(prop),
-                        pair=pair))
+                    raise ContentDecodingError('Required property {} not present '
+                                               'in response params=({})'.format(prop, pair))
 
         if not data['success']:
             Bittrex._validate_response(data)
@@ -191,21 +188,21 @@ class Bittrex(Exchange):
         data = _API.get_markets()
         if not data['success']:
             Bittrex._validate_response(data)
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(data['message'])
         return [m['MarketName'].replace('-', '_') for m in data['result']]
 
     def get_market_summaries(self) -> List[Dict]:
         data = _API.get_market_summaries()
         if not data['success']:
             Bittrex._validate_response(data)
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(data['message'])
         return data['result']
 
     def get_wallet_health(self) -> List[Dict]:
         data = _API_V2.get_wallet_health()
         if not data['success']:
             Bittrex._validate_response(data)
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(data['message'])
         return [{
             'Currency': entry['Health']['Currency'],
             'IsActive': entry['Health']['IsActive'],

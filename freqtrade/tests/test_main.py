@@ -9,13 +9,13 @@ import requests
 from sqlalchemy import create_engine
 
 import freqtrade.main as main
-import freqtrade.tests.conftest as tt  # test tools
 from freqtrade import DependencyException, OperationalException
 from freqtrade.exchange import Exchanges
 from freqtrade.main import (_process, check_handle_timedout, create_trade,
                             execute_sell, get_target_bid, handle_trade, init)
 from freqtrade.misc import State, get_state
 from freqtrade.persistence import Trade
+from freqtrade.tests.conftest import log_has
 
 
 def test_parse_args_backtesting(mocker):
@@ -73,7 +73,7 @@ def test_process_maybe_execute_buy_exception(default_conf, mocker, caplog):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.create_trade', MagicMock(side_effect=DependencyException))
     main.process_maybe_execute_buy(int(default_conf['ticker_interval']))
-    tt.log_has('Unable to create trade:', caplog.record_tuples)
+    assert log_has('Unable to create trade: ', caplog.record_tuples)
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, mocker):
@@ -233,7 +233,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
-    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = []
         mocker.patch.dict('freqtrade.main._CONF', conf)
@@ -249,7 +249,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker):
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
 
-    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
         conf = copy.deepcopy(default_conf)
         conf['exchange']['pair_whitelist'] = ["BTC_ETH"]
         conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
@@ -385,11 +385,11 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog):
     # if ROI is reached we must sell
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
-    assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
+    assert log_has('Required profit reached. Selling..', caplog.record_tuples)
     # if ROI is reached we must sell even if sell-signal is not signalled
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     assert handle_trade(trade, interval=int(default_conf['ticker_interval']))
-    assert ('freqtrade', logging.DEBUG, 'Executing sell due to ROI ...') in caplog.record_tuples
+    assert log_has('Required profit reached. Selling..', caplog.record_tuples)
 
 
 def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
@@ -416,8 +416,7 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog):
     assert value_returned is False
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (False, True))
     assert handle_trade(trade, int(default_conf['ticker_interval']))
-    s = 'Executing sell due to sell signal ...'
-    assert ('freqtrade', logging.DEBUG, s) in caplog.record_tuples
+    assert log_has('Sell signal received. Selling..', caplog.record_tuples)
 
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker):

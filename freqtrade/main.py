@@ -65,10 +65,7 @@ def process_maybe_execute_buy(interval: int) -> bool:
         if create_trade(float(_CONF['stake_amount']), interval):
             return True
 
-        logger.info(
-            'Checked all whitelisted currencies. '
-            'Found no suitable entry positions for buying. Will keep looking ...'
-        )
+        logger.info('Found no buy signals for whitelisted currencies. Trying again..')
         return False
     except DependencyException as exception:
         logger.warning('Unable to create trade: %s', exception)
@@ -83,7 +80,7 @@ def process_maybe_execute_sell(trade: Trade, interval: int) -> bool:
     # Get order details for actual price per unit
     if trade.open_order_id:
         # Update trade with order values
-        logger.info('Got open order for %s', trade)
+        logger.info('Found open order for %s', trade)
         trade.update(exchange.get_order(trade.open_order_id))
 
     if trade.is_open and trade.open_order_id is None:
@@ -129,17 +126,14 @@ def _process(interval: int, nb_assets: Optional[int] = 0) -> bool:
             Trade.session.flush()
 
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
-        logger.warning(
-            'Got %s in _process(), retrying in 30 seconds...',
-            error
-        )
+        logger.warning('%s, retrying in 30 seconds...', error)
         time.sleep(30)
     except OperationalException:
-        rpc.send_msg('*Status:* Got OperationalException:\n```\n{traceback}```{hint}'.format(
+        rpc.send_msg('*Status:* OperationalException:\n```\n{traceback}```{hint}'.format(
             traceback=traceback.format_exc(),
             hint='Issue `/start` if you think it is safe to restart.'
         ))
-        logger.exception('Got OperationalException. Stopping trader ...')
+        logger.exception('OperationalException. Stopping trader ...')
         update_state(State.STOPPED)
     return state_changed
 
@@ -318,17 +312,17 @@ def should_sell(trade: Trade, rate: float, date: datetime, buy: bool, sell: bool
     """
     # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
     if min_roi_reached(trade, rate, date):
-        logger.debug('Executing sell due to ROI ...')
+        logger.debug('Required profit reached. Selling..')
         return True
 
     # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
     if _CONF.get('experimental', {}).get('sell_profit_only', False):
-        logger.debug('Checking if trade is profitable ...')
+        logger.debug('Checking if trade is profitable..')
         if trade.calc_profit(rate=rate) <= 0:
             return False
 
     if sell and not buy and _CONF.get('experimental', {}).get('use_sell_signal', False):
-        logger.debug('Executing sell due to sell signal ...')
+        logger.debug('Sell signal received. Selling..')
         return True
 
     return False
@@ -389,7 +383,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
             whitelist.remove(trade.pair)
             logger.debug('Ignoring %s in pair whitelist', trade.pair)
     if not whitelist:
-        raise DependencyException('No pair in whitelist')
+        raise DependencyException('No currency pairs in whitelist')
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
@@ -558,9 +552,9 @@ def main(sysargv=sys.argv[1:]) -> int:
                 )
             old_state = new_state
     except KeyboardInterrupt:
-        logger.info('Got SIGINT, aborting ...')
+        logger.info('SIGINT received, aborting ...')
     except BaseException:
-        logger.exception('Got fatal exception!')
+        logger.exception('Fatal exception!')
     finally:
         cleanup()
     return 0
