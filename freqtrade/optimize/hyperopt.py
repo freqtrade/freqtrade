@@ -7,18 +7,14 @@ import os
 import pickle
 import signal
 import sys
-from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable
+from typing import Dict, Any
 
-import numpy
-import talib.abstract as ta
-from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
+from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, space_eval, tpe
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 # Monkey patch config
 from freqtrade import main  # noqa; noqa
 from freqtrade import exchange, misc, optimize

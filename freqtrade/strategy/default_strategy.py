@@ -4,7 +4,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 from typing import Dict, Any, Callable
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
+from hyperopt import hp
 from functools import reduce
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.indicator_helpers import fishers_inverse
@@ -301,7 +301,7 @@ class DefaultStrategy(IStrategy):
                 {'type': 'di_cross'},
             ]),
         }
-    
+
     def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
         """
         Define the buy strategy parameters to be used by hyperopt
@@ -374,7 +374,7 @@ class DefaultStrategy(IStrategy):
             return dataframe
 
         return populate_buy_trend
-        
+
     def roi_space(self) -> Dict[str, Any]:
         return {
             'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
@@ -384,7 +384,6 @@ class DefaultStrategy(IStrategy):
             'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
             'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
         }
-
 
     def stoploss_space(self) -> Dict[str, Any]:
         return {

@@ -185,16 +185,15 @@ class Strategy(object):
         Define your Hyperopt space for searching strategy parameters
         """
         return self.custom_strategy.indicator_space()
-        
+
     def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
         """
         Define the buy strategy parameters to be used by hyperopt
         """
         return self.custom_strategy.buy_strategy_generator(params)
-        
+
     def roi_space(self) -> Dict[str, Any]:
         return self.custom_strategy.roi_space()
-        
+
     def stoploss_space(self) -> Dict[str, Any]:
         return self.custom_strategy.stoploss_space()
-    
