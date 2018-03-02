@@ -19,8 +19,11 @@ class Logger(object):
         :return: None
         """
         self.name = name
-        self.level = level
         self.logger = None
+
+        if level is None:
+            level = logging.INFO
+        self.level = level
 
         self._init_logger()
 

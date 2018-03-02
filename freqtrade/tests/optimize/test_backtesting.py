@@ -5,6 +5,7 @@ import math
 from typing import List
 from copy import deepcopy
 from unittest.mock import MagicMock
+from arrow import Arrow
 import pandas as pd
 from freqtrade import optimize
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
@@ -255,6 +256,25 @@ def test_backtesting_init(default_conf) -> None:
     assert callable(backtesting.populate_sell_trend)
 
 
+def test_tickerdata_to_dataframe(default_conf) -> None:
+    """
+    Test Backtesting.tickerdata_to_dataframe() method
+    """
+
+    timerange = ((None, 'line'), None, -100)
+    tick = optimize.load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
+    tickerlist = {'BTC_UNITEST': tick}
+
+    backtesting = _BACKTESTING
+    data = backtesting.tickerdata_to_dataframe(tickerlist)
+    assert len(data['BTC_UNITEST']) == 100
+
+    # Load Analyze to compare the result between Backtesting function and Analyze are the same
+    analyze = Analyze(default_conf)
+    data2 = analyze.tickerdata_to_dataframe(tickerlist)
+    assert data['BTC_UNITEST'].equals(data2['BTC_UNITEST'])
+
+
 def test_get_timeframe() -> None:
     """
     Test Backtesting.get_timeframe() method
@@ -308,8 +328,18 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     """
     Test Backtesting.start() method
     """
-    mocker.patch.multiple('freqtrade.optimize', load_data=mocked_load_data)
-    mocker.patch('freqtrade.exchange.get_ticker_history', MagicMock)
+    def get_timeframe(input1, input2):
+        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+
+    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
+    mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
+    mocker.patch('freqtrade.exchange.get_ticker_history')
+    mocker.patch.multiple(
+        'freqtrade.optimize.backtesting.Backtesting',
+        backtest=MagicMock(),
+        _generate_text_table=MagicMock(return_value='1'),
+        get_timeframe=get_timeframe,
+    )
 
     conf = deepcopy(default_conf)
     conf['exchange']['pair_whitelist'] = ['BTC_UNITEST']

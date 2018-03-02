@@ -30,7 +30,7 @@ class Analyze(object):
         Init Analyze
         :param config: Bot configuration (use the one from Configuration())
         """
-        self.logger = Logger(name=__name__).get_logger()
+        self.logger = Logger(name=__name__, level=config.get('loglevel')).get_logger()
 
         self.config = config
         self.strategy = Strategy(self.config)

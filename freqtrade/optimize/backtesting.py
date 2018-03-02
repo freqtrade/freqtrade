@@ -5,7 +5,6 @@ This module contains the backtesting logic
 """
 
 from typing import Dict, Tuple, Any
-import logging
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
@@ -20,6 +19,7 @@ from freqtrade.logger import Logger
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 
+from memory_profiler import profile
 
 class Backtesting(object):
     """
@@ -30,7 +30,9 @@ class Backtesting(object):
     backtesting.start()
     """
     def __init__(self, config: Dict[str, Any]) -> None:
-        self.logging = Logger(name=__name__)
+
+        # Init the logger
+        self.logging = Logger(name=__name__, level=config['loglevel'])
         self.logger = self.logging.get_logger()
 
         self.config = config
@@ -219,6 +221,7 @@ class Backtesting(object):
         labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
         return DataFrame.from_records(trades, columns=labels)
 
+    @profile(precision=10)
     def start(self) -> None:
         """
         Run a backtesting end-to-end
@@ -246,10 +249,14 @@ class Backtesting(object):
             )
 
         max_open_trades = self.config.get('max_open_trades', 0)
-
         preprocessed = self.tickerdata_to_dataframe(data)
+
         # Print timeframe
         min_date, max_date = self.get_timeframe(preprocessed)
+
+        import pprint
+        pprint.pprint(min_date)
+        pprint.pprint(max_date)
         self.logger.info(
             'Measuring data from %s up to %s (%s days)..',
             min_date.isoformat(),

@@ -10,8 +10,9 @@ import logging
 import arrow
 from pandas import DataFrame
 
-import freqtrade.tests.conftest as tt  # test tools
 from freqtrade.analyze import Analyze, SignalType
+from freqtrade.optimize.__init__ import load_tickerdata_file
+import freqtrade.tests.conftest as tt  # test tools
 
 
 # Avoid to reinit the same object again and again
@@ -173,3 +174,16 @@ def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
     # Test file without BV data
     dataframe = Analyze.parse_ticker_dataframe(ticker_history_without_bv)
     assert dataframe.columns.tolist() == columns
+
+
+def test_tickerdata_to_dataframe(default_conf) -> None:
+    """
+    Test Analyze.tickerdata_to_dataframe() method
+    """
+    analyze = Analyze(default_conf)
+
+    timerange = ((None, 'line'), None, -100)
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
+    tickerlist = {'BTC_UNITEST': tick}
+    data = analyze.tickerdata_to_dataframe(tickerlist)
+    assert len(data['BTC_UNITEST']) == 100

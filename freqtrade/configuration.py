@@ -19,7 +19,8 @@ class Configuration(object):
     """
     def __init__(self, args: List[str]) -> None:
         self.args = args
-        self.logger = Logger(name=__name__).get_logger()
+        self.logging = Logger(name=__name__)
+        self.logger = self.logging.get_logger()
         self.config = self._load_config()
         self.show_info()
 
@@ -35,15 +36,23 @@ class Configuration(object):
         config.update({'strategy': self.args.strategy})
 
         # Add dynamic_whitelist if found
-        if self.args.dynamic_whitelist:
+        if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
             config.update({'dynamic_whitelist': self.args.dynamic_whitelist})
 
         # Add dry_run_db if found and the bot in dry run
         if self.args.dry_run_db and config.get('dry_run', False):
             config.update({'dry_run_db': True})
 
-        # Load Backtesting / Hyperopt
+        # Log level
+        if 'loglevel' in self.args and self.args.loglevel:
+            config.update({'loglevel': self.args.loglevel})
+            self.logging.set_level(self.args.loglevel)
+
+        # Load Backtesting
         config = self._load_backtesting_config(config)
+
+        # Load Hyperopt
+        config = self._load_hyperopt_config(config)
 
         return config
 
@@ -64,7 +73,7 @@ class Configuration(object):
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract information for sys.argv and load Backtesting and Hyperopt configuration
+        Extract information for sys.argv and load Backtesting configuration
         :return: configuration as dictionary
         """
         # If -i/--ticker-interval is used we override the configuration parameter
@@ -104,6 +113,24 @@ class Configuration(object):
         if 'export' in self.args and self.args.export:
             config.update({'export': self.args.export})
             self.logger.info('Parameter --export detected: %s ...', self.args.export)
+
+        return config
+
+    def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load Hyperopt configuration
+        :return: configuration as dictionary
+        """
+        # If --realistic-simulation is used we add it to the configuration
+        if 'epochs' in self.args and self.args.epochs:
+            config.update({'epochs': self.args.epochs})
+            self.logger.info('Parameter --epochs detected ...')
+            self.logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
+
+        # If --mongodb is used we add it to the configuration
+        if 'mongodb' in self.args and self.args.mongodb:
+            config.update({'mongodb': self.args.mongodb})
+            self.logger.info('Parameter --use-mongodb detected ...')
 
         return config
 

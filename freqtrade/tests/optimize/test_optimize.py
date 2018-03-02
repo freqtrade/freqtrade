@@ -6,7 +6,6 @@ import logging
 import uuid
 from shutil import copyfile
 from freqtrade import optimize
-from freqtrade.analyze import Analyze
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist
 from freqtrade.misc import file_dump_json
@@ -218,16 +217,6 @@ def test_init(default_conf, mocker) -> None:
         refresh_pairs=True,
         ticker_interval=int(default_conf['ticker_interval'])
     )
-
-
-def test_tickerdata_to_dataframe(default_conf) -> None:
-    analyze = Analyze(default_conf)
-
-    timerange = ((None, 'line'), None, -100)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
-    tickerlist = {'BTC_UNITEST': tick}
-    data = analyze.tickerdata_to_dataframe(tickerlist)
-    assert len(data['BTC_UNITEST']) == 100
 
 
 def test_trim_tickerlist() -> None:
