@@ -186,10 +186,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     assert 'refresh_pairs'in config
     assert tt.log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
-
-    import pprint
-    pprint.pprint(caplog.record_tuples)
-    pprint.pprint(config['timerange'])
     assert 'timerange' in config
     assert tt.log_has(
         'Parameter --timerange detected: {} ...'.format(config['timerange']),

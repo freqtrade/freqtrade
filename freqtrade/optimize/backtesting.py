@@ -253,10 +253,6 @@ class Backtesting(object):
 
         # Print timeframe
         min_date, max_date = self.get_timeframe(preprocessed)
-
-        import pprint
-        pprint.pprint(min_date)
-        pprint.pprint(max_date)
         self.logger.info(
             'Measuring data from %s up to %s (%s days)..',
             min_date.isoformat(),

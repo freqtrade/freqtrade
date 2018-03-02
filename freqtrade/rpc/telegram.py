@@ -109,8 +109,6 @@ class Telegram(RPC):
         if not self.is_enabled():
             return
 
-        import pprint
-        pprint.pprint(self._updater.stop.call_count)
         self._updater.stop()
 
     def is_enabled(self) -> bool:
