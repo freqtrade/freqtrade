@@ -2,6 +2,7 @@
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
+import logging
 import arrow
 import copy
 import json
@@ -36,7 +37,7 @@ class FreqtradeBot(object):
         """
 
         # Init the logger
-        self.logger = Logger(name='freqtrade').get_logger()
+        self.logger = Logger(name=__name__, level=config.get('loglevel')).get_logger()
 
         # Init bot states
         self._state = State.STOPPED

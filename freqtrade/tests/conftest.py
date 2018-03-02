@@ -8,6 +8,7 @@ import arrow
 import pytest
 from jsonschema import validate
 from telegram import Chat, Message, Update
+from sqlalchemy import create_engine
 
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
@@ -41,7 +42,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
 
-    return FreqtradeBot(config)
+    return FreqtradeBot(config, create_engine('sqlite://'))
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +84,8 @@ def default_conf():
             "token": "token",
             "chat_id": "0"
         },
-        "initial_state": "running"
+        "initial_state": "running",
+        "loglevel": logging.DEBUG
     }
     validate(configuration, Constants.CONF_SCHEMA)
     return configuration

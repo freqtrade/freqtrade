@@ -8,7 +8,7 @@ import logging
 import time
 from unittest.mock import MagicMock
 from copy import deepcopy
-from typing import Optional
+from typing import Dict, Optional
 import arrow
 import pytest
 import requests
@@ -36,7 +36,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
     patch_pymarketcap(mocker)
 
-    return FreqtradeBot(config)
+    return FreqtradeBot(config, create_engine('sqlite://'))
 
 
 def patch_get_signal(mocker, value=(True, False)) -> None:
@@ -63,7 +63,7 @@ def patch_RPCManager(mocker) -> MagicMock:
     return rpc_mock
 
 
-def patch_pymarketcap(mocker, value: Optional[str] = None) -> None:
+def patch_pymarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
     """
     Mocker to Pymarketcap to speed up tests
     :param mocker: mocker to patch Pymarketcap class
@@ -530,7 +530,6 @@ def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> No
     """
     Test exception on process_maybe_execute_buy() method
     """
-    caplog.set_level(logging.INFO)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch(
