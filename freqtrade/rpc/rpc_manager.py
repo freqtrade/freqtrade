@@ -10,7 +10,6 @@ class RPCManager(object):
     """
     Class to manage RPC objects (Telegram, Slack, ...)
     """
-    
     def __init__(self, freqtrade) -> None:
         """
         Initializes all enabled rpc modules

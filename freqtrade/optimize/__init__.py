@@ -97,10 +97,11 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
         try:
             download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
         except BaseException:
-            logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
-                pair=pair,
-                interval=ticker_interval,
-            ))
+            logger.info(
+                'Failed to download the pair: "%s", Interval: %s min',
+                pair,
+                ticker_interval
+            )
             return False
     return True
 
@@ -115,10 +116,11 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     """
 
     path = make_testdata_path(datadir)
-    logger.info('Download the pair: "{pair}", Interval: {interval} min'.format(
-        pair=pair,
-        interval=interval,
-    ))
+    logger.info(
+        'Download the pair: "%s", Interval: %s min',
+        pair,
+        interval
+    )
 
     filepair = pair.replace("-", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
@@ -129,8 +131,8 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
             data = json.load(file)
-        logger.debug("Current Start: {}".format(data[1]['T']))
-        logger.debug("Current End: {}".format(data[-1:][0]['T']))
+        logger.debug("Current Start: %s", data[1]['T'])
+        logger.debug("Current End: %s", data[-1:][0]['T'])
     else:
         data = []
         logger.debug("Current Start: None")
@@ -140,8 +142,8 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     for row in new_data:
         if row not in data:
             data.append(row)
-    logger.debug("New Start: {}".format(data[1]['T']))
-    logger.debug("New End: {}".format(data[-1:][0]['T']))
+    logger.debug("New Start: %s", data[1]['T'])
+    logger.debug("New End: %s", data[-1:][0]['T'])
     data = sorted(data, key=lambda data: data['T'])
 
     misc.file_dump_json(filename, data)

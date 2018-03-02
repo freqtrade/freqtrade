@@ -2,16 +2,15 @@
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
-import logging
-import arrow
 import copy
 import json
-import requests
 import time
 import traceback
-from cachetools import cached, TTLCache
-from datetime import datetime
 from typing import Dict, List, Optional, Any, Callable
+from datetime import datetime
+import requests
+import arrow
+from cachetools import cached, TTLCache
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
 from freqtrade.fiat_convert import CryptoToFiatConverter
@@ -507,14 +506,14 @@ class FreqtradeBot(object):
                   "*Current Rate:* `{current_rate:.8f}`\n" \
                   "*Profit:* `{profit:.2f}%`" \
                   "".format(
-                        exchange=trade.exchange,
-                        pair=trade.pair,
-                        pair_url=exchange.get_pair_detail_url(trade.pair),
-                        limit=limit,
-                        open_rate=trade.open_rate,
-                        current_rate=current_rate,
-                        amount=round(trade.amount, 8),
-                        profit=round(profit * 100, 2),
+                      exchange=trade.exchange,
+                      pair=trade.pair,
+                      pair_url=exchange.get_pair_detail_url(trade.pair),
+                      limit=limit,
+                      open_rate=trade.open_rate,
+                      current_rate=current_rate,
+                      amount=round(trade.amount, 8),
+                      profit=round(profit * 100, 2),
                   )
 
         # For regular case, when the configuration exists
@@ -528,12 +527,12 @@ class FreqtradeBot(object):
             message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
                        '` / {profit_fiat:.3f} {fiat})`' \
                        ''.format(
-                            gain="profit" if fmt_exp_profit > 0 else "loss",
-                            profit_percent=fmt_exp_profit,
-                            profit_coin=profit_trade,
-                            coin=self.config['stake_currency'],
-                            profit_fiat=profit_fiat,
-                            fiat=self.config['fiat_display_currency'],
+                           gain="profit" if fmt_exp_profit > 0 else "loss",
+                           profit_percent=fmt_exp_profit,
+                           profit_coin=profit_trade,
+                           coin=self.config['stake_currency'],
+                           profit_fiat=profit_fiat,
+                           fiat=self.config['fiat_display_currency'],
                        )
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well

@@ -2,7 +2,7 @@
 
 import pandas
 from freqtrade.optimize import load_data
-from freqtrade.analyze import Analyze, SignalType
+from freqtrade.analyze import Analyze
 
 _pairs = ['BTC_ETH']
 

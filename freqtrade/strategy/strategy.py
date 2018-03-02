@@ -19,7 +19,7 @@ class Strategy(object):
     """
     This class contains all the logic to load custom strategy class
     """
-    def __init__(self, config: dict={}) -> None:
+    def __init__(self, config: dict = {}) -> None:
         """
         Load the custom class from config parameter
         :param config:

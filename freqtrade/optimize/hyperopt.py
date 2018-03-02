@@ -25,7 +25,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data
 from freqtrade.arguments import Arguments
-from freqtrade.optimize.backtesting import Backtesting, setup_configuration
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.logger import Logger
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
@@ -45,7 +45,6 @@ class Hyperopt(Backtesting):
         # Rename the logging to display Hyperopt file instead of Backtesting
         self.logging = Logger(name=__name__, level=config['loglevel'])
         self.logger = self.logging.get_logger()
-
 
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
@@ -353,6 +352,9 @@ class Hyperopt(Backtesting):
         Define the buy strategy parameters to be used by hyperopt
         """
         def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+            """
+            Buy strategy Hyperopt will build and use
+            """
             conditions = []
             # GUARDS AND TRENDS
             if 'uptrend_long_ema' in params and params['uptrend_long_ema']['enabled']:
@@ -513,8 +515,9 @@ class Hyperopt(Backtesting):
                 self.current_tries = len(self.trials.results)
                 self.total_tries += self.current_tries
                 self.logger.info(
-                    'Continuing with trials. Current: {}, Total: {}'
-                    .format(self.current_tries, self.total_tries)
+                    'Continuing with trials. Current: %d, Total: %d',
+                    self.current_tries,
+                    self.total_tries
                 )
 
         try:
@@ -557,7 +560,10 @@ class Hyperopt(Backtesting):
         """
         Hyperopt SIGINT handler
         """
-        self.logger.info('Hyperopt received {}'.format(signal.Signals(sig).name))
+        self.logger.info(
+            'Hyperopt received %s',
+            signal.Signals(sig).name
+        )
 
         self.save_trials()
         self.log_trials_result()
@@ -580,9 +586,7 @@ def start(args) -> None:
     logger.info('Starting freqtrade in Hyperopt mode')
 
     # Initialize configuration
-    #config = setup_configuration(args)
-
-    # Monkey patch of the configuration with hyperopt_conf.py
+    # Monkey patch the configuration with hyperopt_conf.py
     configuration = Configuration(args)
     optimize_config = hyperopt_optimize_conf()
     config = configuration._load_backtesting_config(optimize_config)

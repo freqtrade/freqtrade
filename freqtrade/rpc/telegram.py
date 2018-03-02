@@ -1,14 +1,16 @@
+# pragma pylint: disable=unused-argument, unused-variable, protected-access, invalid-name
+
 """
 This module manage Telegram communication
 """
 
 from typing import Any, Callable
-from freqtrade.rpc.rpc import RPC
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 from freqtrade.__init__ import __version__
+from freqtrade.rpc.rpc import RPC
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
@@ -17,10 +19,10 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
     :param command_handler: Telegram CommandHandler
     :return: decorated function
     """
-
-    #def wrapper(self, bot: Bot, update: Update):
     def wrapper(self, *args, **kwargs):
-
+        """
+        Decorator logic
+        """
         update = kwargs.get('update') or args[1]
 
         # Reject unauthorized messages
@@ -45,6 +47,7 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
 
     return wrapper
 
+
 class Telegram(RPC):
     """
     Telegram, this class send messages to Telegram
@@ -57,7 +60,7 @@ class Telegram(RPC):
         """
         super().__init__(freqtrade)
 
-        self._updater = Updater = None
+        self._updater = None
         self._config = freqtrade.config
         self._init()
 
@@ -190,10 +193,10 @@ class Telegram(RPC):
                              ],
                              tablefmt='simple')
             message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'\
-                    .format(
-                        timescale,
-                        stats
-                    )
+                      .format(
+                          timescale,
+                          stats
+                      )
             self.send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
 
     @authorized_only
@@ -225,22 +228,22 @@ class Telegram(RPC):
                        "*Latest Trade opened:* `{latest_trade_date}`\n" \
                        "*Avg. Duration:* `{avg_duration}`\n" \
                        "*Best Performing:* `{best_pair}: {best_rate:.2f}%`"\
-                    .format(
-                        coin=self._config['stake_currency'],
-                        fiat=self._config['fiat_display_currency'],
-                        profit_closed_coin=stats['profit_closed_coin'],
-                        profit_closed_percent=stats['profit_closed_percent'],
-                        profit_closed_fiat=stats['profit_closed_fiat'],
-                        profit_all_coin=stats['profit_all_coin'],
-                        profit_all_percent=stats['profit_all_percent'],
-                        profit_all_fiat=stats['profit_all_fiat'],
-                        trade_count=stats['trade_count'],
-                        first_trade_date=stats['first_trade_date'],
-                        latest_trade_date=stats['latest_trade_date'],
-                        avg_duration=stats['avg_duration'],
-                        best_pair=stats['best_pair'],
-                        best_rate=stats['best_rate']
-                    )
+                       .format(
+                           coin=self._config['stake_currency'],
+                           fiat=self._config['fiat_display_currency'],
+                           profit_closed_coin=stats['profit_closed_coin'],
+                           profit_closed_percent=stats['profit_closed_percent'],
+                           profit_closed_fiat=stats['profit_closed_fiat'],
+                           profit_all_coin=stats['profit_all_coin'],
+                           profit_all_percent=stats['profit_all_percent'],
+                           profit_all_fiat=stats['profit_all_fiat'],
+                           trade_count=stats['trade_count'],
+                           first_trade_date=stats['first_trade_date'],
+                           latest_trade_date=stats['latest_trade_date'],
+                           avg_duration=stats['avg_duration'],
+                           best_pair=stats['best_pair'],
+                           best_rate=stats['best_rate']
+                       )
         self.send_msg(markdown_msg, bot=bot)
 
     @authorized_only
@@ -294,7 +297,6 @@ class Telegram(RPC):
         (error, msg) = self.rpc_stop()
         self.send_msg(msg, bot=bot)
 
-    # FIX: no test for this!!!!
     @authorized_only
     def _forcesell(self, bot: Bot, update: Update) -> None:
         """
@@ -370,10 +372,12 @@ class Telegram(RPC):
                   "*/status [table]:* `Lists all open trades`\n" \
                   "         *table :* `will display trades in a table`\n" \
                   "*/profit:* `Lists cumulative profit from all finished trades`\n" \
-                  "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, regardless of profit`\n" \
+                  "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
+                  "regardless of profit`\n" \
                   "*/performance:* `Show performance of each finished trade grouped by pair`\n" \
                   "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n" \
-                  "*/count:* `Show number of trades running compared to allowed number of trades`\n" \
+                  "*/count:* `Show number of trades running compared to allowed number of trades`" \
+                  "\n" \
                   "*/balance:* `Show account balance per currency`\n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
@@ -391,7 +395,8 @@ class Telegram(RPC):
         """
         self.send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
-    def send_msg(self, msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
+    def send_msg(self, msg: str, bot: Bot = None,
+                 parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
         """
         Send given markdown message
         :param msg: message

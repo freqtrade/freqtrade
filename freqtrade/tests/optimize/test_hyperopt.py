@@ -1,14 +1,8 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import logging
 import os
-import pytest
 from copy import deepcopy
-
-#from freqtrade.optimize.hyperopt import EXPECTED_MAX_PROFIT, start, \
-#    log_results, save_trials, read_trials, generate_roi_table
 from unittest.mock import MagicMock
-
-from freqtrade.optimize.hyperopt import Hyperopt, start
+from freqtrade.optimize.hyperopt import Hyperopt
 import freqtrade.tests.conftest as tt  # test tools
 
 
@@ -24,7 +18,7 @@ def create_trials(mocker) -> None:
       - we might have a pickle'd file so make sure that we return
         false when looking for it
     """
-    _HYPEROPT.trials_file = os.path.join('freqtrade', 'tests', 'optimize','ut_trials.pickle')
+    _HYPEROPT.trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
 
     mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=False)
     mocker.patch('freqtrade.optimize.hyperopt.os.remove', return_value=True)

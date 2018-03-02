@@ -1,4 +1,5 @@
 # pragma pylint: disable=protected-access, invalid-name
+
 """
 Unit test file for configuration.py
 """
@@ -270,4 +271,3 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'Parameter --export detected: {} ...'.format(config['export']),
         caplog.record_tuples
     )
-

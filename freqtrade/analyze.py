@@ -1,11 +1,11 @@
 """
 Functions to analyze ticker data with indicators and produce buy and sell signals
 """
-import arrow
 from datetime import datetime, timedelta
 from enum import Enum
-from pandas import DataFrame, to_datetime
 from typing import Dict, List
+import arrow
+from pandas import DataFrame, to_datetime
 from freqtrade.exchange import get_ticker_history
 from freqtrade.logger import Logger
 from freqtrade.strategy.strategy import Strategy
@@ -187,7 +187,6 @@ class Analyze(object):
             float(current_profit) * 100.0
         )
         return False
-
 
     def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
         """
