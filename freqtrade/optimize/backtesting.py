@@ -19,7 +19,6 @@ from freqtrade.logger import Logger
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 
-from memory_profiler import profile
 
 class Backtesting(object):
     """
@@ -221,7 +220,6 @@ class Backtesting(object):
         labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
         return DataFrame.from_records(trades, columns=labels)
 
-    @profile(precision=10)
     def start(self) -> None:
         """
         Run a backtesting end-to-end
