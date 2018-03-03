@@ -312,9 +312,9 @@ def test_generate_text_table():
         '-------  -----------  --------------  '
         '------------------  --------------  --------  ------\n'
         'BTC_ETH            2           15.00          '
-        '0.60000000           100.0         2       0\n'
+        '0.60000000            20.0         2       0\n'
         'TOTAL              2           15.00          '
-        '0.60000000           100.0         2       0'
+        '0.60000000            20.0         2       0'
     )
 
     assert backtesting._generate_text_table(data={'BTC_ETH': {}}, results=results) == result_str
