@@ -6,7 +6,6 @@ Unit test file for configuration.py
 import json
 
 from copy import deepcopy
-from unittest.mock import MagicMock
 import pytest
 from jsonschema import ValidationError
 
@@ -19,10 +18,12 @@ def test_configuration_object() -> None:
     """
     Test the Constants object has the mandatory Constants
     """
-    assert hasattr(Configuration, '_load_config')
+    assert hasattr(Configuration, 'load_config')
     assert hasattr(Configuration, '_load_config_file')
     assert hasattr(Configuration, '_validate_config')
-    assert hasattr(Configuration, 'show_info')
+    assert hasattr(Configuration, '_load_common_config')
+    assert hasattr(Configuration, '_load_backtesting_config')
+    assert hasattr(Configuration, '_load_hyperopt_config')
     assert hasattr(Configuration, 'get_config')
 
 
@@ -30,11 +31,6 @@ def test_load_config_invalid_pair(default_conf, mocker) -> None:
     """
     Test the configuration validator with an invalid PAIR format
     """
-    mocker.patch.multiple(
-        'freqtrade.configuration.Configuration',
-        _load_config=MagicMock(return_value=[]),
-        show_info=MagicMock
-    )
     conf = deepcopy(default_conf)
     conf['exchange']['pair_whitelist'].append('BTC-ETH')
 
@@ -47,11 +43,6 @@ def test_load_config_missing_attributes(default_conf, mocker) -> None:
     """
     Test the configuration validator with a missing attribute
     """
-    mocker.patch.multiple(
-        'freqtrade.configuration.Configuration',
-        _load_config=MagicMock(return_value=[]),
-        show_info=MagicMock
-    )
     conf = deepcopy(default_conf)
     conf.pop('exchange')
 
@@ -64,11 +55,6 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     """
     Test Configuration._load_config_file() method
     """
-    mocker.patch.multiple(
-        'freqtrade.configuration.Configuration',
-        _load_config=MagicMock(return_value=[]),
-        show_info=MagicMock
-    )
     file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -83,7 +69,7 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 def test_load_config(default_conf, mocker) -> None:
     """
-    Test Configuration._load_config() without any cli params
+    Test Configuration.load_config() without any cli params
     """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
@@ -91,7 +77,7 @@ def test_load_config(default_conf, mocker) -> None:
 
     args = Arguments([], '').get_parsed_arg()
     configuration = Configuration(args)
-    validated_conf = configuration._load_config()
+    validated_conf = configuration.load_config()
 
     assert 'strategy' in validated_conf
     assert validated_conf['strategy'] == 'default_strategy'
@@ -101,7 +87,7 @@ def test_load_config(default_conf, mocker) -> None:
 
 def test_load_config_with_params(default_conf, mocker) -> None:
     """
-    Test Configuration._load_config() with cli params used
+    Test Configuration.load_config() with cli params used
     """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
@@ -115,7 +101,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     args = Arguments(args, '').get_parsed_arg()
 
     configuration = Configuration(args)
-    validated_conf = configuration._load_config()
+    validated_conf = configuration.load_config()
 
     assert 'dynamic_whitelist' in validated_conf
     assert validated_conf['dynamic_whitelist'] == 10
@@ -141,22 +127,28 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     args = Arguments(args, '').get_parsed_arg()
 
     configuration = Configuration(args)
-    configuration.show_info()
+    configuration.get_config()
 
     assert tt.log_has(
-        'Using dynamically generated whitelist. (--dynamic-whitelist detected)',
+        'Parameter --dynamic-whitelist detected. '
+        'Using dynamically generated whitelist. '
+        '(not applicable with Backtesting and Hyperopt)',
         caplog.record_tuples
     )
 
     assert tt.log_has(
-        'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". '
-        '(--dry_run_db detected)',
+        'Parameter --dry-run-db detected ...',
+        caplog.record_tuples
+    )
+
+    assert tt.log_has(
+        'Dry_run will use the DB file: "tradesv3.dry_run.sqlite"',
         caplog.record_tuples
     )
 
     # Test the Dry run condition
     configuration.config.update({'dry_run': False})
-    configuration.show_info()
+    configuration._load_common_config(configuration.config)
     assert tt.log_has(
         'Dry run is disabled. (--dry_run_db ignored)',
         caplog.record_tuples
@@ -167,7 +159,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     """
     Test setup_configuration() function
     """
-    mocker.patch('freqtrade.configuration.Configuration.show_info', MagicMock)
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -212,7 +203,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     """
     Test setup_configuration() function
     """
-    mocker.patch('freqtrade.configuration.Configuration.show_info', MagicMock)
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))

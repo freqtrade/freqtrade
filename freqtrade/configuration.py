@@ -17,14 +17,13 @@ class Configuration(object):
     Class to read and init the bot configuration
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
-    def __init__(self, args: List[str]) -> None:
+    def __init__(self, args: List[str], do_not_init=False) -> None:
         self.args = args
         self.logging = Logger(name=__name__)
         self.logger = self.logging.get_logger()
-        self.config = self._load_config()
-        self.show_info()
+        self.config = None
 
-    def _load_config(self) -> Dict[str, Any]:
+    def load_config(self) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load the bot configuration
         :return: Configuration dictionary
@@ -35,18 +34,8 @@ class Configuration(object):
         # Add the strategy file to use
         config.update({'strategy': self.args.strategy})
 
-        # Add dynamic_whitelist if found
-        if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
-            config.update({'dynamic_whitelist': self.args.dynamic_whitelist})
-
-        # Add dry_run_db if found and the bot in dry run
-        if self.args.dry_run_db and config.get('dry_run', False):
-            config.update({'dry_run_db': True})
-
-        # Log level
-        if 'loglevel' in self.args and self.args.loglevel:
-            config.update({'loglevel': self.args.loglevel})
-            self.logging.set_level(self.args.loglevel)
+        # Load Common configuration
+        config = self._load_common_config(config)
 
         # Load Backtesting
         config = self._load_backtesting_config(config)
@@ -71,11 +60,46 @@ class Configuration(object):
 
         return self._validate_config(conf)
 
+    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load common configuration
+        :return: configuration as dictionary
+        """
+
+        # Log level
+        if 'loglevel' in self.args and self.args.loglevel:
+            config.update({'loglevel': self.args.loglevel})
+            self.logging.set_level(self.args.loglevel)
+            self.logger.info('Log level set at %s', config['loglevel'])
+
+        # Add dynamic_whitelist if found
+        if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
+            config.update({'dynamic_whitelist': self.args.dynamic_whitelist})
+            self.logger.info(
+                'Parameter --dynamic-whitelist detected. '
+                'Using dynamically generated whitelist. '
+                '(not applicable with Backtesting and Hyperopt)'
+            )
+
+        # Add dry_run_db if found and the bot in dry run
+        if self.args.dry_run_db and config.get('dry_run', False):
+            config.update({'dry_run_db': True})
+            self.logger.info('Parameter --dry-run-db detected ...')
+
+        if config.get('dry_run_db', False):
+            if config.get('dry_run', False):
+                self.logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite"')
+            else:
+                self.logger.info('Dry run is disabled. (--dry_run_db ignored)')
+
+        return config
+
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load Backtesting configuration
         :return: configuration as dictionary
         """
+
         # If -i/--ticker-interval is used we override the configuration parameter
         # (that will override the strategy configuration)
         if 'ticker_interval' in self.args and self.args.ticker_interval:
@@ -152,28 +176,12 @@ class Configuration(object):
                 best_match(Draft4Validator(Constants.CONF_SCHEMA).iter_errors(conf)).message
             )
 
-    def show_info(self) -> None:
-        """
-        Display info message to user depending of the configuration of the bot
-        :return: None
-        """
-        if self.config.get('dynamic_whitelist', False):
-            self.logger.info(
-                'Using dynamically generated whitelist. (--dynamic-whitelist detected)'
-            )
-
-        if self.config.get('dry_run_db', False):
-            if self.config.get('dry_run', False):
-                self.logger.info(
-                    'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". '
-                    '(--dry_run_db detected)'
-                )
-            else:
-                self.logger.info('Dry run is disabled. (--dry_run_db ignored)')
-
     def get_config(self) -> Dict[str, Any]:
         """
         Return the config. Use this method to get the bot config
         :return: Dict: Bot config
         """
+        if self.config is None:
+            self.config = self.load_config()
+
         return self.config

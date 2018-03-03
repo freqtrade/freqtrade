@@ -29,7 +29,7 @@ def test_parse_args_backtesting(mocker) -> None:
 
 def test_main_start_hyperopt(mocker) -> None:
     """
-    Test that main() can start hyperopt.
+    Test that main() can start hyperopt
     """
     hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
     main(['hyperopt'])
@@ -61,7 +61,7 @@ def test_set_loggers() -> None:
 
 def test_main(mocker, caplog) -> None:
     """
-    Test main() function.
+    Test main() function
     In this test we are skipping the while True loop by throwing an exception.
     """
     mocker.patch.multiple(
@@ -73,9 +73,11 @@ def test_main(mocker, caplog) -> None:
         clean=MagicMock(),
     )
 
+    args = ['-c', 'config.json.example']
+
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        main([])
+        main(args)
         tt.log_has('Starting freqtrade', caplog.record_tuples)
         tt.log_has('Got SIGINT, aborting ...', caplog.record_tuples)
         assert pytest_wrapped_e.type == SystemExit
@@ -87,5 +89,5 @@ def test_main(mocker, caplog) -> None:
         MagicMock(side_effect=BaseException)
     )
     with pytest.raises(SystemExit):
-        main([])
+        main(args)
         tt.log_has('Got fatal exception!', caplog.record_tuples)

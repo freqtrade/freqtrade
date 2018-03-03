@@ -589,7 +589,8 @@ def start(args) -> None:
     # Monkey patch the configuration with hyperopt_conf.py
     configuration = Configuration(args)
     optimize_config = hyperopt_optimize_conf()
-    config = configuration._load_backtesting_config(optimize_config)
+    config = configuration._load_common_config(optimize_config)
+    config = configuration._load_backtesting_config(config)
     config = configuration._load_hyperopt_config(config)
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''

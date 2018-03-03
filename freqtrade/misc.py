@@ -69,4 +69,3 @@ def file_dump_json(filename, data) -> None:
     """
     with open(filename, 'w') as file:
         json.dump(data, file)
-
