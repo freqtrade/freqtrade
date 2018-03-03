@@ -177,15 +177,15 @@ class Analyze(object):
             return True
 
         # Check if time matches and current rate is above threshold
-        time_diff = (current_time - trade.open_date).total_seconds() / 60
-        for duration, threshold in sorted(self.strategy.minimal_roi.items()):
-            if time_diff > float(duration) and current_profit > threshold:
+        time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
+        for duration_string, threshold in self.strategy.minimal_roi.items():
+            duration = float(duration_string)
+            if time_diff > duration and current_profit > threshold:
                 return True
 
-        self.logger.debug(
-            'Threshold not reached. (cur_profit: %1.2f%%)',
-            float(current_profit) * 100.0
-        )
+            if time_diff < duration:
+                return False
+
         return False
 
     def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:

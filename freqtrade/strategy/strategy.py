@@ -6,6 +6,7 @@ This module load custom strategies
 import importlib
 import os
 import sys
+from collections import OrderedDict
 from pandas import DataFrame
 from freqtrade.logger import Logger
 from freqtrade.constants import Constants
@@ -56,7 +57,9 @@ class Strategy(object):
             )
 
         # Minimal ROI designed for the strategy
-        self.minimal_roi = self.custom_strategy.minimal_roi
+        self.minimal_roi = OrderedDict(sorted(
+            self.custom_strategy.minimal_roi.items(),
+            key=lambda tuple: float(tuple[0])))  # sort after converting to number
 
         # Optimal stoploss designed for the strategy
         self.stoploss = self.custom_strategy.stoploss

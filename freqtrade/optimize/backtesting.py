@@ -114,15 +114,13 @@ class Backtesting(object):
         )
 
         # calculate win/lose forwards from buy point
-        sell_subset = ticker[ticker.index > row.Index][['close', 'sell']]
+        sell_subset = ticker[ticker.index > row.Index][['close', 'sell', 'buy']]
         for row2 in sell_subset.itertuples(index=True):
             if max_open_trades > 0:
                 # Increase trade_count_lock for every iteration
                 trade_count_lock[row2.Index] = trade_count_lock.get(row2.Index, 0) + 1
 
-            # Buy is on is in the buy_subset there is a row that matches the date
-            # of the sell event
-            buy_signal = (buy_subset.index == row2.Index).any()
+            buy_signal = row2.buy
             if(
                     self.analyze.should_sell(
                         trade=trade,
