@@ -2,24 +2,15 @@
 
 import sys
 import logging
-import argparse
-import os
 
-from pandas import DataFrame
-import talib.abstract as ta
-
-import plotly
 from plotly import tools
 from plotly.offline import plot
 import plotly.graph_objs as go
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade import exchange, analyze
-from freqtrade.misc import common_args_parser
 from freqtrade.strategy.strategy import Strategy
 import freqtrade.misc as misc
 import freqtrade.optimize as optimize
-import freqtrade.analyze as analyze
 
 
 logger = logging.getLogger(__name__)
@@ -61,18 +52,17 @@ def plot_analyzed_dataframe(args) -> None:
     dataframe = dataframes[pair]
     dataframe = analyze.populate_buy_trend(dataframe)
     dataframe = analyze.populate_sell_trend(dataframe)
-    dates = misc.datesarray_to_datetimearray(dataframe['date'])
 
     if (len(dataframe.index) > 750):
         logger.warn('Ticker contained more than 750 candles, clipping.')
     df = dataframe.tail(750)
 
     candles = go.Candlestick(x=df.date,
-                        open=df.open,
-                        high=df.high,
-                        low=df.low,
-                        close=df.close,
-                        name='Price')
+                             open=df.open,
+                             high=df.high,
+                             low=df.low,
+                             close=df.close,
+                             name='Price')
 
     df_buy = df[df['buy'] == 1]
     buys = go.Scattergl(
@@ -116,28 +106,20 @@ def plot_analyzed_dataframe(args) -> None:
         y=df.bb_upperband,
         name='BB upper',
         fill="tonexty",
-        fillcolor="rgba(0,176,246,0.2)", 
+        fillcolor="rgba(0,176,246,0.2)",
         line={'color': "transparent"},
     )
+    macd = go.Scattergl(x=df['date'], y=df['macd'], name='MACD')
+    macdsignal = go.Scattergl(x=df['date'], y=df['macdsignal'], name='MACD signal')
+    volume = go.Bar(x=df['date'], y=df['volume'], name='Volume')
 
-    macd = go.Scattergl(
-        x=df['date'],
-        y=df['macd'],
-        name='MACD'
+    fig = tools.make_subplots(
+        rows=3,
+        cols=1,
+        shared_xaxes=True,
+        row_width=[1, 1, 4],
+        vertical_spacing=0.0001,
     )
-    macdsignal = go.Scattergl(
-        x=df['date'],
-        y=df['macdsignal'],
-        name='MACD signal'
-    )
-
-    volume = go.Bar(
-        x=df['date'],
-        y=df['volume'],
-        name='Volume'
-    )
-
-    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 4],vertical_spacing=0.0001)
 
     fig.append_trace(candles, 1, 1)
     fig.append_trace(bb_lower, 1, 1)
