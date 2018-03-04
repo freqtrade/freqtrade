@@ -51,9 +51,9 @@ def main(sysargv: Dict) -> None:
             state = freqtrade.worker(old_state=state)
 
     except KeyboardInterrupt:
-        logger.info('Got SIGINT, aborting ...')
+        logger.info('SIGINT received, aborting ...')
     except BaseException:
-        logger.exception('Got fatal exception!')
+        logger.exception('Fatal exception!')
     finally:
         freqtrade.clean()
         sys.exit(0)

@@ -128,8 +128,12 @@ class Analyze(object):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        if signal_date < arrow.now() - timedelta(minutes=(interval + 5)):
-            self.logger.warning('Too old dataframe for pair %s', pair)
+        if signal_date < arrow.utcnow() - timedelta(minutes=(interval + 5)):
+            self.logger.warning(
+                'Outdated history for pair %s. Last tick is %s minutes old',
+                pair,
+                (arrow.utcnow() - signal_date).seconds // 60
+            )
             return (False, False)  # return False ?
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
@@ -150,17 +154,17 @@ class Analyze(object):
         """
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
-            self.logger.debug('Executing sell due to ROI ...')
+            self.logger.debug('Required profit reached. Selling..')
             return True
 
         # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
         if self.config.get('experimental', {}).get('sell_profit_only', False):
-            self.logger.debug('Checking if trade is profitable ...')
+            self.logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
                 return False
 
         if sell and not buy and self.config.get('experimental', {}).get('use_sell_signal', False):
-            self.logger.debug('Executing sell due to sell signal ...')
+            self.logger.debug('Sell signal received. Selling..')
             return True
 
         return False

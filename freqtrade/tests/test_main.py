@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.main import main, set_loggers
-import freqtrade.tests.conftest as tt  # test tools
+from freqtrade.tests.conftest import log_has
 
 
 def test_parse_args_backtesting(mocker) -> None:
@@ -78,8 +78,8 @@ def test_main(mocker, caplog) -> None:
     # Test Main + the KeyboardInterrupt exception
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main(args)
-        tt.log_has('Starting freqtrade', caplog.record_tuples)
-        tt.log_has('Got SIGINT, aborting ...', caplog.record_tuples)
+        log_has('Starting freqtrade', caplog.record_tuples)
+        log_has('Got SIGINT, aborting ...', caplog.record_tuples)
         assert pytest_wrapped_e.type == SystemExit
         assert pytest_wrapped_e.value.code == 42
 
@@ -90,4 +90,4 @@ def test_main(mocker, caplog) -> None:
     )
     with pytest.raises(SystemExit):
         main(args)
-        tt.log_has('Got fatal exception!', caplog.record_tuples)
+        log_has('Got fatal exception!', caplog.record_tuples)

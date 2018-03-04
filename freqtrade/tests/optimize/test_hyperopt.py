@@ -4,11 +4,11 @@ from copy import deepcopy
 from unittest.mock import MagicMock
 import pandas as pd
 from freqtrade.optimize.hyperopt import Hyperopt
-import freqtrade.tests.conftest as tt  # test tools
+from freqtrade.tests.conftest import default_conf, log_has
 
 
 # Avoid to reinit the same object again and again
-_HYPEROPT = Hyperopt(tt.default_conf())
+_HYPEROPT = Hyperopt(default_conf())
 
 
 # Functions for recurrent object patching
@@ -83,7 +83,7 @@ def test_log_results_if_loss_improves(caplog) -> None:
             'result': 'foo'
         }
     )
-    assert tt.log_has('    1/2: foo. Loss 1.00000', caplog.record_tuples)
+    assert log_has('    1/2: foo. Loss 1.00000', caplog.record_tuples)
 
 
 def test_no_log_if_loss_does_not_improve(caplog) -> None:
@@ -245,7 +245,7 @@ def test_save_trials_saves_trials(mocker, caplog) -> None:
 
     hyperopt.save_trials()
 
-    assert tt.log_has(
+    assert log_has(
         'Saving Trials to \'freqtrade/tests/optimize/ut_trials.pickle\'',
         caplog.record_tuples
     )
@@ -259,7 +259,7 @@ def test_read_trials_returns_trials_file(mocker, default_conf, caplog) -> None:
 
     hyperopt = _HYPEROPT
     hyperopt_trial = hyperopt.read_trials()
-    assert tt.log_has(
+    assert log_has(
         'Reading Trials from \'freqtrade/tests/optimize/ut_trials.pickle\'',
         caplog.record_tuples
     )

@@ -13,11 +13,11 @@ from freqtrade import optimize
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
-import freqtrade.tests.conftest as tt  # test tools
+from freqtrade.tests.conftest import default_conf, log_has
 
 
 # Avoid to reinit the same object again and again
-_BACKTESTING = Backtesting(tt.default_conf())
+_BACKTESTING = Backtesting(default_conf())
 
 
 def get_args(args) -> List[str]:
@@ -184,21 +184,21 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert tt.log_has(
+    assert log_has(
         'Parameter --datadir detected: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert not tt.log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
 
     assert 'live' not in config
-    assert not tt.log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
     assert 'realistic_simulation' not in config
-    assert not tt.log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
+    assert not log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
 
     assert 'refresh_pairs' not in config
-    assert not tt.log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
 
     assert 'timerange' not in config
     assert 'export' not in config
@@ -232,34 +232,34 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert tt.log_has(
+    assert log_has(
         'Parameter --datadir detected: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert tt.log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert tt.log_has(
+    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert log_has(
         'Using ticker_interval: 1 ...',
         caplog.record_tuples
     )
 
     assert 'live' in config
-    assert tt.log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+    assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
     assert 'realistic_simulation'in config
-    assert tt.log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
-    assert tt.log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+    assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
+    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
 
     assert 'refresh_pairs'in config
-    assert tt.log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
     assert 'timerange' in config
-    assert tt.log_has(
+    assert log_has(
         'Parameter --timerange detected: {} ...'.format(config['timerange']),
         caplog.record_tuples
     )
 
     assert 'export' in config
-    assert tt.log_has(
+    assert log_has(
         'Parameter --export detected: {} ...'.format(config['export']),
         caplog.record_tuples
     )
@@ -281,7 +281,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     ]
     args = get_args(args)
     start(args)
-    assert tt.log_has(
+    assert log_has(
         'Starting freqtrade in Backtesting mode',
         caplog.record_tuples
     )
@@ -422,7 +422,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         'up to 2017-11-14T22:59:00+00:00 (0 days)..'
     ]
     for line in exists:
-        assert tt.log_has(line, caplog.record_tuples)
+        assert log_has(line, caplog.record_tuples)
 
 
 def test_backtest(default_conf) -> None:
@@ -605,4 +605,4 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     ]
 
     for line in exists:
-        tt.log_has(line, caplog.record_tuples)
+        log_has(line, caplog.record_tuples)

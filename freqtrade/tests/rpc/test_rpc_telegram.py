@@ -23,7 +23,6 @@ from freqtrade.persistence import Trade
 from freqtrade.state import State
 from freqtrade.tests.test_freqtradebot import patch_get_signal, patch_pymarketcap
 from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
-import freqtrade.tests.conftest as tt  # test tools
 
 
 class DummyCls(Telegram):
@@ -160,15 +159,15 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(FreqtradeBot(conf, create_engine('sqlite://')))
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is True
-    assert tt.log_has(
+    assert log_has(
         'Executing handler: dummy_handler for chat_id: 0',
         caplog.record_tuples
     )
-    assert not tt.log_has(
+    assert not log_has(
         'Rejected unauthorized message from: 0',
         caplog.record_tuples
     )
-    assert not tt.log_has(
+    assert not log_has(
         'Exception occurred within Telegram module',
         caplog.record_tuples
     )
@@ -191,15 +190,15 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(FreqtradeBot(conf, create_engine('sqlite://')))
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
-    assert not tt.log_has(
+    assert not log_has(
         'Executing handler: dummy_handler for chat_id: 3735928559',
         caplog.record_tuples
     )
-    assert tt.log_has(
+    assert log_has(
         'Rejected unauthorized message from: 3735928559',
         caplog.record_tuples
     )
-    assert not tt.log_has(
+    assert not log_has(
         'Exception occurred within Telegram module',
         caplog.record_tuples
     )
@@ -221,15 +220,15 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     dummy = DummyCls(FreqtradeBot(conf, create_engine('sqlite://')))
     dummy.dummy_exception(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
-    assert not tt.log_has(
+    assert not log_has(
         'Executing handler: dummy_handler for chat_id: 0',
         caplog.record_tuples
     )
-    assert not tt.log_has(
+    assert not log_has(
         'Rejected unauthorized message from: 0',
         caplog.record_tuples
     )
-    assert tt.log_has(
+    assert log_has(
         'Exception occurred within Telegram module',
         caplog.record_tuples
     )
@@ -1086,7 +1085,7 @@ def test_send_msg_network_error(default_conf, mocker, caplog) -> None:
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
-    assert tt.log_has(
-        'Got TelegramError: Oh snap! Giving up on that message.',
+    assert log_has(
+        'Telegram NetworkError: Oh snap! Trying one more time.',
         caplog.record_tuples
     )

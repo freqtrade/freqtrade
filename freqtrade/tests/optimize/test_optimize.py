@@ -2,13 +2,13 @@
 
 import os
 import json
-import logging
 import uuid
 from shutil import copyfile
 from freqtrade import optimize
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist
 from freqtrade.misc import file_dump_json
+from freqtrade.tests.conftest import log_has
 
 # Change this if modifying BTC_UNITEST testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -55,9 +55,7 @@ def test_load_data_30min_ticker(ticker_history, mocker, caplog) -> None:
     _backup_file(file, copy_file=True)
     optimize.load_data(None, pairs=['BTC_UNITTEST'], ticker_interval=30)
     assert os.path.isfile(file) is True
-    assert ('freqtrade.optimize',
-            logging.INFO,
-            'Download the pair: "BTC_ETH", Interval: 30 min') not in caplog.record_tuples
+    assert not log_has('Download the pair: "BTC_ETH", Interval: 30 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -71,9 +69,7 @@ def test_load_data_5min_ticker(ticker_history, mocker, caplog) -> None:
     _backup_file(file, copy_file=True)
     optimize.load_data(None, pairs=['BTC_ETH'], ticker_interval=5)
     assert os.path.isfile(file) is True
-    assert ('freqtrade.optimize',
-            logging.INFO,
-            'Download the pair: "BTC_ETH", Interval: 5 min') not in caplog.record_tuples
+    assert not log_has('Download the pair: "BTC_ETH", Interval: 5 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -87,9 +83,7 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     _backup_file(file, copy_file=True)
     optimize.load_data(None, ticker_interval=1, pairs=['BTC_ETH'])
     assert os.path.isfile(file) is True
-    assert ('freqtrade.optimize',
-            logging.INFO,
-            'Download the pair: "BTC_ETH", Interval: 1 min') not in caplog.record_tuples
+    assert not log_has('Download the pair: "BTC_ETH", Interval: 1 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -103,9 +97,7 @@ def test_load_data_with_new_pair_1min(ticker_history, mocker, caplog) -> None:
     _backup_file(file)
     optimize.load_data(None, ticker_interval=1, pairs=['BTC_MEME'])
     assert os.path.isfile(file) is True
-    assert ('freqtrade.optimize',
-            logging.INFO,
-            'Download the pair: "BTC_MEME", Interval: 1 min') in caplog.record_tuples
+    assert log_has('Download the pair: "BTC_MEME", Interval: 1 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -165,9 +157,7 @@ def test_download_pairs_exception(ticker_history, mocker, caplog) -> None:
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert ('freqtrade.optimize.__init__',
-            logging.INFO,
-            'Failed to download the pair: "BTC-MEME", Interval: 1 min') in caplog.record_tuples
+    assert log_has('Failed to download the pair: "BTC-MEME", Interval: 1 min', caplog.record_tuples)
 
 
 def test_download_backtesting_testdata(ticker_history, mocker) -> None:

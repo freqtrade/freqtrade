@@ -191,20 +191,17 @@ class FreqtradeBot(object):
                 Trade.session.flush()
 
         except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
-            self.logger.warning(
-                'Got %s in _process(), retrying in 30 seconds...',
-                error
-            )
+            self.logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(Constants.RETRY_TIMEOUT)
         except OperationalException:
             self.rpc.send_msg(
-                '*Status:* Got OperationalException:\n```\n{traceback}```{hint}'
+                '*Status:* OperationalException:\n```\n{traceback}```{hint}'
                 .format(
                     traceback=traceback.format_exc(),
                     hint='Issue `/start` if you think it is safe to restart.'
                 )
             )
-            self.logger.exception('Got OperationalException. Stopping trader ...')
+            self.logger.exception('OperationalException. Stopping trader ...')
             self.update_state(State.STOPPED)
         return state_changed
 
@@ -294,7 +291,7 @@ class FreqtradeBot(object):
                 self.logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            raise DependencyException('No pair in whitelist')
+            raise DependencyException('No currency pairs in whitelist')
 
         # Pick pair based on StochRSI buy signals
         for _pair in whitelist:
@@ -356,10 +353,7 @@ class FreqtradeBot(object):
             if self.create_trade(float(self.config['stake_amount']), interval):
                 return True
 
-            self.logger.info(
-                'Checked all whitelisted currencies. '
-                'Found no suitable entry positions for buying. Will keep looking ...'
-            )
+            self.logger.info('Found no buy signals for whitelisted currencies. Trying again..')
             return False
         except DependencyException as exception:
             self.logger.warning('Unable to create trade: %s', exception)
@@ -373,7 +367,7 @@ class FreqtradeBot(object):
         # Get order details for actual price per unit
         if trade.open_order_id:
             # Update trade with order values
-            self.logger.info('Got open order for %s', trade)
+            self.logger.info('Found open order for %s', trade)
             trade.update(exchange.get_order(trade.open_order_id))
 
         if trade.is_open and trade.open_order_id is None:

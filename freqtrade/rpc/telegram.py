@@ -427,7 +427,7 @@ class Telegram(RPC):
                 # Sometimes the telegram server resets the current connection,
                 # if this is the case we send the message again.
                 self.logger.warning(
-                    'Got Telegram NetworkError: %s! Trying one more time.',
+                    'Telegram NetworkError: %s! Trying one more time.',
                     network_err.message
                 )
                 bot.send_message(
@@ -438,6 +438,6 @@ class Telegram(RPC):
                 )
         except TelegramError as telegram_err:
             self.logger.warning(
-                'Got TelegramError: %s! Giving up on that message.',
+                'TelegramError: %s! Giving up on that message.',
                 telegram_err.message
             )

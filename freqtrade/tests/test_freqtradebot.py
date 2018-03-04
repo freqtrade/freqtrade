@@ -14,7 +14,7 @@ import pytest
 import requests
 from sqlalchemy import create_engine
 
-import freqtrade.tests.conftest as tt  # test tools
+from freqtrade.tests.conftest import log_has
 from freqtrade import DependencyException, OperationalException
 from freqtrade.exchange import Exchanges
 from freqtrade.freqtradebot import FreqtradeBot
@@ -145,7 +145,7 @@ def test_throttle(mocker, default_conf, caplog) -> None:
 
     assert result == 42
     assert end - start > 0.1
-    assert tt.log_has('Throttling func for 0.10 seconds', caplog.record_tuples)
+    assert log_has('Throttling func for 0.10 seconds', caplog.record_tuples)
 
     result = freqtrade._throttle(func, min_secs=-1)
     assert result == 42
@@ -311,7 +311,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker) -> None:
 
     freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
 
-    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
         freqtrade.create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
 
 
@@ -336,7 +336,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker) -> 
 
     freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
 
-    with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
+    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
         freqtrade.create_trade(conf['stake_amount'], int(conf['ticker_interval']))
 
 
@@ -399,7 +399,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.open_rate == 0.00001099
     assert trade.amount == 90.99181073703367
 
-    assert tt.log_has(
+    assert log_has(
         'Checking buy signals to create a new trade with stake_amount: 0.001000 ...',
         caplog.record_tuples
     )
@@ -537,7 +537,7 @@ def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> No
         MagicMock(side_effect=DependencyException)
     )
     freqtrade.process_maybe_execute_buy(int(default_conf['ticker_interval']))
-    tt.log_has('Unable to create trade:', caplog.record_tuples)
+    log_has('Unable to create trade:', caplog.record_tuples)
 
 
 def test_process_maybe_execute_sell(mocker, default_conf) -> None:
@@ -690,7 +690,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog) -> None:
     # if ROI is reached we must sell
     patch_get_signal(mocker, value=(False, True))
     assert freqtrade.handle_trade(trade, interval=int(default_conf['ticker_interval']))
-    assert tt.log_has('Executing sell due to ROI ...', caplog.record_tuples)
+    assert log_has('Required profit reached. Selling..', caplog.record_tuples)
 
 
 def test_handle_trade_experimental(default_conf, ticker, mocker, caplog) -> None:
@@ -723,7 +723,7 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog) -> None
 
     patch_get_signal(mocker, value=(False, True))
     assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval']))
-    assert tt.log_has('Executing sell due to sell signal ...', caplog.record_tuples)
+    assert log_has('Sell signal received. Selling..', caplog.record_tuples)
 
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker) -> None:
