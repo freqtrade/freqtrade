@@ -100,7 +100,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, health, m
     assert trade.stake_amount == default_conf['stake_amount']
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'BITTREX'
     assert trade.open_rate == 0.00001099
     assert trade.amount == 90.99181073703367
 
