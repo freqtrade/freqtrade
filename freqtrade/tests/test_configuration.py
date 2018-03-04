@@ -281,5 +281,5 @@ def test_hyperopt_space_argument(mocker, default_conf, caplog) -> None:
     configuration = Configuration(args)
     config = configuration.get_config()
     assert 'spaces' in config
-    assert config['spaces'] is 'all'
-    assert tt.log_has('Parameter -s/--spaces detected: all', caplog.record_tuples)
+    assert config['spaces'] == ['all']
+    assert tt.log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)

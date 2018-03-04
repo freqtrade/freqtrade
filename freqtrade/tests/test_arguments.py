@@ -129,5 +129,5 @@ def test_parse_args_hyperopt_custom() -> None:
     assert call_args.epochs == 20
     assert call_args.loglevel == logging.INFO
     assert call_args.subparser == 'hyperopt'
-    assert call_args.spaces == 'buy'
+    assert call_args.spaces == ['buy']
     assert call_args.func is not None
