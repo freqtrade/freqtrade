@@ -107,10 +107,28 @@ class Arguments(object):
         """
         parser.add_argument(
             '-l', '--live',
+            help='using live data',
             action='store_true',
             dest='live',
-            help='using live data',
         )
+        parser.add_argument(
+            '-r', '--refresh-pairs-cached',
+            help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
+                  Use it if you want to run your backtesting with up-to-date data.',
+            action='store_true',
+            dest='refresh_pairs',
+        )
+        parser.add_argument(
+            '--export',
+            help='export backtest results, argument are: trades\
+                  Example --export=trades',
+            type=str,
+            default=None,
+            dest='export',
+        )
+
+    @staticmethod
+    def _optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             '-i', '--ticker-interval',
             help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
@@ -125,23 +143,8 @@ class Arguments(object):
             dest='realistic_simulation',
         )
         parser.add_argument(
-            '-r', '--refresh-pairs-cached',
-            help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
-                  Use it if you want to run your backtesting with up-to-date data.',
-            action='store_true',
-            dest='refresh_pairs',
-        )
-        parser.add_argument(
-            '--export',
-            help='Export backtest results, argument are: trades\
-                  Example --export=trades',
-            type=str,
-            default=None,
-            dest='export',
-        )
-        parser.add_argument(
             '--timerange',
-            help='Specify what timerange of data to use.',
+            help='specify what timerange of data to use.',
             default=None,
             type=str,
             dest='timerange',
@@ -167,20 +170,6 @@ class Arguments(object):
             action='store_true',
         )
         parser.add_argument(
-            '-i', '--ticker-interval',
-            help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
-            dest='ticker_interval',
-            type=int,
-            metavar='INT',
-        )
-        parser.add_argument(
-            '--timerange',
-            help='Specify what timerange of data to use.',
-            default=None,
-            type=str,
-            dest='timerange',
-        )
-        parser.add_argument(
             '-s', '--spaces',
             help='Specify which parameters to hyperopt. Space separate list. \
                   Default: %(default)s',
@@ -202,11 +191,13 @@ class Arguments(object):
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
         backtesting_cmd.set_defaults(func=backtesting.start)
+        self._optimizer_shared_options(backtesting_cmd)
         self._backtesting_options(backtesting_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
         hyperopt_cmd.set_defaults(func=hyperopt.start)
+        self._optimizer_shared_options(hyperopt_cmd)
         self._hyperopt_options(hyperopt_cmd)
 
     @staticmethod

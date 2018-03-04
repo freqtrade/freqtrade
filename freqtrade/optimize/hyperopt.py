@@ -433,23 +433,21 @@ class Hyperopt(Backtesting):
 
         return populate_buy_trend
 
-    def optimizer(self, params) -> Dict:
-        if 'roi_t1' in params:
+    def generate_optimizer(self, params) -> Dict:
+        if self.has_space('roi'):
             self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
 
-        if 'trigger' in params:
+        if self.has_space('buy'):
             self.populate_buy_trend = self.buy_strategy_generator(params)
 
-        if 'stoploss' in params:
-            stoploss = params['stoploss']
-        else:
-            stoploss = self.analyze.strategy.stoploss
+        if self.has_space('stoploss'):
+            self.analyze.strategy.stoploss = params['stoploss']
 
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': self.processed,
-                'stoploss': stoploss
+                'realistic': params['realistic_simulation'],
             }
         )
         result_explanation = self.format_results(results)
@@ -542,7 +540,7 @@ class Hyperopt(Backtesting):
             self.logging.set_format('\n%(message)s')
 
             best_parameters = fmin(
-                fn=self.optimizer,
+                fn=self.generate_optimizer,
                 space=self.hyperopt_space(),
                 algo=tpe.suggest,
                 max_evals=self.total_tries,

@@ -147,13 +147,12 @@ class Backtesting(object):
             realistic: do we try to simulate realistic trades? (default: True)
             sell_profit_only: sell if profit only
             use_sell_signal: act on sell-signal
-            stoploss: use stoploss
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
-        realistic = args.get('realistic', True)
+        realistic = args.get('realistic', False)
         record = args.get('record', None)
         records = []
         trades = []
@@ -251,7 +250,6 @@ class Backtesting(object):
                 'realistic': self.config.get('realistic_simulation', False),
                 'sell_profit_only': sell_profit_only,
                 'use_sell_signal': use_sell_signal,
-                'stoploss': self.analyze.strategy.stoploss,
                 'record': self.config.get('export')
             }
         )
