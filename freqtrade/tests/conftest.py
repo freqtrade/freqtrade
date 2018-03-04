@@ -103,32 +103,40 @@ def ticker_sell_down():
 
 @pytest.fixture
 def health():
-    return MagicMock(return_value=[{
-        'Currency': 'BTC',
-        'IsActive': True,
-        'LastChecked': '2017-11-13T20:15:00.00',
-        'Notice': None
-    }, {
-        'Currency': 'ETH',
-        'IsActive': True,
-        'LastChecked': '2017-11-13T20:15:00.00',
-        'Notice': None
-    }, {
-        'Currency': 'TRST',
-        'IsActive': True,
-        'LastChecked': '2017-11-13T20:15:00.00',
-        'Notice': None
-    }, {
-        'Currency': 'SWT',
-        'IsActive': True,
-        'LastChecked': '2017-11-13T20:15:00.00',
-        'Notice': None
-    }, {
-        'Currency': 'BCC',
-        'IsActive': False,
-        'LastChecked': '2017-11-13T20:15:00.00',
-        'Notice': None
-    }])
+    return MagicMock(return_value={
+        'ETH/BTC': {
+            'Currency': 'BTC',
+            'base': 'ETH',
+            'quote': 'BTC',
+            'active': True,
+            'LastChecked': '2017-11-13T20:15:00.00',
+            'Notice': None
+        },
+        'TRST/BTC': {
+            'Currency': 'TRST',
+            'base': 'TRST',
+            'quote': 'BTC',
+            'active': True,
+            'LastChecked': '2017-11-13T20:15:00.00',
+            'Notice': None
+        },
+        'SWT/BTC': {
+            'Currency': 'SWT',
+            'base': 'SWT',
+            'quote': 'BTC',
+            'active': True,
+            'LastChecked': '2017-11-13T20:15:00.00',
+            'Notice': None
+        },
+        'BCC/BTC': {
+            'Currency': 'BCC',
+            'base': 'BCC',
+            'quote': 'BTC',
+            'active': False,
+            'LastChecked': '2017-11-13T20:15:00.00',
+            'Notice': None
+        }
+    })
 
 
 @pytest.fixture
