@@ -1,0 +1,44 @@
+{
+    "max_open_trades": 3,
+    "stake_currency": "BTC",
+    "stake_amount": 0.005,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "unfilledtimeout": 600,
+    "bid_strategy": {
+        "ask_last_balance": 0.0
+    },
+    "exchange": {
+        "name": "bittrex",
+        "key": "",
+        "secret": "",
+        "pair_whitelist": [
+            "BTC_ETH",
+            "BTC_LTC",
+            "BTC_ETC",
+            "BTC_DASH",
+            "BTC_ZEC",
+            "BTC_XLM",
+            "BTC_NXT",
+            "BTC_POWR",
+            "BTC_ADA",
+            "BTC_XMR"
+        ],
+        "pair_blacklist": [
+            "BTC_DOGE"
+        ]
+    },
+    "experimental": {
+        "use_sell_signal": false,
+        "sell_profit_only": false
+    },
+    "telegram": {
+        "enabled": true,
+        "token": "387056091:AAEVz29u5KwphICqGB6c63RwZjqCd7Kh6T4",
+        "chat_id": "391939601"
+    },
+    "initial_state": "running",
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

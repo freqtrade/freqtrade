@@ -274,7 +274,6 @@ def setup_configuration(args) -> Dict[str, Any]:
     :return: Configuration
     """
     configuration = Configuration(args)
-
     config = configuration.get_config()
 
     # Ensure we do not use Exchange credentials
