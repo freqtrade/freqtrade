@@ -1,5 +1,5 @@
 python-bittrex==0.3.0
-SQLAlchemy==1.2.2
+SQLAlchemy==1.2.3
 python-telegram-bot==9.0.0
 arrow==0.12.1
 cachetools==2.0.1
@@ -13,7 +13,7 @@ jsonschema==2.6.0
 numpy==1.14.0
 TA-Lib==0.4.16
 pytest==3.4.0
-pytest-mock==1.6.3
+pytest-mock==1.7.0
 pytest-cov==2.5.1
 hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
