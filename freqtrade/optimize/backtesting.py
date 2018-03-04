@@ -102,43 +102,35 @@ class Backtesting(object):
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
-    def _get_sell_trade_entry(self, pair, row, buy_subset, ticker, trade_count_lock, args):
+    def _get_sell_trade_entry(self, pair, buy_row, partial_ticker, trade_count_lock, args):
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
-            open_rate=row.close,
-            open_date=row.Index,
+            open_rate=buy_row.close,
+            open_date=buy_row.date,
             stake_amount=stake_amount,
-            amount=stake_amount / row.open,
+            amount=stake_amount / buy_row.open,
             fee=exchange.get_fee()
         )
 
         # calculate win/lose forwards from buy point
-        sell_subset = ticker[ticker.index > row.Index][['close', 'sell', 'buy']]
-        for row2 in sell_subset.itertuples(index=True):
+        for sell_row in partial_ticker:
             if max_open_trades > 0:
                 # Increase trade_count_lock for every iteration
-                trade_count_lock[row2.Index] = trade_count_lock.get(row2.Index, 0) + 1
+                trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
-            buy_signal = row2.buy
-            if(
-                    self.analyze.should_sell(
-                        trade=trade,
-                        rate=row2.close,
-                        date=row2.Index,
-                        buy=buy_signal,
-                        sell=row2.sell
-                    )
-            ):
+            buy_signal = sell_row.buy
+            if self.analyze.should_sell(trade, sell_row.close, sell_row.date, buy_signal,
+                                        sell_row.sell):
                 return \
-                    row2, \
+                    sell_row, \
                     (
                         pair,
-                        trade.calc_profit_percent(rate=row2.close),
-                        trade.calc_profit(rate=row2.close),
-                        (row2.Index - row.Index).seconds // 60
-                    ),\
-                    row2.Index
+                        trade.calc_profit_percent(rate=sell_row.close),
+                        trade.calc_profit(rate=sell_row.close),
+                        (sell_row.date - buy_row.date).seconds // 60
+                    ), \
+                    sell_row.date
         return None
 
     def backtest(self, args) -> DataFrame:
@@ -159,6 +151,7 @@ class Backtesting(object):
             stoploss: use stoploss
         :return: DataFrame
         """
+        headers = ['date', 'buy', 'open', 'close', 'sell']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', True)
@@ -167,37 +160,28 @@ class Backtesting(object):
         trades = []
         trade_count_lock = {}
         for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0
-            ticker = self.populate_sell_trend(
-                self.populate_buy_trend(pair_data)
-            )
-            if 'date' in ticker:
-                ticker.set_index('date', inplace=True)
-            # for each buy point
+            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+
+            ticker_data = self.populate_sell_trend(self.populate_buy_trend(pair_data))[headers]
+            ticker = [x for x in ticker_data.itertuples()]
+
             lock_pair_until = None
-            headers = ['buy', 'open', 'close', 'sell']
-            buy_subset = ticker[(ticker.buy == 1) & (ticker.sell == 0)][headers]
-            for row in buy_subset.itertuples(index=True):
+            for index, row in enumerate(ticker):
+                if row.buy == 0 or row.sell == 1:
+                    continue  # skip rows where no buy signal or that would immediately sell off
+
                 if realistic:
-                    if lock_pair_until is not None and row.Index <= lock_pair_until:
+                    if lock_pair_until is not None and row.date <= lock_pair_until:
                         continue
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
-                    if not trade_count_lock.get(row.Index, 0) < max_open_trades:
+                    if not trade_count_lock.get(row.date, 0) < max_open_trades:
                         continue
 
-                if max_open_trades > 0:
-                    # Increase lock
-                    trade_count_lock[row.Index] = trade_count_lock.get(row.Index, 0) + 1
+                    trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                ret = self._get_sell_trade_entry(
-                    pair=pair,
-                    row=row,
-                    buy_subset=buy_subset,
-                    ticker=ticker,
-                    trade_count_lock=trade_count_lock,
-                    args=args
-                )
+                ret = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
+                                                 trade_count_lock, args)
 
                 if ret:
                     row2, trade_entry, next_date = ret
@@ -208,9 +192,9 @@ class Backtesting(object):
                         # record a tuple of pair, current_profit_percent,
                         # entry-date, duration
                         records.append((pair, trade_entry[1],
-                                        row.Index.strftime('%s'),
-                                        row2.Index.strftime('%s'),
-                                        row.Index, trade_entry[3]))
+                                        row.date.strftime('%s'),
+                                        row2.date.strftime('%s'),
+                                        row.date, trade_entry[3]))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
@@ -226,6 +210,8 @@ class Backtesting(object):
         """
         data = {}
         pairs = self.config['exchange']['pair_whitelist']
+        self.logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
+        self.logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
         if self.config.get('live'):
             self.logger.info('Downloading data for all pairs in whitelist ...')
@@ -233,8 +219,6 @@ class Backtesting(object):
                 data[pair] = exchange.get_ticker_history(pair, self.ticker_interval)
         else:
             self.logger.info('Using local backtesting data (using whitelist in given config) ...')
-            self.logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
-            self.logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
             timerange = Arguments.parse_timerange(self.config.get('timerange'))
             data = optimize.load_data(

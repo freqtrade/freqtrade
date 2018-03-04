@@ -43,6 +43,11 @@ def test_analyze_object() -> None:
     assert hasattr(Analyze, 'min_roi_reached')
 
 
+def test_dataframe_correct_length(result):
+    dataframe = Analyze.parse_ticker_dataframe(result)
+    assert len(result.index) == len(dataframe.index)
+
+
 def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == \
         ['close', 'high', 'low', 'open', 'date', 'volume']

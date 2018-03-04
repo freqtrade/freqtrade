@@ -285,6 +285,7 @@ def ticker_history_without_bv():
     ]
 
 
+# FIX: Perhaps change result fixture to use BTC_UNITEST instead?
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:

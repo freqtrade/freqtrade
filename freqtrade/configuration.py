@@ -116,7 +116,7 @@ class Configuration(object):
         if 'realistic_simulation' in self.args and self.args.realistic_simulation:
             config.update({'realistic_simulation': True})
             self.logger.info('Parameter --realistic-simulation detected ...')
-            self.logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+        self.logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:

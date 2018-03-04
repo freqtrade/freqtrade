@@ -67,5 +67,5 @@ def file_dump_json(filename, data) -> None:
     :param data: JSON Data to save
     :return:
     """
-    with open(filename, 'w') as file:
-        json.dump(data, file)
+    with open(filename, 'w') as fp:
+        json.dump(data, fp, default=str)

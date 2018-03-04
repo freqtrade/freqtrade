@@ -2,6 +2,7 @@
 import os
 from copy import deepcopy
 from unittest.mock import MagicMock
+import pandas as pd
 from freqtrade.optimize.hyperopt import Hyperopt
 import freqtrade.tests.conftest as tt  # test tools
 
@@ -157,7 +158,7 @@ def test_fmin_best_results(mocker, default_conf, caplog) -> None:
         '"uptrend_long_ema": {\n        "enabled": true\n    },',
         '"uptrend_short_ema": {\n        "enabled": false\n    },',
         '"uptrend_sma": {\n        "enabled": false\n    }',
-        'ROI table:\n{\'0\': 6.0, \'3.0\': 3.0, \'5.0\': 1.0, \'6.0\': 0}',
+        'ROI table:\n{0: 6.0, 3.0: 3.0, 5.0: 1.0, 6.0: 0}',
         'Best Result:\nfoo'
     ]
     for line in exists:
@@ -275,7 +276,7 @@ def test_roi_table_generation() -> None:
     }
 
     hyperopt = _HYPEROPT
-    assert hyperopt.generate_roi_table(params) == {'0': 6, '15': 3, '25': 1, '30': 0}
+    assert hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
 def test_start_calls_fmin(mocker, default_conf) -> None:
@@ -319,3 +320,36 @@ def test_start_uses_mongotrials(mocker, default_conf) -> None:
     hyperopt.start()
     mock_mongotrials.assert_called_once()
     mock_fmin.assert_called_once()
+
+
+# test log_trials_result
+# test buy_strategy_generator def populate_buy_trend
+# test optimizer if 'ro_t1' in params
+
+def test_format_results():
+    """
+    Test Hyperopt.format_results()
+    """
+    trades = [
+        ('BTC_ETH', 2, 2, 123),
+        ('BTC_LTC', 1, 1, 123),
+        ('BTC_XRP', -1, -2, -246)
+    ]
+    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+    df = pd.DataFrame.from_records(trades, columns=labels)
+    x = Hyperopt.format_results(df)
+    assert x.find(' 66.67%')
+
+
+def test_signal_handler(mocker):
+    """
+    Test Hyperopt.signal_handler()
+    """
+    m = MagicMock()
+    mocker.patch('sys.exit', m)
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.save_trials', m)
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.log_trials_result', m)
+
+    hyperopt = _HYPEROPT
+    hyperopt.signal_handler(9, None)
+    assert m.call_count == 3

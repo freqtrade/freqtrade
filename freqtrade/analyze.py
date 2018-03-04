@@ -172,19 +172,17 @@ class Analyze(object):
         :return True if bot should sell at current rate
         """
         current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < float(self.strategy.stoploss):
+        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
             self.logger.debug('Stop loss hit.')
             return True
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
-        for duration_string, threshold in self.strategy.minimal_roi.items():
-            duration = float(duration_string)
-            if time_diff > duration and current_profit > threshold:
-                return True
-
-            if time_diff < duration:
+        for duration, threshold in self.strategy.minimal_roi.items():
+            if time_diff <= duration:
                 return False
+            if current_profit > threshold:
+                return True
 
         return False
 
