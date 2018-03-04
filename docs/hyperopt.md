@@ -51,12 +51,12 @@ def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
     return dataframe
 ```
 
-Your hyperopt file must contains `guards` to find the right value for 
+Your hyperopt file must contain `guards` to find the right value for 
 `(dataframe['adx'] > 65)` & and `(dataframe['plus_di'] > 0.5)`. That 
 means you will need to enable/disable triggers.
  
 In our case the `SPACE` and `populate_buy_trend` in your strategy file 
-will be look like:
+will look like:
 ```python
 space = {
     'rsi': hp.choice('rsi', [
@@ -105,7 +105,7 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
 
 
 ### 2. Update the hyperopt config file
-Hyperopt is using a dedicated config file. At this moment hyperopt 
+Hyperopt is using a dedicated config file. Currently hyperopt 
 cannot use your config file. It is also made on purpose to allow you
 testing your strategy with different configurations.
 
@@ -127,19 +127,21 @@ If it's a guard, you will add a line like this:
     {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
 ]),
 ```
-This says, "*one of guards is RSI, it can have two values, enabled or 
+This says, "*one of the guards is RSI, it can have two values, enabled or 
 disabled. If it is enabled, try different values for it between 20 and 40*".
 
 So, the part of the strategy builder using the above setting looks like 
 this:
+
 ```
 if params['rsi']['enabled']:
     conditions.append(dataframe['rsi'] < params['rsi']['value'])
 ```
+
 It checks if Hyperopt wants the RSI guard to be enabled for this 
 round `params['rsi']['enabled']` and if it is, then it will add a 
-condition that says RSI must be < than the value hyperopt picked 
-for this evaluation, that is given in the `params['rsi']['value']`.
+condition that says RSI must be smaller than the value hyperopt picked 
+for this evaluation, which is given in the `params['rsi']['value']`.
 
 That's it. Now you can add new parts of strategies to Hyperopt and it 
 will try all the combinations with all different values in the search 
@@ -148,8 +150,7 @@ for best working algo.
 
 ### Add a new Indicators
 If you want to test an indicator that isn't used by the bot currently, 
-you need to add it to your strategy file (example: [user_data/strategies/test_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py))
-inside the `populate_indicators()` method.
+you need to add it to the `populate_indicators()` method in `hyperopt.py`.
 
 ## Execute Hyperopt
 Once you have updated your hyperopt configuration you can run it. 
@@ -158,23 +159,40 @@ it will take time you will have the result (more than 30 mins).
 
 We strongly recommend to use `screen` to prevent any connection loss.
 ```bash
-python3 ./freqtrade/main.py -c config.json hyperopt
+python3 ./freqtrade/main.py -c config.json hyperopt -e 5000
 ```
 
+The `-e` flag will set how many evaluations hyperopt will do. We recommend
+running at least several thousand evaluations.
+
 ### Execute hyperopt with different ticker-data source
-If you would like to learn parameters using an alternate ticke-data that
+If you would like to hyperopt parameters using an alternate ticker data that
 you have on-disk, use the `--datadir PATH` option. Default hyperopt will
 use data from directory `user_data/data`.
 
 ### Running hyperopt with smaller testset
-
-Use the --timeperiod argument to change how much of the testset
+Use the `--timeperiod` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
 python3 ./freqtrade/main.py hyperopt --timeperiod -200
 ```
+
+### Running hyperopt with smaller search space
+Use the `--spaces` argument to limit the search space used by hyperopt.
+Letting Hyperopt optimize everything is a huuuuge search space. Often it 
+might make more sense to start by just searching for initial buy algorithm. 
+Or maybe you just want to optimize your stoploss or roi table for that awesome 
+new buy strategy you have.
+
+Legal values are:
+
+- `all`: optimize everything
+- `buy`: just search for a new buy strategy
+- `roi`: just optimize the minimal profit table for your strategy
+- `stoploss`: search for the best stoploss value
+- space-separated list of any of the above values for example `--spaces roi stoploss`
 
 ### Hyperopt with MongoDB
 Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
@@ -267,7 +285,6 @@ customizable value.
 - You should **ignore** the guard "mfi" (`"mfi"` is `"enabled": false`)
 - and so on...
 
-
 You have to look inside your strategy file into `buy_strategy_generator()` 
 method, what those values match to.   
   
@@ -277,7 +294,7 @@ at `adx`-block, that translates to the following code block:
 (dataframe['adx'] > 15.0)
 ```
   
-So translating your whole hyperopt result to as the new buy-signal 
+Translating your whole hyperopt result to as the new buy-signal 
 would be the following:
 ```
 def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:

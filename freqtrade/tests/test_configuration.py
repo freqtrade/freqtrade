@@ -261,3 +261,25 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'Parameter --export detected: {} ...'.format(config['export']),
         caplog.record_tuples
     )
+
+
+def test_hyperopt_space_argument(mocker, default_conf, caplog) -> None:
+    """
+    Test setup_configuration() function
+    """
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+
+    args = [
+        'hyperopt',
+        '--spaces', 'all',
+    ]
+
+    args = Arguments(args, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+    assert 'spaces' in config
+    assert config['spaces'] is 'all'
+    assert tt.log_has('Parameter -s/--spaces detected: all', caplog.record_tuples)

@@ -156,6 +156,11 @@ class Configuration(object):
             config.update({'mongodb': self.args.mongodb})
             self.logger.info('Parameter --use-mongodb detected ...')
 
+        # If --spaces is used we add it to the configuration
+        if 'spaces' in self.args and self.args.spaces:
+            config.update({'spaces': self.args.spaces})
+            self.logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
+
         return config
 
     def _validate_config(self, conf: Dict[str, Any]) -> Dict[str, Any]:

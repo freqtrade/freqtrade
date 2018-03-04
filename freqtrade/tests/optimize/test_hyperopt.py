@@ -126,6 +126,7 @@ def test_fmin_best_results(mocker, default_conf, caplog) -> None:
     conf.update({'config': 'config.json.example'})
     conf.update({'epochs': 1})
     conf.update({'timerange': None})
+    conf.update({'spaces': 'all'})
 
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value=fmin_result)
@@ -173,6 +174,7 @@ def test_fmin_throw_value_error(mocker, default_conf, caplog) -> None:
     conf.update({'config': 'config.json.example'})
     conf.update({'epochs': 1})
     conf.update({'timerange': None})
+    conf.update({'spaces': 'all'})
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
     mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
 
@@ -200,6 +202,7 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker, default_conf) -> No
     conf.update({'epochs': 1})
     conf.update({'mongodb': False})
     conf.update({'timerange': None})
+    conf.update({'spaces': 'all'})
 
     mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=True)
     mocker.patch('freqtrade.optimize.hyperopt.len', return_value=len(trials.results))
@@ -290,6 +293,7 @@ def test_start_calls_fmin(mocker, default_conf) -> None:
     conf.update({'epochs': 1})
     conf.update({'mongodb': False})
     conf.update({'timerange': None})
+    conf.update({'spaces': 'all'})
 
     hyperopt = Hyperopt(conf)
     hyperopt.trials = trials
@@ -312,6 +316,7 @@ def test_start_uses_mongotrials(mocker, default_conf) -> None:
     conf.update({'epochs': 1})
     conf.update({'mongodb': True})
     conf.update({'timerange': None})
+    conf.update({'spaces': 'all'})
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
 
     hyperopt = Hyperopt(conf)
@@ -353,3 +358,16 @@ def test_signal_handler(mocker):
     hyperopt = _HYPEROPT
     hyperopt.signal_handler(9, None)
     assert m.call_count == 3
+
+
+def test_has_space():
+    """
+    Test Hyperopt.has_space() method
+    """
+    _HYPEROPT.config.update({'spaces': ['buy', 'roi']})
+    assert _HYPEROPT.has_space('roi')
+    assert _HYPEROPT.has_space('buy')
+    assert not _HYPEROPT.has_space('stoploss')
+
+    _HYPEROPT.config.update({'spaces': ['all']})
+    assert _HYPEROPT.has_space('buy')

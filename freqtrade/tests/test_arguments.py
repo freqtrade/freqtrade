@@ -118,10 +118,16 @@ def test_parse_args_backtesting_custom() -> None:
 
 
 def test_parse_args_hyperopt_custom() -> None:
-    args = ['-c', 'test_conf.json', 'hyperopt', '--epochs', '20']
+    args = [
+        '-c', 'test_conf.json',
+        'hyperopt',
+        '--epochs', '20',
+        '--spaces', 'buy'
+    ]
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == 'test_conf.json'
     assert call_args.epochs == 20
     assert call_args.loglevel == logging.INFO
     assert call_args.subparser == 'hyperopt'
+    assert call_args.spaces == 'buy'
     assert call_args.func is not None

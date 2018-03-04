@@ -335,16 +335,26 @@ class Hyperopt(Backtesting):
             ]),
         }
 
-    @staticmethod
-    def hyperopt_space() -> Dict[str, Any]:
+    def has_space(self, space) -> bool:
+        """
+        Tell if a space value is contained in the configuration
+        """
+        if space in self.config['spaces'] or 'all' in self.config['spaces']:
+            return True
+        return False
+
+    def hyperopt_space(self) -> Dict[str, Any]:
         """
         Return the space to use during Hyperopt
         """
-        return {
-            **Hyperopt.indicator_space(),
-            **Hyperopt.roi_space(),
-            **Hyperopt.stoploss_space()
-        }
+        spaces = {}
+        if self.has_space('buy'):
+            spaces = {**spaces, **Hyperopt.indicator_space()}
+        if self.has_space('roi'):
+            spaces = {**spaces, **Hyperopt.roi_space()}
+        if self.has_space('stoploss'):
+            spaces = {**spaces, **Hyperopt.stoploss_space()}
+        return spaces
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
@@ -427,13 +437,19 @@ class Hyperopt(Backtesting):
         if 'roi_t1' in params:
             self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
 
-        self.populate_buy_trend = self.buy_strategy_generator(params)
+        if 'trigger' in params:
+            self.populate_buy_trend = self.buy_strategy_generator(params)
+
+        if 'stoploss' in params:
+            stoploss = params['stoploss']
+        else:
+            stoploss = self.analyze.strategy.stoploss
 
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': self.processed,
-                'stoploss': params['stoploss']
+                'stoploss': stoploss
             }
         )
         result_explanation = self.format_results(results)
@@ -491,7 +507,8 @@ class Hyperopt(Backtesting):
             timerange=timerange
         )
 
-        self.analyze.populate_indicators = Hyperopt.populate_indicators
+        if self.has_space('buy'):
+            self.analyze.populate_indicators = Hyperopt.populate_indicators
         self.processed = self.tickerdata_to_dataframe(data)
 
         if self.config.get('mongodb'):

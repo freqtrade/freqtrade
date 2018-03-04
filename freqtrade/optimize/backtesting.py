@@ -33,7 +33,6 @@ class Backtesting(object):
         # Init the logger
         self.logging = Logger(name=__name__, level=config['loglevel'])
         self.logger = self.logging.get_logger()
-
         self.config = config
         self.analyze = None
         self.ticker_interval = None
