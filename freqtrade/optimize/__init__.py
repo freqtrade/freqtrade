@@ -31,19 +31,20 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     :return dict OR empty if unsuccesful
     """
     path = make_testdata_path(datadir)
-    file = '{abspath}/{pair}-{ticker_interval}.json'.format(
-        abspath=path,
+    file = os.path.join(path, '{pair}-{ticker_interval}.json'.format(
         pair=pair,
         ticker_interval=ticker_interval,
-    )
+    ))
     gzipfile = file + '.gz'
 
     # If the file does not exist we download it when None is returned.
     # If file exists, read the file, load the json
     if os.path.isfile(gzipfile):
+        logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
             pairdata = json.load(tickerdata)
     elif os.path.isfile(file):
+        logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
             pairdata = json.load(tickerdata)
     else:
