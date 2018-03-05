@@ -115,7 +115,7 @@ class FreqtradeBot(object):
         if new_state == State.STOPPED:
             time.sleep(1)
         elif new_state == State.RUNNING:
-            min_secs = self.config['internals'].get(
+            min_secs = self.config.get('internals', {}).get(
                 'process_throttle_secs',
                 Constants.PROCESS_THROTTLE_SECS
             )

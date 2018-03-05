@@ -12,6 +12,7 @@ from typing import Dict, Optional
 import arrow
 import pytest
 import requests
+import re
 from sqlalchemy import create_engine
 
 from freqtrade.tests.conftest import log_has
@@ -110,20 +111,52 @@ def test_freqtradebot(mocker, default_conf) -> None:
     assert freqtrade.get_state() is State.STOPPED
 
 
-@pytest.mark.skip(reason="Test not implemented")
-def test_clean() -> None:
+def test_clean(mocker, default_conf, caplog) -> None:
     """
     Test clean() method
     """
-    pass
+    mock_cleanup = MagicMock()
+    mocker.patch('freqtrade.persistence.cleanup', mock_cleanup)
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert freqtrade.get_state() == State.RUNNING
+
+    assert freqtrade.clean()
+    assert freqtrade.get_state() == State.STOPPED
+    assert log_has('Stopping trader and cleaning up modules...', caplog.record_tuples)
+    assert mock_cleanup.call_count == 1
 
 
-@pytest.mark.skip(reason="Test not implemented")
-def test_worker() -> None:
+def test_worker_running(mocker, default_conf, caplog) -> None:
     """
-    Test worker() method
+    Test worker() method. Test when we start the bot
     """
-    pass
+    mock_throttle = MagicMock()
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._throttle', mock_throttle)
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    state = freqtrade.worker(old_state=None)
+    assert state is State.RUNNING
+    assert log_has('Changing state to: RUNNING', caplog.record_tuples)
+    assert mock_throttle.call_count == 1
+
+
+def test_worker_stopped(mocker, default_conf, caplog) -> None:
+    """
+    Test worker() method. Test when we stop the bot
+    """
+    mock_throttle = MagicMock()
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._throttle', mock_throttle)
+    mock_sleep = mocker.patch('time.sleep', return_value=None)
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.update_state(State.STOPPED)
+    state = freqtrade.worker(old_state=State.RUNNING)
+    assert state is State.STOPPED
+    assert log_has('Changing state to: STOPPED', caplog.record_tuples)
+    assert mock_throttle.call_count == 0
+    assert mock_sleep.call_count == 1
 
 
 def test_throttle(mocker, default_conf, caplog) -> None:
@@ -168,14 +201,6 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
 
     result = freqtrade._throttle(func, min_secs=0.1)
     assert result == -1
-
-
-@pytest.mark.skip(reason="Test not implemented")
-def test_process() -> None:
-    """
-    Test _process() method
-    """
-    pass
 
 
 def test_gen_pair_whitelist(mocker, default_conf, get_market_summaries_data) -> None:
@@ -476,14 +501,6 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
 
     result = freqtrade._process(interval=int(default_conf['ticker_interval']))
     assert result is False
-
-
-@pytest.mark.skip(reason="Test not implemented")
-def test_get_target_bid():
-    """
-    Test get_target_bid() method
-    """
-    pass
 
 
 def test_balance_fully_ask_side(mocker) -> None:
@@ -872,6 +889,51 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     assert len(trades) == 1
     assert trades[0].amount == 23.0
     assert trades[0].stake_amount == trade_buy.open_rate * trades[0].amount
+
+
+def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -> None:
+    """
+    Test check_handle_timedout() method when get_order throw an exception
+    """
+    patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock()
+    patch_pymarketcap(mocker)
+
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        handle_timedout_limit_buy=MagicMock(),
+        handle_timedout_limit_sell=MagicMock(),
+    )
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=ticker,
+        get_order=MagicMock(side_effect=requests.exceptions.RequestException('Oh snap')),
+        cancel_order=cancel_order_mock
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+
+    trade_buy = Trade(
+        pair='BTC_ETH',
+        open_rate=0.00001099,
+        exchange='BITTREX',
+        open_order_id='123456789',
+        amount=90.99181073,
+        fee=0.0,
+        stake_amount=1,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )
+
+    Trade.session.add(trade_buy)
+    regexp = re.compile(
+        'Cannot query order for Trade(id=1, pair=BTC_ETH, amount=90.99181073, '
+        'open_rate=0.00001099, open_since=10 hours ago) due to Traceback (most '
+        'recent call last):\n.*'
+    )
+
+    freqtrade.check_handle_timedout(600)
+    assert filter(regexp.match, caplog.record_tuples)
 
 
 def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
