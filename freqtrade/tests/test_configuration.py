@@ -263,7 +263,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     )
 
 
-def test_hyperopt_space_argument(mocker, default_conf, caplog) -> None:
+def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     """
     Test setup_configuration() function
     """
@@ -273,6 +273,8 @@ def test_hyperopt_space_argument(mocker, default_conf, caplog) -> None:
 
     args = [
         'hyperopt',
+        '--epochs', '10',
+        '--use-mongodb',
         '--spaces', 'all',
     ]
 
@@ -280,6 +282,16 @@ def test_hyperopt_space_argument(mocker, default_conf, caplog) -> None:
 
     configuration = Configuration(args)
     config = configuration.get_config()
+
+    assert 'epochs' in config
+    assert int(config['epochs']) == 10
+    assert log_has('Parameter --epochs detected ...', caplog.record_tuples)
+    assert log_has('Will run Hyperopt with for 10 epochs ...', caplog.record_tuples)
+
+    assert 'mongodb' in config
+    assert config['mongodb'] is True
+    assert log_has('Parameter --use-mongodb detected ...', caplog.record_tuples)
+
     assert 'spaces' in config
     assert config['spaces'] == ['all']
     assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
