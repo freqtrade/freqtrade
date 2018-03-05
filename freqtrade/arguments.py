@@ -21,7 +21,9 @@ class Arguments(object):
         self.args = args
         self.parsed_arg = None
         self.parser = argparse.ArgumentParser(description=description)
-        self._common_args_parser()
+
+    def _load_args(self):
+        self.common_args_parser()
         self._build_subcommands()
 
     def get_parsed_arg(self) -> List[str]:
@@ -29,11 +31,13 @@ class Arguments(object):
         Return the list of arguments
         :return: List[str] List of arguments
         """
-        self.parsed_arg = self._parse_args()
+        if self.parsed_arg is None:
+            self._load_args()
+            self.parsed_arg = self.parse_args()
 
         return self.parsed_arg
 
-    def _parse_args(self) -> List[str]:
+    def parse_args(self) -> List[str]:
         """
         Parses given arguments and returns an argparse Namespace instance.
         """
@@ -41,7 +45,7 @@ class Arguments(object):
 
         return parsed_arg
 
-    def _common_args_parser(self) -> None:
+    def common_args_parser(self) -> None:
         """
         Parses given common arguments and returns them as a parsed object.
         """
@@ -101,7 +105,7 @@ class Arguments(object):
         )
 
     @staticmethod
-    def _backtesting_options(parser: argparse.ArgumentParser) -> None:
+    def backtesting_options(parser: argparse.ArgumentParser) -> None:
         """
         Parses given arguments for Backtesting scripts.
         """
@@ -128,7 +132,7 @@ class Arguments(object):
         )
 
     @staticmethod
-    def _optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
+    def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             '-i', '--ticker-interval',
             help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
@@ -151,7 +155,7 @@ class Arguments(object):
         )
 
     @staticmethod
-    def _hyperopt_options(parser: argparse.ArgumentParser) -> None:
+    def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         """
         Parses given arguments for Hyperopt scripts.
         """
@@ -191,14 +195,14 @@ class Arguments(object):
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
         backtesting_cmd.set_defaults(func=backtesting.start)
-        self._optimizer_shared_options(backtesting_cmd)
-        self._backtesting_options(backtesting_cmd)
+        self.optimizer_shared_options(backtesting_cmd)
+        self.backtesting_options(backtesting_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
         hyperopt_cmd.set_defaults(func=hyperopt.start)
-        self._optimizer_shared_options(hyperopt_cmd)
-        self._hyperopt_options(hyperopt_cmd)
+        self.optimizer_shared_options(hyperopt_cmd)
+        self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
     def parse_timerange(text: str) -> (List, int, int):

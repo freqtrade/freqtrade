@@ -17,7 +17,7 @@ def test_arguments_object() -> None:
     :return: None
     """
     assert hasattr(Arguments, 'get_parsed_arg')
-    assert hasattr(Arguments, '_parse_args')
+    assert hasattr(Arguments, 'parse_args')
     assert hasattr(Arguments, 'parse_timerange')
     assert hasattr(Arguments, 'scripts_options')
 
