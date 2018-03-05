@@ -15,7 +15,6 @@ import sys
 import json
 from typing import Dict
 import numpy as np
-from datetime import datetime
 
 from plotly import tools
 from plotly.offline import plot
@@ -28,8 +27,6 @@ from freqtrade.logger import Logger
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
-
-import pprint
 
 
 logger = Logger(name="Graph profits").get_logger()
@@ -191,6 +188,7 @@ def define_index(min_date, max_date, interval):
     Return the index of a specific date
     """
     return int((max_date - min_date) / (interval * 60))
+
 
 def plot_parse_args(args):
     """
