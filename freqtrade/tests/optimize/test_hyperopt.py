@@ -3,6 +3,7 @@ import os
 from copy import deepcopy
 from unittest.mock import MagicMock
 import pandas as pd
+from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.tests.conftest import default_conf, log_has
 
@@ -371,3 +372,43 @@ def test_has_space():
 
     _HYPEROPT.config.update({'spaces': ['all']})
     assert _HYPEROPT.has_space('buy')
+
+
+def test_populate_indicators() -> None:
+    """
+    Test Hyperopt.populate_indicators()
+    """
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tickerlist = {'BTC_UNITEST': tick}
+    dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
+    dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
+
+    # Check if some indicators are generated. We will not test all of them
+    assert 'adx' in dataframe
+    assert 'ao' in dataframe
+    assert 'cci' in dataframe
+
+
+def test_buy_strategy_generator() -> None:
+    """
+    Test Hyperopt.buy_strategy_generator()
+    """
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tickerlist = {'BTC_UNITEST': tick}
+    dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
+    dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
+
+    populate_buy_trend = _HYPEROPT.buy_strategy_generator(
+        {
+            'adx': {
+                'enabled': True,
+                'value': 20
+            },
+            'trigger': {
+                'type': 'lower_bb'
+            }
+        }
+    )
+    result = populate_buy_trend(dataframe)
+    # Check if some indicators are generated. We will not test all of them
+    assert 'adx' in result
