@@ -51,8 +51,15 @@ class Configuration(object):
         :param path: path as str
         :return: configuration as dictionary
         """
-        with open(path) as file:
-            conf = json.load(file)
+        try:
+            with open(path) as file:
+                conf = json.load(file)
+        except FileNotFoundError:
+            self.logger.critical(
+                'Config file "%s" not found. Please create your config file',
+                path
+            )
+            exit(0)
 
         if 'internals' not in conf:
             conf['internals'] = {}
