@@ -7,7 +7,9 @@ Unit test file for misc.py
 import datetime
 from unittest.mock import MagicMock
 from freqtrade.analyze import Analyze
-from freqtrade.misc import (shorten_date, datesarray_to_datetimearray, file_dump_json)
+from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.misc import (shorten_date, datesarray_to_datetimearray,
+                            common_datearray, file_dump_json)
 
 
 def test_shorten_date() -> None:
@@ -37,6 +39,25 @@ def test_datesarray_to_datetimearray(ticker_history):
 
     date_len = len(dates)
     assert date_len == 3
+
+
+def test_common_datearray(default_conf, mocker) -> None:
+    """
+    Test common_datearray()
+    :return: None
+    """
+    mocker.patch('freqtrade.strategy.strategy.Strategy', MagicMock())
+
+    analyze = Analyze(default_conf)
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tickerlist = {'BTC_UNITEST': tick}
+    dataframes = analyze.tickerdata_to_dataframe(tickerlist)
+
+    dates = common_datearray(dataframes)
+
+    assert dates.size == dataframes['BTC_UNITEST']['date'].size
+    assert dates[0] == dataframes['BTC_UNITEST']['date'][0]
+    assert dates[-1] == dataframes['BTC_UNITEST']['date'][-1]
 
 
 def test_file_dump_json(mocker) -> None:
