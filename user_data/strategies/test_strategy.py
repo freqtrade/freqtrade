@@ -2,6 +2,9 @@
 # --- Do not remove these libs ---
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
+from typing import Dict, Any, Callable
+from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
+from functools import reduce
 # --------------------------------
 
 # Add your lib to import here
@@ -244,3 +247,66 @@ class TestStrategy(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def indicator_space(self) -> Dict[str, Any]:
+        """
+        Define your Hyperopt space for searching strategy parameters
+        """
+        return {
+            'adx': hp.choice('adx', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('adx-value', 50, 80, 5)}
+            ]),
+            'uptrend_tema': hp.choice('uptrend_tema', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'trigger': hp.choice('trigger', [
+                {'type': 'middle_bb_tema'},
+            ]),
+        }
+        
+    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
+        """
+        Define the buy strategy parameters to be used by hyperopt
+        """
+        def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+            conditions = []
+            # GUARDS AND TRENDS
+            if 'adx' in params and params['adx']['enabled']:
+                conditions.append(dataframe['adx'] > params['adx']['value'])
+            if 'uptrend_tema' in params and params['uptrend_tema']['enabled']:
+                prevtema = dataframe['tema'].shift(1)
+                conditions.append(dataframe['tema'] > prevtema)
+
+            # TRIGGERS
+            triggers = {
+                'middle_bb_tema': (
+                    dataframe['tema'] > dataframe['bb_middleband']
+                ),
+            }
+            conditions.append(triggers.get(params['trigger']['type']))
+
+            dataframe.loc[
+                reduce(lambda x, y: x & y, conditions),
+                'buy'] = 1
+
+            return dataframe
+
+        return populate_buy_trend
+        
+    def roi_space(self) -> Dict[str, Any]:
+        return {
+            'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
+            'roi_t2': hp.quniform('roi_t2', 10, 60, 15),
+            'roi_t3': hp.quniform('roi_t3', 10, 40, 10),
+            'roi_p1': hp.quniform('roi_p1', 0.01, 0.04, 0.01),
+            'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
+            'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
+        }
+
+
+    def stoploss_space(self) -> Dict[str, Any]:
+        return {
+            'stoploss': hp.quniform('stoploss', -0.5, -0.02, 0.02),
+        }

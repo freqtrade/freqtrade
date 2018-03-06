@@ -2,7 +2,10 @@
 
 import talib.abstract as ta
 from pandas import DataFrame
+from typing import Dict, Any, Callable
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from hyperopt import hp
+from functools import reduce
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.indicator_helpers import fishers_inverse
 
@@ -239,3 +242,150 @@ class DefaultStrategy(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def indicator_space(self) -> Dict[str, Any]:
+        """
+        Define your Hyperopt space for searching strategy parameters
+        """
+        return {
+            'macd_below_zero': hp.choice('macd_below_zero', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'mfi': hp.choice('mfi', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('mfi-value', 10, 25, 5)}
+            ]),
+            'fastd': hp.choice('fastd', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('fastd-value', 15, 45, 5)}
+            ]),
+            'adx': hp.choice('adx', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('adx-value', 20, 50, 5)}
+            ]),
+            'rsi': hp.choice('rsi', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 5)}
+            ]),
+            'uptrend_long_ema': hp.choice('uptrend_long_ema', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'uptrend_short_ema': hp.choice('uptrend_short_ema', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'over_sar': hp.choice('over_sar', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'green_candle': hp.choice('green_candle', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'uptrend_sma': hp.choice('uptrend_sma', [
+                {'enabled': False},
+                {'enabled': True}
+            ]),
+            'trigger': hp.choice('trigger', [
+                {'type': 'lower_bb'},
+                {'type': 'lower_bb_tema'},
+                {'type': 'faststoch10'},
+                {'type': 'ao_cross_zero'},
+                {'type': 'ema3_cross_ema10'},
+                {'type': 'macd_cross_signal'},
+                {'type': 'sar_reversal'},
+                {'type': 'ht_sine'},
+                {'type': 'heiken_reversal_bull'},
+                {'type': 'di_cross'},
+            ]),
+        }
+
+    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
+        """
+        Define the buy strategy parameters to be used by hyperopt
+        """
+        def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+            conditions = []
+            # GUARDS AND TRENDS
+            if 'uptrend_long_ema' in params and params['uptrend_long_ema']['enabled']:
+                conditions.append(dataframe['ema50'] > dataframe['ema100'])
+            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
+                conditions.append(dataframe['macd'] < 0)
+            if 'uptrend_short_ema' in params and params['uptrend_short_ema']['enabled']:
+                conditions.append(dataframe['ema5'] > dataframe['ema10'])
+            if 'mfi' in params and params['mfi']['enabled']:
+                conditions.append(dataframe['mfi'] < params['mfi']['value'])
+            if 'fastd' in params and params['fastd']['enabled']:
+                conditions.append(dataframe['fastd'] < params['fastd']['value'])
+            if 'adx' in params and params['adx']['enabled']:
+                conditions.append(dataframe['adx'] > params['adx']['value'])
+            if 'rsi' in params and params['rsi']['enabled']:
+                conditions.append(dataframe['rsi'] < params['rsi']['value'])
+            if 'over_sar' in params and params['over_sar']['enabled']:
+                conditions.append(dataframe['close'] > dataframe['sar'])
+            if 'green_candle' in params and params['green_candle']['enabled']:
+                conditions.append(dataframe['close'] > dataframe['open'])
+            if 'uptrend_sma' in params and params['uptrend_sma']['enabled']:
+                prevsma = dataframe['sma'].shift(1)
+                conditions.append(dataframe['sma'] > prevsma)
+
+            # TRIGGERS
+            triggers = {
+                'lower_bb': (
+                    dataframe['close'] < dataframe['bb_lowerband']
+                ),
+                'lower_bb_tema': (
+                    dataframe['tema'] < dataframe['bb_lowerband']
+                ),
+                'faststoch10': (qtpylib.crossed_above(
+                    dataframe['fastd'], 10.0
+                )),
+                'ao_cross_zero': (qtpylib.crossed_above(
+                    dataframe['ao'], 0.0
+                )),
+                'ema3_cross_ema10': (qtpylib.crossed_above(
+                    dataframe['ema3'], dataframe['ema10']
+                )),
+                'macd_cross_signal': (qtpylib.crossed_above(
+                    dataframe['macd'], dataframe['macdsignal']
+                )),
+                'sar_reversal': (qtpylib.crossed_above(
+                    dataframe['close'], dataframe['sar']
+                )),
+                'ht_sine': (qtpylib.crossed_above(
+                    dataframe['htleadsine'], dataframe['htsine']
+                )),
+                'heiken_reversal_bull': (
+                    (qtpylib.crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
+                    (dataframe['ha_low'] == dataframe['ha_open'])
+                ),
+                'di_cross': (qtpylib.crossed_above(
+                    dataframe['plus_di'], dataframe['minus_di']
+                )),
+            }
+            conditions.append(triggers.get(params['trigger']['type']))
+
+            dataframe.loc[
+                reduce(lambda x, y: x & y, conditions),
+                'buy'] = 1
+
+            return dataframe
+
+        return populate_buy_trend
+
+    def roi_space(self) -> Dict[str, Any]:
+        return {
+            'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
+            'roi_t2': hp.quniform('roi_t2', 10, 60, 15),
+            'roi_t3': hp.quniform('roi_t3', 10, 40, 10),
+            'roi_p1': hp.quniform('roi_p1', 0.01, 0.04, 0.01),
+            'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
+            'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
+        }
+
+    def stoploss_space(self) -> Dict[str, Any]:
+        return {
+            'stoploss': hp.quniform('stoploss', -0.5, -0.02, 0.02),
+        }

@@ -19,8 +19,8 @@ your strategy file located into [user_data/strategies/](https://github.com/gcarq
 ### 1. Configure your Guards and Triggers
 There are two places you need to change in your strategy file to add a 
 new buy strategy for testing:
-- Inside [populate_buy_trend()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L278-L294).
-- Inside [hyperopt_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297) known as `SPACE`.
+- Inside [populate_buy_trend()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L273-L294).
+- Inside [indicator_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L251-L67).
 
 There you have two different type of indicators: 1. `guards` and 2. 
 `triggers`.
@@ -55,29 +55,33 @@ Your hyperopt file must contain `guards` to find the right value for
 `(dataframe['adx'] > 65)` & and `(dataframe['plus_di'] > 0.5)`. That 
 means you will need to enable/disable triggers.
  
-In our case the `SPACE` and `populate_buy_trend` in your strategy file 
+In our case the `indicator_space` and `populate_buy_trend` in your strategy file 
 will look like:
 ```python
-space = {
-    'rsi': hp.choice('rsi', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
-    ]),
-    'adx': hp.choice('adx', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
-    ]),
-    'trigger': hp.choice('trigger', [
-        {'type': 'lower_bb'},
-        {'type': 'faststoch10'},
-        {'type': 'ao_cross_zero'},
-        {'type': 'ema5_cross_ema10'},
-        {'type': 'macd_cross_signal'},
-        {'type': 'sar_reversal'},
-        {'type': 'stochf_cross'},
-        {'type': 'ht_sine'},
-    ]),
-}
+    def indicator_space(self) -> Dict[str, Any]:
+        """
+        Define your Hyperopt space for searching strategy parameters
+        """
+        return {
+            'rsi': hp.choice('rsi', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
+            ]),
+            'adx': hp.choice('adx', [
+                {'enabled': False},
+                {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
+            ]),
+            'trigger': hp.choice('trigger', [
+                {'type': 'lower_bb'},
+                {'type': 'faststoch10'},
+                {'type': 'ao_cross_zero'},
+                {'type': 'ema5_cross_ema10'},
+                {'type': 'macd_cross_signal'},
+                {'type': 'sar_reversal'},
+                {'type': 'stochf_cross'},
+                {'type': 'ht_sine'},
+            ]),
+        }
 
 ... 
 
@@ -100,7 +104,13 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
             'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
             'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
         }
-        ...
+        conditions.append(triggers.get(params['trigger']['type']))
+
+        dataframe.loc[
+            reduce(lambda x, y: x & y, conditions),
+            'buy'] = 1
+
+        return dataframe
 ```
 
 
@@ -116,7 +126,7 @@ The Hyperopt configuration is located in
 ## Advanced notions
 ### Understand the Guards and Triggers
 When you need to add the new guards and triggers to be hyperopt 
-parameters, you do this by adding them into the [hyperopt_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297).
+parameters, you do this by adding them into the [indicator_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L251-L267).
 
 If it's a trigger, you add one line to the 'trigger' choice group and that's it.
 
