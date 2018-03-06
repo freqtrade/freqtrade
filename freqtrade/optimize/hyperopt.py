@@ -524,7 +524,7 @@ class Hyperopt(Backtesting):
             self.logger.info('Preparing Trials..')
             signal.signal(signal.SIGINT, self.signal_handler)
             # read trials file if we have one
-            if os.path.exists(self.trials_file):
+            if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
                 self.trials = self.read_trials()
 
                 self.current_tries = len(self.trials.results)
