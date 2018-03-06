@@ -7,6 +7,7 @@ import json
 
 from copy import deepcopy
 import pytest
+from unittest.mock import MagicMock
 from jsonschema import ValidationError
 
 from freqtrade.arguments import Arguments
@@ -65,6 +66,24 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     assert validated_conf.items() >= default_conf.items()
     assert 'internals' in validated_conf
     assert log_has('Validating configuration ...', caplog.record_tuples)
+
+
+def test_load_config_file_exception(mocker, caplog) -> None:
+    """
+    Test Configuration._load_config_file() method
+    """
+    mocker.patch(
+        'freqtrade.configuration.open',
+        MagicMock(side_effect=FileNotFoundError('File not found'))
+    )
+    configuration = Configuration([])
+
+    with pytest.raises(SystemExit):
+        configuration._load_config_file('somefile')
+    assert log_has(
+        'Config file "somefile" not found. Please create your config file',
+        caplog.record_tuples
+    )
 
 
 def test_load_config(default_conf, mocker) -> None:
