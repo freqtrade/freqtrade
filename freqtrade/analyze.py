@@ -77,6 +77,13 @@ class Analyze(object):
         """
         return self.strategy.populate_sell_trend(dataframe=dataframe)
 
+    def get_ticker_interval(self) -> int:
+        """
+        Return ticker interval to use
+        :return: Ticker interval value to use
+        """
+        return self.strategy.ticker_interval
+
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame

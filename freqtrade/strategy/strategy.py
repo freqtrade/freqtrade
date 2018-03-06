@@ -64,7 +64,7 @@ class Strategy(object):
         # Optimal stoploss designed for the strategy
         self.stoploss = float(self.custom_strategy.stoploss)
 
-        self.ticker_interval = self.custom_strategy.ticker_interval
+        self.ticker_interval = int(self.custom_strategy.ticker_interval)
 
     def _load_strategy(self, strategy_name: str) -> None:
         """
