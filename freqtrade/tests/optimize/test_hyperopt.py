@@ -1,11 +1,13 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+import json
 import os
 from copy import deepcopy
 from unittest.mock import MagicMock
 import pandas as pd
 from freqtrade.optimize.__init__ import load_tickerdata_file
-from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.optimize.hyperopt import Hyperopt, start
 from freqtrade.tests.conftest import default_conf, log_has
+from freqtrade.tests.optimize.test_backtesting import get_args
 
 
 # Avoid to reinit the same object again and again
@@ -23,6 +25,7 @@ def create_trials(mocker) -> None:
     _HYPEROPT.trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
 
     mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=False)
+    mocker.patch('freqtrade.optimize.hyperopt.os.path.getsize', return_value=1)
     mocker.patch('freqtrade.optimize.hyperopt.os.remove', return_value=True)
     mocker.patch('freqtrade.optimize.hyperopt.pickle.dump', return_value=None)
 
@@ -39,6 +42,35 @@ def create_trials(mocker) -> None:
 
 
 # Unit tests
+def test_start(mocker, default_conf, caplog) -> None:
+    """
+    Test start() function
+    """
+    start_mock = MagicMock()
+    mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+    args = [
+        '--config', 'config.json',
+        '--strategy', 'default_strategy',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+    start(args)
+
+    import pprint
+    pprint.pprint(caplog.record_tuples)
+
+    assert log_has(
+        'Starting freqtrade in Hyperopt mode',
+        caplog.record_tuples
+    )
+    assert start_mock.call_count == 1
+
+
 def test_loss_calculation_prefer_correct_trade_count() -> None:
     """
     Test Hyperopt.calculate_loss()
@@ -253,7 +285,7 @@ def test_save_trials_saves_trials(mocker, caplog) -> None:
     mock_dump.assert_called_once()
 
 
-def test_read_trials_returns_trials_file(mocker, default_conf, caplog) -> None:
+def test_read_trials_returns_trials_file(mocker, caplog) -> None:
     trials = create_trials(mocker)
     mock_load = mocker.patch('freqtrade.optimize.hyperopt.pickle.load', return_value=trials)
     mock_open = mocker.patch('freqtrade.optimize.hyperopt.open', return_value=mock_load)
@@ -400,10 +432,41 @@ def test_buy_strategy_generator() -> None:
 
     populate_buy_trend = _HYPEROPT.buy_strategy_generator(
         {
+            'uptrend_long_ema': {
+                'enabled': True
+            },
+            'macd_below_zero': {
+                'enabled': True
+            },
+            'uptrend_short_ema': {
+                'enabled': True
+            },
+            'mfi': {
+                'enabled': True,
+                'value': 20
+            },
+            'fastd': {
+                'enabled': True,
+                'value': 20
+            },
             'adx': {
                 'enabled': True,
                 'value': 20
             },
+            'rsi': {
+                'enabled': True,
+                'value': 20
+            },
+            'over_sar': {
+                'enabled': True,
+            },
+            'green_candle': {
+                'enabled': True,
+            },
+            'uptrend_sma': {
+                'enabled': True,
+            },
+
             'trigger': {
                 'type': 'lower_bb'
             }
@@ -411,4 +474,58 @@ def test_buy_strategy_generator() -> None:
     )
     result = populate_buy_trend(dataframe)
     # Check if some indicators are generated. We will not test all of them
-    assert 'adx' in result
+    assert 'buy' in result
+    assert 1 in result['buy']
+
+
+def test_generate_optimizer(mocker, default_conf) -> None:
+    """
+    Test Hyperopt.generate_optimizer() function
+    """
+    conf = deepcopy(default_conf)
+    conf.update({'config': 'config.json.example'})
+    conf.update({'timerange': None})
+    conf.update({'spaces': 'all'})
+
+    trades = [
+        ('BTC_POWR', 0.023117, 0.000233, 100)
+    ]
+    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+    backtest_result = pd.DataFrame.from_records(trades, columns=labels)
+
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.Hyperopt.backtest',
+        MagicMock(return_value=backtest_result)
+    )
+
+    optimizer_param = {
+        'adx': {'enabled': False},
+        'fastd': {'enabled': True, 'value': 35.0},
+        'green_candle': {'enabled': True},
+        'macd_below_zero': {'enabled': True},
+        'mfi': {'enabled': False},
+        'over_sar': {'enabled': False},
+        'roi_p1': 0.01,
+        'roi_p2': 0.01,
+        'roi_p3': 0.1,
+        'roi_t1': 60.0,
+        'roi_t2': 30.0,
+        'roi_t3': 20.0,
+        'rsi': {'enabled': False},
+        'stoploss': -0.4,
+        'trigger': {'type': 'macd_cross_signal'},
+        'uptrend_long_ema': {'enabled': False},
+        'uptrend_short_ema': {'enabled': True},
+        'uptrend_sma': {'enabled': True}
+    }
+
+    response_expected = {
+        'loss': 1.9840569076926293,
+        'result': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
+                  '(0.0231Σ%). Avg duration 100.0 mins.',
+        'status': 'ok'
+    }
+
+    hyperopt = Hyperopt(conf)
+    generate_optimizer_value = hyperopt.generate_optimizer(optimizer_param)
+    assert generate_optimizer_value == response_expected
