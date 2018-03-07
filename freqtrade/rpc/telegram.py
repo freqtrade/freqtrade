@@ -146,6 +146,7 @@ def _status(bot: Bot, update: Update) -> None:
                 round(trade.close_profit * 100, 2)
             ) if trade.close_profit else None
             message = """
+*Exchange:* `{exchange}`
 *Trade ID:* `{trade_id}`
 *Current Pair:* [{pair}]({pair_url})
 *Open Since:* `{date}`
@@ -158,6 +159,7 @@ def _status(bot: Bot, update: Update) -> None:
 *Open Order:* `{open_order}`
 *Total Open Trades:* `{total_trades}`
             """.format(
+                exchange=trade.exchange,
                 trade_id=trade.id,
                 pair=trade.pair,
                 pair_url=exchange.get_pair_detail_url(trade.pair),

@@ -82,6 +82,7 @@ def init(config: dict) -> None:
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
         })
+        logger.info('Using Exchange %s', name.capitalize())
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
