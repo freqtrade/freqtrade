@@ -49,11 +49,11 @@ def default_conf():
             "key": "key",
             "secret": "secret",
             "pair_whitelist": [
-                "BTC_ETH",
-                "BTC_TKN",
-                "BTC_TRST",
-                "BTC_SWT",
-                "BTC_BCC"
+                "ETH/BTC",
+                "TKN/BTC",
+                "TRST/BTC",
+                "SWT/BTC",
+                "BCC/BTC"
             ]
         },
         "telegram": {
