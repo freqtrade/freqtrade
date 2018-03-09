@@ -129,7 +129,7 @@ docker images
 You can run a one-off container that is immediately deleted upon exiting with the following command (`config.json` must be in the current working directory):
 
 ```bash
-docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+docker run --rm -v /etc/localtime:/etc/localtime:ro	-v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
 
 In this example, the database will be created inside the docker instance and will be lost when you will refresh your image.
@@ -152,6 +152,7 @@ mv tradesv3.sqlite ~/.freqtrade
 ```bash
 docker run -d \
   --name freqtrade \
+  -v /etc/localtime:/etc/localtime:ro \
   -v ~/.freqtrade/config.json:/freqtrade/config.json \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
   freqtrade
