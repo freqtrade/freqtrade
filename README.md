@@ -104,7 +104,7 @@ vi config.json
 **3. Build your docker image and run it**
 ```bash
 docker build -t freqtrade .
-docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+docker run --rm -v /etc/localtime:/etc/localtime:ro -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
 
 
