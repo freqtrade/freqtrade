@@ -113,7 +113,7 @@ def test_get_signal_handles_exceptions(mocker):
 
 def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
 
-    columns = ['close', 'high', 'low', 'open', 'date', 'volume']
+    columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     # Test file with BV data
     dataframe = parse_ticker_dataframe(ticker_history)

@@ -12,22 +12,23 @@ def whitelist_conf():
         'stake_currency': 'BTC',
         'exchange': {
             'pair_whitelist': [
-                'BTC_ETH',
-                'BTC_TKN',
-                'BTC_TRST',
-                'BTC_SWT',
-                'BTC_BCC'
+                'ETH/BTC',
+                'TKN/BTC',
+                'TRST/BTC',
+                'SWT/BTC',
+                'BCC/BTC'
             ],
             'pair_blacklist': [
-                'BTC_BLK'
+                'BLK/BTC'
             ],
         },
     }
 
 
 def get_market_summaries():
-    return [{
-        'MarketName': 'BTC-TKN',
+    return {'TKN/BTC': {
+        'symbol': 'TKN/BTC',
+        'MarketName': 'TKN/BTC',
         'High': 0.00000919,
         'Low': 0.00000820,
         'Volume': 74339.61396015,
@@ -40,9 +41,11 @@ def get_market_summaries():
         'OpenSellOrders': 15,
         'PrevDay': 0.00000821,
         'Created': '2014-03-20T06:00:00',
-        'DisplayMarketName': ''
-    }, {
-        'MarketName': 'BTC-ETH',
+        'DisplayMarketName': '',
+        'info': {},
+    }, 'ETH/BTC': {
+        'symbol': 'ETH/BTC',
+        'MarketName': 'ETH/BTC',
         'High': 0.00000072,
         'Low': 0.00000001,
         'Volume': 166340678.42280999,
@@ -55,9 +58,11 @@ def get_market_summaries():
         'OpenSellOrders': 18,
         'PrevDay': 0.00000002,
         'Created': '2014-05-30T07:57:49.637',
-        'DisplayMarketName': ''
-    }, {
-        'MarketName': 'BTC-BLK',
+        'DisplayMarketName': '',
+        'info': {},
+    }, 'BLK/BTC': {
+        'symbol': 'BLK/BTC',
+        'MarketName': 'BLK/BTC',
         'High': 0.00000072,
         'Low': 0.00000001,
         'Volume': 166340678.42280999,
@@ -70,18 +75,21 @@ def get_market_summaries():
         'OpenSellOrders': 18,
         'PrevDay': 0.00000002,
         'Created': '2014-05-30T07:57:49.637',
-        'DisplayMarketName': ''
-    }]
+        'DisplayMarketName': '',
+        'info': {},
+    }}
 
 
 def get_health():
-    return [{'Currency': 'ETH', 'IsActive': True},
-            {'Currency': 'TKN', 'IsActive': True},
-            {'Currency': 'BLK', 'IsActive': True}]
+    return {
+        'ETH/BTC': {'Currency': 'ETH', 'base': 'ETH', 'quote': 'BTC', 'active': True},
+        'TKN/BTC': {'Currency': 'TKN', 'base': 'TKN', 'quote': 'BTC', 'active': True},
+        'BLK/BTC': {'Currency': 'BLK', 'base': 'BLK', 'quote': 'BTC', 'active': True}
+        }
 
 
 def get_health_empty():
-    return []
+    return {}
 
 
 def test_refresh_market_pair_not_in_whitelist(mocker):
@@ -90,9 +98,9 @@ def test_refresh_market_pair_not_in_whitelist(mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_wallet_health=get_health)
     refreshedwhitelist = refresh_whitelist(
-        conf['exchange']['pair_whitelist'] + ['BTC_XXX'])
+        conf['exchange']['pair_whitelist'] + ['XXX/BTC'])
     # List ordered by BaseVolume
-    whitelist = ['BTC_ETH', 'BTC_TKN']
+    whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
     assert whitelist == refreshedwhitelist
 
@@ -104,7 +112,7 @@ def test_refresh_whitelist(mocker):
                           get_wallet_health=get_health)
     refreshedwhitelist = refresh_whitelist(conf['exchange']['pair_whitelist'])
     # List ordered by BaseVolume
-    whitelist = ['BTC_ETH', 'BTC_TKN']
+    whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
     assert whitelist == refreshedwhitelist
 
@@ -117,7 +125,7 @@ def test_refresh_whitelist_dynamic(mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_market_summaries=get_market_summaries)
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['BTC_TKN', 'BTC_ETH']
+    whitelist = ['TKN/BTC', 'ETH/BTC']
     refreshedwhitelist = refresh_whitelist(
         gen_pair_whitelist(conf['stake_currency']))
     assert whitelist == refreshedwhitelist

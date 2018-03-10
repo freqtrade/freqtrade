@@ -4,7 +4,7 @@ import pandas
 import freqtrade.optimize
 from freqtrade import analyze
 
-_pairs = ['BTC_ETH']
+_pairs = ['ETH/BTC']
 
 
 def load_dataframe_pair(pairs):
