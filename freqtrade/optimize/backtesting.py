@@ -3,7 +3,6 @@
 import logging
 from typing import Dict, Tuple
 
-import ccxt
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
@@ -114,7 +113,7 @@ def backtest(args) -> DataFrame:
     records = []
     trades = []
     trade_count_lock: dict = {}
-    exchange._API = ccxt.binance()
+
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = populate_sell_trend(populate_buy_trend(pair_data))
@@ -165,12 +164,12 @@ def start(args):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
-    exchange._API = ccxt.binance()
-
     logger.info('Using config: %s ...', args.config)
     config = misc.load_config(args.config)
     ticker_interval = config.get('ticker_interval', args.ticker_interval)
     logger.info('Using ticker_interval: %s ...', ticker_interval)
+
+    exchange.init(config)
 
     data = {}
     pairs = config['exchange']['pair_whitelist']

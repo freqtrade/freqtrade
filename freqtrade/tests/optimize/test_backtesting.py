@@ -162,6 +162,8 @@ def test_backtest_start(default_conf, mocker, caplog):
     mocker.patch('freqtrade.misc.load_config', new=lambda s: default_conf)
     mocker.patch.multiple('freqtrade.optimize',
                           load_data=mocked_load_data)
+    # patch validate_pairs to do nothing since UNITTEST/BTC pair doesn't exist
+    mocker.patch('freqtrade.exchange.validate_pairs', new=lambda s: None)
     args = MagicMock()
     args.ticker_interval = '1m'
     args.level = 10
