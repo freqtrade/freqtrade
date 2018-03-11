@@ -7,7 +7,7 @@ import pandas as pd
 
 from freqtrade.optimize.hyperopt import calculate_loss, TARGET_TRADES, EXPECTED_MAX_PROFIT, start, \
     log_results, save_trials, read_trials, generate_roi_table, has_space
-
+from freqtrade.strategy.strategy import Strategy
 import freqtrade.optimize.hyperopt as hyperopt
 
 
@@ -72,6 +72,7 @@ def test_start_calls_fmin(mocker):
 
     args = mocker.Mock(epochs=1, config='config.json.example', mongodb=False,
                        timerange=None, spaces='all')
+    Strategy().init({'strategy': 'default_strategy'})
     start(args)
 
     mock_fmin.assert_called_once()
@@ -86,6 +87,7 @@ def test_start_uses_mongotrials(mocker):
 
     args = mocker.Mock(epochs=1, config='config.json.example', mongodb=True,
                        timerange=None, spaces='all')
+    Strategy().init({'strategy': 'default_strategy'})
     start(args)
 
     mock_mongotrials.assert_called_once()
@@ -149,6 +151,7 @@ def test_fmin_best_results(mocker, caplog):
 
     args = mocker.Mock(epochs=1, config='config.json.example',
                        timerange=None, spaces='all')
+    Strategy().init({'strategy': 'default_strategy'})
     start(args)
 
     exists = [
@@ -166,6 +169,7 @@ def test_fmin_best_results(mocker, caplog):
 
 def test_fmin_throw_value_error(mocker, caplog):
     caplog.set_level(logging.INFO)
+    Strategy().init({'strategy': 'default_strategy'})
     mocker.patch('freqtrade.optimize.hyperopt.MongoTrials', return_value=create_trials(mocker))
     mocker.patch('freqtrade.optimize.tickerdata_to_dataframe')
     mocker.patch('freqtrade.optimize.load_data')
@@ -173,6 +177,7 @@ def test_fmin_throw_value_error(mocker, caplog):
 
     args = mocker.Mock(epochs=1, config='config.json.example',
                        timerange=None, spaces='all')
+    Strategy().init({'strategy': 'default_strategy'})
     start(args)
 
     exists = [
@@ -209,7 +214,7 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker):
                        mongodb=False,
                        timerange=None,
                        spaces='all')
-
+    Strategy().init({'strategy': 'default_strategy'})
     start(args)
 
     mock_read.assert_called_once()
