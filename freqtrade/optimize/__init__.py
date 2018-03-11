@@ -3,6 +3,7 @@
 import logging
 import json
 import os
+from datetime import datetime
 from typing import Optional, List, Dict
 from pandas import DataFrame
 from freqtrade.exchange import get_ticker_history
@@ -35,7 +36,7 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     path = make_testdata_path(datadir)
     file = '{abspath}/{pair}-{ticker_interval}.json'.format(
         abspath=path,
-        pair=pair,
+        pair=pair.replace('/', '_'),
         ticker_interval=ticker_interval,
     )
     gzipfile = file + '.gz'
@@ -135,7 +136,7 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         interval=interval,
     ))
 
-    filepair = pair.replace("-", "_")
+    filepair = pair.replace("/", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
         pair=filepair,
         interval=interval,
@@ -155,9 +156,11 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     for row in new_data:
         if row not in data:
             data.append(row)
-    logger.debug("New Start: {}".format(data[1]['T']))
-    logger.debug("New End: {}".format(data[-1:][0]['T']))
-    data = sorted(data, key=lambda data: data['T'])
+    logger.debug("New Start: {}".format(
+                 datetime.fromtimestamp(data[0][0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S')))
+    logger.debug("New End: {}".format(
+                 datetime.fromtimestamp(data[-1:][0][0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S')))
+    data = sorted(data, key=lambda data: data[0])
 
     misc.file_dump_json(filename, data)
 
