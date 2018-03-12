@@ -48,6 +48,8 @@ def default_conf():
             "enabled": True,
             "key": "key",
             "secret": "secret",
+            "password": "password",
+            "uid": "uid",
             "pair_whitelist": [
                 "ETH/BTC",
                 "TKN/BTC",

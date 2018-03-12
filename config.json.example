@@ -10,8 +10,10 @@
     },
     "exchange": {
         "name": "binance",
-        "key": "your_echange_key",
-        "secret": "your_echange_secret",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_secret",
+        "password": "your_exchange_password",
+        "uid": "your_exchange_uid",
         "pair_whitelist": [
             "ETH/BTC",
             "LTC/BTC",

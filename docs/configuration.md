@@ -27,6 +27,8 @@ The table below will list all configuration parameters.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use.
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
+| `exchange.password` | password | No | Password to use for the exchange. Only required when you are in production mode, and only by some exchanges.
+| `exchange.uid` | uid | No | User ID to use for the exchange. Only required when you are in production mode, and only by some exchanges.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | No | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.

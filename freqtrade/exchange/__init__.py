@@ -51,6 +51,8 @@ def init(config: dict) -> None:
         _API = getattr(ccxt, name.lower())({
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
+            'password': exchange_config.get('password'),
+            'uid': exchange_config.get('uid'),
         })
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
