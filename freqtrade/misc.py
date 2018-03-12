@@ -415,7 +415,7 @@ CONF_SCHEMA = {
         'exchange': {
             'type': 'object',
             'properties': {
-                'name': {'type': 'string'},
+                'name': {'type': 'string', 'enum': ['binance', 'bittrex']},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
                 'password': {'type': 'string'},
