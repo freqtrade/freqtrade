@@ -62,7 +62,7 @@ def common_datearray(dfs):
 
 def file_dump_json(filename, data) -> None:
     with open(filename, 'w') as fp:
-        json.dump(data, fp)
+        json.dump(data, fp, default=str)
 
 
 @synchronized
