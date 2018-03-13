@@ -98,10 +98,11 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
             'pair': pair,
             'rate': rate,
             'amount': amount,
-            'type': 'LIMIT_BUY',
+            'type': 'limit',
+            'side': 'buy',
             'remaining': 0.0,
-            'opened': arrow.utcnow().datetime,
-            'closed': arrow.utcnow().datetime,
+            'datetime': arrow.utcnow().isoformat(),
+            'status': 'closed'
         }
         return {'id': order_id}
 
@@ -135,10 +136,11 @@ def sell(pair: str, rate: float, amount: float) -> Dict:
             'pair': pair,
             'rate': rate,
             'amount': amount,
-            'type': 'LIMIT_SELL',
+            'type': 'limit',
+            'side': 'sell',
             'remaining': 0.0,
-            'opened': arrow.utcnow().datetime,
-            'closed': arrow.utcnow().datetime,
+            'datetime': arrow.utcnow().isoformat(),
+            'status': 'closed'
         }
         return {'id': order_id}
 

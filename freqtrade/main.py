@@ -209,15 +209,17 @@ def check_handle_timedout(timeoutvalue: int) -> None:
         except (NetworkException, DependencyException):
             logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
             continue
-        ordertime = arrow.get(order['opened'])
+
+        # divide by 1000 since timestemp is unix timestamp in ms
+        ordertime = arrow.get(order['datetime']).datetime
 
         # Check if trade is still actually open
         if int(order['remaining']) == 0:
             continue
 
-        if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
+        if order['side'] == 'buy' and ordertime < timeoutthreashold:
             handle_timedout_limit_buy(trade, order)
-        elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
+        elif order['side'] == 'sell' and ordertime < timeoutthreashold:
             handle_timedout_limit_sell(trade, order)
 
 

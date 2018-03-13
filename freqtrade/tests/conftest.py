@@ -137,13 +137,14 @@ def health():
 def limit_buy_order():
     return {
         'id': 'mocked_limit_buy',
-        'type': 'LIMIT_BUY',
+        'type': 'limit',
+        'side': 'buy',
         'pair': 'mocked',
-        'opened': str(arrow.utcnow().datetime),
+        'datetime': arrow.utcnow().isoformat(),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': str(arrow.utcnow().datetime),
+        'status': 'closed'
     }
 
 
@@ -151,12 +152,14 @@ def limit_buy_order():
 def limit_buy_order_old():
     return {
         'id': 'mocked_limit_buy_old',
-        'type': 'LIMIT_BUY',
+        'type': 'limit',
+        'side': 'buy',
         'pair': 'ETH/BTC',
-        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
+        'status': 'open'
     }
 
 
@@ -164,12 +167,14 @@ def limit_buy_order_old():
 def limit_sell_order_old():
     return {
         'id': 'mocked_limit_sell_old',
-        'type': 'LIMIT_SELL',
+        'type': 'limit',
+        'side': 'sell',
         'pair': 'ETH/BTC',
-        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
+        'status': 'open'
     }
 
 
@@ -177,12 +182,14 @@ def limit_sell_order_old():
 def limit_buy_order_old_partial():
     return {
         'id': 'mocked_limit_buy_old_partial',
-        'type': 'LIMIT_BUY',
+        'type': 'limit',
+        'side': 'buy',
         'pair': 'ETH/BTC',
-        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'rate': 0.00001099,
         'amount': 90.99181073,
         'remaining': 67.99181073,
+        'status': 'open'
     }
 
 
@@ -190,13 +197,14 @@ def limit_buy_order_old_partial():
 def limit_sell_order():
     return {
         'id': 'mocked_limit_sell',
-        'type': 'LIMIT_SELL',
+        'type': 'limit',
+        'side': 'sell',
         'pair': 'mocked',
-        'opened': str(arrow.utcnow().datetime),
+        'datetime': arrow.utcnow().isoformat(),
         'rate': 0.00001173,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': str(arrow.utcnow().datetime),
+        'status': 'closed'
     }
 
 

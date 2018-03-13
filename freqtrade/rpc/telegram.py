@@ -170,8 +170,8 @@ def _status(bot: Bot, update: Update) -> None:
                 amount=round(trade.amount, 8),
                 close_profit=fmt_close_profit,
                 current_profit=round(current_profit * 100, 2),
-                open_order='({} rem={:.8f})'.format(
-                    order['type'], order['remaining']
+                open_order='({} {} rem={:.8f})'.format(
+                    order['type'], order['side'], order['remaining']
                 ) if order else None,
                 total_trades=len(trades)
             )
@@ -602,14 +602,18 @@ def _exec_forcesell(trade: Trade) -> None:
         order = exchange.get_order(trade.open_order_id, trade.pair)
 
         # Cancel open LIMIT_BUY orders and close trade
-        if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
+        if order and order['status'] == 'open' \
+                and order['type'] == 'limit' \
+                and order['side'] == 'buy':
             exchange.cancel_order(trade.open_order_id, trade.pair)
             trade.close(order.get('rate') or trade.open_rate)
             # TODO: sell amount which has been bought already
             return
 
         # Ignore trades with an attached LIMIT_SELL order
-        if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+        if order and order['status'] == 'open' \
+                and order['type'] == 'limit' \
+                and order['side'] == 'sell':
             return
 
     # Get current rate and execute sell

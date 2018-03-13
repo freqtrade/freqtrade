@@ -294,8 +294,9 @@ def test_exec_forcesell_open_orders(default_conf, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_ticker=ticker,
                           get_order=MagicMock(return_value={
-                              'closed': None,
-                              'type': 'LIMIT_BUY',
+                              'type': 'limit',
+                              'side': 'buy',
+                              'status': 'open'
                           }),
                           cancel_order=cancel_order_mock)
     trade = Trade(
