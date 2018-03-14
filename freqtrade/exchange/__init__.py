@@ -96,7 +96,7 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
         order_id = 'dry_run_buy_{}'.format(randint(0, 10**6))
         _DRY_RUN_OPEN_ORDERS[order_id] = {
             'pair': pair,
-            'rate': rate,
+            'price': rate,
             'amount': amount,
             'type': 'limit',
             'side': 'buy',
@@ -134,7 +134,7 @@ def sell(pair: str, rate: float, amount: float) -> Dict:
         order_id = 'dry_run_sell_{}'.format(randint(0, 10**6))
         _DRY_RUN_OPEN_ORDERS[order_id] = {
             'pair': pair,
-            'rate': rate,
+            'price': rate,
             'amount': amount,
             'type': 'limit',
             'side': 'sell',

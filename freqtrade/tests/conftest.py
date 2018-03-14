@@ -141,7 +141,7 @@ def limit_buy_order():
         'side': 'buy',
         'pair': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
-        'rate': 0.00001099,
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 0.0,
         'status': 'closed'
@@ -156,7 +156,7 @@ def limit_buy_order_old():
         'side': 'buy',
         'pair': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-        'rate': 0.00001099,
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
         'status': 'open'
@@ -171,7 +171,7 @@ def limit_sell_order_old():
         'side': 'sell',
         'pair': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-        'rate': 0.00001099,
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
         'status': 'open'
@@ -186,7 +186,7 @@ def limit_buy_order_old_partial():
         'side': 'buy',
         'pair': 'ETH/BTC',
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-        'rate': 0.00001099,
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 67.99181073,
         'status': 'open'
@@ -201,7 +201,7 @@ def limit_sell_order():
         'side': 'sell',
         'pair': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
-        'rate': 0.00001173,
+        'price': 0.00001173,
         'amount': 90.99181073,
         'remaining': 0.0,
         'status': 'closed'

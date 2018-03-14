@@ -104,7 +104,7 @@ class Trade(_DECL_BASE):
         :return: None
         """
         # Ignore open and cancelled orders
-        if order['status'] == 'open' or order['rate'] is None:
+        if order['status'] == 'open' or order['price'] is None:
             return
 
         logger.info('Updating trade (id=%d) ...', self.id)
@@ -112,12 +112,12 @@ class Trade(_DECL_BASE):
         getcontext().prec = 8  # Bittrex do not go above 8 decimal
         if order['type'] == 'limit' and order['side'] == 'buy':
             # Update open rate and actual amount
-            self.open_rate = Decimal(order['rate'])
+            self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
             logger.info('LIMIT_BUY has been fulfilled for %s.', self)
             self.open_order_id = None
         elif order['type'] == 'limit' and order['side'] == 'sell':
-            self.close(order['rate'])
+            self.close(order['price'])
         else:
             raise ValueError('Unknown order type: {}'.format(order['type']))
         cleanup()
