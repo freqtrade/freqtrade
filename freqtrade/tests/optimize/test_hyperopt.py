@@ -4,8 +4,10 @@ import os
 from copy import deepcopy
 from unittest.mock import MagicMock
 import pandas as pd
+
 from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
+from freqtrade.strategy.strategy import Strategy
 from freqtrade.tests.conftest import default_conf, log_has
 from freqtrade.tests.optimize.test_backtesting import get_args
 
@@ -59,6 +61,7 @@ def test_start(mocker, default_conf, caplog) -> None:
         '--epochs', '5'
     ]
     args = get_args(args)
+    Strategy({'strategy': 'default_strategy'})
     start(args)
 
     import pprint
@@ -169,7 +172,7 @@ def test_fmin_best_results(mocker, default_conf, caplog) -> None:
     hyperopt = Hyperopt(conf)
     hyperopt.trials = create_trials(mocker)
     hyperopt.tickerdata_to_dataframe = MagicMock()
-
+    Strategy({'strategy': 'default_strategy'})
     hyperopt.start()
 
     exists = [
@@ -210,7 +213,7 @@ def test_fmin_throw_value_error(mocker, default_conf, caplog) -> None:
     conf.update({'spaces': 'all'})
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
     mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
-
+    Strategy({'strategy': 'default_strategy'})
     hyperopt = Hyperopt(conf)
     hyperopt.trials = create_trials(mocker)
     hyperopt.tickerdata_to_dataframe = MagicMock()
@@ -253,6 +256,7 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker, default_conf) -> No
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
     mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
 
+    Strategy({'strategy': 'default_strategy'})
     hyperopt = Hyperopt(conf)
     hyperopt.trials = trials
     hyperopt.tickerdata_to_dataframe = MagicMock()
