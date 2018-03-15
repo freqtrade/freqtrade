@@ -200,10 +200,10 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
     global _TICKER_CACHE
     try:
         if not refresh:
-            if _TICKER_CACHE:
-                return _TICKER_CACHE
-        _TICKER_CACHE = _API.fetch_ticker(pair)
-        return _TICKER_CACHE
+            if _TICKER_CACHE and pair in _TICKER_CACHE:
+                return _TICKER_CACHE[pair]
+        _TICKER_CACHE[pair] = _API.fetch_ticker(pair)
+        return _TICKER_CACHE[pair]
     except ccxt.NetworkError as e:
         raise NetworkException(
             'Could not load tickers due to networking error. Message: {}'.format(e)
