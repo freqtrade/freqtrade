@@ -255,7 +255,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker) -> None:
     # Save state of current whitelist
     whitelist = deepcopy(default_conf['exchange']['pair_whitelist'])
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade is not None
@@ -287,12 +287,14 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker) -> None:
         get_ticker=ticker,
         buy=buy_mock
     )
-    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
-    min_stake_amount = 0.0005
-    freqtrade.create_trade(min_stake_amount, int(default_conf['ticker_interval']))
+    conf = deepcopy(default_conf)
+    conf['stake_amount'] = 0.0005
+    freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
+
+    freqtrade.create_trade()
     rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
-    assert rate * amount >= min_stake_amount
+    assert rate * amount >= conf['stake_amount']
 
 
 def test_create_trade_no_stake_amount(default_conf, ticker, mocker) -> None:
@@ -312,7 +314,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker) -> None:
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        freqtrade.create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
+        freqtrade.create_trade()
 
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker) -> None:
@@ -334,10 +336,10 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker) -> None:
     conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
 
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
-        freqtrade.create_trade(default_conf['stake_amount'], int(default_conf['ticker_interval']))
+        freqtrade.create_trade()
 
 
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker) -> None:
@@ -359,10 +361,10 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker) -> 
     conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
 
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
-        freqtrade.create_trade(conf['stake_amount'], int(conf['ticker_interval']))
+        freqtrade.create_trade()
 
 
 def test_create_trade_no_signal(default_conf, mocker) -> None:
@@ -381,12 +383,14 @@ def test_create_trade_no_signal(default_conf, mocker) -> None:
         get_ticker_history=MagicMock(return_value=20),
         get_balance=MagicMock(return_value=20)
     )
+
+    conf = deepcopy(default_conf)
+    conf['stake_amount'] = 10
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
 
-    stake_amount = 10
     Trade.query = MagicMock()
     Trade.query.filter = MagicMock()
-    assert not freqtrade.create_trade(stake_amount, int(conf['ticker_interval']))
+    assert not freqtrade.create_trade()
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
@@ -410,7 +414,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
 
-    result = freqtrade._process(interval=int(default_conf['ticker_interval']))
+    result = freqtrade._process()
     assert result is True
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -447,7 +451,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker) -> None
     sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
 
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
-    result = freqtrade._process(interval=int(default_conf['ticker_interval']))
+    result = freqtrade._process()
     assert result is False
     assert sleep_mock.has_calls()
 
@@ -469,7 +473,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker) -> 
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
     assert freqtrade.get_state() == State.RUNNING
 
-    result = freqtrade._process(interval=int(default_conf['ticker_interval']))
+    result = freqtrade._process()
     assert result is False
     assert freqtrade.get_state() == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
@@ -494,12 +498,12 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
-    result = freqtrade._process(interval=int(default_conf['ticker_interval']))
+    result = freqtrade._process()
     assert result is True
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
 
-    result = freqtrade._process(interval=int(default_conf['ticker_interval']))
+    result = freqtrade._process()
     assert result is False
 
 
@@ -537,10 +541,10 @@ def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade', MagicMock(return_value=True))
-    assert freqtrade.process_maybe_execute_buy(int(default_conf['ticker_interval']))
+    assert freqtrade.process_maybe_execute_buy()
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade', MagicMock(return_value=False))
-    assert not freqtrade.process_maybe_execute_buy(int(default_conf['ticker_interval']))
+    assert not freqtrade.process_maybe_execute_buy()
 
 
 def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> None:
@@ -553,7 +557,7 @@ def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> No
         'freqtrade.freqtradebot.FreqtradeBot.create_trade',
         MagicMock(side_effect=DependencyException)
     )
-    freqtrade.process_maybe_execute_buy(int(default_conf['ticker_interval']))
+    freqtrade.process_maybe_execute_buy()
     log_has('Unable to create trade:', caplog.record_tuples)
 
 
@@ -568,11 +572,11 @@ def test_process_maybe_execute_sell(mocker, default_conf) -> None:
 
     trade = MagicMock()
     trade.open_order_id = '123'
-    assert not freqtrade.process_maybe_execute_sell(trade, int(default_conf['ticker_interval']))
+    assert not freqtrade.process_maybe_execute_sell(trade)
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    assert freqtrade.process_maybe_execute_sell(trade, int(default_conf['ticker_interval']))
+    assert freqtrade.process_maybe_execute_sell(trade)
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker) -> None:
@@ -597,7 +601,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker) -
 
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -606,7 +610,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker) -
     assert trade.is_open is True
 
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == 'mocked_limit_sell'
 
     # Simulate fulfilled LIMIT_SELL order for trade
@@ -638,7 +642,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker) -> None:
 
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
 
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     # Buy and Sell triggering, so doing nothing ...
     trades = Trade.query.all()
@@ -647,7 +651,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker) -> None:
 
     # Buy is triggering, so buying ...
     patch_get_signal(mocker, value=(True, False))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
     trades = Trade.query.all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -655,7 +659,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker) -> None:
 
     # Buy and Sell are not triggering, so doing nothing ...
     patch_get_signal(mocker, value=(False, False))
-    assert freqtrade.handle_trade(trades[0], int(default_conf['ticker_interval'])) is False
+    assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -663,7 +667,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker) -> None:
 
     # Buy and Sell are triggering, so doing nothing ...
     patch_get_signal(mocker, value=(True, True))
-    assert freqtrade.handle_trade(trades[0], int(default_conf['ticker_interval'])) is False
+    assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -672,7 +676,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker) -> None:
     # Sell is triggering, guess what : we are Selling!
     patch_get_signal(mocker, value=(False, True))
     trades = Trade.query.all()
-    assert freqtrade.handle_trade(trades[0], int(default_conf['ticker_interval'])) is True
+    assert freqtrade.handle_trade(trades[0]) is True
 
 
 def test_handle_trade_roi(default_conf, ticker, mocker, caplog) -> None:
@@ -695,7 +699,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=True)
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     trade.is_open = True
@@ -706,7 +710,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog) -> None:
     #      executing
     # if ROI is reached we must sell
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, interval=int(default_conf['ticker_interval']))
+    assert freqtrade.handle_trade(trade)
     assert log_has('Required profit reached. Selling..', caplog.record_tuples)
 
 
@@ -730,16 +734,16 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog) -> None
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
 
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     trade.is_open = True
 
     patch_get_signal(mocker, value=(False, False))
-    assert not freqtrade.handle_trade(trade, int(default_conf['ticker_interval']))
+    assert not freqtrade.handle_trade(trade)
 
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval']))
+    assert freqtrade.handle_trade(trade)
     assert log_has('Sell signal received. Selling..', caplog.record_tuples)
 
 
@@ -759,7 +763,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     # Create trade and sell it
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -769,7 +773,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     assert trade.is_open is False
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
-        freqtrade.handle_trade(trade, int(default_conf['ticker_interval']))
+        freqtrade.handle_trade(trade)
 
 
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mocker) -> None:
@@ -1004,7 +1008,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -1044,7 +1048,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker) -> No
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -1082,7 +1086,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -1122,7 +1126,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker,
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     # Create some test data
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -1168,12 +1172,12 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker) -
         'sell_profit_only': True,
     }
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert freqtrade.handle_trade(trade) is True
 
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker) -> None:
@@ -1200,12 +1204,12 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker) 
         'sell_profit_only': False,
     }
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert freqtrade.handle_trade(trade) is True
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker) -> None:
@@ -1232,12 +1236,12 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker) -> 
         'sell_profit_only': True,
     }
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval'])) is False
+    assert freqtrade.handle_trade(trade) is False
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker) -> None:
@@ -1266,9 +1270,9 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker) ->
     }
 
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
-    freqtrade.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtrade.create_trade()
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     patch_get_signal(mocker, value=(False, True))
-    assert freqtrade.handle_trade(trade, int(default_conf['ticker_interval'])) is True
+    assert freqtrade.handle_trade(trade) is True

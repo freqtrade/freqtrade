@@ -125,17 +125,9 @@ class FreqtradeBot(object):
                 Constants.DYNAMIC_WHITELIST
             )
 
-            interval = int(
-                self.config.get(
-                    'ticker_interval',
-                    Constants.TICKER_INTERVAL
-                )
-            )
-
             self._throttle(func=self._process,
                            min_secs=min_secs,
-                           nb_assets=nb_assets,
-                           interval=interval)
+                           nb_assets=nb_assets)
         return new_state
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
@@ -154,7 +146,7 @@ class FreqtradeBot(object):
         time.sleep(duration)
         return result
 
-    def _process(self, interval: int, nb_assets: Optional[int] = 0) -> bool:
+    def _process(self, nb_assets: Optional[int] = 0) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
@@ -179,11 +171,11 @@ class FreqtradeBot(object):
 
             # First process current opened trades
             for trade in trades:
-                state_changed |= self.process_maybe_execute_sell(trade, interval)
+                state_changed |= self.process_maybe_execute_sell(trade)
 
             # Then looking for buy opportunities
             if len(trades) < self.config['max_open_trades']:
-                state_changed = self.process_maybe_execute_buy(interval)
+                state_changed = self.process_maybe_execute_buy()
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
@@ -263,9 +255,7 @@ class FreqtradeBot(object):
         balance = self.config['bid_strategy']['ask_last_balance']
         return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
-    # TODO: Remove the two parameters and use the value already in conf['stake_amount'] and
-    # int(conf['ticker_interval'])
-    def create_trade(self, stake_amount: float, interval: int) -> bool:
+    def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
@@ -273,6 +263,9 @@ class FreqtradeBot(object):
         :param interval: Ticker interval used for Analyze
         :return: True if a trade object has been created and persisted, False otherwise
         """
+        stake_amount = self.config['stake_amount']
+        interval = self.analyze.get_ticker_interval()
+
         self.logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
             stake_amount
@@ -343,14 +336,14 @@ class FreqtradeBot(object):
         Trade.session.flush()
         return True
 
-    def process_maybe_execute_buy(self, interval: int) -> bool:
+    def process_maybe_execute_buy(self) -> bool:
         """
         Tries to execute a buy trade in a safe way
         :return: True if executed
         """
         try:
             # Create entity and execute trade
-            if self.create_trade(float(self.config['stake_amount']), interval):
+            if self.create_trade():
                 return True
 
             self.logger.info('Found no buy signals for whitelisted currencies. Trying again..')
@@ -359,7 +352,7 @@ class FreqtradeBot(object):
             self.logger.warning('Unable to create trade: %s', exception)
             return False
 
-    def process_maybe_execute_sell(self, trade: Trade, interval: int) -> bool:
+    def process_maybe_execute_sell(self, trade: Trade) -> bool:
         """
         Tries to execute a sell trade
         :return: True if executed
@@ -372,10 +365,10 @@ class FreqtradeBot(object):
 
         if trade.is_open and trade.open_order_id is None:
             # Check if we can sell our current pair
-            return self.handle_trade(trade, interval)
+            return self.handle_trade(trade)
         return False
 
-    def handle_trade(self, trade: Trade, interval: int) -> bool:
+    def handle_trade(self, trade: Trade) -> bool:
         """
         Sells the current pair if the threshold is reached and updates the trade record.
         :return: True if trade has been sold, False otherwise
@@ -389,7 +382,7 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
-            (buy, sell) = self.analyze.get_signal(trade.pair, interval)
+            (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
         if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, current_rate)

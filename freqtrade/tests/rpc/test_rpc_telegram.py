@@ -266,7 +266,7 @@ def test_status(default_conf, update, mocker, ticker) -> None:
 
     # Create some test data
     for _ in range(3):
-        freqtradebot.create_trade(0.001, 5)
+        freqtradebot.create_trade()
 
     telegram._status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 3
@@ -314,7 +314,7 @@ def test_status_handle(default_conf, update, ticker, mocker) -> None:
     msg_mock.reset_mock()
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
     # Trigger status while we have a fulfilled order for the open trade
     telegram._status(bot=MagicMock(), update=update)
 
@@ -342,7 +342,9 @@ def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    conf = deepcopy(default_conf)
+    conf['stake_amount'] = 15.0
+    freqtradebot = FreqtradeBot(conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
     freqtradebot.update_state(State.STOPPED)
@@ -358,7 +360,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
     msg_mock.reset_mock()
 
     # Create some test data
-    freqtradebot.create_trade(15.0, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
 
     telegram._status_table(bot=MagicMock(), update=update)
 
@@ -399,7 +401,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order,
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
     trade = Trade.query.first()
     assert trade
 
@@ -426,8 +428,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order,
     # Reset msg_mock
     msg_mock.reset_mock()
     # Add two other trades
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
+    freqtradebot.create_trade()
 
     trades = Trade.query.all()
     for trade in trades:
@@ -512,7 +514,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up,
     msg_mock.reset_mock()
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -764,7 +766,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker) 
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
 
     trade = Trade.query.first()
     assert trade
@@ -803,7 +805,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
 
     # Decrease the price and sell it
     mocker.patch.multiple(
@@ -847,7 +849,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker) -> None:
 
     # Create some test data
     for _ in range(4):
-        freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+        freqtradebot.create_trade()
     rpc_mock.reset_mock()
 
     update.message.text = '/forcesell all'
@@ -925,7 +927,7 @@ def test_performance_handle(default_conf, update, ticker, limit_buy_order,
     telegram = Telegram(freqtradebot)
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
     trade = Trade.query.first()
     assert trade
 
@@ -995,7 +997,7 @@ def test_count_handle(default_conf, update, ticker, mocker) -> None:
     freqtradebot.update_state(State.RUNNING)
 
     # Create some test data
-    freqtradebot.create_trade(0.001, int(default_conf['ticker_interval']))
+    freqtradebot.create_trade()
     msg_mock.reset_mock()
     telegram._count(bot=MagicMock(), update=update)
 
