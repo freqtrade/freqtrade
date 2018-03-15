@@ -3,6 +3,7 @@
 import pandas
 import freqtrade.optimize
 from freqtrade import analyze
+from freqtrade.strategy.strategy import Strategy
 
 _pairs = ['BTC_ETH']
 
@@ -17,11 +18,13 @@ def load_dataframe_pair(pairs):
 
 
 def test_dataframe_load():
+    Strategy().init({'strategy': 'default_strategy'})
     dataframe = load_dataframe_pair(_pairs)
     assert isinstance(dataframe, pandas.core.frame.DataFrame)
 
 
 def test_dataframe_columns_exists():
+    Strategy().init({'strategy': 'default_strategy'})
     dataframe = load_dataframe_pair(_pairs)
     assert 'high' in dataframe.columns
     assert 'low' in dataframe.columns

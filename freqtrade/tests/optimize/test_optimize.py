@@ -10,6 +10,7 @@ from freqtrade.exchange import Bittrex
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs,\
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, file_dump_json
 from freqtrade.tests.conftest import log_has
+from freqtrade.strategy.strategy import Strategy
 
 # Change this if modifying BTC_UNITEST testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -218,6 +219,7 @@ def test_init(default_conf, mocker):
 
 
 def test_tickerdata_to_dataframe():
+    Strategy().init({'strategy': 'default_strategy'})
     timerange = ((None, 'line'), None, -100)
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
     tickerlist = {'BTC_UNITEST': tick}
