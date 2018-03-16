@@ -290,6 +290,24 @@ def test_get_ticker(default_conf, mocker):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
+    # change the ticker to a different pair which should not be cached
+    tick = {
+        'symbol': 'LTC/BTC',
+        'bid': 2,
+        'ask': 3,
+        'last': 4,
+    }
+    api_mock.fetch_ticker = MagicMock(return_value=tick, refresh=False)
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    ticker = get_ticker(pair='LTC/BTC', refresh=False)
+    assert ticker['bid'] == 2
+    assert ticker['ask'] == 3
+
+    # check that ETH/BTC is still cached
+    ticker = get_ticker(pair='ETH/BTC', refresh=False)
+    assert ticker['bid'] == 0.5
+    assert ticker['ask'] == 1
+
     with pytest.raises(NetworkException):
         api_mock.fetch_ticker = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
