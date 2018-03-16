@@ -186,7 +186,7 @@ class CryptoToFiatConverter(object):
                 self._coinmarketcap.ticker(
                     currency=self.CRYPTOMAP[crypto_symbol],
                     convert=fiat_symbol
-                )['price_' + fiat_symbol.lower()]
+                )[0]['price_' + fiat_symbol.lower()]
             )
         except BaseException:
             return 0.0
