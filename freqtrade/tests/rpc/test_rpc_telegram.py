@@ -166,9 +166,8 @@ def test_profit_handle(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
@@ -395,9 +394,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, limit_sell_
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
@@ -459,9 +457,8 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     init(default_conf, create_engine('sqlite://'))
 
@@ -656,9 +653,8 @@ def test_telegram_balance_handle(default_conf, update, mocker):
                           send_msg=msg_mock)
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_balances=MagicMock(return_value=mock_balance))
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.main.exchange.get_ticker', side_effect=mock_ticker)
 
     _balance(bot=MagicMock(), update=update)

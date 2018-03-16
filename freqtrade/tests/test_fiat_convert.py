@@ -71,7 +71,7 @@ def test_fiat_convert_find_price(mocker):
         'price_usd': 12345.0,
         'price_eur': 13000.2
     })
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    mocker.patch('freqtrade.fiat_convert.Market.ticker', api_mock)
     fiat_convert = CryptoToFiatConverter()
 
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
@@ -90,7 +90,7 @@ def test_fiat_convert_get_price(mocker):
         'price_usd': 28000.0,
         'price_eur': 15000.0
     })
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    mocker.patch('freqtrade.fiat_convert.Market.ticker', api_mock)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
 
     fiat_convert = CryptoToFiatConverter()

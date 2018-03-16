@@ -189,9 +189,8 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     main.init(default_conf, create_engine('sqlite://'))
     stake_currency = default_conf['stake_currency']
@@ -242,9 +241,8 @@ def test_rpc_trade_statistics(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     main.init(default_conf, create_engine('sqlite://'))
     stake_currency = default_conf['stake_currency']
@@ -298,9 +296,8 @@ def test_rpc_trade_statistics_closed(
     mocker.patch.multiple('freqtrade.main.exchange',
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     main.init(default_conf, create_engine('sqlite://'))
     stake_currency = default_conf['stake_currency']
@@ -356,9 +353,8 @@ def test_rpc_balance_handle(default_conf, update, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_balances=MagicMock(return_value=mock_balance))
-    mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
-                          _cache_symbols=MagicMock(return_value={'BTC': 1}))
+    mocker.patch.multiple('freqtrade.fiat_convert.Market',
+                          ticker=MagicMock(return_value={'price_usd': 15000.0}))
 
     (error, res) = rpc.rpc_balance(default_conf['fiat_display_currency'])
     assert not error
