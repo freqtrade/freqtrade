@@ -207,6 +207,7 @@ class Trade(_DECL_BASE):
         Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).
         If rate is not set self.close_rate will be used
+        :param fee: fee to use on the close rate (optional).
         :return: profit in percentage as float
         """
         getcontext().prec = 8
