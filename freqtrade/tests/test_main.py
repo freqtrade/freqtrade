@@ -72,7 +72,6 @@ def test_main(mocker, caplog) -> None:
         ),
         clean=MagicMock(),
     )
-
     args = ['-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception

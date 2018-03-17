@@ -35,7 +35,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
 
     return FreqtradeBot(config, create_engine('sqlite://'))
 
@@ -64,18 +64,18 @@ def patch_RPCManager(mocker) -> MagicMock:
     return rpc_mock
 
 
-def patch_pymarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
+def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
     """
-    Mocker to Pymarketcap to speed up tests
-    :param mocker: mocker to patch Pymarketcap class
+    Mocker to coinmarketcap to speed up tests
+    :param mocker: mocker to patch coinmarketcap class
     :return: None
     """
-    pymarketcap = MagicMock()
+    mock = MagicMock()
 
     if value:
-        pymarketcap.ticker = {'price_usd': 12345.0}
+        mock.ticker = {'price_usd': 12345.0}
 
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap', pymarketcap)
+    mocker.patch('freqtrade.fiat_convert.Market', mock)
 
 
 # Unit tests
@@ -244,7 +244,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker) -> None:
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -279,7 +279,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker) -> None:
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     buy_mock = MagicMock(return_value='mocked_limit_buy')
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -303,7 +303,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker) -> None:
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -323,7 +323,7 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker) -> None:
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -348,7 +348,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker) -> 
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -376,7 +376,7 @@ def test_create_trade_no_signal(default_conf, mocker) -> None:
 
     patch_get_signal(mocker, value=(False, False))
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -400,7 +400,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker, value={'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -440,7 +440,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker) -> None
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker, value={'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -462,7 +462,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker) -> 
     """
     patch_get_signal(mocker)
     msg_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker, value={'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -485,7 +485,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker, value={'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -596,8 +596,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker) -
         buy=MagicMock(return_value='mocked_limit_buy'),
         sell=MagicMock(return_value='mocked_limit_sell')
     )
-    patch_pymarketcap(mocker, value={'price_usd': 15000.0})
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap._cache_symbols', return_value={'BTC': 1})
+    patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
 
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -631,7 +630,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, mocker) -> None:
 
     patch_get_signal(mocker, value=(True, True))
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -689,7 +688,7 @@ def test_handle_trade_roi(default_conf, ticker, mocker, caplog) -> None:
 
     patch_get_signal(mocker, value=(True, False))
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -724,7 +723,7 @@ def test_handle_trade_experimental(default_conf, ticker, mocker, caplog) -> None
 
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -753,7 +752,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -782,7 +781,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     """
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -820,7 +819,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     Test check_handle_timedout() method
     """
     rpc_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -859,7 +858,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     Test check_handle_timedout() method
     """
     rpc_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -901,7 +900,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     """
     patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
 
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
@@ -945,7 +944,7 @@ def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
     Test handle_timedout_limit_buy() method
     """
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -972,7 +971,7 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     """
     patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -998,7 +997,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
     """
     patch_get_signal(mocker)
     rpc_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -1038,7 +1037,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker) -> No
     """
     patch_get_signal(mocker)
     rpc_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -1077,7 +1076,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     """
     patch_get_signal(mocker)
     rpc_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker, value={'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -1117,7 +1116,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker,
     """
     patch_get_signal(mocker)
     rpc_mock = patch_RPCManager(mocker)
-    patch_pymarketcap(mocker, value={'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -1154,7 +1153,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker) -
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -1186,7 +1185,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker) 
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -1218,7 +1217,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker) -> 
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -1250,7 +1249,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker) ->
     """
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_pymarketcap(mocker)
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',

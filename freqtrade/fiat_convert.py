@@ -5,7 +5,7 @@ e.g BTC to USD
 
 import logging
 import time
-from pymarketcap import Pymarketcap
+from coinmarketcap import Market
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +72,17 @@ class CryptoToFiatConverter(object):
         "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
     ]
 
+    CRYPTOMAP = {
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'USDT': 'thether'
+    }
+
     def __new__(cls):
         if CryptoToFiatConverter.__instance is None:
             CryptoToFiatConverter.__instance = object.__new__(cls)
             try:
-                CryptoToFiatConverter._coinmarketcap = Pymarketcap()
+                CryptoToFiatConverter._coinmarketcap = Market()
             except BaseException:
                 CryptoToFiatConverter._coinmarketcap = None
         return CryptoToFiatConverter.__instance
@@ -171,12 +177,16 @@ class CryptoToFiatConverter(object):
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
+
+        if crypto_symbol not in self.CRYPTOMAP:
+            raise ValueError(
+                'The crypto symbol {} is not supported.'.format(crypto_symbol))
         try:
             return float(
                 self._coinmarketcap.ticker(
-                    currency=crypto_symbol,
+                    currency=self.CRYPTOMAP[crypto_symbol],
                     convert=fiat_symbol
-                )['price_' + fiat_symbol.lower()]
+                )[0]['price_' + fiat_symbol.lower()]
             )
         except BaseException:
             return 0.0
