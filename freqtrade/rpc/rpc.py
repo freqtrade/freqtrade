@@ -196,11 +196,9 @@ class RPC(object):
             profit_all_percent.append(profit_percent)
 
         best_pair = Trade.session.query(
-                        Trade.pair,
-                        sql.func.sum(Trade.close_profit).label('profit_sum')
-            )\
-            .filter(Trade.is_open.is_(False))\
-            .group_by(Trade.pair)\
+            Trade.pair, sql.func.sum(Trade.close_profit).label('profit_sum')
+        ).filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
             .order_by(sql.text('profit_sum DESC')).first()
 
         if not best_pair:
