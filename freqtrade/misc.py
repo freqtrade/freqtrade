@@ -6,12 +6,15 @@ import re
 import json
 import logging
 from datetime import datetime
+from typing import Dict
+
 import numpy as np
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
 
-def shorten_date(_date):
+def shorten_date(_date: str) -> str:
     """
     Trim the date so it fits on small screens
     """
@@ -28,7 +31,7 @@ def shorten_date(_date):
 # Matplotlib doesn't support ::datetime64, #
 # so we need to convert it into ::datetime #
 ############################################
-def datesarray_to_datetimearray(dates):
+def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     """
     Convert an pandas-array of timestamps into
     An numpy-array of datetimes
@@ -42,10 +45,10 @@ def datesarray_to_datetimearray(dates):
     return np.array(times)
 
 
-def common_datearray(dfs):
+def common_datearray(dfs: Dict[str, DataFrame]) -> np.ndarray:
     """
     Return dates from Dataframe
-    :param dfs: Dataframe
+    :param dfs: Dict with format pair: pair_data
     :return: List of dates
     """
     alldates = {}
