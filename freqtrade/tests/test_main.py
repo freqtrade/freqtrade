@@ -4,6 +4,7 @@ Unit test file for main.py
 
 import logging
 from unittest.mock import MagicMock
+
 import pytest
 
 from freqtrade.main import main, set_loggers

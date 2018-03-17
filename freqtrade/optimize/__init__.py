@@ -1,12 +1,12 @@
 # pragma pylint: disable=missing-docstring
 
+import gzip
 import json
 import os
 from typing import Optional, List, Dict, Tuple
-import gzip
-from freqtrade.exchange import get_ticker_history
 
 from freqtrade import misc
+from freqtrade.exchange import get_ticker_history
 from freqtrade.logger import Logger
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 

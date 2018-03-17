@@ -6,23 +6,23 @@ Unit test file for rpc/telegram.py
 """
 
 import re
+from copy import deepcopy
 from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock
-from copy import deepcopy
 
 from sqlalchemy import create_engine
 from telegram import Update, Message, Chat
 from telegram.error import NetworkError
 
 from freqtrade import __version__
-from freqtrade.rpc.telegram import authorized_only
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.rpc.telegram import Telegram
 from freqtrade.persistence import Trade
+from freqtrade.rpc.telegram import Telegram
+from freqtrade.rpc.telegram import authorized_only
 from freqtrade.state import State
-from freqtrade.tests.test_freqtradebot import patch_get_signal, patch_coinmarketcap
 from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
+from freqtrade.tests.test_freqtradebot import patch_get_signal, patch_coinmarketcap
 
 
 class DummyCls(Telegram):

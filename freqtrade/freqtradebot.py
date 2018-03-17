@@ -6,11 +6,14 @@ import copy
 import json
 import time
 import traceback
-from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
-import requests
+from typing import Dict, List, Optional, Any, Callable
+
 import arrow
+import requests
 from cachetools import cached, TTLCache
+
+from freqtrade import (DependencyException, OperationalException, exchange, persistence)
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
 from freqtrade.fiat_convert import CryptoToFiatConverter
@@ -18,7 +21,6 @@ from freqtrade.logger import Logger
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
 from freqtrade.state import State
-from freqtrade import (DependencyException, OperationalException, exchange, persistence)
 
 
 class FreqtradeBot(object):

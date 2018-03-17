@@ -14,7 +14,7 @@ from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable, List
+from typing import Dict, Any, Callable
 
 import numpy
 import talib.abstract as ta
@@ -23,11 +23,11 @@ from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.configuration import Configuration
-from freqtrade.optimize import load_data
 from freqtrade.arguments import Arguments
-from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.configuration import Configuration
 from freqtrade.logger import Logger
+from freqtrade.optimize import load_data
+from freqtrade.optimize.backtesting import Backtesting
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 

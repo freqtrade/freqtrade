@@ -5,16 +5,17 @@ This module contains the backtesting logic
 """
 from argparse import Namespace
 from typing import Dict, Tuple, Any, List, Optional
+
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
-from freqtrade.arguments import Arguments
-from freqtrade.exchange import Bittrex
-from freqtrade.configuration import Configuration
 from freqtrade import exchange
 from freqtrade.analyze import Analyze
+from freqtrade.arguments import Arguments
+from freqtrade.configuration import Configuration
+from freqtrade.exchange import Bittrex
 from freqtrade.logger import Logger
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade

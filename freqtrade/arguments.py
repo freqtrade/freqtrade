@@ -3,9 +3,9 @@ This module contains the argument manager class
 """
 
 import argparse
+import logging
 import os
 import re
-import logging
 from typing import List, Tuple, Optional
 
 from freqtrade import __version__

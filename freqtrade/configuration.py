@@ -4,8 +4,8 @@ This module contains the configuration class
 
 import json
 from argparse import Namespace
-
 from typing import Dict, Any
+
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 

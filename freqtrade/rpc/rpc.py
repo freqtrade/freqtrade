@@ -2,16 +2,18 @@
 This module contains class to define a RPC communications
 """
 
-from decimal import Decimal
 from datetime import datetime, timedelta
+from decimal import Decimal
+
 import arrow
-from pandas import DataFrame
 import sqlalchemy as sql
+from pandas import DataFrame
+
+from freqtrade import exchange
 from freqtrade.logger import Logger
+from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
-from freqtrade import exchange
-from freqtrade.misc import shorten_date
 
 
 class RPC(object):

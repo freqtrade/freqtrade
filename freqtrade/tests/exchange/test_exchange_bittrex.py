@@ -1,10 +1,12 @@
 # pragma pylint: disable=missing-docstring, C0103, protected-access, unused-argument
 
 from unittest.mock import MagicMock
+
 import pytest
 from requests.exceptions import ContentDecodingError
-from freqtrade.exchange.bittrex import Bittrex
+
 import freqtrade.exchange.bittrex as btx
+from freqtrade.exchange.bittrex import Bittrex
 
 
 # Eat this flake8

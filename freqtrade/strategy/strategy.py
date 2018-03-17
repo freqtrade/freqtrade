@@ -7,11 +7,12 @@ import importlib
 import os
 import sys
 from collections import OrderedDict
-from pandas import DataFrame
-from freqtrade.logger import Logger
-from freqtrade.constants import Constants
-from freqtrade.strategy.interface import IStrategy
 
+from pandas import DataFrame
+
+from freqtrade.constants import Constants
+from freqtrade.logger import Logger
+from freqtrade.strategy.interface import IStrategy
 
 sys.path.insert(0, r'../../user_data/strategies')
 

@@ -5,10 +5,12 @@ This module manage Telegram communication
 """
 
 from typing import Any, Callable
+
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
+
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC
 

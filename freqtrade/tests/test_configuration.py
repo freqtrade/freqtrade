@@ -4,10 +4,10 @@
 Unit test file for configuration.py
 """
 import json
-
 from copy import deepcopy
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from jsonschema import ValidationError
 
 from freqtrade.arguments import Arguments

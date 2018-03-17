@@ -3,6 +3,7 @@ Unit test file for logger.py
 """
 
 import logging
+
 from freqtrade.logger import Logger
 
 

@@ -4,12 +4,14 @@ Functions to analyze ticker data with indicators and produce buy and sell signal
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, List, Tuple
+
 import arrow
 from pandas import DataFrame, to_datetime
+
 from freqtrade.exchange import get_ticker_history
 from freqtrade.logger import Logger
-from freqtrade.strategy.strategy import Strategy
 from freqtrade.persistence import Trade
+from freqtrade.strategy.strategy import Strategy
 
 
 class SignalType(Enum):

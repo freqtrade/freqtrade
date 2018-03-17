@@ -6,10 +6,11 @@ Unit test file for misc.py
 
 import datetime
 from unittest.mock import MagicMock
+
 from freqtrade.analyze import Analyze
-from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.misc import (shorten_date, datesarray_to_datetimearray,
                             common_datearray, file_dump_json)
+from freqtrade.optimize.__init__ import load_tickerdata_file
 
 
 def test_shorten_date() -> None:

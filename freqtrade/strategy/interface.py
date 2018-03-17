@@ -4,6 +4,7 @@ This module defines the interface to apply for strategies
 """
 
 from abc import ABC, abstractmethod
+
 from pandas import DataFrame
 
 

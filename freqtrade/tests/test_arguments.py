@@ -6,6 +6,7 @@ Unit test file for arguments.py
 
 import argparse
 import logging
+
 import pytest
 
 from freqtrade.arguments import Arguments
