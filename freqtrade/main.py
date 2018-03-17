@@ -49,7 +49,14 @@ def refresh_whitelist(whitelist: List[str]) -> List[str]:
                 'Ignoring %s from whitelist (reason: %s).',
                 pair, status.get('Notice') or 'wallet is not active'
             )
-
+        # Wallet will be delisted soon (and cause a loss)
+        if 'delisted' in str(status['Notice']).lower():
+            sanitized_whitelist.remove(pair)
+            logger.info(
+                'Ignoring %s from whitelist (reason: %s).',
+                pair, status.get('Notice') or 'wallet will be delisted soon'
+            )
+            
     # We need to remove pairs that are unknown
     final_list = [x for x in sanitized_whitelist if x in known_pairs]
     return final_list
