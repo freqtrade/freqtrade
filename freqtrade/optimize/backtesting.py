@@ -3,8 +3,8 @@
 """
 This module contains the backtesting logic
 """
-
-from typing import Dict, Tuple, Any
+from argparse import Namespace
+from typing import Dict, Tuple, Any, List, Optional
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
@@ -101,7 +101,10 @@ class Backtesting(object):
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
-    def _get_sell_trade_entry(self, pair, buy_row, partial_ticker, trade_count_lock, args):
+    def _get_sell_trade_entry(
+            self, pair: str, buy_row: DataFrame,
+            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[Tuple]:
+
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
@@ -132,7 +135,7 @@ class Backtesting(object):
                     sell_row.date
         return None
 
-    def backtest(self, args) -> DataFrame:
+    def backtest(self, args: Dict) -> DataFrame:
         """
         Implements backtesting functionality
 
@@ -273,7 +276,7 @@ class Backtesting(object):
         )
 
 
-def setup_configuration(args) -> Dict[str, Any]:
+def setup_configuration(args: Namespace) -> Dict[str, Any]:
     """
     Prepare the configuration for the backtesting
     :param args: Cli args from Arguments()
@@ -289,7 +292,7 @@ def setup_configuration(args) -> Dict[str, Any]:
     return config
 
 
-def start(args) -> None:
+def start(args: Namespace) -> None:
     """
     Start Backtesting script
     :param args: Cli args from Arguments()

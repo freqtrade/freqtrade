@@ -2,7 +2,7 @@
 
 import json
 import os
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 import gzip
 from freqtrade.exchange import get_ticker_history
 
@@ -13,8 +13,8 @@ from user_data.hyperopt_conf import hyperopt_optimize_conf
 logger = Logger(name=__name__).get_logger()
 
 
-def trim_tickerlist(tickerlist, timerange):
-    (stype, start, stop) = timerange
+def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -> List[Dict]:
+    stype, start, stop = timerange
     if stype == (None, 'line'):
         return tickerlist[stop:]
     elif stype == ('line', None):
@@ -25,7 +25,10 @@ def trim_tickerlist(tickerlist, timerange):
     return tickerlist
 
 
-def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
+def load_tickerdata_file(
+        datadir: str, pair: str,
+        ticker_interval: int,
+        timerange: Optional[Tuple[Tuple, int, int]] = None) -> Optional[List[Dict]]:
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
@@ -55,12 +58,12 @@ def load_tickerdata_file(datadir, pair, ticker_interval, timerange=None):
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = None,
-              refresh_pairs: Optional[bool] = False, timerange=None) -> Dict[str, List]:
+def load_data(datadir: str, ticker_interval: int,
+              pairs: Optional[List[str]] = None,
+              refresh_pairs: Optional[bool] = False,
+              timerange: Optional[Tuple[Tuple, int, int]] = None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
-    :param ticker_interval: ticker interval in minutes
-    :param pairs: list of pairs
     :return: dict
     """
     result = {}

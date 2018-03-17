@@ -10,10 +10,11 @@ import os
 import pickle
 import signal
 import sys
+from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List
 
 import numpy
 import talib.abstract as ta
@@ -240,7 +241,7 @@ class Hyperopt(Backtesting):
         return trade_loss + profit_loss + duration_loss
 
     @staticmethod
-    def generate_roi_table(params) -> Dict[int, float]:
+    def generate_roi_table(params: Dict) -> Dict[int, float]:
         """
         Generate the ROI table thqt will be used by Hyperopt
         """
@@ -335,7 +336,7 @@ class Hyperopt(Backtesting):
             ]),
         }
 
-    def has_space(self, space) -> bool:
+    def has_space(self, space: str) -> bool:
         """
         Tell if a space value is contained in the configuration
         """
@@ -433,7 +434,7 @@ class Hyperopt(Backtesting):
 
         return populate_buy_trend
 
-    def generate_optimizer(self, params) -> Dict:
+    def generate_optimizer(self, params: Dict) -> Dict:
         if self.has_space('roi'):
             self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
 
@@ -496,7 +497,7 @@ class Hyperopt(Backtesting):
                     results.duration.mean(),
                 )
 
-    def start(self):
+    def start(self) -> None:
         timerange = Arguments.parse_timerange(self.config.get('timerange'))
         data = load_data(
             datadir=self.config.get('datadir'),
@@ -571,7 +572,7 @@ class Hyperopt(Backtesting):
         # Store trials result to file to resume next time
         self.save_trials()
 
-    def signal_handler(self, sig, frame):
+    def signal_handler(self, sig, frame) -> None:
         """
         Hyperopt SIGINT handler
         """
@@ -585,7 +586,7 @@ class Hyperopt(Backtesting):
         sys.exit(0)
 
 
-def start(args) -> None:
+def start(args: Namespace) -> None:
     """
     Start Backtesting script
     :param args: Cli args from Arguments()
