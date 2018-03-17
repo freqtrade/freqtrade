@@ -3,7 +3,7 @@ Functions to analyze ticker data with indicators and produce buy and sell signal
 """
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import arrow
 from pandas import DataFrame, to_datetime
 from freqtrade.exchange import get_ticker_history
@@ -96,9 +96,7 @@ class Analyze(object):
         dataframe = self.populate_sell_trend(dataframe)
         return dataframe
 
-    # FIX: Maybe return False, if an error has occured,
-    #      Otherwise we might mask an error as an non-signal-scenario
-    def get_signal(self, pair: str, interval: int) -> (bool, bool):
+    def get_signal(self, pair: str, interval: int) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format BTC_ANT or BTC-ANT
@@ -108,7 +106,7 @@ class Analyze(object):
         ticker_hist = get_ticker_history(pair, interval)
         if not ticker_hist:
             self.logger.warning('Empty ticker history for pair %s', pair)
-            return (False, False)  # return False ?
+            return False, False
 
         try:
             dataframe = self.analyze_ticker(ticker_hist)
@@ -118,18 +116,18 @@ class Analyze(object):
                 pair,
                 str(error)
             )
-            return (False, False)  # return False ?
+            return False, False
         except Exception as error:
             self.logger.exception(
                 'Unexpected error when analyzing ticker for pair %s: %s',
                 pair,
                 str(error)
             )
-            return (False, False)  # return False ?
+            return False, False
 
         if dataframe.empty:
             self.logger.warning('Empty dataframe for pair %s', pair)
-            return (False, False)  # return False ?
+            return False, False
 
         latest = dataframe.iloc[-1]
 
@@ -141,7 +139,7 @@ class Analyze(object):
                 pair,
                 (arrow.utcnow() - signal_date).seconds // 60
             )
-            return (False, False)  # return False ?
+            return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         self.logger.debug(
@@ -151,7 +149,7 @@ class Analyze(object):
             str(buy),
             str(sell)
         )
-        return (buy, sell)
+        return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool, sell: bool) -> bool:
         """
