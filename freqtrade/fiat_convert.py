@@ -180,7 +180,7 @@ class CryptoToFiatConverter(object):
 
         if crypto_symbol not in self.CRYPTOMAP:
             raise ValueError(
-                'The crypto_symbol {} is not supported.'.format(crypto_symbol))
+                'The crypto symbol {} is not supported.'.format(crypto_symbol))
         try:
             return float(
                 self._coinmarketcap.ticker(
