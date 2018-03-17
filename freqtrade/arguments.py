@@ -6,7 +6,7 @@ import argparse
 import os
 import re
 import logging
-from typing import List
+from typing import List, Tuple, Optional
 
 from freqtrade import __version__
 from freqtrade.constants import Constants
@@ -22,7 +22,7 @@ class Arguments(object):
         self.parsed_arg = None
         self.parser = argparse.ArgumentParser(description=description)
 
-    def _load_args(self):
+    def _load_args(self) -> None:
         self.common_args_parser()
         self._build_subcommands()
 
@@ -205,7 +205,7 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: str) -> (List, int, int):
+    def parse_timerange(text: str) -> Optional[Tuple[List, int, int]]:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
@@ -236,10 +236,10 @@ class Arguments(object):
                     stop = rvals[index]
                     if stype[1] != 'date':
                         stop = int(stop)
-                return (stype, start, stop)
+                return stype, start, stop
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
-    def scripts_options(self):
+    def scripts_options(self) -> None:
         """
         Parses given arguments for plot scripts.
         """
