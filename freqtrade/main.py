@@ -6,7 +6,7 @@ Read the documentation to know what cli arguments you need.
 
 import logging
 import sys
-from typing import Dict
+from typing import List
 
 from freqtrade import (__version__)
 from freqtrade.arguments import Arguments
@@ -17,7 +17,7 @@ from freqtrade.logger import Logger
 logger = Logger(name='freqtrade').get_logger()
 
 
-def main(sysargv: Dict) -> None:
+def main(sysargv: List[str]) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None

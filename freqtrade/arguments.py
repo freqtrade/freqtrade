@@ -26,7 +26,7 @@ class Arguments(object):
         self.common_args_parser()
         self._build_subcommands()
 
-    def get_parsed_arg(self) -> List[str]:
+    def get_parsed_arg(self) -> argparse.Namespace:
         """
         Return the list of arguments
         :return: List[str] List of arguments
@@ -37,7 +37,7 @@ class Arguments(object):
 
         return self.parsed_arg
 
-    def parse_args(self) -> List[str]:
+    def parse_args(self) -> argparse.Namespace:
         """
         Parses given arguments and returns an argparse Namespace instance.
         """
