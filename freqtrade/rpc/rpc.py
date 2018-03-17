@@ -4,6 +4,7 @@ This module contains class to define a RPC communications
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import Tuple, Any
 
 import arrow
 import sqlalchemy as sql
@@ -32,7 +33,7 @@ class RPC(object):
             level=self.freqtrade.config.get('loglevel')
         ).get_logger()
 
-    def rpc_trade_status(self) -> (bool, Trade):
+    def rpc_trade_status(self) -> Tuple[bool, Any]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
@@ -41,9 +42,9 @@ class RPC(object):
         # Fetch open trade
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if self.freqtrade.get_state() != State.RUNNING:
-            return (True, '*Status:* `trader is not running`')
+            return True, '*Status:* `trader is not running`'
         elif not trades:
-            return (True, '*Status:* `no active trade`')
+            return True, '*Status:* `no active trade`'
         else:
             result = []
             for trade in trades:
@@ -82,14 +83,14 @@ class RPC(object):
                               ) if order else None,
                           )
                 result.append(message)
-            return (False, result)
+            return False, result
 
-    def rpc_status_table(self) -> (bool, DataFrame):
+    def rpc_status_table(self) -> Tuple[bool, Any]:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if self.freqtrade.get_state() != State.RUNNING:
-            return (True, '*Status:* `trader is not running`')
+            return True, '*Status:* `trader is not running`'
         elif not trades:
-            return (True, '*Status:* `no active order`')
+            return True, '*Status:* `no active order`'
         else:
             trades_list = []
             for trade in trades:
@@ -109,14 +110,16 @@ class RPC(object):
             # consisting of (error_occured?, result)
             # Another approach would be to just return the
             # result, or raise error
-            return (False, df_statuses)
+            return False, df_statuses
 
-    def rpc_daily_profit(self, timescale, stake_currency, fiat_display_currency):
+    def rpc_daily_profit(
+            self, timescale: int,
+            stake_currency: str, fiat_display_currency: str) -> Tuple[bool, Any]:
         today = datetime.utcnow().date()
         profit_days = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
-            return (True, '*Daily [n]:* `must be an integer greater than 0`')
+            return True, '*Daily [n]:* `must be an integer greater than 0`'
 
         fiat = self.freqtrade.fiat_converter
         for day in range(0, timescale):
@@ -155,9 +158,10 @@ class RPC(object):
             ]
             for key, value in profit_days.items()
         ]
-        return (False, stats)
+        return False, stats
 
-    def rpc_trade_statistics(self, stake_currency, fiat_display_currency) -> None:
+    def rpc_trade_statistics(
+            self, stake_currency: str, fiat_display_currency: str) -> Tuple[bool, Any]:
         """
         :return: cumulative profit statistics.
         """
@@ -200,7 +204,7 @@ class RPC(object):
             .order_by(sql.text('profit_sum DESC')).first()
 
         if not best_pair:
-            return (True, '*Status:* `no closed trade`')
+            return True, '*Status:* `no closed trade`'
 
         bp_pair, bp_rate = best_pair
 
@@ -241,7 +245,7 @@ class RPC(object):
             }
         )
 
-    def rpc_balance(self, fiat_display_currency):
+    def rpc_balance(self, fiat_display_currency: str) -> Tuple[bool, Any]:
         """
         :return: current account balance per crypto
         """
@@ -250,7 +254,7 @@ class RPC(object):
             if c['Balance'] or c['Available'] or c['Pending']
         ]
         if not balances:
-            return (True, '`All balances are zero.`')
+            return True, '`All balances are zero.`'
 
         output = []
         total = 0.0
@@ -277,17 +281,17 @@ class RPC(object):
         fiat = self.freqtrade.fiat_converter
         symbol = fiat_display_currency
         value = fiat.convert_amount(total, 'BTC', symbol)
-        return (False, (output, total, symbol, value))
+        return False, (output, total, symbol, value)
 
     def rpc_start(self) -> (bool, str):
         """
         Handler for start.
         """
         if self.freqtrade.get_state() == State.RUNNING:
-            return (True, '*Status:* `already running`')
+            return True, '*Status:* `already running`'
 
         self.freqtrade.update_state(State.RUNNING)
-        return (False, '`Starting trader ...`')
+        return False, '`Starting trader ...`'
 
     def rpc_stop(self) -> (bool, str):
         """
@@ -295,18 +299,18 @@ class RPC(object):
         """
         if self.freqtrade.get_state() == State.RUNNING:
             self.freqtrade.update_state(State.STOPPED)
-            return (False, '`Stopping trader ...`')
+            return False, '`Stopping trader ...`'
 
-        return (True, '*Status:* `already stopped`')
+        return True, '*Status:* `already stopped`'
 
     # FIX: no test for this!!!!
-    def rpc_forcesell(self, trade_id) -> None:
+    def rpc_forcesell(self, trade_id) -> Tuple[bool, Any]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
         :return: error or None
         """
-        def _exec_forcesell(trade: Trade) -> str:
+        def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
             if trade.open_order_id:
                 order = exchange.get_order(trade.open_order_id)
@@ -328,13 +332,13 @@ class RPC(object):
         # ---- EOF def _exec_forcesell ----
 
         if self.freqtrade.get_state() != State.RUNNING:
-            return (True, '`trader is not running`')
+            return True, '`trader is not running`'
 
         if trade_id == 'all':
             # Execute sell for all open orders
             for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
                 _exec_forcesell(trade)
-            return (False, '')
+            return False, ''
 
         # Query for trade
         trade = Trade.query.filter(
@@ -345,18 +349,18 @@ class RPC(object):
         ).first()
         if not trade:
             self.logger.warning('forcesell: Invalid argument received')
-            return (True, 'Invalid argument.')
+            return True, 'Invalid argument.'
 
         _exec_forcesell(trade)
-        return (False, '')
+        return False, ''
 
-    def rpc_performance(self) -> None:
+    def rpc_performance(self) -> Tuple[bool, Any]:
         """
         Handler for performance.
         Shows a performance statistic from finished trades
         """
         if self.freqtrade.get_state() != State.RUNNING:
-            return (True, '`trader is not running`')
+            return True, '`trader is not running`'
 
         pair_rates = Trade.session.query(Trade.pair,
                                          sql.func.sum(Trade.close_profit).label('profit_sum'),
@@ -369,15 +373,15 @@ class RPC(object):
         for (pair, rate, count) in pair_rates:
             trades.append({'pair': pair, 'profit': round(rate * 100, 2), 'count': count})
 
-        return (False, trades)
+        return False, trades
 
-    def rpc_count(self) -> None:
+    def rpc_count(self) -> Tuple[bool, Any]:
         """
         Returns the number of trades running
         :return: None
         """
         if self.freqtrade.get_state() != State.RUNNING:
-            return (True, '`trader is not running`')
+            return True, '`trader is not running`'
 
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        return (False, trades)
+        return False, trades
