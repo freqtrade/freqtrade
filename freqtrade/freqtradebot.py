@@ -27,7 +27,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None) -> bool:
+    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None):
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
