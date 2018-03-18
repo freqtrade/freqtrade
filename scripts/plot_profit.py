@@ -13,7 +13,8 @@ Optional Cli parameters
 
 import sys
 import json
-from typing import Dict
+from argparse import Namespace
+from typing import List, Optional
 import numpy as np
 
 from plotly import tools
@@ -34,8 +35,11 @@ logger = Logger(name="Graph profits").get_logger()
 
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
 # data:: ["BTC_ETH", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
-def make_profit_array(data, px, min_date, interval, filter_pairs=[]):
+def make_profit_array(
+        data: List, px: int, min_date: int,
+        interval: int, filter_pairs: Optional[List] = None) -> np.ndarray:
     pg = np.zeros(px)
+    filter_pairs = filter_pairs or []
     # Go through the trades
     # and make an total profit
     # array
@@ -63,7 +67,7 @@ def make_profit_array(data, px, min_date, interval, filter_pairs=[]):
     return pg
 
 
-def plot_profit(args) -> None:
+def plot_profit(args: Namespace) -> None:
     """
     Plots the total profit for all pairs.
     Note, the profit calculation isn't realistic.
@@ -183,14 +187,14 @@ def plot_profit(args) -> None:
     plot(fig, filename='freqtrade-profit-plot.html')
 
 
-def define_index(min_date, max_date, interval):
+def define_index(min_date: int, max_date: int, interval: int) -> int:
     """
     Return the index of a specific date
     """
     return int((max_date - min_date) / (interval * 60))
 
 
-def plot_parse_args(args):
+def plot_parse_args(args: List[str]) -> Namespace:
     """
     Parse args passed to the script
     :param args: Cli arguments
@@ -205,7 +209,7 @@ def plot_parse_args(args):
     return arguments.parse_args()
 
 
-def main(sysargv: Dict) -> None:
+def main(sysargv: List[str]) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None
