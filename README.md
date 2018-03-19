@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
 [![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/gcarq/freqtrade/maintainability)
 
 
 Simple High frequency trading bot for crypto currencies designed to 
@@ -104,7 +105,7 @@ vi config.json
 **3. Build your docker image and run it**
 ```bash
 docker build -t freqtrade .
-docker run --rm -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+docker run --rm -v /etc/localtime:/etc/localtime:ro -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
 
 

@@ -1,7 +1,7 @@
-FROM python:3.6.2
+FROM python:3.6.4-slim-stretch
 
 # Install TA-lib
-RUN apt-get update && apt-get -y install build-essential && apt-get clean
+RUN apt-get update && apt-get -y install curl build-essential && apt-get clean
 RUN curl -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz | \
   tar xzvf - && \
   cd ta-lib && \

@@ -79,6 +79,7 @@ def test_loss_calculation_prefer_correct_trade_count() -> None:
     Test Hyperopt.calculate_loss()
     """
     hyperopt = _HYPEROPT
+    Strategy({'strategy': 'default_strategy'})
 
     correct = hyperopt.calculate_loss(1, hyperopt.target_trades, 20)
     over = hyperopt.calculate_loss(1, hyperopt.target_trades + 100, 20)
@@ -169,10 +170,10 @@ def test_fmin_best_results(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
     mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
 
+    Strategy({'strategy': 'default_strategy'})
     hyperopt = Hyperopt(conf)
     hyperopt.trials = create_trials(mocker)
     hyperopt.tickerdata_to_dataframe = MagicMock()
-    Strategy({'strategy': 'default_strategy'})
     hyperopt.start()
 
     exists = [

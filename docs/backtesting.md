@@ -53,13 +53,13 @@ python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180
 
 **With a (custom) strategy file**
 ```bash
-python3.6 ./freqtrade/main.py -s currentstrategy backtesting
+python3 ./freqtrade/main.py -s currentstrategy backtesting
 ```
 Where `-s currentstrategy` refers to a filename `currentstrategy.py` in `freqtrade/user_data/strategies`
 
 **Exporting trades to file**
 ```bash
-freqtrade backtesting --export trades
+python3 ./freqtrade/main.py backtesting --export trades
 ```
 
 **Running backtest with smaller testset**  
@@ -99,7 +99,7 @@ cd user_data/data-20180113
 Possibly edit pairs.json file to include/exclude pairs
 
 ```bash
-python freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
+python3 freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
 ```
 
 The script will read your pairs.json file, and download ticker data
