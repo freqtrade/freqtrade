@@ -95,7 +95,7 @@ class Backtesting(object):
             len(results.index),
             results.profit_percent.mean() * 100.0,
             results.profit_BTC.sum(),
-            result.duration.mean(),
+            results.duration.mean(),
             len(results[results.profit_BTC > 0]),
             len(results[results.profit_BTC < 0])
         ])
