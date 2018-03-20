@@ -85,8 +85,6 @@ def test_freqtradebot_object() -> None:
     Test the FreqtradeBot object has the mandatory public methods
     """
     assert hasattr(FreqtradeBot, 'worker')
-    assert hasattr(FreqtradeBot, 'get_state')
-    assert hasattr(FreqtradeBot, 'update_state')
     assert hasattr(FreqtradeBot, 'clean')
     assert hasattr(FreqtradeBot, 'create_trade')
     assert hasattr(FreqtradeBot, 'get_target_bid')
