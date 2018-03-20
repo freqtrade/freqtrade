@@ -2,15 +2,18 @@
 import argparse
 import json
 import time
-from copy import deepcopy
-from unittest.mock import MagicMock
-
 import datetime
 import pytest
+import numpy as np
+import pandas as pd
+from copy import deepcopy
+from unittest.mock import MagicMock
 from jsonschema import ValidationError
+
 from freqtrade.analyze import parse_ticker_dataframe
 from freqtrade.misc import (common_args_parser, file_dump_json, load_config,
                             parse_args, parse_timerange, throttle, datesarray_to_datetimearray)
+import freqtrade.misc as misc
 
 
 def test_throttle():
@@ -108,6 +111,20 @@ def test_parse_args_backtesting_invalid():
         parse_args(['backtesting --ticker-interval', 'abc'], '')
 
 
+def test_scripts_options():
+    # Test with -p arg given
+    args = ['-p', 'BTC_ETH']
+    parser = argparse.ArgumentParser()
+    misc.scripts_options(parser)
+    call_args = parser.parse_args(args)
+    assert call_args.pair == 'BTC_ETH'
+    # Test with NO -p arg given
+    parser = argparse.ArgumentParser()
+    misc.scripts_options(parser)
+    call_args = parser.parse_args([])
+    assert not call_args.pair
+
+
 def test_parse_args_backtesting_custom():
     args = [
         '-c', 'test_conf.json',
@@ -194,3 +211,28 @@ def test_datesarray_to_datetimearray(ticker_history):
 
     date_len = len(dates)
     assert date_len == 3
+
+
+def test_common_datearray():
+    dts = [datetime.datetime(2018, 2, 1),
+           datetime.datetime(2018, 2, 2),
+           datetime.datetime(2018, 2, 3),
+           datetime.datetime(2018, 2, 4)]
+    dt64 = [np.datetime64(dt) for dt in dts]
+
+    def check(totlen, idx1, idx2):
+        df1 = pd.DataFrame([[dt64[x], x] for x in idx1],
+                           columns=['date', 'foo'])
+        df2 = pd.DataFrame([[dt64[x], x] for x in idx2],
+                           columns=['date', 'foo'])
+        datearray = misc.common_datearray({'q1': df1, 'q2': df2})
+        assert len(datearray) == totlen
+        for i in range(0, totlen):
+            assert dts[i] == datearray[i]
+
+    # ensure two merged date arrays with unique dates
+    check(4, [0, 2], [1, 3])
+    # ensure two merged date arrays with unique dates
+    check(4, [0, 2], [1, 2, 3])
+    # ensure unsorted arrays result in sorted arrays
+    check(4, [2, 0], [3, 1])
