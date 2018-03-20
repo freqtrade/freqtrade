@@ -1,7 +1,6 @@
 # Freqtrade rules
 freqtrade/tests/testdata/*.json
 hyperopt_conf.py
-config.json
 *.sqlite
 .hyperopt
 logfile.txt
