@@ -227,7 +227,13 @@ class Backtesting(object):
                 timerange=timerange
             )
 
-        max_open_trades = self.config.get('max_open_trades', 0)
+        # Ignore max_open_trades in backtesting, except realistic flag was passed
+        if self.config.get('realistic_simulation', False):
+            max_open_trades = self.config['max_open_trades']
+        else:
+            self.logger.info('Ignoring max_open_trades (realistic_simulation not set) ...')
+            max_open_trades = 0
+
         preprocessed = self.tickerdata_to_dataframe(data)
 
         # Print timeframe
