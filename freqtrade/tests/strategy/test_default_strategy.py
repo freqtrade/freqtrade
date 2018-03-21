@@ -1,8 +1,10 @@
 import json
+
 import pytest
 from pandas import DataFrame
-from freqtrade.strategy.default_strategy import DefaultStrategy, class_name
+
 from freqtrade.analyze import Analyze
+from freqtrade.strategy.default_strategy import DefaultStrategy, class_name
 
 
 @pytest.fixture

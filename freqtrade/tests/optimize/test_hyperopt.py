@@ -3,6 +3,7 @@ import json
 import os
 from copy import deepcopy
 from unittest.mock import MagicMock
+
 import pandas as pd
 
 from freqtrade.optimize.__init__ import load_tickerdata_file

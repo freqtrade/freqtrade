@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 """This script generate json data from bittrex"""
-import sys
 import json
+import sys
 
 from freqtrade import exchange
-from freqtrade.exchange import Bittrex
 from freqtrade import misc
+from freqtrade.exchange import Bittrex
 
 parser = misc.common_args_parser('download utility')
 parser.add_argument(

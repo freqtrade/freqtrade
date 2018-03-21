@@ -1,4 +1,5 @@
 import pandas as pd
+
 from freqtrade.indicator_helpers import went_up, went_down
 
 

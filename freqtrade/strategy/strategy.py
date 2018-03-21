@@ -7,11 +7,12 @@ import importlib
 import os
 import sys
 from collections import OrderedDict
-from pandas import DataFrame
-from freqtrade.logger import Logger
-from freqtrade.constants import Constants
-from freqtrade.strategy.interface import IStrategy
 
+from pandas import DataFrame
+
+from freqtrade.constants import Constants
+from freqtrade.logger import Logger
+from freqtrade.strategy.interface import IStrategy
 
 sys.path.insert(0, r'../../user_data/strategies')
 
@@ -59,7 +60,7 @@ class Strategy(object):
         # Minimal ROI designed for the strategy
         self.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.custom_strategy.minimal_roi.items()}.items(),
-            key=lambda tuple: tuple[0]))  # sort after converting to number
+            key=lambda t: t[0]))  # sort after converting to number
 
         # Optimal stoploss designed for the strategy
         self.stoploss = float(self.custom_strategy.stoploss)

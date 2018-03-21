@@ -3,8 +3,9 @@ This module contains the configuration class
 """
 
 import json
+from argparse import Namespace
+from typing import Dict, Any
 
-from typing import Dict, List, Any
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
@@ -17,7 +18,7 @@ class Configuration(object):
     Class to read and init the bot configuration
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
-    def __init__(self, args: List[str], do_not_init=False) -> None:
+    def __init__(self, args: Namespace) -> None:
         self.args = args
         self.logging = Logger(name=__name__)
         self.logger = self.logging.get_logger()

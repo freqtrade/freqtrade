@@ -1,20 +1,21 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import json
-import random
 import math
-from typing import List
+import random
 from copy import deepcopy
+from typing import List
 from unittest.mock import MagicMock
-from arrow import Arrow
-import pandas as pd
-import numpy as np
-from freqtrade import optimize
-from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
-from freqtrade.arguments import Arguments
-from freqtrade.analyze import Analyze
-from freqtrade.tests.conftest import default_conf, log_has
 
+import numpy as np
+import pandas as pd
+from arrow import Arrow
+
+from freqtrade import optimize
+from freqtrade.analyze import Analyze
+from freqtrade.arguments import Arguments
+from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
+from freqtrade.tests.conftest import default_conf, log_has
 
 # Avoid to reinit the same object again and again
 _BACKTESTING = Backtesting(default_conf())

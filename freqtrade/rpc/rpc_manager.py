@@ -28,7 +28,7 @@ class RPCManager(object):
         self.telegram = None
         self._init()
 
-    def _init(self):
+    def _init(self) -> None:
         """
         Init RPC modules
         :return:

@@ -5,15 +5,15 @@ Unit test file for analyse.py
 """
 
 import datetime
-from unittest.mock import MagicMock
 import logging
+from unittest.mock import MagicMock
+
 import arrow
 from pandas import DataFrame
 
 from freqtrade.analyze import Analyze, SignalType
 from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.tests.conftest import log_has
-
 
 # Avoid to reinit the same object again and again
 _ANALYZE = Analyze({'strategy': 'default_strategy'})

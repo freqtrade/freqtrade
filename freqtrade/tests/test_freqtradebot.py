@@ -5,22 +5,23 @@ Unit test file for freqtradebot.py
 """
 
 import logging
+import re
 import time
-from unittest.mock import MagicMock
 from copy import deepcopy
 from typing import Dict, Optional
+from unittest.mock import MagicMock
+
 import arrow
 import pytest
 import requests
-import re
 from sqlalchemy import create_engine
 
-from freqtrade.tests.conftest import log_has
 from freqtrade import DependencyException, OperationalException
 from freqtrade.exchange import Exchanges
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.state import State
 from freqtrade.persistence import Trade
+from freqtrade.state import State
+from freqtrade.tests.conftest import log_has
 
 
 # Functions for recurrent object patching

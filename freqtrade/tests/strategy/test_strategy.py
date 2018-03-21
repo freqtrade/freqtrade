@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import logging
+
 from freqtrade.strategy.strategy import Strategy
 
 

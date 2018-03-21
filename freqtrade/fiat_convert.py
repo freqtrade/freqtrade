@@ -5,12 +5,13 @@ e.g BTC to USD
 
 import logging
 import time
+
 from coinmarketcap import Market
 
 logger = logging.getLogger(__name__)
 
 
-class CryptoFiat():
+class CryptoFiat(object):
     """
     Object to describe what is the price of Crypto-currency in a FIAT
     """

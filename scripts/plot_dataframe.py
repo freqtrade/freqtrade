@@ -13,8 +13,9 @@ Optional Cli parameters
 """
 
 import sys
+from argparse import Namespace
 
-from typing import Dict
+from typing import List
 
 from plotly import tools
 from plotly.offline import plot
@@ -30,10 +31,9 @@ import freqtrade.optimize as optimize
 logger = Logger(name="Graph dataframe").get_logger()
 
 
-def plot_analyzed_dataframe(args) -> None:
+def plot_analyzed_dataframe(args: Namespace) -> None:
     """
     Calls analyze() and plots the returned dataframe
-    :param pair: pair as str
     :return: None
     """
     pair = args.pair.replace('-', '_')
@@ -153,7 +153,7 @@ def plot_analyzed_dataframe(args) -> None:
     plot(fig, filename='freqtrade-plot.html')
 
 
-def plot_parse_args(args):
+def plot_parse_args(args: List[str]) -> Namespace:
     """
     Parse args passed to the script
     :param args: Cli arguments
@@ -168,7 +168,7 @@ def plot_parse_args(args):
     return arguments.parse_args()
 
 
-def main(sysargv: Dict) -> None:
+def main(sysargv: List[str]) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None

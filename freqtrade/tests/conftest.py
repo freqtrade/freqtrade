@@ -1,14 +1,15 @@
 # pragma pylint: disable=missing-docstring
-from datetime import datetime
-from unittest.mock import MagicMock
-from functools import reduce
-import logging
 import json
+import logging
+from datetime import datetime
+from functools import reduce
+from unittest.mock import MagicMock
+
 import arrow
 import pytest
 from jsonschema import validate
-from telegram import Chat, Message, Update
 from sqlalchemy import create_engine
+from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
