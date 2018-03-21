@@ -208,13 +208,12 @@ class FreqtradeBot(object):
         :return: List of pairs
         """
         summaries = sorted(
-            (s for s in exchange.get_market_summaries() if
-             s['MarketName'].startswith(base_currency)),
-            key=lambda s: s.get(key) or 0.0,
+            (v for s, v in exchange.get_market_summaries().items() if v['symbol'].endswith(base_currency)),
+            key=lambda v: v.get('info').get(key) or 0.0,
             reverse=True
         )
 
-        return [s['MarketName'].replace('-', '_') for s in summaries]
+        return [s['symbol'] for s in summaries]
 
     def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
         """
@@ -227,15 +226,15 @@ class FreqtradeBot(object):
         sanitized_whitelist = whitelist
         health = exchange.get_wallet_health()
         known_pairs = set()
-        for status in health:
-            pair = '{}_{}'.format(self.config['stake_currency'], status['Currency'])
+        for symbol, status in health.items():
+            pair = f"{status['base']}/{self.config['stake_currency']}"
             # pair is not int the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
                 continue
             # else the pair is valid
             known_pairs.add(pair)
             # Market is not active
-            if not status['IsActive']:
+            if not status['active']:
                 sanitized_whitelist.remove(pair)
                 self.logger.info(
                     'Ignoring %s from whitelist (reason: %s).',
@@ -328,7 +327,7 @@ class FreqtradeBot(object):
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee(),
+            fee=exchange.get_fee_maker(),
             open_rate=buy_limit,
             open_date=datetime.utcnow(),
             exchange=exchange.get_name().upper(),
