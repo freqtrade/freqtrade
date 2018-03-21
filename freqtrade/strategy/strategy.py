@@ -3,15 +3,16 @@
 """
 This module load custom strategies
 """
+import importlib
 import os
 import sys
-import logging
-import importlib
 from collections import OrderedDict
 
 from pandas import DataFrame
-from freqtrade.strategy.interface import IStrategy
 
+from freqtrade.constants import Constants
+from freqtrade.logger import Logger
+from freqtrade.strategy.interface import IStrategy
 
 sys.path.insert(0, r'../../user_data/strategies')
 
@@ -20,32 +21,19 @@ class Strategy(object):
     """
     This class contains all the logic to load custom strategy class
     """
-    __instance = None
-
-    DEFAULT_STRATEGY = 'default_strategy'
-
-    def __new__(cls) -> object:
-        """
-        Used to create the Singleton
-        :return: Strategy object
-        """
-        if Strategy.__instance is None:
-            Strategy.__instance = object.__new__(cls)
-        return Strategy.__instance
-
-    def init(self, config: dict) -> None:
+    def __init__(self, config: dict = {}) -> None:
         """
         Load the custom class from config parameter
         :param config:
         :return:
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = Logger(name=__name__).get_logger()
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         if 'strategy' in config:
             strategy = config['strategy']
         else:
-            strategy = self.DEFAULT_STRATEGY
+            strategy = Constants.DEFAULT_STRATEGY
 
         # Load the strategy
         self._load_strategy(strategy)
@@ -72,12 +60,12 @@ class Strategy(object):
         # Minimal ROI designed for the strategy
         self.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.custom_strategy.minimal_roi.items()}.items(),
-            key=lambda tuple: tuple[0]))  # sort after converting to number
+            key=lambda t: t[0]))  # sort after converting to number
 
         # Optimal stoploss designed for the strategy
         self.stoploss = float(self.custom_strategy.stoploss)
 
-        self.ticker_interval = self.custom_strategy.ticker_interval
+        self.ticker_interval = int(self.custom_strategy.ticker_interval)
 
     def _load_strategy(self, strategy_name: str) -> None:
         """

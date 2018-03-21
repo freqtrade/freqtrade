@@ -1,7 +1,9 @@
 # pragma pylint: disable=missing-docstring, C0103
 import os
+
 import pytest
 from sqlalchemy import create_engine
+
 from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 

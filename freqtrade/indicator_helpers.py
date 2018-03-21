@@ -1,19 +1,19 @@
 from math import exp, pi, sqrt, cos
 
-import numpy
+import numpy as np
 import talib as ta
 from pandas import Series
 
 
-def went_up(series: Series) -> Series:
+def went_up(series: Series) -> bool:
     return series > series.shift(1)
 
 
-def went_down(series: Series) -> Series:
+def went_down(series: Series) -> bool:
     return series < series.shift(1)
 
 
-def ehlers_super_smoother(series: Series, smoothing: float = 6):
+def ehlers_super_smoother(series: Series, smoothing: float = 6) -> type(Series):
     magic = pi * sqrt(2) / smoothing
     a1 = exp(-magic)
     coeff2 = 2 * a1 * cos(magic)
@@ -29,7 +29,7 @@ def ehlers_super_smoother(series: Series, smoothing: float = 6):
     return filtered
 
 
-def fishers_inverse(series: Series, smoothing: float = 0):
+def fishers_inverse(series: Series, smoothing: float = 0) -> np.ndarray:
     """ Does a smoothed fishers inverse transformation.
         Can be used with any oscillator that goes from 0 to 100 like RSI or MFI """
     v1 = 0.1 * (series - 50)
@@ -37,4 +37,4 @@ def fishers_inverse(series: Series, smoothing: float = 0):
         v2 = ta.WMA(v1.values, timeperiod=smoothing)
     else:
         v2 = v1
-    return (numpy.exp(2 * v2)-1) / (numpy.exp(2 * v2) + 1)
+    return (np.exp(2 * v2)-1) / (np.exp(2 * v2) + 1)

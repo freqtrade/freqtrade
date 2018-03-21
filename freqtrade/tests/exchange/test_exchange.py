@@ -1,15 +1,16 @@
 # pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
 # pragma pylint: disable=protected-access
-from unittest.mock import MagicMock
-from random import randint
 import logging
-from requests.exceptions import RequestException
-import pytest
+from random import randint
+from unittest.mock import MagicMock
 
+import pytest
+from requests.exceptions import RequestException
+
+import freqtrade.exchange as exchange
 from freqtrade import OperationalException
 from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
     get_ticker, get_ticker_history, cancel_order, get_name, get_fee
-import freqtrade.exchange as exchange
 from freqtrade.tests.conftest import log_has
 
 API_INIT = False

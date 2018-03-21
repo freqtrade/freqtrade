@@ -1,3 +1,7 @@
+"""
+This module contains the class to persist trades into SQLite
+"""
+
 import logging
 from datetime import datetime
 from decimal import Decimal, getcontext
@@ -72,6 +76,9 @@ def clean_dry_run_db() -> None:
 
 
 class Trade(_DECL_BASE):
+    """
+    Class used to define a trade structure
+    """
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
@@ -200,6 +207,7 @@ class Trade(_DECL_BASE):
         Calculates the profit in percentage (including fee).
         :param rate: rate to compare with (optional).
         If rate is not set self.close_rate will be used
+        :param fee: fee to use on the close rate (optional).
         :return: profit in percentage as float
         """
         getcontext().prec = 8

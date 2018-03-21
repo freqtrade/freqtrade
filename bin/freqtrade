@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
 
-from freqtrade.main import main
-main()
+import sys
+
+from freqtrade.main import main, set_loggers
+set_loggers()
+main(sys.argv[1:])
