@@ -94,13 +94,14 @@ class FreqtradeBot(object):
         :return: current service state
         """
         # Log state transition
-        if self.state != old_state:
-            self.rpc.send_msg('*Status:* `{}`'.format(self.state.name.lower()))
-            self.logger.info('Changing state to: %s', self.state.name)
+        state = self.state
+        if state != old_state:
+            self.rpc.send_msg('*Status:* `{}`'.format(state.name.lower()))
+            self.logger.info('Changing state to: %s', state.name)
 
-        if self.state == State.STOPPED:
+        if state == State.STOPPED:
             time.sleep(1)
-        elif self.state == State.RUNNING:
+        elif state == State.RUNNING:
             min_secs = self.config.get('internals', {}).get(
                 'process_throttle_secs',
                 Constants.PROCESS_THROTTLE_SECS
@@ -114,7 +115,7 @@ class FreqtradeBot(object):
             self._throttle(func=self._process,
                            min_secs=min_secs,
                            nb_assets=nb_assets)
-        return self.state
+        return state
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
         """
