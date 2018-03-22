@@ -41,7 +41,7 @@ class FreqtradeBot(object):
         self.logger = Logger(name=__name__, level=config.get('loglevel')).get_logger()
 
         # Init bot states
-        self._state = State.STOPPED
+        self.state = State.STOPPED
 
         # Init objects
         self.config = config
@@ -71,9 +71,9 @@ class FreqtradeBot(object):
         initial_state = self.config.get('initial_state')
 
         if initial_state:
-            self.update_state(State[initial_state.upper()])
+            self.state = State[initial_state.upper()]
         else:
-            self.update_state(State.STOPPED)
+            self.state = State.STOPPED
 
     def clean(self) -> bool:
         """
@@ -82,25 +82,10 @@ class FreqtradeBot(object):
         """
         self.rpc.send_msg('*Status:* `Stopping trader...`')
         self.logger.info('Stopping trader and cleaning up modules...')
-        self.update_state(State.STOPPED)
+        self.state = State.STOPPED
         self.rpc.cleanup()
         persistence.cleanup()
         return True
-
-    def update_state(self, state: State) -> None:
-        """
-        Updates the application state
-        :param state: new state
-        :return: None
-        """
-        self._state = state
-
-    def get_state(self) -> State:
-        """
-        Gets the current application state
-        :return:
-        """
-        return self._state
 
     def worker(self, old_state: None) -> State:
         """
@@ -108,15 +93,15 @@ class FreqtradeBot(object):
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
-        new_state = self.get_state()
         # Log state transition
-        if new_state != old_state:
-            self.rpc.send_msg('*Status:* `{}`'.format(new_state.name.lower()))
-            self.logger.info('Changing state to: %s', new_state.name)
+        state = self.state
+        if state != old_state:
+            self.rpc.send_msg('*Status:* `{}`'.format(state.name.lower()))
+            self.logger.info('Changing state to: %s', state.name)
 
-        if new_state == State.STOPPED:
+        if state == State.STOPPED:
             time.sleep(1)
-        elif new_state == State.RUNNING:
+        elif state == State.RUNNING:
             min_secs = self.config.get('internals', {}).get(
                 'process_throttle_secs',
                 Constants.PROCESS_THROTTLE_SECS
@@ -130,7 +115,7 @@ class FreqtradeBot(object):
             self._throttle(func=self._process,
                            min_secs=min_secs,
                            nb_assets=nb_assets)
-        return new_state
+        return state
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
         """
@@ -196,7 +181,7 @@ class FreqtradeBot(object):
                 )
             )
             self.logger.exception('OperationalException. Stopping trader ...')
-            self.update_state(State.STOPPED)
+            self.state = State.STOPPED
         return state_changed
 
     @cached(TTLCache(maxsize=1, ttl=1800))

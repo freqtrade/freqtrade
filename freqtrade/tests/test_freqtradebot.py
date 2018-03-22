@@ -85,8 +85,6 @@ def test_freqtradebot_object() -> None:
     Test the FreqtradeBot object has the mandatory public methods
     """
     assert hasattr(FreqtradeBot, 'worker')
-    assert hasattr(FreqtradeBot, 'get_state')
-    assert hasattr(FreqtradeBot, 'update_state')
     assert hasattr(FreqtradeBot, 'clean')
     assert hasattr(FreqtradeBot, 'create_trade')
     assert hasattr(FreqtradeBot, 'get_target_bid')
@@ -104,12 +102,12 @@ def test_freqtradebot(mocker, default_conf) -> None:
     Test __init__, _init_modules, update_state, and get_state methods
     """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    assert freqtrade.get_state() is State.RUNNING
+    assert freqtrade.state is State.RUNNING
 
     conf = deepcopy(default_conf)
     conf.pop('initial_state')
     freqtrade = FreqtradeBot(conf)
-    assert freqtrade.get_state() is State.STOPPED
+    assert freqtrade.state is State.STOPPED
 
 
 def test_clean(mocker, default_conf, caplog) -> None:
@@ -120,10 +118,10 @@ def test_clean(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.persistence.cleanup', mock_cleanup)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    assert freqtrade.get_state() == State.RUNNING
+    assert freqtrade.state == State.RUNNING
 
     assert freqtrade.clean()
-    assert freqtrade.get_state() == State.STOPPED
+    assert freqtrade.state == State.STOPPED
     assert log_has('Stopping trader and cleaning up modules...', caplog.record_tuples)
     assert mock_cleanup.call_count == 1
 
@@ -152,7 +150,7 @@ def test_worker_stopped(mocker, default_conf, caplog) -> None:
     mock_sleep = mocker.patch('time.sleep', return_value=None)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    freqtrade.update_state(State.STOPPED)
+    freqtrade.state = State.STOPPED
     state = freqtrade.worker(old_state=State.RUNNING)
     assert state is State.STOPPED
     assert log_has('Changing state to: STOPPED', caplog.record_tuples)
@@ -472,11 +470,11 @@ def test_process_operational_exception(default_conf, ticker, health, mocker) -> 
         buy=MagicMock(side_effect=OperationalException)
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
-    assert freqtrade.get_state() == State.RUNNING
+    assert freqtrade.state == State.RUNNING
 
     result = freqtrade._process()
     assert result is False
-    assert freqtrade.get_state() == State.STOPPED
+    assert freqtrade.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
 
 
