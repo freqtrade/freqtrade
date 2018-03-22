@@ -497,7 +497,7 @@ class Hyperopt(Backtesting):
                     results.duration.mean(),
                 )
 
-    def start(self) -> None:
+    def sta(self) -> None:
         timerange = Arguments.parse_timerange(self.config.get('timerange'))
         data = load_data(
             datadir=self.config.get('datadir'),
@@ -586,7 +586,7 @@ class Hyperopt(Backtesting):
         sys.exit(0)
 
 
-def start(args: Namespace) -> None:
+def sta(args: Namespace) -> None:
     """
     Start Backtesting script
     :param args: Cli args from Arguments()
@@ -612,5 +612,4 @@ def start(args: Namespace) -> None:
     config['exchange']['secret'] = ''
 
     # Initialize backtesting object
-    hyperopt = Hyperopt(config)
-    hyperopt.start()
+    Hyperopt(config).start()

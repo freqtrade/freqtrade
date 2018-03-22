@@ -200,7 +200,7 @@ class Arguments(object):
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
-        hyperopt_cmd.set_defaults(func=hyperopt.start)
+        hyperopt_cmd.set_defaults(func=hyperopt.sta)
         self.optimizer_shared_options(hyperopt_cmd)
         self.hyperopt_options(hyperopt_cmd)
 
