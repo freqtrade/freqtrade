@@ -52,6 +52,9 @@ class Configuration(object):
         if self.args.strategy_path:
             config.update({'strategy_path': self.args.strategy_path})
 
+        # Add the hyperopt file to use
+        config.update({'hyperopt': self.args.hyperopt})
+
         # Load Common configuration
         config = self._load_common_config(config)
 
