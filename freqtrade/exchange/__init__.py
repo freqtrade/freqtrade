@@ -11,7 +11,6 @@ import arrow
 import requests
 
 from freqtrade import OperationalException
-from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 
