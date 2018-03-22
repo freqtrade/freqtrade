@@ -21,16 +21,19 @@ and still take a long time.
 
 We recommend you start by taking a look at `hyperopt.py` file located in [freqtrade/optimize](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py)
  
-### Configure your Guards and Triggers
+### 1. Configure your Guards and Triggers
 
-There are two places you need to change to add a new buy strategy for testing:
-- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L231-L264).
-- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L213-L224) 
-and the associated methods `indicator_space`, `roi_space`, `stoploss_space`.
+There are two places you need to change in your strategy file to add a 
+new buy strategy for testing:
 
-There you have two different type of indicators: 1. `guards` and 2. `triggers`.
-1. Guards are conditions like "never buy if ADX < 10", or "never buy if 
-current price is over EMA10".
+- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L230-L251).
+- Inside [indicator_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L207-L223).
+
+There you have two different type of indicators: 1. `guards` and 2. 
+`triggers`.
+
+1. Guards are conditions like "never buy if ADX < 10", or never buy if 
+current price is over EMA10.
 2. Triggers are ones that actually trigger buy in specific moment, like 
 "buy when EMA5 crosses over EMA10" or "buy when close price touches lower 
 bollinger band".
@@ -124,8 +127,10 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 ./freqtrade/main.py -c config.json hyperopt -e 5000
+python3 ./freqtrade/main.py -s <strategyname> --hyperopt <hyperoptname> -c config.json hyperopt -e 5000
 ```
+
+Use `<strategyname>` and `<hyperoptname>` as the names of the custom strategy and custom hyperopt used.
 
 The `-e` flag will set how many evaluations hyperopt will do. We recommend
 running at least several thousand evaluations.
