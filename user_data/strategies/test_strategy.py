@@ -13,9 +13,35 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
 
-# Make a backup of default_strategy then move this file over your default strategy in freqtrade/strategy and to run run with -s all to find best values when running hyperopt.
-# 
+# Make a backup of default_strategy then move this file over your default strategy in freqtrade/strategy and to run:
+# 'python3.6 freqtrade/main.py -c config.json hyperopt -s all --realistic-simulation -i 5'
 # Make sure to take note of the if statements at the bottom of the file, and the pattern of > < and >= <= and the triggers configuration.
+# Then, take note of the results: There is one trigger in the results, map the trigger as an example:
+# 'Trigger: 7'
+# The 7th trigger in this file's if statement such as:
+# 'sar_reversal': (qtpylib.crossed_above(
+#     dataframe['close'], dataframe['sar']
+#
+# Drop the trigger into 'def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:' as:
+# dataframe['close'], dataframe['sar'] &
+# Then for your other values such as: 'Mfi-Value: 15.00'
+# The if statement looks like: conditions.append(dataframe['mfi'] < params['mfi']['value']
+# Drop this in as:
+# (dataframe['mfi'] < 15.00) &
+# The last condition in 'def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:' will have no &
+
+
+### As an example the sell/buy trend looks like this:
+#        dataframe.loc[
+#            (
+#                (dataframe['adx'] > 70) &
+#                (dataframe['tema'] < dataframe['tema'].shift(1))
+#            ),
+#            'sell'] = 1
+#
+
+
+
 
 class_name = 'DefaultStrategy'
 
