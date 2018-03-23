@@ -19,6 +19,8 @@ command = [
     '--mongo=127.0.0.1:1234/{}'.format(DB_NAME),
     '--poll-interval=0.1',
     '--workdir={}'.format(WORK_DIR),
+    '--max-jobs=100000',
+    '--max-consecutive-failures=100000',
 ]
 processes = [subprocess.Popen(command) for i in range(PROC_COUNT)]
 
