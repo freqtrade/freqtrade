@@ -22,7 +22,7 @@ import numpy # noqa
 # 'sar_reversal': (qtpylib.crossed_above(
 #     dataframe['close'], dataframe['sar']
 #
-# Drop the trigger into 'def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:' as:
+# Drop the trigger into 'def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:' into your default_strategy backup as:
 # dataframe['close'], dataframe['sar'] &
 # Then for your other values such as: 'Mfi-Value: 15.00'
 # The if statement looks like: conditions.append(dataframe['mfi'] < params['mfi']['value']
@@ -40,7 +40,7 @@ import numpy # noqa
 #            'sell'] = 1
 #
 
-
+# Once done, move your backup strategy back over this one and backtest.
 
 
 class_name = 'DefaultStrategy'
