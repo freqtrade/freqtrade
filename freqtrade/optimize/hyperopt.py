@@ -21,7 +21,7 @@ import talib.abstract as ta
 from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
-
+import fire
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
@@ -29,6 +29,18 @@ from freqtrade.logger import Logger
 from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
 from user_data.hyperopt_conf import hyperopt_optimize_conf
+
+
+
+class Testz():
+    db_name = 'freqtrade_hyperopt'
+    MongoTrials(
+        arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
+        exp_key='exp1'
+        )
+    async = 'Null'
+    attachments = 'Null'
+
 
 
 class Hyperopt(Backtesting):
@@ -68,7 +80,7 @@ class Hyperopt(Backtesting):
 
         # Hyperopt Trials
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
-        self.trials = Trials()
+        self.trials = Testz()
 
     @staticmethod
     def populate_indicators(dataframe: DataFrame) -> DataFrame:
@@ -515,12 +527,6 @@ class Hyperopt(Backtesting):
             self.logger.info(
                 'Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!'
             )
-
-            db_name = 'freqtrade_hyperopt'
-            self.trials = MongoTrials(
-                arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
-                exp_key='exp1'
-            )
         else:
             self.logger.info('Preparing Trials..')
             signal.signal(signal.SIGINT, self.signal_handler)
@@ -536,26 +542,24 @@ class Hyperopt(Backtesting):
                     self.total_tries
                 )
 
-        try:
-            # change the Logging format
-            self.logging.set_format('\n%(message)s')
+        A = self.generate_optimizer
+        B = self.hyperopt_space()
+        C = self.total_tries
 
+        def Tests():
             best_parameters = fmin(
                 fn=self.generate_optimizer,
                 space=self.hyperopt_space(),
                 algo=tpe.suggest,
                 max_evals=self.total_tries,
-                trials=self.trials
+                trials=MongoTrials('mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs')
             )
-
-            results = sorted(self.trials.results, key=itemgetter('loss'))
-            best_result = results[0]['result']
-
-        except ValueError:
-            best_parameters = {}
-            best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
-                          'try with more epochs (param: -e).'
-
+        # change the Logging format
+        self.logging.set_format('\n%(message)s')
+        # best_parameters = Tests(self)
+        best_parameters = Tests()
+        results = sorted(self.trials.results, key=itemgetter('loss'))
+        best_result = results[0]['result']
         # Improve best parameter logging display
         if best_parameters:
             best_parameters = space_eval(
@@ -584,6 +588,7 @@ class Hyperopt(Backtesting):
         self.save_trials()
         self.log_trials_result()
         sys.exit(0)
+
 
 
 def start(args: Namespace) -> None:
