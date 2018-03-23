@@ -2,7 +2,8 @@
 import multiprocessing
 import os
 import subprocess
-
+import sys
+import shlex
 PROC_COUNT = multiprocessing.cpu_count() - 1
 DB_NAME = 'freqtrade_hyperopt'
 WORK_DIR = os.path.join(
@@ -22,8 +23,6 @@ command = [
     '--max-jobs=100000',
     '--max-consecutive-failures=100000',
 ]
-processes = [subprocess.Popen(command) for i in range(PROC_COUNT)]
-
-# Join all workers
-for proc in processes:
-    proc.wait()
+def run(command):
+    subprocess.call(command, shell=True))
+run(command)
