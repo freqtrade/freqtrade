@@ -31,15 +31,6 @@ from freqtrade.optimize.backtesting import Backtesting
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 
-
-class Testz():
-    db_name = 'freqtrade_hyperopt'
-    MongoTrials(
-        arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
-        exp_key='exp1'
-        )
-
-
 class Hyperopt(Backtesting):
     """
     Hyperopt class, this class contains all the logic to run a hyperopt simulation
@@ -77,7 +68,7 @@ class Hyperopt(Backtesting):
 
         # Hyperopt Trials
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
-        self.trials = Testz()
+        self.trials = Trials()
 
     @staticmethod
     def populate_indicators(dataframe: DataFrame) -> DataFrame:
@@ -524,6 +515,12 @@ class Hyperopt(Backtesting):
             self.logger.info(
                 'Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!'
             )
+
+            db_name = 'freqtrade_hyperopt'
+            self.trials = MongoTrials(
+                arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
+                exp_key='exp1'
+            )
         else:
             self.logger.info('Preparing Trials..')
             signal.signal(signal.SIGINT, self.signal_handler)
@@ -538,23 +535,28 @@ class Hyperopt(Backtesting):
                     self.current_tries,
                     self.total_tries
                 )
+
         try:
+            # change the Logging format
+            self.logging.set_format('\n%(message)s')
+
             best_parameters = fmin(
                 fn=self.generate_optimizer,
                 space=self.hyperopt_space(),
                 algo=tpe.suggest,
                 max_evals=self.total_tries,
-                trials=MongoTrials(arg='mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs', exp_key='exp1')
+                trials=self.trials
             )
-            # change the Logging format
-            self.logging.set_format('\n%(message)s')
+
             results = sorted(self.trials.results, key=itemgetter('loss'))
             best_result = results[0]['result']
-        # Improve best parameter logging display
+
         except ValueError:
             best_parameters = {}
             best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
                           'try with more epochs (param: -e).'
+
+        # Improve best parameter logging display
         if best_parameters:
             best_parameters = space_eval(
                 self.hyperopt_space(),
@@ -582,7 +584,6 @@ class Hyperopt(Backtesting):
         self.save_trials()
         self.log_trials_result()
         sys.exit(0)
-
 
 
 def start(args: Namespace) -> None:
