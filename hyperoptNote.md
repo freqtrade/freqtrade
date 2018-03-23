@@ -36,7 +36,7 @@ You may also need to install the latest hyperopt from their github to avoid subs
 
 pip3.6 install git+https://github.com/hyperopt/hyperopt.git
 
-You also need to edit: --max-jobs=1 to --max-jobs=100000 in mongoexp.py:
+You also need to edit: --max-jobs=1 to --max-jobs=500 in mongoexp.py:
 
 /usr/local/lib/python3.6/dist-packages/hyperopt/mongoexp.py
 
