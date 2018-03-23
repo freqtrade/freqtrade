@@ -33,11 +33,7 @@ from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 
 class Testz():
-    db_name = 'freqtrade_hyperopt'
-    MongoTrials(
-        arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
-        exp_key='exp1'
-        )
+    MongoTrials('mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs')
     async = 'Null'
     attachments = 'Null'
 
@@ -542,10 +538,6 @@ class Hyperopt(Backtesting):
                     self.total_tries
                 )
 
-        A = self.generate_optimizer
-        B = self.hyperopt_space()
-        C = self.total_tries
-
         def Tests():
             best_parameters = fmin(
                 fn=self.generate_optimizer,
@@ -556,7 +548,6 @@ class Hyperopt(Backtesting):
             )
         # change the Logging format
         self.logging.set_format('\n%(message)s')
-        # best_parameters = Tests(self)
         best_parameters = Tests()
         results = sorted(self.trials.results, key=itemgetter('loss'))
         best_result = results[0]['result']
