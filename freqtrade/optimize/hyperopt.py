@@ -538,8 +538,7 @@ class Hyperopt(Backtesting):
                     self.current_tries,
                     self.total_tries
                 )
-
-        def Tests():
+        try:
             best_parameters = fmin(
                 fn=self.generate_optimizer,
                 space=self.hyperopt_space(),
@@ -547,11 +546,8 @@ class Hyperopt(Backtesting):
                 max_evals=self.total_tries,
                 trials=MongoTrials(arg='mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs', exp_key='exp1')
             )
-            return best_parameters 
-        try:
             # change the Logging format
             self.logging.set_format('\n%(message)s')
-            best_parameters = Tests()
             results = sorted(self.trials.results, key=itemgetter('loss'))
             best_result = results[0]['result']
         # Improve best parameter logging display
