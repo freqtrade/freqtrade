@@ -91,7 +91,7 @@ class Constants(object):
                         'type': 'array',
                         'items': {
                             'type': 'string',
-                            'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                            'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                         },
                         'uniqueItems': True
                     },
@@ -99,7 +99,7 @@ class Constants(object):
                         'type': 'array',
                         'items': {
                             'type': 'string',
-                            'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                            'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                         },
                         'uniqueItems': True
                     }
