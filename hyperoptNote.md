@@ -14,8 +14,11 @@ remove:import six.moves.cPickle as pickle
 add: import dill as pickle in the following files:
 
 /usr/local/lib/python3.6/dist-packages/hyperopt/fmin.py
+
 /usr/local/lib/python3.6/dist-packages/hyperopt/main.py
+
 /usr/local/lib/python3.6/dist-packages/hyperopt/mongoexp.py
+
 /usr/local/lib/python3.6/dist-packages/hyperopt/utils.py
 
 Install dill:
@@ -33,5 +36,8 @@ You may also need to install the latest hyperopt from their github to avoid subs
 
 pip3.6 install git+https://github.com/hyperopt/hyperopt.git
 
+You also need to edit: --max-jobs=1 to --max-jobs=100000 in mongoexp.py:
+
+/usr/local/lib/python3.6/dist-packages/hyperopt/mongoexp.py
 
 Lastly, copy hyperopt-mongodb.py over freqtrade/optimise/hyperopt.py then run scripts.
