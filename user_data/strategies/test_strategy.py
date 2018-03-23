@@ -13,7 +13,10 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
 
-# Update this variable if you change the class name
+# Make a backup of default_strategy then move this file over your default strategy in freqtrade/strategy and to run run with -s all to find best values when running hyperopt.
+# 
+# Make sure to take note of the if statements at the bottom of the file, and the pattern of > < and >= <= and the triggers configuration.
+
 class_name = 'DefaultStrategy'
 
 
@@ -64,7 +67,7 @@ class DefaultStrategy(IStrategy):
         # ADX
         dataframe['adx'] = ta.ADX(dataframe)
 
-        """
+
         # Awesome oscillator
         dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
 
@@ -116,7 +119,7 @@ class DefaultStrategy(IStrategy):
         stoch_rsi = ta.STOCHRSI(dataframe)
         dataframe['fastd_rsi'] = stoch_rsi['fastd']
         dataframe['fastk_rsi'] = stoch_rsi['fastk']
-        """
+
 
         # Overlap Studies
         # ------------------------------------
@@ -137,7 +140,7 @@ class DefaultStrategy(IStrategy):
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
 
-        """
+
         # EMA - Exponential Moving Average
         dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
         dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
@@ -150,7 +153,6 @@ class DefaultStrategy(IStrategy):
 
         # SMA - Simple Moving Average
         dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
-        """
 
         # TEMA - Triple Exponential Moving Average
         dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
@@ -164,7 +166,7 @@ class DefaultStrategy(IStrategy):
 
         # Pattern Recognition - Bullish candlestick patterns
         # ------------------------------------
-        """
+
         # Hammer: values [0, 100]
         dataframe['CDLHAMMER'] = ta.CDLHAMMER(dataframe)
         # Inverted Hammer: values [0, 100]
@@ -177,11 +179,11 @@ class DefaultStrategy(IStrategy):
         dataframe['CDLMORNINGSTAR'] = ta.CDLMORNINGSTAR(dataframe) # values [0, 100]
         # Three White Soldiers: values [0, 100]
         dataframe['CDL3WHITESOLDIERS'] = ta.CDL3WHITESOLDIERS(dataframe) # values [0, 100]
-        """
+
 
         # Pattern Recognition - Bearish candlestick patterns
         # ------------------------------------
-        """
+
         # Hanging Man: values [0, 100]
         dataframe['CDLHANGINGMAN'] = ta.CDLHANGINGMAN(dataframe)
         # Shooting Star: values [0, 100]
@@ -194,11 +196,10 @@ class DefaultStrategy(IStrategy):
         dataframe['CDLEVENINGDOJISTAR'] = ta.CDLEVENINGDOJISTAR(dataframe)
         # Evening Star: values [0, 100]
         dataframe['CDLEVENINGSTAR'] = ta.CDLEVENINGSTAR(dataframe)
-        """
-
+ 
         # Pattern Recognition - Bullish/Bearish candlestick patterns
         # ------------------------------------
-        """
+
         # Three Line Strike: values [0, -100, 100]
         dataframe['CDL3LINESTRIKE'] = ta.CDL3LINESTRIKE(dataframe)
         # Spinning Top: values [0, -100, 100]
@@ -211,18 +212,18 @@ class DefaultStrategy(IStrategy):
         dataframe['CDL3OUTSIDE'] = ta.CDL3OUTSIDE(dataframe) # values [0, -100, 100]
         # Three Inside Up/Down: values [0, -100, 100]
         dataframe['CDL3INSIDE'] = ta.CDL3INSIDE(dataframe) # values [0, -100, 100]
-        """
+
 
         # Chart type
         # ------------------------------------
-        """
+
         # Heikinashi stategy
         heikinashi = qtpylib.heikinashi(dataframe)
         dataframe['ha_open'] = heikinashi['open']
         dataframe['ha_close'] = heikinashi['close']
         dataframe['ha_high'] = heikinashi['high']
         dataframe['ha_low'] = heikinashi['low']
-        """
+
 
         return dataframe
 
