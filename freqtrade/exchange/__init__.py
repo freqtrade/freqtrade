@@ -10,8 +10,6 @@ import arrow
 from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException, DependencyException, NetworkException
-from freqtrade.exchange.bittrex import Bittrex
-from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +21,6 @@ _CONF: dict = {}
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
 _TICKER_CACHE: dict = {}
-
-
-class Exchanges(enum.Enum):
-    """
-    Maps supported exchange names to correspondent classes.
-    """
-    BITTREX = Bittrex
 
 
 def init(config: dict) -> None:

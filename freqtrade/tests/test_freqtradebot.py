@@ -17,7 +17,6 @@ import requests
 from sqlalchemy import create_engine
 
 from freqtrade import DependencyException, OperationalException
-from freqtrade.exchange import Exchanges
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
@@ -261,7 +260,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker) -> None:
     assert trade.stake_amount == 0.001
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'bittrex'
 
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
@@ -423,7 +422,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.stake_amount == default_conf['stake_amount']
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == 'bittrex'
     assert trade.open_rate == 0.00001099
     assert trade.amount == 90.99181073703367
 

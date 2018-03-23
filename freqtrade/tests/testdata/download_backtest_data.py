@@ -6,7 +6,7 @@ import sys
 
 from freqtrade import exchange
 from freqtrade import misc
-from freqtrade.exchange import Bittrex
+from freqtrade.exchange import ccxt
 
 parser = misc.common_args_parser('download utility')
 parser.add_argument(
@@ -28,7 +28,7 @@ PAIRS = list(set(PAIRS))
 print('About to download pairs:', PAIRS)
 
 # Init Bittrex exchange
-exchange._API = Bittrex({'key': '', 'secret': ''})
+exchange._API = ccxt.bittrex({'key': '', 'secret': ''})
 
 for pair in PAIRS:
     for tick_interval in TICKER_INTERVALS:

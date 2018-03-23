@@ -4,7 +4,6 @@ import os
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
@@ -122,7 +121,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
     assert trade.open_order_id is None
     assert trade.open_rate is None
@@ -149,7 +148,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
 
     trade.open_order_id = 'something'
@@ -171,7 +170,7 @@ def test_calc_close_trade_price_exception(limit_buy_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
 
     trade.open_order_id = 'something'
@@ -184,7 +183,7 @@ def test_update_open_order(limit_buy_order):
         pair='BTC_ETH',
         stake_amount=1.00,
         fee=0.1,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
 
     assert trade.open_order_id is None
@@ -206,7 +205,7 @@ def test_update_invalid_order(limit_buy_order):
         pair='BTC_ETH',
         stake_amount=1.00,
         fee=0.1,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
     limit_buy_order['type'] = 'invalid'
     with pytest.raises(ValueError, match=r'Unknown order type'):
@@ -218,7 +217,7 @@ def test_calc_open_trade_price(limit_buy_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
     trade.open_order_id = 'open_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -235,7 +234,7 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
     trade.open_order_id = 'close_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -256,7 +255,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
     trade.open_order_id = 'profit_percent'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -286,7 +285,7 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='bittrex',
     )
     trade.open_order_id = 'profit_percent'
     trade.update(limit_buy_order)  # Buy @ 0.00001099

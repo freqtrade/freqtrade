@@ -6,6 +6,7 @@ This module contains the backtesting logic
 from argparse import Namespace
 from typing import Dict, Tuple, Any, List, Optional
 
+import ccxt
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
@@ -15,7 +16,6 @@ from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.exchange import Bittrex
 from freqtrade.logger import Logger
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
@@ -52,7 +52,7 @@ class Backtesting(object):
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
         self.populate_buy_trend = self.analyze.populate_buy_trend
         self.populate_sell_trend = self.analyze.populate_sell_trend
-        exchange._API = Bittrex({'key': '', 'secret': ''})
+        exchange._API = ccxt.bittrex({'key': '', 'secret': ''})
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
