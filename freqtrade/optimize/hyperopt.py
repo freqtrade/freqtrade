@@ -34,8 +34,6 @@ from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 class Testz():
     MongoTrials('mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs')
-    async = 'Null'
-    attachments = 'Null'
 
 
 
