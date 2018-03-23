@@ -33,8 +33,11 @@ from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 
 class Testz():
-    MongoTrials('mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs')
-
+    db_name = 'freqtrade_hyperopt'
+    MongoTrials(
+        arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
+        exp_key='exp1'
+        )
 
 
 class Hyperopt(Backtesting):
@@ -542,14 +545,20 @@ class Hyperopt(Backtesting):
                 space=self.hyperopt_space(),
                 algo=tpe.suggest,
                 max_evals=self.total_tries,
-                trials=MongoTrials('mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs')
+                trials=MongoTrials(arg='mongo://127.0.0.1:1234/freqtrade_hyperopt/jobs', exp_key='exp1')
             )
-        # change the Logging format
-        self.logging.set_format('\n%(message)s')
-        best_parameters = Tests()
-        results = sorted(self.trials.results, key=itemgetter('loss'))
-        best_result = results[0]['result']
+            return best_parameters 
+        try:
+            # change the Logging format
+            self.logging.set_format('\n%(message)s')
+            best_parameters = Tests()
+            results = sorted(self.trials.results, key=itemgetter('loss'))
+            best_result = results[0]['result']
         # Improve best parameter logging display
+        except ValueError:
+            best_parameters = {}
+            best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
+                          'try with more epochs (param: -e).'
         if best_parameters:
             best_parameters = space_eval(
                 self.hyperopt_space(),
