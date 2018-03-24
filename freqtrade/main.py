@@ -41,6 +41,7 @@ def main(sysargv: List[str]) -> None:
     )
 
     freqtrade = None
+    return_code = 1
     try:
         # Load and validate configuration
         configuration = Configuration(args)
@@ -54,12 +55,13 @@ def main(sysargv: List[str]) -> None:
 
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
+        return_code = 0
     except BaseException:
         logger.exception('Fatal exception!')
     finally:
         if freqtrade:
             freqtrade.clean()
-        sys.exit(0)
+        sys.exit(return_code)
 
 
 def set_loggers() -> None:
