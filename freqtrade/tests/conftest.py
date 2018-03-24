@@ -73,11 +73,11 @@ def default_conf():
             "key": "key",
             "secret": "secret",
             "pair_whitelist": [
-                "BTC_ETH",
-                "BTC_TKN",
-                "BTC_TRST",
-                "BTC_SWT",
-                "BTC_BCC"
+                "ETH/BTC",
+                "TKN/BTC",
+                "TRST/BTC",
+                "SWT/BTC",
+                "BCC/BTC"
             ]
         },
         "telegram": {
@@ -175,7 +175,7 @@ def limit_buy_order_old():
     return {
         'id': 'mocked_limit_buy_old',
         'type': 'LIMIT_BUY',
-        'pair': 'BTC_ETH',
+        'pair': 'ETH/BTC',
         'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
@@ -188,7 +188,7 @@ def limit_sell_order_old():
     return {
         'id': 'mocked_limit_sell_old',
         'type': 'LIMIT_SELL',
-        'pair': 'BTC_ETH',
+        'pair': 'ETH/BTC',
         'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,
@@ -201,7 +201,7 @@ def limit_buy_order_old_partial():
     return {
         'id': 'mocked_limit_buy_old_partial',
         'type': 'LIMIT_BUY',
-        'pair': 'BTC_ETH',
+        'pair': 'ETH/BTC',
         'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
         'rate': 0.00001099,
         'amount': 90.99181073,

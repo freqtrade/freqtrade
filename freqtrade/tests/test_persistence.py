@@ -4,7 +4,7 @@ import os
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade.exchange import Exchanges
+from freqtrade import exchange
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
@@ -122,7 +122,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
         pair='BTC_ETH',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
     assert trade.open_order_id is None
     assert trade.open_rate is None
@@ -146,10 +146,10 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
 
 def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
 
     trade.open_order_id = 'something'
@@ -168,10 +168,10 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
 
 def test_calc_close_trade_price_exception(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
 
     trade.open_order_id = 'something'
@@ -181,10 +181,10 @@ def test_calc_close_trade_price_exception(limit_buy_order):
 
 def test_update_open_order(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=1.00,
         fee=0.1,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
 
     assert trade.open_order_id is None
@@ -203,10 +203,10 @@ def test_update_open_order(limit_buy_order):
 
 def test_update_invalid_order(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=1.00,
         fee=0.1,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
     limit_buy_order['type'] = 'invalid'
     with pytest.raises(ValueError, match=r'Unknown order type'):
@@ -215,10 +215,10 @@ def test_update_invalid_order(limit_buy_order):
 
 def test_calc_open_trade_price(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
     trade.open_order_id = 'open_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -232,10 +232,10 @@ def test_calc_open_trade_price(limit_buy_order):
 
 def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
     trade.open_order_id = 'close_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -253,10 +253,10 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
 
 def test_calc_profit(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
     trade.open_order_id = 'profit_percent'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -283,10 +283,10 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
 
 def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        exchange='binance',
     )
     trade.open_order_id = 'profit_percent'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -310,35 +310,35 @@ def test_clean_dry_run_db(default_conf):
 
     # Simulate dry_run entries
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
         fee=0.0025,
         open_rate=0.123,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='dry_run_buy_12345'
     )
     Trade.session.add(trade)
 
     trade = Trade(
-        pair='BTC_ETC',
+        pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
         fee=0.0025,
         open_rate=0.123,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='dry_run_sell_12345'
     )
     Trade.session.add(trade)
 
     # Simulate prod entry
     trade = Trade(
-        pair='BTC_ETC',
+        pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
         fee=0.0025,
         open_rate=0.123,
-        exchange='BITTREX',
+        exchange='binance',
         open_order_id='prod_buy_12345'
     )
     Trade.session.add(trade)
