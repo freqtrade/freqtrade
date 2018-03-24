@@ -115,7 +115,6 @@ def test_strategy_override_ticker_interval(caplog):
 
 def test_strategy_fallback_default_strategy():
     strategy = StrategyResolver()
-    strategy.logger = logging.getLogger(__name__)
 
     assert not hasattr(StrategyResolver, 'custom_strategy')
     strategy._load_strategy('../../super_duper')
