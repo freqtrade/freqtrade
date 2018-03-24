@@ -9,8 +9,12 @@ from freqtrade.strategy.resolver import StrategyResolver
 
 
 def test_search_strategy():
-    default_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'strategy')
-    assert isinstance(StrategyResolver._search_strategy(default_location, 'DefaultStrategy'), IStrategy)
+    default_location = os.path.join(os.path.dirname(
+        os.path.realpath(__file__)), '..', '..', 'strategy'
+    )
+    assert isinstance(
+        StrategyResolver._search_strategy(default_location, 'DefaultStrategy'), IStrategy
+    )
     assert StrategyResolver._search_strategy(default_location, 'NotFoundStrategy') is None
 
 
