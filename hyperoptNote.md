@@ -1,16 +1,21 @@
 Basically, to sum things up:
 
 Make these changes per this PR in these files:
+
 https://github.com/hyperopt/hyperopt/pull/287/files
 
 /usr/local/lib/python3.6/dist-packages/hyperopt/fmin.py
+
 removetrial['state'] == base.JOB_STATE_RUNNING
+
 addtrial['state'] = base.JOB_STATE_RUNNING
 
 Make these changes per this PR into the hyperopt files:
+
 https://github.com/hyperopt/hyperopt/pull/288/files
 
 remove:import six.moves.cPickle as pickle
+
 add: import dill as pickle in the following files:
 
 /usr/local/lib/python3.6/dist-packages/hyperopt/fmin.py
@@ -22,6 +27,7 @@ add: import dill as pickle in the following files:
 /usr/local/lib/python3.6/dist-packages/hyperopt/utils.py
 
 Install dill:
+
 pip3.6 install dill
 
 Get this raw file and replace your hyperopy.py with this one in freqtrade/optmize/:
@@ -38,3 +44,7 @@ pip3.6 install git+https://github.com/hyperopt/hyperopt.git
 
 
 Lastly, copy hyperopt-mongodb.py over freqtrade/optimise/hyperopt.py then run scripts. Wait until the database fills and get result!
+
+Management tool for mongodb:
+
+https://robomongo.org/download
