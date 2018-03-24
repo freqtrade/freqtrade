@@ -7,6 +7,7 @@ import importlib
 import os
 import sys
 from collections import OrderedDict
+from typing import Optional, Dict
 
 from pandas import DataFrame
 
@@ -21,12 +22,14 @@ class StrategyResolver(object):
     """
     This class contains all the logic to load custom strategy class
     """
-    def __init__(self, config: dict = {}) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Load the custom class from config parameter
         :param config:
         :return:
         """
+        config = config or {}
+
         self.logger = Logger(name=__name__).get_logger()
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
