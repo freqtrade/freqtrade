@@ -5,20 +5,10 @@ import logging
 from freqtrade.strategy.resolver import StrategyResolver
 
 
-def test_sanitize_module_name():
-    assert StrategyResolver._sanitize_module_name('default_strategy') == 'default_strategy'
-    assert StrategyResolver._sanitize_module_name('default_strategy.py') == 'default_strategy'
-    assert StrategyResolver._sanitize_module_name('../default_strategy.py') == 'default_strategy'
-    assert StrategyResolver._sanitize_module_name('../default_strategy') == 'default_strategy'
-    assert StrategyResolver._sanitize_module_name('.default_strategy') == '.default_strategy'
-    assert StrategyResolver._sanitize_module_name('foo-bar') == 'foo-bar'
-    assert StrategyResolver._sanitize_module_name('foo/bar') == 'bar'
-
-
 def test_search_strategy():
-    assert StrategyResolver._search_strategy('default_strategy') == '.'
-    assert StrategyResolver._search_strategy('test_strategy') == 'user_data.strategies.'
-    assert StrategyResolver._search_strategy('super_duper') is None
+    assert StrategyResolver._search_strategy('DefaultStrategy') == '.'
+    assert StrategyResolver._search_strategy('TestStrategy') == 'user_data.strategies.'
+    assert StrategyResolver._search_strategy('NotFoundStrategy') is None
 
 
 def test_strategy_structure():
@@ -32,7 +22,7 @@ def test_load_strategy(result):
     strategy.logger = logging.getLogger(__name__)
 
     assert not hasattr(StrategyResolver, 'custom_strategy')
-    strategy._load_strategy('test_strategy')
+    strategy._load_strategy('TestStrategy')
 
     assert not hasattr(StrategyResolver, 'custom_strategy')
 
@@ -47,13 +37,13 @@ def test_load_not_found_strategy(caplog):
     assert not hasattr(StrategyResolver, 'custom_strategy')
     strategy._load_strategy('NotFoundStrategy')
 
-    error_msg = "Impossible to load Strategy 'user_data/strategies/{}.py'. This file does not " \
+    error_msg = "Impossible to load Strategy '{}'. This class does not " \
                 "exist or contains Python code errors".format('NotFoundStrategy')
     assert ('test_strategy', logging.ERROR, error_msg) in caplog.record_tuples
 
 
 def test_strategy(result):
-    strategy = StrategyResolver({'strategy': 'default_strategy'})
+    strategy = StrategyResolver({'strategy': 'DefaultStrategy'})
 
     assert hasattr(strategy.custom_strategy, 'minimal_roi')
     assert strategy.minimal_roi[0] == 0.04
@@ -76,7 +66,7 @@ def test_strategy(result):
 def test_strategy_override_minimal_roi(caplog):
     caplog.set_level(logging.INFO)
     config = {
-        'strategy': 'default_strategy',
+        'strategy': 'DefaultStrategy',
         'minimal_roi': {
             "0": 0.5
         }
@@ -94,7 +84,7 @@ def test_strategy_override_minimal_roi(caplog):
 def test_strategy_override_stoploss(caplog):
     caplog.set_level(logging.INFO)
     config = {
-        'strategy': 'default_strategy',
+        'strategy': 'DefaultStrategy',
         'stoploss': -0.5
     }
     strategy = StrategyResolver(config)
@@ -111,7 +101,7 @@ def test_strategy_override_ticker_interval(caplog):
     caplog.set_level(logging.INFO)
 
     config = {
-        'strategy': 'default_strategy',
+        'strategy': 'DefaultStrategy',
         'ticker_interval': 60
     }
     strategy = StrategyResolver(config)
@@ -134,7 +124,7 @@ def test_strategy_fallback_default_strategy():
 
 
 def test_strategy_singleton():
-    strategy1 = StrategyResolver({'strategy': 'default_strategy'})
+    strategy1 = StrategyResolver({'strategy': 'DefaultStrategy'})
 
     assert hasattr(strategy1.custom_strategy, 'minimal_roi')
     assert strategy1.minimal_roi[0] == 0.04

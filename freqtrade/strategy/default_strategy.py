@@ -7,8 +7,6 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.indicator_helpers import fishers_inverse
 from freqtrade.strategy.interface import IStrategy
 
-class_name = 'DefaultStrategy'
-
 
 class DefaultStrategy(IStrategy):
     """

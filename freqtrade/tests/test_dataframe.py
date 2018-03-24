@@ -15,19 +15,19 @@ def load_dataframe_pair(pairs):
     assert isinstance(pairs[0], str)
     dataframe = ld[pairs[0]]
 
-    analyze = Analyze({'strategy': 'default_strategy'})
+    analyze = Analyze({'strategy': 'DefaultStrategy'})
     dataframe = analyze.analyze_ticker(dataframe)
     return dataframe
 
 
 def test_dataframe_load():
-    StrategyResolver({'strategy': 'default_strategy'})
+    StrategyResolver({'strategy': 'DefaultStrategy'})
     dataframe = load_dataframe_pair(_pairs)
     assert isinstance(dataframe, pandas.core.frame.DataFrame)
 
 
 def test_dataframe_columns_exists():
-    StrategyResolver({'strategy': 'default_strategy'})
+    StrategyResolver({'strategy': 'DefaultStrategy'})
     dataframe = load_dataframe_pair(_pairs)
     assert 'high' in dataframe.columns
     assert 'low' in dataframe.columns

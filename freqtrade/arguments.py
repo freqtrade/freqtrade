@@ -82,7 +82,7 @@ class Arguments(object):
             '-s', '--strategy',
             help='specify strategy file (default: %(default)s)',
             dest='strategy',
-            default='default_strategy',
+            default='DefaultStrategy',
             type=str,
             metavar='PATH',
         )

@@ -14,7 +14,7 @@ class Constants(object):
     TICKER_INTERVAL = 5  # min
     HYPEROPT_EPOCH = 100  # epochs
     RETRY_TIMEOUT = 30  # sec
-    DEFAULT_STRATEGY = 'default_strategy'
+    DEFAULT_STRATEGY = 'DefaultStrategy'
 
     # Required json-schema for user specified config
     CONF_SCHEMA = {

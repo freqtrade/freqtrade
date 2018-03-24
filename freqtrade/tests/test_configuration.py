@@ -99,7 +99,7 @@ def test_load_config(default_conf, mocker) -> None:
     validated_conf = configuration.load_config()
 
     assert 'strategy' in validated_conf
-    assert validated_conf['strategy'] == 'default_strategy'
+    assert validated_conf['strategy'] == 'DefaultStrategy'
     assert 'dynamic_whitelist' not in validated_conf
     assert 'dry_run_db' not in validated_conf
 
@@ -114,7 +114,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
 
     args = [
         '--dynamic-whitelist', '10',
-        '--strategy', 'test_strategy',
+        '--strategy', 'TestStrategy',
         '--dry-run-db'
     ]
     args = Arguments(args, '').get_parsed_arg()
@@ -125,7 +125,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert 'dynamic_whitelist' in validated_conf
     assert validated_conf['dynamic_whitelist'] == 10
     assert 'strategy' in validated_conf
-    assert validated_conf['strategy'] == 'test_strategy'
+    assert validated_conf['strategy'] == 'TestStrategy'
     assert 'dry_run_db' in validated_conf
     assert validated_conf['dry_run_db'] is True
 
@@ -140,7 +140,7 @@ def test_show_info(default_conf, mocker, caplog) -> None:
 
     args = [
         '--dynamic-whitelist', '10',
-        '--strategy', 'test_strategy',
+        '--strategy', 'TestStrategy',
         '--dry-run-db'
     ]
     args = Arguments(args, '').get_parsed_arg()
@@ -184,7 +184,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'default_strategy',
+        '--strategy', 'DefaultStrategy',
         'backtesting'
     ]
 
@@ -228,7 +228,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'default_strategy',
+        '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
         'backtesting',
         '--ticker-interval', '1',
