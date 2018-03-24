@@ -37,4 +37,4 @@ You may also need to install the latest hyperopt from their github to avoid subs
 pip3.6 install git+https://github.com/hyperopt/hyperopt.git
 
 
-Lastly, copy hyperopt-mongodb.py over freqtrade/optimise/hyperopt.py then run scripts.
+Lastly, copy hyperopt-mongodb.py over freqtrade/optimise/hyperopt.py then run scripts. Wait until the database fills and get result!
