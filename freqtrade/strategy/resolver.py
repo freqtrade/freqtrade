@@ -16,6 +16,9 @@ from freqtrade.logger import Logger
 from freqtrade.strategy.interface import IStrategy
 
 
+logger = Logger(name=__name__).get_logger()
+
+
 class StrategyResolver(object):
     """
     This class contains all the logic to load custom strategy class
@@ -27,8 +30,6 @@ class StrategyResolver(object):
         :return:
         """
         config = config or {}
-
-        self.logger = Logger(name=__name__).get_logger()
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         if 'strategy' in config:
@@ -43,17 +44,17 @@ class StrategyResolver(object):
         # Check if we need to override configuration
         if 'minimal_roi' in config:
             self.custom_strategy.minimal_roi = config['minimal_roi']
-            self.logger.info("Override strategy \'minimal_roi\' with value in config file.")
+            logger.info("Override strategy \'minimal_roi\' with value in config file.")
 
         if 'stoploss' in config:
             self.custom_strategy.stoploss = config['stoploss']
-            self.logger.info(
+            logger.info(
                 "Override strategy \'stoploss\' with value in config file: %s.", config['stoploss']
             )
 
         if 'ticker_interval' in config:
             self.custom_strategy.ticker_interval = config['ticker_interval']
-            self.logger.info(
+            logger.info(
                 "Override strategy \'ticker_interval\' with value in config file: %s.",
                 config['ticker_interval']
             )
@@ -83,18 +84,18 @@ class StrategyResolver(object):
             for path in abs_paths:
                 self.custom_strategy = self._search_strategy(path, strategy_name)
                 if self.custom_strategy:
-                    self.logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
                     return None
 
             raise ImportError('not found')
         # Fallback to the default strategy
         except (ImportError, TypeError) as error:
-            self.logger.error(
+            logger.error(
                 "Impossible to load Strategy '%s'. This class does not exist"
                 " or contains Python code errors",
                 strategy_name
             )
-            self.logger.error(
+            logger.error(
                 "The error is:\n%s.",
                 error
             )
@@ -119,17 +120,18 @@ class StrategyResolver(object):
         )
         return next(valid_strategies_gen, None)
 
-    def _search_strategy(self, directory: str, strategy_name: str) -> Optional[IStrategy]:
+    @staticmethod
+    def _search_strategy(directory: str, strategy_name: str) -> Optional[IStrategy]:
         """
         Search for the strategy_name in the given directory
         :param directory: relative or absolute directory path
         :return: name of the strategy class
         """
-        self.logger.debug('Searching for strategy %s in \'%s\'', strategy_name, directory)
+        logger.debug('Searching for strategy %s in \'%s\'', strategy_name, directory)
         for entry in os.listdir(directory):
             # Only consider python files
             if not entry.endswith('.py'):
-                self.logger.debug('Ignoring %s', entry)
+                logger.debug('Ignoring %s', entry)
                 continue
             strategy = StrategyResolver._get_valid_strategies(
                 os.path.abspath(os.path.join(directory, entry)), strategy_name

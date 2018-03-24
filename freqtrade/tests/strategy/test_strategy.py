@@ -2,19 +2,16 @@
 
 import logging
 
+import os
+
+from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.resolver import StrategyResolver
 
 
 def test_search_strategy():
-    assert StrategyResolver._search_strategy('DefaultStrategy') == '.'
-    assert StrategyResolver._search_strategy('TestStrategy') == 'user_data.strategies.'
-    assert StrategyResolver._search_strategy('NotFoundStrategy') is None
-
-
-def test_strategy_structure():
-    assert hasattr(StrategyResolver, 'populate_indicators')
-    assert hasattr(StrategyResolver, 'populate_buy_trend')
-    assert hasattr(StrategyResolver, 'populate_sell_trend')
+    default_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'strategy')
+    assert isinstance(StrategyResolver._search_strategy(default_location, 'DefaultStrategy'), IStrategy)
+    assert StrategyResolver._search_strategy(default_location, 'NotFoundStrategy') is None
 
 
 def test_load_strategy(result):
@@ -39,7 +36,7 @@ def test_load_not_found_strategy(caplog):
 
     error_msg = "Impossible to load Strategy '{}'. This class does not " \
                 "exist or contains Python code errors".format('NotFoundStrategy')
-    assert ('test_strategy', logging.ERROR, error_msg) in caplog.record_tuples
+    assert ('freqtrade.strategy.resolver', logging.ERROR, error_msg) in caplog.record_tuples
 
 
 def test_strategy(result):
