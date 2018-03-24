@@ -117,7 +117,7 @@ class Configuration(object):
         if 'ticker_interval' in self.args and self.args.ticker_interval:
             config.update({'ticker_interval': self.args.ticker_interval})
             self.logger.info('Parameter -i/--ticker-interval detected ...')
-            self.logger.info('Using ticker_interval: %d ...', config.get('ticker_interval'))
+            self.logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
 
         # If -l/--live is used we add it to the configuration
         if 'live' in self.args and self.args.live:

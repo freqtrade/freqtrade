@@ -135,10 +135,9 @@ class Arguments(object):
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             '-i', '--ticker-interval',
-            help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
+            help='specify ticker interval (1m, 5m, 30m, 1h, 1d)',
             dest='ticker_interval',
-            type=int,
-            metavar='INT',
+            type=str,
         )
         parser.add_argument(
             '--realistic-simulation',

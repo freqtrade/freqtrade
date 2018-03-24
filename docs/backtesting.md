@@ -33,7 +33,7 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation
 
 **With 1 min tickers**
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1
+python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
 ```
 
 **Reload your testdata files**

@@ -257,7 +257,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
     assert log_has(
-        'Using ticker_interval: 1 ...',
+        'Using ticker_interval: 1m ...',
         caplog.record_tuples
     )
 

@@ -50,7 +50,7 @@ def test_common_datearray(default_conf, mocker) -> None:
     mocker.patch('freqtrade.strategy.strategy.Strategy', MagicMock())
 
     analyze = Analyze(default_conf)
-    tick = load_tickerdata_file(None, 'UNITTEST/BTC', 1)
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = analyze.tickerdata_to_dataframe(tickerlist)
 

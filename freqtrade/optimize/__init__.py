@@ -27,7 +27,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
 
 def load_tickerdata_file(
         datadir: str, pair: str,
-        ticker_interval: int,
+        ticker_interval: str,
         timerange: Optional[Tuple[Tuple, int, int]] = None) -> Optional[List[Dict]]:
     """
     Load a pair from file,
@@ -59,7 +59,8 @@ def load_tickerdata_file(
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int,
+def load_data(datadir: str,
+              ticker_interval: str,
               pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False,
               timerange: Optional[Tuple[Tuple, int, int]] = None) -> Dict[str, List]:
@@ -96,14 +97,14 @@ def make_testdata_path(datadir: str) -> str:
     )
 
 
-def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
+def download_pairs(datadir, pairs: List[str], ticker_interval: str) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
             download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
         except BaseException:
             logger.info(
-                'Failed to download the pair: "%s", Interval: %s min',
+                'Failed to download the pair: "%s", Interval: %s',
                 pair,
                 ticker_interval
             )
@@ -112,7 +113,7 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
-def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> bool:
+def download_backtesting_testdata(datadir: str, pair: str, interval: str = '5m') -> bool:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
@@ -122,7 +123,7 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
 
     path = make_testdata_path(datadir)
     logger.info(
-        'Download the pair: "%s", Interval: %s min',
+        'Download the pair: "%s", Interval: %s',
         pair,
         interval
     )
@@ -143,7 +144,7 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         logger.debug("Current Start: None")
         logger.debug("Current End: None")
 
-    new_data = get_ticker_history(pair=pair, tick_interval=int(interval))
+    new_data = get_ticker_history(pair=pair, tick_interval=interval)
     for row in new_data:
         if row not in data:
             data.append(row)

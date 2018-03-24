@@ -167,7 +167,7 @@ def test_download_backtesting_testdata(ticker_history, mocker) -> None:
     # Download a 1 min ticker file
     file1 = 'freqtrade/tests/testdata/XEL_BTC-1m.json'
     _backup_file(file1)
-    download_backtesting_testdata(None, pair="XEL/BTC", interval=1)
+    download_backtesting_testdata(None, pair="XEL/BTC", interval='1m')
     assert os.path.isfile(file1) is True
     _clean_test_file(file1)
 
@@ -175,7 +175,7 @@ def test_download_backtesting_testdata(ticker_history, mocker) -> None:
     file2 = 'freqtrade/tests/testdata/STORJ_BTC-5m.json'
     _backup_file(file2)
 
-    download_backtesting_testdata(None, pair="STORJ/BTC", interval=5)
+    download_backtesting_testdata(None, pair="STORJ/BTC", interval='5m')
     assert os.path.isfile(file2) is True
     _clean_test_file(file2)
 
@@ -184,8 +184,8 @@ def test_download_backtesting_testdata2(mocker) -> None:
     tick = [{'T': 'bar'}, {'T': 'foo'}]
     mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
-    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", interval=1)
-    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", interval=3)
+    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", interval='1m')
+    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", interval='3m')
 
 
 def test_load_tickerdata_file() -> None:

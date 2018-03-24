@@ -25,6 +25,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
 from freqtrade.logger import Logger
+from freqtrade.constants import Constants
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
@@ -187,11 +188,12 @@ def plot_profit(args: Namespace) -> None:
     plot(fig, filename='freqtrade-profit-plot.html')
 
 
-def define_index(min_date: int, max_date: int, interval: int) -> int:
+def define_index(min_date: int, max_date: int, interval: str) -> int:
     """
     Return the index of a specific date
     """
-    return int((max_date - min_date) / (interval * 60))
+    interval_minutes = Constants.TICKER_INTERVAL_MINUTES[interval]
+    return int((max_date - min_date) / (interval_minutes * 60))
 
 
 def plot_parse_args(args: List[str]) -> Namespace:
