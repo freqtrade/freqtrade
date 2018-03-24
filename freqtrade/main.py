@@ -40,6 +40,7 @@ def main(sysargv: List[str]) -> None:
         logging.getLevelName(args.loglevel)
     )
 
+    freqtrade = None
     try:
         # Load and validate configuration
         configuration = Configuration(args)
@@ -56,7 +57,8 @@ def main(sysargv: List[str]) -> None:
     except BaseException:
         logger.exception('Fatal exception!')
     finally:
-        freqtrade.clean()
+        if freqtrade:
+            freqtrade.clean()
         sys.exit(0)
 
 
