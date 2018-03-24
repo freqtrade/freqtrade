@@ -32,7 +32,7 @@ def main(sysargv: List[str]) -> None:
     # Means if Backtesting or Hyperopt have been called we exit the bot
     if hasattr(args, 'func'):
         args.func(args)
-        return 0
+        return
 
     logger.info(
         'Starting freqtrade %s (loglevel=%s)',
