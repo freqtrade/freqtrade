@@ -17,7 +17,7 @@ from freqtrade.strategy.interface import IStrategy
 sys.path.insert(0, r'../../user_data/strategies')
 
 
-class Strategy(object):
+class StrategyResolver(object):
     """
     This class contains all the logic to load custom strategy class
     """

@@ -11,7 +11,7 @@ from pandas import DataFrame, to_datetime
 from freqtrade.exchange import get_ticker_history
 from freqtrade.logger import Logger
 from freqtrade.persistence import Trade
-from freqtrade.strategy.strategy import Strategy
+from freqtrade.strategy.resolver import StrategyResolver
 
 
 class SignalType(Enum):
@@ -35,7 +35,7 @@ class Analyze(object):
         self.logger = Logger(name=__name__, level=config.get('loglevel')).get_logger()
 
         self.config = config
-        self.strategy = Strategy(self.config)
+        self.strategy = StrategyResolver(self.config)
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:
