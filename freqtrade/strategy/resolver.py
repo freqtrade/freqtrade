@@ -30,13 +30,7 @@ class StrategyResolver(object):
         config = config or {}
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
-        if 'strategy' in config:
-            strategy = config['strategy']
-        else:
-            strategy = Constants.DEFAULT_STRATEGY
-
-        # Try to load the strategy
-        self.strategy = self._load_strategy(strategy)
+        self.strategy = self._load_strategy(config.get('strategy') or Constants.DEFAULT_STRATEGY)
 
         # Set attributes
         # Check if we need to override configuration
