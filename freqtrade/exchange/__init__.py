@@ -6,11 +6,12 @@ import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
 from cachetools import cached, TTLCache
+from datetime import datetime
 
 import arrow
 import requests
 
-from freqtrade import OperationalException
+from freqtrade import OperationalException, NetworkException
 
 logger = logging.getLogger(__name__)
 
@@ -183,11 +184,34 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
     # TODO: tickers need to be in format 1m,5m
     # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
-    if not _API.markets:
-        _API.load_markets()
-    ohlcv = _API.fetch_ohlcv(pair, str(tick_interval)+'m')
+    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
+        raise OperationalException(
+            'Exhange {} does not support fetching historical candlestick data.'.format(
+                _API.name)
+        )
 
-    return ohlcv
+    try:
+        history = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
+        history_json = []
+        for candlestick in history:
+            history_json.append({
+                'T': datetime.fromtimestamp(candlestick[0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S.%f'),
+                'O': candlestick[1],
+                'H': candlestick[2],
+                'L': candlestick[3],
+                'C': candlestick[4],
+                'V': candlestick[5],
+            })
+        return history_json
+    except IndexError as e:
+        logger.warning('Empty ticker history. Msg %s', str(e))
+        return []
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load ticker history due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
 
 
 def cancel_order(order_id: str) -> None:
@@ -235,7 +259,7 @@ def get_fee_taker() -> float:
 
 
 def get_fee() -> float:
-    return _API.fees['trading']
+    return get_fee_taker()
 
 
 def get_wallet_health() -> List[Dict]:

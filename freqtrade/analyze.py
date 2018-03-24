@@ -44,13 +44,13 @@ class Analyze(object):
         :param ticker: See exchange.get_ticker_history
         :return: DataFrame
         """
-        cols = ['date', 'open', 'high', 'low', 'close', 'volume']
-        frame = DataFrame(ticker, columns=cols)
+        columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
+        frame = DataFrame(ticker) \
+            .rename(columns=columns)
+        if 'BV' in frame:
+            frame.drop('BV', 1, inplace=True)
+        frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
 
-        frame['date'] = to_datetime(frame['date'],
-                                    unit='ms',
-                                    utc=True,
-                                    infer_datetime_format=True)
         frame.sort_values('date', inplace=True)
         return frame
 
