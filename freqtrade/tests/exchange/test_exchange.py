@@ -307,7 +307,7 @@ def test_get_ticker(default_conf, mocker):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(OperationalException):  # test retrier
         api_mock.fetch_ticker = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         get_ticker(pair='ETH/BTC', refresh=True)
@@ -365,7 +365,7 @@ def test_get_ticker_history(default_conf, mocker):
     assert ticks[0]['C'] == 4
     assert ticks[0]['V'] == 5
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(OperationalException):  # test retrier
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         # new symbol to get around cache
