@@ -113,7 +113,7 @@ class Backtesting(object):
             open_date=buy_row.date,
             stake_amount=stake_amount,
             amount=stake_amount / buy_row.open,
-            fee=exchange.get_fee()
+            fee=0.0025
         )
 
         # calculate win/lose forwards from buy point
