@@ -80,11 +80,11 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '-s', '--strategy',
-            help='specify strategy file (default: %(default)s)',
+            help='specify strategy class name (default: %(default)s)',
             dest='strategy',
             default='DefaultStrategy',
             type=str,
-            metavar='PATH',
+            metavar='NAME',
         )
         self.parser.add_argument(
             '--dynamic-whitelist',
