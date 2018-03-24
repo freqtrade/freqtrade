@@ -19,7 +19,7 @@ command = [
     '--mongo=127.0.0.1:1234/{}'.format(DB_NAME),
     '--poll-interval=0.1',
     '--workdir={}'.format(WORK_DIR),
-    '--reserve-timeout=900,
+    '--reserve-timeout=900',
 ]
 processes = [subprocess.Popen(command) for i in range(PROC_COUNT)]
 
