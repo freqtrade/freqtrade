@@ -215,15 +215,15 @@ def test_gen_pair_whitelist(mocker, default_conf, get_market_summaries_data) -> 
 
     # Test to retrieved BTC sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
-    assert whitelist == ['BTC_ZCL', 'BTC_ZEC', 'BTC_XZC', 'BTC_XWC']
+    assert whitelist == ['ZCL/BTC', 'ZEC/BTC', 'XZC/BTC', 'XWC/BTC']
 
     # Test to retrieved BTC sorted on OpenBuyOrders
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC', key='OpenBuyOrders')
-    assert whitelist == ['BTC_XWC', 'BTC_ZCL', 'BTC_ZEC', 'BTC_XZC']
+    assert whitelist == ['XWC/BTC', 'ZCL/BTC', 'ZEC/BTC', 'XZC/BTC']
 
     # Test with USDT sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='USDT')
-    assert whitelist == ['USDT_XRP', 'USDT_XVG', 'USDT_XMR', 'USDT_ZEC']
+    assert whitelist == ['XRP/USDT', 'XVG/USDT', 'XMR/USDT', 'ZEC/USDT']
 
     # Test with ETH (our fixture does not have ETH, but Bittrex returns them)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='ETH')
@@ -424,7 +424,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.stake_amount == default_conf['stake_amount']
     assert trade.is_open
     assert trade.open_date is not None
-    assert trade.exchange == Exchanges.BITTREX.name
+    assert trade.exchange == "BITTREX"
     assert trade.open_rate == 0.00001099
     assert trade.amount == 90.99181073703367
 
