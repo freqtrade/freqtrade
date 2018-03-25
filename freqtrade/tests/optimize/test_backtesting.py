@@ -34,7 +34,7 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what):
     timerange = ((None, 'line'), None, -100)
-    data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'], timerange=timerange)
+    data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'], timerange=timerange)
     pair = data['UNITTEST/BTC']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
@@ -93,8 +93,8 @@ def simple_backtest(config, contour, num_results) -> None:
     assert len(results) == num_results
 
 
-def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, timerange=None):
-    tickerdata = optimize.load_tickerdata_file(datadir, 'UNITTEST/BTC', 1, timerange=timerange)
+def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False, timerange=None):
+    tickerdata = optimize.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     pairdata = {'UNITTEST/BTC': tickerdata}
     return pairdata
 
@@ -108,7 +108,7 @@ def _load_pair_as_ticks(pair, tickfreq):
 
 # FIX: fixturize this?
 def _make_backtest_conf(conf=None, pair='UNITTEST/BTC', record=None):
-    data = optimize.load_data(None, ticker_interval=8, pairs=[pair])
+    data = optimize.load_data(None, ticker_interval='8m', pairs=[pair])
     data = trim_dictlist(data, -200)
     return {
         'stake_amount': conf['stake_amount'],
@@ -218,7 +218,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--strategy', 'default_strategy',
         '--datadir', '/foo/bar',
         'backtesting',
-        '--ticker-interval', '1',
+        '--ticker-interval', '1m',
         '--live',
         '--realistic-simulation',
         '--refresh-pairs-cached',
@@ -240,7 +240,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
     assert log_has(
-        'Using ticker_interval: 1 ...',
+        'Using ticker_interval: 1m ...',
         caplog.record_tuples
     )
 
@@ -313,7 +313,7 @@ def test_backtesting_init(default_conf) -> None:
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert isinstance(backtesting.analyze, Analyze)
-    assert backtesting.ticker_interval == 5
+    assert backtesting.ticker_interval == '5m'
     assert callable(backtesting.tickerdata_to_dataframe)
     assert callable(backtesting.populate_buy_trend)
     assert callable(backtesting.populate_sell_trend)
@@ -325,7 +325,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     """
 
     timerange = ((None, 'line'), None, -100)
-    tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', 1, timerange=timerange)
+    tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
 
     backtesting = _BACKTESTING
@@ -347,7 +347,7 @@ def test_get_timeframe() -> None:
     data = backtesting.tickerdata_to_dataframe(
         optimize.load_data(
             None,
-            ticker_interval=1,
+            ticker_interval='1m',
             pairs=['UNITTEST/BTC']
         )
     )
@@ -432,7 +432,7 @@ def test_backtest(default_conf) -> None:
     """
     backtesting = _BACKTESTING
 
-    data = optimize.load_data(None, ticker_interval=5, pairs=['ETH/BTC'])
+    data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     results = backtesting.backtest(
         {
@@ -452,7 +452,7 @@ def test_backtest_1min_ticker_interval(default_conf) -> None:
     backtesting = _BACKTESTING
 
     # Run a backtesting for an exiting 5min ticker_interval
-    data = optimize.load_data(None, ticker_interval=1, pairs=['UNITTEST/BTC'])
+    data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     results = backtesting.backtest(
         {
@@ -585,7 +585,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--config', 'config.json',
         '--strategy', 'default_strategy',
         'backtesting',
-        '--ticker-interval', '1',
+        '--ticker-interval', '1m',
         '--live',
         '--timerange', '-100'
     ]
@@ -594,7 +594,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--ticker-interval detected ...',
-        'Using ticker_interval: 1 ...',
+        'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
         'Using max_open_trades: 1 ...',
         'Parameter --timerange detected: -100 ..',
