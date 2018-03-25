@@ -15,7 +15,7 @@ import numpy # noqa
 import random
 
 # Update this variable if you change the class name
-class_name = 'RandomStrategy'
+class_name = 'DefaultStrategy'
 
 
 # This class is a sample. Feel free to customize it.
@@ -56,7 +56,7 @@ def Select():
 
 
 
-class RandomStrategy(IStrategy):
+class DefaultStrategy(IStrategy):
     """
     This is a test strategy to inspire you.
     More information in https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md
