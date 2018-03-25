@@ -1,9 +1,12 @@
 """
 This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
+import logging
 
-from freqtrade.logger import Logger
 from freqtrade.rpc.telegram import Telegram
+
+
+logger = logging.getLogger(__name__)
 
 
 class RPCManager(object):
@@ -18,12 +21,6 @@ class RPCManager(object):
         """
         self.freqtrade = freqtrade
 
-        # Init the logger
-        self.logger = Logger(
-            name=__name__,
-            level=self.freqtrade.config.get('loglevel')
-        ).get_logger()
-
         self.registered_modules = []
         self.telegram = None
         self._init()
@@ -34,7 +31,7 @@ class RPCManager(object):
         :return:
         """
         if self.freqtrade.config['telegram'].get('enabled', False):
-            self.logger.info('Enabling rpc.telegram ...')
+            logger.info('Enabling rpc.telegram ...')
             self.registered_modules.append('telegram')
             self.telegram = Telegram(self.freqtrade)
 
@@ -44,7 +41,7 @@ class RPCManager(object):
         :return: None
         """
         if 'telegram' in self.registered_modules:
-            self.logger.info('Cleaning up rpc.telegram ...')
+            logger.info('Cleaning up rpc.telegram ...')
             self.registered_modules.remove('telegram')
             self.telegram.cleanup()
 
@@ -54,6 +51,6 @@ class RPCManager(object):
         :param msg: message
         :return: None
         """
-        self.logger.info(msg)
+        logger.info(msg)
         if 'telegram' in self.registered_modules:
             self.telegram.send_msg(msg)

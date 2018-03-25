@@ -64,7 +64,6 @@ def test_start(mocker, default_conf, caplog) -> None:
     Test start() function
     """
     start_mock = MagicMock()
-    mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf',
                  MagicMock(return_value=default_conf))
@@ -184,7 +183,6 @@ def test_fmin_best_results(mocker, init_hyperopt, default_conf, caplog) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value=fmin_result)
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
-    mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
 
     Strategy({'strategy': 'default_strategy'})
@@ -230,7 +228,6 @@ def test_fmin_throw_value_error(mocker, init_hyperopt, default_conf, caplog) -> 
     conf.update({'timerange': None})
     conf.update({'spaces': 'all'})
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
-    mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
 
     Strategy({'strategy': 'default_strategy'})
@@ -274,7 +271,6 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker, init_hyperopt, defa
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
-    mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
 
     Strategy({'strategy': 'default_strategy'})

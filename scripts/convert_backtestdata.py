@@ -10,7 +10,7 @@ Optional Cli parameters
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
 """
-
+import logging
 import sys
 from argparse import Namespace
 from os import path
@@ -22,13 +22,12 @@ import gzip
 
 from freqtrade.arguments import Arguments
 from freqtrade import misc
-from freqtrade.logger import Logger
 from pandas import DataFrame
 from freqtrade.constants import Constants
 
 import dateutil.parser
 
-logger = Logger(name="freqtrade").get_logger()
+logger = logging.getLogger('freqtrade')
 
 
 def load_old_file(filename) -> (List[Dict], bool):

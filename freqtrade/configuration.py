@@ -3,6 +3,7 @@ This module contains the configuration class
 """
 
 import json
+import logging
 from argparse import Namespace
 from typing import Dict, Any
 from jsonschema import Draft4Validator, validate
@@ -11,7 +12,9 @@ import ccxt
 
 from freqtrade import OperationalException
 from freqtrade.constants import Constants
-from freqtrade.logger import Logger
+
+
+logger = logging.getLogger(__name__)
 
 
 class Configuration(object):
@@ -21,8 +24,6 @@ class Configuration(object):
     """
     def __init__(self, args: Namespace) -> None:
         self.args = args
-        self.logging = Logger(name=__name__)
-        self.logger = self.logging.get_logger()
         self.config = None
 
     def load_config(self) -> Dict[str, Any]:
@@ -30,7 +31,7 @@ class Configuration(object):
         Extract information for sys.argv and load the bot configuration
         :return: Configuration dictionary
         """
-        self.logger.info('Using config: %s ...', self.args.config)
+        logger.info('Using config: %s ...', self.args.config)
         config = self._load_config_file(self.args.config)
 
         # Add the strategy file to use
@@ -57,7 +58,7 @@ class Configuration(object):
             with open(path) as file:
                 conf = json.load(file)
         except FileNotFoundError:
-            self.logger.critical(
+            logger.critical(
                 'Config file "%s" not found. Please create your config file',
                 path
             )
@@ -65,7 +66,7 @@ class Configuration(object):
 
         if 'internals' not in conf:
             conf['internals'] = {}
-        self.logger.info('Validating configuration ...')
+        logger.info('Validating configuration ...')
 
         return self._validate_config(conf)
 
@@ -78,13 +79,16 @@ class Configuration(object):
         # Log level
         if 'loglevel' in self.args and self.args.loglevel:
             config.update({'loglevel': self.args.loglevel})
-            self.logging.set_level(self.args.loglevel)
-            self.logger.info('Log level set at %s', config['loglevel'])
+            logging.basicConfig(
+                level=config['loglevel'],
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            )
+            logger.info('Log level set to %s', logging.getLevelName(config['loglevel']))
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
             config.update({'dynamic_whitelist': self.args.dynamic_whitelist})
-            self.logger.info(
+            logger.info(
                 'Parameter --dynamic-whitelist detected. '
                 'Using dynamically generated whitelist. '
                 '(not applicable with Backtesting and Hyperopt)'
@@ -93,13 +97,13 @@ class Configuration(object):
         # Add dry_run_db if found and the bot in dry run
         if self.args.dry_run_db and config.get('dry_run', False):
             config.update({'dry_run_db': True})
-            self.logger.info('Parameter --dry-run-db detected ...')
+            logger.info('Parameter --dry-run-db detected ...')
 
         if config.get('dry_run_db', False):
             if config.get('dry_run', False):
-                self.logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite"')
+                logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite"')
             else:
-                self.logger.info('Dry run is disabled. (--dry_run_db ignored)')
+                logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
         # Check if the exchange set by the user is supported
         self.check_exchange(config)
@@ -116,39 +120,39 @@ class Configuration(object):
         # (that will override the strategy configuration)
         if 'ticker_interval' in self.args and self.args.ticker_interval:
             config.update({'ticker_interval': self.args.ticker_interval})
-            self.logger.info('Parameter -i/--ticker-interval detected ...')
-            self.logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
+            logger.info('Parameter -i/--ticker-interval detected ...')
+            logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
 
         # If -l/--live is used we add it to the configuration
         if 'live' in self.args and self.args.live:
             config.update({'live': True})
-            self.logger.info('Parameter -l/--live detected ...')
+            logger.info('Parameter -l/--live detected ...')
 
         # If --realistic-simulation is used we add it to the configuration
         if 'realistic_simulation' in self.args and self.args.realistic_simulation:
             config.update({'realistic_simulation': True})
-            self.logger.info('Parameter --realistic-simulation detected ...')
-        self.logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+            logger.info('Parameter --realistic-simulation detected ...')
+        logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
             config.update({'timerange': self.args.timerange})
-            self.logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
 
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})
-            self.logger.info('Parameter --datadir detected: %s ...', self.args.datadir)
+            logger.info('Parameter --datadir detected: %s ...', self.args.datadir)
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
             config.update({'refresh_pairs': True})
-            self.logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
 
         # If --export is used we add it to the configuration
         if 'export' in self.args and self.args.export:
             config.update({'export': self.args.export})
-            self.logger.info('Parameter --export detected: %s ...', self.args.export)
+            logger.info('Parameter --export detected: %s ...', self.args.export)
 
         return config
 
@@ -160,18 +164,18 @@ class Configuration(object):
         # If --realistic-simulation is used we add it to the configuration
         if 'epochs' in self.args and self.args.epochs:
             config.update({'epochs': self.args.epochs})
-            self.logger.info('Parameter --epochs detected ...')
-            self.logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
+            logger.info('Parameter --epochs detected ...')
+            logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
 
         # If --mongodb is used we add it to the configuration
         if 'mongodb' in self.args and self.args.mongodb:
             config.update({'mongodb': self.args.mongodb})
-            self.logger.info('Parameter --use-mongodb detected ...')
+            logger.info('Parameter --use-mongodb detected ...')
 
         # If --spaces is used we add it to the configuration
         if 'spaces' in self.args and self.args.spaces:
             config.update({'spaces': self.args.spaces})
-            self.logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
+            logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
 
         return config
 
@@ -185,7 +189,7 @@ class Configuration(object):
             validate(conf, Constants.CONF_SCHEMA)
             return conf
         except ValidationError as exception:
-            self.logger.fatal(
+            logger.fatal(
                 'Invalid configuration. See config.json.example. Reason: %s',
                 exception
             )
@@ -215,10 +219,10 @@ class Configuration(object):
                             'The following exchanges are supported: {}'\
                 .format(exchange, ', '.join(ccxt.exchanges))
 
-            self.logger.critical(exception_msg)
+            logger.critical(exception_msg)
             raise OperationalException(
                 exception_msg
             )
 
-        self.logger.debug('Exchange "%s" supported', exchange)
+        logger.debug('Exchange "%s" supported', exchange)
         return True

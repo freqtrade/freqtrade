@@ -29,7 +29,6 @@ def test_strategy_structure():
 
 def test_load_strategy(result):
     strategy = Strategy()
-    strategy.logger = logging.getLogger(__name__)
 
     assert not hasattr(Strategy, 'custom_strategy')
     strategy._load_strategy('test_strategy')
@@ -42,14 +41,13 @@ def test_load_strategy(result):
 
 def test_load_not_found_strategy(caplog):
     strategy = Strategy()
-    strategy.logger = logging.getLogger(__name__)
 
     assert not hasattr(Strategy, 'custom_strategy')
     strategy._load_strategy('NotFoundStrategy')
 
     error_msg = "Impossible to load Strategy 'user_data/strategies/{}.py'. This file does not " \
                 "exist or contains Python code errors".format('NotFoundStrategy')
-    assert ('test_strategy', logging.ERROR, error_msg) in caplog.record_tuples
+    assert ('freqtrade.strategy.strategy', logging.ERROR, error_msg) in caplog.record_tuples
 
 
 def test_strategy(result):
