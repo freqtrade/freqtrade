@@ -21,28 +21,18 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver()
-
-    assert not hasattr(StrategyResolver, 'custom_strategy')
     resolver._load_strategy('TestStrategy')
-
-    assert not hasattr(StrategyResolver, 'custom_strategy')
-
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
 def test_load_strategy_custom_directory(result):
     resolver = StrategyResolver()
-
-    assert not hasattr(StrategyResolver, 'custom_strategy')
-
     extra_dir = os.path.join('some', 'path')
     with pytest.raises(
             FileNotFoundError,
             match=r".*No such file or directory: '{}'".format(extra_dir)):
         resolver._load_strategy('TestStrategy', extra_dir)
-
-    assert not hasattr(StrategyResolver, 'custom_strategy')
 
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
