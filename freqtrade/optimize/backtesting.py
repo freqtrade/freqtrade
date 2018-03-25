@@ -296,12 +296,9 @@ def start(args: Namespace) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-
-    # Initialize logger
-    logger.info('Starting freqtrade in Backtesting mode')
-
     # Initialize configuration
     config = setup_configuration(args)
+    logger.info('Starting freqtrade in Backtesting mode')
 
     # Initialize backtesting object
     backtesting = Backtesting(config)
