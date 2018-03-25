@@ -481,7 +481,11 @@ def test_processed() -> None:
         assert col in cols
 
 
-def test_backtest_pricecontours(default_conf) -> None:
+def test_backtest_pricecontours(init_backtesting, default_conf, mocker) -> None:
+    mocker.patch(
+        'freqtrade.optimize.backtesting.exchange.get_fee',
+        MagicMock(return_value=0.0025)
+    )
     tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
@@ -521,7 +525,11 @@ def test_backtest_only_sell(default_conf):
     assert results.empty
 
 
-def test_backtest_alternate_buy_sell(default_conf):
+def test_backtest_alternate_buy_sell(init_backtesting, default_conf, mocker):
+    mocker.patch(
+        'freqtrade.optimize.backtesting.exchange.get_fee',
+        MagicMock(return_value=0.0025)
+    )
     backtest_conf = _make_backtest_conf(conf=default_conf, pair='UNITTEST/BTC')
     results = _run_backtest_1(_trend_alternate, backtest_conf)
     assert len(results) == 3
@@ -530,6 +538,10 @@ def test_backtest_alternate_buy_sell(default_conf):
 def test_backtest_record(default_conf, mocker):
     names = []
     records = []
+    mocker.patch(
+        'freqtrade.optimize.backtesting.exchange.get_fee',
+        MagicMock(return_value=0.0025)
+    )
     mocker.patch(
         'freqtrade.optimize.backtesting.file_dump_json',
         new=lambda n, r: (names.append(n), records.append(r))

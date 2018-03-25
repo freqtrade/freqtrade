@@ -35,7 +35,8 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=MagicMock(return_value=0.0025)
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -83,7 +84,8 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=MagicMock(return_value=0.0025)
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -117,7 +119,8 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=MagicMock(return_value=0.0025)
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -173,7 +176,8 @@ def test_rpc_trade_statistics(
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=MagicMock(return_value=0.0025)
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -235,7 +239,8 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, ticker_sell_u
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=MagicMock(return_value=0.0025)
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -253,7 +258,8 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, ticker_sell_u
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker_sell_up
+        get_ticker=ticker_sell_up,
+        get_fee=MagicMock(return_value=0.0025)
     )
     trade.update(limit_sell_order)
     trade.close_date = datetime.utcnow()
@@ -490,7 +496,8 @@ def test_performance_handle(default_conf, ticker, limit_buy_order,
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=MagicMock(return_value=0.0025)
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
