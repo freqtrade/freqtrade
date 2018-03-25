@@ -217,13 +217,13 @@ class Hyperopt(Backtesting):
         """
         if results['loss'] < self.current_best_loss:
             self.current_best_loss = results['loss']
-            log_msg = '{:5d}/{}: {}. Loss {:.5f}'.format(
+            log_msg = '\n{:5d}/{}: {}. Loss {:.5f}'.format(
                 results['current_tries'],
                 results['total_tries'],
                 results['result'],
                 results['loss']
             )
-            logger.info(log_msg)
+            print(log_msg)
         else:
             print('.', end='')
             sys.stdout.flush()
