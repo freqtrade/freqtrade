@@ -7,9 +7,8 @@ import re
 PROC_COUNT = multiprocessing.cpu_count() - 1
 cwd = os.getcwd()
 print(cwd)
-
-
-limit = multiprocessing.cpu_count() - 1
+global procs
+limit = 24
 WORK_DIR = os.path.join(
     os.path.sep,
     os.path.abspath(os.path.dirname(__file__)),
@@ -24,14 +23,14 @@ command = [
 ]
 global current
 current = 0
-
+procs = 0
 DEVNULL = open(os.devnull, 'wb')
 
 while True:
-    def Run(command):
-        global current
-        processes = [subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) for i in range(PROC_COUNT)]
-        for proc in processes:
+    while procs < 32:
+        try:
+            procs + 1
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             wait = proc.communicate()
             string = str(wait)
             params = re.search(r'~~~~(.*)~~~~', string).group(1)
@@ -62,4 +61,6 @@ while True:
                 if rsi:
                     print('~~~RSI~~~')
                     print(rsi.group(1))
-    data = Run(command)
+            procs - 1
+        except Exception as e:
+            print(e)
