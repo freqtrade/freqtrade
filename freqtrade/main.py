@@ -32,7 +32,7 @@ def main(sysargv: List[str]) -> None:
     # Means if Backtesting or Hyperopt have been called we exit the bot
     if hasattr(args, 'func'):
         args.func(args)
-        return 0
+        return
 
     logger.info(
         'Starting freqtrade %s (loglevel=%s)',
@@ -40,6 +40,8 @@ def main(sysargv: List[str]) -> None:
         logging.getLevelName(args.loglevel)
     )
 
+    freqtrade = None
+    return_code = 1
     try:
         # Load and validate configuration
         configuration = Configuration(args)
@@ -53,11 +55,13 @@ def main(sysargv: List[str]) -> None:
 
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
+        return_code = 0
     except BaseException:
         logger.exception('Fatal exception!')
     finally:
-        freqtrade.clean()
-        sys.exit(0)
+        if freqtrade:
+            freqtrade.clean()
+        sys.exit(return_code)
 
 
 def set_loggers() -> None:
