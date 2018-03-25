@@ -388,22 +388,22 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
-                order = exchange.get_order(trade.open_order_id)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 self.logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
                     traceback.format_exc())
                 continue
-            ordertime = arrow.get(order['opened'])
+            ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
                 continue
 
-            if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
+            if order['side'] == 'buy' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_buy(trade, order)
-            elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
+            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
@@ -465,7 +465,7 @@ class FreqtradeBot(object):
         :return: None
         """
         # Execute sell and update trade record
-        order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+        order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)

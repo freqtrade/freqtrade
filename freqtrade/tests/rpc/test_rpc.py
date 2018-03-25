@@ -67,7 +67,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
         '*Current Rate:* `0.00001098`\n'
         '*Close Profit:* `None`\n'
         '*Current Profit:* `-0.59%`\n'
-        '*Open Order:* `(LIMIT_BUY rem=0.00000000)`'
+        '*Open Order:* `(limit buy rem=0.00000000)`'
     ]
     assert result == result_message
     assert trade.find('[ETH/BTC]') >= 0
@@ -401,8 +401,9 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
         cancel_order=cancel_order_mock,
         get_order=MagicMock(
             return_value={
-                'closed': True,
-                'type': 'LIMIT_BUY',
+                'status': 'closed',
+                'type': 'limit',
+                'side': 'buy'
             }
         )
     )
@@ -448,8 +449,9 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
     mocker.patch(
         'freqtrade.freqtradebot.exchange.get_order',
         return_value={
-            'closed': None,
-            'type': 'LIMIT_BUY'
+            'status': 'open',
+            'type': 'limit',
+            'side': 'buy'
         }
     )
     # check that the trade is called, which is done
@@ -464,8 +466,9 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
     mocker.patch(
         'freqtrade.freqtradebot.exchange.get_order',
         return_value={
-            'closed': None,
-            'type': 'LIMIT_SELL'
+            'status': 'open',
+            'type': 'limit',
+            'side': 'sell'
         }
     )
     (error, res) = rpc.rpc_forcesell('2')

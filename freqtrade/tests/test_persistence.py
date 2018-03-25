@@ -191,7 +191,7 @@ def test_update_open_order(limit_buy_order):
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    limit_buy_order['closed'] = False
+    limit_buy_order['status'] = 'open'
     trade.update(limit_buy_order)
 
     assert trade.open_order_id is None
