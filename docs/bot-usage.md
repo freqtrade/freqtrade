@@ -57,7 +57,7 @@ To load a strategy, simply pass the class name (e.g.: `CustomStrategy`) in this 
 
 **Example:**  
 In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
-a strategy class called `AwesomeStrategy` to  load it:
+a strategy class called `AwesomeStrategy` to load it:
 ```bash
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```

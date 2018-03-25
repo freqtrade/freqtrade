@@ -14,12 +14,12 @@ Since the version `0.16.0` the bot allows using custom strategy file.
 This is very simple. Copy paste your strategy file into the folder 
 `user_data/strategies`.
 
-Let assume you have a class called `AwesomeStragety` in the file `awesome-strategy.py`:
+Let assume you have a class called `AwesomeStrategy` in the file `awesome-strategy.py`:
 1. Move your file into `user_data/strategies` (you should have `user_data/strategies/awesome-strategy.py`
-2. Start the bot with the param `--strategy AwesomeStragety` (the parameter is the class name)
+2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStragety
+python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
 ## Change your strategy
