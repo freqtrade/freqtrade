@@ -4,6 +4,7 @@ import gzip
 import json
 import os
 from typing import Optional, List, Dict, Tuple
+from datetime import datetime
 
 from freqtrade import misc
 from freqtrade.exchange import get_ticker_history
@@ -135,8 +136,8 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
             data = json.load(file)
-        logger.debug("Current Start: %s", data[1]['T'])
-        logger.debug("Current End: %s", data[-1:][0]['T'])
+        logger.debug("Current Start: %s", format_ms_time(data[1][0]))
+        logger.debug("Current End: %s", format_ms_time(data[-1:][0][0]))
     else:
         data = []
         logger.debug("Current Start: None")
@@ -146,10 +147,14 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     for row in new_data:
         if row not in data:
             data.append(row)
-    logger.debug("New Start: %s", data[1]['T'])
-    logger.debug("New End: %s", data[-1:][0]['T'])
-    data = sorted(data, key=lambda data: data['T'])
+    logger.debug("New Start: %s", format_ms_time(data[0][0]))
+    logger.debug("New End: %s", format_ms_time(data[-1:][0][0]))
+    data = sorted(data, key=lambda data: data[0])
 
     misc.file_dump_json(filename, data)
 
     return True
+
+
+def format_ms_time(date: str) -> str:
+    return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')

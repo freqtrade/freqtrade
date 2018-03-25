@@ -181,26 +181,18 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 # @cached(TTLCache(maxsize=100, ttl=30))
 @retrier
-def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
+def get_ticker_history(pair: str, tick_interval) -> List[List]:
     # TODO: tickers need to be in format 1m,5m
     # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
     if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
-        logger.warning('Exhange %s does not support fetching historical candlestick data.', _API.name)
+        logger.warning('Exhange %s does not support fetching historical candlestick data.',
+                       _API.name)
         return []
 
     try:
-        history = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
-        history_json = []
-        for candlestick in history:
-            history_json.append({
-                'T': datetime.fromtimestamp(candlestick[0]/1000.0).strftime('%Y-%m-%dT%H:%M:%S.%f'),
-                'O': candlestick[1],
-                'H': candlestick[2],
-                'L': candlestick[3],
-                'C': candlestick[4],
-                'V': candlestick[5],
-            })
-        return history_json
+        ohlcv = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
+
+        return ohlcv
     except IndexError as e:
         logger.warning('Empty ticker history. Msg %s', str(e))
     except ccxt.NetworkError as e:
