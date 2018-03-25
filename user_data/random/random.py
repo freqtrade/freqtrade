@@ -34,7 +34,7 @@ while True:
         for proc in processes:
             wait = proc.communicate()
             string = str(wait)
-            params = re.search(r'~~~~(.*)\~~~~', string).group(1)
+            params = re.search(r'~~~~(.*)\~~~~', string)
             mfi = re.search(r'MFI Value(.*)XXX', string)
             fastd = re.search(r'FASTD Value(.*)XXX', string)
             adx = re.search(r'ADX Value(.*)XXX', string)
