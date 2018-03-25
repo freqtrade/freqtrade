@@ -287,7 +287,7 @@ class FreqtradeBot(object):
         buy_limit = self.get_target_bid(exchange.get_ticker(pair))
         amount = stake_amount / buy_limit
 
-        order_id = exchange.buy(pair, buy_limit, amount)
+        order_id = exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(
             stake_amount,
