@@ -185,10 +185,8 @@ def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
     # TODO: tickers need to be in format 1m,5m
     # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
     if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
-        raise OperationalException(
-            'Exhange {} does not support fetching historical candlestick data.'.format(
-                _API.name)
-        )
+        logger.warning('Exhange %s does not support fetching historical candlestick data.', _API.name)
+        return []
 
     try:
         history = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
@@ -205,13 +203,11 @@ def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
         return history_json
     except IndexError as e:
         logger.warning('Empty ticker history. Msg %s', str(e))
-        return []
     except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not load ticker history due to networking error. Message: {}'.format(e)
-        )
+        logger.warning('Could not load ticker history due to networking error. Message: %s', str(e))
     except ccxt.BaseError as e:
-        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
+        logger.warning('Could not fetch ticker data. Msg: %s', str(e))
+    return []
 
 
 def cancel_order(order_id: str) -> None:
