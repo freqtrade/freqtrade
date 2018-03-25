@@ -19,6 +19,7 @@ WORK_DIR = os.path.join(
 # Spawn workers
 command = [
     'python3.6',
+    '-u',
      WORK_DIR,
     'backtesting',
 ]
@@ -31,7 +32,7 @@ while True:
     while procs < 32:
         try:
             procs + 1
-            proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
             data = proc.communicate()
             string = str(data)
             params = re.search(r'~~~~(.*)~~~~', string).group(1)
