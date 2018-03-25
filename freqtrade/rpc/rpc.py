@@ -29,7 +29,7 @@ class RPC(object):
         """
         self.freqtrade = freqtrade
         self.logger = Logger(
-            name=__name__,
+            __name__,
             level=self.freqtrade.config.get('loglevel')
         ).get_logger()
 

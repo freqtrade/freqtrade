@@ -10,7 +10,7 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.logger import Logger
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
-logger = Logger(name=__name__).get_logger()
+logger = Logger(__name__).get_logger()
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -> List[Dict]:

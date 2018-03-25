@@ -12,13 +12,13 @@ def test_logger_object() -> None:
     Test the Constants object has the mandatory Constants
     :return: None
     """
-    logger = Logger()
+    logger = Logger('')
     assert logger.name == ''
     assert logger.level == 20
     assert logger.level is logging.INFO
     assert hasattr(logger, 'get_logger')
 
-    logger = Logger(name='Foo', level=logging.WARNING)
+    logger = Logger('Foo', level=logging.WARNING)
     assert logger.name == 'Foo'
     assert logger.name != ''
     assert logger.level == 30

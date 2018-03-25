@@ -38,7 +38,7 @@ class FreqtradeBot(object):
         """
 
         # Init the logger
-        self.logger = Logger(name=__name__, level=config.get('loglevel')).get_logger()
+        self.logger = Logger(__name__, level=config.get('loglevel')).get_logger()
 
         # Init bot states
         self.state = State.STOPPED

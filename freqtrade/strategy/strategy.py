@@ -27,7 +27,7 @@ class Strategy(object):
         :param config:
         :return:
         """
-        self.logger = Logger(name=__name__).get_logger()
+        self.logger = Logger(__name__).get_logger()
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         if 'strategy' in config:

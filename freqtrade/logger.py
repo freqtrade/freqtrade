@@ -5,13 +5,14 @@ This module contains the class for logger and logging messages
 """
 
 import logging
+from typing import Optional
 
 
 class Logger(object):
     """
     Logging class
     """
-    def __init__(self, name='', level=logging.INFO) -> None:
+    def __init__(self, name, level: Optional[int] = None) -> None:
         """
         Init the logger class
         :param name: Name of the Logger scope
@@ -21,9 +22,7 @@ class Logger(object):
         self.name = name
         self.logger = None
 
-        if level is None:
-            level = logging.INFO
-        self.level = level
+        self.level = level or logging.getLogger().getEffectiveLevel()
 
         self._init_logger()
 

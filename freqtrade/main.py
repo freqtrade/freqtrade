@@ -14,8 +14,6 @@ from freqtrade.configuration import Configuration
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.logger import Logger
 
-logger = Logger(name='freqtrade').get_logger()
-
 
 def main(sysargv: List[str]) -> None:
     """
@@ -27,6 +25,8 @@ def main(sysargv: List[str]) -> None:
         'Simple High Frequency Trading Bot for crypto currencies'
     )
     args = arguments.get_parsed_arg()
+
+    logger = Logger(__name__, level=args.loglevel).get_logger()
 
     # A subcommand has been issued.
     # Means if Backtesting or Hyperopt have been called we exit the bot

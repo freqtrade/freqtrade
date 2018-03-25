@@ -32,7 +32,7 @@ class Backtesting(object):
     def __init__(self, config: Dict[str, Any]) -> None:
 
         # Init the logger
-        self.logging = Logger(name=__name__, level=config['loglevel'])
+        self.logging = Logger(__name__, level=config['loglevel'])
         self.logger = self.logging.get_logger()
         self.config = config
         self.analyze = None
@@ -301,7 +301,7 @@ def start(args: Namespace) -> None:
     """
 
     # Initialize logger
-    logger = Logger(name=__name__).get_logger()
+    logger = Logger(__name__).get_logger()
     logger.info('Starting freqtrade in Backtesting mode')
 
     # Initialize configuration

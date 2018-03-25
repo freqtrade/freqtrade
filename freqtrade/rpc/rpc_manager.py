@@ -20,7 +20,7 @@ class RPCManager(object):
 
         # Init the logger
         self.logger = Logger(
-            name=__name__,
+            __name__,
             level=self.freqtrade.config.get('loglevel')
         ).get_logger()
 

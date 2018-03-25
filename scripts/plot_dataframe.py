@@ -28,7 +28,7 @@ from freqtrade.logger import Logger
 import freqtrade.optimize as optimize
 
 
-logger = Logger(name="Graph dataframe").get_logger()
+logger = Logger(__name__).get_logger()
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:

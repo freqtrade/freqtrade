@@ -44,7 +44,7 @@ class Hyperopt(Backtesting):
         super().__init__(config)
 
         # Rename the logging to display Hyperopt file instead of Backtesting
-        self.logging = Logger(name=__name__, level=config['loglevel'])
+        self.logging = Logger(__name__, level=config['loglevel'])
         self.logger = self.logging.get_logger()
 
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
@@ -598,7 +598,7 @@ def start(args: Namespace) -> None:
     logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
     # Initialize logger
-    logger = Logger(name=__name__).get_logger()
+    logger = Logger(__name__).get_logger()
     logger.info('Starting freqtrade in Hyperopt mode')
 
     # Initialize configuration

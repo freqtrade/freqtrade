@@ -30,7 +30,7 @@ import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 
 
-logger = Logger(name="Graph profits").get_logger()
+logger = Logger(__name__).get_logger()
 
 
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]

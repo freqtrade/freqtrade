@@ -20,7 +20,7 @@ class Configuration(object):
     """
     def __init__(self, args: Namespace) -> None:
         self.args = args
-        self.logging = Logger(name=__name__)
+        self.logging = Logger(__name__)
         self.logger = self.logging.get_logger()
         self.config = None
 
