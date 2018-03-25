@@ -27,8 +27,7 @@ class StrategyResolver(object):
     def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Load the custom class from config parameter
-        :param config:
-        :return:
+        :param config: configuration dictionary or None
         """
         config = config or {}
 
