@@ -257,9 +257,7 @@ class Backtesting(object):
                 results
             )
         )
-        time.sleep(5)
-        os.close(1)
-        sys.exit()
+        sys.exit(1)
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
     """
