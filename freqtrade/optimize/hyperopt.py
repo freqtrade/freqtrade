@@ -31,6 +31,9 @@ from freqtrade.optimize.backtesting import Backtesting
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 
+logger = logging.getLogger(__name__)
+
+
 class Hyperopt(Backtesting):
     """
     Hyperopt class, this class contains all the logic to run a hyperopt simulation
@@ -42,11 +45,6 @@ class Hyperopt(Backtesting):
     def __init__(self, config: Dict[str, Any]) -> None:
 
         super().__init__(config)
-
-        # Rename the logging to display Hyperopt file instead of Backtesting
-        self.logging = Logger(__name__, level=config['loglevel'])
-        self.logger = self.logging.get_logger()
-
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
         self.target_trades = 600
@@ -194,14 +192,14 @@ class Hyperopt(Backtesting):
         """
         Save hyperopt trials to file
         """
-        self.logger.info('Saving Trials to \'%s\'', self.trials_file)
+        logger.info('Saving Trials to \'%s\'', self.trials_file)
         pickle.dump(self.trials, open(self.trials_file, 'wb'))
 
     def read_trials(self) -> Trials:
         """
         Read hyperopt trials file
         """
-        self.logger.info('Reading Trials from \'%s\'', self.trials_file)
+        logger.info('Reading Trials from \'%s\'', self.trials_file)
         trials = pickle.load(open(self.trials_file, 'rb'))
         os.remove(self.trials_file)
         return trials
@@ -212,7 +210,7 @@ class Hyperopt(Backtesting):
         """
         vals = json.dumps(self.trials.best_trial['misc']['vals'], indent=4)
         results = self.trials.best_trial['result']['result']
-        self.logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
+        logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
 
     def log_results(self, results) -> None:
         """
@@ -226,7 +224,7 @@ class Hyperopt(Backtesting):
                 results['result'],
                 results['loss']
             )
-            self.logger.info(log_msg)
+            logger.info(log_msg)
         else:
             print('.', end='')
             sys.stdout.flush()
@@ -511,8 +509,8 @@ class Hyperopt(Backtesting):
         self.processed = self.tickerdata_to_dataframe(data)
 
         if self.config.get('mongodb'):
-            self.logger.info('Using mongodb ...')
-            self.logger.info(
+            logger.info('Using mongodb ...')
+            logger.info(
                 'Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!'
             )
 
@@ -522,7 +520,7 @@ class Hyperopt(Backtesting):
                 exp_key='exp1'
             )
         else:
-            self.logger.info('Preparing Trials..')
+            logger.info('Preparing Trials..')
             signal.signal(signal.SIGINT, self.signal_handler)
             # read trials file if we have one
             if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
@@ -530,16 +528,13 @@ class Hyperopt(Backtesting):
 
                 self.current_tries = len(self.trials.results)
                 self.total_tries += self.current_tries
-                self.logger.info(
+                logger.info(
                     'Continuing with trials. Current: %d, Total: %d',
                     self.current_tries,
                     self.total_tries
                 )
 
         try:
-            # change the Logging format
-            self.logging.set_format('\n%(message)s')
-
             best_parameters = fmin(
                 fn=self.generate_optimizer,
                 space=self.hyperopt_space(),
@@ -563,11 +558,11 @@ class Hyperopt(Backtesting):
                 best_parameters
             )
 
-        self.logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
+        logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
         if 'roi_t1' in best_parameters:
-            self.logger.info('ROI table:\n%s', self.generate_roi_table(best_parameters))
+            logger.info('ROI table:\n%s', self.generate_roi_table(best_parameters))
 
-        self.logger.info('Best Result:\n%s', best_result)
+        logger.info('Best Result:\n%s', best_result)
 
         # Store trials result to file to resume next time
         self.save_trials()
@@ -576,7 +571,7 @@ class Hyperopt(Backtesting):
         """
         Hyperopt SIGINT handler
         """
-        self.logger.info(
+        logger.info(
             'Hyperopt received %s',
             signal.Signals(sig).name
         )

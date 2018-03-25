@@ -4,6 +4,7 @@
 This module load custom strategies
 """
 import importlib
+import logging
 import os
 import sys
 from collections import OrderedDict
@@ -11,10 +12,12 @@ from collections import OrderedDict
 from pandas import DataFrame
 
 from freqtrade.constants import Constants
-from freqtrade.logger import Logger
 from freqtrade.strategy.interface import IStrategy
 
 sys.path.insert(0, r'../../user_data/strategies')
+
+
+logger = logging.getLogger(__name__)
 
 
 class Strategy(object):
@@ -27,8 +30,6 @@ class Strategy(object):
         :param config:
         :return:
         """
-        self.logger = Logger(__name__).get_logger()
-
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         if 'strategy' in config:
             strategy = config['strategy']
@@ -42,17 +43,17 @@ class Strategy(object):
         # Check if we need to override configuration
         if 'minimal_roi' in config:
             self.custom_strategy.minimal_roi = config['minimal_roi']
-            self.logger.info("Override strategy \'minimal_roi\' with value in config file.")
+            logger.info("Override strategy \'minimal_roi\' with value in config file.")
 
         if 'stoploss' in config:
             self.custom_strategy.stoploss = config['stoploss']
-            self.logger.info(
+            logger.info(
                 "Override strategy \'stoploss\' with value in config file: %s.", config['stoploss']
             )
 
         if 'ticker_interval' in config:
             self.custom_strategy.ticker_interval = config['ticker_interval']
-            self.logger.info(
+            logger.info(
                 "Override strategy \'ticker_interval\' with value in config file: %s.",
                 config['ticker_interval']
             )
@@ -87,12 +88,12 @@ class Strategy(object):
 
         # Fallback to the default strategy
         except (ImportError, TypeError) as error:
-            self.logger.error(
+            logger.error(
                 "Impossible to load Strategy 'user_data/strategies/%s.py'. This file does not exist"
                 " or contains Python code errors",
                 strategy_name
             )
-            self.logger.error(
+            logger.error(
                 "The error is:\n%s.",
                 error
             )
@@ -106,7 +107,7 @@ class Strategy(object):
         module = importlib.import_module(filename, __package__)
         custom_strategy = getattr(module, module.class_name)
 
-        self.logger.info("Load strategy class: %s (%s.py)", module.class_name, filename)
+        logger.info("Load strategy class: %s (%s.py)", module.class_name, filename)
         return custom_strategy()
 
     @staticmethod

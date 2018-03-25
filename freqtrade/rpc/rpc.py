@@ -1,7 +1,7 @@
 """
 This module contains class to define a RPC communications
 """
-
+import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Tuple, Any
@@ -11,10 +11,12 @@ import sqlalchemy as sql
 from pandas import DataFrame
 
 from freqtrade import exchange
-from freqtrade.logger import Logger
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
+
+
+logger = logging.getLogger(__name__)
 
 
 class RPC(object):
@@ -28,10 +30,6 @@ class RPC(object):
         :return: None
         """
         self.freqtrade = freqtrade
-        self.logger = Logger(
-            __name__,
-            level=self.freqtrade.config.get('loglevel')
-        ).get_logger()
 
     def rpc_trade_status(self) -> Tuple[bool, Any]:
         """
@@ -346,7 +344,7 @@ class RPC(object):
             )
         ).first()
         if not trade:
-            self.logger.warning('forcesell: Invalid argument received')
+            logger.warning('forcesell: Invalid argument received')
             return True, 'Invalid argument.'
 
         _exec_forcesell(trade)

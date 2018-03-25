@@ -11,7 +11,7 @@ Optional Cli parameters
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
 """
-
+import logging
 import sys
 from argparse import Namespace
 
@@ -24,11 +24,10 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
 from freqtrade import exchange
-from freqtrade.logger import Logger
 import freqtrade.optimize as optimize
 
 
-logger = Logger(__name__).get_logger()
+logger = logging.getLogger(__name__)
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
