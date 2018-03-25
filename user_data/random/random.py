@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 import os
 import multiprocessing
-from itertools import zip_longest
 import subprocess
 import re
 PROC_COUNT = multiprocessing.cpu_count() - 1
 cwd = os.getcwd()
 print(cwd)
-global procs
-limit = 24
 WORK_DIR = os.path.join(
     os.path.sep,
     os.path.abspath(os.path.dirname(__file__)),
@@ -22,12 +19,13 @@ command = [
     'backtesting',
 ]
 global current
+global procs
 current = 0
 procs = 0
 DEVNULL = open(os.devnull, 'wb')
 
 while True:
-    while procs < 32:
+    while procs < PROC_COUNT:
         try:
             procs + 1
             proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
