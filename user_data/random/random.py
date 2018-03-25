@@ -34,7 +34,7 @@ while True:
         for proc in processes:
             wait = proc.communicate()
             string = str(wait)
-            params = re.search(r'~~~~(.*)\~~~~', string)
+            params = re.search(r'~~~~(.*)~~~~', string).group(1)
             mfi = re.search(r'MFI Value(.*)XXX', string)
             fastd = re.search(r'FASTD Value(.*)XXX', string)
             adx = re.search(r'ADX Value(.*)XXX', string)
@@ -47,6 +47,9 @@ while True:
                 print(total)
                 if params:
                     print(params)
+                    print('~~~~~~')
+                    print('Only enable the above settings, not all settings below are used!')
+                    print('~~~~~~')
                 if mfi:
                     print(mfi.group(1))
                 if fastd:
