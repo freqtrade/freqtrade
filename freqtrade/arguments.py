@@ -87,6 +87,13 @@ class Arguments(object):
             metavar='NAME',
         )
         self.parser.add_argument(
+            '--strategy-path',
+            help='specify additional strategy lookup path',
+            dest='strategy_path',
+            type=str,
+            metavar='PATH',
+        )
+        self.parser.add_argument(
             '--dynamic-whitelist',
             help='dynamically generate and update whitelist \
                                   based on 24h BaseVolume (Default 20 currencies)',  # noqa

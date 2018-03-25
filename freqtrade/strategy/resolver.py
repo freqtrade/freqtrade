@@ -33,7 +33,8 @@ class StrategyResolver(object):
         config = config or {}
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
-        self.strategy = self._load_strategy(config.get('strategy') or Constants.DEFAULT_STRATEGY)
+        strategy_name = config.get('strategy') or Constants.DEFAULT_STRATEGY
+        self.strategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
 
         # Set attributes
         # Check if we need to override configuration
@@ -61,33 +62,34 @@ class StrategyResolver(object):
         self.strategy.stoploss = float(self.strategy.stoploss)
         self.strategy.ticker_interval = int(self.strategy.ticker_interval)
 
-    def _load_strategy(self, strategy_name: str) -> Optional[IStrategy]:
+    def _load_strategy(
+            self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
+        :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        try:
-            current_path = os.path.dirname(os.path.realpath(__file__))
-            abs_paths = [
-                os.path.join(current_path, '..', '..', 'user_data', 'strategies'),
-                current_path,
-            ]
-            for path in abs_paths:
-                strategy = self._search_strategy(path, strategy_name)
-                if strategy:
-                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
-                    return strategy
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        abs_paths = [
+            os.path.join(current_path, '..', '..', 'user_data', 'strategies'),
+            current_path,
+        ]
 
-            raise ImportError('not found')
-        # Fallback to the default strategy
-        except (ImportError, TypeError):
-            logger.exception(
-                "Impossible to load Strategy '%s'. This class does not exist"
-                " or contains Python code errors",
-                strategy_name
-            )
-            return None
+        if extra_dir:
+            # Add extra strategy directory on top of search paths
+            abs_paths.insert(0, extra_dir)
+
+        for path in abs_paths:
+            strategy = self._search_strategy(path, strategy_name)
+            if strategy:
+                logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                return strategy
+
+        raise ImportError(
+            "Impossible to load Strategy '{}'. This class does not exist"
+            " or contains Python code errors".format(strategy_name)
+        )
 
     @staticmethod
     def _get_valid_strategies(module_path: str, strategy_name: str) -> Optional[Type[IStrategy]]:

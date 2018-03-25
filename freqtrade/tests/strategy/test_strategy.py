@@ -1,8 +1,9 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import logging
-
 import os
+
+import pytest
 
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.resolver import StrategyResolver
@@ -30,15 +31,29 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
-def test_load_not_found_strategy(caplog):
-    strategy = StrategyResolver()
+def test_load_strategy_custom_directory(result):
+    resolver = StrategyResolver()
 
     assert not hasattr(StrategyResolver, 'custom_strategy')
-    strategy._load_strategy('NotFoundStrategy')
 
-    error_msg = "Impossible to load Strategy '{}'. This class does not " \
-                "exist or contains Python code errors".format('NotFoundStrategy')
-    assert ('freqtrade.strategy.resolver', logging.ERROR, error_msg) in caplog.record_tuples
+    extra_dir = os.path.join('some', 'path')
+    with pytest.raises(
+            FileNotFoundError,
+            match=r".*No such file or directory: '{}'".format(extra_dir)):
+        resolver._load_strategy('TestStrategy', extra_dir)
+
+    assert not hasattr(StrategyResolver, 'custom_strategy')
+
+    assert hasattr(resolver.strategy, 'populate_indicators')
+    assert 'adx' in resolver.strategy.populate_indicators(result)
+
+
+def test_load_not_found_strategy():
+    strategy = StrategyResolver()
+    with pytest.raises(ImportError,
+                       match=r'Impossible to load Strategy \'NotFoundStrategy\'.'
+                             r' This class does not exist or contains Python code errors'):
+        strategy._load_strategy('NotFoundStrategy')
 
 
 def test_strategy(result):
@@ -111,11 +126,3 @@ def test_strategy_override_ticker_interval(caplog):
             logging.INFO,
             'Override strategy \'ticker_interval\' with value in config file: 60.'
             ) in caplog.record_tuples
-
-
-def test_strategy_fallback_default_strategy():
-    strategy = StrategyResolver()
-
-    assert not hasattr(StrategyResolver, 'custom_strategy')
-    strategy._load_strategy('../../super_duper')
-    assert not hasattr(StrategyResolver, 'custom_strategy')

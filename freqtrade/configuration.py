@@ -36,6 +36,9 @@ class Configuration(object):
         # Add the strategy file to use
         config.update({'strategy': self.args.strategy})
 
+        if self.args.strategy_path:
+            config.update({'strategy_path': self.args.strategy_path})
+
         # Load Common configuration
         config = self._load_common_config(config)
 
