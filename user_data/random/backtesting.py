@@ -19,7 +19,8 @@ from freqtrade.logger import Logger
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 import sys
-
+import os
+import time
 class Backtesting(object):
     """
     Backtesting class, this class contains all the logic to run a backtest
@@ -257,8 +258,8 @@ class Backtesting(object):
                 results
             )
         )
-        sys.exit(1)
-
+        time.sleep(2)
+        os.close(1)
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
     """
     Prepare the configuration for the backtesting
