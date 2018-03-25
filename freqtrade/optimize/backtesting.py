@@ -199,8 +199,8 @@ class Backtesting(object):
                         # record a tuple of pair, current_profit_percent,
                         # entry-date, duration
                         records.append((pair, trade_entry[1],
-                                        row.date.strftime('%s'),
-                                        row2.date.strftime('%s'),
+                                        row.date.timestamp(),
+                                        row2.date.timestamp(),
                                         row.date, trade_entry[3]))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
