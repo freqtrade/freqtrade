@@ -51,11 +51,15 @@ while True:
                     print('Only enable the above settings, not all settings below are used!')
                     print('~~~~~~')
                 if mfi:
+                    print('~~~MFI~~~')
                     print(mfi.group(1))
                 if fastd:
+                    print('~~~FASTD~~~')
                     print(fastd.group(1))
                 if adx:
+                    print('~~~ADX~~~')
                     print(adx.group(1))
                 if rsi:
+                    print('~~~RSI~~~')
                     print(rsi.group(1))
     data = Run(command)
