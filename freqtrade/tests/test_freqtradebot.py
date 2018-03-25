@@ -201,15 +201,12 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
     assert result == -1
 
 
-def test_gen_pair_whitelist(mocker, default_conf, get_market_summaries_data) -> None:
+def test_gen_pair_whitelist(mocker, default_conf, markets) -> None:
     """
     Test _gen_pair_whitelist() method
     """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch(
-        'freqtrade.freqtradebot.exchange.get_market_summaries',
-        return_value=get_market_summaries_data
-    )
+    mocker.patch('freqtrade.freqtradebot.exchange.get_markets', markets)
 
     # Test to retrieved BTC sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
@@ -392,7 +389,7 @@ def test_create_trade_no_signal(default_conf, mocker) -> None:
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
-                                health, mocker, caplog) -> None:
+                                markets, mocker, caplog) -> None:
     """
     Test the trade creation in _process() method
     """
@@ -403,7 +400,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_wallet_health=health,
+        get_markets=markets,
         buy=MagicMock(return_value='mocked_limit_buy'),
         get_order=MagicMock(return_value=limit_buy_order)
     )
@@ -432,7 +429,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     )
 
 
-def test_process_exchange_failures(default_conf, ticker, health, mocker) -> None:
+def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> None:
     """
     Test _process() method when a RequestException happens
     """
@@ -443,7 +440,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker) -> None
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_wallet_health=health,
+        get_markets=markets,
         buy=MagicMock(side_effect=requests.exceptions.RequestException)
     )
     sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
@@ -454,7 +451,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker) -> None
     assert sleep_mock.has_calls()
 
 
-def test_process_operational_exception(default_conf, ticker, health, mocker) -> None:
+def test_process_operational_exception(default_conf, ticker, markets, mocker) -> None:
     """
     Test _process() method when an OperationalException happens
     """
@@ -465,7 +462,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker) -> 
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_wallet_health=health,
+        get_markets=markets,
         buy=MagicMock(side_effect=OperationalException)
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -477,7 +474,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker) -> 
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker) -> None:
+def test_process_trade_handling(default_conf, ticker, limit_buy_order, markets, mocker) -> None:
     """
     Test _process()
     """
@@ -488,7 +485,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_wallet_health=health,
+        get_markets=markets,
         buy=MagicMock(return_value='mocked_limit_buy'),
         get_order=MagicMock(return_value=limit_buy_order)
     )

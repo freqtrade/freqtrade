@@ -127,32 +127,80 @@ def ticker_sell_down():
 
 
 @pytest.fixture
-def health():
-    return MagicMock(return_value={
-        "ETH/BTC": {
+def markets():
+    return MagicMock(return_value=[
+        {
+            'id': 'ethbtc',
+            'symbol': 'ETH/BTC',
             'base': 'ETH',
+            'quote': 'BTC',
             'active': True,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
         },
-        "TRST/BTC": {
-            'base': 'TRST',
+        {
+            'id': 'tknbtc',
+            'symbol': 'TKN/BTC',
+            'base': 'TKN',
+            'quote': 'BTC',
             'active': True,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
         },
-        "SWT/BTC": {
-            'base': 'SWT',
+        {
+            'id': 'blkbtc',
+            'symbol': 'BLK/BTC',
+            'base': 'BLK',
+            'quote': 'BTC',
             'active': True,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
-        },
-        "BCC/BTC": {
-            'base': 'BCC',
-            'active': False,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
-        }})
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
+        }
+    ])
+
+
+@pytest.fixture
+def markets_empty():
+    return MagicMock(return_value=[])
 
 
 @pytest.fixture
@@ -334,3 +382,4 @@ def result():
 # that inserts a trade of some type and open-status
 # return the open-order-id
 # See tests in rpc/main that could use this
+

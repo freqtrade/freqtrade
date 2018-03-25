@@ -192,42 +192,44 @@ class FreqtradeBot(object):
         :param key: sort key (defaults to 'BaseVolume')
         :return: List of pairs
         """
-        summaries = sorted(
-            (v for s, v in exchange.get_market_summaries().items() if v['symbol'].endswith(base_currency)),
-            key=lambda v: v.get('info').get(key) or 0.0,
+        pairs = sorted(
+            [s['symbol'] for s in exchange.get_markets() if s['quote'] == base_currency],
             reverse=True
         )
 
-        return [s['symbol'] for s in summaries]
+        return pairs
 
     def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
         """
-        Check wallet health and remove pair from whitelist if necessary
+        Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
         trade
         :return: the list of pairs the user wants to trade without the one unavailable or
         black_listed
         """
         sanitized_whitelist = whitelist
-        health = exchange.get_wallet_health()
+        markets = exchange.get_markets()
+
+        markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
         known_pairs = set()
-        for symbol, status in health.items():
-            pair = f"{status['base']}/{self.config['stake_currency']}"
+        for market in markets:
+            pair = market['symbol']
             # pair is not int the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
                 continue
             # else the pair is valid
             known_pairs.add(pair)
             # Market is not active
-            if not status['active']:
+            if not market['active']:
                 sanitized_whitelist.remove(pair)
                 self.logger.info(
-                    'Ignoring %s from whitelist (reason: %s).',
-                    pair, status.get('Notice') or 'wallet is not active'
+                    'Ignoring %s from whitelist. Market is not active.',
+                    pair
                 )
 
         # We need to remove pairs that are unknown
         final_list = [x for x in sanitized_whitelist if x in known_pairs]
+
         return final_list
 
     def get_target_bid(self, ticker: Dict[str, float]) -> float:
