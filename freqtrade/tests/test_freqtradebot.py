@@ -792,7 +792,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     trade_buy = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -831,7 +831,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     trade_sell = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -870,7 +870,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     trade_buy = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
@@ -917,7 +917,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     trade_buy = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='123456789',
         amount=90.99181073,
         fee=0.0,
