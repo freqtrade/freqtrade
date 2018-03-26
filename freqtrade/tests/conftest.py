@@ -74,6 +74,51 @@ def default_conf():
             "secret": "secret",
             "pair_whitelist": [
                 "ETH/BTC",
+                "NEO/BTC",
+                "LTC/BTC",
+                "XRP/BTC"
+            ]
+        },
+        "telegram": {
+            "enabled": True,
+            "token": "token",
+            "chat_id": "0"
+        },
+        "initial_state": "running",
+        "loglevel": logging.DEBUG
+    }
+    validate(configuration, Constants.CONF_SCHEMA)
+    return configuration
+
+
+@pytest.fixture(scope="module")
+def default_conf_ccxt():
+    """ Returns validated configuration suitable for most tests """
+    configuration = {
+        "max_open_trades": 1,
+        "stake_currency": "BTC",
+        "stake_amount": 0.001,
+        "fiat_display_currency": "USD",
+        "ticker_interval": 5,
+        "dry_run": True,
+        "minimal_roi": {
+            "40": 0.0,
+            "30": 0.01,
+            "20": 0.02,
+            "0": 0.04
+        },
+        "stoploss": -0.10,
+        "unfilledtimeout": 600,
+        "bid_strategy": {
+            "ask_last_balance": 0.0
+        },
+        "exchange": {
+            "name": "ccxt-unittest",
+            "enabled": True,
+            "key": "key",
+            "secret": "secret",
+            "pair_whitelist": [
+                "ETH/BTC",
                 "TKN/BTC",
                 "TRST/BTC",
                 "SWT/BTC",
