@@ -201,24 +201,25 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
     assert result == -1
 
 
-def test_gen_pair_whitelist(mocker, default_conf, markets) -> None:
+def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
     """
     Test _gen_pair_whitelist() method
     """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.freqtradebot.exchange.get_markets', markets)
+    mocker.patch('freqtrade.freqtradebot.exchange.get_tickers', tickers)
+    mocker.patch('freqtrade.freqtradebot.exchange.exchange_has', MagicMock(return_value=True))
 
     # Test to retrieved BTC sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
-    assert whitelist == ['ZCL/BTC', 'ZEC/BTC', 'XZC/BTC', 'XWC/BTC']
+    assert whitelist == ['ETH/BTC', 'TKN/BTC', 'BLK/BTC']
 
-    # Test to retrieved BTC sorted on OpenBuyOrders
-    whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC', key='OpenBuyOrders')
-    assert whitelist == ['XWC/BTC', 'ZCL/BTC', 'ZEC/BTC', 'XZC/BTC']
+    # Test to retrieve BTC sorted on bidVolume
+    whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC', key='bidVolume')
+    assert whitelist == ['TKN/BTC', 'ETH/BTC', 'BLK/BTC']
 
     # Test with USDT sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='USDT')
-    assert whitelist == ['XRP/USDT', 'XVG/USDT', 'XMR/USDT', 'ZEC/USDT']
+    assert whitelist == ['TKN/USDT', 'ETH/USDT', 'BLK/USDT']
 
     # Test with ETH (our fixture does not have ETH, but Bittrex returns them)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='ETH')

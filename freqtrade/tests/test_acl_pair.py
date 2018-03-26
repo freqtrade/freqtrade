@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
 import freqtrade.tests.conftest as tt  # test tools
+from unittest.mock import MagicMock
 
 # whitelist, blacklist, filtering, all of that will
 # eventually become some rules to run on a generic ACL engine
@@ -54,13 +55,18 @@ def test_refresh_whitelist(mocker, markets):
     assert whitelist == refreshedwhitelist
 
 
-def test_refresh_whitelist_dynamic(mocker, markets):
+def test_refresh_whitelist_dynamic(mocker, markets, tickers):
     conf = whitelist_conf()
     freqtradebot = tt.get_patched_freqtradebot(mocker, conf)
-    mocker.patch('freqtrade.freqtradebot.exchange.get_markets', markets)
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.exchange',
+        get_markets=markets,
+        get_tickers=tickers,
+        exchange_has=MagicMock(return_value=True)
+    )
 
     # argument: use the whitelist dynamically by exchange-volume
-    whitelist = ['TKN/BTC', 'ETH/BTC']
+    whitelist = ['ETH/BTC', 'TKN/BTC']
 
     refreshedwhitelist = freqtradebot._refresh_whitelist(
         freqtradebot._gen_pair_whitelist(conf['stake_currency'])

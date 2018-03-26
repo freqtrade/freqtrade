@@ -372,14 +372,144 @@ def ticker_history_without_bv():
 
 
 @pytest.fixture
+def tickers():
+    return MagicMock(return_value={
+        'ETH/BTC': {
+            'symbol': 'ETH/BTC',
+            'timestamp': 1522014806207,
+            'datetime': '2018-03-25T21:53:26.207Z',
+            'high': 0.061697,
+            'low': 0.060531,
+            'bid': 0.061588,
+            'bidVolume': 3.321,
+            'ask': 0.061655,
+            'askVolume': 0.212,
+            'vwap': 0.06105296,
+            'open': 0.060809,
+            'close': 0.060761,
+            'first': None,
+            'last': 0.061588,
+            'change': 1.281,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 111649.001,
+            'quoteVolume': 6816.50176926,
+            'info': {}
+        },
+        'TKN/BTC': {
+            'symbol': 'TKN/BTC',
+            'timestamp': 1522014806169,
+            'datetime': '2018-03-25T21:53:26.169Z',
+            'high': 0.01885,
+            'low': 0.018497,
+            'bid': 0.018799,
+            'bidVolume': 8.38,
+            'ask': 0.018802,
+            'askVolume': 15.0,
+            'vwap': 0.01869197,
+            'open': 0.018585,
+            'close': 0.018573,
+            'baseVolume': 81058.66,
+            'quoteVolume': 2247.48374509,
+        },
+        'BLK/BTC': {
+            'symbol': 'BLK/BTC',
+            'timestamp': 1522014806072,
+            'datetime': '2018-03-25T21:53:26.720Z',
+            'high': 0.007745,
+            'low': 0.007512,
+            'bid': 0.007729,
+            'bidVolume': 0.01,
+            'ask': 0.007743,
+            'askVolume': 21.37,
+            'vwap': 0.00761466,
+            'open': 0.007653,
+            'close': 0.007652,
+            'first': None,
+            'last': 0.007743,
+            'change': 1.176,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 295152.26,
+            'quoteVolume': 1515.14631229,
+            'info': {}
+        },
+        'ETH/USDT': {
+            'symbol': 'ETH/USDT',
+            'timestamp': 1522014804118,
+            'datetime': '2018-03-25T21:53:24.118Z',
+            'high': 530.88,
+            'low': 512.0,
+            'bid': 529.73,
+            'bidVolume': 0.2,
+            'ask': 530.21,
+            'askVolume': 0.2464,
+            'vwap': 521.02438405,
+            'open': 527.27,
+            'close': 528.42,
+            'first': None,
+            'last': 530.21,
+            'change': 0.558,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 72300.0659,
+            'quoteVolume': 37670097.3022171,
+            'info': {}
+        },
+        'TKN/USDT': {
+            'symbol': 'TKN/USDT',
+            'timestamp': 1522014806198,
+            'datetime': '2018-03-25T21:53:26.198Z',
+            'high': 8718.0,
+            'low': 8365.77,
+            'bid': 8603.64,
+            'bidVolume': 0.15846,
+            'ask': 8603.67,
+            'askVolume': 0.069147,
+            'vwap': 8536.35621697,
+            'open': 8680.0,
+            'close': 8680.0,
+            'first': None,
+            'last': 8603.67,
+            'change': -0.879,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 30414.604298,
+            'quoteVolume': 259629896.48584127,
+            'info': {}
+        },
+        'BLK/USDT': {
+            'symbol': 'BLK/USDT',
+            'timestamp': 1522014806145,
+            'datetime': '2018-03-25T21:53:26.145Z',
+            'high': 66.95,
+            'low': 63.38,
+            'bid': 66.473,
+            'bidVolume': 4.968,
+            'ask': 66.54,
+            'askVolume': 2.704,
+            'vwap': 65.0526901,
+            'open': 66.43,
+            'close': 66.383,
+            'first': None,
+            'last': 66.5,
+            'change': 0.105,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 294106.204,
+            'quoteVolume': 19132399.743954,
+            'info': {}
+        }
+    })
+
+
+@pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
-
 
 # FIX:
 # Create an fixture/function
 # that inserts a trade of some type and open-status
 # return the open-order-id
 # See tests in rpc/main that could use this
-
