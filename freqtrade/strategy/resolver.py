@@ -5,6 +5,7 @@ This module load custom strategies
 """
 import importlib.util
 import inspect
+import logging
 import os
 from collections import OrderedDict
 from typing import Optional, Dict, Type
@@ -12,11 +13,10 @@ from typing import Optional, Dict, Type
 from pandas import DataFrame
 
 from freqtrade.constants import Constants
-from freqtrade.logger import Logger
 from freqtrade.strategy.interface import IStrategy
 
 
-logger = Logger(name=__name__).get_logger()
+logger = logging.getLogger(__name__)
 
 
 class StrategyResolver(object):

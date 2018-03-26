@@ -20,7 +20,6 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     strategy = StrategyResolver()
-    strategy.logger = logging.getLogger(__name__)
 
     assert not hasattr(StrategyResolver, 'custom_strategy')
     strategy._load_strategy('TestStrategy')
@@ -33,7 +32,6 @@ def test_load_strategy(result):
 
 def test_load_not_found_strategy(caplog):
     strategy = StrategyResolver()
-    strategy.logger = logging.getLogger(__name__)
 
     assert not hasattr(StrategyResolver, 'custom_strategy')
     strategy._load_strategy('NotFoundStrategy')

@@ -10,7 +10,7 @@ Optional Cli parameters
 -s / --strategy: strategy to use
 --timerange: specify what timerange of data to use.
 """
-
+import logging
 import sys
 import json
 from argparse import Namespace
@@ -24,13 +24,12 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
-from freqtrade.logger import Logger
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 
 
-logger = Logger(name="Graph profits").get_logger()
+logger = logging.getLogger(__name__)
 
 
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
