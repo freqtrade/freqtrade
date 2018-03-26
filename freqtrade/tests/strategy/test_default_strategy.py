@@ -7,12 +7,6 @@ from freqtrade.analyze import Analyze
 from freqtrade.strategy.default_strategy import DefaultStrategy, class_name
 
 
-@pytest.fixture
-def result():
-    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
-        return Analyze.parse_ticker_dataframe(json.load(data_file))
-
-
 def test_default_strategy_class_name():
     assert class_name == DefaultStrategy.__name__
 
