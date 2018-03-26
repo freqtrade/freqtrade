@@ -56,7 +56,7 @@ for index in range(rounds):
     for job in jobs:
         res = job()
         string = str(res)
-        params = re.search(r'~~~~(.*)~~~~', string)
+        params = re.search(r'~~~~(.*)~~~~', string).group(1)
         mfi = re.search(r'MFI Value(.*)XXX', string)
         fastd = re.search(r'FASTD Value(.*)XXX', string)
         adx = re.search(r'ADX Value(.*)XXX', string)
