@@ -84,9 +84,8 @@ def convert_dataframe(frame: DataFrame):
     return list(list(x) for x in zip(*by_column))
 
 
-
 def convert_file(filename: str, filename_new: str):
-    """Converts a file following the old format to the new format"""
+    """Converts a file from old format to ccxt format"""
     pairdata = load_old_file(filename)
     if pairdata and type(pairdata) is list and len(pairdata) > 0:
         if type(pairdata[0]) is list:
