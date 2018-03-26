@@ -328,4 +328,5 @@ def get_fee() -> float:
     if _API.markets is None or len(_API.markets) == 0:
         _API.load_markets()
 
-    return _API.calculate_fee('ETH/BTC', '', '', 1, 1)['rate']
+    return _API.calculate_fee(symbol='ETH/BTC', type='', side='', amount=1, price=1)['rate']
+
