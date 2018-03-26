@@ -1,16 +1,11 @@
 # pragma pylint: disable=W0603
 """ Cryptocurrency Exchanges support """
-import enum
 import logging
-import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
-from cachetools import cached, TTLCache
-from datetime import datetime
 
 import ccxt
 import arrow
-from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException, DependencyException, NetworkException
 
