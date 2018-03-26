@@ -6,11 +6,12 @@ import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
 from cachetools import cached, TTLCache
+from datetime import datetime
 
 import arrow
 import requests
 
-from freqtrade import OperationalException
+from freqtrade import OperationalException, NetworkException
 
 logger = logging.getLogger(__name__)
 
@@ -180,14 +181,25 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 # @cached(TTLCache(maxsize=100, ttl=30))
 @retrier
-def get_ticker_history(pair: str, tick_interval) -> List[Dict]:
+def get_ticker_history(pair: str, tick_interval) -> List[List]:
     # TODO: tickers need to be in format 1m,5m
     # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
-    if not _API.markets:
-        _API.load_markets()
-    ohlcv = _API.fetch_ohlcv(pair, str(tick_interval)+'m')
+    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
+        logger.warning('Exhange %s does not support fetching historical candlestick data.',
+                       _API.name)
+        return []
 
-    return ohlcv
+    try:
+        ohlcv = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
+
+        return ohlcv
+    except IndexError as e:
+        logger.warning('Empty ticker history. Msg %s', str(e))
+    except ccxt.NetworkError as e:
+        logger.warning('Could not load ticker history due to networking error. Message: %s', str(e))
+    except ccxt.BaseError as e:
+        logger.warning('Could not fetch ticker data. Msg: %s', str(e))
+    return []
 
 
 def cancel_order(order_id: str) -> None:
@@ -235,7 +247,7 @@ def get_fee_taker() -> float:
 
 
 def get_fee() -> float:
-    return _API.fees['trading']
+    return get_fee_taker()
 
 
 def get_wallet_health() -> List[Dict]:

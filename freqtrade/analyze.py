@@ -51,6 +51,7 @@ class Analyze(object):
                                     unit='ms',
                                     utc=True,
                                     infer_datetime_format=True)
+
         frame.sort_values('date', inplace=True)
         return frame
 
