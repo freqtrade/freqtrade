@@ -196,7 +196,7 @@ class Backtesting(object):
                         records.append((pair, trade_entry[1],
                                         row.date.strftime('%s'),
                                         row2.date.strftime('%s'),
-                                        row.date, trade_entry[3]))
+                                        index, trade_entry[3]))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
