@@ -191,7 +191,6 @@ def get_ticker_history(pair: str, tick_interval) -> List[List]:
 
     try:
         ohlcv = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
-
         return ohlcv
     except IndexError as e:
         logger.warning('Empty ticker history. Msg %s', str(e))
@@ -235,7 +234,7 @@ def get_market_summaries() -> List[Dict]:
 
 
 def get_name() -> str:
-    return _API.__class__.__name__
+    return _API.__class__.__name__.capitalize()
 
 
 def get_fee_maker() -> float:
