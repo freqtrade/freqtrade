@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""
+Script to display when the bot will buy a specific pair
+
+Mandatory Cli parameters:
+-p / --pair: pair to examine
+
+Optional Cli parameters
+-d / --datadir: path to pair backtest data
+--timerange: specify what timerange of data to use.
+-l / --live: Live, to download the latest ticker for the pair
+"""
+
+import sys
+from argparse import Namespace
+from os import path
+import glob
+import json
+import re
+from typing import List, Dict
+
+from freqtrade.arguments import Arguments
+from freqtrade import misc
+from freqtrade.logger import Logger
+from pandas import DataFrame
+
+import dateutil.parser
+
+logger = Logger(name="Convert data").get_logger()
+
+
+def load_old_file(filename) -> List[Dict]:
+    if not path.isfile(filename):
+        logger.warning("filename %s does not exist", filename)
+        return None
+    logger.debug('Loading ticker data from file %s', filename)
+    # as in optimize/__init__.py::load_tickerdata_file
+    # if os.path.isfile(gzipfile):
+    #     logger.debug('Loading ticker data from file %s', gzipfile)
+    #     with gzip.open(gzipfile) as tickerdata:
+    #         pairdata = json.load(tickerdata)
+
+    pairdata = None
+    with open(filename) as tickerdata:
+        pairdata = json.load(tickerdata)
+    return pairdata
+
+
+def parse_old_backtest_data(ticker) -> DataFrame:
+    """
+    Reads old backtest data
+    Format: "O": 8.794e-05,
+            "H": 8.948e-05,
+            "L": 8.794e-05,
+            "C": 8.88e-05,
+            "V": 991.09056638,
+            "T": "2017-11-26T08:50:00",
+            "BV": 0.0877869
+    """
+
+    columns = {'C': 'close', 'V': 'volume', 'O': 'open',
+               'H': 'high', 'L': 'low', 'T': 'date'}
+
+    frame = DataFrame(ticker) \
+        .rename(columns=columns)
+    if 'BV' in frame:
+        frame.drop('BV', 1, inplace=True)
+
+    frame.sort_values('date', inplace=True)
+    return frame
+
+
+def convert_dataframe(frame: DataFrame):
+    """Convert dataframe to new format"""
+    # reorder columns:
+    cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+    frame = frame[cols]
+
+    frame['date'] = frame['date'].apply(
+        lambda d: int(dateutil.parser.parse(d).timestamp()) * 1000)
+    frame['date'] = frame['date'].astype(int)
+    # Convert columns one by one to preserve type.
+    by_column = [frame[x].values.tolist() for x in frame.columns]
+    return list(list(x) for x in zip(*by_column))
+
+
+
+def convert_file(filename: str, filename_new: str):
+    """Converts a file following the old format to the new format"""
+    pairdata = load_old_file(filename)
+    if pairdata and type(pairdata) is list and len(pairdata) > 0:
+        if type(pairdata[0]) is list:
+            logger.error("pairdata for %s already in new format", filename)
+            return 1
+
+    frame = parse_old_backtest_data(pairdata)
+    # Convert frame to new format
+    frame1 = convert_dataframe(frame)
+
+    misc.file_dump_json(filename_new, frame1)
+
+
+def convert_main(args: Namespace) -> None:
+    """
+    converts a folder given in --datadir from old to new format to support ccxt
+    """
+
+    workdir = args.datadir if args.datadir.endswith("/") else args.datadir + "/"
+    print(workdir)
+
+    for filename in glob.glob(workdir + "*.json"):
+        # swap currency names
+        ret = re.search(r'[A-Z_]{7,}', path.basename(filename))
+        if args.norename:
+            filename_new = filename
+        else:
+            if not ret:
+                logger.warning("file %s could not be converted, could not extract currencies",
+                               filename)
+                continue
+            pair = ret.group(0)
+            currencies = pair.split("_")
+            if len(currencies) != 2:
+                logger.warning("file %s could not be converted, could not extract currencies",
+                               filename)
+                continue
+
+            ret = re.search(r'\d+(?=\.json)', path.basename(filename))
+            if not ret:
+                logger.warning("file %s could not be converted, interval not found", filename)
+                continue
+            interval = ret.group(0)
+            # filename = "user_data/data/BTC_ADA-5.json"
+            # filename_new = "user_data/data/ADA_BTC-5.json"
+            filename_new = "{}/{}_{}-{}.json".format(path.dirname(filename),
+                                                     currencies[1], currencies[0], interval)
+        logger.debug("Converting and renaming %s to %s", filename, filename_new)
+        convert_file(filename, filename_new)
+
+
+def convert_parse_args(args: List[str]) -> Namespace:
+    """
+    Parse args passed to the script
+    :param args: Cli arguments
+    :return: args: Array with all arguments
+    """
+    arguments = Arguments(args, 'Convert datafiles')
+    arguments.parser.add_argument(
+        '-d', '--datadir',
+        help='path to backtest data (default: %(default)s',
+        dest='datadir',
+        default=path.join('freqtrade', 'tests', 'testdata'),
+        type=str,
+        metavar='PATH',
+    )
+    arguments.parser.add_argument(
+        '-n', '--norename',
+        help='don''t rename files from BTC_<PAIR> to <PAIR>_BTC - '
+             'Note that not renaming will overwrite source files',
+        dest='norename',
+        default=False,
+        action='store_true'
+    )
+
+    return arguments.parse_args()
+
+
+def main(sysargv: List[str]) -> None:
+    """
+    This function will initiate the bot and start the trading loop.
+    :return: None
+    """
+    logger.info('Starting Dataframe conversation')
+    convert_main(convert_parse_args(sysargv))
+
+
+
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
