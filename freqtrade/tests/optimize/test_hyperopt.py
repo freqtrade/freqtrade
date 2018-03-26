@@ -284,8 +284,9 @@ def test_save_trials_saves_trials(mocker, caplog) -> None:
 
     hyperopt.save_trials()
 
+    trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
     assert log_has(
-        'Saving Trials to \'freqtrade/tests/optimize/ut_trials.pickle\'',
+        'Saving Trials to \'{}\''.format(trials_file),
         caplog.record_tuples
     )
     mock_dump.assert_called_once()
@@ -298,8 +299,9 @@ def test_read_trials_returns_trials_file(mocker, caplog) -> None:
 
     hyperopt = _HYPEROPT
     hyperopt_trial = hyperopt.read_trials()
+    trials_file = os.path.join('freqtrade', 'tests', 'optimize', 'ut_trials.pickle')
     assert log_has(
-        'Reading Trials from \'freqtrade/tests/optimize/ut_trials.pickle\'',
+        'Reading Trials from \'{}\''.format(trials_file),
         caplog.record_tuples
     )
     assert hyperopt_trial == trials

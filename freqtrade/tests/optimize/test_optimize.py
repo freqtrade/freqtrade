@@ -52,11 +52,11 @@ def test_load_data_30min_ticker(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = 'freqtrade/tests/testdata/UNITTEST_BTC-30m.json'
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'ETH_BTC-30m.json')
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
+    optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval='30m')
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "ETH/BTC", Interval: 30 min', caplog.record_tuples)
+    assert not log_has('Download the pair: "ETH/BTC", Interval: 30m', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -66,11 +66,11 @@ def test_load_data_5min_ticker(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = 'freqtrade/tests/testdata/ETH_BTC-5m.json'
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'ETH_BTC-5m.json')
     _backup_file(file, copy_file=True)
     optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval='5m')
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "ETH/BTC", Interval: 5 min', caplog.record_tuples)
+    assert not log_has('Download the pair: "ETH/BTC", Interval: 5m', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -80,11 +80,11 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = 'freqtrade/tests/testdata/ETH_BTC-1m.json'
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'ETH_BTC-1m.json')
     _backup_file(file, copy_file=True)
     optimize.load_data(None, ticker_interval='1m', pairs=['ETH/BTC'])
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "ETH/BTC", Interval: 1 min', caplog.record_tuples)
+    assert not log_has('Download the pair: "ETH/BTC", Interval: 1m', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -94,11 +94,12 @@ def test_load_data_with_new_pair_1min(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = 'freqtrade/tests/testdata/MEME_BTC-1m.json'
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
+
     _backup_file(file)
     optimize.load_data(None, ticker_interval='1m', pairs=['MEME/BTC'])
     assert os.path.isfile(file) is True
-    assert log_has('Download the pair: "MEME/BTC", Interval: 1 min', caplog.record_tuples)
+    assert log_has('Download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -109,10 +110,10 @@ def test_testdata_path() -> None:
 def test_download_pairs(ticker_history, mocker) -> None:
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
 
-    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1m.json'
-    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5m.json'
-    file2_1 = 'freqtrade/tests/testdata/CFI_BTC-1m.json'
-    file2_5 = 'freqtrade/tests/testdata/CFI_BTC-5m.json'
+    file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
+    file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
+    file2_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'CFI_BTC-1m.json')
+    file2_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'CFI_BTC-5m.json')
 
     _backup_file(file1_1)
     _backup_file(file1_5)
@@ -149,8 +150,8 @@ def test_download_pairs_exception(ticker_history, mocker, caplog) -> None:
     mocker.patch('freqtrade.optimize.__init__.download_backtesting_testdata',
                  side_effect=BaseException('File Error'))
 
-    file1_1 = 'freqtrade/tests/testdata/MEME_BTC-1m.json'
-    file1_5 = 'freqtrade/tests/testdata/MEME_BTC-5m.json'
+    file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
+    file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
     _backup_file(file1_1)
     _backup_file(file1_5)
 
@@ -158,21 +159,21 @@ def test_download_pairs_exception(ticker_history, mocker, caplog) -> None:
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert log_has('Failed to download the pair: "MEME/BTC", Interval: 1 min', caplog.record_tuples)
+    assert log_has('Failed to download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
 
 
 def test_download_backtesting_testdata(ticker_history, mocker) -> None:
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
 
     # Download a 1 min ticker file
-    file1 = 'freqtrade/tests/testdata/XEL_BTC-1m.json'
+    file1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'XEL_BTC-1m.json')
     _backup_file(file1)
     download_backtesting_testdata(None, pair="XEL/BTC", interval='1m')
     assert os.path.isfile(file1) is True
     _clean_test_file(file1)
 
     # Download a 5 min ticker file
-    file2 = 'freqtrade/tests/testdata/STORJ_BTC-5m.json'
+    file2 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'STORJ_BTC-5m.json')
     _backup_file(file2)
 
     download_backtesting_testdata(None, pair="STORJ/BTC", interval='5m')
@@ -211,7 +212,8 @@ def test_init(default_conf, mocker) -> None:
 
 
 def test_trim_tickerlist() -> None:
-    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
+    with open(file) as data_file:
         ticker_list = json.load(data_file)
     ticker_list_len = len(ticker_list)
 
@@ -260,7 +262,8 @@ def test_file_dump_json() -> None:
     Test file_dump_json()
     :return: None
     """
-    file = 'freqtrade/tests/testdata/test_{id}.json'.format(id=str(uuid.uuid4()))
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata',
+                        'test_{id}.json'.format(id=str(uuid.uuid4())))
     data = {'bar': 'foo'}
 
     # check the file we will create does not exist
