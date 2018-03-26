@@ -205,9 +205,10 @@ def test_get_ticker_history(default_conf, mocker):
     tick = 123
     api_mock.get_ticker_history = MagicMock(return_value=tick)
     mocker.patch('freqtrade.exchange._API', api_mock)
-
+    mocker.patch('freqtrade.exchange._API.has', {'fetchOHLCV': True})
+    mocker.patch('freqtrade.exchange._API.fetch_ohlcv', return_value=tick)
     # retrieve original ticker
-    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
+    ticks = get_ticker_history('ETH/BTC', int(default_conf['ticker_interval']))
     assert ticks == 123
 
     # change the ticker
