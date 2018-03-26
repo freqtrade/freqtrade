@@ -2,8 +2,11 @@
 """ Cryptocurrency Exchanges support """
 import enum
 import logging
+import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
+from cachetools import cached, TTLCache
+from datetime import datetime
 
 import ccxt
 import arrow
@@ -11,10 +14,12 @@ from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException, DependencyException, NetworkException
 
+
 logger = logging.getLogger(__name__)
 
 # Current selected exchange
 _API: ccxt.Exchange = None
+
 _CONF: dict = {}
 API_RETRY_COUNT = 4
 
@@ -22,7 +27,6 @@ API_RETRY_COUNT = 4
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
 _TICKER_CACHE: dict = {}
-
 
 def retrier(f):
     def wrapper(*args, **kwargs):
@@ -85,6 +89,10 @@ def validate_pairs(pairs: List[str]) -> None:
     :param pairs: list of pairs
     :return: None
     """
+
+    if not _API.markets:
+        _API.load_markets()
+
     try:
         markets = _API.load_markets()
     except ccxt.BaseError as e:
@@ -314,7 +322,15 @@ def get_markets() -> List[dict]:
 
 
 def get_name() -> str:
-    return _API.name
+    return _API.__class__.__name__.capitalize()
+
+
+def get_fee_maker() -> float:
+    return _API.fees['trading']['maker']
+
+
+def get_fee_taker() -> float:
+    return _API.fees['trading']['taker']
 
 
 def get_fee() -> float:

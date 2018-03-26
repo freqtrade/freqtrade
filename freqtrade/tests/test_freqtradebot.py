@@ -213,15 +213,15 @@ def test_gen_pair_whitelist(mocker, default_conf, get_market_summaries_data) -> 
 
     # Test to retrieved BTC sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
-    assert whitelist == ['BTC_ZCL', 'BTC_ZEC', 'BTC_XZC', 'BTC_XWC']
+    assert whitelist == ['ZCL/BTC', 'ZEC/BTC', 'XZC/BTC', 'XWC/BTC']
 
     # Test to retrieved BTC sorted on OpenBuyOrders
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC', key='OpenBuyOrders')
-    assert whitelist == ['BTC_XWC', 'BTC_ZCL', 'BTC_ZEC', 'BTC_XZC']
+    assert whitelist == ['XWC/BTC', 'ZCL/BTC', 'ZEC/BTC', 'XZC/BTC']
 
     # Test with USDT sorted on BaseVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='USDT')
-    assert whitelist == ['USDT_XRP', 'USDT_XVG', 'USDT_XMR', 'USDT_ZEC']
+    assert whitelist == ['XRP/USDT', 'XVG/USDT', 'XMR/USDT', 'ZEC/USDT']
 
     # Test with ETH (our fixture does not have ETH, but Bittrex returns them)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='ETH')
@@ -330,8 +330,8 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker) -> None:
     )
 
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ["BTC_ETH"]
-    conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
+    conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
+    conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
 
     freqtrade.create_trade()
@@ -355,8 +355,8 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker, mocker) -> 
     )
 
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ["BTC_ETH"]
-    conf['exchange']['pair_blacklist'] = ["BTC_ETH"]
+    conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
+    conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
 
     freqtrade.create_trade()
@@ -790,7 +790,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     trade_buy = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='BITTREX',
         open_order_id='123456789',
@@ -829,7 +829,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     trade_sell = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='BITTREX',
         open_order_id='123456789',
@@ -868,7 +868,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     trade_buy = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='BITTREX',
         open_order_id='123456789',
@@ -915,7 +915,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     trade_buy = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='BITTREX',
         open_order_id='123456789',
@@ -928,7 +928,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
 
     Trade.session.add(trade_buy)
     regexp = re.compile(
-        'Cannot query order for Trade(id=1, pair=BTC_ETH, amount=90.99181073, '
+        'Cannot query order for Trade(id=1, pair=ETH/BTC, amount=90.99181073, '
         'open_rate=0.00001099, open_since=10 hours ago) due to Traceback (most '
         'recent call last):\n.*'
     )
@@ -1021,7 +1021,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert 'Profit' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
@@ -1061,7 +1061,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker) -> No
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
@@ -1100,7 +1100,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert '(profit: 6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
@@ -1140,7 +1140,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker,
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
 

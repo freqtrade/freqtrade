@@ -35,7 +35,7 @@ def load_tickerdata_file(
     """
     path = make_testdata_path(datadir)
     file = os.path.join(path, '{pair}-{ticker_interval}.json'.format(
-        pair=pair,
+        pair=pair.replace('/', '_'),
         ticker_interval=ticker_interval,
     ))
     gzipfile = file + '.gz'
@@ -126,7 +126,7 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
         interval
     )
 
-    filepair = pair.replace("-", "_")
+    filepair = pair.replace("/", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
         pair=filepair,
         interval=interval,
@@ -135,8 +135,8 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
             data = json.load(file)
-        logger.debug("Current Start: %s", data[1]['T'])
-        logger.debug("Current End: %s", data[-1:][0]['T'])
+        logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]))
+        logger.debug("Current End: %s", misc.format_ms_time(data[-1:][0][0]))
     else:
         data = []
         logger.debug("Current Start: None")
@@ -146,9 +146,9 @@ def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) ->
     for row in new_data:
         if row not in data:
             data.append(row)
-    logger.debug("New Start: %s", data[1]['T'])
-    logger.debug("New End: %s", data[-1:][0]['T'])
-    data = sorted(data, key=lambda data: data['T'])
+    logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
+    logger.debug("New End: %s", misc.format_ms_time(data[-1:][0][0]))
+    data = sorted(data, key=lambda data: data[0])
 
     misc.file_dump_json(filename, data)
 

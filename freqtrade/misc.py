@@ -72,3 +72,11 @@ def file_dump_json(filename, data) -> None:
     """
     with open(filename, 'w') as fp:
         json.dump(data, fp, default=str)
+
+
+def format_ms_time(date: str) -> str:
+    """
+    convert MS date to readable format.
+    : epoch-string in ms
+    """
+    return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')

@@ -248,7 +248,8 @@ def test_status(default_conf, update, mocker, ticker) -> None:
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_pair_detail_url=MagicMock()
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -319,7 +320,7 @@ def test_status_handle(default_conf, update, ticker, mocker) -> None:
     telegram._status(bot=MagicMock(), update=update)
 
     assert msg_mock.call_count == 1
-    assert '[BTC_ETH]' in msg_mock.call_args_list[0][0][0]
+    assert '[ETH/BTC]' in msg_mock.call_args_list[0][0][0]
 
 
 def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
@@ -369,7 +370,7 @@ def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
     fields = re.sub('[ ]+', ' ', line[2].strip()).split(' ')
 
     assert int(fields[0]) == 1
-    assert fields[1] == 'BTC_ETH'
+    assert fields[1] == 'ETH/BTC'
     assert msg_mock.call_count == 1
 
 
@@ -387,7 +388,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order,
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_pair_detail_url=MagicMock()
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -541,7 +543,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up,
     assert '∙ `0.00006217 BTC (6.20%)`' in msg_mock.call_args_list[-1][0][0]
     assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
 
-    assert '*Best Performing:* `BTC_ETH: 6.20%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
 def test_telegram_balance_handle(default_conf, update, mocker) -> None:
@@ -779,7 +781,7 @@ def test_forcesell_handle(default_conf, update, ticker, ticker_sell_up, mocker) 
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
     assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
@@ -822,7 +824,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, ticker_sell_down, m
 
     assert rpc_mock.call_count == 2
     assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[BTC_ETH]' in rpc_mock.call_args_list[-1][0][0]
+    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
     assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
     assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
@@ -838,6 +840,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker) -> None:
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
+    mocker.patch('freqtrade.exchange.get_pair_detail_url', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -942,7 +945,7 @@ def test_performance_handle(default_conf, update, ticker, limit_buy_order,
     telegram._performance(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>BTC_ETH\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_performance_handle_invalid(default_conf, update, mocker) -> None:

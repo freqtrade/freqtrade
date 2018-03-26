@@ -12,6 +12,7 @@ from pandas import DataFrame, Series
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
+import freqtrade.exchange as exchange
 from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
@@ -52,7 +53,11 @@ class Backtesting(object):
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
         self.populate_buy_trend = self.analyze.populate_buy_trend
         self.populate_sell_trend = self.analyze.populate_sell_trend
-        exchange._API = ccxt.bittrex({'key': '', 'secret': ''})
+
+        # Reset keys for backtesting
+        self.config['exchange']['key'] = ''
+        self.config['exchange']['secret'] = ''
+        exchange.init(self.config)
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:

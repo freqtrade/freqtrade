@@ -59,7 +59,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
     result_message = [
         '*Trade ID:* `1`\n'
         '*Current Pair:* '
-        '[BTC_ETH](https://www.bittrex.com/Market/Index?MarketName=BTC-ETH)\n'
+        '[ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n'
         '*Open Since:* `just now`\n'
         '*Amount:* `90.99181074`\n'
         '*Open Rate:* `0.00001099`\n'
@@ -70,7 +70,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
         '*Open Order:* `(LIMIT_BUY rem=0.00000000)`'
     ]
     assert result == result_message
-    assert trade.find('[BTC_ETH]') >= 0
+    assert trade.find('[ETH/BTC]') >= 0
 
 
 def test_rpc_status_table(default_conf, ticker, mocker) -> None:
@@ -102,7 +102,7 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
     freqtradebot.create_trade()
     (error, result) = rpc.rpc_status_table()
     assert 'just now' in result['Since'].all()
-    assert 'BTC_ETH' in result['Pair'].all()
+    assert 'ETH/BTC' in result['Pair'].all()
     assert '-0.59%' in result['Profit'].all()
 
 
@@ -214,7 +214,7 @@ def test_rpc_trade_statistics(
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
     assert stats['avg_duration'] == '0:00:00'
-    assert stats['best_pair'] == 'BTC_ETH'
+    assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
 
 
@@ -274,7 +274,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, ticker_sell_u
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
     assert stats['avg_duration'] == '0:00:00'
-    assert stats['best_pair'] == 'BTC_ETH'
+    assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
 
 
@@ -509,7 +509,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order,
     (error, res) = rpc.rpc_performance()
     assert not error
     assert len(res) == 1
-    assert res[0]['pair'] == 'BTC_ETH'
+    assert res[0]['pair'] == 'ETH/BTC'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit'], 6.2)
 
