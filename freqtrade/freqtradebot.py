@@ -468,8 +468,8 @@ class FreqtradeBot(object):
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
         profit_trade = trade.calc_profit(rate=limit)
-        current_rate = exchange.get_ticker(trade.pair, False)['bid']
-        profit = trade.calc_profit_percent(current_rate)
+        current_rate = exchange.get_ticker(trade.pair)['bid']
+        profit = trade.calc_profit_percent(limit)
 
         message = "*{exchange}:* Selling\n" \
                   "*Current Pair:* [{pair}]({pair_url})\n" \
