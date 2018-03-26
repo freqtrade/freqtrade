@@ -63,10 +63,10 @@ cd ~/freqtrade && pip3.6 install -r requirements.txt && python3.6 setup.py insta
 
 11. Implement these results into your default_strategy:
 
-***```
+***
 You will need to read the if statements and populate_buy_signal and populate_sell_signal in this file carefully.
 
 Once implemented, remove the if statements in the populate_buy_trend.
 
-```***
+***
 
