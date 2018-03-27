@@ -73,24 +73,14 @@ class Backtesting(object):
         """
         stake_currency = self.config.get('stake_currency')
 
-        floatfmt = ('.8f', '.8f', '.8f', '.8f', '.8f')
+        floatfmt = ('.8f', '.8f', '.8f', '.8f', '.1f')
         tabular_data = []
-        headers = ['total profit ']
-        for pair in data:
-            result = results[results.currency == pair]
-            tabular_data.append([
-                result.profit_BTC.sum(),
-            ])
+        headers = ['total profit ' + stake_currency]
 
         # Append Total
         tabular_data.append([
             'TOTAL',
-            len(results.index),
-            results.profit_percent.mean() * 100.0,
             results.profit_BTC.sum(),
-            results.duration.mean(),
-            len(results[results.profit_BTC > 0]),
-            len(results[results.profit_BTC < 0])
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
 
@@ -255,7 +245,7 @@ class Backtesting(object):
                 'record': self.config.get('export')
             }
         )
-        logger.info(
+        print(
             '\n==================================== '
             'BACKTESTING REPORT'
             ' ====================================\n'
