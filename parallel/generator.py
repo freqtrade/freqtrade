@@ -41,7 +41,7 @@ if len(sys.argv) > 1:
     job_server = pp.Server(ncpus, ppservers=ppservers)
 else:
     # Creates jobserver with automatically detected number of workers
-    job_server = pp.Server(32, ppservers=ppservers)
+    job_server = pp.Server(ppservers=ppservers)
 
 print("Starting pp with", job_server.get_ncpus(), "workers")
 
