@@ -46,10 +46,14 @@ print("Starting pp with", job_server.get_ncpus(), "workers")
 
 start_time = time.time()
 index = 1
+
+print('Please wait... sending jobs to server')
 while parts > index:
     jobs.append(job_server.submit(backtesting, (index,)))
     index += 1
 while True:
+    print('Searching... in loop... waiting 15s')
+    time.sleep(15)
     for job in jobs:
         try:
             res = job()
@@ -86,5 +90,3 @@ while True:
                 job_server.print_stats()
         except:
             pass
-    print('Searching... in loop... waiting 30s')
-    time.sleep(30)
