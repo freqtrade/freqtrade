@@ -62,8 +62,8 @@ while True:
                 fastd = re.search(r'FASTD Value(.*)XXX', string)
                 adx = re.search(r'ADX Value(.*)XXX', string)
                 rsi = re.search(r'RSI Value(.*)XXX', string)
-                tot = re.search(r'TOTAL(.*)', string).group(1)
-                total = re.search(r'[-+]?([0-9]*\.[0-9]+|[0-9]+)', tot).group(1)
+                tot = re.search(r'TOTAL         (.*)', string).group(1)
+                total = float(tot)
                 if total and (float(total) > float(current)):
                     current = total
                     print('total better profit paremeters:  ')
