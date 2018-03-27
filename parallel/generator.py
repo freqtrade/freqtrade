@@ -85,9 +85,7 @@ while True:
                     if rsi:
                         print('~~~RSI~~~')
                         print(rsi.group(1))
-        except exception as e:
-            print(e)
+                    print("Time elapsed: ", time.time() - start_time, "s")
+                    job_server.print_stats()
+        except:
             pass
-
-print("Time elapsed: ", time.time() - start_time, "s")
-job_server.print_stats()
