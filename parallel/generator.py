@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import math, sys, os, time, pp, math, re
 from io import StringIO
+
 # tuple of all parallel python servers to connect with
 ppservers = ()
 #ppservers = ("10.0.0.1",)
@@ -8,8 +9,10 @@ ppservers = ()
 # Number of jobs to run
 parts = 1000000
 
+
 jobs = []
 current = 0
+
 
 def backtesting(ind):
     er1 = str(ind)
@@ -42,10 +45,10 @@ print("Starting pp with", job_server.get_ncpus(), "workers")
 
 
 start_time = time.time()
-i = 0
-while parts < i:
-    i += 1
+index = 1
+while parts > index:
     jobs.append(job_server.submit(backtesting, (index,)))
+    index += 1
 while True:
     for job in jobs:
         try:
