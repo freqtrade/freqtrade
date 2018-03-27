@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-import math, sys, os, time, pp, math, re
-from io import StringIO
-
+import math
+import sys
+import os
+import time
+import pp
+import math
+import re
 # tuple of all parallel python servers to connect with
 ppservers = ()
-#ppservers = ("10.0.0.1",)
+# ppservers = ("10.0.0.1",)
 
 # Number of jobs to run
 parts = 1000000
@@ -17,7 +21,7 @@ current = 0
 def backtesting(ind):
     er1 = str(ind)
     ou1 = str(ind * 1024)
-    import threading, traceback
+    import threading
     from io import StringIO
     from freqtrade.main import main, set_loggers
     old_stdout = sys.stdout
