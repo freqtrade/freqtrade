@@ -28,6 +28,7 @@ optional arguments:
                         specify configuration file (default: config.json)
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
+  --strategy-path PATH  specify additional strategy lookup path
   --dry-run-db          Force dry run to use a local DB
                         "tradesv3.dry_run.sqlite" instead of memory DB. Work
                         only if dry_run is enabled.
@@ -67,9 +68,16 @@ message the reason (File not found, or errors in your code).
 
 Learn more about strategy file in [optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
 
+### How to use --strategy-path?
+This parameter allows you to add an additional strategy lookup path, which gets
+checked before the default locations (The passed path must be a folder!):
+```bash
+python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
+```
+
 #### How to install a strategy?
 This is very simple. Copy paste your strategy file into the folder 
-`user_data/strategies`. And voila, the bot is ready to use it.
+`user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
 
 ### How to use --dynamic-whitelist?
 Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
