@@ -174,7 +174,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'default_strategy',
+        '--strategy', 'DefaultStrategy',
         'backtesting'
     ]
 
@@ -215,7 +215,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'default_strategy',
+        '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
         'backtesting',
         '--ticker-interval', '1',
@@ -277,7 +277,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     ))
     args = [
         '--config', 'config.json',
-        '--strategy', 'default_strategy',
+        '--strategy', 'DefaultStrategy',
         'backtesting'
     ]
     args = get_args(args)
@@ -498,7 +498,7 @@ def test_backtest_ticks(default_conf):
 
 
 def test_backtest_clash_buy_sell(default_conf):
-    # Override the default buy trend function in our default_strategy
+    # Override the default buy trend function in our DefaultStrategy
     def fun(dataframe=None):
         buy_value = 1
         sell_value = 1
@@ -510,7 +510,7 @@ def test_backtest_clash_buy_sell(default_conf):
 
 
 def test_backtest_only_sell(default_conf):
-    # Override the default buy trend function in our default_strategy
+    # Override the default buy trend function in our DefaultStrategy
     def fun(dataframe=None):
         buy_value = 0
         sell_value = 1
@@ -578,12 +578,12 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     args.live = True
     args.datadir = None
     args.export = None
-    args.strategy = 'default_strategy'
+    args.strategy = 'DefaultStrategy'
     args.timerange = '-100'  # needed due to MagicMock malleability
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'default_strategy',
+        '--strategy', 'DefaultStrategy',
         'backtesting',
         '--ticker-interval', '1',
         '--live',

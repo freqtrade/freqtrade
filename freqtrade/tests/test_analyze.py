@@ -16,7 +16,7 @@ from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.tests.conftest import log_has
 
 # Avoid to reinit the same object again and again
-_ANALYZE = Analyze({'strategy': 'default_strategy'})
+_ANALYZE = Analyze({'strategy': 'DefaultStrategy'})
 
 
 def test_signaltype_object() -> None:

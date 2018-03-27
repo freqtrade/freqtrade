@@ -14,12 +14,12 @@ Since the version `0.16.0` the bot allows using custom strategy file.
 This is very simple. Copy paste your strategy file into the folder 
 `user_data/strategies`.
 
-Let assume you have a strategy file `awesome-strategy.py`:
+Let assume you have a class called `AwesomeStrategy` in the file `awesome-strategy.py`:
 1. Move your file into `user_data/strategies` (you should have `user_data/strategies/awesome-strategy.py`
-2. Start the bot with the param `--strategy awesome-strategy` (the parameter is the name of the file without '.py') 
+2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
 
 ```bash
-python3 ./freqtrade/main.py --strategy awesome_strategy
+python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
 ## Change your strategy
@@ -35,11 +35,11 @@ A strategy file contains all the information needed to build a good strategy:
 - Stoploss recommended
 - Hyperopt parameter
 
-The bot also include a sample strategy you can update: `user_data/strategies/test_strategy.py`.  
-You can test it with the parameter: `--strategy test_strategy`
+The bot also include a sample strategy called `TestStrategy` you can update: `user_data/strategies/test_strategy.py`.
+You can test it with the parameter: `--strategy TestStrategy`
  
 ```bash
-python3 ./freqtrade/main.py --strategy awesome_strategy
+python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py)

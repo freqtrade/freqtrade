@@ -47,8 +47,6 @@ def test_common_datearray(default_conf, mocker) -> None:
     Test common_datearray()
     :return: None
     """
-    mocker.patch('freqtrade.strategy.strategy.Strategy', MagicMock())
-
     analyze = Analyze(default_conf)
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}

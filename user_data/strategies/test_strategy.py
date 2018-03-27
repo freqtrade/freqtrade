@@ -10,10 +10,6 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
 
-# Update this variable if you change the class name
-class_name = 'TestStrategy'
-
-
 # This class is a sample. Feel free to customize it.
 class TestStrategy(IStrategy):
     """
