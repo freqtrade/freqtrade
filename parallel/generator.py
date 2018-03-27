@@ -72,7 +72,7 @@ while True:
                 if params:
                     print(params)
                     print('~~~~~~')
-                    print('Only enable the above settings, not all settings below are used!')
+                    print('Only enable the above settings! Not all below!')
                     print('~~~~~~')
                 if mfi:
                     print('~~~MFI~~~')
