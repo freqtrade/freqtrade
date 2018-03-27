@@ -6,7 +6,7 @@ ppservers = ()
 #ppservers = ("10.0.0.1",)
 
 # Number of jobs to run
-parts = 1280000
+parts = 32
 
 
 
@@ -41,7 +41,7 @@ if len(sys.argv) > 1:
     job_server = pp.Server(ncpus, ppservers=ppservers)
 else:
     # Creates jobserver with automatically detected number of workers
-    job_server = pp.Server(ppservers=ppservers)
+    job_server = pp.Server(32, ppservers=ppservers)
 
 print("Starting pp with", job_server.get_ncpus(), "workers")
 
@@ -55,37 +55,36 @@ while True:
     for job in jobs:
         try:
             res = job()
-            if res is not None:
-                string = str(res)
-                params = re.search(r'~~~~(.*)~~~~', string).group(1)
-                mfi = re.search(r'MFI Value(.*)XXX', string)
-                fastd = re.search(r'FASTD Value(.*)XXX', string)
-                adx = re.search(r'ADX Value(.*)XXX', string)
-                rsi = re.search(r'RSI Value(.*)XXX', string)
-                tot = re.search(r'TOTAL         (.*)', string).group(1)
-                total = float(tot)
-                if total and (float(total) > float(current)):
-                    current = total
-                    print('total better profit paremeters:  ')
-                    print(total)
-                    if params:
-                        print(params)
-                        print('~~~~~~')
-                        print('Only enable the above settings, not all settings below are used!')
-                        print('~~~~~~')
-                    if mfi:
-                        print('~~~MFI~~~')
-                        print(mfi.group(1))
-                    if fastd:
-                        print('~~~FASTD~~~')
-                        print(fastd.group(1))
-                    if adx:
-                        print('~~~ADX~~~')
-                        print(adx.group(1))
-                    if rsi:
-                        print('~~~RSI~~~')
-                        print(rsi.group(1))
-                    print("Time elapsed: ", time.time() - start_time, "s")
-                    job_server.print_stats()
+            string = str(res)
+            params = re.search(r'~~~~(.*)~~~~', string).group(1)
+            mfi = re.search(r'MFI Value(.*)XXX', string)
+            fastd = re.search(r'FASTD Value(.*)XXX', string)
+            adx = re.search(r'ADX Value(.*)XXX', string)
+            rsi = re.search(r'RSI Value(.*)XXX', string)
+            tot = re.search(r'TOTAL         (.*)\\n', string).group(1)
+            total = float(tot)
+            if total and (float(total) > float(current)):
+                current = total
+                print('total better profit paremeters:  ')
+                print(format(total, '.8f'))
+                if params:
+                    print(params)
+                    print('~~~~~~')
+                    print('Only enable the above settings, not all settings below are used!')
+                    print('~~~~~~')
+                if mfi:
+                    print('~~~MFI~~~')
+                    print(mfi.group(1))
+                if fastd:
+                    print('~~~FASTD~~~')
+                    print(fastd.group(1))
+                if adx:
+                    print('~~~ADX~~~')
+                    print(adx.group(1))
+                if rsi:
+                    print('~~~RSI~~~')
+                    print(rsi.group(1))
+                print("Time elapsed: ", time.time() - start_time, "s")
+                job_server.print_stats()
         except:
             pass
