@@ -70,3 +70,81 @@ Once implemented, remove the if statements in the populate_buy_trend.
 
 ***
 
+For ease of use, here is an example:
+
+The if statements that run the random generator are:
+
+```
+    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+
+        conditions = []
+        # GUARDS AND TRENDS
+        if 'uptrend_long_ema' in str(self.params):
+            conditions.append(dataframe['ema50'] > dataframe['ema100'])
+        if 'macd_below_zero' in str(self.params):
+            conditions.append(dataframe['macd'] < 0)
+        if 'uptrend_short_ema' in str(self.params):
+            conditions.append(dataframe['ema5'] > dataframe['ema10'])
+        if 'mfi' in str(self.params):
+
+            conditions.append(dataframe['mfi'] < self.valm)
+        if 'fastd' in str(self.params):
+
+            conditions.append(dataframe['fastd'] < self.valfast)
+        if 'adx' in str(self.params):
+
+            conditions.append(dataframe['adx'] > self.valadx)
+        if 'rsi' in str(self.params):
+
+            conditions.append(dataframe['rsi'] < self.valrsi)
+        if 'over_sar' in str(self.params):
+            conditions.append(dataframe['close'] > dataframe['sar'])
+        if 'green_candle' in str(self.params):
+            conditions.append(dataframe['close'] > dataframe['open'])
+        if 'uptrend_sma' in str(self.params):
+            prevsma = dataframe['sma'].shift(1)
+            conditions.append(dataframe['sma'] > prevsma)
+        if 'closebb' in str(self.params):
+            conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+        if 'temabb' in str(self.params):
+            conditions.append(dataframe['tema'] < dataframe['bb_lowerband'])
+        if 'fastdt' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['fastd'], 10.0))
+        if 'ao' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['ao'], 0.0))
+        if 'ema3' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['ema3'], dataframe['ema10']))
+        if 'macd' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['macd'], dataframe['macdsignal']))
+        if 'closesar' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['close'], dataframe['sar']))
+        if 'htsine' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['htleadsine'], dataframe['htsine']))
+        if 'has' in str(self.params):
+            conditions.append((qtpylib.crossed_above(dataframe['ha_close'], dataframe['ha_open'])) & (dataframe['ha_low'] == dataframe['ha_open']))
+        if 'plusdi' in str(self.params):
+            conditions.append(qtpylib.crossed_above(dataframe['plus_di'], dataframe['minus_di']))
+
+        dataframe.loc[
+            reduce(lambda x, y: x & y, conditions),
+            'buy'] = 1
+
+        return dataframe
+```
+
+
+So of you get MFI as a option runnning generator.py, and it's option in output is 91, look at the if statements above at mfi, the populate_buy_trend will now look like this:
+
+
+```
+    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+        dataframe.loc[
+            (
+            (dataframe['mfi'] < 91)
+            ),
+            'buy'] = 1
+
+        return dataframe
+```
+
+It's as simple as that.
