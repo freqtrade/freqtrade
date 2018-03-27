@@ -73,7 +73,7 @@ class Backtesting(object):
         """
         stake_currency = self.config.get('stake_currency')
 
-        floatfmt = ('.8f', '.8f', '.8f', '.8f', '.1f')
+        floatfmt = ('.8f', '.8f', '.8f', '.8f', '.8f')
         tabular_data = []
         headers = ['total profit ' + stake_currency]
 
