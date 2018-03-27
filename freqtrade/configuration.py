@@ -33,8 +33,8 @@ class Configuration(object):
         logger.info('Using config: %s ...', self.args.config)
         config = self._load_config_file(self.args.config)
 
-        # Override strategy if specified
-        if self.args.strategy != Constants.DEFAULT_STRATEGY:
+        # Set strategy if not specified in config and or if it's non default
+        if self.args.strategy != Constants.DEFAULT_STRATEGY or not config.get('strategy'):
             config.update({'strategy': self.args.strategy})
 
         if self.args.strategy_path:
