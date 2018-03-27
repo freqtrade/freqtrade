@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+import math
+import sys
+import os
+import time
+import pp
+import math
+import re
+# tuple of all parallel python servers to connect with
+ppservers = ()
+# ppservers = ("10.0.0.1",)
+
+# Number of jobs to run
+work = 32
+cycles = 100
+
+jobs = []
+current = 0
+
+
+def backtesting(ind):
+    er1 = str(ind)
+    ou1 = str(ind * 1024)
+    import threading
+    from io import StringIO
+    from freqtrade.main import main, set_loggers
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    ind1 = sys.stdout = StringIO()
+    ind2 = sys.stderr = StringIO()
+    dat = threading.Thread(target=main(['backtesting']))
+    dat.start()
+    dat.join()
+    er1 = ind2.getvalue()
+    ou1 = ind1.getvalue()
+    sys.stdout = old_stdout
+    sys.stderr = old_stderr
+    return er1, ou1
+
+if len(sys.argv) > 1:
+    ncpus = int(sys.argv[1])
+    # Creates jobserver with ncpus workers
+    job_server = pp.Server(ncpus, ppservers=ppservers)
+else:
+    # Creates jobserver with automatically detected number of workers
+    job_server = pp.Server(ppservers=ppservers)
+
+print("Starting pp with", job_server.get_ncpus(), "workers")
+
+
+start_time = time.time()
+index = 1
+indey = 1
+print('Please wait... sending jobs to server')
+while cycles > index:
+    cycles += 1
+    while work > indey:
+        jobs.append(job_server.submit(backtesting, (index,)))
+        indey += 1
+    job_server.wait()
+    print('Searching this cycle....')
+    for job in jobs:
+        try:
+            res = job()
+            string = str(res)
+            params = re.search(r'~~~~(.*)~~~~', string).group(1)
+            mfi = re.search(r'MFI Value(.*)XXX', string)
+            fastd = re.search(r'FASTD Value(.*)XXX', string)
+            adx = re.search(r'ADX Value(.*)XXX', string)
+            rsi = re.search(r'RSI Value(.*)XXX', string)
+            tot = re.search(r'TOTAL         (.*)\\n', string).group(1)
+            total = float(tot)
+            if total and (float(total) > float(current)):
+                current = total
+                print('total better profit paremeters:  ')
+                print(format(total, '.8f'))
+                if params:
+                    print(params)
+                    print('~~~~~~')
+                    print('Only enable the above settings! Not all below!')
+                    print('~~~~~~')
+                if mfi:
+                    print('~~~MFI~~~')
+                    print(mfi.group(1))
+                if fastd:
+                    print('~~~FASTD~~~')
+                    print(fastd.group(1))
+                if adx:
+                    print('~~~ADX~~~')
+                    print(adx.group(1))
+                if rsi:
+                    print('~~~RSI~~~')
+                    print(rsi.group(1))
+                print("Time elapsed: ", time.time() - start_time, "s")
+                job_server.print_stats()
+        except:
+            pass
+    jobs = []
+    indey = 1
+print('DONE')
+print("Time elapsed: ", time.time() - start_time, "s")
+job_server.print_stats()
