@@ -11,8 +11,8 @@ ppservers = ()
 # ppservers = ("10.0.0.1",)
 
 # Number of jobs to run
-parts = 1000000
-
+work = 32
+cycles = 100
 
 jobs = []
 current = 0
@@ -50,14 +50,15 @@ print("Starting pp with", job_server.get_ncpus(), "workers")
 
 start_time = time.time()
 index = 1
-
+indey = 1
 print('Please wait... sending jobs to server')
-while parts > index:
-    jobs.append(job_server.submit(backtesting, (index,)))
-    index += 1
-while True:
-    print('Searching... in loop... waiting 15s')
-    time.sleep(15)
+while cycles > index:
+    cycles += 1
+    while work > indey:
+        jobs.append(job_server.submit(backtesting, (index,)))
+        indey += 1
+    job_server.wait()
+    print('Searching this cycle....')
     for job in jobs:
         try:
             res = job()
@@ -94,3 +95,8 @@ while True:
                 job_server.print_stats()
         except:
             pass
+    jobs = []
+    indey = 1
+print('DONE')
+print("Time elapsed: ", time.time() - start_time, "s")
+job_server.print_stats()
