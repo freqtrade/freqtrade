@@ -6,7 +6,7 @@ ppservers = ()
 #ppservers = ("10.0.0.1",)
 
 # Number of jobs to run
-parts = 32
+parts = 10000
 
 
 
