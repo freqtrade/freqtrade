@@ -5,14 +5,15 @@ from io import StringIO
 ppservers = ()
 #ppservers = ("10.0.0.1",)
 
-#note threads are automatically detected for performance
-
-#number of jobs to append each round
+# Number of jobs to run
 parts = 1280000
-#number of times to loop jobs
-rounds = 1280000
+
+
+
 jobs = []
 current = 0
+
+
 
 
 def backtesting(ind):
@@ -37,58 +38,54 @@ def backtesting(ind):
 if len(sys.argv) > 1:
     ncpus = int(sys.argv[1])
     # Creates jobserver with ncpus workers
-    job_server = pp.Server(ncpus, ppservers=ppservers, restart=True)
+    job_server = pp.Server(150, ppservers=ppservers, restart=True)
 else:
     # Creates jobserver with automatically detected number of workers
-    job_server = pp.Server(ppservers=ppservers, restart=True)
+    job_server = pp.Server(150, ppservers=ppservers, restart=True)
 
 print("Starting pp with", job_server.get_ncpus(), "workers")
 
 
 start_time = time.time()
 
-# Since jobs are not equal in the execution time, division of the problem 
-# into a 100 of small subproblems leads to a better load balancing
-
-for index in range(rounds):
-    print('Please wait... it takes a few minutes to hit the while loop after all jobs are appended for the round.')
-    for index in range(parts):
-        jobs.append(job_server.submit(backtesting, (index,)))
-    while True:
-        for job in jobs:
-            try:
-                res = job()
-                string = str(res)
-                params = re.search(r'~~~~(.*)~~~~', string).group(1)
-                mfi = re.search(r'MFI Value(.*)XXX', string)
-                fastd = re.search(r'FASTD Value(.*)XXX', string)
-                adx = re.search(r'ADX Value(.*)XXX', string)
-                rsi = re.search(r'RSI Value(.*)XXX', string)
-                tot = re.search(r'TOTAL(.*)', string).group(1)
-                total = re.search(r'[-+]?([0-9]*\.[0-9]+|[0-9]+)', tot).group(1)
-                if total and (float(total) > float(current)):
-                    current = total
-                    print('total better profit paremeters:  ')
-                    print(total)
-                    if params:
-                        print(params)
-                        print('~~~~~~')
-                        print('Only enable the above settings, not all settings below are used!')
-                        print('~~~~~~')
-                    if mfi:
-                        print('~~~MFI~~~')
-                        print(mfi.group(1))
-                    if fastd:
-                        print('~~~FASTD~~~')
-                        print(fastd.group(1))
-                    if adx:
-                        print('~~~ADX~~~')
-                        print(adx.group(1))
-                    if rsi:
-                        print('~~~RSI~~~')
-                        print(rsi.group(1))
-            except exception as e:
-                print(e)
+for index in range(parts):
+    jobs.append(job_server.submit(backtesting, (index,)))
+    # print(index)
+while True:
+    for job in jobs:
+        try:
+            res = job()
+            string = str(res)
+            params = re.search(r'~~~~(.*)~~~~', string).group(1)
+            mfi = re.search(r'MFI Value(.*)XXX', string)
+            fastd = re.search(r'FASTD Value(.*)XXX', string)
+            adx = re.search(r'ADX Value(.*)XXX', string)
+            rsi = re.search(r'RSI Value(.*)XXX', string)
+            tot = re.search(r'TOTAL(.*)', string).group(1)
+            total = re.search(r'[-+]?([0-9]*\.[0-9]+|[0-9]+)', tot).group(1)
+            if total and (float(total) > float(current)):
+                current = total
+                print('total better profit paremeters:  ')
+                print(total)
+                if params:
+                    print(params)
+                    print('~~~~~~')
+                    print('Only enable the above settings, not all settings below are used!')
+                    print('~~~~~~')
+                if mfi:
+                    print('~~~MFI~~~')
+                    print(mfi.group(1))
+                if fastd:
+                    print('~~~FASTD~~~')
+                    print(fastd.group(1))
+                if adx:
+                    print('~~~ADX~~~')
+                    print(adx.group(1))
+                if rsi:
+                    print('~~~RSI~~~')
+                    print(rsi.group(1))
+        except exception as e:
+            print(e)
 
 print("Time elapsed: ", time.time() - start_time, "s")
 job_server.print_stats()
