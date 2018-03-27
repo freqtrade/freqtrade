@@ -38,10 +38,10 @@ def backtesting(ind):
 if len(sys.argv) > 1:
     ncpus = int(sys.argv[1])
     # Creates jobserver with ncpus workers
-    job_server = pp.Server(150, ppservers=ppservers, restart=True)
+    job_server = pp.Server(ncpus, ppservers=ppservers, restart=True)
 else:
     # Creates jobserver with automatically detected number of workers
-    job_server = pp.Server(150, ppservers=ppservers, restart=True)
+    job_server = pp.Server(ppservers=ppservers, restart=True)
 
 print("Starting pp with", job_server.get_ncpus(), "workers")
 
