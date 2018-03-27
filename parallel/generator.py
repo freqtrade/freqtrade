@@ -8,13 +8,8 @@ ppservers = ()
 # Number of jobs to run
 parts = 1000000
 
-
-
 jobs = []
 current = 0
-
-
-
 
 def backtesting(ind):
     er1 = str(ind)
