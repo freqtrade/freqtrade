@@ -307,24 +307,23 @@ def test_get_ticker_history(default_conf, mocker):
             5,  # volume (in quote currency)
         ]
     ]
-    has = PropertyMock(return_value={'fetchOHLCV': True})
-    type(api_mock).has = has
+    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     api_mock.fetch_ohlcv = MagicMock(return_value=tick)
     mocker.patch('freqtrade.exchange._API', api_mock)
-    mocker.patch('freqtrade.exchange._API.has', {'fetchOHLCV': True})
-    mocker.patch('freqtrade.exchange._API.fetch_ohlcv', return_value=tick)
+
     # retrieve original ticker
     ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])
-    assert ticks[0]['O'] == 1
-    assert ticks[0]['H'] == 2
-    assert ticks[0]['L'] == 3
-    assert ticks[0]['C'] == 4
-    assert ticks[0]['V'] == 5
+    assert ticks[0][0] == 1511686200000
+    assert ticks[0][1] == 1
+    assert ticks[0][2] == 2
+    assert ticks[0][3] == 3
+    assert ticks[0][4] == 4
+    assert ticks[0][5] == 5
 
-    # change the ticker
+    # change ticker and ensure tick changes
     new_tick = [
         [
-            1511686200000,  # unix timestamp ms
+            1511686210000,  # unix timestamp ms
             6,  # open
             7,  # high
             8,  # low
@@ -332,16 +331,16 @@ def test_get_ticker_history(default_conf, mocker):
             10,  # volume (in quote currency)
         ]
     ]
-    api_mock.get_ticker_history = MagicMock(return_value=new_tick)
+    api_mock.fetch_ohlcv = MagicMock(return_value=new_tick)
     mocker.patch('freqtrade.exchange._API', api_mock)
 
-    # ensure caching will still return the original ticker
     ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])
-    assert ticks[0]['O'] == 1
-    assert ticks[0]['H'] == 2
-    assert ticks[0]['L'] == 3
-    assert ticks[0]['C'] == 4
-    assert ticks[0]['V'] == 5
+    assert ticks[0][0] == 1511686210000
+    assert ticks[0][1] == 6
+    assert ticks[0][2] == 7
+    assert ticks[0][3] == 8
+    assert ticks[0][4] == 9
+    assert ticks[0][5] == 10
 
     with pytest.raises(OperationalException):  # test retrier
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NetworkError)
