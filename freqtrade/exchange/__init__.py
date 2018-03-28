@@ -23,8 +23,8 @@ _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
 # Urls to exchange markets, insert quote and base with .format()
 _EXCHANGE_URLS = {
-    ccxt.bittrex().id: '/Market/Index?MarketName={quote}-{base}',
-    ccxt.binance().id: '/tradeDetail.html?symbol={base}_{quote}'
+    ccxt.bittrex.__name__: '/Market/Index?MarketName={quote}-{base}',
+    ccxt.binance.__name__: '/tradeDetail.html?symbol={base}_{quote}'
 }
 
 
