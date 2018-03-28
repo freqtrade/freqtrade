@@ -98,8 +98,8 @@ def test_load_config(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert 'strategy' in validated_conf
-    assert validated_conf['strategy'] == 'DefaultStrategy'
+    assert validated_conf.get('strategy') == 'DefaultStrategy'
+    assert validated_conf.get('strategy_path') is None
     assert 'dynamic_whitelist' not in validated_conf
     assert 'dry_run_db' not in validated_conf
 
@@ -115,19 +115,39 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     args = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
-        '--dry-run-db'
+        '--strategy-path', '/some/path',
+        '--dry-run-db',
     ]
     args = Arguments(args, '').get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert 'dynamic_whitelist' in validated_conf
-    assert validated_conf['dynamic_whitelist'] == 10
-    assert 'strategy' in validated_conf
-    assert validated_conf['strategy'] == 'TestStrategy'
-    assert 'dry_run_db' in validated_conf
-    assert validated_conf['dry_run_db'] is True
+    assert validated_conf.get('dynamic_whitelist') == 10
+    assert validated_conf.get('strategy') == 'TestStrategy'
+    assert validated_conf.get('strategy_path') == '/some/path'
+    assert validated_conf.get('dry_run_db') is True
+
+
+def test_load_custom_strategy(default_conf, mocker) -> None:
+    """
+    Test Configuration.load_config() without any cli params
+    """
+    custom_conf = deepcopy(default_conf)
+    custom_conf.update({
+        'strategy': 'CustomStrategy',
+        'strategy_path': '/tmp/strategies',
+    })
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(custom_conf)
+    ))
+
+    args = Arguments([], '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('strategy') == 'CustomStrategy'
+    assert validated_conf.get('strategy_path') == '/tmp/strategies'
 
 
 def test_show_info(default_conf, mocker, caplog) -> None:

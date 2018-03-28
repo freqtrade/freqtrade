@@ -33,8 +33,12 @@ class Configuration(object):
         logger.info('Using config: %s ...', self.args.config)
         config = self._load_config_file(self.args.config)
 
-        # Add the strategy file to use
-        config.update({'strategy': self.args.strategy})
+        # Set strategy if not specified in config and or if it's non default
+        if self.args.strategy != Constants.DEFAULT_STRATEGY or not config.get('strategy'):
+            config.update({'strategy': self.args.strategy})
+
+        if self.args.strategy_path:
+            config.update({'strategy_path': self.args.strategy_path})
 
         # Load Common configuration
         config = self._load_common_config(config)

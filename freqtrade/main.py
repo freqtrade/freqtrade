@@ -3,7 +3,6 @@
 Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
-
 import logging
 import sys
 from typing import List

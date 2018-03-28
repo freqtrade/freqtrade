@@ -42,6 +42,13 @@ You can test it with the parameter: `--strategy TestStrategy`
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
+### Specify custom strategy location
+If you want to use a strategy from a different folder you can pass `--strategy-path`
+
+```bash
+python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
+```
+
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
 file as reference.**
 
