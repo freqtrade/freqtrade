@@ -9,7 +9,7 @@ import pytest
 
 from freqtrade import OperationalException, DependencyException, NetworkException
 from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
-    get_ticker, get_ticker_history, cancel_order, get_name, get_fee
+    get_ticker, get_ticker_history, cancel_order, get_name, get_fee, get_id, get_pair_detail_url
 import freqtrade.exchange as exchange
 from freqtrade.tests.conftest import log_has
 
@@ -427,6 +427,41 @@ def test_get_name(default_conf, mocker):
     init(default_conf)
 
     assert get_name() == 'Binance'
+
+
+def test_get_id(default_conf, mocker):
+    mocker.patch('freqtrade.exchange.validate_pairs',
+                 side_effect=lambda s: True)
+    default_conf['exchange']['name'] = 'binance'
+    init(default_conf)
+
+    assert get_id() == 'binance'
+
+
+def test_get_pair_detail_url(default_conf, mocker):
+    mocker.patch('freqtrade.exchange.validate_pairs',
+                 side_effect=lambda s: True)
+    default_conf['exchange']['name'] = 'binance'
+    init(default_conf)
+
+    url = get_pair_detail_url('TKN/ETH')
+    assert 'TKN' in url
+    assert 'ETH' in url
+
+    url = get_pair_detail_url('LOOONG/BTC')
+    assert 'LOOONG' in url
+    assert 'BTC' in url
+
+    default_conf['exchange']['name'] = 'bittrex'
+    init(default_conf)
+
+    url = get_pair_detail_url('TKN/ETH')
+    assert 'TKN' in url
+    assert 'ETH' in url
+
+    url = get_pair_detail_url('LOOONG/BTC')
+    assert 'LOOONG' in url
+    assert 'BTC' in url
 
 
 def test_get_fee(default_conf, mocker):

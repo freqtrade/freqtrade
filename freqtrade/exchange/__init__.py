@@ -21,6 +21,12 @@ API_RETRY_COUNT = 4
 # Holds all open sell orders for dry_run
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
+# Urls to exchange markets, insert quote and base with .format()
+_EXCHANGE_URLS = {
+    ccxt.bittrex().id: '/Market/Index?MarketName={quote}-{base}',
+    ccxt.binance().id: '/tradeDetail.html?symbol={base}_{quote}'
+}
+
 
 def retrier(f):
     def wrapper(*args, **kwargs):
@@ -295,9 +301,15 @@ def get_order(order_id: str, pair: str) -> Dict:
         raise OperationalException(e)
 
 
-# TODO: reimplement, not part of ccxt
 def get_pair_detail_url(pair: str) -> str:
-    return ""
+    try:
+        url_base = _API.urls.get('www')
+        base, quote = pair.split('/')
+
+        return url_base + _EXCHANGE_URLS[_API.id].format(base=base, quote=quote)
+    except KeyError:
+        logger.warning('Could not get exchange url for %s', get_name())
+        return ""
 
 
 def get_markets() -> List[dict]:
@@ -312,7 +324,11 @@ def get_markets() -> List[dict]:
 
 
 def get_name() -> str:
-    return _API.__class__.__name__.capitalize()
+    return _API.name
+
+
+def get_id() -> str:
+    return _API.id
 
 
 def get_fee_maker() -> float:
