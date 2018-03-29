@@ -50,6 +50,14 @@ class Analyze(object):
             .rename(columns=columns)
         if 'BV' in frame:
             frame.drop('BV', 1, inplace=True)
+        # group by date to eliminate duplicate ticks
+        frame.groupby('date').agg({
+            'volume': 'max',
+            'open': 'first',
+            'close': 'last',
+            'high': 'max',
+            'low': 'min',
+        })
         frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
         frame.sort_values('date', inplace=True)
         return frame
