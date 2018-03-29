@@ -50,7 +50,7 @@ def test_dataframe_correct_length(result):
 
 def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == \
-        ['close', 'high', 'low', 'open', 'date', 'volume']
+        ['date', 'close', 'high', 'low', 'open', 'volume']
 
 
 def test_populates_buy_trend(result):
@@ -170,7 +170,7 @@ def test_get_signal_handles_exceptions(mocker):
 
 
 def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
-    columns = ['close', 'high', 'low', 'open', 'date', 'volume']
+    columns = ['date', 'close', 'high', 'low', 'open', 'volume']
 
     # Test file with BV data
     dataframe = Analyze.parse_ticker_dataframe(ticker_history)
