@@ -111,45 +111,38 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
-def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> bool:
+def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> None:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
-    :param pairs: list of pairs to download
-    :return: bool
     """
 
     path = make_testdata_path(datadir)
     logger.info(
-        'Download the pair: "%s", Interval: %s min',
-        pair,
-        interval
+        'Download the pair: "%s", Interval: %s min', pair, interval
     )
 
-    filepair = pair.replace("-", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
-        pair=filepair,
+        pair=pair.replace("-", "_"),
         interval=interval,
     ))
 
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
             data = json.load(file)
-        logger.debug("Current Start: %s", data[1]['T'])
-        logger.debug("Current End: %s", data[-1:][0]['T'])
     else:
         data = []
-        logger.debug("Current Start: None")
-        logger.debug("Current End: None")
 
-    new_data = get_ticker_history(pair=pair, tick_interval=int(interval))
-    for row in new_data:
-        if row not in data:
-            data.append(row)
-    logger.debug("New Start: %s", data[1]['T'])
-    logger.debug("New End: %s", data[-1:][0]['T'])
-    data = sorted(data, key=lambda data: data['T'])
+    logger.debug('Current Start: %s', data[1]['T'] if data else None)
+    logger.debug('Current End: %s', data[-1:][0]['T'] if data else None)
 
+    # Extend data with new ticker history
+    data.extend([
+        row for row in get_ticker_history(pair=pair, tick_interval=int(interval))
+        if row not in data
+    ])
+
+    data = sorted(data, key=lambda _data: _data['T'])
+    logger.debug('New Start: %s', data[1]['T'])
+    logger.debug('New End: %s', data[-1:][0]['T'])
     misc.file_dump_json(filename, data)
-
-    return True
