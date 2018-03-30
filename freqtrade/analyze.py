@@ -46,12 +46,20 @@ class Analyze(object):
         :return: DataFrame
         """
         columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
-        frame = DataFrame(ticker) \
-            .rename(columns=columns)
+        frame = DataFrame(ticker).rename(columns=columns)
         if 'BV' in frame:
-            frame.drop('BV', 1, inplace=True)
+            frame.drop('BV', axis=1, inplace=True)
+
         frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
-        frame.sort_values('date', inplace=True)
+
+        # group by index and aggregate results to eliminate duplicate ticks
+        frame = frame.groupby(by='date', as_index=False, sort=True).agg({
+            'close': 'last',
+            'high': 'max',
+            'low': 'min',
+            'open': 'first',
+            'volume': 'max',
+        })
         return frame
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:

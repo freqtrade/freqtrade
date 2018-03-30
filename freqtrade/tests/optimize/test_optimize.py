@@ -182,10 +182,11 @@ def test_download_backtesting_testdata(ticker_history, mocker) -> None:
 
 def test_download_backtesting_testdata2(mocker) -> None:
     tick = [{'T': 'bar'}, {'T': 'foo'}]
-    mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
+    json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
-    assert download_backtesting_testdata(None, pair="BTC-UNITEST", interval=1)
-    assert download_backtesting_testdata(None, pair="BTC-UNITEST", interval=3)
+    download_backtesting_testdata(None, pair="BTC-UNITEST", interval=1)
+    download_backtesting_testdata(None, pair="BTC-UNITEST", interval=3)
+    assert json_dump_mock.call_count == 2
 
 
 def test_load_tickerdata_file() -> None:
