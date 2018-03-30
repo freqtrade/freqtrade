@@ -74,16 +74,14 @@ def init(config: dict) -> None:
     # Find matching class for the given exchange name
     name = exchange_config['name']
 
-    # TODO add check for a list of supported exchanges
-
+    # Init the exchange if the exchange name passed is supported
     try:
-        # exchange_class = Exchanges[name.upper()].value
         _API = getattr(ccxt, name.lower())({
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
         })
         logger.info('Using Exchange %s', name.capitalize())
-    except KeyError:
+    except (KeyError, AttributeError):
         raise OperationalException('Exchange {} is not supported'.format(name))
 
     # we need load api markets

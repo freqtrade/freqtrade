@@ -5,10 +5,11 @@ This module contains the configuration class
 import json
 from argparse import Namespace
 from typing import Dict, Any
-
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
+import ccxt
 
+from freqtrade import OperationalException
 from freqtrade.constants import Constants
 from freqtrade.logger import Logger
 
@@ -99,6 +100,9 @@ class Configuration(object):
                 self.logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite"')
             else:
                 self.logger.info('Dry run is disabled. (--dry_run_db ignored)')
+
+        # Check if the exchange set by the user is supported
+        self.check_exchange()
 
         return config
 
@@ -198,3 +202,23 @@ class Configuration(object):
             self.config = self.load_config()
 
         return self.config
+
+    def check_exchange(self) -> bool:
+        """
+        Check if the exchange name in the config file is supported by Freqtrade
+        :return: True or raised an exception if the exchange if not supported
+        """
+        exchange = self.config.get('exchange', {}).get('name').lower()
+        if exchange not in ccxt.exchanges:
+
+            exception_msg = 'Exchange "{}" not supported.\n' \
+                            'The following exchanges are supported: {}'\
+                .format(exchange, ', '.join(ccxt.exchanges))
+
+            self.logger.critical(exception_msg)
+            raise OperationalException(
+                exception_msg
+            )
+
+        self.logger.debug('Exchange "%s" supported', exchange)
+        return True
