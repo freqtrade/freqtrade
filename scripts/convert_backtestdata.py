@@ -18,6 +18,7 @@ import glob
 import json
 import re
 from typing import List, Dict
+import gzip
 
 from freqtrade.arguments import Arguments
 from freqtrade import misc
@@ -26,24 +27,27 @@ from pandas import DataFrame
 
 import dateutil.parser
 
-logger = Logger(name="Convert data").get_logger()
+logger = Logger(name="Convert data", level=10).get_logger()
 
 
-def load_old_file(filename) -> List[Dict]:
+def load_old_file(filename) -> (List[Dict], bool):
     if not path.isfile(filename):
         logger.warning("filename %s does not exist", filename)
-        return None
+        return (None, False)
     logger.debug('Loading ticker data from file %s', filename)
-    # as in optimize/__init__.py::load_tickerdata_file
-    # if os.path.isfile(gzipfile):
-    #     logger.debug('Loading ticker data from file %s', gzipfile)
-    #     with gzip.open(gzipfile) as tickerdata:
-    #         pairdata = json.load(tickerdata)
 
     pairdata = None
-    with open(filename) as tickerdata:
-        pairdata = json.load(tickerdata)
-    return pairdata
+
+    if filename.endswith('.gz'):
+        logger.debug('Loading ticker data from file %s', filename)
+        is_zip = True
+        with gzip.open(filename) as tickerdata:
+            pairdata = json.load(tickerdata)
+    else:
+        is_zip = False
+        with open(filename) as tickerdata:
+            pairdata = json.load(tickerdata)
+    return (pairdata, is_zip)
 
 
 def parse_old_backtest_data(ticker) -> DataFrame:
@@ -86,7 +90,7 @@ def convert_dataframe(frame: DataFrame):
 
 def convert_file(filename: str, filename_new: str):
     """Converts a file from old format to ccxt format"""
-    pairdata = load_old_file(filename)
+    (pairdata, is_zip) = load_old_file(filename)
     if pairdata and type(pairdata) is list and len(pairdata) > 0:
         if type(pairdata[0]) is list:
             logger.error("pairdata for %s already in new format", filename)
@@ -95,8 +99,7 @@ def convert_file(filename: str, filename_new: str):
     frame = parse_old_backtest_data(pairdata)
     # Convert frame to new format
     frame1 = convert_dataframe(frame)
-
-    misc.file_dump_json(filename_new, frame1)
+    misc.file_dump_json(filename_new, frame1, is_zip)
 
 
 def convert_main(args: Namespace) -> None:
@@ -105,7 +108,7 @@ def convert_main(args: Namespace) -> None:
     """
 
     workdir = args.datadir if args.datadir.endswith("/") else args.datadir + "/"
-    print(workdir)
+    logger.info("Workdir: %s", workdir)
 
     for filename in glob.glob(workdir + "*.json"):
         # swap currency names
@@ -171,9 +174,6 @@ def main(sysargv: List[str]) -> None:
     """
     logger.info('Starting Dataframe conversation')
     convert_main(convert_parse_args(sysargv))
-
-
-
 
 
 if __name__ == '__main__':
