@@ -1,11 +1,11 @@
 # pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
 # pragma pylint: disable=protected-access
 import logging
+from copy import deepcopy
 from random import randint
 from unittest.mock import MagicMock
 
 import pytest
-from requests.exceptions import RequestException
 
 import freqtrade.exchange as exchange
 from freqtrade import OperationalException
@@ -60,31 +60,46 @@ def test_validate_pairs_not_available(default_conf, mocker):
 def test_validate_pairs_not_compatible(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.get_markets = MagicMock(
-        return_value=['BTC_ETH', 'BTC_TKN', 'BTC_TRST', 'BTC_SWT'])
-    default_conf['stake_currency'] = 'ETH'
+        return_value=['BTC/ETH', 'BTC/TKN', 'BTC/TRST', 'BTC/SWT'])
+    conf = deepcopy(default_conf)
+    conf['stake_currency'] = 'ETH'
     mocker.patch('freqtrade.exchange._API', api_mock)
-    mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
+    mocker.patch.dict('freqtrade.exchange._CONF', conf)
     with pytest.raises(OperationalException, match=r'not compatible'):
-        validate_pairs(default_conf['exchange']['pair_whitelist'])
+        validate_pairs(conf['exchange']['pair_whitelist'])
 
 
 def test_validate_pairs_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
-    api_mock.get_markets = MagicMock(side_effect=RequestException())
+    api_mock.name = 'binance'
     mocker.patch('freqtrade.exchange._API', api_mock)
+    mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    # with pytest.raises(RequestException, match=r'Unable to validate pairs'):
-    validate_pairs(default_conf['exchange']['pair_whitelist'])
-    assert log_has('Unable to validate pairs (assuming they are correct). Reason: ',
-                   caplog.record_tuples)
+    with pytest.raises(OperationalException, match=r'Pair ETH/BTC is not available at binance'):
+        validate_pairs(default_conf['exchange']['pair_whitelist'])
 
+
+def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    conf = deepcopy(default_conf)
+    conf['stake_currency'] = 'ETH'
+    api_mock = MagicMock()
+    api_mock.name = 'binance'
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    mocker.patch.dict('freqtrade.exchange._CONF', conf)
+
+    with pytest.raises(
+        OperationalException,
+        match=r'Pair ETH/BTC not compatible with stake_currency: ETH'
+    ):
+        validate_pairs(default_conf['exchange']['pair_whitelist'])
 
 def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_buy_' in buy(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_buy_' in buy(pair='BTC/ETH', rate=200, amount=1)
 
 
 def test_buy_prod(default_conf, mocker):
@@ -96,14 +111,14 @@ def test_buy_prod(default_conf, mocker):
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_buy_' in buy(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_buy_' in buy(pair='BTC/ETH', rate=200, amount=1)
 
 
 def test_sell_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_sell_' in sell(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_sell_' in sell(pair='BTC/ETH', rate=200, amount=1)
 
 
 def test_sell_prod(default_conf, mocker):
@@ -115,7 +130,7 @@ def test_sell_prod(default_conf, mocker):
     default_conf['dry_run'] = False
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
 
-    assert 'dry_run_sell_' in sell(pair='BTC_ETH', rate=200, amount=1)
+    assert 'dry_run_sell_' in sell(pair='BTC/ETH', rate=200, amount=1)
 
 
 def test_get_balance_dry_run(default_conf, mocker):
@@ -177,7 +192,7 @@ def test_get_ticker(default_conf, mocker):
     mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
 
     # retrieve original ticker
-    ticker = get_ticker(pair='BTC_ETH')
+    ticker = get_ticker(pair='BTC/ETH')
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
@@ -188,12 +203,12 @@ def test_get_ticker(default_conf, mocker):
 
     # if not caching the result we should get the same ticker
     # if not fetching a new result we should get the cached ticker
-    ticker = get_ticker(pair='BTC_ETH', refresh=False)
+    ticker = get_ticker(pair='BTC/ETH', refresh=False)
     assert ticker['bid'] == 0.00001098
     assert ticker['ask'] == 0.00001099
 
     # force ticker refresh
-    ticker = get_ticker(pair='BTC_ETH', refresh=True)
+    ticker = get_ticker(pair='BTC/ETH', refresh=True)
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
@@ -215,7 +230,7 @@ def test_get_ticker_history(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     # ensure caching will still return the original ticker
-    ticks = get_ticker_history('BTC_ETH', int(default_conf['ticker_interval']))
+    ticks = get_ticker_history('BTC/ETH', int(default_conf['ticker_interval']))
     assert ticks == 123
 
 
