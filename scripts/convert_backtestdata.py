@@ -69,7 +69,9 @@ def parse_old_backtest_data(ticker) -> DataFrame:
         .rename(columns=columns)
     if 'BV' in frame:
         frame.drop('BV', 1, inplace=True)
-
+    if not 'date' in frame:
+        logger.warning("Date not in frame - probably not a Ticker file")
+        return None
     frame.sort_values('date', inplace=True)
     return frame
 
@@ -98,8 +100,9 @@ def convert_file(filename: str, filename_new: str):
 
     frame = parse_old_backtest_data(pairdata)
     # Convert frame to new format
-    frame1 = convert_dataframe(frame)
-    misc.file_dump_json(filename_new, frame1, is_zip)
+    if frame is not None:
+        frame1 = convert_dataframe(frame)
+        misc.file_dump_json(filename_new, frame1, is_zip)
 
 
 def convert_main(args: Namespace) -> None:
