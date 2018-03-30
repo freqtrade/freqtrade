@@ -78,6 +78,8 @@ def init(config: dict) -> None:
     except KeyError:
         raise OperationalException('Exchange {} is not supported'.format(name))
 
+    logger.info('Using Exchange "%s"', get_name())
+
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
 
