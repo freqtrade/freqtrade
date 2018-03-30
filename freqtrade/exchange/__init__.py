@@ -30,11 +30,11 @@ def retrier(f):
             return f(*args, **kwargs)
         # TODO dont be a gotta-catch-them-all pokemon collector
         except Exception as ex:
-            logger.warn('%s returned exception: "%s"', f, ex)
+            logger.warning('%s returned exception: "%s"', f, ex)
             if count > 0:
                 count -= 1
                 kwargs.update({'count': count})
-                logger.warn('retrying %s still for %s times', f, count)
+                logger.warning('retrying %s still for %s times', f, count)
                 return wrapper(*args, **kwargs)
             else:
                 raise OperationalException('Giving up retrying: %s', f)
