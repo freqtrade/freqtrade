@@ -204,6 +204,8 @@ optional arguments:
                         number)
   --timerange TIMERANGE
                         specify what timerange of data to use.
+  --hyperopt PATH       specify hyperopt file (default:
+                        freqtrade/optimize/default_hyperopt.py)
   -e INT, --epochs INT  specify number of epochs (default: 100)
   -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space separate
