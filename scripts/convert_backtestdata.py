@@ -90,13 +90,13 @@ def convert_dataframe(frame: DataFrame):
     return list(list(x) for x in zip(*by_column))
 
 
-def convert_file(filename: str, filename_new: str):
+def convert_file(filename: str, filename_new: str) -> None:
     """Converts a file from old format to ccxt format"""
     (pairdata, is_zip) = load_old_file(filename)
-    if pairdata and type(pairdata) is list and len(pairdata) > 0:
+    if pairdata and type(pairdata) is list:
         if type(pairdata[0]) is list:
             logger.error("pairdata for %s already in new format", filename)
-            return 1
+            return
 
     frame = parse_old_backtest_data(pairdata)
     # Convert frame to new format
