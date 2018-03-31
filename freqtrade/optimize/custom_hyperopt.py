@@ -4,6 +4,7 @@
 This module load custom hyperopts
 """
 import importlib
+import logging
 import os
 import sys
 from typing import Dict, Any, Callable
@@ -11,10 +12,11 @@ from typing import Dict, Any, Callable
 from pandas import DataFrame
 
 from freqtrade.constants import Constants
-from freqtrade.logger import Logger
 from freqtrade.optimize.interface import IHyperOpt
 
 sys.path.insert(0, r'../../user_data/hyperopts')
+
+logger = logging.getLogger(__name__)
 
 
 class CustomHyperOpt(object):
@@ -27,7 +29,6 @@ class CustomHyperOpt(object):
         :param config:
         :return:
         """
-        self.logger = Logger(name=__name__).get_logger()
 
         # Verify the hyperopt is in the configuration, otherwise fallback to the default hyperopt
         if 'hyperopt' in config:
@@ -58,12 +59,12 @@ class CustomHyperOpt(object):
 
         # Fallback to the default hyperopt
         except (ImportError, TypeError) as error:
-            self.logger.error(
+            logger.error(
                 "Impossible to load Hyperopt 'user_data/hyperopts/%s.py'. This file does not exist"
                 " or contains Python code errors",
                 hyperopt_name
             )
-            self.logger.error(
+            logger.error(
                 "The error is:\n%s.",
                 error
             )
@@ -77,7 +78,7 @@ class CustomHyperOpt(object):
         module = importlib.import_module(filename, __package__)
         custom_hyperopt = getattr(module, module.class_name)
 
-        self.logger.info("Load hyperopt class: %s (%s.py)", module.class_name, filename)
+        logger.info("Load hyperopt class: %s (%s.py)", module.class_name, filename)
         return custom_hyperopt()
 
     @staticmethod
