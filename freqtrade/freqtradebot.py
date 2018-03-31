@@ -114,10 +114,7 @@ class FreqtradeBot(object):
                 Constants.PROCESS_THROTTLE_SECS
             )
 
-            nb_assets = self.config.get(
-                'dynamic_whitelist',
-                Constants.DYNAMIC_WHITELIST
-            )
+            nb_assets = self.config.get('dynamic_whitelist', None)
 
             self._throttle(func=self._process,
                            min_secs=min_secs,
