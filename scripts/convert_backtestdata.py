@@ -27,7 +27,7 @@ from pandas import DataFrame
 
 import dateutil.parser
 
-logger = Logger(name="Convert data", level=10).get_logger()
+logger = Logger(name="freqtrade").get_logger()
 
 
 def load_old_file(filename) -> (List[Dict], bool):
