@@ -110,7 +110,7 @@ def convert_main(args: Namespace) -> None:
     converts a folder given in --datadir from old to new format to support ccxt
     """
 
-    workdir = args.datadir if args.datadir.endswith("/") else args.datadir + "/"
+    workdir = path.join(args.datadir, "")
     logger.info("Workdir: %s", workdir)
 
     for filename in glob.glob(workdir + "*.json"):
@@ -135,10 +135,10 @@ def convert_main(args: Namespace) -> None:
                 logger.warning("file %s could not be converted, interval not found", filename)
                 continue
             interval = ret.group(0)
-            # filename = "user_data/data/BTC_ADA-5.json"
-            # filename_new = "user_data/data/ADA_BTC-5.json"
-            filename_new = "{}/{}_{}-{}.json".format(path.dirname(filename),
-                                                     currencies[1], currencies[0], interval)
+
+            filename_new = path.join(path.dirname(filename),
+                                     "{}_{}-{}.json".format(currencies[1],
+                                                            currencies[0], interval))
         logger.debug("Converting and renaming %s to %s", filename, filename_new)
         convert_file(filename, filename_new)
 
