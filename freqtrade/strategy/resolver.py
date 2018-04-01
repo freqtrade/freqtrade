@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 from typing import Optional, Dict, Type
 
-from freqtrade.constants import Constants
+from freqtrade import constants
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -32,7 +32,7 @@ class StrategyResolver(object):
         config = config or {}
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
-        strategy_name = config.get('strategy') or Constants.DEFAULT_STRATEGY
+        strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
         self.strategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
 
         # Set attributes

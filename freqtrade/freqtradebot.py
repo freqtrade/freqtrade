@@ -18,7 +18,7 @@ from freqtrade import (
     DependencyException, OperationalException, exchange, persistence, __version__
 )
 from freqtrade.analyze import Analyze
-from freqtrade.constants import Constants
+from freqtrade import constants
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
@@ -111,7 +111,7 @@ class FreqtradeBot(object):
         elif state == State.RUNNING:
             min_secs = self.config.get('internals', {}).get(
                 'process_throttle_secs',
-                Constants.PROCESS_THROTTLE_SECS
+                constants.PROCESS_THROTTLE_SECS
             )
 
             nb_assets = self.config.get('dynamic_whitelist', None)
@@ -175,7 +175,7 @@ class FreqtradeBot(object):
 
         except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
             logger.warning('%s, retrying in 30 seconds...', error)
-            time.sleep(Constants.RETRY_TIMEOUT)
+            time.sleep(constants.RETRY_TIMEOUT)
         except OperationalException:
             self.rpc.send_msg(
                 '*Status:* OperationalException:\n```\n{traceback}```{hint}'
