@@ -22,7 +22,8 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.optimize.custom_hyperopt import CustomHyperOpt
+from freqtrade.optimize.resolver import HyperOptResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +41,8 @@ class Hyperopt(Backtesting):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
-
-        self.custom_hyperopt = CustomHyperOpt(self.config)
+        self.config = config
+        self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
 
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days

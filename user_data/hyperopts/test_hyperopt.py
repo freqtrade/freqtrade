@@ -15,10 +15,6 @@ from freqtrade.indicator_helpers import fishers_inverse
 from freqtrade.optimize.interface import IHyperOpt
 
 
-# Update this variable if you change the class name
-class_name = 'TestHyperOpt'
-
-
 # This class is a sample. Feel free to customize it.
 class TestHyperOpt(IHyperOpt):
     """

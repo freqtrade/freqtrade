@@ -105,12 +105,12 @@ class Arguments(object):
             metavar='PATH',
         )
         self.parser.add_argument(
-            '--hyperopt',
-            help='specify hyperopt file (default: %(default)s)',
+            '--customhyperopt',
+            help='specify hyperopt class name (default: %(default)s)',
             dest='hyperopt',
             default=Constants.DEFAULT_HYPEROPT,
             type=str,
-            metavar='PATH',
+            metavar='NAME',
         )
         self.parser.add_argument(
             '--dynamic-whitelist',
