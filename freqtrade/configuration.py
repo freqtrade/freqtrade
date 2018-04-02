@@ -10,7 +10,7 @@ from typing import Dict, Any
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
-from freqtrade.constants import Constants
+from freqtrade import constants
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class Configuration(object):
         config = self._load_config_file(self.args.config)
 
         # Set strategy if not specified in config and or if it's non default
-        if self.args.strategy != Constants.DEFAULT_STRATEGY or not config.get('strategy'):
+        if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
             config.update({'strategy': self.args.strategy})
 
         if self.args.strategy_path:
@@ -186,7 +186,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, Constants.CONF_SCHEMA)
+            validate(conf, constants.CONF_SCHEMA)
             return conf
         except ValidationError as exception:
             logger.fatal(
@@ -194,7 +194,7 @@ class Configuration(object):
                 exception
             )
             raise ValidationError(
-                best_match(Draft4Validator(Constants.CONF_SCHEMA).iter_errors(conf)).message
+                best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
             )
 
     def get_config(self) -> Dict[str, Any]:
