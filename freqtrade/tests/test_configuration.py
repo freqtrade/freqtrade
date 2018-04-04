@@ -326,13 +326,11 @@ def test_check_exchange(default_conf) -> None:
 
     # Test a valid exchange
     conf.get('exchange').update({'name': 'BITTREX'})
-    configuration.config = conf
-    assert configuration.check_exchange()
+    assert configuration.check_exchange(conf)
 
     # Test a valid exchange
     conf.get('exchange').update({'name': 'binance'})
-    configuration.config = conf
-    assert configuration.check_exchange()
+    assert configuration.check_exchange(conf)
 
     # Test a invalid exchange
     conf.get('exchange').update({'name': 'unknown_exchange'})
@@ -342,4 +340,4 @@ def test_check_exchange(default_conf) -> None:
         OperationalException,
         match=r'.*Exchange "unknown_exchange" not supported.*'
     ):
-        configuration.check_exchange()
+        configuration.check_exchange(conf)

@@ -102,7 +102,7 @@ class Configuration(object):
                 self.logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
         # Check if the exchange set by the user is supported
-        self.check_exchange()
+        self.check_exchange(config)
 
         return config
 
@@ -203,12 +203,12 @@ class Configuration(object):
 
         return self.config
 
-    def check_exchange(self) -> bool:
+    def check_exchange(self, config: Dict[str, Any]) -> bool:
         """
         Check if the exchange name in the config file is supported by Freqtrade
         :return: True or raised an exception if the exchange if not supported
         """
-        exchange = self.config.get('exchange', {}).get('name').lower()
+        exchange = config.get('exchange', {}).get('name').lower()
         if exchange not in ccxt.exchanges:
 
             exception_msg = 'Exchange "{}" not supported.\n' \
