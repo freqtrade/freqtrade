@@ -41,7 +41,7 @@ class RPC(object):
         """
         # Fetch open trade
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self.freqtrade.get_state() != State.RUNNING:
+        if self.freqtrade.state != State.RUNNING:
             return True, '*Status:* `trader is not running`'
         elif not trades:
             return True, '*Status:* `no active trade`'
@@ -87,7 +87,7 @@ class RPC(object):
 
     def rpc_status_table(self) -> Tuple[bool, Any]:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self.freqtrade.get_state() != State.RUNNING:
+        if self.freqtrade.state != State.RUNNING:
             return True, '*Status:* `trader is not running`'
         elif not trades:
             return True, '*Status:* `no active order`'
@@ -285,18 +285,18 @@ class RPC(object):
         """
         Handler for start.
         """
-        if self.freqtrade.get_state() == State.RUNNING:
+        if self.freqtrade.state == State.RUNNING:
             return True, '*Status:* `already running`'
 
-        self.freqtrade.update_state(State.RUNNING)
+        self.freqtrade.state = State.RUNNING
         return False, '`Starting trader ...`'
 
     def rpc_stop(self) -> (bool, str):
         """
         Handler for stop.
         """
-        if self.freqtrade.get_state() == State.RUNNING:
-            self.freqtrade.update_state(State.STOPPED)
+        if self.freqtrade.state == State.RUNNING:
+            self.freqtrade.state = State.STOPPED
             return False, '`Stopping trader ...`'
 
         return True, '*Status:* `already stopped`'
@@ -329,7 +329,7 @@ class RPC(object):
             self.freqtrade.execute_sell(trade, current_rate)
         # ---- EOF def _exec_forcesell ----
 
-        if self.freqtrade.get_state() != State.RUNNING:
+        if self.freqtrade.state != State.RUNNING:
             return True, '`trader is not running`'
 
         if trade_id == 'all':
@@ -357,7 +357,7 @@ class RPC(object):
         Handler for performance.
         Shows a performance statistic from finished trades
         """
-        if self.freqtrade.get_state() != State.RUNNING:
+        if self.freqtrade.state != State.RUNNING:
             return True, '`trader is not running`'
 
         pair_rates = Trade.session.query(Trade.pair,
@@ -378,7 +378,7 @@ class RPC(object):
         Returns the number of trades running
         :return: None
         """
-        if self.freqtrade.get_state() != State.RUNNING:
+        if self.freqtrade.state != State.RUNNING:
             return True, '`trader is not running`'
 
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()

@@ -4,7 +4,6 @@ import os
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade import exchange
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 

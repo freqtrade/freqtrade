@@ -74,51 +74,6 @@ def default_conf():
             "secret": "secret",
             "pair_whitelist": [
                 "ETH/BTC",
-                "NEO/BTC",
-                "LTC/BTC",
-                "XRP/BTC"
-            ]
-        },
-        "telegram": {
-            "enabled": True,
-            "token": "token",
-            "chat_id": "0"
-        },
-        "initial_state": "running",
-        "loglevel": logging.DEBUG
-    }
-    validate(configuration, Constants.CONF_SCHEMA)
-    return configuration
-
-
-@pytest.fixture(scope="module")
-def default_conf_ccxt():
-    """ Returns validated configuration suitable for most tests """
-    configuration = {
-        "max_open_trades": 1,
-        "stake_currency": "BTC",
-        "stake_amount": 0.001,
-        "fiat_display_currency": "USD",
-        "ticker_interval": 5,
-        "dry_run": True,
-        "minimal_roi": {
-            "40": 0.0,
-            "30": 0.01,
-            "20": 0.02,
-            "0": 0.04
-        },
-        "stoploss": -0.10,
-        "unfilledtimeout": 600,
-        "bid_strategy": {
-            "ask_last_balance": 0.0
-        },
-        "exchange": {
-            "name": "ccxt-unittest",
-            "enabled": True,
-            "key": "key",
-            "secret": "secret",
-            "pair_whitelist": [
-                "ETH/BTC",
                 "TKN/BTC",
                 "TRST/BTC",
                 "SWT/BTC",
@@ -204,13 +159,14 @@ def health():
 def limit_buy_order():
     return {
         'id': 'mocked_limit_buy',
-        'type': 'LIMIT_BUY',
+        'type': 'limit',
+        'side': 'buy',
         'pair': 'mocked',
-        'opened': str(arrow.utcnow().datetime),
-        'rate': 0.00001099,
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': str(arrow.utcnow().datetime),
+        'status': 'closed'
     }
 
 
@@ -218,12 +174,14 @@ def limit_buy_order():
 def limit_buy_order_old():
     return {
         'id': 'mocked_limit_buy_old',
-        'type': 'LIMIT_BUY',
-        'pair': 'ETH/BTC',
-        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
-        'rate': 0.00001099,
+        'type': 'limit',
+        'side': 'buy',
+        'pair': 'mocked',
+        'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
+        'status': 'open'
     }
 
 
@@ -231,12 +189,14 @@ def limit_buy_order_old():
 def limit_sell_order_old():
     return {
         'id': 'mocked_limit_sell_old',
-        'type': 'LIMIT_SELL',
+        'type': 'limit',
+        'side': 'sell',
         'pair': 'ETH/BTC',
-        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
-        'rate': 0.00001099,
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
+        'status': 'open'
     }
 
 
@@ -244,12 +204,14 @@ def limit_sell_order_old():
 def limit_buy_order_old_partial():
     return {
         'id': 'mocked_limit_buy_old_partial',
-        'type': 'LIMIT_BUY',
+        'type': 'limit',
+        'side': 'buy',
         'pair': 'ETH/BTC',
-        'opened': str(arrow.utcnow().shift(minutes=-601).datetime),
-        'rate': 0.00001099,
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 67.99181073,
+        'status': 'open'
     }
 
 
@@ -257,14 +219,45 @@ def limit_buy_order_old_partial():
 def limit_sell_order():
     return {
         'id': 'mocked_limit_sell',
-        'type': 'LIMIT_SELL',
+        'type': 'limit',
+        'side': 'sell',
         'pair': 'mocked',
-        'opened': str(arrow.utcnow().datetime),
-        'rate': 0.00001173,
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00001173,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'closed': str(arrow.utcnow().datetime),
+        'status': 'closed'
     }
+
+
+@pytest.fixture
+def ticker_history_api():
+    return [
+        [
+            1511686200000,  # unix timestamp ms
+            8.794e-05,  # open
+            8.948e-05,  # high
+            8.794e-05,  # low
+            8.88e-05,  # close
+            0.0877869,  # volume (in quote currency)
+        ],
+        [
+            1511686500000,
+            8.88e-05,
+            8.942e-05,
+            8.88e-05,
+            8.893e-05,
+            0.05874751,
+        ],
+        [
+            1511686800,
+            8.891e-05,
+            8.893e-05,
+            8.875e-05,
+            8.877e-05,
+            0.7039405
+        ]
+    ]
 
 
 @pytest.fixture
@@ -342,158 +335,3 @@ def result():
 # that inserts a trade of some type and open-status
 # return the open-order-id
 # See tests in rpc/main that could use this
-
-
-@pytest.fixture
-def get_market_summaries_data():
-    """
-    This fixture is a real result from exchange.get_market_summaries() but reduced to only
-    8 entries. 4 BTC, 4 USTD
-    :return: JSON market summaries
-    """
-    return {
-        'XWC/BTC': {
-            'symbol': 'XWC/BTC',
-            'info': {
-                'Ask': 1.316e-05,
-                'BaseVolume': 5.72599471,
-                'Bid': 1.3e-05,
-                'Created': '2014-04-14T00:00:00',
-                'High': 1.414e-05,
-                'Last': 1.298e-05,
-                'Low': 1.282e-05,
-                'MarketName': 'BTC-XWC',
-                'OpenBuyOrders': 2000,
-                'OpenSellOrders': 1484,
-                'PrevDay': 1.376e-05,
-                'TimeStamp': '2018-02-05T01:32:40.493',
-                'Volume': 424041.21418375
-            }
-        },
-        'XZC/BTC': {
-            'symbol': 'XZC/BTC',
-            'info': {
-                'Ask': 0.00627051,
-                'BaseVolume': 93.23302388,
-                'Bid': 0.00618192,
-                'Created': '2016-10-20T04:48:30.387',
-                'High': 0.00669897,
-                'Last': 0.00618192,
-                'Low': 0.006,
-                'MarketName': 'BTC-XZC',
-                'OpenBuyOrders': 343,
-                'OpenSellOrders': 2037,
-                'PrevDay': 0.00668229,
-                'TimeStamp': '2018-02-05T01:32:43.383',
-                'Volume': 14863.60730702
-            }
-        },
-        'ZCL/BTC': {
-            'symbol': 'ZCL/BTC',
-            'info': {
-                'Ask': 0.01137247,
-                'BaseVolume': 383.55922657,
-                'Bid': 0.01136006,
-                'Created': '2016-11-15T20:29:59.73',
-                'High': 0.012,
-                'Last': 0.01137247,
-                'Low': 0.01119883,
-                'MarketName': 'BTC-ZCL',
-                'OpenBuyOrders': 1332,
-                'OpenSellOrders': 5317,
-                'PrevDay': 0.01179603,
-                'TimeStamp': '2018-02-05T01:32:42.773',
-                'Volume': 33308.07358285
-            }
-        },
-        'ZEC/BTC': {
-            'symbol': 'ZEC/BTC',
-            'info': {
-                'Ask': 0.04155821,
-                'BaseVolume': 274.75369074,
-                'Bid': 0.04130002,
-                'Created': '2016-10-28T17:13:10.833',
-                'High': 0.04354429,
-                'Last': 0.041585,
-                'Low': 0.0413,
-                'MarketName': 'BTC-ZEC',
-                'OpenBuyOrders': 863,
-                'OpenSellOrders': 5579,
-                'PrevDay': 0.0429,
-                'TimeStamp': '2018-02-05T01:32:43.21',
-                'Volume': 6479.84033259
-            }
-        },
-        'XMR/USDT': {
-            'symbol': 'XMR/USDT',
-            'info': {
-                'Ask': 210.99999999,
-                'BaseVolume': 615132.70989532,
-                'Bid': 210.05503736,
-                'Created': '2017-07-21T01:08:49.397',
-                'High': 257.396,
-                'Last': 211.0,
-                'Low': 209.05333589,
-                'MarketName': 'USDT-XMR',
-                'OpenBuyOrders': 180,
-                'OpenSellOrders': 1203,
-                'PrevDay': 247.93528899,
-                'TimeStamp': '2018-02-05T01:32:43.117',
-                'Volume': 2688.17410793
-            }
-        },
-        'XRP/USDT': {
-            'symbol': 'XRP/USDT',
-            'info': {
-                'Ask': 0.79589979,
-                'BaseVolume': 9349557.01853031,
-                'Bid': 0.789226,
-                'Created': '2017-07-14T17:10:10.737',
-                'High': 0.977,
-                'Last': 0.79589979,
-                'Low': 0.781,
-                'MarketName': 'USDT-XRP',
-                'OpenBuyOrders': 1075,
-                'OpenSellOrders': 6508,
-                'PrevDay': 0.93300218,
-                'TimeStamp': '2018-02-05T01:32:42.383',
-                'Volume': 10801663.00788851
-            }
-        },
-        'XVG/USDT': {
-            'symbol': 'XVG/USDT',
-            'info': {
-                'Ask': 0.05154982,
-                'BaseVolume': 2311087.71232136,
-                'Bid': 0.05040107,
-                'Created': '2017-12-29T19:29:18.357',
-                'High': 0.06668561,
-                'Last': 0.0508,
-                'Low': 0.05006731,
-                'MarketName': 'USDT-XVG',
-                'OpenBuyOrders': 655,
-                'OpenSellOrders': 5544,
-                'PrevDay': 0.0627,
-                'TimeStamp': '2018-02-05T01:32:41.507',
-                'Volume': 40031424.2152716
-            }
-        },
-        'ZEC/USDT': {
-            'symbol': 'ZEC/USDT',
-            'info': {
-                'Ask': 332.65500022,
-                'BaseVolume': 562911.87455665,
-                'Bid': 330.00000001,
-                'Created': '2017-07-14T17:10:10.673',
-                'High': 401.59999999,
-                'Last': 332.65500019,
-                'Low': 330.0,
-                'MarketName': 'USDT-ZEC',
-                'OpenBuyOrders': 161,
-                'OpenSellOrders': 1731,
-                'PrevDay': 391.42,
-                'TimeStamp': '2018-02-05T01:32:42.947',
-                'Volume': 1571.09647946
-            }
-        }
-    }

@@ -1,35 +1,39 @@
 # pragma pylint: disable=W0603
 """ Cryptocurrency Exchanges support """
-import enum
 import logging
-import ccxt
 from random import randint
 from typing import List, Dict, Any, Optional
-from cachetools import cached, TTLCache
-from datetime import datetime
 
+import ccxt
 import arrow
-import requests
 
-from freqtrade import OperationalException, NetworkException
+from freqtrade import OperationalException, DependencyException, NetworkException
+
 
 logger = logging.getLogger(__name__)
 
 # Current selected exchange
-_API = None
+_API: ccxt.Exchange = None
+
 _CONF: dict = {}
 API_RETRY_COUNT = 4
 
 # Holds all open sell orders for dry_run
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
+# Urls to exchange markets, insert quote and base with .format()
+_EXCHANGE_URLS = {
+    ccxt.bittrex.__name__: '/Market/Index?MarketName={quote}-{base}',
+    ccxt.binance.__name__: '/tradeDetail.html?symbol={base}_{quote}'
+}
+
+
 def retrier(f):
     def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
         try:
             return f(*args, **kwargs)
-        # TODO dont be a gotta-catch-them-all pokemon collector
-        except Exception as ex:
+        except (NetworkException, DependencyException) as ex:
             logger.warning('%s returned exception: "%s"', f, ex)
             if count > 0:
                 count -= 1
@@ -39,19 +43,6 @@ def retrier(f):
             else:
                 raise OperationalException('Giving up retrying: %s', f)
     return wrapper
-
-
-def _get_market_url(exchange):
-    "get market url for exchange"
-    # TODO: PR to ccxt
-    base = exchange.urls.get('www')
-    market = ""
-    if 'bittrex' in get_name():
-        market = base + '/Market/Index?MarketName={}'
-    if 'binance' in get_name():
-        market = base + '/trade.html?symbol={}'
-
-    return market
 
 
 def init(config: dict) -> None:
@@ -74,18 +65,19 @@ def init(config: dict) -> None:
     # Find matching class for the given exchange name
     name = exchange_config['name']
 
-    # Init the exchange if the exchange name passed is supported
+    if name not in ccxt.exchanges:
+        raise OperationalException('Exchange {} is not supported'.format(name))
     try:
         _API = getattr(ccxt, name.lower())({
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
+            'password': exchange_config.get('password'),
+            'uid': exchange_config.get('uid'),
         })
-        logger.info('Using Exchange %s', name.capitalize())
     except (KeyError, AttributeError):
         raise OperationalException('Exchange {} is not supported'.format(name))
 
-    # we need load api markets
-    _API.load_markets()
+    logger.info('Using Exchange "%s"', get_name())
 
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
@@ -99,14 +91,15 @@ def validate_pairs(pairs: List[str]) -> None:
     :return: None
     """
 
-    if not _API.markets:
-        _API.load_markets()
+    try:
+        markets = _API.load_markets()
+    except ccxt.BaseError as e:
+        logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
+        return
 
-    markets = _API.markets
     stake_cur = _CONF['stake_currency']
     for pair in pairs:
         # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
-        pair = pair.replace('_', '/')
         # TODO: add a support for having coins in BTC/USDT format
         if not pair.endswith(stake_cur):
             raise OperationalException(
@@ -114,120 +107,212 @@ def validate_pairs(pairs: List[str]) -> None:
             )
         if pair not in markets:
             raise OperationalException(
-                'Pair {} is not available at {}'.format(pair, _API.name.lower()))
+                'Pair {} is not available at {}'.format(pair, _API.id.lower()))
 
 
-def buy(pair: str, rate: float, amount: float) -> str:
+def buy(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
         order_id = 'dry_run_buy_{}'.format(randint(0, 10**6))
         _DRY_RUN_OPEN_ORDERS[order_id] = {
             'pair': pair,
-            'rate': rate,
+            'price': rate,
             'amount': amount,
-            'type': 'LIMIT_BUY',
+            'type': 'limit',
+            'side': 'buy',
             'remaining': 0.0,
-            'opened': arrow.utcnow().datetime,
-            'closed': arrow.utcnow().datetime,
+            'datetime': arrow.utcnow().isoformat(),
+            'status': 'closed'
         }
-        return order_id
+        return {'id': order_id}
 
-    return _API.buy(pair, rate, amount)
+    try:
+        return _API.create_limit_buy_order(pair, amount, rate)
+    except ccxt.InsufficientFunds as e:
+        raise DependencyException(
+            'Insufficient funds to create limit buy order on market {}.'
+            'Tried to buy amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not create limit buy order on market {}.'
+            'Tried to buy amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not place buy order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
-def sell(pair: str, rate: float, amount: float) -> str:
+def sell(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
         order_id = 'dry_run_sell_{}'.format(randint(0, 10**6))
         _DRY_RUN_OPEN_ORDERS[order_id] = {
             'pair': pair,
-            'rate': rate,
+            'price': rate,
             'amount': amount,
-            'type': 'LIMIT_SELL',
+            'type': 'limit',
+            'side': 'sell',
             'remaining': 0.0,
-            'opened': arrow.utcnow().datetime,
-            'closed': arrow.utcnow().datetime,
+            'datetime': arrow.utcnow().isoformat(),
+            'status': 'closed'
         }
-        return order_id
+        return {'id': order_id}
 
-    return _API.sell(pair, rate, amount)
+    try:
+        return _API.create_limit_sell_order(pair, amount, rate)
+    except ccxt.InsufficientFunds as e:
+        raise DependencyException(
+            'Insufficient funds to create limit sell order on market {}.'
+            'Tried to sell amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not create limit sell order on market {}.'
+            'Tried to sell amount {} at rate {} (total {}).'
+            'Message: {}'.format(pair, amount, rate, rate*amount, e)
+        )
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not place sell order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
-    return _API.fetch_balance()[currency]
+    # ccxt exception is already handled by get_balances
+    balances = get_balances()
+    return balances[currency]['free']
 
 
-def get_balances():
+def get_balances() -> dict:
     if _CONF['dry_run']:
-        return []
-
-    return _API.fetch_balance()
-
-# @cached(TTLCache(maxsize=100, ttl=30))
-@retrier
-def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
-    return _API.fetch_ticker(pair)
-
-
-# @cached(TTLCache(maxsize=100, ttl=30))
-@retrier
-def get_ticker_history(pair: str, tick_interval) -> List[List]:
-    # TODO: tickers need to be in format 1m,5m
-    # fetch_ohlcv returns an [[datetime,o,h,l,c,v]]
-    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
-        logger.warning('Exhange %s does not support fetching historical candlestick data.',
-                       _API.name)
-        return []
+        return {}
 
     try:
-        ohlcv = _API.fetch_ohlcv(pair, timeframe=str(tick_interval)+"m")
-        return ohlcv
-    except IndexError as e:
-        logger.warning('Empty ticker history. Msg %s', str(e))
+        balances = _API.fetch_balance()
+        # Remove additional info from ccxt results
+        balances.pop("info", None)
+        balances.pop("free", None)
+        balances.pop("total", None)
+        balances.pop("used", None)
+
+        return balances
     except ccxt.NetworkError as e:
-        logger.warning('Could not load ticker history due to networking error. Message: %s', str(e))
+        raise NetworkException(
+            'Could not get balance due to networking error. Message: {}'.format(e)
+        )
     except ccxt.BaseError as e:
-        logger.warning('Could not fetch ticker data. Msg: %s', str(e))
-    return []
+        raise OperationalException(e)
 
 
-def cancel_order(order_id: str) -> None:
+# TODO: remove refresh argument, keeping it to keep track of where it was intended to be used
+@retrier
+def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
+    try:
+        return _API.fetch_ticker(pair)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load tickers due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
+
+
+@retrier
+def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
+    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
+        raise OperationalException(
+            'Exchange {} does not support fetching historical candlestick data.'.format(_API.name)
+        )
+
+    try:
+        return _API.fetch_ohlcv(pair, timeframe=tick_interval)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load ticker history due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
+
+
+def cancel_order(order_id: str, pair: str) -> None:
     if _CONF['dry_run']:
         return
 
-    return _API.cancel_order(order_id)
+    try:
+        return _API.cancel_order(order_id, pair)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not get order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not cancel order. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
-def get_order(order_id: str) -> Dict:
+def get_order(order_id: str, pair: str) -> Dict:
     if _CONF['dry_run']:
         order = _DRY_RUN_OPEN_ORDERS[order_id]
         order.update({
             'id': order_id
         })
         return order
-
-    return _API.get_order(order_id)
+    try:
+        return _API.fetch_order(order_id, pair)
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not get order due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not get order. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_pair_detail_url(pair: str) -> str:
-    return _get_market_url(_API).format(
-        _API.markets[pair]['id']
-    )
+    try:
+        url_base = _API.urls.get('www')
+        base, quote = pair.split('/')
+
+        return url_base + _EXCHANGE_URLS[_API.id].format(base=base, quote=quote)
+    except KeyError:
+        logger.warning('Could not get exchange url for %s', get_name())
+        return ""
 
 
-def get_markets() -> List[str]:
-    return _API.get_markets()
-
-
-def get_market_summaries() -> List[Dict]:
-    return _API.fetch_tickers()
+def get_markets() -> List[dict]:
+    try:
+        return _API.fetch_markets()
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load markets due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_name() -> str:
-    return _API.__class__.__name__.capitalize()
+    return _API.name
+
+
+def get_id() -> str:
+    return _API.id
 
 
 def get_fee_maker() -> float:
@@ -239,11 +324,9 @@ def get_fee_taker() -> float:
 
 
 def get_fee() -> float:
-    return get_fee_taker()
-
-
-def get_wallet_health() -> List[Dict]:
-    if not _API.markets:
+    # validate that markets are loaded before trying to get fee
+    if _API.markets is None or len(_API.markets) == 0:
         _API.load_markets()
 
-    return _API.markets
+    return _API.calculate_fee(symbol='ETH/BTC', type='', side='', amount=1, price=1)['rate']
+

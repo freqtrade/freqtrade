@@ -41,12 +41,12 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     rpc = RPC(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     (error, result) = rpc.rpc_trade_status()
     assert error
     assert 'trader is not running' in result
 
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     (error, result) = rpc.rpc_trade_status()
     assert error
     assert 'no active trade' in result
@@ -89,12 +89,12 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     rpc = RPC(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     (error, result) = rpc.rpc_status_table()
     assert error
     assert '*Status:* `trader is not running`' in result
 
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     (error, result) = rpc.rpc_status_table()
     assert error
     assert '*Status:* `no active order`' in result
@@ -344,17 +344,17 @@ def test_rpc_start(mocker, default_conf) -> None:
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     rpc = RPC(freqtradebot)
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
 
     (error, result) = rpc.rpc_start()
     assert not error
     assert '`Starting trader ...`' in result
-    assert freqtradebot.get_state() == State.RUNNING
+    assert freqtradebot.state == State.RUNNING
 
     (error, result) = rpc.rpc_start()
     assert error
     assert '*Status:* `already running`' in result
-    assert freqtradebot.get_state() == State.RUNNING
+    assert freqtradebot.state == State.RUNNING
 
 
 def test_rpc_stop(mocker, default_conf) -> None:
@@ -372,17 +372,17 @@ def test_rpc_stop(mocker, default_conf) -> None:
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     rpc = RPC(freqtradebot)
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
 
     (error, result) = rpc.rpc_stop()
     assert not error
     assert '`Stopping trader ...`' in result
-    assert freqtradebot.get_state() == State.STOPPED
+    assert freqtradebot.state == State.STOPPED
 
     (error, result) = rpc.rpc_stop()
     assert error
     assert '*Status:* `already stopped`' in result
-    assert freqtradebot.get_state() == State.STOPPED
+    assert freqtradebot.state == State.STOPPED
 
 
 def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
@@ -410,12 +410,12 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     rpc = RPC(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     (error, res) = rpc.rpc_forcesell(None)
     assert error
     assert res == '`trader is not running`'
 
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     (error, res) = rpc.rpc_forcesell(None)
     assert error
     assert res == 'Invalid argument.'
@@ -433,7 +433,7 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
     assert not error
     assert res == ''
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     (error, res) = rpc.rpc_forcesell(None)
     assert error
     assert res == '`trader is not running`'
@@ -442,7 +442,7 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
     assert error
     assert res == '`trader is not running`'
 
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
     # make an limit-buy open trade
     mocker.patch(

@@ -302,13 +302,13 @@ def test_status_handle(default_conf, update, ticker, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     telegram._status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'trader is not running' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     telegram._status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'no active trade' in msg_mock.call_args_list[0][0][0]
@@ -348,13 +348,13 @@ def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
     freqtradebot = FreqtradeBot(conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     telegram._status_table(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'trader is not running' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     telegram._status_table(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'no active order' in msg_mock.call_args_list[0][0][0]
@@ -472,7 +472,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
 
     # Try invalid data
     msg_mock.reset_mock()
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     update.message.text = '/daily -2'
     telegram._daily(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -480,7 +480,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
 
     # Try invalid data
     msg_mock.reset_mock()
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     update.message.text = '/daily today'
     telegram._daily(bot=MagicMock(), update=update)
     assert str('Daily Profit over the last 7 days') in msg_mock.call_args_list[0][0][0]
@@ -667,10 +667,10 @@ def test_start_handle(default_conf, update, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
-    assert freqtradebot.get_state() == State.STOPPED
+    freqtradebot.state = State.STOPPED
+    assert freqtradebot.state == State.STOPPED
     telegram._start(bot=MagicMock(), update=update)
-    assert freqtradebot.get_state() == State.RUNNING
+    assert freqtradebot.state == State.RUNNING
     assert msg_mock.call_count == 0
 
 
@@ -691,10 +691,10 @@ def test_start_handle_already_running(default_conf, update, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.RUNNING)
-    assert freqtradebot.get_state() == State.RUNNING
+    freqtradebot.state = State.RUNNING
+    assert freqtradebot.state == State.RUNNING
     telegram._start(bot=MagicMock(), update=update)
-    assert freqtradebot.get_state() == State.RUNNING
+    assert freqtradebot.state == State.RUNNING
     assert msg_mock.call_count == 1
     assert 'already running' in msg_mock.call_args_list[0][0][0]
 
@@ -716,10 +716,10 @@ def test_stop_handle(default_conf, update, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.RUNNING)
-    assert freqtradebot.get_state() == State.RUNNING
+    freqtradebot.state = State.RUNNING
+    assert freqtradebot.state == State.RUNNING
     telegram._stop(bot=MagicMock(), update=update)
-    assert freqtradebot.get_state() == State.STOPPED
+    assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
     assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
 
@@ -741,10 +741,10 @@ def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
-    assert freqtradebot.get_state() == State.STOPPED
+    freqtradebot.state = State.STOPPED
+    assert freqtradebot.state == State.STOPPED
     telegram._stop(bot=MagicMock(), update=update)
-    assert freqtradebot.get_state() == State.STOPPED
+    assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
     assert 'already stopped' in msg_mock.call_args_list[0][0][0]
 
@@ -884,7 +884,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     telegram = Telegram(freqtradebot)
 
     # Trader is not running
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     update.message.text = '/forcesell 1'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -892,7 +892,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
 
     # No argument
     msg_mock.reset_mock()
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     update.message.text = '/forcesell'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -900,7 +900,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
 
     # Invalid argument
     msg_mock.reset_mock()
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
     update.message.text = '/forcesell 123456'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
@@ -965,7 +965,7 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
     telegram = Telegram(freqtradebot)
 
     # Trader is not running
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     telegram._performance(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'not running' in msg_mock.call_args_list[0][0][0]
@@ -992,12 +992,12 @@ def test_count_handle(default_conf, update, ticker, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
-    freqtradebot.update_state(State.STOPPED)
+    freqtradebot.state = State.STOPPED
     telegram._count(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'not running' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
-    freqtradebot.update_state(State.RUNNING)
+    freqtradebot.state = State.RUNNING
 
     # Create some test data
     freqtradebot.create_trade()

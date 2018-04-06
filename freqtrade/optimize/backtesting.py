@@ -6,6 +6,7 @@ This module contains the backtesting logic
 from argparse import Namespace
 from typing import Dict, Tuple, Any, List, Optional
 
+import ccxt
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
@@ -16,7 +17,6 @@ from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-
 from freqtrade.logger import Logger
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
@@ -53,7 +53,8 @@ class Backtesting(object):
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
         self.populate_buy_trend = self.analyze.populate_buy_trend
         self.populate_sell_trend = self.analyze.populate_sell_trend
-        # Reest keys for backtesting
+
+        # Reset keys for backtesting
         self.config['exchange']['key'] = ''
         self.config['exchange']['secret'] = ''
         exchange.init(self.config)
