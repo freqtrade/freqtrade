@@ -13,6 +13,7 @@ from jsonschema import ValidationError
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.tests.conftest import log_has
+from freqtrade import OperationalException
 
 
 def test_configuration_object() -> None:
@@ -28,7 +29,7 @@ def test_configuration_object() -> None:
     assert hasattr(Configuration, 'get_config')
 
 
-def test_load_config_invalid_pair(default_conf, mocker) -> None:
+def test_load_config_invalid_pair(default_conf) -> None:
     """
     Test the configuration validator with an invalid PAIR format
     """
@@ -40,7 +41,7 @@ def test_load_config_invalid_pair(default_conf, mocker) -> None:
         configuration._validate_config(conf)
 
 
-def test_load_config_missing_attributes(default_conf, mocker) -> None:
+def test_load_config_missing_attributes(default_conf) -> None:
     """
     Test the configuration validator with a missing attribute
     """
@@ -314,3 +315,29 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert 'spaces' in config
     assert config['spaces'] == ['all']
     assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
+
+
+def test_check_exchange(default_conf) -> None:
+    """
+    Test the configuration validator with a missing attribute
+    """
+    conf = deepcopy(default_conf)
+    configuration = Configuration([])
+
+    # Test a valid exchange
+    conf.get('exchange').update({'name': 'BITTREX'})
+    assert configuration.check_exchange(conf)
+
+    # Test a valid exchange
+    conf.get('exchange').update({'name': 'binance'})
+    assert configuration.check_exchange(conf)
+
+    # Test a invalid exchange
+    conf.get('exchange').update({'name': 'unknown_exchange'})
+    configuration.config = conf
+
+    with pytest.raises(
+        OperationalException,
+        match=r'.*Exchange "unknown_exchange" not supported.*'
+    ):
+        configuration.check_exchange(conf)

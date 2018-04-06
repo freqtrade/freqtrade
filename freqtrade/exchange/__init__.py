@@ -67,7 +67,6 @@ def init(config: dict) -> None:
 
     if name not in ccxt.exchanges:
         raise OperationalException('Exchange {} is not supported'.format(name))
-
     try:
         _API = getattr(ccxt, name.lower())({
             'apiKey': exchange_config.get('key'),
@@ -75,7 +74,7 @@ def init(config: dict) -> None:
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid'),
         })
-    except KeyError:
+    except (KeyError, AttributeError):
         raise OperationalException('Exchange {} is not supported'.format(name))
 
     logger.info('Using Exchange "%s"', get_name())
@@ -91,9 +90,6 @@ def validate_pairs(pairs: List[str]) -> None:
     :param pairs: list of pairs
     :return: None
     """
-
-    if not _API.markets:
-        _API.load_markets()
 
     try:
         markets = _API.load_markets()
