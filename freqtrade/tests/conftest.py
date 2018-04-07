@@ -46,7 +46,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     return FreqtradeBot(config, create_engine('sqlite://'))
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def default_conf():
     """ Returns validated configuration suitable for most tests """
     configuration = {

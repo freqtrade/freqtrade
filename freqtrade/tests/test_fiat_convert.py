@@ -126,8 +126,10 @@ def test_fiat_convert_get_price(mocker):
 
 def test_fiat_convert_without_network():
     # Because CryptoToFiatConverter is a Singleton we reset the value of _coinmarketcap
-    CryptoToFiatConverter._coinmarketcap = None
 
     fiat_convert = CryptoToFiatConverter()
+
+    CryptoToFiatConverter._coinmarketcap = None
+
     assert fiat_convert._coinmarketcap is None
     assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
