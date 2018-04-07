@@ -110,6 +110,16 @@ def validate_pairs(pairs: List[str]) -> None:
                 'Pair {} is not available at {}'.format(pair, _API.id.lower()))
 
 
+def exchange_has(endpoint: str) -> bool:
+    """
+    Checks if exchange implements a specific API endpoint.
+    Wrapper around ccxt 'has' attribute
+    :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
+    :return: bool
+    """
+    return endpoint in _API.has and _API.has[endpoint]
+
+
 def buy(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
@@ -231,11 +241,6 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 @retrier
 def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
-    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
-        raise OperationalException(
-            'Exchange {} does not support fetching historical candlestick data.'.format(_API.name)
-        )
-
     try:
         return _API.fetch_ohlcv(pair, timeframe=tick_interval)
     except ccxt.NetworkError as e:
@@ -244,6 +249,11 @@ def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
         )
     except ccxt.BaseError as e:
         raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
+    except ccxt.NotSupported as e:
+        raise OperationalException(
+            'Exchange {} does not support fetching historical candlestick data.'
+            'Message: {}'.format(_API.name, e)
+        )
 
 
 def cancel_order(order_id: str, pair: str) -> None:
