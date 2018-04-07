@@ -16,9 +16,9 @@ from freqtrade.tests.conftest import log_has
 API_INIT = False
 
 
-def maybe_init_api(conf, mocker):
+def maybe_init_api(conf, mocker, force=False):
     global API_INIT
-    if not API_INIT:
+    if force or not API_INIT:
         mocker.patch('freqtrade.exchange.validate_pairs',
                      side_effect=lambda s: True)
         init(config=conf)
@@ -27,7 +27,7 @@ def maybe_init_api(conf, mocker):
 
 def test_init(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
-    maybe_init_api(default_conf, mocker)
+    maybe_init_api(default_conf, mocker, True)
     assert log_has('Instance is running with dry_run enabled', caplog.record_tuples)
 
 
