@@ -7,9 +7,11 @@ from sqlalchemy import create_engine
 from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
+
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
     init(default_conf)
+
 
 def test_init_create_session(default_conf, mocker):
     mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
