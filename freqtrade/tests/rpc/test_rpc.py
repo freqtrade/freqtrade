@@ -59,7 +59,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
     result_message = [
         '*Trade ID:* `1`\n'
         '*Current Pair:* '
-        '[BTC_ETH](https://www.bittrex.com/Market/Index?MarketName=BTC-ETH)\n'
+        '[ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n'
         '*Open Since:* `just now`\n'
         '*Amount:* `90.99181074`\n'
         '*Open Rate:* `0.00001099`\n'
