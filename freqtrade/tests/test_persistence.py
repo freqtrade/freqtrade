@@ -7,6 +7,9 @@ from sqlalchemy import create_engine
 from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
+@pytest.fixture(scope='function')
+def init_persistence(default_conf):
+    init(default_conf)
 
 def test_init_create_session(default_conf, mocker):
     mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
@@ -90,7 +93,7 @@ def test_init_prod_db(default_conf, mocker):
         os.rename(prod_db_swp, prod_db)
 
 
-def test_update_with_bittrex(limit_buy_order, limit_sell_order):
+def test_update_with_bittrex(init_persistence, limit_buy_order, limit_sell_order):
     """
     On this test we will buy and sell a crypto currency.
 
@@ -144,7 +147,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     assert trade.close_date is not None
 
 
-def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
+def test_calc_open_close_trade_price(init_persistence, limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=0.001,
@@ -166,7 +169,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_profit_percent() == 0.06201057
 
 
-def test_calc_close_trade_price_exception(limit_buy_order):
+def test_calc_close_trade_price_exception(init_persistence, limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=0.001,
@@ -179,7 +182,7 @@ def test_calc_close_trade_price_exception(limit_buy_order):
     assert trade.calc_close_trade_price() == 0.0
 
 
-def test_update_open_order(limit_buy_order):
+def test_update_open_order(init_persistence, limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=1.00,
@@ -201,7 +204,7 @@ def test_update_open_order(limit_buy_order):
     assert trade.close_date is None
 
 
-def test_update_invalid_order(limit_buy_order):
+def test_update_invalid_order(init_persistence, limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=1.00,
@@ -213,7 +216,7 @@ def test_update_invalid_order(limit_buy_order):
         trade.update(limit_buy_order)
 
 
-def test_calc_open_trade_price(limit_buy_order):
+def test_calc_open_trade_price(init_persistence, limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=0.001,
@@ -230,7 +233,7 @@ def test_calc_open_trade_price(limit_buy_order):
     assert trade.calc_open_trade_price(fee=0.003) == 0.001003000
 
 
-def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
+def test_calc_close_trade_price(init_persistence, limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=0.001,
@@ -251,7 +254,7 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972
 
 
-def test_calc_profit(limit_buy_order, limit_sell_order):
+def test_calc_profit(init_persistence, limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=0.001,
@@ -281,7 +284,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
     assert trade.calc_profit(fee=0.003) == 0.00006163
 
 
-def test_calc_profit_percent(limit_buy_order, limit_sell_order):
+def test_calc_profit_percent(init_persistence, limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
         stake_amount=0.001,
