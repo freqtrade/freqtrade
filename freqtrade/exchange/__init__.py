@@ -226,6 +226,23 @@ def get_balances() -> dict:
         raise OperationalException(e)
 
 
+@retrier
+def get_tickers() -> Dict:
+    try:
+        return _API.fetch_tickers()
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load tickers due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
+    except ccxt.NotSupported as e:
+        raise OperationalException(
+            'Exchange {} does not support fetching tickers in batch.'
+            'Message: {}'.format(_API.name, e)
+        )
+
+
 # TODO: remove refresh argument, keeping it to keep track of where it was intended to be used
 @retrier
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
