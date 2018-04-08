@@ -24,6 +24,7 @@ from freqtrade.arguments import Arguments
 from freqtrade import misc
 from freqtrade.logger import Logger
 from pandas import DataFrame
+from freqtrade.constants import Constants
 
 import dateutil.parser
 
@@ -82,9 +83,10 @@ def convert_dataframe(frame: DataFrame):
     cols = ['date', 'open', 'high', 'low', 'close', 'volume']
     frame = frame[cols]
 
+    # Make sure parsing/printing data is assumed to be UTC
     frame['date'] = frame['date'].apply(
-        lambda d: int(dateutil.parser.parse(d).timestamp()) * 1000)
-    frame['date'] = frame['date'].astype(int)
+        lambda d: int(dateutil.parser.parse(d+'+00:00').timestamp()) * 1000)
+    frame['date'] = frame['date'].astype('int64')
     # Convert columns one by one to preserve type.
     by_column = [frame[x].values.tolist() for x in frame.columns]
     return list(list(x) for x in zip(*by_column))
@@ -130,15 +132,32 @@ def convert_main(args: Namespace) -> None:
                                filename)
                 continue
 
-            ret = re.search(r'\d+(?=\.json)', path.basename(filename))
-            if not ret:
+            ret_integer = re.search(r'\d+(?=\.json)', path.basename(filename))
+            ret_string = re.search(r'(\d+[mhdw])(?=\.json)', path.basename(filename))
+
+            if ret_integer:
+                minutes = int(ret_integer.group(0))
+                interval = str(minutes) + 'm'  # default to adding 'm' to end of minutes for new interval name
+                # but check if there is a mapping between int and string also
+                for str_interval, minutes_interval in Constants.TICKER_INTERVAL_MINUTES.items():
+                    if minutes_interval == minutes:
+                        interval = str_interval
+                        break
+                # change order on pairs if old ticker interval found
+                filename_new = path.join(path.dirname(filename),
+                                         "{}_{}-{}.json".format(currencies[1],
+                                                                currencies[0], interval))
+
+            elif ret_string:
+                interval = ret_string.group(0)
+                filename_new = path.join(path.dirname(filename),
+                                         "{}_{}-{}.json".format(currencies[0],
+                                                                currencies[1], interval))
+
+            else:
                 logger.warning("file %s could not be converted, interval not found", filename)
                 continue
-            interval = ret.group(0)
 
-            filename_new = path.join(path.dirname(filename),
-                                     "{}_{}-{}.json".format(currencies[1],
-                                                            currencies[0], interval))
         logger.debug("Converting and renaming %s to %s", filename, filename_new)
         convert_file(filename, filename_new)
 
