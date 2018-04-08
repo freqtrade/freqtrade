@@ -17,7 +17,7 @@ parser.add_argument(
 )
 args = parser.parse_args(sys.argv[1:])
 
-TICKER_INTERVALS = ['1m', '5m']  # ticker interval in minutes (currently implemented: 1 and 5)
+TICKER_INTERVALS = ['1m', '5m']
 PAIRS = []
 
 if args.pair:
