@@ -107,7 +107,7 @@ def validate_pairs(pairs: List[str]) -> None:
             )
         if pair not in markets:
             raise OperationalException(
-                'Pair {} is not available at {}'.format(pair, _API.id.lower()))
+                'Pair {} is not available at {}'.format(pair, get_name()))
 
 
 def exchange_has(endpoint: str) -> bool:
