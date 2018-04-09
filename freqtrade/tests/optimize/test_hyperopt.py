@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import json
 import os
+import signal
 from copy import deepcopy
 from unittest.mock import MagicMock
 import pytest
@@ -416,7 +417,7 @@ def test_signal_handler(mocker, init_hyperopt):
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.log_trials_result', m)
 
     hyperopt = _HYPEROPT
-    hyperopt.signal_handler(9, None)
+    hyperopt.signal_handler(signal.SIGTERM, None)
     assert m.call_count == 3
 
 
