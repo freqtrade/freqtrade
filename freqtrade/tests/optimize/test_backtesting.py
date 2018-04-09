@@ -50,39 +50,48 @@ def load_data_test(what):
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
     # loaded data looks:
-    # pair :: [{'O': 0.123, 'H': 0.123, 'L': 0.123,
-    #           'C': 0.123, 'V': 123.123,
-    #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
+    # pair :: [[    1509836520000,   unix timestamp in ms
+    #               0.00162008,      open
+    #               0.00162008,      high
+    #               0.00162008,      low
+    #               0.00162008,      close
+    #               108.14853839     base volume
+    #           ]]
     base = 0.001
     if what == 'raise':
-        return {'UNITTEST/BTC':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
-                  'BV': pair[x]['BV'],  # keep too
-                  'O': x * base,        # But replace O,H,L,C
-                  'H': x * base + 0.0001,
-                  'L': x * base - 0.0001,
-                  'C': x * base} for x in range(0, datalen)]}
+        return {'UNITTEST/BTC': [
+            [
+                pair[x][0],  # Keep old dates
+                x * base,  # But replace O,H,L,C
+                x * base + 0.0001,
+                x * base - 0.0001,
+                x * base,
+                pair[x][5],  # Keep old volume
+            ] for x in range(0, datalen)
+        ]}
     if what == 'lower':
-        return {'UNITTEST/BTC':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
-                  'BV': pair[x]['BV'],  # keep too
-                  'O': 1 - x * base,        # But replace O,H,L,C
-                  'H': 1 - x * base + 0.0001,
-                  'L': 1 - x * base - 0.0001,
-                  'C': 1 - x * base} for x in range(0, datalen)]}
+        return {'UNITTEST/BTC': [
+            [
+                pair[x][0],  # Keep old dates
+                1 - x * base,  # But replace O,H,L,C
+                1 - x * base + 0.0001,
+                1 - x * base - 0.0001,
+                1 - x * base,
+                pair[x][5]  # Keep old volume
+            ] for x in range(0, datalen)
+        ]}
     if what == 'sine':
         hz = 0.1  # frequency
-        return {'UNITTEST/BTC':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
-                  'BV': pair[x]['BV'],  # keep too
-                  # But replace O,H,L,C
-                  'O': math.sin(x * hz) / 1000 + base,
-                  'H': math.sin(x * hz) / 1000 + base + 0.0001,
-                  'L': math.sin(x * hz) / 1000 + base - 0.0001,
-                  'C': math.sin(x * hz) / 1000 + base} for x in range(0, datalen)]}
+        return {'UNITTEST/BTC': [
+            [
+                pair[x][0],  # Keep old dates
+                math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
+                math.sin(x * hz) / 1000 + base + 0.0001,
+                math.sin(x * hz) / 1000 + base - 0.0001,
+                math.sin(x * hz) / 1000 + base,
+                pair[x][5]  # Keep old volume
+            ] for x in range(0, datalen)
+        ]}
     return data
 
 
@@ -258,11 +267,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation'in config
+    assert 'realistic_simulation' in config
     assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
     assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
 
-    assert 'refresh_pairs'in config
+    assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
     assert 'timerange' in config
     assert log_has(
@@ -403,6 +412,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     """
     Test Backtesting.start() method
     """
+
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
