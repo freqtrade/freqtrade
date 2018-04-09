@@ -598,13 +598,15 @@ def test_backtest_record(init_backtesting, default_conf, mocker):
 
 
 def test_backtest_start_live(init_backtesting, default_conf, mocker, caplog):
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     mocker.patch('freqtrade.exchange.get_ticker_history',
                  new=lambda n, i: _load_pair_as_ticks(n, i))
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(default_conf)
+        read_data=json.dumps(conf)
     ))
 
     args = MagicMock()
