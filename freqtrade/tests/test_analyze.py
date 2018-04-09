@@ -169,15 +169,11 @@ def test_get_signal_handles_exceptions(mocker):
     assert _ANALYZE.get_signal('ETH/BTC', '5m') == (False, False)
 
 
-def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
+def test_parse_ticker_dataframe(ticker_history):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     # Test file with BV data
     dataframe = Analyze.parse_ticker_dataframe(ticker_history)
-    assert dataframe.columns.tolist() == columns
-
-    # Test file without BV data
-    dataframe = Analyze.parse_ticker_dataframe(ticker_history_without_bv)
     assert dataframe.columns.tolist() == columns
 
 
