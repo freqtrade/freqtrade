@@ -323,7 +323,7 @@ class FreqtradeBot(object):
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee_maker(),
+            fee=exchange.get_fee(taker_or_maker='maker'),
             open_rate=buy_limit,
             open_date=datetime.utcnow(),
             exchange=exchange.get_id(),

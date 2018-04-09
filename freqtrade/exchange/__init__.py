@@ -342,18 +342,12 @@ def get_id() -> str:
     return _API.id
 
 
-def get_fee_maker() -> float:
-    return _API.fees['trading']['maker']
-
-
-def get_fee_taker() -> float:
-    return _API.fees['trading']['taker']
-
-
-def get_fee() -> float:
+def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
+            price=1, taker_or_maker='maker') -> float:
     # validate that markets are loaded before trying to get fee
     if _API.markets is None or len(_API.markets) == 0:
         _API.load_markets()
 
-    return _API.calculate_fee(symbol='ETH/BTC', type='', side='', amount=1, price=1)['rate']
+    return _API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
+                              price=price, takerOrMaker=taker_or_maker)['rate']
 
