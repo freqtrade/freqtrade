@@ -25,6 +25,7 @@ def hyperopt_optimize_conf() -> dict:
             "ask_last_balance": 0.0
         },
         "exchange": {
+            "name": "bittrex",
             "pair_whitelist": [
                 "ETH/BTC",
                 "LTC/BTC",
