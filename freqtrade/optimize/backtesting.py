@@ -57,6 +57,9 @@ class Backtesting(object):
         # Reset keys for backtesting
         self.config['exchange']['key'] = ''
         self.config['exchange']['secret'] = ''
+        self.config['exchange']['password'] = ''
+        self.config['exchange']['uid'] = ''
+        self.config['dry_run'] = True
         exchange.init(self.config)
 
     @staticmethod
