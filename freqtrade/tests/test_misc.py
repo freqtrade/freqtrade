@@ -85,5 +85,7 @@ def test_format_ms_time() -> None:
     """
     date = format_ms_time(1523383321000)
     assert type(date) is str
-    assert date == '2018-04-10T20:02:01'
-    assert format_ms_time(1513152121000) == '2017-12-13T09:02:01'
+    res = datetime.datetime(2018, 4, 10, 18, 2, 1, tzinfo=datetime.timezone.utc)
+    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    res = datetime.datetime(2017, 12, 13, 8, 2, 1, tzinfo=datetime.timezone.utc)
+    assert format_ms_time(1513152121000) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
