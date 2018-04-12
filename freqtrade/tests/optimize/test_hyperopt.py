@@ -375,9 +375,9 @@ def test_format_results():
     Test Hyperopt.format_results()
     """
     trades = [
-        ('BTC_ETH', 2, 2, 123),
-        ('BTC_LTC', 1, 1, 123),
-        ('BTC_XRP', -1, -2, -246)
+        ('ETH/BTC', 2, 2, 123),
+        ('LTC/BTC', 1, 1, 123),
+        ('XPR/BTC', -1, -2, -246)
     ]
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
     df = pd.DataFrame.from_records(trades, columns=labels)
@@ -416,10 +416,10 @@ def test_populate_indicators() -> None:
     """
     Test Hyperopt.populate_indicators()
     """
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
+    tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
-    dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
+    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'])
 
     # Check if some indicators are generated. We will not test all of them
     assert 'adx' in dataframe
@@ -431,10 +431,10 @@ def test_buy_strategy_generator() -> None:
     """
     Test Hyperopt.buy_strategy_generator()
     """
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
+    tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
-    dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
+    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'])
 
     populate_buy_trend = _HYPEROPT.buy_strategy_generator(
         {
@@ -494,7 +494,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     conf.update({'spaces': 'all'})
 
     trades = [
-        ('BTC_POWR', 0.023117, 0.000233, 100)
+        ('POWR/BTC', 0.023117, 0.000233, 100)
     ]
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)

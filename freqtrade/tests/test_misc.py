@@ -50,15 +50,15 @@ def test_common_datearray(default_conf, mocker) -> None:
     mocker.patch('freqtrade.strategy.strategy.Strategy', MagicMock())
 
     analyze = Analyze(default_conf)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
+    tickerlist = {'UNITTEST/BTC': tick}
     dataframes = analyze.tickerdata_to_dataframe(tickerlist)
 
     dates = common_datearray(dataframes)
 
-    assert dates.size == dataframes['BTC_UNITEST']['date'].size
-    assert dates[0] == dataframes['BTC_UNITEST']['date'][0]
-    assert dates[-1] == dataframes['BTC_UNITEST']['date'][-1]
+    assert dates.size == dataframes['UNITTEST/BTC']['date'].size
+    assert dates[0] == dataframes['UNITTEST/BTC']['date'][0]
+    assert dates[-1] == dataframes['UNITTEST/BTC']['date'][-1]
 
 
 def test_file_dump_json(mocker) -> None:

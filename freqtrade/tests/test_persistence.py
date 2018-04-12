@@ -118,7 +118,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     """
 
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         fee=0.0025,
         exchange='bittrex',

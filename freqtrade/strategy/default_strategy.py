@@ -28,7 +28,7 @@ class DefaultStrategy(IStrategy):
     stoploss = -0.10
 
     # Optimal ticker interval for the strategy
-    ticker_interval = 5
+    ticker_interval = '5m'
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """

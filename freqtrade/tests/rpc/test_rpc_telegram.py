@@ -585,7 +585,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
         """
         Mock Bittrex.get_ticker() response
         """
-        if symbol == 'USDT_BTC':
+        if symbol == 'BTC/USDT':
             return {
                 'bid': 10000.00,
                 'ask': 10000.00,

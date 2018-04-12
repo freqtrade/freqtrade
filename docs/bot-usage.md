@@ -118,7 +118,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -l, --live            using live data
   -i INT, --ticker-interval INT
-                        specify ticker interval in minutes (default: 5)
+                        specify ticker interval (default: '5m')
   --realistic-simulation
                         uses max_open_trades from config to simulate real
                         world limitations

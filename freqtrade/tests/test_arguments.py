@@ -55,10 +55,10 @@ def test_parse_args_verbose() -> None:
 
 
 def test_scripts_options() -> None:
-    arguments = Arguments(['-p', 'BTC_ETH'], '')
+    arguments = Arguments(['-p', 'ETH/BTC'], '')
     arguments.scripts_options()
     args = arguments.get_parsed_arg()
-    assert args.pair == 'BTC_ETH'
+    assert args.pair == 'ETH/BTC'
 
 
 def test_parse_args_version() -> None:
@@ -106,7 +106,7 @@ def test_parse_args_backtesting_custom() -> None:
         '-c', 'test_conf.json',
         'backtesting',
         '--live',
-        '--ticker-interval', '1',
+        '--ticker-interval', '1m',
         '--refresh-pairs-cached']
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == 'test_conf.json'
@@ -114,7 +114,7 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args.loglevel == logging.INFO
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
-    assert call_args.ticker_interval == 1
+    assert call_args.ticker_interval == '1m'
     assert call_args.refresh_pairs is True
 
 

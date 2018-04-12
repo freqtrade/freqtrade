@@ -12,6 +12,7 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.logger import Logger
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy import Strategy
+from freqtrade.constants import Constants
 
 
 class SignalType(Enum):
@@ -81,7 +82,7 @@ class Analyze(object):
         """
         return self.strategy.populate_sell_trend(dataframe=dataframe)
 
-    def get_ticker_interval(self) -> int:
+    def get_ticker_interval(self) -> str:
         """
         Return ticker interval to use
         :return: Ticker interval value to use
@@ -100,10 +101,10 @@ class Analyze(object):
         dataframe = self.populate_sell_trend(dataframe)
         return dataframe
 
-    def get_signal(self, pair: str, interval: int) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, interval: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
-        :param pair: pair in format BTC_ANT or BTC-ANT
+        :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
@@ -137,7 +138,8 @@ class Analyze(object):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        if signal_date < arrow.utcnow() - timedelta(minutes=(interval + 5)):
+        interval_minutes = Constants.TICKER_INTERVAL_MINUTES[interval]
+        if signal_date < arrow.utcnow() - timedelta(minutes=(interval_minutes + 5)):
             self.logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,

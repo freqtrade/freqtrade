@@ -54,7 +54,7 @@ def default_conf():
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": 5,
+        "ticker_interval": '5m',
         "dry_run": True,
         "minimal_roi": {
             "40": 0.0,
@@ -323,10 +323,9 @@ def ticker_history_without_bv():
     ]
 
 
-# FIX: Perhaps change result fixture to use BTC_UNITEST instead?
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
+    with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
 
 
