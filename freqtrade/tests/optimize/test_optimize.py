@@ -52,11 +52,11 @@ def test_load_data_30min_ticker(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'ETH_BTC-30m.json')
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-30m.json')
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval='30m')
+    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "ETH/BTC", Interval: 30m', caplog.record_tuples)
+    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 30m', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -66,11 +66,11 @@ def test_load_data_5min_ticker(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'ETH_BTC-5m.json')
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-5m.json')
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['ETH/BTC'], ticker_interval='5m')
+    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='5m')
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "ETH/BTC", Interval: 5m', caplog.record_tuples)
+    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 5m', caplog.record_tuples)
     _clean_test_file(file)
 
 
@@ -80,11 +80,11 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     """
     mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
 
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'ETH_BTC-1m.json')
+    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, ticker_interval='1m', pairs=['ETH/BTC'])
+    optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "ETH/BTC", Interval: 1m', caplog.record_tuples)
+    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 1m', caplog.record_tuples)
     _clean_test_file(file)
 
 
