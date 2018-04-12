@@ -6,13 +6,11 @@ This module contains the backtesting logic
 from argparse import Namespace
 from typing import Dict, Tuple, Any, List, Optional
 
-import ccxt
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
-import freqtrade.exchange as exchange
 from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments

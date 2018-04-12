@@ -108,6 +108,7 @@ def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
     ):
         validate_pairs(default_conf['exchange']['pair_whitelist'])
 
+
 def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)
@@ -115,6 +116,7 @@ def test_buy_dry_run(default_conf, mocker):
     order = buy(pair='ETH/BTC', rate=200, amount=1)
     assert 'id' in order
     assert 'dry_run_buy_' in order['id']
+
 
 def test_buy_prod(default_conf, mocker):
     api_mock = MagicMock()

@@ -350,4 +350,3 @@ def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
 
     return _API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                               price=price, takerOrMaker=taker_or_maker)['rate']
-

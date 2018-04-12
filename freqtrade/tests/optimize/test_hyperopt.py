@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import json
 import os
 import signal
 from copy import deepcopy
@@ -25,7 +24,8 @@ def init_hyperopt(default_conf, mocker):
     global _HYPEROPT_INITIALIZED, _HYPEROPT
     if not _HYPEROPT_INITIALIZED:
         mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
-        mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', MagicMock(return_value=default_conf))
+        mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf',
+                     MagicMock(return_value=default_conf))
         mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
         _HYPEROPT = Hyperopt(default_conf)
         _HYPEROPT_INITIALIZED = True
@@ -66,7 +66,8 @@ def test_start(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock()
     mocker.patch('freqtrade.logger.Logger.set_format', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
-    mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', MagicMock(return_value=default_conf))
+    mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf',
+                 MagicMock(return_value=default_conf))
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
 
     args = [
