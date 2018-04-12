@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 from freqtrade.analyze import Analyze
 from freqtrade.misc import (shorten_date, datesarray_to_datetimearray,
-                            common_datearray, file_dump_json)
+                            common_datearray, file_dump_json, format_ms_time)
 from freqtrade.optimize.__init__ import load_tickerdata_file
 
 
@@ -76,3 +76,20 @@ def test_file_dump_json(mocker) -> None:
     file_dump_json('somefile', [1, 2, 3], True)
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
+
+
+def test_format_ms_time() -> None:
+    """
+    test format_ms_time()
+    :return: None
+    """
+    # Date 2018-04-10 18:02:01
+    date_in_epoch_ms = 1523383321000
+    date = format_ms_time(date_in_epoch_ms)
+    assert type(date) is str
+    res = datetime.datetime(2018, 4, 10, 18, 2, 1, tzinfo=datetime.timezone.utc)
+    assert date == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+    res = datetime.datetime(2017, 12, 13, 8, 2, 1, tzinfo=datetime.timezone.utc)
+    # Date 2017-12-13 08:02:01
+    date_in_epoch_ms = 1513152121000
+    assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
