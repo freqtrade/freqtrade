@@ -1281,3 +1281,196 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker) ->
     trade.update(limit_buy_order)
     patch_get_signal(mocker, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+
+
+def test_get_real_amount_quote(default_conf, trades_for_order, mocker):
+    """
+    Test get_real_amount
+    """
+
+    rv = [{'info': {'id': 34567,
+                    'orderId': 123456,
+                    'price': '0.24544100',
+                    'qty': '8.00000000',
+                    'commission': '0.00800000',
+                    'commissionAsset': 'LTC',
+                    'time': 1521663363189,
+                    'isBuyer': True,
+                    'isMaker': False,
+                    'isBestMatch': True},
+           'timestamp': 1521663363189,
+           'datetime': '2018-03-21T20:16:03.189Z',
+           'symbol': 'LTC/ETH',
+           'id': '34567',
+           'order': '123456',
+           'type': None,
+           'side': 'buy',
+           'price': 0.245441,
+           'cost': 1.963528,
+           'amount': 8.0,
+           'fee': {'cost': 0.008, 'currency': 'LTC'}}]
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=rv)
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=8,
+        exchange='binance',
+        open_order_id="123456"
+        )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount - cost
+    assert freqtrade.get_real_amount(trade) == 7.992
+
+
+def test_get_real_amount_stake(default_conf, mocker):
+    """
+    Test get_real_amount
+    """
+
+    rv = [{'info': {'id': 34567,
+                    'orderId': 123456,
+                    'price': '0.24544100',
+                    'qty': '8.00000000',
+                    'commission': '0.00800000',
+                    'commissionAsset': 'LTC',
+                    'time': 1521663363189,
+                    'isBuyer': True,
+                    'isMaker': False,
+                    'isBestMatch': True},
+           'timestamp': 1521663363189,
+           'datetime': '2018-03-21T20:16:03.189Z',
+           'symbol': 'LTC/ETH',
+           'id': '34567',
+           'order': '123456',
+           'type': None,
+           'side': 'buy',
+           'price': 0.245441,
+           'cost': 1.963528,
+           'amount': 8.0,
+           'fee': {'cost': 0.008, 'currency': 'ETH'}}]
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=rv)
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    trade = Trade(
+        pair='IOTA/ETH',
+        amount=8,
+        exchange='binance',
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount - cost
+    assert freqtrade.get_real_amount(trade) == 8
+
+
+def test_get_real_amount_BNB(default_conf, mocker):
+    """
+    Test get_real_amount
+    """
+
+    rv = [{'info': {'id': 34567,
+                    'orderId': 123456,
+                    'price': '0.24544100',
+                    'qty': '8.00000000',
+                    'commission': '0.00800000',
+                    'commissionAsset': 'LTC',
+                    'time': 1521663363189,
+                    'isBuyer': True,
+                    'isMaker': False,
+                    'isBestMatch': True},
+           'timestamp': 1521663363189,
+           'datetime': '2018-03-21T20:16:03.189Z',
+           'symbol': 'LTC/ETH',
+           'id': '34567',
+           'order': '123456',
+           'type': None,
+           'side': 'buy',
+           'price': 0.245441,
+           'cost': 1.963528,
+           'amount': 8.0,
+           'fee': {'cost': 0.00094518, 'currency': 'BNB'}}]
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=rv)
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    trade = Trade(
+        pair='IOTA/ETH',
+        amount=8,
+        exchange='binance',
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount - cost
+    assert freqtrade.get_real_amount(trade) == 8
+
+
+def test_get_real_amount_multi(default_conf, mocker):
+    """
+    Test get_real_amount
+    """
+
+    rv = [{'info': {'id': 34567,
+                    'orderId': 123456,
+                    'price': '0.24544100',
+                    'qty': '8.00000000',
+                    'commission': '0.00800000',
+                    'commissionAsset': 'LTC',
+                    'time': 1521663363189,
+                    'isBuyer': True,
+                    'isMaker': False,
+                    'isBestMatch': True},
+           'timestamp': 1521663363189,
+           'datetime': '2018-03-21T20:16:03.189Z',
+           'symbol': 'LTC/ETH',
+           'id': '34567',
+           'order': '123456',
+           'type': None,
+           'side': 'buy',
+           'price': 0.245441,
+           'cost': 1.963528,
+           'amount': 4.0,
+           'fee': {'cost': 0.004, 'currency': 'LTC'}},
+           {'info': {'id': 34567,
+                    'orderId': 123456,
+                    'price': '0.24544100',
+                    'qty': '8.00000000',
+                    'commission': '0.00800000',
+                    'commissionAsset': 'LTC',
+                    'time': 1521663363189,
+                    'isBuyer': True,
+                    'isMaker': False,
+                    'isBestMatch': True},
+           'timestamp': 1521663363189,
+           'datetime': '2018-03-21T20:16:03.189Z',
+           'symbol': 'LTC/ETH',
+           'id': '34567',
+           'order': '123456',
+           'type': None,
+           'side': 'buy',
+           'price': 0.245441,
+           'cost': 1.963528,
+           'amount': 4.0,
+           'fee': {'cost': 0.004, 'currency': 'LTC'}}]
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=rv)
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=8,
+        exchange='binance',
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount - cost
+    assert freqtrade.get_real_amount(trade) == 7.992

@@ -362,6 +362,53 @@ class FreqtradeBot(object):
             return self.handle_trade(trade)
         return False
 
+    def get_real_amount(self, order: Trade) -> float:
+        """
+        Get real amount for the trade
+        This is needed for exchanges which charge fees in target currency (binance)
+        """
+
+        trades = exchange.get_trades_for_order(
+            order.open_order_id, order.pair, order.open_date)
+
+        if len(trades) == 0:
+            raise OperationalException("get_real_amount: no trade found")
+        amount = 0
+        fee = 0
+        for trade in trades:
+            amount += trade["amount"]
+            if "fee" in trade:
+                if order.pair.startswith(trade["fee"]["currency"]):
+                    fee += trade["fee"]["cost"]
+
+        # TODO: create order using amount_lots would be better
+        if amount != order.amount:
+            self.logger.warning("amount {} does not match amount {}".format(amount, order.amount))
+            raise OperationalException("Half bought? Amounts don't match")
+        real_amount = amount - fee
+        return real_amount
+
+    def maybe_update_real_amount(self, trade: Trade) -> bool:
+        """
+        Updates trade-amount with real amount
+        :return: True if real-amount has been changed.
+        """
+        if trade.is_open and trade.open_order_id is None:
+            # Trade is not open anymore
+            self.logger.warning("could not open trade amount - Trade is not open anymore")
+            return False
+        try:
+            new_amount = self.get_real_amount(trade)
+        except OperationalException as exception:
+            self.logger.warning("could not update trade amount: %s", exception)
+            return False
+        # updating amount
+        self.logger.info("Updating amount for Trade {} from {} to {}".format(
+                    trade, trade.amount, new_amount))
+        trade.amount = new_amount
+        Trade.session.flush()
+        return True
+
     def handle_trade(self, trade: Trade) -> bool:
         """
         Sells the current pair if the threshold is reached and updates the trade record.
