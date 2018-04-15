@@ -1,9 +1,5 @@
-import json
-
-import pytest
 from pandas import DataFrame
 
-from freqtrade.analyze import Analyze
 from freqtrade.strategy.default_strategy import DefaultStrategy, class_name
 
 
