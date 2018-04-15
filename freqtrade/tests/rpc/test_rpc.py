@@ -25,7 +25,7 @@ def prec_satoshi(a, b) -> float:
 
 
 # Unit tests
-def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
+def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     """
     Test rpc_trade_status() method
     """
@@ -36,7 +36,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -74,7 +74,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
     assert trade.find('[ETH/BTC]') >= 0
 
 
-def test_rpc_status_table(default_conf, ticker, mocker) -> None:
+def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     """
     Test rpc_status_table() method
     """
@@ -85,7 +85,7 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -108,8 +108,8 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
     assert '-0.59%' in result['Profit'].all()
 
 
-def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker)\
-        -> None:
+def test_rpc_daily_profit(default_conf, update, ticker, fee,
+                          limit_buy_order, limit_sell_order, mocker) -> None:
     """
     Test rpc_daily_profit() method
     """
@@ -120,7 +120,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -161,8 +161,8 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
     assert days.find('must be an integer greater than 0') >= 0
 
 
-def test_rpc_trade_statistics(
-        default_conf, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker) -> None:
+def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
+                              limit_buy_order, limit_sell_order, mocker) -> None:
     """
     Test rpc_trade_statistics() method
     """
@@ -177,7 +177,7 @@ def test_rpc_trade_statistics(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -224,8 +224,8 @@ def test_rpc_trade_statistics(
 
 # Test that rpc_trade_statistics can handle trades that lacks
 # trade.open_rate (it is set to None)
-def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, ticker_sell_up, limit_buy_order,
-                                     limit_sell_order):
+def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
+                                     ticker_sell_up, limit_buy_order, limit_sell_order):
     """
     Test rpc_trade_statistics() method
     """
@@ -240,7 +240,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, ticker_sell_u
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -259,7 +259,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, ticker_sell_u
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker_sell_up,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     trade.update(limit_sell_order)
     trade.close_date = datetime.utcnow()
@@ -484,7 +484,7 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
     assert cancel_order_mock.call_count == 1
 
 
-def test_performance_handle(default_conf, ticker, limit_buy_order,
+def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
                             limit_sell_order, mocker) -> None:
     """
     Test rpc_performance() method
@@ -497,7 +497,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order,
         validate_pairs=MagicMock(),
         get_balances=MagicMock(return_value=ticker),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))

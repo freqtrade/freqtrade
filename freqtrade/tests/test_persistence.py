@@ -89,7 +89,7 @@ def test_init_prod_db(default_conf, mocker):
         os.rename(prod_db_swp, prod_db)
 
 
-def test_update_with_bittrex(limit_buy_order, limit_sell_order):
+def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     """
     On this test we will buy and sell a crypto currency.
 
@@ -120,7 +120,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
     assert trade.open_order_id is None
@@ -143,11 +143,11 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     assert trade.close_date is not None
 
 
-def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
+def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
 
@@ -165,11 +165,11 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_profit_percent() == 0.06201057
 
 
-def test_calc_close_trade_price_exception(limit_buy_order):
+def test_calc_close_trade_price_exception(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
 
@@ -212,11 +212,11 @@ def test_update_invalid_order(limit_buy_order):
         trade.update(limit_buy_order)
 
 
-def test_calc_open_trade_price(limit_buy_order):
+def test_calc_open_trade_price(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
     trade.open_order_id = 'open_trade'
@@ -229,11 +229,11 @@ def test_calc_open_trade_price(limit_buy_order):
     assert trade.calc_open_trade_price(fee=0.003) == 0.001003000
 
 
-def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
+def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
     trade.open_order_id = 'close_trade'
@@ -250,11 +250,11 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972
 
 
-def test_calc_profit(limit_buy_order, limit_sell_order):
+def test_calc_profit(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
     trade.open_order_id = 'profit_percent'
@@ -280,11 +280,11 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
     assert trade.calc_profit(fee=0.003) == 0.00006163
 
 
-def test_calc_profit_percent(limit_buy_order, limit_sell_order):
+def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
+        fee=fee.return_value,
         exchange='bittrex',
     )
     trade.open_order_id = 'profit_percent'
@@ -304,7 +304,7 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     assert trade.calc_profit_percent(fee=0.003) == 0.0614782
 
 
-def test_clean_dry_run_db(default_conf):
+def test_clean_dry_run_db(default_conf, fee):
     init(default_conf, create_engine('sqlite://'))
 
     # Simulate dry_run entries
@@ -312,7 +312,7 @@ def test_clean_dry_run_db(default_conf):
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
-        fee=0.0025,
+        fee=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
         open_order_id='dry_run_buy_12345'
@@ -323,7 +323,7 @@ def test_clean_dry_run_db(default_conf):
         pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
-        fee=0.0025,
+        fee=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
         open_order_id='dry_run_sell_12345'
@@ -335,7 +335,7 @@ def test_clean_dry_run_db(default_conf):
         pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
-        fee=0.0025,
+        fee=fee.return_value,
         open_rate=0.123,
         exchange='bittrex',
         open_order_id='prod_buy_12345'

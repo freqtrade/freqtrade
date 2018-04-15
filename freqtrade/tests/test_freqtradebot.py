@@ -575,7 +575,7 @@ def test_process_maybe_execute_sell(mocker, default_conf) -> None:
     assert freqtrade.process_maybe_execute_sell(trade)
 
 
-def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker) -> None:
+def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, fee, mocker) -> None:
     """
     Test check_handle() method
     """
@@ -591,7 +591,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker) -
         }),
         buy=MagicMock(return_value={'id': 'mocked_limit_buy'}),
         sell=MagicMock(return_value={'id': 'mocked_limit_sell'}),
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
 
@@ -772,7 +772,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
         freqtrade.handle_trade(trade)
 
 
-def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mocker) -> None:
+def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fee, mocker) -> None:
     """
     Test check_handle_timedout() method
     """
@@ -785,7 +785,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, mo
         get_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old),
         cancel_order=cancel_order_mock,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -989,7 +989,7 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     assert cancel_order_mock.call_count == 1
 
 
-def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
+def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> None:
     """
     Test execute_sell() method with a ticker going UP
     """
@@ -1000,7 +1000,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -1030,7 +1030,7 @@ def test_execute_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
     assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker) -> None:
+def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) -> None:
     """
     Test execute_sell() method with a ticker going DOWN
     """
@@ -1042,7 +1042,7 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker) -> No
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -1070,7 +1070,8 @@ def test_execute_sell_down(default_conf, ticker, ticker_sell_down, mocker) -> No
     assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up, mocker) -> None:
+def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
+                                           ticker_sell_up, mocker) -> None:
     """
     Test execute_sell() method with a ticker going DOWN and with a bot config empty
     """
@@ -1081,7 +1082,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -1110,7 +1111,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, ticker_sell_up,
     assert 'USD' not in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_execute_sell_without_conf_sell_down(default_conf, ticker,
+def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
                                              ticker_sell_down, mocker) -> None:
     """
     Test execute_sell() method with a ticker going DOWN and with a bot config empty
@@ -1122,7 +1123,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker,
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=MagicMock(return_value=0.0025)
+        get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 

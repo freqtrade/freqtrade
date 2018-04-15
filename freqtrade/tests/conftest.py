@@ -100,6 +100,11 @@ def update():
 
 
 @pytest.fixture
+def fee():
+    return MagicMock(return_value=0.0025)
+
+
+@pytest.fixture
 def ticker():
     return MagicMock(return_value={
         'bid': 0.00001098,
