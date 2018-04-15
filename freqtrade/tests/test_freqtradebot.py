@@ -604,6 +604,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, fee, mock
     trade = Trade.query.first()
     assert trade
 
+    time.sleep(0.01)  # Race condition fix
     trade.update(limit_buy_order)
     assert trade.is_open is True
 
