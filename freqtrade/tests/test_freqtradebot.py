@@ -208,20 +208,21 @@ def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.exchange.get_tickers', tickers)
     mocker.patch('freqtrade.freqtradebot.exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
 
-    # Test to retrieved BTC sorted on BaseVolume
+    # Test to retrieved BTC sorted on quoteVolume (default)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
-    assert whitelist == ['ETH/BTC', 'TKN/BTC', 'BLK/BTC']
+    assert whitelist == ['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC']
 
     # Test to retrieve BTC sorted on bidVolume
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC', key='bidVolume')
-    assert whitelist == ['TKN/BTC', 'ETH/BTC', 'BLK/BTC']
+    assert whitelist == ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'BLK/BTC']
 
-    # Test with USDT sorted on BaseVolume
+    # Test with USDT sorted on quoteVolume (default)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='USDT')
-    assert whitelist == ['TKN/USDT', 'ETH/USDT', 'BLK/USDT']
+    assert whitelist == ['TKN/USDT', 'ETH/USDT', 'LTC/USDT', 'BLK/USDT']
 
-    # Test with ETH (our fixture does not have ETH, but Bittrex returns them)
+    # Test with ETH (our fixture does not have ETH, so result should be empty)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='ETH')
     assert whitelist == []
 

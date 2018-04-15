@@ -376,6 +376,28 @@ def tickers():
             'quoteVolume': 1515.14631229,
             'info': {}
         },
+        'LTC/BTC': {
+            'symbol': 'LTC/BTC',
+            'timestamp': 1523787258992,
+            'datetime': '2018-04-15T10:14:19.992Z',
+            'high': 0.015978,
+            'low': 0.0157,
+            'bid': 0.015954,
+            'bidVolume': 12.83,
+            'ask': 0.015957,
+            'askVolume': 0.49,
+            'vwap': 0.01581636,
+            'open': 0.015823,
+            'close': 0.01582,
+            'first': None,
+            'last': 0.015951,
+            'change': 0.809,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 88620.68,
+            'quoteVolume': 1401.65697943,
+            'info': {}
+        },
         'ETH/USDT': {
             'symbol': 'ETH/USDT',
             'timestamp': 1522014804118,
@@ -440,6 +462,28 @@ def tickers():
             'average': None,
             'baseVolume': 294106.204,
             'quoteVolume': 19132399.743954,
+            'info': {}
+        },
+        'LTC/USDT': {
+            'symbol': 'LTC/USDT',
+            'timestamp': 1523787257812,
+            'datetime': '2018-04-15T10:14:18.812Z',
+            'high': 129.94,
+            'low': 124.0,
+            'bid': 129.28,
+            'bidVolume': 0.03201,
+            'ask': 129.52,
+            'askVolume': 0.14529,
+            'vwap': 126.92838682,
+            'open': 127.0,
+            'close': 127.1,
+            'first': None,
+            'last': 129.28,
+            'change': 1.795,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 59698.79897,
+            'quoteVolume': 29132399.743954,
             'info': {}
         }
     })
