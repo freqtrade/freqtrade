@@ -365,7 +365,7 @@ class FreqtradeBot(object):
     def get_real_amount(self, order: Trade) -> float:
         """
         Get real amount for the trade
-        This is needed for exchanges which charge fees in target currency (binance)
+        This is needed for exchanges which charge fees in target currency (e.g. binance)
         """
 
         trades = exchange.get_trades_for_order(
