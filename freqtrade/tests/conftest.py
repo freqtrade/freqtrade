@@ -100,6 +100,11 @@ def update():
 
 
 @pytest.fixture
+def fee():
+    return MagicMock(return_value=0.0025)
+
+
+@pytest.fixture
 def ticker():
     return MagicMock(return_value={
         'bid': 0.00001098,
@@ -127,32 +132,80 @@ def ticker_sell_down():
 
 
 @pytest.fixture
-def health():
-    return MagicMock(return_value={
-        "ETH/BTC": {
+def markets():
+    return MagicMock(return_value=[
+        {
+            'id': 'ethbtc',
+            'symbol': 'ETH/BTC',
             'base': 'ETH',
+            'quote': 'BTC',
             'active': True,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
         },
-        "TRST/BTC": {
-            'base': 'TRST',
+        {
+            'id': 'tknbtc',
+            'symbol': 'TKN/BTC',
+            'base': 'TKN',
+            'quote': 'BTC',
             'active': True,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
         },
-        "SWT/BTC": {
-            'base': 'SWT',
+        {
+            'id': 'blkbtc',
+            'symbol': 'BLK/BTC',
+            'base': 'BLK',
+            'quote': 'BTC',
             'active': True,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
-        },
-        "BCC/BTC": {
-            'base': 'BCC',
-            'active': False,
-            'LastChecked': '2017-11-13T20:15:00.00',
-            'Notice': None
-        }})
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': 500000,
+            },
+            'info': '',
+        }
+    ])
+
+
+@pytest.fixture
+def markets_empty():
+    return MagicMock(return_value=[])
 
 
 @pytest.fixture
@@ -231,7 +284,7 @@ def limit_sell_order():
 
 
 @pytest.fixture
-def ticker_history_api():
+def ticker_history():
     return [
         [
             1511686200000,  # unix timestamp ms
@@ -261,73 +314,185 @@ def ticker_history_api():
 
 
 @pytest.fixture
-def ticker_history():
-    return [
-        {
-            "O": 8.794e-05,
-            "H": 8.948e-05,
-            "L": 8.794e-05,
-            "C": 8.88e-05,
-            "V": 991.09056638,
-            "T": "2017-11-26T08:50:00",
-            "BV": 0.0877869
+def tickers():
+    return MagicMock(return_value={
+        'ETH/BTC': {
+            'symbol': 'ETH/BTC',
+            'timestamp': 1522014806207,
+            'datetime': '2018-03-25T21:53:26.207Z',
+            'high': 0.061697,
+            'low': 0.060531,
+            'bid': 0.061588,
+            'bidVolume': 3.321,
+            'ask': 0.061655,
+            'askVolume': 0.212,
+            'vwap': 0.06105296,
+            'open': 0.060809,
+            'close': 0.060761,
+            'first': None,
+            'last': 0.061588,
+            'change': 1.281,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 111649.001,
+            'quoteVolume': 6816.50176926,
+            'info': {}
         },
-        {
-            "O": 8.88e-05,
-            "H": 8.942e-05,
-            "L": 8.88e-05,
-            "C": 8.893e-05,
-            "V": 658.77935965,
-            "T": "2017-11-26T08:55:00",
-            "BV": 0.05874751
+        'TKN/BTC': {
+            'symbol': 'TKN/BTC',
+            'timestamp': 1522014806169,
+            'datetime': '2018-03-25T21:53:26.169Z',
+            'high': 0.01885,
+            'low': 0.018497,
+            'bid': 0.018799,
+            'bidVolume': 8.38,
+            'ask': 0.018802,
+            'askVolume': 15.0,
+            'vwap': 0.01869197,
+            'open': 0.018585,
+            'close': 0.018573,
+            'baseVolume': 81058.66,
+            'quoteVolume': 2247.48374509,
         },
-        {
-            "O": 8.891e-05,
-            "H": 8.893e-05,
-            "L": 8.875e-05,
-            "C": 8.877e-05,
-            "V": 7920.73570705,
-            "T": "2017-11-26T09:00:00",
-            "BV": 0.7039405
+        'BLK/BTC': {
+            'symbol': 'BLK/BTC',
+            'timestamp': 1522014806072,
+            'datetime': '2018-03-25T21:53:26.720Z',
+            'high': 0.007745,
+            'low': 0.007512,
+            'bid': 0.007729,
+            'bidVolume': 0.01,
+            'ask': 0.007743,
+            'askVolume': 21.37,
+            'vwap': 0.00761466,
+            'open': 0.007653,
+            'close': 0.007652,
+            'first': None,
+            'last': 0.007743,
+            'change': 1.176,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 295152.26,
+            'quoteVolume': 1515.14631229,
+            'info': {}
+        },
+        'LTC/BTC': {
+            'symbol': 'LTC/BTC',
+            'timestamp': 1523787258992,
+            'datetime': '2018-04-15T10:14:19.992Z',
+            'high': 0.015978,
+            'low': 0.0157,
+            'bid': 0.015954,
+            'bidVolume': 12.83,
+            'ask': 0.015957,
+            'askVolume': 0.49,
+            'vwap': 0.01581636,
+            'open': 0.015823,
+            'close': 0.01582,
+            'first': None,
+            'last': 0.015951,
+            'change': 0.809,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 88620.68,
+            'quoteVolume': 1401.65697943,
+            'info': {}
+        },
+        'ETH/USDT': {
+            'symbol': 'ETH/USDT',
+            'timestamp': 1522014804118,
+            'datetime': '2018-03-25T21:53:24.118Z',
+            'high': 530.88,
+            'low': 512.0,
+            'bid': 529.73,
+            'bidVolume': 0.2,
+            'ask': 530.21,
+            'askVolume': 0.2464,
+            'vwap': 521.02438405,
+            'open': 527.27,
+            'close': 528.42,
+            'first': None,
+            'last': 530.21,
+            'change': 0.558,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 72300.0659,
+            'quoteVolume': 37670097.3022171,
+            'info': {}
+        },
+        'TKN/USDT': {
+            'symbol': 'TKN/USDT',
+            'timestamp': 1522014806198,
+            'datetime': '2018-03-25T21:53:26.198Z',
+            'high': 8718.0,
+            'low': 8365.77,
+            'bid': 8603.64,
+            'bidVolume': 0.15846,
+            'ask': 8603.67,
+            'askVolume': 0.069147,
+            'vwap': 8536.35621697,
+            'open': 8680.0,
+            'close': 8680.0,
+            'first': None,
+            'last': 8603.67,
+            'change': -0.879,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 30414.604298,
+            'quoteVolume': 259629896.48584127,
+            'info': {}
+        },
+        'BLK/USDT': {
+            'symbol': 'BLK/USDT',
+            'timestamp': 1522014806145,
+            'datetime': '2018-03-25T21:53:26.145Z',
+            'high': 66.95,
+            'low': 63.38,
+            'bid': 66.473,
+            'bidVolume': 4.968,
+            'ask': 66.54,
+            'askVolume': 2.704,
+            'vwap': 65.0526901,
+            'open': 66.43,
+            'close': 66.383,
+            'first': None,
+            'last': 66.5,
+            'change': 0.105,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 294106.204,
+            'quoteVolume': 19132399.743954,
+            'info': {}
+        },
+        'LTC/USDT': {
+            'symbol': 'LTC/USDT',
+            'timestamp': 1523787257812,
+            'datetime': '2018-04-15T10:14:18.812Z',
+            'high': 129.94,
+            'low': 124.0,
+            'bid': 129.28,
+            'bidVolume': 0.03201,
+            'ask': 129.52,
+            'askVolume': 0.14529,
+            'vwap': 126.92838682,
+            'open': 127.0,
+            'close': 127.1,
+            'first': None,
+            'last': 129.28,
+            'change': 1.795,
+            'percentage': None,
+            'average': None,
+            'baseVolume': 59698.79897,
+            'quoteVolume': 29132399.743954,
+            'info': {}
         }
-    ]
-
-
-@pytest.fixture
-def ticker_history_without_bv():
-    return [
-        {
-            "O": 8.794e-05,
-            "H": 8.948e-05,
-            "L": 8.794e-05,
-            "C": 8.88e-05,
-            "V": 991.09056638,
-            "T": "2017-11-26T08:50:00"
-        },
-        {
-            "O": 8.88e-05,
-            "H": 8.942e-05,
-            "L": 8.88e-05,
-            "C": 8.893e-05,
-            "V": 658.77935965,
-            "T": "2017-11-26T08:55:00"
-        },
-        {
-            "O": 8.891e-05,
-            "H": 8.893e-05,
-            "L": 8.875e-05,
-            "C": 8.877e-05,
-            "V": 7920.73570705,
-            "T": "2017-11-26T09:00:00"
-        }
-    ]
+    })
 
 
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
-
 
 # FIX:
 # Create an fixture/function

@@ -107,10 +107,7 @@ class FreqtradeBot(object):
                 Constants.PROCESS_THROTTLE_SECS
             )
 
-            nb_assets = self.config.get(
-                'dynamic_whitelist',
-                Constants.DYNAMIC_WHITELIST
-            )
+            nb_assets = self.config.get('dynamic_whitelist', None)
 
             self._throttle(func=self._process,
                            min_secs=min_secs,
@@ -185,49 +182,60 @@ class FreqtradeBot(object):
         return state_changed
 
     @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str = 'BaseVolume') -> List[str]:
+    def _gen_pair_whitelist(self, base_currency: str, key: str = 'quoteVolume') -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
-        :param key: sort key (defaults to 'BaseVolume')
+        :param key: sort key (defaults to 'quoteVolume')
         :return: List of pairs
         """
-        summaries = sorted(
-            (v for s, v in exchange.get_market_summaries().items() if v['symbol'].endswith(base_currency)),
-            key=lambda v: v.get('info').get(key) or 0.0,
-            reverse=True
-        )
 
-        return [s['symbol'] for s in summaries]
+        if not exchange.exchange_has('fetchTickers'):
+            raise OperationalException(
+                'Exchange does not support dynamic whitelist.'
+                'Please edit your config and restart the bot'
+            )
+
+        tickers = exchange.get_tickers()
+        # check length so that we make sure that '/' is actually in the string
+        tickers = [v for k, v in tickers.items()
+                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
+
+        sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
+        pairs = [s['symbol'] for s in sorted_tickers]
+        return pairs
 
     def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
         """
-        Check wallet health and remove pair from whitelist if necessary
+        Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
         trade
         :return: the list of pairs the user wants to trade without the one unavailable or
         black_listed
         """
         sanitized_whitelist = whitelist
-        health = exchange.get_wallet_health()
+        markets = exchange.get_markets()
+
+        markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
         known_pairs = set()
-        for symbol, status in health.items():
-            pair = f"{status['base']}/{self.config['stake_currency']}"
+        for market in markets:
+            pair = market['symbol']
             # pair is not int the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
                 continue
             # else the pair is valid
             known_pairs.add(pair)
             # Market is not active
-            if not status['active']:
+            if not market['active']:
                 sanitized_whitelist.remove(pair)
                 self.logger.info(
-                    'Ignoring %s from whitelist (reason: %s).',
-                    pair, status.get('Notice') or 'wallet is not active'
+                    'Ignoring %s from whitelist. Market is not active.',
+                    pair
                 )
 
         # We need to remove pairs that are unknown
         final_list = [x for x in sanitized_whitelist if x in known_pairs]
+
         return final_list
 
     def get_target_bid(self, ticker: Dict[str, float]) -> float:
@@ -285,7 +293,7 @@ class FreqtradeBot(object):
         buy_limit = self.get_target_bid(exchange.get_ticker(pair))
         amount = stake_amount / buy_limit
 
-        order_id = exchange.buy(pair, buy_limit, amount)
+        order_id = exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(
             stake_amount,
@@ -297,7 +305,7 @@ class FreqtradeBot(object):
         self.rpc.send_msg(
             '*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '
             .format(
-                exchange.get_name().upper(),
+                exchange.get_name(),
                 pair.replace('_', '/'),
                 exchange.get_pair_detail_url(pair),
                 buy_limit,
@@ -312,10 +320,10 @@ class FreqtradeBot(object):
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee_maker(),
+            fee=exchange.get_fee(taker_or_maker='maker'),
             open_rate=buy_limit,
             open_date=datetime.utcnow(),
-            exchange=exchange.get_name().upper(),
+            exchange=exchange.get_id(),
             open_order_id=order_id
         )
         Trade.session.add(trade)
@@ -347,7 +355,7 @@ class FreqtradeBot(object):
         if trade.open_order_id:
             # Update trade with order values
             self.logger.info('Found open order for %s', trade)
-            trade.update(exchange.get_order(trade.open_order_id))
+            trade.update(exchange.get_order(trade.open_order_id, trade.pair))
 
         if trade.is_open and trade.open_order_id is None:
             # Check if we can sell our current pair
@@ -386,22 +394,22 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
-                order = exchange.get_order(trade.open_order_id)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 self.logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
                     traceback.format_exc())
                 continue
-            ordertime = arrow.get(order['opened'])
+            ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
                 continue
 
-            if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
+            if order['side'] == 'buy' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_buy(trade, order)
-            elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
+            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
@@ -463,7 +471,7 @@ class FreqtradeBot(object):
         :return: None
         """
         # Execute sell and update trade record
-        order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+        order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)

@@ -6,13 +6,11 @@ This module contains the backtesting logic
 from argparse import Namespace
 from typing import Dict, Tuple, Any, List, Optional
 
-import ccxt
 import arrow
 from pandas import DataFrame, Series
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
-import freqtrade.exchange as exchange
 from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
@@ -57,6 +55,9 @@ class Backtesting(object):
         # Reset keys for backtesting
         self.config['exchange']['key'] = ''
         self.config['exchange']['secret'] = ''
+        self.config['exchange']['password'] = ''
+        self.config['exchange']['uid'] = ''
+        self.config['dry_run'] = True
         exchange.init(self.config)
 
     @staticmethod
@@ -199,8 +200,8 @@ class Backtesting(object):
                         # record a tuple of pair, current_profit_percent,
                         # entry-date, duration
                         records.append((pair, trade_entry[1],
-                                        row.date.strftime('%s'),
-                                        row2.date.strftime('%s'),
+                                        row.date.timestamp(),
+                                        row2.date.timestamp(),
                                         row.date, trade_entry[3]))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)

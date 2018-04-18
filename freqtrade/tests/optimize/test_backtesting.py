@@ -6,6 +6,7 @@ import random
 from copy import deepcopy
 from typing import List
 from unittest.mock import MagicMock
+import pytest
 
 import numpy as np
 import pandas as pd
@@ -15,10 +16,20 @@ from freqtrade import optimize
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
-from freqtrade.tests.conftest import default_conf, log_has
+from freqtrade.tests.conftest import log_has
 
 # Avoid to reinit the same object again and again
-_BACKTESTING = Backtesting(default_conf())
+_BACKTESTING = None
+_BACKTESTING_INITIALIZED = False
+
+
+@pytest.fixture(scope='function')
+def init_backtesting(default_conf, mocker):
+    global _BACKTESTING_INITIALIZED, _BACKTESTING
+    if not _BACKTESTING_INITIALIZED:
+        mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+        _BACKTESTING = Backtesting(default_conf)
+        _BACKTESTING_INITIALIZED = True
 
 
 def get_args(args) -> List[str]:
@@ -34,44 +45,54 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what):
     timerange = ((None, 'line'), None, -100)
-    data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'], timerange=timerange)
+    data = optimize.load_data(None, ticker_interval='1m',
+                              pairs=['UNITTEST/BTC'], timerange=timerange)
     pair = data['UNITTEST/BTC']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
     # loaded data looks:
-    # pair :: [{'O': 0.123, 'H': 0.123, 'L': 0.123,
-    #           'C': 0.123, 'V': 123.123,
-    #           'T': '2017-11-04T23:02:00', 'BV': 0.123}]
+    # pair :: [[    1509836520000,   unix timestamp in ms
+    #               0.00162008,      open
+    #               0.00162008,      high
+    #               0.00162008,      low
+    #               0.00162008,      close
+    #               108.14853839     base volume
+    #           ]]
     base = 0.001
     if what == 'raise':
-        return {'UNITTEST/BTC':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
-                  'BV': pair[x]['BV'],  # keep too
-                  'O': x * base,        # But replace O,H,L,C
-                  'H': x * base + 0.0001,
-                  'L': x * base - 0.0001,
-                  'C': x * base} for x in range(0, datalen)]}
+        return {'UNITTEST/BTC': [
+            [
+                pair[x][0],  # Keep old dates
+                x * base,  # But replace O,H,L,C
+                x * base + 0.0001,
+                x * base - 0.0001,
+                x * base,
+                pair[x][5],  # Keep old volume
+            ] for x in range(0, datalen)
+        ]}
     if what == 'lower':
-        return {'UNITTEST/BTC':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
-                  'BV': pair[x]['BV'],  # keep too
-                  'O': 1 - x * base,        # But replace O,H,L,C
-                  'H': 1 - x * base + 0.0001,
-                  'L': 1 - x * base - 0.0001,
-                  'C': 1 - x * base} for x in range(0, datalen)]}
+        return {'UNITTEST/BTC': [
+            [
+                pair[x][0],  # Keep old dates
+                1 - x * base,  # But replace O,H,L,C
+                1 - x * base + 0.0001,
+                1 - x * base - 0.0001,
+                1 - x * base,
+                pair[x][5]  # Keep old volume
+            ] for x in range(0, datalen)
+        ]}
     if what == 'sine':
         hz = 0.1  # frequency
-        return {'UNITTEST/BTC':
-                [{'T': pair[x]['T'],  # Keep old dates
-                  'V': pair[x]['V'],  # Keep old volume
-                  'BV': pair[x]['BV'],  # keep too
-                  # But replace O,H,L,C
-                  'O': math.sin(x * hz) / 1000 + base,
-                  'H': math.sin(x * hz) / 1000 + base + 0.0001,
-                  'L': math.sin(x * hz) / 1000 + base - 0.0001,
-                  'C': math.sin(x * hz) / 1000 + base} for x in range(0, datalen)]}
+        return {'UNITTEST/BTC': [
+            [
+                pair[x][0],  # Keep old dates
+                math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
+                math.sin(x * hz) / 1000 + base + 0.0001,
+                math.sin(x * hz) / 1000 + base - 0.0001,
+                math.sin(x * hz) / 1000 + base,
+                pair[x][5]  # Keep old volume
+            ] for x in range(0, datalen)
+        ]}
     return data
 
 
@@ -247,11 +268,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation'in config
+    assert 'realistic_simulation' in config
     assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
     assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
 
-    assert 'refresh_pairs'in config
+    assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
     assert 'timerange' in config
     assert log_has(
@@ -266,7 +287,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     )
 
 
-def test_start(mocker, default_conf, caplog) -> None:
+def test_start(mocker, init_backtesting, default_conf, caplog) -> None:
     """
     Test start() function
     """
@@ -306,10 +327,11 @@ def test_backtesting__init__(mocker, default_conf) -> None:
     assert init_mock.call_count == 1
 
 
-def test_backtesting_init(default_conf) -> None:
+def test_backtesting_init(mocker, default_conf) -> None:
     """
     Test Backtesting._init() method
     """
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert isinstance(backtesting.analyze, Analyze)
@@ -319,7 +341,7 @@ def test_backtesting_init(default_conf) -> None:
     assert callable(backtesting.populate_sell_trend)
 
 
-def test_tickerdata_to_dataframe(default_conf) -> None:
+def test_tickerdata_to_dataframe(init_backtesting, default_conf) -> None:
     """
     Test Backtesting.tickerdata_to_dataframe() method
     """
@@ -338,7 +360,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
 
-def test_get_timeframe() -> None:
+def test_get_timeframe(init_backtesting) -> None:
     """
     Test Backtesting.get_timeframe() method
     """
@@ -356,7 +378,7 @@ def test_get_timeframe() -> None:
     assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
 
 
-def test_generate_text_table():
+def test_generate_text_table(init_backtesting):
     """
     Test Backtesting.generate_text_table() method
     """
@@ -391,12 +413,14 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     """
     Test Backtesting.start() method
     """
+
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
     mocker.patch('freqtrade.exchange.get_ticker_history')
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
         backtest=MagicMock(),
@@ -426,7 +450,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         assert log_has(line, caplog.record_tuples)
 
 
-def test_backtest(default_conf) -> None:
+def test_backtest(init_backtesting, default_conf) -> None:
     """
     Test Backtesting.backtest() method
     """
@@ -445,7 +469,7 @@ def test_backtest(default_conf) -> None:
     assert not results.empty
 
 
-def test_backtest_1min_ticker_interval(default_conf) -> None:
+def test_backtest_1min_ticker_interval(init_backtesting, default_conf) -> None:
     """
     Test Backtesting.backtest() method with 1 min ticker
     """
@@ -465,7 +489,7 @@ def test_backtest_1min_ticker_interval(default_conf) -> None:
     assert not results.empty
 
 
-def test_processed() -> None:
+def test_processed(init_backtesting) -> None:
     """
     Test Backtesting.backtest() method with offline data
     """
@@ -481,14 +505,15 @@ def test_processed() -> None:
         assert col in cols
 
 
-def test_backtest_pricecontours(default_conf) -> None:
+def test_backtest_pricecontours(init_backtesting, default_conf, fee, mocker) -> None:
+    mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
     tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
 
 
 # Test backtest using offline data (testdata directory)
-def test_backtest_ticks(default_conf):
+def test_backtest_ticks(init_backtesting, default_conf):
     ticks = [1, 5]
     fun = _BACKTESTING.populate_buy_trend
     for tick in ticks:
@@ -497,7 +522,7 @@ def test_backtest_ticks(default_conf):
         assert not results.empty
 
 
-def test_backtest_clash_buy_sell(default_conf):
+def test_backtest_clash_buy_sell(init_backtesting, default_conf):
     # Override the default buy trend function in our default_strategy
     def fun(dataframe=None):
         buy_value = 1
@@ -509,7 +534,7 @@ def test_backtest_clash_buy_sell(default_conf):
     assert results.empty
 
 
-def test_backtest_only_sell(default_conf):
+def test_backtest_only_sell(init_backtesting, default_conf):
     # Override the default buy trend function in our default_strategy
     def fun(dataframe=None):
         buy_value = 0
@@ -521,15 +546,17 @@ def test_backtest_only_sell(default_conf):
     assert results.empty
 
 
-def test_backtest_alternate_buy_sell(default_conf):
+def test_backtest_alternate_buy_sell(init_backtesting, default_conf, fee, mocker):
+    mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
     backtest_conf = _make_backtest_conf(conf=default_conf, pair='UNITTEST/BTC')
     results = _run_backtest_1(_trend_alternate, backtest_conf)
     assert len(results) == 3
 
 
-def test_backtest_record(default_conf, mocker):
+def test_backtest_record(init_backtesting, default_conf, fee, mocker):
     names = []
     records = []
+    mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
     mocker.patch(
         'freqtrade.optimize.backtesting.file_dump_json',
         new=lambda n, r: (names.append(n), records.append(r))
@@ -562,14 +589,16 @@ def test_backtest_record(default_conf, mocker):
         assert dur > 0
 
 
-def test_backtest_start_live(default_conf, mocker, caplog):
-    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+def test_backtest_start_live(init_backtesting, default_conf, mocker, caplog):
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     mocker.patch('freqtrade.exchange.get_ticker_history',
                  new=lambda n, i: _load_pair_as_ticks(n, i))
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(default_conf)
+        read_data=json.dumps(conf)
     ))
 
     args = MagicMock()

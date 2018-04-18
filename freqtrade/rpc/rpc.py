@@ -50,7 +50,7 @@ class RPC(object):
             for trade in trades:
                 order = None
                 if trade.open_order_id:
-                    order = exchange.get_order(trade.open_order_id)
+                    order = exchange.get_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
                 current_rate = exchange.get_ticker(trade.pair, False)['bid']
                 current_profit = trade.calc_profit_percent(current_rate)
@@ -78,8 +78,8 @@ class RPC(object):
                               amount=round(trade.amount, 8),
                               close_profit=fmt_close_profit,
                               current_profit=round(current_profit * 100, 2),
-                              open_order='({} rem={:.8f})'.format(
-                                  order['type'], order['remaining']
+                              open_order='({} {} rem={:.8f})'.format(
+                                  order['type'], order['side'], order['remaining']
                               ) if order else None,
                           )
                 result.append(message)
@@ -311,17 +311,21 @@ class RPC(object):
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
             if trade.open_order_id:
-                order = exchange.get_order(trade.open_order_id)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
 
                 # Cancel open LIMIT_BUY orders and close trade
-                if order and not order['closed'] and order['type'] == 'LIMIT_BUY':
-                    exchange.cancel_order(trade.open_order_id)
-                    trade.close(order.get('rate') or trade.open_rate)
+                if order and order['status'] == 'open' \
+                        and order['type'] == 'limit' \
+                        and order['side'] == 'buy':
+                    exchange.cancel_order(trade.open_order_id, trade.pair)
+                    trade.close(order.get('price') or trade.open_rate)
                     # TODO: sell amount which has been bought already
                     return
 
                 # Ignore trades with an attached LIMIT_SELL order
-                if order and not order['closed'] and order['type'] == 'LIMIT_SELL':
+                if order and order['status'] == 'open' \
+                        and order['type'] == 'limit' \
+                        and order['side'] == 'sell':
                     return
 
             # Get current rate and execute sell

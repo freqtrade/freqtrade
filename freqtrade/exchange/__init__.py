@@ -107,7 +107,17 @@ def validate_pairs(pairs: List[str]) -> None:
             )
         if pair not in markets:
             raise OperationalException(
-                'Pair {} is not available at {}'.format(pair, _API.id.lower()))
+                'Pair {} is not available at {}'.format(pair, get_name()))
+
+
+def exchange_has(endpoint: str) -> bool:
+    """
+    Checks if exchange implements a specific API endpoint.
+    Wrapper around ccxt 'has' attribute
+    :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
+    :return: bool
+    """
+    return endpoint in _API.has and _API.has[endpoint]
 
 
 def buy(pair: str, rate: float, amount: float) -> Dict:
@@ -216,6 +226,23 @@ def get_balances() -> dict:
         raise OperationalException(e)
 
 
+@retrier
+def get_tickers() -> Dict:
+    try:
+        return _API.fetch_tickers()
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not load tickers due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
+    except ccxt.NotSupported as e:
+        raise OperationalException(
+            'Exchange {} does not support fetching tickers in batch.'
+            'Message: {}'.format(_API.name, e)
+        )
+
+
 # TODO: remove refresh argument, keeping it to keep track of where it was intended to be used
 @retrier
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
@@ -231,11 +258,6 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 @retrier
 def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
-    if 'fetchOHLCV' not in _API.has or not _API.has['fetchOHLCV']:
-        raise OperationalException(
-            'Exchange {} does not support fetching historical candlestick data.'.format(_API.name)
-        )
-
     try:
         return _API.fetch_ohlcv(pair, timeframe=tick_interval)
     except ccxt.NetworkError as e:
@@ -244,6 +266,11 @@ def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
         )
     except ccxt.BaseError as e:
         raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
+    except ccxt.NotSupported as e:
+        raise OperationalException(
+            'Exchange {} does not support fetching historical candlestick data.'
+            'Message: {}'.format(_API.name, e)
+        )
 
 
 def cancel_order(order_id: str, pair: str) -> None:
@@ -315,18 +342,11 @@ def get_id() -> str:
     return _API.id
 
 
-def get_fee_maker() -> float:
-    return _API.fees['trading']['maker']
-
-
-def get_fee_taker() -> float:
-    return _API.fees['trading']['taker']
-
-
-def get_fee() -> float:
+def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
+            price=1, taker_or_maker='maker') -> float:
     # validate that markets are loaded before trying to get fee
     if _API.markets is None or len(_API.markets) == 0:
         _API.load_markets()
 
-    return _API.calculate_fee(symbol='ETH/BTC', type='', side='', amount=1, price=1)['rate']
-
+    return _API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
+                              price=price, takerOrMaker=taker_or_maker)['rate']
