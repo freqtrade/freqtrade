@@ -117,7 +117,7 @@ function config_generator () {
         -e "s/\"your_exchange_key\"/\"$api_key\"/g" \
         -e "s/\"your_exchange_secret\"/\"$api_secret\"/g" \
         -e "s/\"your_telegram_token\"/\"$token\"/g" \
-        -e "s/\"your_telegram_chat_id\"/\"$chat_id\"/g"
+        -e "s/\"your_telegram_chat_id\"/\"$chat_id\"/g" \
         -e "s/\"dry_run\": false,/\"dry_run\": true,/g" config.json.example > config.json
 
 }
