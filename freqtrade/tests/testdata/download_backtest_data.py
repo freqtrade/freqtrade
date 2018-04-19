@@ -8,7 +8,7 @@ from freqtrade import exchange
 from freqtrade import arguments
 from freqtrade.exchange import ccxt
 
-BASE_PATH='freqtrade/tests/testdata'
+BASE_PATH = 'freqtrade/tests/testdata'
 
 arguments = arguments.Arguments(sys.argv[1:], 'download utility')
 arguments.scripts_options()
