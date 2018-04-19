@@ -4,8 +4,7 @@
 import json
 import sys
 
-from freqtrade import exchange
-from freqtrade import arguments
+from freqtrade import (exchange, arguments, misc)
 from freqtrade.exchange import ccxt
 
 BASE_PATH = 'freqtrade/tests/testdata'
