@@ -5,17 +5,14 @@ import json
 import sys
 
 from freqtrade import exchange
-from freqtrade import misc
+from freqtrade import arguments
 from freqtrade.exchange import ccxt
 
-parser = misc.common_args_parser('download utility')
-parser.add_argument(
-    '-p', '--pair',
-    help='JSON file containing pairs to download',
-    dest='pair',
-    default=None
-)
-args = parser.parse_args(sys.argv[1:])
+BASE_PATH='freqtrade/tests/testdata'
+
+arguments = arguments.Arguments(sys.argv[1:], 'download utility')
+arguments.scripts_options()
+args = arguments.parse_args()
 
 TICKER_INTERVALS = ['1m', '5m']
 PAIRS = []
