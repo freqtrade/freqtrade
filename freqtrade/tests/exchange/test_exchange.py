@@ -8,7 +8,7 @@ import ccxt
 
 import pytest
 
-from freqtrade import OperationalException, DependencyException, NetworkException
+from freqtrade import OperationalException, DependencyException, TemporaryError
 from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
     get_ticker, get_ticker_history, cancel_order, get_name, get_fee, get_id, get_pair_detail_url
 import freqtrade.exchange as exchange
@@ -148,7 +148,7 @@ def test_buy_prod(default_conf, mocker):
         mocker.patch('freqtrade.exchange._API', api_mock)
         buy(pair='ETH/BTC', rate=200, amount=1)
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(TemporaryError):
         api_mock.create_limit_buy_order = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         buy(pair='ETH/BTC', rate=200, amount=1)
@@ -198,7 +198,7 @@ def test_sell_prod(default_conf, mocker):
         mocker.patch('freqtrade.exchange._API', api_mock)
         sell(pair='ETH/BTC', rate=200, amount=1)
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(TemporaryError):
         api_mock.create_limit_sell_order = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         sell(pair='ETH/BTC', rate=200, amount=1)
@@ -262,7 +262,7 @@ def test_get_balances_prod(default_conf, mocker):
     assert get_balances()['1ST']['total'] == 10.0
     assert get_balances()['1ST']['used'] == 0.0
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(TemporaryError):
         api_mock.fetch_balance = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         get_balances()
@@ -397,12 +397,12 @@ def test_cancel_order(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert cancel_order(order_id='_', pair='TKN/BTC') == 123
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(TemporaryError):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         cancel_order(order_id='_', pair='TKN/BTC')
 
-    with pytest.raises(DependencyException):
+    with pytest.raises(TemporaryError):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder)
         mocker.patch('freqtrade.exchange._API', api_mock)
         cancel_order(order_id='_', pair='TKN/BTC')
@@ -429,7 +429,7 @@ def test_get_order(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert exchange.get_order('X', 'TKN/BTC') == 456
 
-    with pytest.raises(NetworkException):
+    with pytest.raises(TemporaryError):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         exchange.get_order(order_id='_', pair='TKN/BTC')
