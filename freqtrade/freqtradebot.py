@@ -471,7 +471,6 @@ class FreqtradeBot(object):
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
-                # self.maybe_update_real_amount(trade)
                 continue
 
             if order['side'] == 'buy' and ordertime < timeoutthreashold:
