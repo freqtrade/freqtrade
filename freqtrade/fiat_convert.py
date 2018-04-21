@@ -76,7 +76,8 @@ class CryptoToFiatConverter(object):
     CRYPTOMAP = {
         'BTC': 'bitcoin',
         'ETH': 'ethereum',
-        'USDT': 'thether'
+        'USDT': 'thether',
+        'BNB': 'binance-coin'
     }
 
     def __new__(cls):
