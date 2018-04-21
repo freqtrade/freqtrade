@@ -234,7 +234,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     )
 
 
-def test_status(default_conf, update, mocker, ticker) -> None:
+def test_status(default_conf, update, mocker, fee, ticker) -> None:
     """
     Test _status() method
     """
@@ -249,7 +249,8 @@ def test_status(default_conf, update, mocker, ticker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_pair_detail_url=MagicMock()
+        get_pair_detail_url=MagicMock(),
+        get_fee=fee,
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -278,7 +279,7 @@ def test_status(default_conf, update, mocker, ticker) -> None:
     assert status_table.call_count == 1
 
 
-def test_status_handle(default_conf, update, ticker, mocker) -> None:
+def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     """
     Test _status() method
     """
@@ -287,7 +288,8 @@ def test_status_handle(default_conf, update, ticker, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=fee,
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -323,7 +325,7 @@ def test_status_handle(default_conf, update, ticker, mocker) -> None:
     assert '[ETH/BTC]' in msg_mock.call_args_list[0][0][0]
 
 
-def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
+def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     """
     Test _status_table() method
     """
@@ -333,7 +335,8 @@ def test_status_table_handle(default_conf, update, ticker, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'})
+        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
+        get_fee=fee,
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -976,7 +979,7 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
     assert 'not running' in msg_mock.call_args_list[0][0][0]
 
 
-def test_count_handle(default_conf, update, ticker, mocker) -> None:
+def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     """
     Test _count() method
     """
@@ -994,6 +997,7 @@ def test_count_handle(default_conf, update, ticker, mocker) -> None:
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'})
     )
+    mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
     telegram = Telegram(freqtradebot)
 
