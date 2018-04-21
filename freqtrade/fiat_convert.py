@@ -76,7 +76,8 @@ class CryptoToFiatConverter(object):
     CRYPTOMAP = {
         'BTC': 'bitcoin',
         'ETH': 'ethereum',
-        'USDT': 'thether'
+        'USDT': 'thether',
+        'BNB': 'binance-coin'
     }
 
     def __new__(cls):
@@ -99,6 +100,8 @@ class CryptoToFiatConverter(object):
         :param fiat_symbol: fiat to convert to
         :return: float, value in fiat of the crypto-currency amount
         """
+        if crypto_symbol == fiat_symbol:
+            return crypto_amount
         price = self.get_price(crypto_symbol=crypto_symbol, fiat_symbol=fiat_symbol)
         return float(crypto_amount) * float(price)
 
@@ -180,8 +183,9 @@ class CryptoToFiatConverter(object):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
 
         if crypto_symbol not in self.CRYPTOMAP:
-            raise ValueError(
-                'The crypto symbol {} is not supported.'.format(crypto_symbol))
+            # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
+            logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
+            return 0.0
         try:
             return float(
                 self._coinmarketcap.ticker(
