@@ -3,7 +3,7 @@
 """
 This module manage Telegram communication
 """
-
+import logging
 from typing import Any, Callable
 
 from tabulate import tabulate
@@ -13,6 +13,9 @@ from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC
+
+
+logger = logging.getLogger(__name__)
 
 
 def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
@@ -31,13 +34,13 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
         chat_id = int(self._config['telegram']['chat_id'])
 
         if int(update.message.chat_id) != chat_id:
-            self.logger.info(
+            logger.info(
                 'Rejected unauthorized message from: %s',
                 update.message.chat_id
             )
             return wrapper
 
-        self.logger.info(
+        logger.info(
             'Executing handler: %s for chat_id: %s',
             command_handler.__name__,
             chat_id
@@ -45,7 +48,7 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
         try:
             return command_handler(self, *args, **kwargs)
         except BaseException:
-            self.logger.exception('Exception occurred within Telegram module')
+            logger.exception('Exception occurred within Telegram module')
 
     return wrapper
 
@@ -101,7 +104,7 @@ class Telegram(RPC):
             timeout=30,
             read_latency=60,
         )
-        self.logger.info(
+        logger.info(
             'rpc.telegram is listening for following commands: %s',
             [h.command for h in handles]
         )
@@ -357,7 +360,7 @@ class Telegram(RPC):
             'max': [self._config['max_open_trades']]
         }, headers=['current', 'max'], tablefmt='simple')
         message = "<pre>{}</pre>".format(message)
-        self.logger.debug(message)
+        logger.debug(message)
         self.send_msg(message, parse_mode=ParseMode.HTML)
 
     @authorized_only
@@ -428,7 +431,7 @@ class Telegram(RPC):
             except NetworkError as network_err:
                 # Sometimes the telegram server resets the current connection,
                 # if this is the case we send the message again.
-                self.logger.warning(
+                logger.warning(
                     'Telegram NetworkError: %s! Trying one more time.',
                     network_err.message
                 )
@@ -439,7 +442,7 @@ class Telegram(RPC):
                     reply_markup=reply_markup
                 )
         except TelegramError as telegram_err:
-            self.logger.warning(
+            logger.warning(
                 'TelegramError: %s! Giving up on that message.',
                 telegram_err.message
             )

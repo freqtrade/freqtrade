@@ -8,13 +8,11 @@ import logging
 import sys
 from typing import List
 
-from freqtrade import (__version__)
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.logger import Logger
 
-logger = Logger(name='freqtrade').get_logger()
+logger = logging.getLogger('freqtrade')
 
 
 def main(sysargv: List[str]) -> None:
@@ -34,19 +32,13 @@ def main(sysargv: List[str]) -> None:
         args.func(args)
         return 0
 
-    logger.info(
-        'Starting freqtrade %s (loglevel=%s)',
-        __version__,
-        logging.getLevelName(args.loglevel)
-    )
-
     freqtrade = None
     try:
         # Load and validate configuration
-        configuration = Configuration(args)
+        config = Configuration(args).get_config()
 
         # Init the bot
-        freqtrade = FreqtradeBot(configuration.get_config())
+        freqtrade = FreqtradeBot(config)
 
         state = None
         while 1:

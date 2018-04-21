@@ -450,10 +450,12 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         assert log_has(line, caplog.record_tuples)
 
 
-def test_backtest(init_backtesting, default_conf) -> None:
+def test_backtest(init_backtesting, default_conf, fee, mocker) -> None:
     """
     Test Backtesting.backtest() method
     """
+    mocker.patch('freqtrade.exchange.get_fee', fee)
+
     backtesting = _BACKTESTING
 
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
@@ -469,10 +471,12 @@ def test_backtest(init_backtesting, default_conf) -> None:
     assert not results.empty
 
 
-def test_backtest_1min_ticker_interval(init_backtesting, default_conf) -> None:
+def test_backtest_1min_ticker_interval(init_backtesting, default_conf, fee, mocker) -> None:
     """
     Test Backtesting.backtest() method with 1 min ticker
     """
+    mocker.patch('freqtrade.exchange.get_fee', fee)
+
     backtesting = _BACKTESTING
 
     # Run a backtesting for an exiting 5min ticker_interval
@@ -513,10 +517,11 @@ def test_backtest_pricecontours(init_backtesting, default_conf, fee, mocker) -> 
 
 
 # Test backtest using offline data (testdata directory)
-def test_backtest_ticks(init_backtesting, default_conf):
+def test_backtest_ticks(init_backtesting, default_conf, fee, mocker):
+    mocker.patch('freqtrade.exchange.get_fee', fee)
     ticks = [1, 5]
     fun = _BACKTESTING.populate_buy_trend
-    for tick in ticks:
+    for _ in ticks:
         backtest_conf = _make_backtest_conf(conf=default_conf)
         results = _run_backtest_1(fun, backtest_conf)
         assert not results.empty

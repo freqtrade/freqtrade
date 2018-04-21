@@ -7,6 +7,11 @@ from sqlalchemy import create_engine
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
+@pytest.fixture(scope='function')
+def init_persistence(default_conf):
+    init(default_conf)
+
+
 def test_init_create_session(default_conf, mocker):
     mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
 
@@ -89,6 +94,7 @@ def test_init_prod_db(default_conf, mocker):
         os.rename(prod_db_swp, prod_db)
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     """
     On this test we will buy and sell a crypto currency.
@@ -144,6 +150,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     assert trade.close_date is not None
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
@@ -167,6 +174,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     assert trade.calc_profit_percent() == 0.06201057
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price_exception(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
@@ -181,6 +189,7 @@ def test_calc_close_trade_price_exception(limit_buy_order, fee):
     assert trade.calc_close_trade_price() == 0.0
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_update_open_order(limit_buy_order):
     trade = Trade(
         pair='ETH/BTC',
@@ -204,6 +213,7 @@ def test_update_open_order(limit_buy_order):
     assert trade.close_date is None
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_update_invalid_order(limit_buy_order):
     trade = Trade(
         pair='ETH/BTC',
@@ -217,6 +227,7 @@ def test_update_invalid_order(limit_buy_order):
         trade.update(limit_buy_order)
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_open_trade_price(limit_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
@@ -235,6 +246,7 @@ def test_calc_open_trade_price(limit_buy_order, fee):
     assert trade.calc_open_trade_price(fee=0.003) == 0.001003000
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
@@ -257,6 +269,7 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_profit(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
@@ -288,6 +301,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order, fee):
     assert trade.calc_profit(fee=0.003) == 0.00006163
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',

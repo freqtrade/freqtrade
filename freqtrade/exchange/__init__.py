@@ -74,6 +74,7 @@ def init(config: dict) -> None:
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid'),
+            'enableRateLimit': True,
         })
     except (KeyError, AttributeError):
         raise OperationalException('Exchange {} is not supported'.format(name))

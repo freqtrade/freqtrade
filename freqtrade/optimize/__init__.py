@@ -2,15 +2,15 @@
 
 import gzip
 import json
+import logging
 import os
 from typing import Optional, List, Dict, Tuple
 
 from freqtrade import misc
 from freqtrade.exchange import get_ticker_history
-from freqtrade.logger import Logger
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
-logger = Logger(name=__name__).get_logger()
+logger = logging.getLogger(__name__)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -> List[Dict]:

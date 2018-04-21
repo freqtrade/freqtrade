@@ -1,6 +1,7 @@
 """
 Functions to analyze ticker data with indicators and produce buy and sell signals
 """
+import logging
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, List, Tuple
@@ -9,10 +10,12 @@ import arrow
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.logger import Logger
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy import Strategy
 from freqtrade.constants import Constants
+
+
+logger = logging.getLogger(__name__)
 
 
 class SignalType(Enum):
@@ -33,8 +36,6 @@ class Analyze(object):
         Init Analyze
         :param config: Bot configuration (use the one from Configuration())
         """
-        self.logger = Logger(name=__name__, level=config.get('loglevel')).get_logger()
-
         self.config = config
         self.strategy = Strategy(self.config)
 
@@ -110,20 +111,20 @@ class Analyze(object):
         """
         ticker_hist = get_ticker_history(pair, interval)
         if not ticker_hist:
-            self.logger.warning('Empty ticker history for pair %s', pair)
+            logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
         try:
             dataframe = self.analyze_ticker(ticker_hist)
         except ValueError as error:
-            self.logger.warning(
+            logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
                 pair,
                 str(error)
             )
             return False, False
         except Exception as error:
-            self.logger.exception(
+            logger.exception(
                 'Unexpected error when analyzing ticker for pair %s: %s',
                 pair,
                 str(error)
@@ -131,7 +132,7 @@ class Analyze(object):
             return False, False
 
         if dataframe.empty:
-            self.logger.warning('Empty dataframe for pair %s', pair)
+            logger.warning('Empty dataframe for pair %s', pair)
             return False, False
 
         latest = dataframe.iloc[-1]
@@ -140,7 +141,7 @@ class Analyze(object):
         signal_date = arrow.get(latest['date'])
         interval_minutes = Constants.TICKER_INTERVAL_MINUTES[interval]
         if signal_date < arrow.utcnow() - timedelta(minutes=(interval_minutes + 5)):
-            self.logger.warning(
+            logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
                 (arrow.utcnow() - signal_date).seconds // 60
@@ -148,7 +149,7 @@ class Analyze(object):
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-        self.logger.debug(
+        logger.debug(
             'trigger: %s (pair=%s) buy=%s sell=%s',
             latest['date'],
             pair,
@@ -165,17 +166,17 @@ class Analyze(object):
         """
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
-            self.logger.debug('Required profit reached. Selling..')
+            logger.debug('Required profit reached. Selling..')
             return True
 
         # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
         if self.config.get('experimental', {}).get('sell_profit_only', False):
-            self.logger.debug('Checking if trade is profitable..')
+            logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
                 return False
 
         if sell and not buy and self.config.get('experimental', {}).get('use_sell_signal', False):
-            self.logger.debug('Sell signal received. Selling..')
+            logger.debug('Sell signal received. Selling..')
             return True
 
         return False
@@ -188,7 +189,7 @@ class Analyze(object):
         """
         current_profit = trade.calc_profit_percent(current_rate)
         if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
-            self.logger.debug('Stop loss hit.')
+            logger.debug('Stop loss hit.')
             return True
 
         # Check if time matches and current rate is above threshold

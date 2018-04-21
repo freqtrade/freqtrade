@@ -391,7 +391,7 @@ def test_rpc_stop(mocker, default_conf) -> None:
     assert freqtradebot.state == State.STOPPED
 
 
-def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
+def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     """
     Test rpc_forcesell() method
     """
@@ -411,7 +411,8 @@ def test_rpc_forcesell(default_conf, ticker, mocker) -> None:
                 'type': 'limit',
                 'side': 'buy'
             }
-        )
+        ),
+        get_fee=fee,
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
@@ -524,7 +525,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert prec_satoshi(res[0]['profit'], 6.2)
 
 
-def test_rpc_count(mocker, default_conf, ticker) -> None:
+def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     """
     Test rpc_count() method
     """
@@ -535,7 +536,8 @@ def test_rpc_count(mocker, default_conf, ticker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_balances=MagicMock(return_value=ticker),
-        get_ticker=ticker
+        get_ticker=ticker,
+        get_fee=fee,
     )
 
     freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))

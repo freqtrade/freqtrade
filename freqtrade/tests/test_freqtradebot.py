@@ -235,7 +235,7 @@ def test_refresh_whitelist() -> None:
     pass
 
 
-def test_create_trade(default_conf, ticker, limit_buy_order, mocker) -> None:
+def test_create_trade(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -246,7 +246,8 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
 
     # Save state of current whitelist
@@ -270,7 +271,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker) -> None:
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
 
-def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order, mocker) -> None:
+def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -282,7 +283,8 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order, mock
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=buy_mock
+        buy=buy_mock,
+        get_fee=fee,
     )
 
     conf = deepcopy(default_conf)
@@ -294,7 +296,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order, mock
     assert rate * amount >= conf['stake_amount']
 
 
-def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, mocker) -> None:
+def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -306,7 +308,8 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, moc
         validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5),
+        get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -314,7 +317,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, moc
         freqtrade.create_trade()
 
 
-def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, mocker) -> None:
+def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -325,7 +328,8 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, mocker) ->
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
 
     conf = deepcopy(default_conf)
@@ -340,7 +344,7 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, mocker) ->
 
 
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
-                                               limit_buy_order, mocker) -> None:
+                                               limit_buy_order, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -351,7 +355,8 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
 
     conf = deepcopy(default_conf)
@@ -365,7 +370,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
         freqtrade.create_trade()
 
 
-def test_create_trade_no_signal(default_conf, mocker) -> None:
+def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -379,7 +384,8 @@ def test_create_trade_no_signal(default_conf, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker_history=MagicMock(return_value=20),
-        get_balance=MagicMock(return_value=20)
+        get_balance=MagicMock(return_value=20),
+        get_fee=fee,
     )
 
     conf = deepcopy(default_conf)
@@ -392,7 +398,7 @@ def test_create_trade_no_signal(default_conf, mocker) -> None:
 
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
-                                markets, mocker, caplog) -> None:
+                                markets, fee, mocker, caplog) -> None:
     """
     Test the trade creation in _process() method
     """
@@ -405,7 +411,8 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
         get_ticker=ticker,
         get_markets=markets,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_order=MagicMock(return_value=limit_buy_order)
+        get_order=MagicMock(return_value=limit_buy_order),
+        get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -477,7 +484,8 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_process_trade_handling(default_conf, ticker, limit_buy_order, markets, mocker) -> None:
+def test_process_trade_handling(
+        default_conf, ticker, limit_buy_order, markets, fee, mocker) -> None:
     """
     Test _process()
     """
@@ -490,7 +498,8 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, markets, 
         get_ticker=ticker,
         get_markets=markets,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_order=MagicMock(return_value=limit_buy_order)
+        get_order=MagicMock(return_value=limit_buy_order),
+        get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -621,7 +630,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, fee, mock
     assert trade.close_date is not None
 
 
-def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order, mocker) -> None:
+def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
     Test check_handle() method
     """
@@ -636,7 +645,8 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order, mock
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
 
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
@@ -678,7 +688,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order, mock
     assert freqtrade.handle_trade(trades[0]) is True
 
 
-def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog) -> None:
+def test_handle_trade_roi(default_conf, ticker, limit_buy_order, fee, mocker, caplog) -> None:
     """
     Test check_handle() method
     """
@@ -693,7 +703,8 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog)
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
 
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=True)
@@ -713,7 +724,8 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order, mocker, caplog)
     assert log_has('Required profit reached. Selling..', caplog.record_tuples)
 
 
-def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker, caplog) -> None:
+def test_handle_trade_experimental(
+        default_conf, ticker, limit_buy_order, fee, mocker, caplog) -> None:
     """
     Test check_handle() method
     """
@@ -728,7 +740,8 @@ def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
     mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
 
@@ -746,7 +759,7 @@ def test_handle_trade_experimental(default_conf, ticker, limit_buy_order, mocker
     assert log_has('Sell signal received. Selling..', caplog.record_tuples)
 
 
-def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker) -> None:
+def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, fee, mocker) -> None:
     """
     Test check_handle() method
     """
@@ -757,7 +770,8 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
@@ -1153,7 +1167,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
     assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker) -> None:
+def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, fee, mocker) -> None:
     """
     Test sell_profit_only feature when enabled
     """
@@ -1169,7 +1183,8 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker) -
             'ask': 0.00002173,
             'last': 0.00002172
         }),
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
     conf = deepcopy(default_conf)
     conf['experimental'] = {
@@ -1185,7 +1200,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, mocker) -
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker) -> None:
+def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, fee, mocker) -> None:
     """
     Test sell_profit_only feature when disabled
     """
@@ -1201,7 +1216,8 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker) 
             'ask': 0.00002173,
             'last': 0.00002172
         }),
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
     conf = deepcopy(default_conf)
     conf['experimental'] = {
@@ -1217,7 +1233,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, mocker) 
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker) -> None:
+def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, mocker) -> None:
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
@@ -1233,7 +1249,8 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker) -> 
             'ask': 0.00000173,
             'last': 0.00000172
         }),
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
     conf = deepcopy(default_conf)
     conf['experimental'] = {
@@ -1249,7 +1266,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, mocker) -> 
     assert freqtrade.handle_trade(trade) is False
 
 
-def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker) -> None:
+def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocker) -> None:
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
@@ -1265,7 +1282,8 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, mocker) ->
             'ask': 0.00000173,
             'last': 0.00000172
         }),
-        buy=MagicMock(return_value={'id': limit_buy_order['id']})
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
     )
 
     conf = deepcopy(default_conf)
