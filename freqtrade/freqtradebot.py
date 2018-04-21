@@ -316,11 +316,14 @@ class FreqtradeBot(object):
             )
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+        fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee(taker_or_maker='maker'),
+            fee=fee,
+            fee_open=fee,
+            fee_close=fee,
             open_rate=buy_limit,
             open_date=datetime.utcnow(),
             exchange=exchange.get_id(),
@@ -355,7 +358,19 @@ class FreqtradeBot(object):
         if trade.open_order_id:
             # Update trade with order values
             self.logger.info('Found open order for %s', trade)
-            trade.update(exchange.get_order(trade.open_order_id, trade.pair))
+            order = exchange.get_order(trade.open_order_id, trade.pair)
+            # TODO: correct place here ??
+            # Try update amount (binance-fix)
+            try:
+                new_amount = self.get_real_amount(trade)
+                if order['amount'] != new_amount:
+                    order['amount'] = new_amount
+                    trade.fee_open = 0
+
+            except OperationalException as exception:
+                self.logger.warning("could not update trade amount: %s", exception)
+
+            trade.update(order)
 
         if trade.is_open and trade.open_order_id is None:
             # Check if we can sell our current pair
@@ -374,18 +389,18 @@ class FreqtradeBot(object):
         if len(trades) == 0:
             raise OperationalException("get_real_amount: no trade found")
         amount = 0
-        fee = 0
+        fee_abs = 0
         for trade in trades:
             amount += trade["amount"]
             if "fee" in trade:
+                # only applies if fee is in quote currency!
                 if order.pair.startswith(trade["fee"]["currency"]):
-                    fee += trade["fee"]["cost"]
+                    fee_abs += trade["fee"]["cost"]
 
-        # TODO: create order using amount_lots would be better
         if amount != order.amount:
             self.logger.warning("amount {} does not match amount {}".format(amount, order.amount))
             raise OperationalException("Half bought? Amounts don't match")
-        real_amount = amount - fee
+        real_amount = amount - fee_abs
         return real_amount
 
     def maybe_update_real_amount(self, trade: Trade) -> bool:
@@ -403,10 +418,12 @@ class FreqtradeBot(object):
             self.logger.warning("could not update trade amount: %s", exception)
             return False
         # updating amount
-        self.logger.info("Updating amount for Trade {} from {} to {}".format(
-                    trade, trade.amount, new_amount))
-        trade.amount = new_amount
-        Trade.session.flush()
+        if trade.amount != new_amount:
+            self.logger.info("Updating amount for Trade {} from {} to {}".format(
+                        trade, trade.amount, new_amount))
+            trade.amount = new_amount
+            trade.fee_open = 0  # Fee was applied - set to 0 for buy
+            Trade.session.flush()
         return True
 
     def handle_trade(self, trade: Trade) -> bool:
@@ -452,6 +469,7 @@ class FreqtradeBot(object):
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
+                # self.maybe_update_real_amount(trade)
                 continue
 
             if order['side'] == 'buy' and ordertime < timeoutthreashold:
