@@ -234,7 +234,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     )
 
 
-def test_status(default_conf, update, mocker, ticker) -> None:
+def test_status(default_conf, update, fee, mocker, ticker) -> None:
     """
     Test _status() method
     """
@@ -249,7 +249,8 @@ def test_status(default_conf, update, mocker, ticker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_pair_detail_url=MagicMock()
+        get_pair_detail_url=MagicMock(),
+        get_fee=fee
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
