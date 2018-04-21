@@ -287,11 +287,12 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     )
 
 
-def test_start(mocker, init_backtesting, default_conf, caplog) -> None:
+def test_start(mocker, init_backtesting, fee, default_conf, caplog) -> None:
     """
     Test start() function
     """
     start_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.get_fee', fee)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.start', start_mock)
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
