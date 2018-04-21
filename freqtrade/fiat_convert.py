@@ -182,8 +182,9 @@ class CryptoToFiatConverter(object):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
 
         if crypto_symbol not in self.CRYPTOMAP:
-            raise ValueError(
-                'The crypto symbol {} is not supported.'.format(crypto_symbol))
+            # simply return 0 for unsupported stake currencies (fiat-convert should not break the bot)
+            logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
+            return 0.0
         try:
             return float(
                 self._coinmarketcap.ticker(
