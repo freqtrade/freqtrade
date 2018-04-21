@@ -364,6 +364,8 @@ class FreqtradeBot(object):
             try:
                 new_amount = self.get_real_amount(trade)
                 if order['amount'] != new_amount:
+                    self.logger.info("Updating amount for Trade {} from {} to {}".format(
+                        trade, order['amount'], new_amount))
                     order['amount'] = new_amount
                     trade.fee_open = 0
 
