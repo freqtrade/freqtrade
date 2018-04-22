@@ -240,7 +240,7 @@ class Arguments(object):
 
     def scripts_options(self) -> None:
         """
-        Parses given arguments for plot scripts.
+        Parses given arguments for scripts.
         """
         self.parser.add_argument(
             '-p', '--pair',
@@ -248,3 +248,20 @@ class Arguments(object):
             dest='pair',
             default=None
         )
+
+    def testdata_dl_options(self) -> None:
+        """
+        Parses given arguments for testdata download
+        """
+        self.parser.add_argument(
+            '--pairs-file',
+            help='File containing a list of pairs to download',
+            dest='pairs_file',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--export',
+            help='Export files to given dir',
+            dest='export',
+            default=None)
