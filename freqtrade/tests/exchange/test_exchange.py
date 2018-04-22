@@ -44,7 +44,7 @@ def test_init_exception(default_conf):
 def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.load_markets = MagicMock(return_value={
-        'ETH/BTC': '', 'TKN/BTC': '', 'TRST/BTC': '', 'SWT/BTC': '', 'BCC/BTC': ''
+        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
     })
     id_mock = PropertyMock(return_value='test_exchange')
     type(api_mock).id = id_mock

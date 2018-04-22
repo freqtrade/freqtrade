@@ -74,10 +74,9 @@ def default_conf():
             "secret": "secret",
             "pair_whitelist": [
                 "ETH/BTC",
-                "TKN/BTC",
-                "TRST/BTC",
-                "SWT/BTC",
-                "BCC/BTC"
+                "LTC/BTC",
+                "XRP/BTC",
+                "NEO/BTC"
             ]
         },
         "telegram": {
