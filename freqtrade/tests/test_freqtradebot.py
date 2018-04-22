@@ -16,7 +16,7 @@ import pytest
 import requests
 from sqlalchemy import create_engine
 
-from freqtrade import DependencyException, OperationalException
+from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
@@ -451,7 +451,7 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
         validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_markets=markets,
-        buy=MagicMock(side_effect=requests.exceptions.RequestException)
+        buy=MagicMock(side_effect=TemporaryError)
     )
     sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
 

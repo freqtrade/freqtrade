@@ -3,7 +3,6 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
 import copy
-import json
 import logging
 import time
 import traceback
@@ -15,7 +14,8 @@ import requests
 from cachetools import cached, TTLCache
 
 from freqtrade import (
-    DependencyException, OperationalException, exchange, persistence, __version__
+    DependencyException, OperationalException, TemporaryError,
+    exchange, persistence, __version__,
 )
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
@@ -173,7 +173,7 @@ class FreqtradeBot(object):
                 self.check_handle_timedout(self.config['unfilledtimeout'])
                 Trade.session.flush()
 
-        except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+        except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(Constants.RETRY_TIMEOUT)
         except OperationalException:
