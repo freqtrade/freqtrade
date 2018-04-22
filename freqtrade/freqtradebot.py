@@ -358,15 +358,18 @@ class FreqtradeBot(object):
         Tries to execute a sell trade
         :return: True if executed
         """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            trade.update(exchange.get_order(trade.open_order_id, trade.pair))
+        try:
+            # Get order details for actual price per unit
+            if trade.open_order_id:
+                # Update trade with order values
+                logger.info('Found open order for %s', trade)
+                trade.update(exchange.get_order(trade.open_order_id, trade.pair))
 
-        if trade.is_open and trade.open_order_id is None:
-            # Check if we can sell our current pair
-            return self.handle_trade(trade)
+            if trade.is_open and trade.open_order_id is None:
+                # Check if we can sell our current pair
+                return self.handle_trade(trade)
+        except DependencyException as exception:
+            logger.warning('Unable to sell trade: %s', exception)
         return False
 
     def handle_trade(self, trade: Trade) -> bool:
