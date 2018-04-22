@@ -262,15 +262,17 @@ def test_get_balances_prod(default_conf, mocker):
     assert get_balances()['1ST']['total'] == 10.0
     assert get_balances()['1ST']['used'] == 0.0
 
-    with pytest.raises(TemporaryError):
+    with pytest.raises(OperationalException):
         api_mock.fetch_balance = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         get_balances()
+    assert api_mock.fetch_balance.call_count == exchange.API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
         api_mock.fetch_balance = MagicMock(side_effect=ccxt.BaseError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         get_balances()
+    assert api_mock.fetch_balance.call_count == 1
 
 
 # This test is somewhat redundant with
@@ -397,20 +399,23 @@ def test_cancel_order(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert cancel_order(order_id='_', pair='TKN/BTC') == 123
 
-    with pytest.raises(TemporaryError):
+    with pytest.raises(OperationalException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         cancel_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.cancel_order.call_count == exchange.API_RETRY_COUNT + 1
 
-    with pytest.raises(TemporaryError):
+    with pytest.raises(OperationalException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder)
         mocker.patch('freqtrade.exchange._API', api_mock)
         cancel_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.cancel_order.call_count == exchange.API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.BaseError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         cancel_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.cancel_order.call_count == 1
 
 
 def test_get_order(default_conf, mocker):
@@ -429,20 +434,23 @@ def test_get_order(default_conf, mocker):
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert exchange.get_order('X', 'TKN/BTC') == 456
 
-    with pytest.raises(TemporaryError):
+    with pytest.raises(OperationalException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.NetworkError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         exchange.get_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.fetch_order.call_count == exchange.API_RETRY_COUNT + 1
 
-    with pytest.raises(DependencyException):
+    with pytest.raises(OperationalException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder)
         mocker.patch('freqtrade.exchange._API', api_mock)
         exchange.get_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.fetch_order.call_count == exchange.API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.BaseError)
         mocker.patch('freqtrade.exchange._API', api_mock)
         exchange.get_order(order_id='_', pair='TKN/BTC')
+    assert api_mock.fetch_order.call_count == 1
 
 
 def test_get_name(default_conf, mocker):

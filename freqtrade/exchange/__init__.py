@@ -206,6 +206,7 @@ def get_balance(currency: str) -> float:
     return balances[currency]['free']
 
 
+@retrier
 def get_balances() -> dict:
     if _CONF['dry_run']:
         return {}
@@ -274,6 +275,7 @@ def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
         raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
 
 
+@retrier
 def cancel_order(order_id: str, pair: str) -> None:
     if _CONF['dry_run']:
         return
@@ -288,6 +290,7 @@ def cancel_order(order_id: str, pair: str) -> None:
         raise OperationalException(e)
 
 
+@retrier
 def get_order(order_id: str, pair: str) -> Dict:
     if _CONF['dry_run']:
         order = _DRY_RUN_OPEN_ORDERS[order_id]
@@ -309,6 +312,7 @@ def get_order(order_id: str, pair: str) -> Dict:
         raise OperationalException(e)
 
 
+@retrier
 def get_pair_detail_url(pair: str) -> str:
     try:
         url_base = _API.urls.get('www')
@@ -320,6 +324,7 @@ def get_pair_detail_url(pair: str) -> str:
         return ""
 
 
+@retrier
 def get_markets() -> List[dict]:
     try:
         return _API.fetch_markets()
@@ -339,6 +344,7 @@ def get_id() -> str:
     return _API.id
 
 
+@retrier
 def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
             price=1, taker_or_maker='maker') -> float:
     try:
