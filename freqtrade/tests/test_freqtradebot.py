@@ -568,18 +568,32 @@ def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> No
     log_has('Unable to create trade:', caplog.record_tuples)
 
 
-def test_process_maybe_execute_sell(mocker, default_conf) -> None:
+def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplog) -> None:
     """
     Test process_maybe_execute_sell() method
     """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
-    mocker.patch('freqtrade.freqtradebot.exchange.get_order', return_value=1)
+    mocker.patch('freqtrade.freqtradebot.exchange.get_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.freqtradebot.exchange.get_trades_for_order', return_value=[])
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
+                 return_value=limit_buy_order['amount'])
 
     trade = MagicMock()
     trade.open_order_id = '123'
+    trade.open_fee = 0.001
     assert not freqtrade.process_maybe_execute_sell(trade)
+    # Test amount not modified by fee-logic
+    assert not log_has('Updating amount for Trade {} from 90.99181073 to 90.81'.format(trade),
+                       caplog.record_tuples)
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
+    # test amount modified by fee-logic
+    assert not freqtrade.process_maybe_execute_sell(trade)
+    assert log_has('Updating amount for Trade {} from 90.99181073 to 90.81'.format(trade),
+                   caplog.record_tuples)
+
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution

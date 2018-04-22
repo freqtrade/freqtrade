@@ -208,7 +208,7 @@ def markets_empty():
     return MagicMock(return_value=[])
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def limit_buy_order():
     return {
         'id': 'mocked_limit_buy',
