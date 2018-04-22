@@ -328,7 +328,6 @@ class FreqtradeBot(object):
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=fee,
             fee_open=fee,
             fee_close=fee,
             open_rate=buy_limit,
