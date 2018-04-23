@@ -429,7 +429,7 @@ class FreqtradeBot(object):
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        exchange.cancel_order(trade.open_order_id)
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
@@ -459,7 +459,7 @@ class FreqtradeBot(object):
         """
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
-            exchange.cancel_order(trade.open_order_id)
+            exchange.cancel_order(trade.open_order_id, trade.pair)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
