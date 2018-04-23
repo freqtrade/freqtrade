@@ -198,13 +198,19 @@ def sell(pair: str, rate: float, amount: float) -> Dict:
         raise OperationalException(e)
 
 
+@retrier
 def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
     # ccxt exception is already handled by get_balances
     balances = get_balances()
-    return balances[currency]['free']
+    balance = balances.get(currency)
+    if balance is None:
+        raise TemporaryError(
+            'Could not get {} balance due to malformed exchange response: {}'.format(
+                currency, balances))
+    return balance['free']
 
 
 @retrier
