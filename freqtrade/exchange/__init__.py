@@ -289,6 +289,10 @@ def cancel_order(order_id: str, pair: str) -> None:
 
     try:
         return _API.cancel_order(order_id, pair)
+    except ccxt.InvalidOrder as e:
+        raise DependencyException(
+            'Could not cancel order. Message: {}'.format(e)
+        )
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
             'Could not cancel order due to {}. Message: {}'.format(
