@@ -375,6 +375,7 @@ class FreqtradeBot(object):
                         logger.info("Updating amount for Trade {} from {} to {}".format(
                             trade, order['amount'], new_amount))
                         order['amount'] = new_amount
+                        # Fee was applied, so set to 0
                         trade.fee_open = 0
 
             except OperationalException as exception:
@@ -412,29 +413,6 @@ class FreqtradeBot(object):
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
         return real_amount
-
-    def maybe_update_real_amount(self, trade: Trade) -> bool:
-        """
-        Updates trade-amount with real amount
-        :return: True if real-amount has been changed.
-        """
-        if trade.is_open and trade.open_order_id is None:
-            # Trade is not open anymore
-            logger.warning("could not open trade amount - Trade is not open anymore")
-            return False
-        try:
-            new_amount = self.get_real_amount(trade)
-        except OperationalException as exception:
-            logger.warning("could not update trade amount: %s", exception)
-            return False
-        # updating amount
-        if trade.amount != new_amount:
-            logger.info("Updating amount for Trade {} from {} to {}".format(
-                        trade, trade.amount, new_amount))
-            trade.amount = new_amount
-            trade.fee_open = 0  # Fee was applied - set to 0 for buy
-            Trade.session.flush()
-        return True
 
     def handle_trade(self, trade: Trade) -> bool:
         """
