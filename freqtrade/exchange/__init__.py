@@ -41,7 +41,8 @@ def retrier(f):
                 logger.warning('retrying %s() still for %s times', f.__name__, count)
                 return wrapper(*args, **kwargs)
             else:
-                raise OperationalException('Giving up retrying: %s()', f.__name__)
+                logger.warning('Giving up retrying: %s()', f.__name__)
+                raise ex
     return wrapper
 
 
