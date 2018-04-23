@@ -368,7 +368,7 @@ class FreqtradeBot(object):
             # Try update amount (binance-fix)
             try:
                 # Only run for closed trades
-                if trade.fee_open != 0 and not (order['status'] == 'open' or order['price'] is None):
+                if trade.fee_open != 0 and not (order['status'] == 'open'):
                     new_amount = self.get_real_amount(trade)
                     # This may break if a exchange applies no fee (which appears highly unlikely)
                     if order['amount'] != new_amount:
