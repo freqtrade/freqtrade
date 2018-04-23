@@ -9,9 +9,9 @@ import ccxt
 import pytest
 
 from freqtrade import OperationalException, DependencyException, NetworkException
-from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
-    get_ticker, get_ticker_history, cancel_order, get_name, get_fee, get_id, get_pair_detail_url, \
-    get_amount_lots
+from freqtrade.exchange import (init, validate_pairs, buy, sell, get_balance, get_balances,
+                                get_ticker, get_ticker_history, cancel_order, get_name, get_fee,
+                                get_id, get_pair_detail_url, get_amount_lots)
 import freqtrade.exchange as exchange
 from freqtrade.tests.conftest import log_has
 
