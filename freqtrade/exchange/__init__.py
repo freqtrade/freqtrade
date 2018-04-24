@@ -45,7 +45,7 @@ def retrier(f):
     return wrapper
 
 
-def init_ccxt(exchange_config: dict) -> ccxt:
+def init_ccxt(exchange_config: dict) -> ccxt.Exchange:
     """
     Initialize ccxt with given config and return valid
     ccxt instance.
@@ -62,7 +62,7 @@ def init_ccxt(exchange_config: dict) -> ccxt:
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
-            'uid': exchange_config.get('uid' ''),
+            'uid': exchange_config.get('uid', ''),
             'enableRateLimit': True,
         })
     except (KeyError, AttributeError):
@@ -269,9 +269,9 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 
 @retrier
-def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
+def get_ticker_history(pair: str, tick_interval: str, since: Optional[int] = None) -> List[Dict]:
     try:
-        return _API.fetch_ohlcv(pair, timeframe=tick_interval)
+        return _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since)
     except ccxt.NetworkError as e:
         raise NetworkException(
             'Could not load ticker history due to networking error. Message: {}'.format(e)

@@ -265,3 +265,17 @@ class Arguments(object):
             help='Export files to given dir',
             dest='export',
             default=None)
+
+        self.parser.add_argument(
+            '--days',
+            help='Download data for number of days',
+            dest='days',
+            type=int,
+            default=None)
+
+        self.parser.add_argument(
+            '--exchange',
+            help='Exchange name',
+            dest='exchange',
+            type=str,
+            default='bittrex')
