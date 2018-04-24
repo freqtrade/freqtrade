@@ -378,6 +378,6 @@ def get_amount_lots(pair: str, amount: float) -> float:
     get buyable amount rounding, ..
     """
     # validate that markets are loaded before trying to get fee
-    if _API.markets is None or len(_API.markets) == 0:
+    if not _API.markets:
         _API.load_markets()
     return _API.amount_to_lots(pair, amount)
