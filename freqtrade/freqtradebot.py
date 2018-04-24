@@ -367,12 +367,12 @@ class FreqtradeBot(object):
             order = exchange.get_order(trade.open_order_id, trade.pair)
             # Try update amount (binance-fix)
             try:
-                # Only run for closed trades
+                # Only run for closed orders
                 if trade.fee_open != 0 and not (order['status'] == 'open'):
                     new_amount = self.get_real_amount(trade)
                     # This may break if a exchange applies no fee (which appears highly unlikely)
                     if order['amount'] != new_amount:
-                        logger.info("Updating amount for Trade {} from {} to {}".format(
+                        logger.info("Applying fee to amount for Trade {} from {} to {} ".format(
                             trade, order['amount'], new_amount))
                         order['amount'] = new_amount
                         # Fee was applied, so set to 0
