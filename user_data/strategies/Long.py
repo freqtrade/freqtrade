@@ -9,6 +9,7 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+import numpy # noqa
 
 
 class Long(IStrategy):
@@ -47,6 +48,17 @@ class Long(IStrategy):
         dataframe['bb_lowerband'] = bollinger['lower']
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
+
+        # RSI
+        dataframe['rsi'] = ta.RSI(dataframe)
+
+        # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
+        rsi = 0.1 * (dataframe['rsi'] - 50)
+        dataframe['fisher_rsi'] = (numpy.exp(2 * rsi) - 1) / (numpy.exp(2 * rsi) + 1)
+
+        # SAR Parabol
+        dataframe['sar'] = ta.SAR(dataframe)
+
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
@@ -73,7 +85,10 @@ class Long(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['tema'] < dataframe['close'])
+#                (dataframe['tema'] < dataframe['close'])
+
+                (dataframe['sar'] > dataframe['close']) &
+                (dataframe['fisher_rsi'] > 0.3)
             ),
             'sell'] = 1
         return dataframe
