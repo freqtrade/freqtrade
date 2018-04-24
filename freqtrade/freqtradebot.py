@@ -378,7 +378,7 @@ class FreqtradeBot(object):
         if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, current_rate)
             return True
-
+        logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
 
     def check_handle_timedout(self, timeoutvalue: int) -> None:
