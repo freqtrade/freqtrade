@@ -369,8 +369,6 @@ class FreqtradeBot(object):
             try:
                 new_amount = self.get_real_amount(trade, order)
                 if order['amount'] != new_amount:
-                    logger.info("Applying fee to amount for Trade {} from {} to {} ".format(
-                        trade, order['amount'], new_amount))
                     order['amount'] = new_amount
                     # Fee was applied, so set to 0
                     trade.fee_open = 0
@@ -392,11 +390,11 @@ class FreqtradeBot(object):
         """
         order_amount = order['amount']
         # Only run for closed orders
-        if trade.fee_open == 0 or not order['status'] == 'open':
+        if trade.fee_open == 0 or order['status'] == 'open':
             return order_amount
 
         # use fee from order-dict if possible
-        if order['fee']:
+        if 'fee' in order.keys() and order['fee']:
             if trade.pair.startswith(order['fee']['currency']):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
