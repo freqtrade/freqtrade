@@ -394,7 +394,7 @@ class FreqtradeBot(object):
             return order_amount
 
         # use fee from order-dict if possible
-        if 'fee' in order.keys() and order['fee']:
+        if 'fee' in order and order['fee']:
             if trade.pair.startswith(order['fee']['currency']):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
