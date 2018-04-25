@@ -570,3 +570,19 @@ def trades_for_order2():
              'cost': 1.963528,
              'amount': 4.0,
              'fee': {'cost': 0.004, 'currency': 'LTC'}}]
+
+
+@pytest.fixture
+def buy_order_fee():
+    return {
+        'id': 'mocked_limit_buy_old',
+        'type': 'limit',
+        'side': 'buy',
+        'pair': 'mocked',
+        'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'price': 0.245441,
+        'amount': 8.0,
+        'remaining': 90.99181073,
+        'status': 'open',
+        'fee': None
+    }
