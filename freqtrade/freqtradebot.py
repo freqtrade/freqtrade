@@ -330,6 +330,7 @@ class FreqtradeBot(object):
             fee_open=fee,
             fee_close=fee,
             open_rate=buy_limit,
+            open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
             exchange=exchange.get_id(),
             open_order_id=order_id
@@ -538,6 +539,7 @@ class FreqtradeBot(object):
         # Execute sell and update trade record
         order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
+        trade.close_rate_requested = limit
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
         profit_trade = trade.calc_profit(rate=limit)
