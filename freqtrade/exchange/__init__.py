@@ -134,7 +134,8 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
             'side': 'buy',
             'remaining': 0.0,
             'datetime': arrow.utcnow().isoformat(),
-            'status': 'closed'
+            'status': 'closed',
+            'fee': None
         }
         return {'id': order_id}
 
