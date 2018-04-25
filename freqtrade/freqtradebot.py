@@ -367,16 +367,13 @@ class FreqtradeBot(object):
             order = exchange.get_order(trade.open_order_id, trade.pair)
             # Try update amount (binance-fix)
             try:
-                # Only run for closed orders
-                if trade.fee_open != 0 and not (order['status'] == 'open'):
-                    new_amount = self.get_real_amount(trade)
-                    # This may break if a exchange applies no fee (which appears highly unlikely)
-                    if order['amount'] != new_amount:
-                        logger.info("Applying fee to amount for Trade {} from {} to {} ".format(
-                            trade, order['amount'], new_amount))
-                        order['amount'] = new_amount
-                        # Fee was applied, so set to 0
-                        trade.fee_open = 0
+                new_amount = self.get_real_amount(trade, order)
+                if order['amount'] != new_amount:
+                    logger.info("Applying fee to amount for Trade {} from {} to {} ".format(
+                        trade, order['amount'], new_amount))
+                    order['amount'] = new_amount
+                    # Fee was applied, so set to 0
+                    trade.fee_open = 0
 
             except OperationalException as exception:
                 logger.warning("could not update trade amount: %s", exception)
@@ -388,30 +385,46 @@ class FreqtradeBot(object):
             return self.handle_trade(trade)
         return False
 
-    def get_real_amount(self, order: Trade) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
         Get real amount for the trade
-        This is needed for exchanges which charge fees in target currency (e.g. binance)
+        Necessary for exchanges which charge fees in base currency (e.g. binance)
         """
+        order_amount = order['amount']
+        # Only run for closed orders
+        if trade.fee_open == 0 or not order['status'] == 'open':
+            return order_amount
 
-        trades = exchange.get_trades_for_order(
-            order.open_order_id, order.pair, order.open_date)
+        # use fee from order-dict if possible
+        if order['fee']:
+            if trade.pair.startswith(order['fee']['currency']):
+                new_amount = order_amount - order['fee']['cost']
+                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
+                            trade, order['amount'], new_amount)
+                return new_amount
+
+        # Fallback to Trades
+        trades = exchange.get_trades_for_order(trade.open_order_id, trade.pair, trade.open_date)
 
         if len(trades) == 0:
-            raise OperationalException("get_real_amount: no trade found")
+            logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            return order_amount
         amount = 0
         fee_abs = 0
-        for trade in trades:
-            amount += trade["amount"]
-            if "fee" in trade:
+        for exectrade in trades:
+            amount += exectrade['amount']
+            if "fee" in exectrade:
                 # only applies if fee is in quote currency!
-                if order.pair.startswith(trade["fee"]["currency"]):
-                    fee_abs += trade["fee"]["cost"]
+                if trade.pair.startswith(exectrade['fee']['currency']):
+                    fee_abs += exectrade['fee']['cost']
 
-        if amount != order.amount:
-            logger.warning("amount {} does not match amount {}".format(amount, order.amount))
+        if amount != order_amount:
+            logger.warning("amount {} does not match amount {}".format(amount, trade.amount))
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
+        if fee_abs != 0:
+            logger.info("Applying fee on amount for {} (from {} to {}) from Trades".format(
+                        trade, order['amount'], real_amount))
         return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:

@@ -585,14 +585,12 @@ def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplo
     trade.open_fee = 0.001
     assert not freqtrade.process_maybe_execute_sell(trade)
     # Test amount not modified by fee-logic
-    assert not log_has('Updating amount for Trade {} from 90.99181073 to 90.81'.format(trade),
-                       caplog.record_tuples)
+    assert not log_has('Applying fee to amount for Trade {} from 90.99181073 to 90.81'.format(
+                       trade), caplog.record_tuples)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
     # test amount modified by fee-logic
     assert not freqtrade.process_maybe_execute_sell(trade)
-    assert log_has('Updating amount for Trade {} from 90.99181073 to 90.81'.format(trade),
-                   caplog.record_tuples)
 
     trade.is_open = True
     trade.open_order_id = None
@@ -1319,7 +1317,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_get_real_amount_quote(default_conf, trades_for_order, mocker):
+def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
     """
     Test get_real_amount - fee in quote currency
     """
@@ -1335,14 +1333,18 @@ def test_get_real_amount_quote(default_conf, trades_for_order, mocker):
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        open_rate=0.245441,
         open_order_id="123456"
         )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
     # Amount is reduced by "fee"
-    assert freqtrade.get_real_amount(trade) == amount - (amount * 0.001)
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
+    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992) from Trades',
+                   caplog.record_tuples)
 
 
-def test_get_real_amount_stake(default_conf, trades_for_order, mocker):
+def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
     """
     Test get_real_amount - fees in Stake currency
     """
@@ -1358,14 +1360,15 @@ def test_get_real_amount_stake(default_conf, trades_for_order, mocker):
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        open_rate=0.245441,
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
     # Amount does not change
-    assert freqtrade.get_real_amount(trade) == amount
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
-def test_get_real_amount_BNB(default_conf, trades_for_order, mocker):
+def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mocker):
     """
     Test get_real_amount - Fees in BNB
     """
@@ -1383,14 +1386,15 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, mocker):
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        open_rate=0.245441,
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
     # Amount does not change
-    assert freqtrade.get_real_amount(trade) == amount
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
-def test_get_real_amount_multi(default_conf, trades_for_order2, mocker):
+def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, caplog, mocker):
     """
     Test get_real_amount with split trades (multiple trades for this order)
     """
@@ -1405,8 +1409,40 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, mocker):
         pair='LTC/ETH',
         amount=amount,
         exchange='binance',
+        open_rate=0.245441,
         open_order_id="123456"
     )
     freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
     # Amount is reduced by "fee"
-    assert freqtrade.get_real_amount(trade) == amount - (amount * 0.001)
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
+    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992) from Trades',
+                   caplog.record_tuples)
+
+
+def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
+    """
+    Test get_real_amount with split trades (multiple trades for this order)
+    """
+    limit_buy_order = deepcopy(buy_order_fee)
+    limit_buy_order['fee'] = {'cost': 0.004, 'currency': 'LTC'}
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = float(sum(x['amount'] for x in trades_for_order))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount is reduced by "fee"
+    assert freqtrade.get_real_amount(trade, limit_buy_order) == amount - 0.004
+    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996) from Order',
+                   caplog.record_tuples)
