@@ -1370,6 +1370,7 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
                    'open_rate=0.24544100, open_since=closed) failed: myTrade-Dict empty found',
                    caplog.record_tuples)
 
+
 def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
     """
     Test get_real_amount - fees in Stake currency
