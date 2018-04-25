@@ -287,7 +287,7 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on StochRSI buy signals
+        # Pick pair based on buy signals
         for _pair in whitelist:
             (buy, sell) = self.analyze.get_signal(_pair, interval)
             if buy and not sell:
