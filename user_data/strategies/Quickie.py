@@ -22,10 +22,10 @@ class Quickie(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "60":  0.01,
-        "30":  0.03,
-        "20":  0.04,
-        "0":  0.05
+        "60": 0.01,
+        "30": 0.03,
+        "20": 0.04,
+        "0": 0.05
     }
 
     # Optimal stoploss designed for the strategy
@@ -33,7 +33,7 @@ class Quickie(IStrategy):
     stoploss = -0.3
 
     # Optimal ticker interval for the strategy
-    ticker_interval = 1
+    ticker_interval = 5
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         macd = ta.MACD(dataframe)
@@ -44,8 +44,8 @@ class Quickie(IStrategy):
         dataframe['cci'] = ta.CCI(dataframe)
         dataframe['willr'] = ta.WILLR(dataframe)
 
-        dataframe['smaSlow'] = ta.EMA(dataframe, timeperiod=12)
-        dataframe['smaFast'] = ta.EMA(dataframe, timeperiod=26)
+        dataframe['smaSlow'] = ta.TEMA(dataframe, timeperiod=30)
+        dataframe['smaFast'] = ta.TEMA(dataframe, timeperiod=20)
 
         # required for graphing
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
@@ -53,10 +53,6 @@ class Quickie(IStrategy):
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
 
-        bollinger2 = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=1.5)
-        dataframe['bb_lowerband_2'] = bollinger['lower']
-        dataframe['bb_middleband_2'] = bollinger['mid']
-        dataframe['bb_upperband_2'] = bollinger['upper']
 
         return dataframe
 
@@ -69,15 +65,9 @@ class Quickie(IStrategy):
         dataframe.loc[
             (
                 # we want to buy oversold assets
-#                (dataframe['cci'] <= -50)
 
                 # some basic trend should have been established
- #               & (dataframe['macd'] > dataframe['macdsignal'])
-
-                # which starts inside the band
-  #              & (dataframe['open'] > dataframe['bb_lowerband'])
-
-                qtpylib.crossed_above(dataframe['smaFast'], dataframe['smaSlow'])
+                (qtpylib.crossed_above(dataframe['smaFast'], dataframe['smaSlow']))
 
             )
             ,
@@ -92,8 +82,7 @@ class Quickie(IStrategy):
         :return: DataFrame with buy column
         """
         dataframe.loc[
-            qtpylib.crossed_above(dataframe['smaSlow'], dataframe['smaFast'])
-
+            (qtpylib.crossed_above(dataframe['smaSlow'], dataframe['smaFast']))
             ,
             'sell'] = 1
         return dataframe

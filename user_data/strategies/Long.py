@@ -33,7 +33,7 @@ class Long(IStrategy):
     stoploss = -0.15
 
     # Optimal ticker interval for the strategy
-    ticker_interval = 5
+    ticker_interval = 60
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
 
