@@ -33,7 +33,7 @@ class Quickie(IStrategy):
     stoploss = -0.3
 
     # Optimal ticker interval for the strategy
-    ticker_interval = 5
+    ticker_interval = 1
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         macd = ta.MACD(dataframe)
@@ -44,8 +44,8 @@ class Quickie(IStrategy):
         dataframe['cci'] = ta.CCI(dataframe)
         dataframe['willr'] = ta.WILLR(dataframe)
 
-        dataframe['smaSlow'] = ta.SMA(dataframe, timeperiod=7)
-        dataframe['smaFast'] = ta.SMA(dataframe, timeperiod=13)
+        dataframe['smaSlow'] = ta.EMA(dataframe, timeperiod=12)
+        dataframe['smaFast'] = ta.EMA(dataframe, timeperiod=26)
 
         # required for graphing
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
@@ -69,13 +69,16 @@ class Quickie(IStrategy):
         dataframe.loc[
             (
                 # we want to buy oversold assets
-                (dataframe['cci'] <= -50)
+#                (dataframe['cci'] <= -50)
 
                 # some basic trend should have been established
-                & (dataframe['macd'] > dataframe['macdsignal'])
+ #               & (dataframe['macd'] > dataframe['macdsignal'])
 
                 # which starts inside the band
-                & (dataframe['open'] > dataframe['bb_lowerband'])
+  #              & (dataframe['open'] > dataframe['bb_lowerband'])
+
+                qtpylib.crossed_above(dataframe['smaFast'], dataframe['smaSlow'])
+
             )
             ,
             'buy'] = 1
@@ -89,11 +92,8 @@ class Quickie(IStrategy):
         :return: DataFrame with buy column
         """
         dataframe.loc[
-            (dataframe['close'] >= dataframe['bb_upperband']) |
-            (
-                (dataframe['macd'] < dataframe['macdsignal']) &
-                (dataframe['cci'] >= 100)
-            )
+            qtpylib.crossed_above(dataframe['smaSlow'], dataframe['smaFast'])
+
             ,
             'sell'] = 1
         return dataframe
