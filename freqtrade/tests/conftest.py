@@ -583,6 +583,6 @@ def buy_order_fee():
         'price': 0.245441,
         'amount': 8.0,
         'remaining': 90.99181073,
-        'status': 'open',
+        'status': 'closed',
         'fee': None
     }
