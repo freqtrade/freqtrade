@@ -22,15 +22,12 @@ class Quickie(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "60": 0.01,
-        "30": 0.03,
-        "20": 0.04,
-        "0": 0.05
+        "0": 0.01
     }
 
     # Optimal stoploss designed for the strategy
     # This attribute will be overridden if the config file contains "stoploss"
-    stoploss = -0.3
+    stoploss = -0.25
 
     # Optimal ticker interval for the strategy
     ticker_interval = 5
@@ -41,11 +38,8 @@ class Quickie(IStrategy):
         dataframe['macdsignal'] = macd['macdsignal']
         dataframe['macdhist'] = macd['macdhist']
 
-        dataframe['cci'] = ta.CCI(dataframe)
-        dataframe['willr'] = ta.WILLR(dataframe)
-
-        dataframe['smaSlow'] = ta.TEMA(dataframe, timeperiod=30)
-        dataframe['smaFast'] = ta.TEMA(dataframe, timeperiod=20)
+        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=100)
+        dataframe['adx'] = ta.ADX(dataframe)
 
         # required for graphing
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
@@ -53,36 +47,24 @@ class Quickie(IStrategy):
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
 
-
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
-        """
-        Based on TA indicators, populates the buy signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
         dataframe.loc[
             (
-                # we want to buy oversold assets
-
-                # some basic trend should have been established
-                (qtpylib.crossed_above(dataframe['smaFast'], dataframe['smaSlow']))
-
-            )
-            ,
+                    (dataframe['adx'] > 30) &
+                    (dataframe['tema'] < dataframe['bb_middleband']) &
+                    (dataframe['tema'] > dataframe['tema'].shift(1))
+            ),
             'buy'] = 1
-
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
-        """
-        Based on TA indicators, populates the sell signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
         dataframe.loc[
-            (qtpylib.crossed_above(dataframe['smaSlow'], dataframe['smaFast']))
-            ,
+            (
+                    (dataframe['adx'] > 70) &
+                    (dataframe['tema'] > dataframe['bb_middleband']) &
+                    (dataframe['tema'] < dataframe['tema'].shift(1))
+            ),
             'sell'] = 1
         return dataframe
