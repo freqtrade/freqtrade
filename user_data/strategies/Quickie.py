@@ -22,7 +22,9 @@ class Quickie(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "0": 0.01
+        "20": 0.01,
+        "15": 0.06,
+        "10": 0.15
     }
 
     # Optimal stoploss designed for the strategy
