@@ -9,8 +9,9 @@ import ccxt
 import pytest
 
 from freqtrade import OperationalException, DependencyException, NetworkException
-from freqtrade.exchange import init, validate_pairs, buy, sell, get_balance, get_balances, \
-    get_ticker, get_ticker_history, cancel_order, get_name, get_fee, get_id, get_pair_detail_url
+from freqtrade.exchange import (init, validate_pairs, buy, sell, get_balance, get_balances,
+                                get_ticker, get_ticker_history, cancel_order, get_name, get_fee,
+                                get_id, get_pair_detail_url, get_amount_lots)
 import freqtrade.exchange as exchange
 from freqtrade.tests.conftest import log_has
 
@@ -499,3 +500,10 @@ def test_get_fee(default_conf, mocker):
     })
     mocker.patch('freqtrade.exchange._API', api_mock)
     assert get_fee() == 0.025
+
+
+def test_get_amount_lots(default_conf, mocker):
+    api_mock = MagicMock()
+    api_mock.amount_to_lots = MagicMock(return_value=1.0)
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    assert get_amount_lots('LTC/BTC', 1.54) == 1

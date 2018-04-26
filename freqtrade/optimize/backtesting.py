@@ -113,12 +113,14 @@ class Backtesting(object):
 
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
+        fee = exchange.get_fee()
         trade = Trade(
             open_rate=buy_row.close,
             open_date=buy_row.date,
             stake_amount=stake_amount,
             amount=stake_amount / buy_row.open,
-            fee=exchange.get_fee()
+            fee_open=fee,
+            fee_close=fee
         )
 
         # calculate win/lose forwards from buy point

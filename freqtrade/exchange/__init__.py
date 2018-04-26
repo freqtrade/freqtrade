@@ -3,6 +3,7 @@
 import logging
 from random import randint
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 
 import ccxt
 import arrow
@@ -133,7 +134,8 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
             'side': 'buy',
             'remaining': 0.0,
             'datetime': arrow.utcnow().isoformat(),
-            'status': 'closed'
+            'status': 'closed',
+            'fee': None
         }
         return {'id': order_id}
 
@@ -313,6 +315,25 @@ def get_order(order_id: str, pair: str) -> Dict:
         raise OperationalException(e)
 
 
+def get_trades_for_order(order_id: str, pair: str, since: datetime) -> List:
+    if _CONF['dry_run']:
+        return []
+    if not exchange_has('fetchMyTrades'):
+        return []
+    try:
+        my_trades = _API.fetch_my_trades(pair, since.timestamp())
+        matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
+
+        return matched_trades
+
+    except ccxt.NetworkError as e:
+        raise NetworkException(
+            'Could not get trades due to networking error. Message: {}'.format(e)
+        )
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
+
+
 def get_pair_detail_url(pair: str) -> str:
     try:
         url_base = _API.urls.get('www')
@@ -351,3 +372,13 @@ def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
 
     return _API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                               price=price, takerOrMaker=taker_or_maker)['rate']
+
+
+def get_amount_lots(pair: str, amount: float) -> float:
+    """
+    get buyable amount rounding, ..
+    """
+    # validate that markets are loaded before trying to get fee
+    if not _API.markets:
+        _API.load_markets()
+    return _API.amount_to_lots(pair, amount)
