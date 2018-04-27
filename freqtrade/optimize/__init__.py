@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -> List[Dict]:
+    if not tickerlist:
+        return tickerlist
+
     stype, start, stop = timerange
 
     start_index = 0
