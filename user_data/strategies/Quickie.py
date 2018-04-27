@@ -22,7 +22,7 @@ class Quickie(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "20": 0.01,
+        "100": 0.01,
         "15": 0.06,
         "10": 0.15
     }
@@ -40,7 +40,7 @@ class Quickie(IStrategy):
         dataframe['macdsignal'] = macd['macdsignal']
         dataframe['macdhist'] = macd['macdhist']
 
-        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=100)
+        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
         dataframe['adx'] = ta.ADX(dataframe)
 
         # required for graphing
