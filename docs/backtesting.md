@@ -80,12 +80,9 @@ The full timerange specification:
 - Use last 123 tickframes of data: `--timerange=-123`
 - Use first 123 tickframes of data: `--timerange=123-`
 - Use tickframes from line 123 through 456: `--timerange=123-456`
-
-
-Incoming feature, not implemented yet:
-- `--timerange=-20180131`
--  `--timerange=20180101-`
-- `--timerange=20180101-20181231`
+- Use tickframes till 2018/01/31: `--timerange=-20180131`
+- Use tickframes since 2018/01/31: `--timerange=20180131-`
+- Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
 
 
 **Update testdata directory**

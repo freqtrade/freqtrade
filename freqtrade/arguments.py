@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import re
+import arrow
 from typing import List, Tuple, Optional
 
 from freqtrade import __version__
@@ -228,12 +229,16 @@ class Arguments(object):
                 stop = None
                 if stype[0]:
                     start = rvals[index]
-                    if stype[0] != 'date':
+                    if stype[0] == 'date':
+                        start = arrow.get(start, 'YYYYMMDD').timestamp
+                    else:
                         start = int(start)
                     index += 1
                 if stype[1]:
                     stop = rvals[index]
-                    if stype[1] != 'date':
+                    if stype[1] == 'date':
+                        stop = arrow.get(stop, 'YYYYMMDD').timestamp
+                    else:
                         stop = int(stop)
                 return stype, start, stop
         raise Exception('Incorrect syntax for timerange "%s"' % text)

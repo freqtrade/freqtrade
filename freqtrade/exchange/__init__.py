@@ -271,7 +271,26 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 @retrier
 def get_ticker_history(pair: str, tick_interval: str, since: Optional[int] = None) -> List[Dict]:
     try:
-        return _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since)
+        # download data until it reaches today now time
+        #
+        # it looks as if some exchanges return cached data
+        # and update it with some delay so 10 mins interval is added
+        data = []
+        while not since or since < arrow.utcnow().shift(minutes=-10).timestamp * 1000:
+            data_part = _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since)
+
+            if not data_part:
+                break
+
+            logger.info('Downloaded data for time range [%s, %s]',
+                        arrow.get(data_part[0][0] / 1000).format(),
+                        arrow.get(data_part[-1][0] / 1000).format())
+
+            data.extend(data_part)
+            since = data[-1][0] + 1
+
+        return data
+
     except ccxt.NetworkError as e:
         raise NetworkException(
             'Could not load ticker history due to networking error. Message: {}'.format(e)

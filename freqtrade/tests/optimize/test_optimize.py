@@ -3,12 +3,14 @@
 import json
 import os
 import uuid
+import arrow
 from shutil import copyfile
 
 from freqtrade import optimize
 from freqtrade.misc import file_dump_json
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs, \
-    download_backtesting_testdata, load_tickerdata_file, trim_tickerlist
+    download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, \
+    get_start_ts_from_timerange
 from freqtrade.tests.conftest import log_has
 
 # Change this if modifying UNITTEST/BTC testdatafile
@@ -145,6 +147,28 @@ def test_download_pairs(ticker_history, mocker) -> None:
     _clean_test_file(file2_5)
 
 
+def test_get_start_ts_from_timerange(mocker) -> None:
+    start = get_start_ts_from_timerange(None, '1m')
+    assert start is None
+
+    # check 'date'
+    start = get_start_ts_from_timerange((('date', 'date'), 1000, 2000), '1m')
+    assert start == 1000 * 1000
+
+    start = get_start_ts_from_timerange((('date', 'date'), 1000, 2000), '5m')
+    assert start == 1000 * 1000
+
+    # check 'line'
+    mock_now = arrow.get(1367900664)
+    mocker.patch('arrow.utcnow', return_value=mock_now)
+
+    start = get_start_ts_from_timerange(((None, 'line'), None, -200), '1m')
+    assert start == (1367900664 - 200 * 60) * 1000
+
+    start = get_start_ts_from_timerange(((None, 'line'), None, -200), '5m')
+    assert start == (1367900664 - 5 * 200 * 60) * 1000
+    
+
 def test_download_pairs_exception(ticker_history, mocker, caplog) -> None:
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
     mocker.patch('freqtrade.optimize.__init__.download_backtesting_testdata',
@@ -221,12 +245,12 @@ def test_trim_tickerlist() -> None:
     ticker_list_len = len(ticker_list)
 
     # Test the pattern ^(-\d+)$
-    # This pattern remove X element from the beginning
-    timerange = ((None, 'line'), None, 5)
+    # This pattern uses the latest N elements
+    timerange = ((None, 'line'), None, -5)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
-    assert ticker_list_len == ticker_len + 5
+    assert ticker_len == 5
     assert ticker_list[0] is not ticker[0]  # The first element should be different
     assert ticker_list[-1] is ticker[-1]  # The last element must be the same
 
@@ -250,6 +274,37 @@ def test_trim_tickerlist() -> None:
     assert ticker_list[0] is not ticker[0]  # The first element should be different
     assert ticker_list[5] is ticker[0]  # The list starts at the index 5
     assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
+
+    # Test the pattern ^(\d{8})-(\d{8})$
+    # This pattern extract a window between the dates
+    timerange = (('date', 'date'), ticker_list[5][0] / 1000, ticker_list[10][0] / 1000 - 1)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_len == 5
+    assert ticker_list[0] is not ticker[0]  # The first element should be different
+    assert ticker_list[5] is ticker[0]  # The list starts at the index 5
+    assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
+
+    # Test the pattern ^-(\d{8})$
+    # This pattern extracts elements from the start to the date
+    timerange = ((None, 'date'), None, ticker_list[10][0] / 1000 - 1)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_len == 10
+    assert ticker_list[0] is ticker[0]  # The start of the list is included
+    assert ticker_list[9] is ticker[-1]  # The element 10 is not included
+
+    # Test the pattern ^(\d{8})-$
+    # This pattern extracts elements from the date to now
+    timerange = (('date', None), ticker_list[10][0] / 1000 - 1, None)
+    ticker = trim_tickerlist(ticker_list, timerange)
+    ticker_len = len(ticker)
+
+    assert ticker_len == ticker_list_len - 10
+    assert ticker_list[10] is ticker[0]  # The first element is element #10
+    assert ticker_list[-1] is ticker[-1]  # The last element is the same
 
     # Test a wrong pattern
     # This pattern must return the list unchanged
