@@ -24,7 +24,7 @@ class Quickie(IStrategy):
     minimal_roi = {
         "100": 0.01,
         "15": 0.06,
-        "10": 0.15
+        "10": 0.15,
     }
 
     # Optimal stoploss designed for the strategy
