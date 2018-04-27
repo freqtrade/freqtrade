@@ -47,7 +47,7 @@ for pair in PAIRS:
         if not data:
             print('\tNo data was downloaded')
             break
-            
+
         print('\tData was downloaded for period %s - %s' % (
             arrow.get(data[0][0] / 1000).format(),
             arrow.get(data[-1][0] / 1000).format()))

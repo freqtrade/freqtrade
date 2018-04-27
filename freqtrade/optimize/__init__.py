@@ -122,7 +122,10 @@ def download_pairs(datadir, pairs: List[str],
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
-            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval, timerange=timerange)
+            download_backtesting_testdata(datadir,
+                                          pair=pair,
+                                          interval=ticker_interval,
+                                          timerange=timerange)
         except BaseException:
             logger.info(
                 'Failed to download the pair: "%s", Interval: %s',
@@ -139,7 +142,7 @@ def get_start_ts_from_timerange(timerange: Tuple[Tuple, int, int], interval: str
 
     if timerange[0][0] == 'date':
         return timerange[1] * 1000
-    
+
     if timerange[0][1] == 'line':
         num_minutes = timerange[2] * Constants.TICKER_INTERVAL_MINUTES[interval]
         return arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
@@ -156,7 +159,7 @@ def download_backtesting_testdata(datadir: str,
     Download the latest ticker intervals from the exchange for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
     :param pairs: list of pairs to download
-    :param interval: ticker interval 
+    :param interval: ticker interval
     :param timerange: range of time to download
     :return: bool
     """

@@ -167,7 +167,7 @@ def test_get_start_ts_from_timerange(mocker) -> None:
 
     start = get_start_ts_from_timerange(((None, 'line'), None, -200), '5m')
     assert start == (1367900664 - 5 * 200 * 60) * 1000
-    
+
 
 def test_download_pairs_exception(ticker_history, mocker, caplog) -> None:
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
