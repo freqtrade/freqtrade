@@ -45,7 +45,7 @@ def retrier(f):
     return wrapper
 
 
-def init_ccxt(exchange_config: dict) -> ccxt:
+def init_ccxt(exchange_config: dict) -> ccxt.Exchange:
     """
     Initialize ccxt with given config and return valid
     ccxt instance.
@@ -62,7 +62,7 @@ def init_ccxt(exchange_config: dict) -> ccxt:
             'apiKey': exchange_config.get('key'),
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
-            'uid': exchange_config.get('uid' ''),
+            'uid': exchange_config.get('uid', ''),
             'enableRateLimit': True,
         })
     except (KeyError, AttributeError):
