@@ -41,10 +41,11 @@ class Quickie(IStrategy):
         dataframe['macdhist'] = macd['macdhist']
 
         dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
+        dataframe['sma_200'] = ta.SMA(dataframe,timeperiod=200)
         dataframe['adx'] = ta.ADX(dataframe)
 
         # required for graphing
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+        bollinger = qtpylib.bollinger_bands(dataframe['close'], window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
@@ -56,7 +57,8 @@ class Quickie(IStrategy):
             (
                     (dataframe['adx'] > 30) &
                     (dataframe['tema'] < dataframe['bb_middleband']) &
-                    (dataframe['tema'] > dataframe['tema'].shift(1))
+                    (dataframe['tema'] > dataframe['tema'].shift(1)) &
+                    (dataframe['sma_200'] > dataframe['close'])
             ),
             'buy'] = 1
         return dataframe
