@@ -23,6 +23,8 @@ class Quickie(IStrategy):
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
         "100": 0.01,
+        "45": 0.02,
+        "30": 0.03,
         "15": 0.06,
         "10": 0.15,
     }
@@ -35,13 +37,10 @@ class Quickie(IStrategy):
     ticker_interval = 5
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
-        macd = ta.MACD(dataframe)
-        dataframe['macd'] = macd['macd']
-        dataframe['macdsignal'] = macd['macdsignal']
-        dataframe['macdhist'] = macd['macdhist']
-
         dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
-        dataframe['sma_200'] = ta.SMA(dataframe,timeperiod=200)
+        dataframe['sma_200'] = ta.SMA(dataframe, timeperiod=200)
+        dataframe['sma_50'] = ta.SMA(dataframe, timeperiod=50)
+
         dataframe['adx'] = ta.ADX(dataframe)
 
         # required for graphing
@@ -55,10 +54,17 @@ class Quickie(IStrategy):
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
         dataframe.loc[
             (
-                    (dataframe['adx'] > 30) &
-                    (dataframe['tema'] < dataframe['bb_middleband']) &
-                    (dataframe['tema'] > dataframe['tema'].shift(1)) &
-                    (dataframe['sma_200'] > dataframe['close'])
+                    (
+                            (dataframe['adx'] > 30) &
+                            (dataframe['tema'] < dataframe['bb_middleband']) &
+                            (dataframe['tema'] > dataframe['tema'].shift(1)) &
+                            (dataframe['sma_200'] > dataframe['close'])
+                    )
+                    |
+                    (
+                            (dataframe['sma_200'] > dataframe['close']) &
+                            (dataframe['sma_50'] < dataframe['sma_200'])
+                    )
             ),
             'buy'] = 1
         return dataframe
