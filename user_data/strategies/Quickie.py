@@ -60,11 +60,6 @@ class Quickie(IStrategy):
                             (dataframe['tema'] > dataframe['tema'].shift(1)) &
                             (dataframe['sma_200'] > dataframe['close'])
                     )
-                    |
-                    (
-                            (dataframe['sma_200'] > dataframe['close']) &
-                            (dataframe['sma_50'] < dataframe['sma_200'])
-                    )
             ),
             'buy'] = 1
         return dataframe
@@ -72,9 +67,11 @@ class Quickie(IStrategy):
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
         dataframe.loc[
             (
+                (
                     (dataframe['adx'] > 70) &
                     (dataframe['tema'] > dataframe['bb_middleband']) &
                     (dataframe['tema'] < dataframe['tema'].shift(1))
+                )
             ),
             'sell'] = 1
         return dataframe
