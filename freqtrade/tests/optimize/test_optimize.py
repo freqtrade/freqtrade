@@ -10,7 +10,7 @@ from freqtrade import optimize
 from freqtrade.misc import file_dump_json
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs, \
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, \
-    get_start_ts_from_timerange
+    load_cached_data_for_updating
 from freqtrade.tests.conftest import log_has
 
 # Change this if modifying UNITTEST/BTC testdatafile
@@ -147,26 +147,107 @@ def test_download_pairs(ticker_history, mocker) -> None:
     _clean_test_file(file2_5)
 
 
-def test_get_start_ts_from_timerange(mocker) -> None:
-    start = get_start_ts_from_timerange(None, '1m')
-    assert start is None
+def test_load_cached_data_for_updating(mocker) -> None:
+    datadir = os.path.join(os.path.dirname(__file__), '..', 'testdata')
 
-    # check 'date'
-    start = get_start_ts_from_timerange((('date', 'date'), 1000, 2000), '1m')
-    assert start == 1000 * 1000
+    test_data = None
+    test_filename = os.path.join(datadir, 'UNITTEST_BTC-1m.json')
+    with open(test_filename, "rt") as file:
+        test_data = json.load(file)
 
-    start = get_start_ts_from_timerange((('date', 'date'), 1000, 2000), '5m')
-    assert start == 1000 * 1000
+    # change now time to test 'line' cases
+    # now = last cached item + 1 hour
+    now_ts = test_data[-1][0] / 1000 + 60 * 60
+    mocker.patch('arrow.utcnow', return_value=arrow.get(now_ts))
 
-    # check 'line'
-    mock_now = arrow.get(1367900664)
-    mocker.patch('arrow.utcnow', return_value=mock_now)
+    # timeframe starts earlier than the cached data
+    # should fully update data
+    timerange = (('date', None), test_data[0][0] / 1000 - 1, None)
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   timerange)
+    assert data == []
+    assert start_ts == test_data[0][0] - 1000
 
-    start = get_start_ts_from_timerange(((None, 'line'), None, -200), '1m')
-    assert start == (1367900664 - 200 * 60) * 1000
+    # same with 'line' timeframe
+    num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 120
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   ((None, 'line'), None, -num_lines))
+    assert data == []
+    assert start_ts < test_data[0][0] - 1
 
-    start = get_start_ts_from_timerange(((None, 'line'), None, -200), '5m')
-    assert start == (1367900664 - 5 * 200 * 60) * 1000
+    # timeframe starts in the center of the cached data
+    # should return the chached data w/o the last item
+    timerange = (('date', None), test_data[0][0] / 1000 + 1, None)
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   timerange)
+    assert data == test_data[:-1]
+    assert test_data[-2][0] < start_ts < test_data[-1][0]
+
+    # same with 'line' timeframe
+    num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 30
+    timerange = ((None, 'line'), None, -num_lines)
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   timerange)
+    assert data == test_data[:-1]
+    assert test_data[-2][0] < start_ts < test_data[-1][0]
+
+    # timeframe starts after the chached data
+    # should return the chached data w/o the last item
+    timerange = (('date', None), test_data[-1][0] / 1000 + 1, None)
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   timerange)
+    assert data == test_data[:-1]
+    assert test_data[-2][0] < start_ts < test_data[-1][0]
+
+    # same with 'line' timeframe
+    num_lines = 30
+    timerange = ((None, 'line'), None, -num_lines)
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   timerange)
+    assert data == test_data[:-1]
+    assert test_data[-2][0] < start_ts < test_data[-1][0]
+
+    # no timeframe is set
+    # should return the chached data w/o the last item
+    num_lines = 30
+    timerange = ((None, 'line'), None, -num_lines)
+    data, start_ts = load_cached_data_for_updating(test_filename,
+                                                   '1m',
+                                                   timerange)
+    assert data == test_data[:-1]
+    assert test_data[-2][0] < start_ts < test_data[-1][0]
+
+    # no datafile exist
+    # should return timestamp start time
+    timerange = (('date', None), now_ts - 10000, None)
+    data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
+                                                   '1m',
+                                                   timerange)
+    assert data == []
+    assert start_ts == (now_ts - 10000) * 1000
+
+    # same with 'line' timeframe
+    num_lines = 30
+    timerange = ((None, 'line'), None, -num_lines)
+    data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
+                                                   '1m',
+                                                   timerange)
+    assert data == []
+    assert start_ts == (now_ts - num_lines * 60) * 1000
+
+    # no datafile exist, no timeframe is set
+    # should return an empty array and None
+    data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
+                                                   '1m',
+                                                   None)
+    assert data == []
+    assert start_ts is None
 
 
 def test_download_pairs_exception(ticker_history, mocker, caplog) -> None:
@@ -192,7 +273,7 @@ def test_download_backtesting_testdata(ticker_history, mocker) -> None:
     # Download a 1 min ticker file
     file1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'XEL_BTC-1m.json')
     _backup_file(file1)
-    download_backtesting_testdata(None, pair="XEL/BTC", interval='1m')
+    download_backtesting_testdata(None, pair="XEL/BTC", tick_interval='1m')
     assert os.path.isfile(file1) is True
     _clean_test_file(file1)
 
@@ -200,7 +281,7 @@ def test_download_backtesting_testdata(ticker_history, mocker) -> None:
     file2 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'STORJ_BTC-5m.json')
     _backup_file(file2)
 
-    download_backtesting_testdata(None, pair="STORJ/BTC", interval='5m')
+    download_backtesting_testdata(None, pair="STORJ/BTC", tick_interval='5m')
     assert os.path.isfile(file2) is True
     _clean_test_file(file2)
 
@@ -212,8 +293,8 @@ def test_download_backtesting_testdata2(mocker) -> None:
     ]
     mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
-    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", interval='1m')
-    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", interval='3m')
+    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", tick_interval='1m')
+    assert download_backtesting_testdata(None, pair="UNITTEST/BTC", tick_interval='3m')
 
 
 def test_load_tickerdata_file() -> None:

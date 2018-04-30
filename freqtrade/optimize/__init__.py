@@ -103,7 +103,10 @@ def load_data(datadir: str,
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         if not pairdata:
             # download the tickerdata from exchange
-            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
+            download_backtesting_testdata(datadir,
+                                          pair=pair,
+                                          tick_interval=ticker_interval,
+                                          timerange=timerange)
             # and retry reading the pair
             pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         result[pair] = pairdata
@@ -127,7 +130,7 @@ def download_pairs(datadir, pairs: List[str],
         try:
             download_backtesting_testdata(datadir,
                                           pair=pair,
-                                          interval=ticker_interval,
+                                          tick_interval=ticker_interval,
                                           timerange=timerange)
         except BaseException:
             logger.info(
@@ -139,70 +142,81 @@ def download_pairs(datadir, pairs: List[str],
     return True
 
 
-def get_start_ts_from_timerange(timerange: Tuple[Tuple, int, int], interval: str) -> int:
-    if not timerange:
-        return None
+def load_cached_data_for_updating(filename: str,
+                                  tick_interval: str,
+                                  timerange: Optional[Tuple[Tuple, int, int]]) -> Tuple[list, int]:
+    """
+    Load cached data and choose what part of the data should be updated
+    """
 
-    if timerange[0][0] == 'date':
-        return timerange[1] * 1000
+    since_ms = None
 
-    if timerange[0][1] == 'line':
-        num_minutes = timerange[2] * Constants.TICKER_INTERVAL_MINUTES[interval]
-        return arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
+    # user sets timerange, so find the start time
+    if timerange:
+        if timerange[0][0] == 'date':
+            since_ms = timerange[1] * 1000
+        elif timerange[0][1] == 'line':
+            num_minutes = timerange[2] * Constants.TICKER_INTERVAL_MINUTES[tick_interval]
+            since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
-    return None
+    # read the cached file
+    if os.path.isfile(filename):
+        with open(filename, "rt") as file:
+            data = json.load(file)
+            # remove the last item, because we are not sure if it is correct
+            # it could be fetched when the candle was incompleted
+            if data:
+                data.pop()
+    else:
+        data = []
+
+    if data:
+        if since_ms and since_ms < data[0][0]:
+            # the data is requested for earlier period than the cache has
+            # so fully redownload all the data
+            data = []
+        else:
+            # a part of the data was already downloaded, so
+            # download unexist data only
+            since_ms = data[-1][0] + 1
+
+    return (data, since_ms)
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
 def download_backtesting_testdata(datadir: str,
                                   pair: str,
-                                  interval: str = '5m',
+                                  tick_interval: str = '5m',
                                   timerange: Optional[Tuple[Tuple, int, int]] = None) -> bool:
     """
     Download the latest ticker intervals from the exchange for the pairs passed in parameters
+    The data is downloaded starting from the last correct ticker interval data that
+    esists in a cache. If timerange starts earlier than the data in the cache,
+    the full data will be redownloaded
+
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
     :param pairs: list of pairs to download
-    :param interval: ticker interval
+    :param tick_interval: ticker interval
     :param timerange: range of time to download
     :return: bool
     """
 
     path = make_testdata_path(datadir)
+    filepair = pair.replace("/", "_")
+    filename = os.path.join(path, f'{filepair}-{tick_interval}.json')
+
     logger.info(
         'Download the pair: "%s", Interval: %s',
         pair,
-        interval
+        tick_interval
     )
 
-    filepair = pair.replace("/", "_")
-    filename = os.path.join(path, '{pair}-{interval}.json'.format(
-        pair=filepair,
-        interval=interval,
-    ))
-
-    since = get_start_ts_from_timerange(timerange, interval)
-
-    if os.path.isfile(filename):
-        with open(filename, "rt") as file:
-            data = json.load(file)
-
-        if since:
-            if since < data[0][0]:
-                # fully update the data
-                data = []
-            else:
-                # download unexist data only
-                since = max(since, data[-1][0] + 1)
-        else:
-            # download unexist data only
-            since = data[-1][0] + 1
-    else:
-        data = []
+    data, since_ms = load_cached_data_for_updating(filename, tick_interval, timerange)
 
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    new_data = get_ticker_history(pair=pair, tick_interval=interval, since=since)
+    new_data = get_ticker_history(pair=pair, tick_interval=tick_interval, since_ms=since_ms)
     data.extend(new_data)
 
     logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))

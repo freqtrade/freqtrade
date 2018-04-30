@@ -36,7 +36,7 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation
 python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
 ```
 
-**Reload your testdata files**
+**Update cached pairs with the latest data**
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
 ```

@@ -8,7 +8,7 @@ import ccxt
 import arrow
 
 from freqtrade import OperationalException, DependencyException, NetworkException
-
+from freqtrade.constants import Constants
 
 logger = logging.getLogger(__name__)
 
@@ -269,15 +269,21 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 
 
 @retrier
-def get_ticker_history(pair: str, tick_interval: str, since: Optional[int] = None) -> List[Dict]:
+def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = None) -> List[Dict]:
     try:
-        # download data until it reaches today now time
-        #
+        # last item should be in the time interval [now - tick_interval, now]
+        till_time_ms = arrow.utcnow().shift(
+                        minutes=-Constants.TICKER_INTERVAL_MINUTES[tick_interval]
+                       ).timestamp * 1000
         # it looks as if some exchanges return cached data
-        # and update it with some delay so 10 mins interval is added
+        # and they update it one in several minute, so 10 mins interval
+        # is necessary to skeep downloading of an empty array when all
+        # chached data was already downloaded
+        till_time_ms = min(till_time_ms, arrow.utcnow().shift(minutes=-10).timestamp * 1000)
+
         data = []
-        while not since or since < arrow.utcnow().shift(minutes=-10).timestamp * 1000:
-            data_part = _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since)
+        while not since_ms or since_ms < till_time_ms:
+            data_part = _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
 
             if not data_part:
                 break
@@ -287,7 +293,7 @@ def get_ticker_history(pair: str, tick_interval: str, since: Optional[int] = Non
                         arrow.get(data_part[-1][0] / 1000).format())
 
             data.extend(data_part)
-            since = data[-1][0] + 1
+            since_ms = data[-1][0] + 1
 
         return data
 

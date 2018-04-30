@@ -43,7 +43,7 @@ for pair in PAIRS:
     for tick_interval in TICKER_INTERVALS:
         print(f'downloading pair {pair}, interval {tick_interval}')
 
-        data = exchange.get_ticker_history(pair, tick_interval, since=since_time)
+        data = exchange.get_ticker_history(pair, tick_interval, since_ms=since_time)
         if not data:
             print('\tNo data was downloaded')
             break

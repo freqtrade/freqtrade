@@ -118,7 +118,7 @@ class Arguments(object):
         )
         parser.add_argument(
             '-r', '--refresh-pairs-cached',
-            help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
+            help='refresh the pairs files in tests/testdata with the latest data from the exchange. \
                   Use it if you want to run your backtesting with up-to-date data.',
             action='store_true',
             dest='refresh_pairs',
