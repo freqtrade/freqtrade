@@ -51,9 +51,6 @@ class Simple(IStrategy):
         dataframe['bb_upperband'] = bollinger['upper']
         dataframe['bb_middleband'] = bollinger['mid']
 
-        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
-        dataframe['adx'] = ta.ADX(dataframe)
-
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
@@ -73,11 +70,7 @@ class Simple(IStrategy):
         # different strategy used for sell points, due to be able to duplicate it to 100%
         dataframe.loc[
             (
-                (
-                        (dataframe['adx'] > 70) &
-                        (dataframe['tema'] > dataframe['bb_middleband']) &
-                        (dataframe['tema'] < dataframe['tema'].shift(1))
-                )
+                (dataframe['rsi'] > 80)
             ),
             'sell'] = 1
         return dataframe
