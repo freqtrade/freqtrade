@@ -25,7 +25,7 @@ class Simple(IStrategy):
     # since this strategy is planned around 5 minutes, we assume any time we have a 5% profit we should call it a day
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "0": 0.5
+        "0": 0.01
     }
 
     # Optimal stoploss designed for the strategy
