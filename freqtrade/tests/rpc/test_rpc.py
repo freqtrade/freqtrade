@@ -99,12 +99,13 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
     assert error
     assert '*Status:* `no active order`' in result
 
+    print(result)
     freqtradebot.create_trade()
     (error, result) = rpc.rpc_status_table()
     assert 'just now' in result['Since'].all()
     assert 'BTC_ETH' in result['Pair'].all()
     assert '-0.59%' in result['Profit'].all()
-
+    assert 'Value' in result
 
 def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker)\
         -> None:
