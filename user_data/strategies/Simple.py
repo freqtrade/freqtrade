@@ -49,6 +49,7 @@ class Simple(IStrategy):
         bollinger = qtpylib.bollinger_bands(dataframe['close'], window=12, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
         dataframe['bb_upperband'] = bollinger['upper']
+        dataframe['bb_middleband'] = bollinger['mid']
 
         dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
         dataframe['adx'] = ta.ADX(dataframe)
@@ -69,12 +70,12 @@ class Simple(IStrategy):
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
-
-        #different strategy used for sell points, due to be able to duplicate it to 100%
+        # different strategy used for sell points, due to be able to duplicate it to 100%
         dataframe.loc[
             (
                 (
                         (dataframe['adx'] > 70) &
+                        (dataframe['tema'] > dataframe['bb_middleband']) &
                         (dataframe['tema'] < dataframe['tema'].shift(1))
                 )
             ),
