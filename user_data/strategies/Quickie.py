@@ -38,10 +38,11 @@ class Quickie(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
+        dataframe['adx'] = ta.ADX(dataframe)
+
         dataframe['sma_200'] = ta.SMA(dataframe, timeperiod=200)
         dataframe['sma_50'] = ta.SMA(dataframe, timeperiod=50)
 
-        dataframe['adx'] = ta.ADX(dataframe)
 
         # required for graphing
         bollinger = qtpylib.bollinger_bands(dataframe['close'], window=20, stds=2)
