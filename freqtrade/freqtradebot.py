@@ -15,15 +15,14 @@ import requests
 from cachetools import cached, TTLCache
 
 from freqtrade import (
-    DependencyException, OperationalException, exchange, persistence, __version__
-)
+    DependencyException, OperationalException, exchange, persistence, __version__,
+    NotEnoughFundsExeption)
 from freqtrade.analyze import Analyze
 from freqtrade import constants
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
 from freqtrade.state import State
-
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +165,11 @@ class FreqtradeBot(object):
 
             # Then looking for buy opportunities
             if len(trades) < self.config['max_open_trades']:
-                state_changed = self.process_maybe_execute_buy()
+                try:
+                    state_changed = self.process_maybe_execute_buy()
+                except NotEnoughFundsExeption:
+                    logger.warning('insufficient funds to execute this buy order, ignoring it!')
+                    state_changed = False
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
@@ -176,10 +179,11 @@ class FreqtradeBot(object):
         except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
             logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(constants.RETRY_TIMEOUT)
+
         except OperationalException:
             self.rpc.send_msg(
                 '*Status:* OperationalException:\n```\n{traceback}```{hint}'
-                .format(
+                    .format(
                     traceback=traceback.format_exc(),
                     hint='Issue `/start` if you think it is safe to restart.'
                 )
@@ -301,7 +305,7 @@ class FreqtradeBot(object):
         # Create trade entity and return
         self.rpc.send_msg(
             '*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '
-            .format(
+                .format(
                 exchange.get_name().upper(),
                 pair.replace('_', '/'),
                 exchange.get_pair_detail_url(pair),
@@ -484,15 +488,15 @@ class FreqtradeBot(object):
                   "*Current Rate:* `{current_rate:.8f}`\n" \
                   "*Profit:* `{profit:.2f}%`" \
                   "".format(
-                      exchange=trade.exchange,
-                      pair=trade.pair,
-                      pair_url=exchange.get_pair_detail_url(trade.pair),
-                      limit=limit,
-                      open_rate=trade.open_rate,
-                      current_rate=current_rate,
-                      amount=round(trade.amount, 8),
-                      profit=round(profit * 100, 2),
-                  )
+            exchange=trade.exchange,
+            pair=trade.pair,
+            pair_url=exchange.get_pair_detail_url(trade.pair),
+            limit=limit,
+            open_rate=trade.open_rate,
+            current_rate=current_rate,
+            amount=round(trade.amount, 8),
+            profit=round(profit * 100, 2),
+        )
 
         # For regular case, when the configuration exists
         if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
@@ -505,13 +509,13 @@ class FreqtradeBot(object):
             message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
                        '` / {profit_fiat:.3f} {fiat})`' \
                        ''.format(
-                           gain="profit" if fmt_exp_profit > 0 else "loss",
-                           profit_percent=fmt_exp_profit,
-                           profit_coin=profit_trade,
-                           coin=self.config['stake_currency'],
-                           profit_fiat=profit_fiat,
-                           fiat=self.config['fiat_display_currency'],
-                       )
+                gain="profit" if fmt_exp_profit > 0 else "loss",
+                profit_percent=fmt_exp_profit,
+                profit_coin=profit_trade,
+                coin=self.config['stake_currency'],
+                profit_fiat=profit_fiat,
+                fiat=self.config['fiat_display_currency'],
+            )
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well
         else:
