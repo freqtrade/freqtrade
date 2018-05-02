@@ -3,7 +3,6 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
 import copy
-import json
 import logging
 import time
 import traceback
@@ -15,7 +14,8 @@ import requests
 from cachetools import cached, TTLCache
 
 from freqtrade import (
-    DependencyException, OperationalException, exchange, persistence, __version__
+    DependencyException, OperationalException, TemporaryError,
+    exchange, persistence, __version__,
 )
 from freqtrade.analyze import Analyze
 from freqtrade.constants import Constants
@@ -173,7 +173,7 @@ class FreqtradeBot(object):
                 self.check_handle_timedout(self.config['unfilledtimeout'])
                 Trade.session.flush()
 
-        except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+        except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(Constants.RETRY_TIMEOUT)
         except OperationalException:
@@ -360,27 +360,30 @@ class FreqtradeBot(object):
         Tries to execute a sell trade
         :return: True if executed
         """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            order = exchange.get_order(trade.open_order_id, trade.pair)
-            # Try update amount (binance-fix)
-            try:
-                new_amount = self.get_real_amount(trade, order)
-                if order['amount'] != new_amount:
-                    order['amount'] = new_amount
-                    # Fee was applied, so set to 0
-                    trade.fee_open = 0
+        try:
+            # Get order details for actual price per unit
+            if trade.open_order_id:
+                # Update trade with order values
+                logger.info('Found open order for %s', trade)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
+                # Try update amount (binance-fix)
+                try:
+                    new_amount = self.get_real_amount(trade, order)
+                    if order['amount'] != new_amount:
+                        order['amount'] = new_amount
+                        # Fee was applied, so set to 0
+                        trade.fee_open = 0
 
-            except OperationalException as exception:
-                logger.warning("could not update trade amount: %s", exception)
+                except OperationalException as exception:
+                    logger.warning("could not update trade amount: %s", exception)
 
-            trade.update(order)
+                trade.update(order)
 
-        if trade.is_open and trade.open_order_id is None:
-            # Check if we can sell our current pair
-            return self.handle_trade(trade)
+            if trade.is_open and trade.open_order_id is None:
+                # Check if we can sell our current pair
+                return self.handle_trade(trade)
+        except DependencyException as exception:
+            logger.warning('Unable to sell trade: %s', exception)
         return False
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
@@ -482,7 +485,7 @@ class FreqtradeBot(object):
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        exchange.cancel_order(trade.open_order_id)
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
@@ -512,7 +515,7 @@ class FreqtradeBot(object):
         """
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
-            exchange.cancel_order(trade.open_order_id)
+            exchange.cancel_order(trade.open_order_id, trade.pair)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None

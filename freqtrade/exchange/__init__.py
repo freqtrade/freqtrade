@@ -8,7 +8,7 @@ from datetime import datetime
 import ccxt
 import arrow
 
-from freqtrade import OperationalException, DependencyException, NetworkException
+from freqtrade import OperationalException, DependencyException, TemporaryError
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Current selected exchange
 _API: ccxt.Exchange = None
 
-_CONF: dict = {}
+_CONF: Dict = {}
 API_RETRY_COUNT = 4
 
 # Holds all open sell orders for dry_run
@@ -34,15 +34,16 @@ def retrier(f):
         count = kwargs.pop('count', API_RETRY_COUNT)
         try:
             return f(*args, **kwargs)
-        except (NetworkException, DependencyException) as ex:
-            logger.warning('%s returned exception: "%s"', f, ex)
+        except (TemporaryError, DependencyException) as ex:
+            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
             if count > 0:
                 count -= 1
                 kwargs.update({'count': count})
-                logger.warning('retrying %s still for %s times', f, count)
+                logger.warning('retrying %s() still for %s times', f.__name__, count)
                 return wrapper(*args, **kwargs)
             else:
-                raise OperationalException('Giving up retrying: %s', f)
+                logger.warning('Giving up retrying: %s()', f.__name__)
+                raise ex
     return wrapper
 
 
@@ -153,10 +154,10 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
             'Tried to buy amount {} at rate {} (total {}).'
             'Message: {}'.format(pair, amount, rate, rate*amount, e)
         )
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not place buy order due to networking error. Message: {}'.format(e)
-        )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not place buy order due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -191,23 +192,30 @@ def sell(pair: str, rate: float, amount: float) -> Dict:
             'Tried to sell amount {} at rate {} (total {}).'
             'Message: {}'.format(pair, amount, rate, rate*amount, e)
         )
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not place sell order due to networking error. Message: {}'.format(e)
-        )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not place sell order due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
 
+@retrier
 def get_balance(currency: str) -> float:
     if _CONF['dry_run']:
         return 999.9
 
     # ccxt exception is already handled by get_balances
     balances = get_balances()
-    return balances[currency]['free']
+    balance = balances.get(currency)
+    if balance is None:
+        raise TemporaryError(
+            'Could not get {} balance due to malformed exchange response: {}'.format(
+                currency, balances))
+    return balance['free']
 
 
+@retrier
 def get_balances() -> dict:
     if _CONF['dry_run']:
         return {}
@@ -221,10 +229,10 @@ def get_balances() -> dict:
         balances.pop("used", None)
 
         return balances
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not get balance due to networking error. Message: {}'.format(e)
-        )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not get balance due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -233,17 +241,17 @@ def get_balances() -> dict:
 def get_tickers() -> Dict:
     try:
         return _API.fetch_tickers()
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not load tickers due to networking error. Message: {}'.format(e)
-        )
-    except ccxt.BaseError as e:
-        raise OperationalException(e)
     except ccxt.NotSupported as e:
         raise OperationalException(
             'Exchange {} does not support fetching tickers in batch.'
             'Message: {}'.format(_API.name, e)
         )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not load tickers due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 # TODO: remove refresh argument, keeping it to keep track of where it was intended to be used
@@ -251,10 +259,10 @@ def get_tickers() -> Dict:
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
     try:
         return _API.fetch_ticker(pair)
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not load tickers due to networking error. Message: {}'.format(e)
-        )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not load ticker history due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -263,37 +271,39 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
 def get_ticker_history(pair: str, tick_interval: str) -> List[Dict]:
     try:
         return _API.fetch_ohlcv(pair, timeframe=tick_interval)
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not load ticker history due to networking error. Message: {}'.format(e)
-        )
-    except ccxt.BaseError as e:
-        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
     except ccxt.NotSupported as e:
         raise OperationalException(
             'Exchange {} does not support fetching historical candlestick data.'
             'Message: {}'.format(_API.name, e)
         )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not load ticker history due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
+    except ccxt.BaseError as e:
+        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
 
 
+@retrier
 def cancel_order(order_id: str, pair: str) -> None:
     if _CONF['dry_run']:
         return
 
     try:
         return _API.cancel_order(order_id, pair)
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not get order due to networking error. Message: {}'.format(e)
-        )
     except ccxt.InvalidOrder as e:
         raise DependencyException(
             'Could not cancel order. Message: {}'.format(e)
         )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not cancel order due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
 
+@retrier
 def get_order(order_id: str, pair: str) -> Dict:
     if _CONF['dry_run']:
         order = _DRY_RUN_OPEN_ORDERS[order_id]
@@ -303,18 +313,19 @@ def get_order(order_id: str, pair: str) -> Dict:
         return order
     try:
         return _API.fetch_order(order_id, pair)
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not get order due to networking error. Message: {}'.format(e)
-        )
     except ccxt.InvalidOrder as e:
         raise DependencyException(
             'Could not get order. Message: {}'.format(e)
         )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not get order due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
 
+@retrier
 def get_trades_for_order(order_id: str, pair: str, since: datetime) -> List:
     if _CONF['dry_run']:
         return []
@@ -327,7 +338,7 @@ def get_trades_for_order(order_id: str, pair: str, since: datetime) -> List:
         return matched_trades
 
     except ccxt.NetworkError as e:
-        raise NetworkException(
+        raise TemporaryError(
             'Could not get trades due to networking error. Message: {}'.format(e)
         )
     except ccxt.BaseError as e:
@@ -345,13 +356,14 @@ def get_pair_detail_url(pair: str) -> str:
         return ""
 
 
+@retrier
 def get_markets() -> List[dict]:
     try:
         return _API.fetch_markets()
-    except ccxt.NetworkError as e:
-        raise NetworkException(
-            'Could not load markets due to networking error. Message: {}'.format(e)
-        )
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not load markets due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -364,14 +376,22 @@ def get_id() -> str:
     return _API.id
 
 
+@retrier
 def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
             price=1, taker_or_maker='maker') -> float:
-    # validate that markets are loaded before trying to get fee
-    if _API.markets is None or len(_API.markets) == 0:
-        _API.load_markets()
+    try:
+        # validate that markets are loaded before trying to get fee
+        if _API.markets is None or len(_API.markets) == 0:
+            _API.load_markets()
 
-    return _API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
-                              price=price, takerOrMaker=taker_or_maker)['rate']
+        return _API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
+                                  price=price, takerOrMaker=taker_or_maker)['rate']
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            'Could not get fee info due to {}. Message: {}'.format(
+                e.__class__.__name__, e))
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 
 def get_amount_lots(pair: str, amount: float) -> float:
