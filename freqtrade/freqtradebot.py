@@ -472,59 +472,64 @@ class FreqtradeBot(object):
         :return: None
         """
         # Execute sell and update trade record
-        order_id = exchange.sell(str(trade.pair), limit, trade.amount)
-        trade.open_order_id = order_id
 
-        fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
-        profit_trade = trade.calc_profit(rate=limit)
-        current_rate = exchange.get_ticker(trade.pair, False)['bid']
-        profit = trade.calc_profit_percent(current_rate)
+        # check if we have these funds first
+        try:
+            order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+            trade.open_order_id = order_id
 
-        message = "*{exchange}:* Selling\n" \
-                  "*Current Pair:* [{pair}]({pair_url})\n" \
-                  "*Limit:* `{limit}`\n" \
-                  "*Amount:* `{amount}`\n" \
-                  "*Open Rate:* `{open_rate:.8f}`\n" \
-                  "*Current Rate:* `{current_rate:.8f}`\n" \
-                  "*Profit:* `{profit:.2f}%`" \
-                  "".format(
-                    exchange=trade.exchange,
-                    pair=trade.pair,
-                    pair_url=exchange.get_pair_detail_url(trade.pair),
-                    limit=limit,
-                    open_rate=trade.open_rate,
-                    current_rate=current_rate,
-                    amount=round(trade.amount, 8),
-                    profit=round(profit * 100, 2),
-                    )
+            fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
+            profit_trade = trade.calc_profit(rate=limit)
+            current_rate = exchange.get_ticker(trade.pair, False)['bid']
+            profit = trade.calc_profit_percent(current_rate)
 
-        # For regular case, when the configuration exists
-        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
-            fiat_converter = CryptoToFiatConverter()
-            profit_fiat = fiat_converter.convert_amount(
-                profit_trade,
-                self.config['stake_currency'],
-                self.config['fiat_display_currency']
-            )
-            message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
-                       '` / {profit_fiat:.3f} {fiat})`' \
-                       ''.format(
-                        gain="profit" if fmt_exp_profit > 0 else "loss",
-                        profit_percent=fmt_exp_profit,
-                        profit_coin=profit_trade,
-                        coin=self.config['stake_currency'],
-                        profit_fiat=profit_fiat,
-                        fiat=self.config['fiat_display_currency'],
+            message = "*{exchange}:* Selling\n" \
+                      "*Current Pair:* [{pair}]({pair_url})\n" \
+                      "*Limit:* `{limit}`\n" \
+                      "*Amount:* `{amount}`\n" \
+                      "*Open Rate:* `{open_rate:.8f}`\n" \
+                      "*Current Rate:* `{current_rate:.8f}`\n" \
+                      "*Profit:* `{profit:.2f}%`" \
+                      "".format(
+                        exchange=trade.exchange,
+                        pair=trade.pair,
+                        pair_url=exchange.get_pair_detail_url(trade.pair),
+                        limit=limit,
+                        open_rate=trade.open_rate,
+                        current_rate=current_rate,
+                        amount=round(trade.amount, 8),
+                        profit=round(profit * 100, 2),
                         )
-        # Because telegram._forcesell does not have the configuration
-        # Ignore the FIAT value and does not show the stake_currency as well
-        else:
-            message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f})`'.format(
-                gain="profit" if fmt_exp_profit > 0 else "loss",
-                profit_percent=fmt_exp_profit,
-                profit_coin=profit_trade
-            )
 
-        # Send the message
-        self.rpc.send_msg(message)
-        Trade.session.flush()
+            # For regular case, when the configuration exists
+            if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
+                fiat_converter = CryptoToFiatConverter()
+                profit_fiat = fiat_converter.convert_amount(
+                    profit_trade,
+                    self.config['stake_currency'],
+                    self.config['fiat_display_currency']
+                )
+                message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
+                           '` / {profit_fiat:.3f} {fiat})`' \
+                           ''.format(
+                            gain="profit" if fmt_exp_profit > 0 else "loss",
+                            profit_percent=fmt_exp_profit,
+                            profit_coin=profit_trade,
+                            coin=self.config['stake_currency'],
+                            profit_fiat=profit_fiat,
+                            fiat=self.config['fiat_display_currency'],
+                            )
+            # Because telegram._forcesell does not have the configuration
+            # Ignore the FIAT value and does not show the stake_currency as well
+            else:
+                message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f})`'.format(
+                    gain="profit" if fmt_exp_profit > 0 else "loss",
+                    profit_percent=fmt_exp_profit,
+                    profit_coin=profit_trade
+                )
+
+            # Send the message
+            self.rpc.send_msg(message)
+            Trade.session.flush()
+        except NotEnoughFundsExeption:
+            logger.warning('Sell order failed, due to not having enough funds for %s.', trade)

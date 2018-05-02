@@ -82,11 +82,18 @@ class Bittrex(Exchange):
         data = _API.sell_limit(pair.replace('_', '-'), amount, rate)
         if not data['success']:
             Bittrex._validate_response(data)
-            raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
-                message=data['message'],
-                pair=pair,
-                rate=rate,
-                amount=amount))
+            if data['message'] == "INSUFFICIENT_FUNDS":
+                raise NotEnoughFundsExeption('{message} params=({pair}, {rate}, {amount})'.format(
+                    message=data['message'],
+                    pair=pair,
+                    rate=rate,
+                    amount=amount))
+            else:
+                raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
+                    message=data['message'],
+                    pair=pair,
+                    rate=rate,
+                    amount=amount))
         return data['result']['uuid']
 
     def get_balance(self, currency: str) -> float:
