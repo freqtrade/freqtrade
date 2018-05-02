@@ -106,6 +106,7 @@ def test_rpc_status_table(default_conf, ticker, mocker) -> None:
     assert '-0.59%' in result['Profit'].all()
     assert 'Value' in result
 
+
 def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker)\
         -> None:
     """
