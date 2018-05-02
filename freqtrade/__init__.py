@@ -18,6 +18,7 @@ class OperationalException(BaseException):
 
 class NotEnoughFundsExeption(BaseException):
     """
-    This happens when the exchange reports that not enough funds where available. We do not want to stop
-    the bot in this case and just keep it going and suppress this message
+    This happens when the exchange reports that not enough funds where available.
+    We do not want to stop the bot in this case and just keep it going and suppress
+    this message
     """

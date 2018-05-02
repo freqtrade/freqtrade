@@ -184,9 +184,9 @@ class FreqtradeBot(object):
             self.rpc.send_msg(
                 '*Status:* OperationalException:\n```\n{traceback}```{hint}'
                     .format(
-                    traceback=traceback.format_exc(),
-                    hint='Issue `/start` if you think it is safe to restart.'
-                )
+                        traceback=traceback.format_exc(),
+                        hint='Issue `/start` if you think it is safe to restart.'
+                    )
             )
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
@@ -306,15 +306,15 @@ class FreqtradeBot(object):
         self.rpc.send_msg(
             '*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '
                 .format(
-                exchange.get_name().upper(),
-                pair.replace('_', '/'),
-                exchange.get_pair_detail_url(pair),
-                buy_limit,
-                stake_amount,
-                self.config['stake_currency'],
-                stake_amount_fiat,
-                self.config['fiat_display_currency']
-            )
+                    exchange.get_name().upper(),
+                    pair.replace('_', '/'),
+                    exchange.get_pair_detail_url(pair),
+                    buy_limit,
+                    stake_amount,
+                    self.config['stake_currency'],
+                    stake_amount_fiat,
+                    self.config['fiat_display_currency']
+                )
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         trade = Trade(
@@ -488,15 +488,15 @@ class FreqtradeBot(object):
                   "*Current Rate:* `{current_rate:.8f}`\n" \
                   "*Profit:* `{profit:.2f}%`" \
                   "".format(
-            exchange=trade.exchange,
-            pair=trade.pair,
-            pair_url=exchange.get_pair_detail_url(trade.pair),
-            limit=limit,
-            open_rate=trade.open_rate,
-            current_rate=current_rate,
-            amount=round(trade.amount, 8),
-            profit=round(profit * 100, 2),
-        )
+                    exchange=trade.exchange,
+                    pair=trade.pair,
+                    pair_url=exchange.get_pair_detail_url(trade.pair),
+                    limit=limit,
+                    open_rate=trade.open_rate,
+                    current_rate=current_rate,
+                    amount=round(trade.amount, 8),
+                    profit=round(profit * 100, 2),
+                    )
 
         # For regular case, when the configuration exists
         if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
@@ -509,13 +509,13 @@ class FreqtradeBot(object):
             message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
                        '` / {profit_fiat:.3f} {fiat})`' \
                        ''.format(
-                gain="profit" if fmt_exp_profit > 0 else "loss",
-                profit_percent=fmt_exp_profit,
-                profit_coin=profit_trade,
-                coin=self.config['stake_currency'],
-                profit_fiat=profit_fiat,
-                fiat=self.config['fiat_display_currency'],
-            )
+                        gain="profit" if fmt_exp_profit > 0 else "loss",
+                        profit_percent=fmt_exp_profit,
+                        profit_coin=profit_trade,
+                        coin=self.config['stake_currency'],
+                        profit_fiat=profit_fiat,
+                        fiat=self.config['fiat_display_currency'],
+                        )
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well
         else:
