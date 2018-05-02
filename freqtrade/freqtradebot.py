@@ -287,7 +287,7 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on StochRSI buy signals
+        # Pick pair based on buy signals
         for _pair in whitelist:
             (buy, sell) = self.analyze.get_signal(_pair, interval)
             if buy and not sell:
@@ -323,11 +323,13 @@ class FreqtradeBot(object):
             )
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+        fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee(taker_or_maker='maker'),
+            fee_open=fee,
+            fee_close=fee,
             open_rate=buy_limit,
             open_date=datetime.utcnow(),
             exchange=exchange.get_id(),
@@ -363,7 +365,19 @@ class FreqtradeBot(object):
             if trade.open_order_id:
                 # Update trade with order values
                 logger.info('Found open order for %s', trade)
-                trade.update(exchange.get_order(trade.open_order_id, trade.pair))
+                order = exchange.get_order(trade.open_order_id, trade.pair)
+                # Try update amount (binance-fix)
+                try:
+                    new_amount = self.get_real_amount(trade, order)
+                    if order['amount'] != new_amount:
+                        order['amount'] = new_amount
+                        # Fee was applied, so set to 0
+                        trade.fee_open = 0
+
+                except OperationalException as exception:
+                    logger.warning("could not update trade amount: %s", exception)
+
+                trade.update(order)
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
@@ -371,6 +385,48 @@ class FreqtradeBot(object):
         except DependencyException as exception:
             logger.warning('Unable to sell trade: %s', exception)
         return False
+
+    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+        """
+        Get real amount for the trade
+        Necessary for exchanges which charge fees in base currency (e.g. binance)
+        """
+        order_amount = order['amount']
+        # Only run for closed orders
+        if trade.fee_open == 0 or order['status'] == 'open':
+            return order_amount
+
+        # use fee from order-dict if possible
+        if 'fee' in order and order['fee']:
+            if trade.pair.startswith(order['fee']['currency']):
+                new_amount = order_amount - order['fee']['cost']
+                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
+                            trade, order['amount'], new_amount)
+                return new_amount
+
+        # Fallback to Trades
+        trades = exchange.get_trades_for_order(trade.open_order_id, trade.pair, trade.open_date)
+
+        if len(trades) == 0:
+            logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            return order_amount
+        amount = 0
+        fee_abs = 0
+        for exectrade in trades:
+            amount += exectrade['amount']
+            if "fee" in exectrade:
+                # only applies if fee is in quote currency!
+                if trade.pair.startswith(exectrade['fee']['currency']):
+                    fee_abs += exectrade['fee']['cost']
+
+        if amount != order_amount:
+            logger.warning("amount {} does not match amount {}".format(amount, trade.amount))
+            raise OperationalException("Half bought? Amounts don't match")
+        real_amount = amount - fee_abs
+        if fee_abs != 0:
+            logger.info("Applying fee on amount for {} (from {} to {}) from Trades".format(
+                        trade, order['amount'], real_amount))
+        return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:
         """
