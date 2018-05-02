@@ -47,6 +47,32 @@ def retrier(f):
     return wrapper
 
 
+def init_ccxt(exchange_config: dict) -> ccxt.Exchange:
+    """
+    Initialize ccxt with given config and return valid
+    ccxt instance.
+    :param config: config to use
+    :return: ccxt
+    """
+    # Find matching class for the given exchange name
+    name = exchange_config['name']
+
+    if name not in ccxt.exchanges:
+        raise OperationalException('Exchange {} is not supported'.format(name))
+    try:
+        api = getattr(ccxt, name.lower())({
+            'apiKey': exchange_config.get('key'),
+            'secret': exchange_config.get('secret'),
+            'password': exchange_config.get('password'),
+            'uid': exchange_config.get('uid', ''),
+            'enableRateLimit': True,
+        })
+    except (KeyError, AttributeError):
+        raise OperationalException('Exchange {} is not supported'.format(name))
+
+    return api
+
+
 def init(config: dict) -> None:
     """
     Initializes this module with the given config,
@@ -63,22 +89,7 @@ def init(config: dict) -> None:
         logger.info('Instance is running with dry_run enabled')
 
     exchange_config = config['exchange']
-
-    # Find matching class for the given exchange name
-    name = exchange_config['name']
-
-    if name not in ccxt.exchanges:
-        raise OperationalException('Exchange {} is not supported'.format(name))
-    try:
-        _API = getattr(ccxt, name.lower())({
-            'apiKey': exchange_config.get('key'),
-            'secret': exchange_config.get('secret'),
-            'password': exchange_config.get('password'),
-            'uid': exchange_config.get('uid'),
-            'enableRateLimit': True,
-        })
-    except (KeyError, AttributeError):
-        raise OperationalException('Exchange {} is not supported'.format(name))
+    _API = init_ccxt(exchange_config)
 
     logger.info('Using Exchange "%s"', get_name())
 
