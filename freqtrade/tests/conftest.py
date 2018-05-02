@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
-from freqtrade.constants import Constants
+from freqtrade import constants
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -87,7 +87,7 @@ def default_conf():
         "initial_state": "running",
         "loglevel": logging.DEBUG
     }
-    validate(configuration, Constants.CONF_SCHEMA)
+    validate(configuration, constants.CONF_SCHEMA)
     return configuration
 
 
@@ -302,7 +302,7 @@ def ticker_history():
             0.05874751,
         ],
         [
-            1511686800,
+            1511686800000,
             8.891e-05,
             8.893e-05,
             8.875e-05,

@@ -9,10 +9,10 @@ from typing import Dict, List, Tuple
 import arrow
 from pandas import DataFrame, to_datetime
 
+from freqtrade import constants
 from freqtrade.exchange import get_ticker_history
 from freqtrade.persistence import Trade
-from freqtrade.strategy.strategy import Strategy
-from freqtrade.constants import Constants
+from freqtrade.strategy.resolver import StrategyResolver
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class Analyze(object):
         :param config: Bot configuration (use the one from Configuration())
         """
         self.config = config
-        self.strategy = Strategy(self.config)
+        self.strategy = StrategyResolver(self.config).strategy
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:
@@ -54,7 +54,14 @@ class Analyze(object):
                                     utc=True,
                                     infer_datetime_format=True)
 
-        frame.sort_values('date', inplace=True)
+        # group by index and aggregate results to eliminate duplicate ticks
+        frame = frame.groupby(by='date', as_index=False, sort=True).agg({
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'max',
+        })
         return frame
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
@@ -139,7 +146,7 @@ class Analyze(object):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        interval_minutes = Constants.TICKER_INTERVAL_MINUTES[interval]
+        interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
         if signal_date < arrow.utcnow() - timedelta(minutes=(interval_minutes + 5)):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',

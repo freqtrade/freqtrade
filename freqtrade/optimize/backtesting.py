@@ -4,11 +4,12 @@
 This module contains the backtesting logic
 """
 import logging
+import operator
 from argparse import Namespace
 from typing import Dict, Tuple, Any, List, Optional
 
 import arrow
-from pandas import DataFrame, Series
+from pandas import DataFrame
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
@@ -18,7 +19,6 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
-
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +66,12 @@ class Backtesting(object):
         :param data: dictionary with preprocessed backtesting data
         :return: tuple containing min_date, max_date
         """
-        all_dates = Series([])
-        for pair_data in data.values():
-            all_dates = all_dates.append(pair_data['date'])
-        all_dates.sort_values(inplace=True)
-        return arrow.get(all_dates.iloc[0]), arrow.get(all_dates.iloc[-1])
+        timeframe = [
+            (arrow.get(min(frame.date)), arrow.get(max(frame.date)))
+            for frame in data.values()
+        ]
+        return min(timeframe, key=operator.itemgetter(0))[0], \
+            max(timeframe, key=operator.itemgetter(1))[1]
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
@@ -201,9 +202,9 @@ class Backtesting(object):
                         # record a tuple of pair, current_profit_percent,
                         # entry-date, duration
                         records.append((pair, trade_entry[1],
-                                        row.date.timestamp(),
-                                        row2.date.timestamp(),
-                                        row.date, trade_entry[3]))
+                                        row.date.strftime('%s'),
+                                        row2.date.strftime('%s'),
+                                        index, trade_entry[3]))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
@@ -304,12 +305,9 @@ def start(args: Namespace) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-
-    # Initialize logger
-    logger.info('Starting freqtrade in Backtesting mode')
-
     # Initialize configuration
     config = setup_configuration(args)
+    logger.info('Starting freqtrade in Backtesting mode')
 
     # Initialize backtesting object
     backtesting = Backtesting(config)

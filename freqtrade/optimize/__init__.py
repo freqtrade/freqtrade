@@ -113,45 +113,38 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: str) -> bool:
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
-def download_backtesting_testdata(datadir: str, pair: str, interval: str = '5m') -> bool:
+def download_backtesting_testdata(datadir: str, pair: str, interval: str = '5m') -> None:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
-    :param pairs: list of pairs to download
-    :return: bool
     """
 
     path = make_testdata_path(datadir)
     logger.info(
-        'Download the pair: "%s", Interval: %s',
-        pair,
-        interval
+        'Download the pair: "%s", Interval: %s', pair, interval
     )
 
-    filepair = pair.replace("/", "_")
     filename = os.path.join(path, '{pair}-{interval}.json'.format(
-        pair=filepair,
+        pair=pair.replace("/", "_"),
         interval=interval,
     ))
 
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
             data = json.load(file)
-        logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]))
-        logger.debug("Current End: %s", misc.format_ms_time(data[-1:][0][0]))
     else:
         data = []
-        logger.debug("Current Start: None")
-        logger.debug("Current End: None")
 
-    new_data = get_ticker_history(pair=pair, tick_interval=interval)
-    for row in new_data:
-        if row not in data:
-            data.append(row)
-    logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
-    logger.debug("New End: %s", misc.format_ms_time(data[-1:][0][0]))
-    data = sorted(data, key=lambda data: data[0])
+    logger.debug('Current Start: %s', data[0][0] if data else None)
+    logger.debug('Current End: %s', data[-1:][0][0] if data else None)
 
+    # Extend data with new ticker history
+    data.extend([
+        row for row in get_ticker_history(pair=pair, tick_interval=interval)
+        if row not in data
+    ])
+
+    data = sorted(data, key=lambda _data: _data[0])
+    logger.debug('New Start: %s', data[0][0])
+    logger.debug('New End: %s', data[-1:][0][0])
     misc.file_dump_json(filename, data)
-
-    return True

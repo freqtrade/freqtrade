@@ -29,7 +29,6 @@ from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -591,11 +590,11 @@ def start(args: Namespace) -> None:
     logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
     logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
-    logger.info('Starting freqtrade in Hyperopt mode')
-
     # Initialize configuration
     # Monkey patch the configuration with hyperopt_conf.py
     configuration = Configuration(args)
+    logger.info('Starting freqtrade in Hyperopt mode')
+
     optimize_config = hyperopt_optimize_conf()
     config = configuration._load_common_config(optimize_config)
     config = configuration._load_backtesting_config(config)
