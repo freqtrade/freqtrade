@@ -1001,9 +1001,12 @@ def test_count_handle(default_conf, update, ticker, mocker) -> None:
     msg_mock.reset_mock()
     telegram._count(bot=MagicMock(), update=update)
 
-    msg = '<pre>  current    max\n---------  -----\n        1      {}</pre>'.format(
-        default_conf['max_open_trades']
-    )
+    msg = '<pre>  current    max    total stake\n---------  -----  -------------\n' \
+          '        1      {}          {}</pre>'\
+        .format(
+            default_conf['max_open_trades'],
+            default_conf['stake_amount']
+        )
     assert msg in msg_mock.call_args_list[0][0][0]
 
 
