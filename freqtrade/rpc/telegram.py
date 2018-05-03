@@ -357,8 +357,9 @@ class Telegram(RPC):
 
         message = tabulate({
             'current': [len(trades)],
-            'max': [self._config['max_open_trades']]
-        }, headers=['current', 'max'], tablefmt='simple')
+            'max': [self._config['max_open_trades']],
+            'total stake': [sum((trade.open_rate * trade.amount) for trade in trades)]
+        }, headers=['current', 'max', 'total stake'], tablefmt='simple')
         message = "<pre>{}</pre>".format(message)
         logger.debug(message)
         self.send_msg(message, parse_mode=ParseMode.HTML)
