@@ -66,6 +66,7 @@ def test_rpc_trade_status(default_conf, ticker, mocker) -> None:
         '*Close Rate:* `None`\n'
         '*Current Rate:* `0.00001098`\n'
         '*Close Profit:* `None`\n'
+        '*Stake Value:* `0.000999`\n'        
         '*Current Profit:* `-0.59%`\n'
         '*Open Order:* `(LIMIT_BUY rem=0.00000000)`'
     ]

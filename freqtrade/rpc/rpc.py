@@ -63,6 +63,7 @@ class RPC(object):
                           "*Close Rate:* `{close_rate}`\n" \
                           "*Current Rate:* `{current_rate:.8f}`\n" \
                           "*Close Profit:* `{close_profit}`\n" \
+                          "*Stake Value:* `{stake_value}`\n" \
                           "*Current Profit:* `{current_profit:.2f}%`\n" \
                           "*Open Order:* `{open_order}`"\
                           .format(
@@ -75,6 +76,7 @@ class RPC(object):
                               current_rate=current_rate,
                               amount=round(trade.amount, 8),
                               close_profit=fmt_close_profit,
+                              stake_value=round(current_rate * trade.amount,6),
                               current_profit=round(current_profit * 100, 2),
                               open_order='({} rem={:.8f})'.format(
                                   order['type'], order['remaining']
