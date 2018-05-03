@@ -10,8 +10,7 @@ from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 import ccxt
 
-from freqtrade import OperationalException
-from freqtrade.constants import Constants
+from freqtrade import OperationalException, constants
 
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,12 @@ class Configuration(object):
         logger.info('Using config: %s ...', self.args.config)
         config = self._load_config_file(self.args.config)
 
-        # Add the strategy file to use
-        config.update({'strategy': self.args.strategy})
+        # Set strategy if not specified in config and or if it's non default
+        if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
+            config.update({'strategy': self.args.strategy})
+
+        if self.args.strategy_path:
+            config.update({'strategy_path': self.args.strategy_path})
 
         # Load Common configuration
         config = self._load_common_config(config)
@@ -186,7 +189,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, Constants.CONF_SCHEMA)
+            validate(conf, constants.CONF_SCHEMA)
             return conf
         except ValidationError as exception:
             logger.fatal(
@@ -194,7 +197,7 @@ class Configuration(object):
                 exception
             )
             raise ValidationError(
-                best_match(Draft4Validator(Constants.CONF_SCHEMA).iter_errors(conf)).message
+                best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
             )
 
     def get_config(self) -> Dict[str, Any]:

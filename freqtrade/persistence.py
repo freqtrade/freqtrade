@@ -85,7 +85,8 @@ class Trade(_DECL_BASE):
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
-    fee = Column(Float, nullable=False, default=0.0)
+    fee_open = Column(Float, nullable=False, default=0.0)
+    fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     close_rate = Column(Float)
     close_profit = Column(Float)
@@ -156,7 +157,7 @@ class Trade(_DECL_BASE):
         getcontext().prec = 8
 
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
-        fees = buy_trade * Decimal(fee or self.fee)
+        fees = buy_trade * Decimal(fee or self.fee_open)
         return float(buy_trade + fees)
 
     def calc_close_trade_price(
@@ -177,7 +178,7 @@ class Trade(_DECL_BASE):
             return 0.0
 
         sell_trade = (Decimal(self.amount) * Decimal(rate or self.close_rate))
-        fees = sell_trade * Decimal(fee or self.fee)
+        fees = sell_trade * Decimal(fee or self.fee_close)
         return float(sell_trade - fees)
 
     def calc_profit(
@@ -195,7 +196,7 @@ class Trade(_DECL_BASE):
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
-            fee=(fee or self.fee)
+            fee=(fee or self.fee_close)
         )
         return float("{0:.8f}".format(close_trade_price - open_trade_price))
 
@@ -215,7 +216,7 @@ class Trade(_DECL_BASE):
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
-            fee=(fee or self.fee)
+            fee=(fee or self.fee_close)
         )
 
         return float("{0:.8f}".format((close_trade_price / open_trade_price) - 1))

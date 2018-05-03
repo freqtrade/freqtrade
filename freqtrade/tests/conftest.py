@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
-from freqtrade.constants import Constants
+from freqtrade import constants
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -87,7 +87,7 @@ def default_conf():
         "initial_state": "running",
         "loglevel": logging.DEBUG
     }
-    validate(configuration, Constants.CONF_SCHEMA)
+    validate(configuration, constants.CONF_SCHEMA)
     return configuration
 
 
@@ -207,7 +207,7 @@ def markets_empty():
     return MagicMock(return_value=[])
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def limit_buy_order():
     return {
         'id': 'mocked_limit_buy',
@@ -302,7 +302,7 @@ def ticker_history():
             0.05874751,
         ],
         [
-            1511686800,
+            1511686800000,
             8.891e-05,
             8.893e-05,
             8.875e-05,
@@ -498,3 +498,90 @@ def result():
 # that inserts a trade of some type and open-status
 # return the open-order-id
 # See tests in rpc/main that could use this
+
+
+@pytest.fixture(scope="function")
+def trades_for_order():
+    return [{'info': {'id': 34567,
+                      'orderId': 123456,
+                      'price': '0.24544100',
+                      'qty': '8.00000000',
+                      'commission': '0.00800000',
+                      'commissionAsset': 'LTC',
+                      'time': 1521663363189,
+                      'isBuyer': True,
+                      'isMaker': False,
+                      'isBestMatch': True},
+             'timestamp': 1521663363189,
+             'datetime': '2018-03-21T20:16:03.189Z',
+             'symbol': 'LTC/ETH',
+             'id': '34567',
+             'order': '123456',
+             'type': None,
+             'side': 'buy',
+             'price': 0.245441,
+             'cost': 1.963528,
+             'amount': 8.0,
+             'fee': {'cost': 0.008, 'currency': 'LTC'}}]
+
+
+@pytest.fixture(scope="function")
+def trades_for_order2():
+    return [{'info': {'id': 34567,
+                      'orderId': 123456,
+                      'price': '0.24544100',
+                      'qty': '8.00000000',
+                      'commission': '0.00800000',
+                      'commissionAsset': 'LTC',
+                      'time': 1521663363189,
+                      'isBuyer': True,
+                      'isMaker': False,
+                      'isBestMatch': True},
+             'timestamp': 1521663363189,
+             'datetime': '2018-03-21T20:16:03.189Z',
+             'symbol': 'LTC/ETH',
+             'id': '34567',
+             'order': '123456',
+             'type': None,
+             'side': 'buy',
+             'price': 0.245441,
+             'cost': 1.963528,
+             'amount': 4.0,
+             'fee': {'cost': 0.004, 'currency': 'LTC'}},
+            {'info': {'id': 34567,
+                      'orderId': 123456,
+                      'price': '0.24544100',
+                      'qty': '8.00000000',
+                      'commission': '0.00800000',
+                      'commissionAsset': 'LTC',
+                      'time': 1521663363189,
+                      'isBuyer': True,
+                      'isMaker': False,
+                      'isBestMatch': True},
+             'timestamp': 1521663363189,
+             'datetime': '2018-03-21T20:16:03.189Z',
+             'symbol': 'LTC/ETH',
+             'id': '34567',
+             'order': '123456',
+             'type': None,
+             'side': 'buy',
+             'price': 0.245441,
+             'cost': 1.963528,
+             'amount': 4.0,
+             'fee': {'cost': 0.004, 'currency': 'LTC'}}]
+
+
+@pytest.fixture
+def buy_order_fee():
+    return {
+        'id': 'mocked_limit_buy_old',
+        'type': 'limit',
+        'side': 'buy',
+        'pair': 'mocked',
+        'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'price': 0.245441,
+        'amount': 8.0,
+        'remaining': 90.99181073,
+        'status': 'closed',
+        'fee': None
+    }

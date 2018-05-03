@@ -48,5 +48,7 @@
     "initial_state": "running",
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "strategy": "DefaultStrategy",
+    "strategy_path": "/some/folder/"
 }

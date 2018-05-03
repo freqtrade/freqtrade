@@ -16,9 +16,9 @@ class OperationalException(BaseException):
     """
 
 
-class NetworkException(BaseException):
+class TemporaryError(BaseException):
     """
-    Network related error.
+    Temporary network or exchange related error.
     This could happen when an exchange is congested, unavailable, or the user
     has networking problems. Usually resolves itself after a time.
     """

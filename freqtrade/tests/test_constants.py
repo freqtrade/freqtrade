@@ -2,25 +2,24 @@
 Unit test file for constants.py
 """
 
-from freqtrade.constants import Constants
+from freqtrade import constants
 
 
 def test_constant_object() -> None:
     """
     Test the Constants object has the mandatory Constants
     """
-    assert hasattr(Constants, 'CONF_SCHEMA')
-    assert hasattr(Constants, 'DYNAMIC_WHITELIST')
-    assert hasattr(Constants, 'PROCESS_THROTTLE_SECS')
-    assert hasattr(Constants, 'TICKER_INTERVAL')
-    assert hasattr(Constants, 'HYPEROPT_EPOCH')
-    assert hasattr(Constants, 'RETRY_TIMEOUT')
-    assert hasattr(Constants, 'DEFAULT_STRATEGY')
+    assert hasattr(constants, 'CONF_SCHEMA')
+    assert hasattr(constants, 'DYNAMIC_WHITELIST')
+    assert hasattr(constants, 'PROCESS_THROTTLE_SECS')
+    assert hasattr(constants, 'TICKER_INTERVAL')
+    assert hasattr(constants, 'HYPEROPT_EPOCH')
+    assert hasattr(constants, 'RETRY_TIMEOUT')
+    assert hasattr(constants, 'DEFAULT_STRATEGY')
 
 
 def test_conf_schema() -> None:
     """
     Test the CONF_SCHEMA is from the right type
     """
-    constant = Constants()
-    assert isinstance(constant.CONF_SCHEMA, dict)
+    assert isinstance(constants.CONF_SCHEMA, dict)

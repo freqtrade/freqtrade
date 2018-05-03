@@ -71,6 +71,26 @@ def test_parse_args_invalid() -> None:
         Arguments(['-c'], '').get_parsed_arg()
 
 
+def test_parse_args_strategy() -> None:
+    args = Arguments(['--strategy', 'SomeStrategy'], '').get_parsed_arg()
+    assert args.strategy == 'SomeStrategy'
+
+
+def test_parse_args_strategy_invalid() -> None:
+    with pytest.raises(SystemExit, match=r'2'):
+        Arguments(['--strategy'], '').get_parsed_arg()
+
+
+def test_parse_args_strategy_path() -> None:
+    args = Arguments(['--strategy-path', '/some/path'], '').get_parsed_arg()
+    assert args.strategy_path == '/some/path'
+
+
+def test_parse_args_strategy_path_invalid() -> None:
+    with pytest.raises(SystemExit, match=r'2'):
+        Arguments(['--strategy-path'], '').get_parsed_arg()
+
+
 def test_parse_args_dynamic_whitelist() -> None:
     args = Arguments(['--dynamic-whitelist'], '').get_parsed_arg()
     assert args.dynamic_whitelist == 20

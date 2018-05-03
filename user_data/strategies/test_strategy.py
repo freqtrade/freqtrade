@@ -10,10 +10,6 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
 
-# Update this variable if you change the class name
-class_name = 'TestStrategy'
-
-
 # This class is a sample. Feel free to customize it.
 class TestStrategy(IStrategy):
     """
@@ -45,7 +41,7 @@ class TestStrategy(IStrategy):
     stoploss = -0.10
 
     # Optimal ticker interval for the strategy
-    ticker_interval = 5
+    ticker_interval = '5m'
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """

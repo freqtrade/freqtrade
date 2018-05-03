@@ -42,13 +42,11 @@ def test_datesarray_to_datetimearray(ticker_history):
     assert date_len == 3
 
 
-def test_common_datearray(default_conf, mocker) -> None:
+def test_common_datearray(default_conf) -> None:
     """
     Test common_datearray()
     :return: None
     """
-    mocker.patch('freqtrade.strategy.strategy.Strategy', MagicMock())
-
     analyze = Analyze(default_conf)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}

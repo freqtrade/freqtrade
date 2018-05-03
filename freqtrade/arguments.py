@@ -9,8 +9,7 @@ import re
 import arrow
 from typing import List, Tuple, Optional
 
-from freqtrade import __version__
-from freqtrade.constants import Constants
+from freqtrade import __version__, constants
 
 
 class Arguments(object):
@@ -81,9 +80,16 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '-s', '--strategy',
-            help='specify strategy file (default: %(default)s)',
+            help='specify strategy class name (default: %(default)s)',
             dest='strategy',
-            default='default_strategy',
+            default='DefaultStrategy',
+            type=str,
+            metavar='NAME',
+        )
+        self.parser.add_argument(
+            '--strategy-path',
+            help='specify additional strategy lookup path',
+            dest='strategy_path',
             type=str,
             metavar='PATH',
         )
@@ -92,7 +98,7 @@ class Arguments(object):
             help='dynamically generate and update whitelist \
                                   based on 24h BaseVolume (Default 20 currencies)',  # noqa
             dest='dynamic_whitelist',
-            const=Constants.DYNAMIC_WHITELIST,
+            const=constants.DYNAMIC_WHITELIST,
             type=int,
             metavar='INT',
             nargs='?',
@@ -163,7 +169,7 @@ class Arguments(object):
             '-e', '--epochs',
             help='specify number of epochs (default: %(default)d)',
             dest='epochs',
-            default=Constants.HYPEROPT_EPOCH,
+            default=constants.HYPEROPT_EPOCH,
             type=int,
             metavar='INT',
         )

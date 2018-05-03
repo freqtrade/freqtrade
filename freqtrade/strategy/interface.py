@@ -33,7 +33,6 @@ class IStrategy(ABC):
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
-        :return:
         """
 
     @abstractmethod
@@ -41,5 +40,5 @@ class IStrategy(ABC):
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
-        :return: DataFrame with buy column
+        :return: DataFrame with sell column
         """

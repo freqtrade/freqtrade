@@ -35,6 +35,8 @@ The table below will list all configuration parameters.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
+| `strategy` | DefaultStrategy | No | Defines Strategy class to use.
+| `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
 The definition of each config parameters is in 

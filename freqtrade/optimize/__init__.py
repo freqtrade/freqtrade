@@ -183,11 +183,11 @@ def load_cached_data_for_updating(filename: str,
     return (data, since_ms)
 
 
-# FIX: 20180110, suggest rename interval to tick_interval
 def download_backtesting_testdata(datadir: str,
                                   pair: str,
                                   tick_interval: str = '5m',
-                                  timerange: Optional[Tuple[Tuple, int, int]] = None) -> bool:
+                                  timerange: Optional[Tuple[Tuple, int, int]] = None) -> None:
+
     """
     Download the latest ticker intervals from the exchange for the pairs passed in parameters
     The data is downloaded starting from the last correct ticker interval data that
@@ -198,7 +198,8 @@ def download_backtesting_testdata(datadir: str,
     :param pairs: list of pairs to download
     :param tick_interval: ticker interval
     :param timerange: range of time to download
-    :return: bool
+    :return: None
+
     """
 
     path = make_testdata_path(datadir)
@@ -223,5 +224,3 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
 
     misc.file_dump_json(filename, data)
-
-    return True
