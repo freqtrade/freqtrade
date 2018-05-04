@@ -7,9 +7,8 @@ import os
 import arrow
 from typing import Optional, List, Dict, Tuple
 
-from freqtrade import misc
+from freqtrade import misc, constants
 from freqtrade.exchange import get_ticker_history
-from freqtrade.constants import Constants
 
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
@@ -156,7 +155,7 @@ def load_cached_data_for_updating(filename: str,
         if timerange[0][0] == 'date':
             since_ms = timerange[1] * 1000
         elif timerange[0][1] == 'line':
-            num_minutes = timerange[2] * Constants.TICKER_INTERVAL_MINUTES[tick_interval]
+            num_minutes = timerange[2] * constants.TICKER_INTERVAL_MINUTES[tick_interval]
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file

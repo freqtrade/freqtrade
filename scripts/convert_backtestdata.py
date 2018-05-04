@@ -21,9 +21,8 @@ from typing import List, Dict
 import gzip
 
 from freqtrade.arguments import Arguments
-from freqtrade import misc
+from freqtrade import misc, constants
 from pandas import DataFrame
-from freqtrade.constants import Constants
 
 import dateutil.parser
 
@@ -139,7 +138,7 @@ def convert_main(args: Namespace) -> None:
                 # default to adding 'm' to end of minutes for new interval name
                 interval = str(minutes) + 'm'
                 # but check if there is a mapping between int and string also
-                for str_interval, minutes_interval in Constants.TICKER_INTERVAL_MINUTES.items():
+                for str_interval, minutes_interval in constants.TICKER_INTERVAL_MINUTES.items():
                     if minutes_interval == minutes:
                         interval = str_interval
                         break

@@ -8,8 +8,7 @@ from datetime import datetime
 import ccxt
 import arrow
 
-from freqtrade import OperationalException, DependencyException, TemporaryError
-from freqtrade.constants import Constants
+from freqtrade import constants, OperationalException, DependencyException, TemporaryError
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +282,7 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
     try:
         # last item should be in the time interval [now - tick_interval, now]
         till_time_ms = arrow.utcnow().shift(
-                        minutes=-Constants.TICKER_INTERVAL_MINUTES[tick_interval]
+                        minutes=-constants.TICKER_INTERVAL_MINUTES[tick_interval]
                        ).timestamp * 1000
         # it looks as if some exchanges return cached data
         # and they update it one in several minute, so 10 mins interval

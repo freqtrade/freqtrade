@@ -24,21 +24,14 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
-<<<<<<< HEAD
-from freqtrade.constants import Constants
-=======
->>>>>>> bddf009a2b6d0e1a19cca558887ce972e99a6238
+from freqtradeimport constants
+
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 
 
-<<<<<<< HEAD
-logger = logging.getLogger('freqtrade')
-=======
 logger = logging.getLogger(__name__)
->>>>>>> bddf009a2b6d0e1a19cca558887ce972e99a6238
-
 
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
 # data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
@@ -198,7 +191,7 @@ def define_index(min_date: int, max_date: int, interval: str) -> int:
     """
     Return the index of a specific date
     """
-    interval_minutes = Constants.TICKER_INTERVAL_MINUTES[interval]
+    interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
     return int((max_date - min_date) / (interval_minutes * 60))
 
 
