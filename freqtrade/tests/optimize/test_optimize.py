@@ -294,8 +294,8 @@ def test_download_backtesting_testdata2(mocker) -> None:
     json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
 
-    download_backtesting_testdata(None, pair="UNITTEST/BTC", interval='1m')
-    download_backtesting_testdata(None, pair="UNITTEST/BTC", interval='3m')
+    download_backtesting_testdata(None, pair="UNITTEST/BTC", tick_interval='1m')
+    download_backtesting_testdata(None, pair="UNITTEST/BTC", tick_interval='3m')
     assert json_dump_mock.call_count == 2
 
 
