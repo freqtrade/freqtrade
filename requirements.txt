@@ -1,6 +1,6 @@
 python-bittrex==0.3.0
 SQLAlchemy==1.2.7
-python-telegram-bot==10.0.2
+python-telegram-bot==10.1.0
 arrow==0.12.1
 cachetools==2.0.1
 requests==2.18.4
