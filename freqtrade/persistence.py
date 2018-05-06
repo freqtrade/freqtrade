@@ -15,6 +15,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import inspect
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +52,56 @@ def init(config: dict, engine: Optional[Engine] = None) -> None:
     Trade.session = session()
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)
+    check_migrate(engine)
 
     # Clean dry_run DB
     if _CONF.get('dry_run', False) and _CONF.get('dry_run_db', False):
         clean_dry_run_db()
+
+
+def has_column(columns, searchname: str) -> bool:
+    return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
+
+
+def check_migrate(engine) -> None:
+    """
+    Checks if migration is necessary and migrates if necessary
+    """
+    inspector = inspect(engine)
+
+    cols = inspector.get_columns('trades')
+
+    if not has_column(cols, 'fee_open'):
+        # Schema migration necessary
+        engine.execute("create table trades_bak as select * from trades;")
+
+        # let SQLAlchemy create the schema as required
+        _DECL_BASE.metadata.create_all(engine)
+
+        # Copy data back - following the correct schema
+        engine.execute("""insert into trades
+                (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
+                open_rate_requested, close_rate, close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id)
+            select id, exchange, pair, is_open, fee fee_open, fee fee_close,
+                open_rate, null open_rate_requested, close_rate,
+                null close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id
+                from trades_bak
+             """)
+
+        # engine.execute("alter table trades add fee_open float not null")
+        # engine.execute("alter table trades add fee_close float not null")
+        # # Update fee_open and fee_close with "fee" column values
+        # engine.execute("update trades set fee_open = fee, fee_close = fee where fee_open is null")
+        # engine.execute("alter table trades drop fee_close float not null")
+
+    if not has_column(cols, 'open_rate_requested'):
+        engine.execute("alter table trades add open_rate_requested float")
+    if not has_column(cols, 'close_rate_requested'):
+        engine.execute("alter table trades add close_rate_requested float")
+
+
 
 
 def cleanup() -> None:
