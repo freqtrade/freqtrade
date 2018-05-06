@@ -255,3 +255,13 @@ class Arguments(object):
             dest='pair',
             default=None
         )
+        """
+        Parses given arguments for plot scripts.
+        """
+        self.parser.add_argument(
+            '--stop-loss',
+            help='Renders stop/loss informations in the main chart',
+            dest='stoplossdisplay',
+            default=False,
+            type=bool
+        )

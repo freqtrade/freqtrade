@@ -11,23 +11,115 @@ Optional Cli parameters
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
 """
+import datetime
 import logging
 import sys
 from argparse import Namespace
-
 from typing import List
 
+import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
-import plotly.graph_objs as go
 
-from freqtrade.arguments import Arguments
-from freqtrade.analyze import Analyze
-from freqtrade import exchange
 import freqtrade.optimize as optimize
-
+from freqtrade import exchange
+from freqtrade.analyze import Analyze
+from freqtrade.arguments import Arguments
+from freqtrade.configuration import Configuration
 
 logger = logging.getLogger(__name__)
+
+
+def plot_stop_loss_trade(df_sell, fig, analyze, args):
+    """
+        plots the stop loss for the associated trades and buys
+        as well as the estimated profit ranges.
+
+        will be enabled if --stop-loss is provided
+        as argument
+
+    :param data:
+    :param trades:
+    :return:
+    """
+
+    if args.stoplossdisplay is False:
+        return
+
+    stoploss = analyze.strategy.stoploss
+
+    for index, x in df_sell.iterrows():
+        if x['associated_buy_price'] > 0:
+            # draw stop loss
+            fig['layout']['shapes'].append(
+                {
+                    'fillcolor': 'red',
+                    'opacity': 0.1,
+                    'type': 'rect',
+                    'x0': x['associated_buy_date'],
+                    'x1': x['date'],
+                    'y0': x['associated_buy_price'],
+                    'y1': (x['associated_buy_price'] - abs(stoploss) * x['associated_buy_price']),
+                    'line': {'color': 'red'}
+                }
+            )
+
+            totalTime = 0
+            for time in analyze.strategy.minimal_roi:
+                t = int(time)
+                totalTime = t + totalTime
+
+                enddate = x['date']
+
+                date = x['associated_buy_date'] + datetime.timedelta(minutes=totalTime)
+
+                # draw profit range
+                fig['layout']['shapes'].append(
+                    {
+                        'fillcolor': 'green',
+                        'opacity': 0.1,
+                        'type': 'rect',
+                        'x0': date,
+                        'x1': enddate,
+                        'y0': x['associated_buy_price'],
+                        'y1': x['associated_buy_price'] + x['associated_buy_price'] * analyze.strategy.minimal_roi[
+                            time],
+                        'line': {'color': 'green'}
+                    }
+                )
+
+
+def find_profits(data):
+    """
+        finds the profits between sells and the associated buys. This does not take in account
+        ROI!
+    :param data:
+    :return:
+    """
+
+    # go over all the sells
+    # find all previous buys
+
+    df_sell = data[data['sell'] == 1]
+    df_buys = data[data['buy'] == 1]
+    lastDate = data['date'].iloc[0]
+
+    for index, row in df_sell.iterrows():
+
+        buys = df_buys[(df_buys['date'] < row['date']) & (df_buys['date'] > lastDate)]
+
+        profit = None
+        if buys['date'].count() > 0:
+            buys = buys.tail()
+            profit = round(row['close'] / buys['close'].values[0] * 100 - 100, 2)
+            lastDate = row['date']
+
+            df_sell.loc[index, 'associated_buy_date'] = buys['date'].values[0]
+            df_sell.loc[index, 'associated_buy_price'] = buys['close'].values[0]
+
+        df_sell.loc[index, 'profit'] = profit
+
+    return df_sell
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
@@ -40,7 +132,9 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     # Init strategy
     try:
-        analyze = Analyze({'strategy': args.strategy})
+        config = Configuration(args)
+
+        analyze = Analyze(config.get_config())
     except AttributeError:
         logger.critical(
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
@@ -83,30 +177,35 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     )
 
     df_buy = data[data['buy'] == 1]
+
     buys = go.Scattergl(
         x=df_buy.date,
-        y=df_buy.close,
+        y=df_buy.close * 0.995,
         mode='markers',
         name='buy',
         marker=dict(
             symbol='triangle-up-dot',
-            size=9,
+            size=15,
             line=dict(width=1),
             color='green',
         )
     )
-    df_sell = data[data['sell'] == 1]
-    sells = go.Scattergl(
+    df_sell = find_profits(data)
+
+    sells = go.Scatter(
         x=df_sell.date,
-        y=df_sell.close,
-        mode='markers',
+        y=df_sell.close * 1.01,
+        mode='markers+text',
         name='sell',
+        text=df_sell.profit,
+        textposition='top right',
         marker=dict(
             symbol='triangle-down-dot',
-            size=9,
+            size=15,
             line=dict(width=1),
             color='red',
         )
+
     )
 
     bb_lower = go.Scatter(
@@ -123,6 +222,15 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         fillcolor="rgba(0,176,246,0.2)",
         line={'color': "transparent"},
     )
+    bb_middle = go.Scatter(
+        x=data.date,
+        y=data.bb_middleband,
+        name='BB middle',
+        fill="tonexty",
+        fillcolor="rgba(0,176,246,0.2)",
+        line={'color': "red"},
+    )
+
     macd = go.Scattergl(x=data['date'], y=data['macd'], name='MACD')
     macdsignal = go.Scattergl(x=data['date'], y=data['macdsignal'], name='MACD signal')
     volume = go.Bar(x=data['date'], y=data['volume'], name='Volume')
@@ -137,9 +245,15 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     fig.append_trace(candles, 1, 1)
     fig.append_trace(bb_lower, 1, 1)
+    fig.append_trace(bb_middle, 1, 1)
     fig.append_trace(bb_upper, 1, 1)
+
     fig.append_trace(buys, 1, 1)
     fig.append_trace(sells, 1, 1)
+
+    # append stop loss/profit
+    plot_stop_loss_trade(df_sell, fig, analyze,args)
+
     fig.append_trace(volume, 2, 1)
     fig.append_trace(macd, 3, 1)
     fig.append_trace(macdsignal, 3, 1)
