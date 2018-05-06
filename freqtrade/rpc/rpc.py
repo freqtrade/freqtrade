@@ -76,7 +76,7 @@ class RPC(object):
                               current_rate=current_rate,
                               amount=round(trade.amount, 8),
                               close_profit=fmt_close_profit,
-                              stake_value=round(current_rate * trade.amount,6),
+                              stake_value=round(current_rate * trade.amount, 8),
                               current_profit=round(current_profit * 100, 2),
                               open_order='({} rem={:.8f})'.format(
                                   order['type'], order['remaining']
@@ -101,7 +101,7 @@ class RPC(object):
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate)),
-                    '{:.6f}'.format(trade.amount * current_rate)
+                    '{:.8f}'.format(trade.amount * current_rate)
                 ])
 
             columns = ['ID', 'Pair', 'Since', 'Profit', 'Value']
