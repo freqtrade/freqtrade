@@ -260,8 +260,7 @@ class Arguments(object):
             '--stop-loss',
             help='Renders stop/loss informations in the main chart',
             dest='stoplossdisplay',
-            default=False,
-            type=bool
+            action='store_true'
         )
 
         self.parser.add_argument(
@@ -286,12 +285,22 @@ class Arguments(object):
         )
 
         self.parser.add_argument(
+            '--plot-dataframe',
+            help='Renders the specified dataframes',
+            dest='plotdataframe',
+            default=None,
+            nargs='+',
+            type=str
+
+        )
+
+        self.parser.add_argument(
             '--plot-volume',
             help='plots the volume as a subchart',
             dest='plotvolume',
-            default=False,
-            type=bool
+            action='store_true'
         )
+
 
 
 

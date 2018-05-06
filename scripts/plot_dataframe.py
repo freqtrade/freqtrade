@@ -30,6 +30,20 @@ from freqtrade.configuration import Configuration
 logger = logging.getLogger(__name__)
 
 
+def plot_dataframes(data, fig, args):
+    """
+        plots additional dataframes in the main plot
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+
+    for x in args.plotdataframe:
+        chart = go.Scattergl(x=data['date'], y=data[x], name=x)
+        fig.append_trace(chart, 1, 1)
+
+
 def plot_volume_dataframe(data, fig, args, plotnumber):
     """
         adds the plotting of the volume
@@ -41,6 +55,7 @@ def plot_volume_dataframe(data, fig, args, plotnumber):
 
     volume = go.Bar(x=data['date'], y=data['volume'], name='Volume')
     fig.append_trace(volume, plotnumber, 1)
+
 
 def plot_macd_dataframe(data, fig, args, plotnumber):
     """
@@ -315,6 +330,9 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     # append stop loss/profit
     plot_stop_loss_trade(df_sell, fig, analyze, args)
+
+    # plot other dataframes
+    plot_dataframes(data, fig, args)
 
     fig['layout'].update(title=args.pair)
     fig['layout']['yaxis1'].update(title='Price')
