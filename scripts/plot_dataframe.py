@@ -30,6 +30,59 @@ from freqtrade.configuration import Configuration
 logger = logging.getLogger(__name__)
 
 
+def plot_volume_dataframe(data, fig, args, plotnumber):
+    """
+        adds the plotting of the volume
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+
+    volume = go.Bar(x=data['date'], y=data['volume'], name='Volume')
+    fig.append_trace(volume, plotnumber, 1)
+
+def plot_macd_dataframe(data, fig, args, plotnumber):
+    """
+        adds the plotting of the MACD if specified
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+
+    macd = go.Scattergl(x=data['date'], y=data[args.plotmacd], name='MACD')
+    macdsignal = go.Scattergl(x=data['date'], y=data[args.plotmacd + 'signal'], name='MACD signal')
+    fig.append_trace(macd, plotnumber, 1)
+    fig.append_trace(macdsignal, plotnumber, 1)
+
+
+def plot_rsi_dataframe(data, fig, args, plotnumber):
+    """
+
+        this function plots an additional RSI chart under the exiting charts
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+    rsi = go.Scattergl(x=data['date'], y=data[args.plotrsi], name='RSI')
+    fig.append_trace(rsi, plotnumber, 1)
+
+
+def plot_cci_dataframe(data, fig, args, plotnumber):
+    """
+
+        this function plots an additional cci chart under the exiting charts
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+    chart = go.Scattergl(x=data['date'], y=data[args.plotcci], name='CCI')
+    fig.append_trace(chart, plotnumber, 1)
+
+
 def plot_stop_loss_trade(df_sell, fig, analyze, args):
     """
         plots the stop loss for the associated trades and buys
@@ -231,18 +284,27 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         line={'color': "red"},
     )
 
-    macd = go.Scattergl(x=data['date'], y=data['macd'], name='MACD')
-    macdsignal = go.Scattergl(x=data['date'], y=data['macdsignal'], name='MACD signal')
-    volume = go.Bar(x=data['date'], y=data['volume'], name='Volume')
+    # ugly hack for now
+    rowWidth = [1]
+    if args.plotvolume:
+        rowWidth.append(1)
+    if args.plotmacd:
+        rowWidth.append(1)
+    if args.plotrsi:
+        rowWidth.append(1)
+    if args.plotcci:
+        rowWidth.append(1)
 
+    # standard layout signal + volume
     fig = tools.make_subplots(
-        rows=3,
+        rows=len(rowWidth),
         cols=1,
         shared_xaxes=True,
-        row_width=[1, 1, 4],
+        row_width=rowWidth,
         vertical_spacing=0.0001,
     )
 
+    # todo should be optional
     fig.append_trace(candles, 1, 1)
     fig.append_trace(bb_lower, 1, 1)
     fig.append_trace(bb_middle, 1, 1)
@@ -252,16 +314,34 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     fig.append_trace(sells, 1, 1)
 
     # append stop loss/profit
-    plot_stop_loss_trade(df_sell, fig, analyze,args)
-
-    fig.append_trace(volume, 2, 1)
-    fig.append_trace(macd, 3, 1)
-    fig.append_trace(macdsignal, 3, 1)
+    plot_stop_loss_trade(df_sell, fig, analyze, args)
 
     fig['layout'].update(title=args.pair)
     fig['layout']['yaxis1'].update(title='Price')
-    fig['layout']['yaxis2'].update(title='Volume')
-    fig['layout']['yaxis3'].update(title='MACD')
+
+    subplots = 1
+
+    if args.plotvolume:
+        subplots = subplots + 1
+        plot_volume_dataframe(data, fig, args, subplots)
+        fig['layout']['yaxis' + str(subplots)].update(title='Volume')
+
+    if args.plotmacd:
+        subplots = subplots + 1
+        plot_macd_dataframe(data, fig, args, subplots)
+        fig['layout']['yaxis' + str(subplots)].update(title='MACD')
+
+    if args.plotrsi:
+        subplots = subplots + 1
+        plot_rsi_dataframe(data, fig, args, subplots)
+        fig['layout']['yaxis' + str(subplots)].update(title='RSI', range=[0, 100])
+
+    if args.plotcci:
+        subplots = subplots + 1
+        plot_cci_dataframe(data, fig, args, subplots)
+        fig['layout']['yaxis' + str(subplots)].update(title='CCI')
+
+    # updated all the
 
     plot(fig, filename='freqtrade-plot.html')
 

@@ -255,9 +255,7 @@ class Arguments(object):
             dest='pair',
             default=None
         )
-        """
-        Parses given arguments for plot scripts.
-        """
+
         self.parser.add_argument(
             '--stop-loss',
             help='Renders stop/loss informations in the main chart',
@@ -265,3 +263,35 @@ class Arguments(object):
             default=False,
             type=bool
         )
+
+        self.parser.add_argument(
+            '--plot-rsi',
+            help='Renders a rsi chart of the given RSI dataframe name, for example --plot-rsi rsi',
+            dest='plotrsi',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-cci',
+            help='Renders a cci chart of the given RSI dataframe name, for example --plot-cci cci',
+            dest='plotcci',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-macd',
+            help='Renders a macd chart of the given RSI dataframe name, for example --plot-macd macd',
+            dest='plotmacd',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-volume',
+            help='plots the volume as a subchart',
+            dest='plotvolume',
+            default=False,
+            type=bool
+        )
+
+
+
