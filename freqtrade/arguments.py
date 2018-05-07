@@ -267,7 +267,9 @@ class Arguments(object):
             '--plot-rsi',
             help='Renders a rsi chart of the given RSI dataframe name, for example --plot-rsi rsi',
             dest='plotrsi',
+            nargs='+',
             default=None
+
         )
 
         self.parser.add_argument(
