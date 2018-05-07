@@ -324,6 +324,15 @@ def test_get_ticker(default_conf, mocker):
         get_ticker(pair='ETH/BTC', refresh=True)
 
 
+def make_fetch_ohlcv_mock(data):
+    def fetch_ohlcv_mock(pair, timeframe, since):
+        if since:
+            assert since > data[-1][0]
+            return []
+        return data
+    return fetch_ohlcv_mock
+
+
 def test_get_ticker_history(default_conf, mocker):
     api_mock = MagicMock()
     tick = [
@@ -337,7 +346,7 @@ def test_get_ticker_history(default_conf, mocker):
         ]
     ]
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
-    api_mock.fetch_ohlcv = MagicMock(return_value=tick)
+    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     # retrieve original ticker
@@ -360,7 +369,7 @@ def test_get_ticker_history(default_conf, mocker):
             10,  # volume (in quote currency)
         ]
     ]
-    api_mock.fetch_ohlcv = MagicMock(return_value=new_tick)
+    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(new_tick))
     mocker.patch('freqtrade.exchange._API', api_mock)
 
     ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])

@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import re
+import arrow
 from typing import List, Tuple, Optional
 
 from freqtrade import __version__, constants
@@ -123,7 +124,7 @@ class Arguments(object):
         )
         parser.add_argument(
             '-r', '--refresh-pairs-cached',
-            help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
+            help='refresh the pairs files in tests/testdata with the latest data from the exchange. \
                   Use it if you want to run your backtesting with up-to-date data.',
             action='store_true',
             dest='refresh_pairs',
@@ -234,12 +235,16 @@ class Arguments(object):
                 stop = None
                 if stype[0]:
                     start = rvals[index]
-                    if stype[0] != 'date':
+                    if stype[0] == 'date':
+                        start = arrow.get(start, 'YYYYMMDD').timestamp
+                    else:
                         start = int(start)
                     index += 1
                 if stype[1]:
                     stop = rvals[index]
-                    if stype[1] != 'date':
+                    if stype[1] == 'date':
+                        stop = arrow.get(stop, 'YYYYMMDD').timestamp
+                    else:
                         stop = int(stop)
                 return stype, start, stop
         raise Exception('Incorrect syntax for timerange "%s"' % text)
@@ -271,3 +276,17 @@ class Arguments(object):
             help='Export files to given dir',
             dest='export',
             default=None)
+
+        self.parser.add_argument(
+            '--days',
+            help='Download data for number of days',
+            dest='days',
+            type=int,
+            default=None)
+
+        self.parser.add_argument(
+            '--exchange',
+            help='Exchange name',
+            dest='exchange',
+            type=str,
+            default='bittrex')

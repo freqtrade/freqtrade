@@ -129,7 +129,7 @@ optional arguments:
                         world limitations
   -r, --refresh-pairs-cached
                         refresh the pairs files in tests/testdata with 
-                        the latest data from Bittrex. Use it if you want
+                        the latest data from the exchange. Use it if you want
                         to run your backtesting with up-to-date data.
 ```
 

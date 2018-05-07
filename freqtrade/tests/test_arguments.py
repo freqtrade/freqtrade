@@ -109,6 +109,13 @@ def test_parse_args_dynamic_whitelist_invalid_values() -> None:
 def test_parse_timerange_incorrect() -> None:
     assert ((None, 'line'), None, -200) == Arguments.parse_timerange('-200')
     assert (('line', None), 200, None) == Arguments.parse_timerange('200-')
+    assert (('index', 'index'), 200, 500) == Arguments.parse_timerange('200-500')
+
+    assert (('date', None), 1274486400, None) == Arguments.parse_timerange('20100522-')
+    assert ((None, 'date'), None, 1274486400) == Arguments.parse_timerange('-20100522')
+    timerange = Arguments.parse_timerange('20100522-20150730')
+    assert timerange == (('date', 'date'), 1274486400, 1438214400)
+
     with pytest.raises(Exception, match=r'Incorrect syntax.*'):
         Arguments.parse_timerange('-')
 
