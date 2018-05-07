@@ -258,7 +258,7 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--stop-loss',
-            help='Renders stop/loss informations in the main chart',
+            help='Renders stop/loss information in the main chart',
             dest='stoplossdisplay',
             action='store_true'
         )
@@ -274,14 +274,15 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--plot-cci',
-            help='Renders a cci chart of the given RSI dataframe name, for example --plot-cci cci',
+            help='Renders a cci chart of the given CCI dataframe name, for example --plot-cci cci',
             dest='plotcci',
             default=None
         )
 
         self.parser.add_argument(
             '--plot-macd',
-            help='Renders a macd chart of the given RSI dataframe name, for example --plot-macd macd',
+            help='Renders a macd chart of the given '
+                 'dataframe name, for example --plot-macd macd',
             dest='plotmacd',
             default=None
         )
@@ -295,10 +296,10 @@ class Arguments(object):
             type=str
         )
 
-
         self.parser.add_argument(
             '--plot-dataframe-marker',
-            help='Renders the specified dataframes as markers. Accepted values for a marker are either 100 or -100',
+            help='Renders the specified dataframes as markers. '
+                 'Accepted values for a marker are either 100 or -100',
             dest='plotdataframemarker',
             default=None,
             nargs='+',
@@ -307,11 +308,10 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--plot-volume',
-            help='plots the volume as a subchart',
+            help='plots the volume as a sub plot',
             dest='plotvolume',
             action='store_true'
         )
-
 
         self.parser.add_argument(
             '--plot-max-ticks',
@@ -320,5 +320,3 @@ class Arguments(object):
             default=750,
             type=int
         )
-
-
