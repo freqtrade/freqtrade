@@ -260,7 +260,9 @@ class Arguments(object):
             '--stop-loss',
             help='Renders stop/loss information in the main chart',
             dest='stoplossdisplay',
-            action='store_true'
+            action='store_true',
+            default=False
+
         )
 
         self.parser.add_argument(
@@ -276,6 +278,8 @@ class Arguments(object):
             '--plot-cci',
             help='Renders a cci chart of the given CCI dataframe name, for example --plot-cci cci',
             dest='plotcci',
+            nargs='+',
+
             default=None
         )
 
