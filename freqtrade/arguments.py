@@ -291,7 +291,16 @@ class Arguments(object):
             default=None,
             nargs='+',
             type=str
+        )
 
+
+        self.parser.add_argument(
+            '--plot-dataframe-marker',
+            help='Renders the specified dataframes as markers',
+            dest='plotdataframemarker',
+            default=None,
+            nargs='+',
+            type=str
         )
 
         self.parser.add_argument(
@@ -302,5 +311,12 @@ class Arguments(object):
         )
 
 
+        self.parser.add_argument(
+            '--plot-max-ticks',
+            help='specify an upper limit of how many ticks we can display',
+            dest='plotticks',
+            default=750,
+            type=int
+        )
 
 

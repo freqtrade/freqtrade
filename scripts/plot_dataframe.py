@@ -39,9 +39,10 @@ def plot_dataframes(data, fig, args):
     :return:
     """
 
-    for x in args.plotdataframe:
-        chart = go.Scattergl(x=data['date'], y=data[x], name=x)
-        fig.append_trace(chart, 1, 1)
+    if args.plotdataframe:
+        for x in args.plotdataframe:
+            chart = go.Scattergl(x=data['date'], y=data[x], name=x)
+            fig.append_trace(chart, 1, 1)
 
 
 def plot_volume_dataframe(data, fig, args, plotnumber):
@@ -112,6 +113,9 @@ def plot_stop_loss_trade(df_sell, fig, analyze, args):
     """
 
     if args.stoplossdisplay is False:
+        return
+
+    if 'associated_buy_price' not in df_sell:
         return
 
     stoploss = analyze.strategy.stoploss
@@ -231,9 +235,9 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     dataframe = analyze.populate_buy_trend(dataframe)
     dataframe = analyze.populate_sell_trend(dataframe)
 
-    if len(dataframe.index) > 750:
-        logger.warning('Ticker contained more than 750 candles, clipping.')
-    data = dataframe.tail(750)
+    if len(dataframe.index) > args.plotticks:
+        logger.warning('Ticker contained more than {} candles, clipping.'.format(args.plotticks))
+    data = dataframe.tail(args.plotticks)
 
     candles = go.Candlestick(
         x=data.date,
