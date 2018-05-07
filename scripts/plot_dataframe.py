@@ -109,8 +109,10 @@ def plot_rsi_dataframe(data, fig, args, plotnumber):
     :param args:
     :return:
     """
-    rsi = go.Scattergl(x=data['date'], y=data[args.plotrsi], name='RSI')
-    fig.append_trace(rsi, plotnumber, 1)
+    if args.plotrsi:
+        for x in args.plotrsi:
+            rsi = go.Scattergl(x=data['date'], y=data[x], name=x)
+            fig.append_trace(rsi, plotnumber, 1)
 
 
 def plot_cci_dataframe(data, fig, args, plotnumber):
@@ -122,7 +124,7 @@ def plot_cci_dataframe(data, fig, args, plotnumber):
     :param args:
     :return:
     """
-    chart = go.Scattergl(x=data['date'], y=data[args.plotcci], name='CCI')
+    chart = go.Scattergl(x=data['date'], y=data[args.plotcci], name=args.plotcci)
     fig.append_trace(chart, plotnumber, 1)
 
 
