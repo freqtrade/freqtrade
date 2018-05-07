@@ -296,7 +296,7 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--plot-dataframe-marker',
-            help='Renders the specified dataframes as markers',
+            help='Renders the specified dataframes as markers. Accepted values for a marker are either 100 or -100',
             dest='plotdataframemarker',
             default=None,
             nargs='+',

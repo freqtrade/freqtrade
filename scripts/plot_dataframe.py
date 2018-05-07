@@ -29,6 +29,33 @@ from freqtrade.configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
+def plot_dataframes_markers(data, fig, args):
+    """
+        plots additional dataframe markers in the main plot
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+
+    if args.plotdataframemarker:
+        for x in args.plotdataframemarker:
+            filter = data[(data[x] == 100 ) | (data[x] == -100) ]
+            marker = go.Scatter(
+                x=filter.date,
+                y=filter.low * 0.99,
+                mode='markers',
+                name=x,
+                marker=dict(
+                    symbol='diamond-tall-open',
+                    size=10,
+                    line=dict(width=1)
+                )
+
+            )
+
+            fig.append_trace(marker, 1, 1)
+
 
 def plot_dataframes(data, fig, args):
     """
@@ -337,6 +364,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     # plot other dataframes
     plot_dataframes(data, fig, args)
+    plot_dataframes_markers(data, fig, args)
 
     fig['layout'].update(title=args.pair)
     fig['layout']['yaxis1'].update(title='Price')
