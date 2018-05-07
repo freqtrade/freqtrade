@@ -124,8 +124,11 @@ def plot_cci_dataframe(data, fig, args, plotnumber):
     :param args:
     :return:
     """
-    chart = go.Scattergl(x=data['date'], y=data[args.plotcci], name=args.plotcci)
-    fig.append_trace(chart, plotnumber, 1)
+    if args.plotcci:
+        for x in args.plotcci:
+            chart = go.Scattergl(x=data['date'], y=data[x], name=x)
+            fig.append_trace(chart, plotnumber, 1)
+
 
 
 def plot_stop_loss_trade(df_sell, fig, analyze, args):
@@ -202,6 +205,7 @@ def find_profits(data):
     # find all previous buys
 
     df_sell = data[data['sell'] == 1]
+    df_sell['profit'] = 0
     df_buys = data[data['buy'] == 1]
     lastDate = data['date'].iloc[0]
 
