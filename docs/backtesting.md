@@ -33,10 +33,10 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation
 
 **With 1 min tickers**
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1
+python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
 ```
 
-**Reload your testdata files**
+**Update cached pairs with the latest data**
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
 ```
@@ -80,12 +80,9 @@ The full timerange specification:
 - Use last 123 tickframes of data: `--timerange=-123`
 - Use first 123 tickframes of data: `--timerange=123-`
 - Use tickframes from line 123 through 456: `--timerange=123-456`
-
-
-Incoming feature, not implemented yet:
-- `--timerange=-20180131`
--  `--timerange=20180101-`
-- `--timerange=20180101-20181231`
+- Use tickframes till 2018/01/31: `--timerange=-20180131`
+- Use tickframes since 2018/01/31: `--timerange=20180131-`
+- Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
 
 
 **Update testdata directory**
@@ -117,16 +114,16 @@ A backtesting result will look like that:
 ====================== BACKTESTING REPORT ================================
 pair        buy count    avg profit %    total profit BTC    avg duration
 --------  -----------  --------------  ------------------  --------------
-BTC_ETH            56           -0.67         -0.00075455            62.3
-BTC_LTC            38           -0.48         -0.00036315            57.9
-BTC_ETC            42           -1.15         -0.00096469            67.0
-BTC_DASH           72           -0.62         -0.00089368            39.9
-BTC_ZEC            45           -0.46         -0.00041387            63.2
-BTC_XLM            24           -0.88         -0.00041846            47.7
-BTC_NXT            24            0.68          0.00031833            40.2
-BTC_POWR           35            0.98          0.00064887            45.3
-BTC_ADA            43           -0.39         -0.00032292            55.0
-BTC_XMR            40           -0.40         -0.00032181            47.4
+ETH/BTC            56           -0.67         -0.00075455            62.3
+LTC/BTC            38           -0.48         -0.00036315            57.9
+ETC/BTC            42           -1.15         -0.00096469            67.0
+DASH/BTC           72           -0.62         -0.00089368            39.9
+ZEC/BTC            45           -0.46         -0.00041387            63.2
+XLM/BTC            24           -0.88         -0.00041846            47.7
+NXT/BTC            24            0.68          0.00031833            40.2
+POWR/BTC           35            0.98          0.00064887            45.3
+ADA/BTC            43           -0.39         -0.00032292            55.0
+XMR/BTC            40           -0.40         -0.00032181            47.4
 TOTAL             419           -0.41         -0.00348593            52.9
 ```
 

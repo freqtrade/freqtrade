@@ -17,10 +17,8 @@ from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.exchange import Bittrex
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
-
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +50,14 @@ class Backtesting(object):
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
         self.populate_buy_trend = self.analyze.populate_buy_trend
         self.populate_sell_trend = self.analyze.populate_sell_trend
-        exchange._API = Bittrex({'key': '', 'secret': ''})
+
+        # Reset keys for backtesting
+        self.config['exchange']['key'] = ''
+        self.config['exchange']['secret'] = ''
+        self.config['exchange']['password'] = ''
+        self.config['exchange']['uid'] = ''
+        self.config['dry_run'] = True
+        exchange.init(self.config)
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
@@ -109,12 +114,14 @@ class Backtesting(object):
 
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
+        fee = exchange.get_fee()
         trade = Trade(
             open_rate=buy_row.close,
             open_date=buy_row.date,
             stake_amount=stake_amount,
             amount=stake_amount / buy_row.open,
-            fee=exchange.get_fee()
+            fee_open=fee,
+            fee_close=fee
         )
 
         # calculate win/lose forwards from buy point

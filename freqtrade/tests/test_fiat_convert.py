@@ -77,8 +77,7 @@ def test_fiat_convert_find_price(mocker):
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
         fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
 
-    with pytest.raises(ValueError, match=r'The crypto symbol XRP is not supported.'):
-        fiat_convert.get_price(crypto_symbol='XRP', fiat_symbol='USD')
+    assert fiat_convert.get_price(crypto_symbol='XRP', fiat_symbol='USD') == 0.0
 
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=12345.0)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 12345.0

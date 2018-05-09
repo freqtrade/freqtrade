@@ -4,7 +4,6 @@ import os
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade.exchange import Exchanges
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
@@ -96,7 +95,7 @@ def test_init_prod_db(default_conf, mocker):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_with_bittrex(limit_buy_order, limit_sell_order):
+def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     """
     On this test we will buy and sell a crypto currency.
 
@@ -125,10 +124,11 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     """
 
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
     assert trade.open_order_id is None
     assert trade.open_rate is None
@@ -151,12 +151,13 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
+def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
 
     trade.open_order_id = 'something'
@@ -174,12 +175,13 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_exception(limit_buy_order):
+def test_calc_close_trade_price_exception(limit_buy_order, fee):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
 
     trade.open_order_id = 'something'
@@ -190,10 +192,11 @@ def test_calc_close_trade_price_exception(limit_buy_order):
 @pytest.mark.usefixtures("init_persistence")
 def test_update_open_order(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=1.00,
-        fee=0.1,
-        exchange=Exchanges.BITTREX,
+        fee_open=0.1,
+        fee_close=0.1,
+        exchange='bittrex',
     )
 
     assert trade.open_order_id is None
@@ -201,7 +204,7 @@ def test_update_open_order(limit_buy_order):
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    limit_buy_order['closed'] = False
+    limit_buy_order['status'] = 'open'
     trade.update(limit_buy_order)
 
     assert trade.open_order_id is None
@@ -213,10 +216,11 @@ def test_update_open_order(limit_buy_order):
 @pytest.mark.usefixtures("init_persistence")
 def test_update_invalid_order(limit_buy_order):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=1.00,
-        fee=0.1,
-        exchange=Exchanges.BITTREX,
+        fee_open=0.1,
+        fee_close=0.1,
+        exchange='bittrex',
     )
     limit_buy_order['type'] = 'invalid'
     with pytest.raises(ValueError, match=r'Unknown order type'):
@@ -224,12 +228,13 @@ def test_update_invalid_order(limit_buy_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_price(limit_buy_order):
+def test_calc_open_trade_price(limit_buy_order, fee):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
     trade.open_order_id = 'open_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -242,12 +247,13 @@ def test_calc_open_trade_price(limit_buy_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
+def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
     trade.open_order_id = 'close_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -264,12 +270,13 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit(limit_buy_order, limit_sell_order):
+def test_calc_profit(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
     trade.open_order_id = 'profit_percent'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -295,12 +302,13 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit_percent(limit_buy_order, limit_sell_order):
+def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
-        fee=0.0025,
-        exchange=Exchanges.BITTREX,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
     )
     trade.open_order_id = 'profit_percent'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -319,40 +327,43 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     assert trade.calc_profit_percent(fee=0.003) == 0.0614782
 
 
-def test_clean_dry_run_db(default_conf):
+def test_clean_dry_run_db(default_conf, fee):
     init(default_conf, create_engine('sqlite://'))
 
     # Simulate dry_run entries
     trade = Trade(
-        pair='BTC_ETH',
+        pair='ETH/BTC',
         stake_amount=0.001,
         amount=123.0,
-        fee=0.0025,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.123,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='dry_run_buy_12345'
     )
     Trade.session.add(trade)
 
     trade = Trade(
-        pair='BTC_ETC',
+        pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
-        fee=0.0025,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.123,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='dry_run_sell_12345'
     )
     Trade.session.add(trade)
 
     # Simulate prod entry
     trade = Trade(
-        pair='BTC_ETC',
+        pair='ETC/BTC',
         stake_amount=0.001,
         amount=123.0,
-        fee=0.0025,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
         open_rate=0.123,
-        exchange='BITTREX',
+        exchange='bittrex',
         open_order_id='prod_buy_12345'
     )
     Trade.session.add(trade)

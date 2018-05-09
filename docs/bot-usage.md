@@ -123,13 +123,13 @@ optional arguments:
   -h, --help            show this help message and exit
   -l, --live            using live data
   -i INT, --ticker-interval INT
-                        specify ticker interval in minutes (default: 5)
+                        specify ticker interval (default: '5m')
   --realistic-simulation
                         uses max_open_trades from config to simulate real
                         world limitations
   -r, --refresh-pairs-cached
                         refresh the pairs files in tests/testdata with 
-                        the latest data from Bittrex. Use it if you want
+                        the latest data from the exchange. Use it if you want
                         to run your backtesting with up-to-date data.
 ```
 
