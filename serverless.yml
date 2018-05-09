@@ -1,0 +1,198 @@
+service: stasis
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+plugins:
+  - serverless-domain-manager
+  - serverless-python-requirements
+
+############################################################################################
+# configure out provider and the security guide lines
+############################################################################################
+provider:
+  name: aws
+  runtime: python3.6
+  region: us-west-2
+
+  #required permissions
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/*"
+    - Effect: Allow
+      Action:
+        - SNS:*
+      Resource: { "Fn::Join" : [":", ["arn:aws:sns:${self:custom.region}",  "*:*" ] ]  }
+
+  memorySize: 128
+  timeout: 90
+  versionFunctions: false
+
+  logRetentionInDays: 3
+
+  #where to store out data, needs to be manually created!
+  deploymentBucket:
+    name: lambdas-stasis
+
+############################################################################################
+#custom configuration settings
+############################################################################################
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  region: ${opt:region, self:provider.region}
+
+  snsTopic: "StasisQueue-${self:custom.stage}"
+
+  trackingTable: "StasisTrackingTable-${self:custom.stage}"
+  acquisitionTable: "StasisMetaDataTable-${self:custom.stage}"
+  resultTable: "StasisResultTable-${self:custom.stage}"
+
+  ###
+  # custom domain management
+  ###
+
+  domains:
+    prod: api.metabolomics.us
+    test: test-api.metabolomics.us
+    dev:  dev-api.metabolomics.us
+
+  customDomain:
+    basePath: "stasis"
+    domainName: ${self:custom.domains.${self:custom.stage}}
+    stage: "${self:custom.stage}"
+    createRoute53Record: true
+
+  pythonRequirements:
+    dockerizePip: non-linux
+############################################################################################
+# this section defines all lambda function and triggers
+############################################################################################
+functions:
+
+
+  #fetches an result record
+  resultGet:
+    handler: stasis/results/get.get
+    events:
+      - http:
+          path: result/{sample}
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                sample: true
+    #defines to which topic we want to connect
+    environment:
+      resultTable: ${self:custom.resultTable}
+      topic: ${self:custom.snsTopic}
+
+  #fetches an result record
+  resultCreate:
+    handler: stasis/results/create.create
+    events:
+      - http:
+          path: result
+          method: post
+          cors: true
+
+    #defines to which topic we want to connect
+    environment:
+      resultTable: ${self:custom.resultTable}
+      topic: ${self:custom.snsTopic}
+
+
+  #creates a new tracking record in the system
+  trackingCreate:
+    handler: stasis/tracking/create.create
+    events:
+      - http:
+          path: tracking
+          method: post
+          cors: true
+
+    #defines to which topic we want to connect
+    environment:
+      topic: ${self:custom.snsTopic}
+
+  #fetches an existing tracking record from the system
+  trackingGet:
+    handler: stasis/tracking/get.get
+    events:
+      - http:
+          path: tracking/{sample}
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                sample: true
+
+    #defines to which topic we want to connect
+    environment:
+      trackingTable: ${self:custom.trackingTable}
+
+  #fetches an acquisition record
+  acquisitionGet:
+    handler: stasis/acquisition/get.get
+    events:
+      - http:
+          path: acquisition/{sample}
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                sample: true
+    #defines to which topic we want to connect
+    environment:
+      acquisitionTable: ${self:custom.acquisitionTable}
+      topic: ${self:custom.snsTopic}
+
+  #fetches an acquisition record
+  acquisitionCreate:
+    handler: stasis/acquisition/create.create
+    events:
+      - http:
+          path: acquisition
+          method: post
+          cors: true
+
+    #defines to which topic we want to connect
+    environment:
+      acquisitionTable: ${self:custom.acquisitionTable}
+      topic: ${self:custom.snsTopic}
+
+  #imports data from MiniX
+  acquisitionCreateFromMinix:
+    handler: stasis/acquisition/create.fromMinix
+    events:
+      - http:
+          path: acquisition/import/minix
+          method: post
+          cors: true
+
+    #defines to which topic we want to connect
+    environment:
+      acquisitionTable: ${self:custom.acquisitionTable}
+      topic: ${self:custom.snsTopic}
+
+
+  #monitors our event queue for received messages and routes them
+  #no public exposure
+  backtest:
+    memorySize: 128
+
+    handler: stasis/route/route.route
+    events:
+      - sns: ${self:custom.snsTopic}
+    environment:
+      trackingTable: ${self:custom.trackingTable}
+      acquisitionTable: ${self:custom.acquisitionTable}
+      topic: ${self:custom.snsTopic}

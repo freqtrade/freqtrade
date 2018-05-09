@@ -15,6 +15,10 @@ from freqtrade.analyze import Analyze
 from freqtrade import constants
 from freqtrade.freqtradebot import FreqtradeBot
 
+import moto
+import boto3
+import os
+
 logging.getLogger('').setLevel(logging.INFO)
 
 
@@ -585,3 +589,34 @@ def buy_order_fee():
         'status': 'closed',
         'fee': None
     }
+
+
+@pytest.fixture
+def lambda_context():
+
+    # mock the different AWS features we need
+    sns = moto.mock_sns()
+    sns.start()
+
+    dynamo = moto.mock_dynamodb2()
+    dynamo.start()
+
+    lamb = moto.mock_lambda()
+    lamb.start()
+
+    session = boto3.session.Session()
+
+    client = session.client('sns')
+
+    os.environ["topic"] = "UnitTestTopic"
+    os.environ["trackingTable"] = "UnitTrackingTable"
+    os.environ["acquisitionTable"] = "UnitAcquisitionTable"
+    os.environ["resultTable"] = "UnitResultTable"
+
+    dynamodb = boto3.resource('dynamodb')
+
+    # here we will define required tables later
+    yield
+    sns.stop()
+    dynamo.stop()
+    lamb.stop()
