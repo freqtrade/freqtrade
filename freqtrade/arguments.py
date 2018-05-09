@@ -255,3 +255,72 @@ class Arguments(object):
             dest='pair',
             default=None
         )
+
+        self.parser.add_argument(
+            '--stop-loss',
+            help='Renders stop/loss information in the main chart',
+            dest='stoplossdisplay',
+            action='store_true',
+            default=False
+
+        )
+
+        self.parser.add_argument(
+            '--plot-rsi',
+            help='Renders a rsi chart of the given RSI dataframe name, for example --plot-rsi rsi',
+            dest='plotrsi',
+            nargs='+',
+            default=None
+
+        )
+
+        self.parser.add_argument(
+            '--plot-cci',
+            help='Renders a cci chart of the given CCI dataframe name, for example --plot-cci cci',
+            dest='plotcci',
+            nargs='+',
+
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-macd',
+            help='Renders a macd chart of the given '
+                 'dataframe name, for example --plot-macd macd',
+            dest='plotmacd',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-dataframe',
+            help='Renders the specified dataframes',
+            dest='plotdataframe',
+            default=None,
+            nargs='+',
+            type=str
+        )
+
+        self.parser.add_argument(
+            '--plot-dataframe-marker',
+            help='Renders the specified dataframes as markers. '
+                 'Accepted values for a marker are either 100 or -100',
+            dest='plotdataframemarker',
+            default=None,
+            nargs='+',
+            type=str
+        )
+
+        self.parser.add_argument(
+            '--plot-volume',
+            help='plots the volume as a sub plot',
+            dest='plotvolume',
+            action='store_true'
+        )
+
+        self.parser.add_argument(
+            '--plot-max-ticks',
+            help='specify an upper limit of how many ticks we can display',
+            dest='plotticks',
+            default=750,
+            type=int
+        )
