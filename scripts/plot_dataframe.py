@@ -27,11 +27,7 @@ from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 
-<<<<<<< HEAD
 logger = logging.getLogger('freqtrade')
-=======
-logger = logging.getLogger(__name__)
->>>>>>> bddf009a2b6d0e1a19cca558887ce972e99a6238
 
 def plot_dataframes_markers(data, fig, args):
     """
