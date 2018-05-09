@@ -607,12 +607,6 @@ def lambda_context():
     session = boto3.session.Session()
 
     client = session.client('sns')
-
-    os.environ["topic"] = "UnitTestTopic"
-    os.environ["trackingTable"] = "UnitTrackingTable"
-    os.environ["acquisitionTable"] = "UnitAcquisitionTable"
-    os.environ["resultTable"] = "UnitResultTable"
-
     dynamodb = boto3.resource('dynamodb')
 
     # here we will define required tables later

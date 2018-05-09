@@ -24,7 +24,7 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
-from freqtradeimport constants
+from freqtrade import constants
 
 
 import freqtrade.optimize as optimize
