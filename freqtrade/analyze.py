@@ -197,16 +197,17 @@ class Analyze(object):
         current_profit = trade.calc_profit_percent(current_rate)
 
         if trade.stop_loss is None:
-            # initially adjust the stop loss to it's default value
-            trade.adjust_stop_loss(current_rate, self.strategy.stoploss)
+            # initially adjust the stop loss to the base value
+            trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss)
 
-        # evaluate stop loss, before we continue
+        # evaluate if the stoploss was hit
         if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
             logger.debug('Stop loss hit.')
             return True
 
         # update the stop loss afterwards, after all by definition it's supposed to be hanging
-        trade.adjust_stop_loss(current_rate, self.strategy.stoploss)
+        if 'trailing_stop' in self.config and self.config['trailing_stop']:
+            trade.adjust_stop_loss(current_rate, self.strategy.stoploss)
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60

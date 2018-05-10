@@ -117,21 +117,20 @@ class Trade(_DECL_BASE):
         """
 
         new_loss = Decimal(current_price * (1 - abs(stoploss)))
-        logger.debug("calculated stop loss at: {:.6f}".format(new_loss))
+
         if self.stop_loss is None:
             logger.debug("assigning new stop loss")
             self.stop_loss = new_loss  # no stop loss assigned yet
         else:
-            if _CONF.get('trailing_stop', True):
-                if new_loss > self.stop_loss:  # stop losses only walk up, never down!
-                    self.stop_loss = new_loss
-                    logger.debug("adjusted stop loss for {:.6f} and {:.6f} to {:.6f}".format(
-                        current_price, stoploss, self.stop_loss)
-                    )
-                else:
-                    logger.debug("keeping current stop loss of {:.6f}".format(self.stop_loss))
+            if new_loss > self.stop_loss:  # stop losses only walk up, never down!
+                self.stop_loss = new_loss
+                logger.debug("adjusted stop loss")
             else:
-                print("utilizing fixed stop")
+                logger.debug("keeping current stop loss")
+
+        print("{} - current price {:.6f}, calculated stop loss at: {:.6f} old loss at {:.6f}".format(self.id, current_price,
+                                                                                                 new_loss,
+                                                                                                 self.stop_loss))
 
     def update(self, order: Dict) -> None:
         """
