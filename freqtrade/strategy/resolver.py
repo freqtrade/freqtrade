@@ -6,13 +6,17 @@ This module load custom strategies
 import importlib.util
 import inspect
 import logging
-import os
 from collections import OrderedDict
 from typing import Optional, Dict, Type
 
 from freqtrade import constants
 from freqtrade.strategy.interface import IStrategy
-
+import validators
+import tempfile
+from urllib.parse import urlparse
+from urllib.request import urlretrieve
+import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +81,14 @@ class StrategyResolver(object):
         if extra_dir:
             # Add extra strategy directory on top of search paths
             abs_paths.insert(0, extra_dir)
+
+        if validators.url(strategy_name):
+            temp = tempfile.mkdtemp("freq", "strategy")
+            abs_paths.insert(0, temp)
+            name = os.path.basename(urlparse(strategy_name).path)
+            urlretrieve(strategy_name, os.path.join(temp, name))
+            Path(os.path.join(temp, "__init__.py")).touch()
+            strategy_name = os.path.splitext(name)[0]
 
         for path in abs_paths:
             strategy = self._search_strategy(path, strategy_name)
