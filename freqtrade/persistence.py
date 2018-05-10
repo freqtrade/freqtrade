@@ -95,6 +95,7 @@ class Trade(_DECL_BASE):
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
     open_order_id = Column(String)
+    stop_loss = Column(Float, nullable=False, default=0.0)  # absolute value of the stop loss
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
@@ -104,6 +105,33 @@ class Trade(_DECL_BASE):
             self.open_rate,
             arrow.get(self.open_date).humanize() if self.is_open else 'closed'
         )
+
+    def adjust_stop_loss(self, current_price, stoploss):
+        """
+
+        this adjusts the stop loss to it's most recently observed
+        setting
+        :param current_price:
+        :param stoploss:
+        :return:
+        """
+
+        new_loss = Decimal(current_price * (1 - abs(stoploss)))
+        logger.debug("calculated stop loss at: {:.6f}".format(new_loss))
+        if self.stop_loss is None:
+            logger.debug("assigning new stop loss")
+            self.stop_loss = new_loss  # no stop loss assigned yet
+        else:
+            if _CONF.get('trailing_stop', True):
+                if new_loss > self.stop_loss:  # stop losses only walk up, never down!
+                    self.stop_loss = new_loss
+                    logger.debug("adjusted stop loss for {:.6f} and {:.6f} to {:.6f}".format(
+                        current_price, stoploss, self.stop_loss)
+                    )
+                else:
+                    logger.debug("keeping current stop loss of {:.6f}".format(self.stop_loss))
+            else:
+                print("utilizing fixed stop")
 
     def update(self, order: Dict) -> None:
         """

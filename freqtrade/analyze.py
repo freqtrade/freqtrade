@@ -14,7 +14,6 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.persistence import Trade
 from freqtrade.strategy.resolver import StrategyResolver
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +30,7 @@ class Analyze(object):
     Analyze class contains everything the bot need to determine if the situation is good for
     buying or selling.
     """
+
     def __init__(self, config: dict) -> None:
         """
         Init Analyze
@@ -195,9 +195,18 @@ class Analyze(object):
         :return True if bot should sell at current rate
         """
         current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
+
+        if trade.stop_loss is None:
+            # initially adjust the stop loss to it's default value
+            trade.adjust_stop_loss(current_rate, self.strategy.stoploss)
+
+        # evaluate stop loss, before we continue
+        if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
             logger.debug('Stop loss hit.')
             return True
+
+        # update the stop loss afterwards, after all by definition it's supposed to be hanging
+        trade.adjust_stop_loss(current_rate, self.strategy.stoploss)
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
