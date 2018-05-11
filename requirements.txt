@@ -23,6 +23,3 @@ coinmarketcap==4.2.1
 
 # Required for plotting data
 #plotly==2.3.0
-
-# Required for dynamic strategy loading from urls
-validators
