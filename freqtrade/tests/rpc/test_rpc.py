@@ -67,6 +67,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         '*Close Rate:* `None`\n'
         '*Current Rate:* `0.00001098`\n'
         '*Close Profit:* `None`\n'
+        '*Stake Value:* `0.00099909`\n'
         '*Current Profit:* `-0.59%`\n'
         '*Open Order:* `(limit buy rem=0.00000000)`'
     ]
@@ -106,6 +107,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert 'just now' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
     assert '-0.59%' in result['Profit'].all()
+    assert 'Value' in result
 
 
 def test_rpc_daily_profit(default_conf, update, ticker, fee,

@@ -63,6 +63,7 @@ class RPC(object):
                           "*Close Rate:* `{close_rate}`\n" \
                           "*Current Rate:* `{current_rate:.8f}`\n" \
                           "*Close Profit:* `{close_profit}`\n" \
+                          "*Stake Value:* `{stake_value}`\n" \
                           "*Current Profit:* `{current_profit:.2f}%`\n" \
                           "*Open Order:* `{open_order}`"\
                           .format(
@@ -75,6 +76,7 @@ class RPC(object):
                               current_rate=current_rate,
                               amount=round(trade.amount, 8),
                               close_profit=fmt_close_profit,
+                              stake_value=round(current_rate * trade.amount, 8),
                               current_profit=round(current_profit * 100, 2),
                               open_order='({} {} rem={:.8f})'.format(
                                   order['type'], order['side'], order['remaining']
@@ -98,10 +100,11 @@ class RPC(object):
                     trade.id,
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
+                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate)),
+                    '{:.8f}'.format(trade.amount * current_rate)
                 ])
 
-            columns = ['ID', 'Pair', 'Since', 'Profit']
+            columns = ['ID', 'Pair', 'Since', 'Profit', 'Value']
             df_statuses = DataFrame.from_records(trades_list, columns=columns)
             df_statuses = df_statuses.set_index(columns[0])
             # The style used throughout is to return a tuple
