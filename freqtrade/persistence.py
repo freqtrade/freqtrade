@@ -96,6 +96,8 @@ class Trade(_DECL_BASE):
     close_date = Column(DateTime)
     open_order_id = Column(String)
     stop_loss = Column(Float, nullable=False, default=0.0)  # absolute value of the stop loss
+    initial_stop_loss = Column(Float, nullable=False, default=0.0)  # absolute value of the initial stop loss
+    max_rate = Column(Float, nullable=False, default=0.0)  # absolute value of the highest reached price
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
@@ -118,9 +120,20 @@ class Trade(_DECL_BASE):
 
         new_loss = Decimal(current_price * (1 - abs(stoploss)))
 
+        # keeping track of the highest observed rate for this trade
+        if self.max_rate is None:
+            self.max_rate = current_price
+        else:
+            if current_price > self.max_rate:
+                self.max_rate = current_price
+
+        # no stop loss assigned yet
         if self.stop_loss is None:
             logger.debug("assigning new stop loss")
-            self.stop_loss = new_loss  # no stop loss assigned yet
+            self.stop_loss = new_loss
+            self.initial_stop_loss = new_loss
+
+        # evaluate if the stop loss needs to be updated
         else:
             if new_loss > self.stop_loss:  # stop losses only walk up, never down!
                 self.stop_loss = new_loss
@@ -128,9 +141,16 @@ class Trade(_DECL_BASE):
             else:
                 logger.debug("keeping current stop loss")
 
-        print("{} - current price {:.6f}, calculated stop loss at: {:.6f} old loss at {:.6f}".format(self.id, current_price,
-                                                                                                 new_loss,
-                                                                                                 self.stop_loss))
+        print(
+            "{} - current price {:.6f}, bought at {:.6f} and calculated "
+            "stop loss is at: {:.6f} initial stop at {:.6f}. trailing stop loss saved us: {:.6f} "
+            "and max observed rate was {:.6f}".format(
+                self.pair, current_price, self.open_rate,
+                self.initial_stop_loss,
+                self.stop_loss, self.stop_loss - self.initial_stop_loss,
+                self.max_rate
+
+            ))
 
     def update(self, order: Dict) -> None:
         """
