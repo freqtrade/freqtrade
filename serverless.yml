@@ -1,4 +1,4 @@
-service: stasis
+service: freq
 
 frameworkVersion: ">=1.1.0 <2.0.0"
 
@@ -12,7 +12,7 @@ plugins:
 provider:
   name: aws
   runtime: python3.6
-  region: us-west-2
+  region: us-east-1
 
   #required permissions
   iamRoleStatements:
@@ -38,7 +38,7 @@ provider:
 
   #where to store out data, needs to be manually created!
   deploymentBucket:
-    name: lambdas-stasis
+    name: lambdas-freq
 
 ############################################################################################
 #custom configuration settings
@@ -47,24 +47,17 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   region: ${opt:region, self:provider.region}
 
-  snsTopic: "StasisQueue-${self:custom.stage}"
-
-  trackingTable: "StasisTrackingTable-${self:custom.stage}"
-  acquisitionTable: "StasisMetaDataTable-${self:custom.stage}"
-  resultTable: "StasisResultTable-${self:custom.stage}"
+  snsTopic: "FreqQueue-${self:custom.stage}"
+  tradeTable: "FreqTradesTable-${self:custom.stage}"
+  strategyTable: "FreqStrategyTable-${self:custom.stage}"
 
   ###
   # custom domain management
   ###
 
-  domains:
-    prod: api.metabolomics.us
-    test: test-api.metabolomics.us
-    dev:  dev-api.metabolomics.us
-
   customDomain:
-    basePath: "stasis"
-    domainName: ${self:custom.domains.${self:custom.stage}}
+    basePath: "${self:custom.stage}"
+    domainName: "freq.isaac.international"
     stage: "${self:custom.stage}"
     createRoute53Record: true
 
@@ -75,124 +68,112 @@ custom:
 ############################################################################################
 functions:
 
-
-  #fetches an result record
-  resultGet:
-    handler: stasis/results/get.get
-    events:
-      - http:
-          path: result/{sample}
-          method: get
-          cors: true
-          request:
-            parameter:
-              paths:
-                sample: true
-    #defines to which topic we want to connect
-    environment:
-      resultTable: ${self:custom.resultTable}
-      topic: ${self:custom.snsTopic}
-
-  #fetches an result record
-  resultCreate:
-    handler: stasis/results/create.create
-    events:
-      - http:
-          path: result
-          method: post
-          cors: true
-
-    #defines to which topic we want to connect
-    environment:
-      resultTable: ${self:custom.resultTable}
-      topic: ${self:custom.snsTopic}
-
-
-  #creates a new tracking record in the system
-  trackingCreate:
-    handler: stasis/tracking/create.create
-    events:
-      - http:
-          path: tracking
-          method: post
-          cors: true
-
-    #defines to which topic we want to connect
-    environment:
-      topic: ${self:custom.snsTopic}
-
-  #fetches an existing tracking record from the system
-  trackingGet:
-    handler: stasis/tracking/get.get
-    events:
-      - http:
-          path: tracking/{sample}
-          method: get
-          cors: true
-          request:
-            parameter:
-              paths:
-                sample: true
-
-    #defines to which topic we want to connect
-    environment:
-      trackingTable: ${self:custom.trackingTable}
-
-  #fetches an acquisition record
-  acquisitionGet:
-    handler: stasis/acquisition/get.get
-    events:
-      - http:
-          path: acquisition/{sample}
-          method: get
-          cors: true
-          request:
-            parameter:
-              paths:
-                sample: true
-    #defines to which topic we want to connect
-    environment:
-      acquisitionTable: ${self:custom.acquisitionTable}
-      topic: ${self:custom.snsTopic}
-
-  #fetches an acquisition record
-  acquisitionCreate:
-    handler: stasis/acquisition/create.create
-    events:
-      - http:
-          path: acquisition
-          method: post
-          cors: true
-
-    #defines to which topic we want to connect
-    environment:
-      acquisitionTable: ${self:custom.acquisitionTable}
-      topic: ${self:custom.snsTopic}
-
-  #imports data from MiniX
-  acquisitionCreateFromMinix:
-    handler: stasis/acquisition/create.fromMinix
-    events:
-      - http:
-          path: acquisition/import/minix
-          method: post
-          cors: true
-
-    #defines to which topic we want to connect
-    environment:
-      acquisitionTable: ${self:custom.acquisitionTable}
-      topic: ${self:custom.snsTopic}
-
-
-  #monitors our event queue for received messages and routes them
-  #no public exposure
-  backtest:
+  #TODO
+  #returns all known strategy names from the server
+  #and if they are private or not
+  strategies:
     memorySize: 128
+    handler: freqtrade/aws/strategy.names
+    events:
+      - http:
+          path: strategies
+          method: get
+          cors: true
 
-    handler: stasis/route/route.route
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+
+  #TODO
+  #returns the performance for the given strategy
+  performance:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.performance
+    events:
+      - http:
+          path: strategies/{name}/performance
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                name: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+
+  #TODO
+  #returns the source code of this given strategy
+  #unless it's private
+  code:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.code
+    events:
+      - http:
+          path: strategies/{name}/code
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                name: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+
+  #TODO
+  # returns the generated Isaac rewards
+  # for the given strategy
+  rewards:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.rewards
+    events:
+      - http:
+          path: strategies/{name}/rewards
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                name: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+
+  #TODO
+  #submits a new strategy to the system
+  submit:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.submit
+    events:
+      - http:
+          path: submit
+          method: post
+          cors: true
+
+    environment:
+      topic: ${self:custom.snsTopic}
+      strategyTable: ${self:custom.strategyTable}
+
+  #TODO
+  #backtests the strategy
+  backtest:
+    memorySize: 256
+    handler: freqtrade/aws/backtesting_lambda.run
+
     events:
       - sns: ${self:custom.snsTopic}
     environment:
-      trackingTable: ${self:custom.trackingTable}
-      acquisitionTable: ${self:custom.acquisitionTable}
       topic: ${self:custom.snsTopic}
+      tradeTable: ${self:custom.tradeTable}
+
+  #TODO
+  # schedules all registered strategies on a daily base
+  daily:
+    memorySize: 128
+    handler: freqtrade/aws/backtesting_lambda.run
+
+    events:
+      - sns: ${self:custom.snsTopic}
+    environment:
+      topic: ${self:custom.snsTopic}
+      strategyTable: ${self:custom.strategyTable}

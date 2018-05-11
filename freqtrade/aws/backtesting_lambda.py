@@ -20,9 +20,20 @@ def backtest(event, context):
             no return
     """
 
-
     backtesting = Backtesting()
     backtesting.start()
 
     pass
 
+
+def submit(event, context):
+
+    """
+
+    this functions submits a new strategy to the backtesting queue
+
+    :param event:
+    :param context:
+    :return:
+    """
+    pass
