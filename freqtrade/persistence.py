@@ -73,8 +73,9 @@ def check_migrate(engine) -> None:
 
     if not has_column(cols, 'fee_open'):
         # Schema migration necessary
-        engine.execute("create table trades_bak as select * from trades;")
-
+        engine.execute("drop table if exists trades_bak")
+        engine.execute("create table trades_bak as select * from trades")
+        engine.execute("drop table if exists trades")
         # let SQLAlchemy create the schema as required
         _DECL_BASE.metadata.create_all(engine)
 
@@ -90,18 +91,14 @@ def check_migrate(engine) -> None:
                 from trades_bak
              """)
 
-        # engine.execute("alter table trades add fee_open float not null")
-        # engine.execute("alter table trades add fee_close float not null")
-        # # Update fee_open and fee_close with "fee" column values
-        # engine.execute("update trades set fee_open = fee, fee_close = fee where fee_open is null")
-        # engine.execute("alter table trades drop fee_close float not null")
+        # Reread columns - the above recreated the table!
+        inspector = inspect(engine)
+        cols = inspector.get_columns('trades')
 
     if not has_column(cols, 'open_rate_requested'):
         engine.execute("alter table trades add open_rate_requested float")
     if not has_column(cols, 'close_rate_requested'):
         engine.execute("alter table trades add close_rate_requested float")
-
-
 
 
 def cleanup() -> None:
