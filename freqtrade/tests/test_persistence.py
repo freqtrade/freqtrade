@@ -377,7 +377,10 @@ def test_clean_dry_run_db(default_conf, fee):
     assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 1
 
 
-def test_migrate(default_conf, fee):
+def test_migrate_old(default_conf, fee):
+    """
+    Test Database migration(starting with old pairformat)
+    """
     amount = 103.223
     create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
                                 id INTEGER NOT NULL,
@@ -421,3 +424,56 @@ def test_migrate(default_conf, fee):
     assert trade.is_open == 1
     assert trade.amount == amount
     assert trade.stake_amount == default_conf.get("stake_amount")
+    assert trade.pair == "ETC/BTC"
+    assert trade.exchange == "bittrex"
+
+
+def test_migrate_new(default_conf, fee):
+    """
+    Test Database migration (starting with new pairformat)
+    """
+    amount = 103.223
+    create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
+                                id INTEGER NOT NULL,
+                                exchange VARCHAR NOT NULL,
+                                pair VARCHAR NOT NULL,
+                                is_open BOOLEAN NOT NULL,
+                                fee FLOAT NOT NULL,
+                                open_rate FLOAT,
+                                close_rate FLOAT,
+                                close_profit FLOAT,
+                                stake_amount FLOAT NOT NULL,
+                                amount FLOAT,
+                                open_date DATETIME NOT NULL,
+                                close_date DATETIME,
+                                open_order_id VARCHAR,
+                                PRIMARY KEY (id),
+                                CHECK (is_open IN (0, 1))
+                                );"""
+    insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
+                          open_rate, stake_amount, amount, open_date)
+                          VALUES ('binance', 'ETC/BTC', 1, {fee},
+                          0.00258580, {stake}, {amount},
+                          '2019-11-28 12:44:24.000000')
+                          """.format(fee=fee.return_value,
+                                     stake=default_conf.get("stake_amount"),
+                                     amount=amount
+                                     )
+    engine = create_engine('sqlite://')
+    # Create table using the old format
+    engine.execute(create_table_old)
+    engine.execute(insert_table_old)
+    # Run init to test migration
+    init(default_conf, engine)
+
+    assert len(Trade.query.filter(Trade.id == 1).all()) == 1
+    trade = Trade.query.filter(Trade.id == 1).first()
+    assert trade.fee_open == fee.return_value
+    assert trade.fee_close == fee.return_value
+    assert trade.open_rate_requested is None
+    assert trade.close_rate_requested is None
+    assert trade.is_open == 1
+    assert trade.amount == amount
+    assert trade.stake_amount == default_conf.get("stake_amount")
+    assert trade.pair == "ETC/BTC"
+    assert trade.exchange == "binance"
