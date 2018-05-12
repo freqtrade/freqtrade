@@ -121,25 +121,6 @@ functions:
       strategyTable: ${self:custom.strategyTable}
 
   #TODO
-  # returns the generated Isaac rewards
-  # for the given strategy
-  rewards:
-    memorySize: 128
-    handler: freqtrade/aws/strategy.rewards
-    events:
-      - http:
-          path: strategies/{name}/rewards
-          method: get
-          cors: true
-          request:
-            parameter:
-              paths:
-                name: true
-
-    environment:
-      strategyTable: ${self:custom.strategyTable}
-
-  #TODO
   #submits a new strategy to the system
   submit:
     memorySize: 128
