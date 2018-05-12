@@ -15,6 +15,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import inspect
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +52,59 @@ def init(config: dict, engine: Optional[Engine] = None) -> None:
     Trade.session = session()
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)
+    check_migrate(engine)
 
     # Clean dry_run DB
     if _CONF.get('dry_run', False) and _CONF.get('dry_run_db', False):
         clean_dry_run_db()
+
+
+def has_column(columns, searchname: str) -> bool:
+    return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
+
+
+def check_migrate(engine) -> None:
+    """
+    Checks if migration is necessary and migrates if necessary
+    """
+    inspector = inspect(engine)
+
+    cols = inspector.get_columns('trades')
+
+    if not has_column(cols, 'fee_open'):
+        # Schema migration necessary
+        engine.execute("alter table trades rename to trades_bak")
+        # let SQLAlchemy create the schema as required
+        _DECL_BASE.metadata.create_all(engine)
+
+        # Copy data back - following the correct schema
+        engine.execute("""insert into trades
+                (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
+                open_rate_requested, close_rate, close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id)
+            select id, lower(exchange),
+                case
+                    when instr(pair, '_') != 0 then
+                    substr(pair,    instr(pair, '_') + 1) || '/' ||
+                    substr(pair, 1, instr(pair, '_') - 1)
+                    else pair
+                    end
+                pair,
+                is_open, fee fee_open, fee fee_close,
+                open_rate, null open_rate_requested, close_rate,
+                null close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id
+                from trades_bak
+             """)
+
+        # Reread columns - the above recreated the table!
+        inspector = inspect(engine)
+        cols = inspector.get_columns('trades')
+
+    if not has_column(cols, 'open_rate_requested'):
+        engine.execute("alter table trades add open_rate_requested float")
+    if not has_column(cols, 'close_rate_requested'):
+        engine.execute("alter table trades add close_rate_requested float")
 
 
 def cleanup() -> None:
@@ -88,7 +139,9 @@ class Trade(_DECL_BASE):
     fee_open = Column(Float, nullable=False, default=0.0)
     fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
+    open_rate_requested = Column(Float)
     close_rate = Column(Float)
+    close_rate_requested = Column(Float)
     close_profit = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
