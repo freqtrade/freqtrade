@@ -401,9 +401,12 @@ def test_migrate(default_conf, fee):
                           0.00258580, 0.002, 0.7715262081,
                           '2017-11-28 12:44:24.000000')""".format(fee.return_value)
     engine = create_engine('sqlite://')
+    # Create table using the old format
     engine.execute(create_table_old)
     engine.execute(insert_table_old)
+    # Run init to test migration
     init(default_conf, engine)
+
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()
     assert trade.fee_open == fee.return_value
