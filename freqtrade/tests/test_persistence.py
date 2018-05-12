@@ -378,6 +378,7 @@ def test_clean_dry_run_db(default_conf, fee):
 
 
 def test_migrate(default_conf, fee):
+    amount = 103.223
     create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
                                 id INTEGER NOT NULL,
                                 exchange VARCHAR NOT NULL,
@@ -397,9 +398,13 @@ def test_migrate(default_conf, fee):
                                 );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
                           open_rate, stake_amount, amount, open_date)
-                          VALUES ('BITTREX', 'BTC_ETC', 1, {},
-                          0.00258580, 0.002, 0.7715262081,
-                          '2017-11-28 12:44:24.000000')""".format(fee.return_value)
+                          VALUES ('BITTREX', 'BTC_ETC', 1, {fee},
+                          0.00258580, {stake}, {amount},
+                          '2017-11-28 12:44:24.000000')
+                          """.format(fee=fee.return_value,
+                                     stake=default_conf.get("stake_amount"),
+                                     amount=amount
+                                     )
     engine = create_engine('sqlite://')
     # Create table using the old format
     engine.execute(create_table_old)
@@ -413,3 +418,6 @@ def test_migrate(default_conf, fee):
     assert trade.fee_close == fee.return_value
     assert trade.open_rate_requested is None
     assert trade.close_rate_requested is None
+    assert trade.is_open == 1
+    assert trade.amount == amount
+    assert trade.stake_amount == default_conf.get("stake_amount")
