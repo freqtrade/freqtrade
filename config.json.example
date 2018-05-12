@@ -4,6 +4,7 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
+    "trailing_stop": false,
     "unfilledtimeout": 600,
     "bid_strategy": {
         "ask_last_balance": 0.0
