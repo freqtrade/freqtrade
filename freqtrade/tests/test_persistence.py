@@ -4,7 +4,7 @@ import os
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade.persistence import Trade, init, clean_dry_run_db, check_migrate
+from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
 @pytest.fixture(scope='function')
@@ -410,5 +410,3 @@ def test_migrate(default_conf, fee):
     assert trade.fee_close == fee.return_value
     assert trade.open_rate_requested is None
     assert trade.close_rate_requested is None
-
-
