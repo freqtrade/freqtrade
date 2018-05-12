@@ -73,9 +73,7 @@ def check_migrate(engine) -> None:
 
     if not has_column(cols, 'fee_open'):
         # Schema migration necessary
-        engine.execute("drop table if exists trades_bak")
-        engine.execute("create table trades_bak as select * from trades")
-        engine.execute("drop table if exists trades")
+        engine.execute("alter table trades rename to trades_bak")
         # let SQLAlchemy create the schema as required
         _DECL_BASE.metadata.create_all(engine)
 
