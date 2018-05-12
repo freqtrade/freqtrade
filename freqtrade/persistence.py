@@ -82,7 +82,15 @@ def check_migrate(engine) -> None:
                 (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id)
-            select id, exchange, pair, is_open, fee fee_open, fee fee_close,
+            select id, exchange,
+                case
+                    when instr(pair, '_') != 0 then
+                    substr(pair,    instr(pair, '_') + 1) || '/' ||
+                    substr(pair, 1, instr(pair, '_') - 1)
+                    else pair
+                    end
+                pair,
+                is_open, fee fee_open, fee fee_close,
                 open_rate, null open_rate_requested, close_rate,
                 null close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id
