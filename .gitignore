@@ -5,6 +5,9 @@ config.json
 *.sqlite
 .hyperopt
 logfile.txt
+hyperopt_trials.pickle
+user_data/
+freqtrade-plot.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -86,4 +89,4 @@ target/
 .idea
 .vscode
 
-hyperopt_trials.pickle
+.pytest_cache/

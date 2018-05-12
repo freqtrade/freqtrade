@@ -4,21 +4,14 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
-    "minimal_roi": {
-        "40":  0.0,
-        "30":  0.01,
-        "20":  0.02,
-        "0":  0.04
-    },
-    "stoploss": -0.10,
     "unfilledtimeout": 600,
     "bid_strategy": {
         "ask_last_balance": 0.0
     },
     "exchange": {
         "name": "bittrex",
-        "key": "key",
-        "secret": "secret",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_secret",
         "pair_whitelist": [
             "BTC_ETH",
             "BTC_LTC",
@@ -41,8 +34,8 @@
     },
     "telegram": {
         "enabled": true,
-        "token": "token",
-        "chat_id": "chat_id"
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id"
     },
     "initial_state": "running",
     "internals": {

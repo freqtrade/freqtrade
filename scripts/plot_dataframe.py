@@ -1,70 +1,182 @@
 #!/usr/bin/env python3
+"""
+Script to display when the bot will buy a specific pair
 
+Mandatory Cli parameters:
+-p / --pair: pair to examine
+
+Optional Cli parameters
+-s / --strategy: strategy to use
+-d / --datadir: path to pair backtest data
+--timerange: specify what timerange of data to use.
+-l / --live: Live, to download the latest ticker for the pair
+"""
+import logging
 import sys
-import argparse
-import matplotlib  # Install PYQT5 manually if you want to test this helper function
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
-from freqtrade import exchange, analyze
-from freqtrade.misc import common_args_parser
+from argparse import Namespace
+
+from typing import List
+
+from plotly import tools
+from plotly.offline import plot
+import plotly.graph_objs as go
+
+from freqtrade.arguments import Arguments
+from freqtrade.analyze import Analyze
+from freqtrade import exchange
+import freqtrade.optimize as optimize
 
 
-def plot_parse_args(args ):
-    parser = common_args_parser(description='Graph utility')
-    parser.add_argument(
-        '-p', '--pair',
-        help = 'What currency pair',
-        dest = 'pair',
-        default = 'BTC_ETH',
-        type = str,
-    )
-    return parser.parse_args(args)
+logger = logging.getLogger(__name__)
 
 
-def plot_analyzed_dataframe(args) -> None:
+def plot_analyzed_dataframe(args: Namespace) -> None:
     """
     Calls analyze() and plots the returned dataframe
-    :param pair: pair as str
     :return: None
     """
-    pair = args.pair
+    pair = args.pair.replace('-', '_')
+    timerange = Arguments.parse_timerange(args.timerange)
 
-    # Init Bittrex to use public API
-    exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
-    ticker = exchange.get_ticker_history(pair)
-    dataframe = analyze.analyze_ticker(ticker)
+    # Init strategy
+    try:
+        analyze = Analyze({'strategy': args.strategy})
+    except AttributeError:
+        logger.critical(
+            'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
+            args.strategy
+        )
+        exit()
 
-    dataframe.loc[dataframe['buy'] == 1, 'buy_price'] = dataframe['close']
-    dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']
+    tick_interval = analyze.strategy.ticker_interval
 
-    # Two subplots sharing x axis
-    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-    fig.suptitle(pair, fontsize=14, fontweight='bold')
-    ax1.plot(dataframe.index.values, dataframe['close'], label='close')
-    # ax1.plot(dataframe.index.values, dataframe['sell'], 'ro', label='sell')
-    ax1.plot(dataframe.index.values, dataframe['sma'], '--', label='SMA')
-    ax1.plot(dataframe.index.values, dataframe['tema'], ':', label='TEMA')
-    ax1.plot(dataframe.index.values, dataframe['blower'], '-.', label='BB low')
-    ax1.plot(dataframe.index.values, dataframe['buy_price'], 'bo', label='buy')
-    ax1.legend()
+    tickers = {}
+    if args.live:
+        logger.info('Downloading pair.')
+        # Init Bittrex to use public API
+        exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
+        tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
+    else:
+        tickers = optimize.load_data(
+            datadir=args.datadir,
+            pairs=[pair],
+            ticker_interval=tick_interval,
+            refresh_pairs=False,
+            timerange=timerange
+        )
+    dataframes = analyze.tickerdata_to_dataframe(tickers)
+    dataframe = dataframes[pair]
+    dataframe = analyze.populate_buy_trend(dataframe)
+    dataframe = analyze.populate_sell_trend(dataframe)
 
-    ax2.plot(dataframe.index.values, dataframe['adx'], label='ADX')
-    ax2.plot(dataframe.index.values, dataframe['mfi'], label='MFI')
-    # ax2.plot(dataframe.index.values, [25] * len(dataframe.index.values))
-    ax2.legend()
+    if len(dataframe.index) > 750:
+        logger.warning('Ticker contained more than 750 candles, clipping.')
+    data = dataframe.tail(750)
 
-    ax3.plot(dataframe.index.values, dataframe['fastk'], label='k')
-    ax3.plot(dataframe.index.values, dataframe['fastd'], label='d')
-    ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
-    ax3.legend()
+    candles = go.Candlestick(
+        x=data.date,
+        open=data.open,
+        high=data.high,
+        low=data.low,
+        close=data.close,
+        name='Price'
+    )
 
-    # Fine-tune figure; make subplots close to each other and hide x ticks for
-    # all but bottom plot.
-    fig.subplots_adjust(hspace=0)
-    plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
-    plt.show()
+    df_buy = data[data['buy'] == 1]
+    buys = go.Scattergl(
+        x=df_buy.date,
+        y=df_buy.close,
+        mode='markers',
+        name='buy',
+        marker=dict(
+            symbol='triangle-up-dot',
+            size=9,
+            line=dict(width=1),
+            color='green',
+        )
+    )
+    df_sell = data[data['sell'] == 1]
+    sells = go.Scattergl(
+        x=df_sell.date,
+        y=df_sell.close,
+        mode='markers',
+        name='sell',
+        marker=dict(
+            symbol='triangle-down-dot',
+            size=9,
+            line=dict(width=1),
+            color='red',
+        )
+    )
+
+    bb_lower = go.Scatter(
+        x=data.date,
+        y=data.bb_lowerband,
+        name='BB lower',
+        line={'color': "transparent"},
+    )
+    bb_upper = go.Scatter(
+        x=data.date,
+        y=data.bb_upperband,
+        name='BB upper',
+        fill="tonexty",
+        fillcolor="rgba(0,176,246,0.2)",
+        line={'color': "transparent"},
+    )
+    macd = go.Scattergl(x=data['date'], y=data['macd'], name='MACD')
+    macdsignal = go.Scattergl(x=data['date'], y=data['macdsignal'], name='MACD signal')
+    volume = go.Bar(x=data['date'], y=data['volume'], name='Volume')
+
+    fig = tools.make_subplots(
+        rows=3,
+        cols=1,
+        shared_xaxes=True,
+        row_width=[1, 1, 4],
+        vertical_spacing=0.0001,
+    )
+
+    fig.append_trace(candles, 1, 1)
+    fig.append_trace(bb_lower, 1, 1)
+    fig.append_trace(bb_upper, 1, 1)
+    fig.append_trace(buys, 1, 1)
+    fig.append_trace(sells, 1, 1)
+    fig.append_trace(volume, 2, 1)
+    fig.append_trace(macd, 3, 1)
+    fig.append_trace(macdsignal, 3, 1)
+
+    fig['layout'].update(title=args.pair)
+    fig['layout']['yaxis1'].update(title='Price')
+    fig['layout']['yaxis2'].update(title='Volume')
+    fig['layout']['yaxis3'].update(title='MACD')
+
+    plot(fig, filename='freqtrade-plot.html')
+
+
+def plot_parse_args(args: List[str]) -> Namespace:
+    """
+    Parse args passed to the script
+    :param args: Cli arguments
+    :return: args: Array with all arguments
+    """
+    arguments = Arguments(args, 'Graph dataframe')
+    arguments.scripts_options()
+    arguments.common_args_parser()
+    arguments.optimizer_shared_options(arguments.parser)
+    arguments.backtesting_options(arguments.parser)
+
+    return arguments.parse_args()
+
+
+def main(sysargv: List[str]) -> None:
+    """
+    This function will initiate the bot and start the trading loop.
+    :return: None
+    """
+    logger.info('Starting Plot Dataframe')
+    plot_analyzed_dataframe(
+        plot_parse_args(sysargv)
+    )
 
 
 if __name__ == '__main__':
-    args = plot_parse_args(sys.argv[1:])
-    plot_analyzed_dataframe(args)
+    main(sys.argv[1:])

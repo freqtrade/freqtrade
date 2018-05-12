@@ -13,7 +13,7 @@ addons:
 install:
 - ./install_ta-lib.sh
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-- pip install --upgrade flake8 coveralls
+- pip install --upgrade flake8 coveralls pytest-random-order
 - pip install -r requirements.txt
 - pip install -e .
 jobs:

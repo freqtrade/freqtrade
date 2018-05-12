@@ -17,10 +17,11 @@ The table below will list all configuration parameters.
 | `max_open_trades` | 3 | Yes | Number of trades open your bot will have.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged.
+| `ticker_interval` | [1, 5, 30, 60, 1440] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Defaut is 5 minutes
 | `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below. 
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. 
-| `minimal_roi` | See below | Yes | Set the threshold in percent the bot will use to sell a trade. More information below. 
-| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. 
+| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. 
+| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `unfilledtimeout` | 0 | No | How long (in minutes) the bot will wait for an unfilled order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use.
@@ -29,10 +30,13 @@ The table below will list all configuration parameters.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | No | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
+| `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
-| `telegram.token` | token | No | Your Telegram bot token. Only required is `enable` is `true`.
-| `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required is `enable` is `true`.
+| `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
+| `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
+| `strategy` | DefaultStrategy | No | Defines Strategy class to use.
+| `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
 The definition of each config parameters is in 
@@ -51,10 +55,18 @@ See the example below:
 },
 ```
 
+Most of the strategy files already include the optimal `minimal_roi`
+value. This parameter is optional. If you use it, it will take over the
+`minimal_roi` value from the strategy file.
+
 ### Understand stoploss
 `stoploss` is loss in percentage that should trigger a sale.
 For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
+
+Most of the strategy files already include the optimal `stoploss`
+value. This parameter is optional. If you use it, it will take over the
+`stoploss` value from the strategy file.
 
 ### Understand initial_state
 `initial_state` is an optional field that defines the initial application state.

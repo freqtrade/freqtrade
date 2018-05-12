@@ -1,164 +1,71 @@
 # pragma pylint: disable=missing-docstring,C0103
-import argparse
-import json
-import time
-from copy import deepcopy
 
-import pytest
-from jsonschema import ValidationError
+"""
+Unit test file for misc.py
+"""
 
-from freqtrade.misc import (common_args_parser, load_config, parse_args,
-                            throttle)
+import datetime
+from unittest.mock import MagicMock
 
-
-def test_throttle():
-
-    def func():
-        return 42
-
-    start = time.time()
-    result = throttle(func, min_secs=0.1)
-    end = time.time()
-
-    assert result == 42
-    assert end - start > 0.1
-
-    result = throttle(func, min_secs=-1)
-    assert result == 42
+from freqtrade.analyze import Analyze
+from freqtrade.misc import (shorten_date, datesarray_to_datetimearray,
+                            common_datearray, file_dump_json)
+from freqtrade.optimize.__init__ import load_tickerdata_file
 
 
-def test_throttle_with_assets():
-
-    def func(nb_assets=-1):
-        return nb_assets
-
-    result = throttle(func, min_secs=0.1, nb_assets=666)
-    assert result == 666
-
-    result = throttle(func, min_secs=0.1)
-    assert result == -1
+def test_shorten_date() -> None:
+    """
+    Test shorten_date() function
+    :return: None
+    """
+    str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
+    str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
+    assert shorten_date(str_data) == str_shorten_data
 
 
-# Parse common command-line-arguments. Used for all tools
+def test_datesarray_to_datetimearray(ticker_history):
+    """
+    Test datesarray_to_datetimearray() function
+    :return: None
+    """
+    dataframes = Analyze.parse_ticker_dataframe(ticker_history)
+    dates = datesarray_to_datetimearray(dataframes['date'])
 
-def test_parse_args_none():
-    args = common_args_parser('')
-    assert isinstance(args, argparse.ArgumentParser)
+    assert isinstance(dates[0], datetime.datetime)
+    assert dates[0].year == 2017
+    assert dates[0].month == 11
+    assert dates[0].day == 26
+    assert dates[0].hour == 8
+    assert dates[0].minute == 50
 
-
-def test_parse_args_defaults():
-    args = parse_args([], '')
-    assert args.config == 'config.json'
-    assert args.dynamic_whitelist is None
-    assert args.loglevel == 20
-
-
-def test_parse_args_config():
-    args = parse_args(['-c', '/dev/null'], '')
-    assert args.config == '/dev/null'
-
-    args = parse_args(['--config', '/dev/null'], '')
-    assert args.config == '/dev/null'
+    date_len = len(dates)
+    assert date_len == 3
 
 
-def test_parse_args_verbose():
-    args = parse_args(['-v'], '')
-    assert args.loglevel == 10
+def test_common_datearray(default_conf, mocker) -> None:
+    """
+    Test common_datearray()
+    :return: None
+    """
+    analyze = Analyze(default_conf)
+    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tickerlist = {'BTC_UNITEST': tick}
+    dataframes = analyze.tickerdata_to_dataframe(tickerlist)
 
-    args = parse_args(['--verbose'], '')
-    assert args.loglevel == 10
+    dates = common_datearray(dataframes)
 
-
-def test_parse_args_version():
-    with pytest.raises(SystemExit, match=r'0'):
-        parse_args(['--version'], '')
-
-
-def test_parse_args_invalid():
-    with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['-c'], '')
-
-
-# Parse command-line-arguments
-# used for main, backtesting and hyperopt
+    assert dates.size == dataframes['BTC_UNITEST']['date'].size
+    assert dates[0] == dataframes['BTC_UNITEST']['date'][0]
+    assert dates[-1] == dataframes['BTC_UNITEST']['date'][-1]
 
 
-def test_parse_args_dynamic_whitelist():
-    args = parse_args(['--dynamic-whitelist'], '')
-    assert args.dynamic_whitelist == 20
-
-
-def test_parse_args_dynamic_whitelist_10():
-    args = parse_args(['--dynamic-whitelist', '10'], '')
-    assert args.dynamic_whitelist == 10
-
-
-def test_parse_args_dynamic_whitelist_invalid_values():
-    with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['--dynamic-whitelist', 'abc'], '')
-
-
-def test_parse_args_backtesting_invalid():
-    with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['backtesting --ticker-interval'], '')
-
-    with pytest.raises(SystemExit, match=r'2'):
-        parse_args(['backtesting --ticker-interval', 'abc'], '')
-
-
-def test_parse_args_backtesting_custom():
-    args = [
-        '-c', 'test_conf.json',
-        'backtesting',
-        '--live',
-        '--ticker-interval', '1',
-        '--refresh-pairs-cached']
-    call_args = parse_args(args, '')
-    assert call_args.config == 'test_conf.json'
-    assert call_args.live is True
-    assert call_args.loglevel == 20
-    assert call_args.subparser == 'backtesting'
-    assert call_args.func is not None
-    assert call_args.ticker_interval == 1
-    assert call_args.refresh_pairs is True
-
-
-def test_parse_args_hyperopt_custom(mocker):
-    args = ['-c', 'test_conf.json', 'hyperopt', '--epochs', '20']
-    call_args = parse_args(args, '')
-    assert call_args.config == 'test_conf.json'
-    assert call_args.epochs == 20
-    assert call_args.loglevel == 20
-    assert call_args.subparser == 'hyperopt'
-    assert call_args.func is not None
-
-
-def test_load_config(default_conf, mocker):
-    file_mock = mocker.patch('freqtrade.misc.open', mocker.mock_open(
-        read_data=json.dumps(default_conf)
-    ))
-    validated_conf = load_config('somefile')
-    assert file_mock.call_count == 1
-    assert validated_conf.items() >= default_conf.items()
-
-
-def test_load_config_invalid_pair(default_conf, mocker):
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('BTC-ETH')
-    mocker.patch(
-        'freqtrade.misc.open',
-        mocker.mock_open(
-            read_data=json.dumps(conf)))
-    with pytest.raises(ValidationError, match=r'.*does not match.*'):
-        load_config('somefile')
-
-
-def test_load_config_missing_attributes(default_conf, mocker):
-    conf = deepcopy(default_conf)
-    conf.pop('exchange')
-    mocker.patch(
-        'freqtrade.misc.open',
-        mocker.mock_open(
-            read_data=json.dumps(conf)))
-    with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
-        load_config('somefile')
+def test_file_dump_json(mocker) -> None:
+    """
+    Test file_dump_json()
+    :return: None
+    """
+    file_open = mocker.patch('freqtrade.misc.open', MagicMock())
+    json_dump = mocker.patch('json.dump', MagicMock())
+    file_dump_json('somefile', [1, 2, 3])
+    assert file_open.call_count == 1
+    assert json_dump.call_count == 1

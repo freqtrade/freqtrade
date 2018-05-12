@@ -1,10 +1,16 @@
-# pragma pylint: disable=missing-docstring
+# pragma pylint: disable=missing-docstring, C0103
 import os
 
 import pytest
+from sqlalchemy import create_engine
 
 from freqtrade.exchange import Exchanges
-from freqtrade.persistence import Trade, init
+from freqtrade.persistence import Trade, init, clean_dry_run_db
+
+
+@pytest.fixture(scope='function')
+def init_persistence(default_conf):
+    init(default_conf)
 
 
 def test_init_create_session(default_conf, mocker):
@@ -13,7 +19,7 @@ def test_init_create_session(default_conf, mocker):
     # Check if init create a session
     init(default_conf)
     assert hasattr(Trade, 'session')
-    assert type(Trade.session).__name__ is 'Session'
+    assert 'Session' in type(Trade.session).__name__
 
 
 def test_init_dry_run_db(default_conf, mocker):
@@ -89,6 +95,7 @@ def test_init_prod_db(default_conf, mocker):
         os.rename(prod_db_swp, prod_db)
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     """
     On this test we will buy and sell a crypto currency.
@@ -143,6 +150,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order):
     assert trade.close_date is not None
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -165,6 +173,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_profit_percent() == 0.06201057
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price_exception(limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -178,6 +187,7 @@ def test_calc_close_trade_price_exception(limit_buy_order):
     assert trade.calc_close_trade_price() == 0.0
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_update_open_order(limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -200,6 +210,7 @@ def test_update_open_order(limit_buy_order):
     assert trade.close_date is None
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_update_invalid_order(limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -212,6 +223,7 @@ def test_update_invalid_order(limit_buy_order):
         trade.update(limit_buy_order)
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_open_trade_price(limit_buy_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -229,6 +241,7 @@ def test_calc_open_trade_price(limit_buy_order):
     assert trade.calc_open_trade_price(fee=0.003) == 0.001003000
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -250,6 +263,7 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_profit(limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -272,10 +286,6 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
     # Lower than open rate
     assert trade.calc_profit(rate=0.00000123, fee=0.003) == -0.00089092
 
-    # Only custom fee without sell order applied
-    with pytest.raises(TypeError):
-        trade.calc_profit(fee=0.003)
-
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)
     assert trade.calc_profit() == 0.00006217
@@ -284,6 +294,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order):
     assert trade.calc_profit(fee=0.003) == 0.00006163
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     trade = Trade(
         pair='BTC_ETH',
@@ -300,13 +311,56 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order):
     # Get percent of profit with a custom rate (Lower than open rate)
     assert trade.calc_profit_percent(rate=0.00000123) == -0.88863827
 
-    # Only custom fee without sell order applied
-    with pytest.raises(TypeError):
-        trade.calc_profit_percent(fee=0.003)
-
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)
     assert trade.calc_profit_percent() == 0.06201057
 
     # Test with a custom fee rate on the close trade
     assert trade.calc_profit_percent(fee=0.003) == 0.0614782
+
+
+def test_clean_dry_run_db(default_conf):
+    init(default_conf, create_engine('sqlite://'))
+
+    # Simulate dry_run entries
+    trade = Trade(
+        pair='BTC_ETH',
+        stake_amount=0.001,
+        amount=123.0,
+        fee=0.0025,
+        open_rate=0.123,
+        exchange='BITTREX',
+        open_order_id='dry_run_buy_12345'
+    )
+    Trade.session.add(trade)
+
+    trade = Trade(
+        pair='BTC_ETC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee=0.0025,
+        open_rate=0.123,
+        exchange='BITTREX',
+        open_order_id='dry_run_sell_12345'
+    )
+    Trade.session.add(trade)
+
+    # Simulate prod entry
+    trade = Trade(
+        pair='BTC_ETC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee=0.0025,
+        open_rate=0.123,
+        exchange='BITTREX',
+        open_order_id='prod_buy_12345'
+    )
+    Trade.session.add(trade)
+
+    # We have 3 entries: 2 dry_run, 1 prod
+    assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 3
+
+    clean_dry_run_db()
+
+    # We have now only the prod
+    assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 1
