@@ -29,7 +29,6 @@ from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
-
 logger = logging.getLogger(__name__)
 
 

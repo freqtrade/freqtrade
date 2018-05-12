@@ -24,6 +24,8 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
+from freqtradeimport constants
+
 
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
@@ -31,9 +33,8 @@ import freqtrade.misc as misc
 
 logger = logging.getLogger(__name__)
 
-
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
-# data:: ["BTC_ETH", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
+# data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
 def make_profit_array(
         data: List, px: int, min_date: int,
         interval: int, filter_pairs: Optional[List] = None) -> np.ndarray:
@@ -186,11 +187,12 @@ def plot_profit(args: Namespace) -> None:
     plot(fig, filename='freqtrade-profit-plot.html')
 
 
-def define_index(min_date: int, max_date: int, interval: int) -> int:
+def define_index(min_date: int, max_date: int, interval: str) -> int:
     """
     Return the index of a specific date
     """
-    return int((max_date - min_date) / (interval * 60))
+    interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
+    return int((max_date - min_date) / (interval_minutes * 60))
 
 
 def plot_parse_args(args: List[str]) -> Namespace:

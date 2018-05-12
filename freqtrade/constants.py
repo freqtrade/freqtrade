@@ -10,12 +10,27 @@ HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
 
+TICKER_INTERVAL_MINUTES = {
+    '1m': 1,
+    '5m': 5,
+    '15m': 15,
+    '30m': 30,
+    '1h': 60,
+    '2h': 120,
+    '4h': 240,
+    '6h': 360,
+    '12h': 720,
+    '1d': 1440,
+    '1w': 10080,
+}
+
+
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer', 'minimum': 1},
-        'ticker_interval': {'type': 'integer', 'enum': [1, 5, 30, 60, 1440]},
+        'max_open_trades': {'type': 'integer', 'minimum': 0},
+        'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
@@ -85,7 +100,7 @@ CONF_SCHEMA = {
                     'type': 'array',
                     'items': {
                         'type': 'string',
-                        'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                        'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
                 },
@@ -93,7 +108,7 @@ CONF_SCHEMA = {
                     'type': 'array',
                     'items': {
                         'type': 'string',
-                        'pattern': '^[0-9A-Z]+_[0-9A-Z]+$'
+                        'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
                 }

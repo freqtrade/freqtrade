@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import re
+import arrow
 from typing import List, Tuple, Optional
 
 from freqtrade import __version__, constants
@@ -123,7 +124,7 @@ class Arguments(object):
         )
         parser.add_argument(
             '-r', '--refresh-pairs-cached',
-            help='refresh the pairs files in tests/testdata with the latest data from Bittrex. \
+            help='refresh the pairs files in tests/testdata with the latest data from the exchange. \
                   Use it if you want to run your backtesting with up-to-date data.',
             action='store_true',
             dest='refresh_pairs',
@@ -141,10 +142,9 @@ class Arguments(object):
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             '-i', '--ticker-interval',
-            help='specify ticker interval in minutes (1, 5, 30, 60, 1440)',
+            help='specify ticker interval (1m, 5m, 30m, 1h, 1d)',
             dest='ticker_interval',
-            type=int,
-            metavar='INT',
+            type=str,
         )
         parser.add_argument(
             '--realistic-simulation',
@@ -235,19 +235,23 @@ class Arguments(object):
                 stop = None
                 if stype[0]:
                     start = rvals[index]
-                    if stype[0] != 'date':
+                    if stype[0] == 'date':
+                        start = arrow.get(start, 'YYYYMMDD').timestamp
+                    else:
                         start = int(start)
                     index += 1
                 if stype[1]:
                     stop = rvals[index]
-                    if stype[1] != 'date':
+                    if stype[1] == 'date':
+                        stop = arrow.get(stop, 'YYYYMMDD').timestamp
+                    else:
                         stop = int(stop)
                 return stype, start, stop
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
     def scripts_options(self) -> None:
         """
-        Parses given arguments for plot scripts.
+        Parses given arguments for scripts.
         """
         self.parser.add_argument(
             '-p', '--pair',
@@ -255,3 +259,34 @@ class Arguments(object):
             dest='pair',
             default=None
         )
+
+    def testdata_dl_options(self) -> None:
+        """
+        Parses given arguments for testdata download
+        """
+        self.parser.add_argument(
+            '--pairs-file',
+            help='File containing a list of pairs to download',
+            dest='pairs_file',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--export',
+            help='Export files to given dir',
+            dest='export',
+            default=None)
+
+        self.parser.add_argument(
+            '--days',
+            help='Download data for number of days',
+            dest='days',
+            type=int,
+            default=None)
+
+        self.parser.add_argument(
+            '--exchange',
+            help='Exchange name',
+            dest='exchange',
+            type=str,
+            default='bittrex')

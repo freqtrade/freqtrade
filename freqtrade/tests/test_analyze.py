@@ -50,7 +50,7 @@ def test_dataframe_correct_length(result):
 
 def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == \
-        ['date', 'close', 'high', 'low', 'open', 'volume']
+        ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
 def test_populates_buy_trend(result):
@@ -74,7 +74,7 @@ def test_returns_latest_buy_signal(mocker):
             return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
         )
     )
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (True, False)
+    assert _ANALYZE.get_signal('ETH/BTC', '5m') == (True, False)
 
     mocker.patch.multiple(
         'freqtrade.analyze.Analyze',
@@ -82,7 +82,7 @@ def test_returns_latest_buy_signal(mocker):
             return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
         )
     )
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (False, True)
+    assert _ANALYZE.get_signal('ETH/BTC', '5m') == (False, True)
 
 
 def test_returns_latest_sell_signal(mocker):
@@ -94,7 +94,7 @@ def test_returns_latest_sell_signal(mocker):
         )
     )
 
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (False, True)
+    assert _ANALYZE.get_signal('ETH/BTC', '5m') == (False, True)
 
     mocker.patch.multiple(
         'freqtrade.analyze.Analyze',
@@ -102,13 +102,13 @@ def test_returns_latest_sell_signal(mocker):
             return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
         )
     )
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (True, False)
+    assert _ANALYZE.get_signal('ETH/BTC', '5m') == (True, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=None)
-    assert (False, False) == _ANALYZE.get_signal('foo', int(default_conf['ticker_interval']))
+    assert (False, False) == _ANALYZE.get_signal('foo', default_conf['ticker_interval'])
     assert log_has('Empty ticker history for pair foo', caplog.record_tuples)
 
 
@@ -121,7 +121,7 @@ def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
             side_effect=ValueError('xyz')
         )
     )
-    assert (False, False) == _ANALYZE.get_signal('foo', int(default_conf['ticker_interval']))
+    assert (False, False) == _ANALYZE.get_signal('foo', default_conf['ticker_interval'])
     assert log_has('Unable to analyze ticker for pair foo: xyz', caplog.record_tuples)
 
 
@@ -134,7 +134,7 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
             return_value=DataFrame([])
         )
     )
-    assert (False, False) == _ANALYZE.get_signal('xyz', int(default_conf['ticker_interval']))
+    assert (False, False) == _ANALYZE.get_signal('xyz', default_conf['ticker_interval'])
     assert log_has('Empty dataframe for pair xyz', caplog.record_tuples)
 
 
@@ -150,7 +150,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
             return_value=DataFrame(ticks)
         )
     )
-    assert (False, False) == _ANALYZE.get_signal('xyz', int(default_conf['ticker_interval']))
+    assert (False, False) == _ANALYZE.get_signal('xyz', default_conf['ticker_interval'])
     assert log_has(
         'Outdated history for pair xyz. Last tick is 11 minutes old',
         caplog.record_tuples
@@ -166,18 +166,14 @@ def test_get_signal_handles_exceptions(mocker):
         )
     )
 
-    assert _ANALYZE.get_signal('BTC-ETH', 5) == (False, False)
+    assert _ANALYZE.get_signal('ETH/BTC', '5m') == (False, False)
 
 
-def test_parse_ticker_dataframe(ticker_history, ticker_history_without_bv):
-    columns = ['date', 'close', 'high', 'low', 'open', 'volume']
+def test_parse_ticker_dataframe(ticker_history):
+    columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     # Test file with BV data
     dataframe = Analyze.parse_ticker_dataframe(ticker_history)
-    assert dataframe.columns.tolist() == columns
-
-    # Test file without BV data
-    dataframe = Analyze.parse_ticker_dataframe(ticker_history_without_bv)
     assert dataframe.columns.tolist() == columns
 
 
@@ -188,7 +184,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     analyze = Analyze(default_conf)
 
     timerange = ((None, 'line'), None, -100)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
-    tickerlist = {'BTC_UNITEST': tick}
+    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
+    tickerlist = {'UNITTEST/BTC': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)
-    assert len(data['BTC_UNITEST']) == 100
+    assert len(data['UNITTEST/BTC']) == 100

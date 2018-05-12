@@ -59,7 +59,6 @@ class StrategyResolver(object):
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
             key=lambda t: t[0]))
         self.strategy.stoploss = float(self.strategy.stoploss)
-        self.strategy.ticker_interval = int(self.strategy.ticker_interval)
 
     def _load_strategy(
             self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:

@@ -3,7 +3,6 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
 import copy
-import json
 import logging
 import time
 import traceback
@@ -12,18 +11,18 @@ from typing import Dict, List, Optional, Any, Callable
 
 import arrow
 import requests
-from cachetools import cached, TTLCache
+from cachetools import TTLCache, cached
 
 from freqtrade import (
-    DependencyException, OperationalException, exchange, persistence, __version__
+    DependencyException, OperationalException, TemporaryError,
+    exchange, persistence, __version__,
 )
-from freqtrade.analyze import Analyze
 from freqtrade import constants
+from freqtrade.analyze import Analyze
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
 from freqtrade.state import State
-
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +172,7 @@ class FreqtradeBot(object):
                 self.check_handle_timedout(self.config['unfilledtimeout'])
                 Trade.session.flush()
 
-        except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+        except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(constants.RETRY_TIMEOUT)
         except OperationalException:
@@ -189,50 +188,60 @@ class FreqtradeBot(object):
         return state_changed
 
     @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str = 'BaseVolume') -> List[str]:
+    def _gen_pair_whitelist(self, base_currency: str, key: str = 'quoteVolume') -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
-        :param key: sort key (defaults to 'BaseVolume')
+        :param key: sort key (defaults to 'quoteVolume')
         :return: List of pairs
         """
-        summaries = sorted(
-            (s for s in exchange.get_market_summaries() if
-             s['MarketName'].startswith(base_currency)),
-            key=lambda s: s.get(key) or 0.0,
-            reverse=True
-        )
 
-        return [s['MarketName'].replace('-', '_') for s in summaries]
+        if not exchange.exchange_has('fetchTickers'):
+            raise OperationalException(
+                'Exchange does not support dynamic whitelist.'
+                'Please edit your config and restart the bot'
+            )
+
+        tickers = exchange.get_tickers()
+        # check length so that we make sure that '/' is actually in the string
+        tickers = [v for k, v in tickers.items()
+                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
+
+        sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
+        pairs = [s['symbol'] for s in sorted_tickers]
+        return pairs
 
     def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
         """
-        Check wallet health and remove pair from whitelist if necessary
+        Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
         trade
         :return: the list of pairs the user wants to trade without the one unavailable or
         black_listed
         """
         sanitized_whitelist = whitelist
-        health = exchange.get_wallet_health()
+        markets = exchange.get_markets()
+
+        markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
         known_pairs = set()
-        for status in health:
-            pair = '{}_{}'.format(self.config['stake_currency'], status['Currency'])
+        for market in markets:
+            pair = market['symbol']
             # pair is not int the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
                 continue
             # else the pair is valid
             known_pairs.add(pair)
             # Market is not active
-            if not status['IsActive']:
+            if not market['active']:
                 sanitized_whitelist.remove(pair)
                 logger.info(
-                    'Ignoring %s from whitelist (reason: %s).',
-                    pair, status.get('Notice') or 'wallet is not active'
+                    'Ignoring %s from whitelist. Market is not active.',
+                    pair
                 )
 
         # We need to remove pairs that are unknown
         final_list = [x for x in sanitized_whitelist if x in known_pairs]
+
         return final_list
 
     def get_target_bid(self, ticker: Dict[str, float]) -> float:
@@ -277,7 +286,7 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on StochRSI buy signals
+        # Pick pair based on buy signals
         for _pair in whitelist:
             (buy, sell) = self.analyze.get_signal(_pair, interval)
             if buy and not sell:
@@ -290,7 +299,7 @@ class FreqtradeBot(object):
         buy_limit = self.get_target_bid(exchange.get_ticker(pair))
         amount = stake_amount / buy_limit
 
-        order_id = exchange.buy(pair, buy_limit, amount)
+        order_id = exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(
             stake_amount,
@@ -302,7 +311,7 @@ class FreqtradeBot(object):
         self.rpc.send_msg(
             '*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '
             .format(
-                exchange.get_name().upper(),
+                exchange.get_name(),
                 pair.replace('_', '/'),
                 exchange.get_pair_detail_url(pair),
                 buy_limit,
@@ -313,14 +322,17 @@ class FreqtradeBot(object):
             )
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+        fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee(),
+            fee_open=fee,
+            fee_close=fee,
             open_rate=buy_limit,
+            open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
-            exchange=exchange.get_name().upper(),
+            exchange=exchange.get_id(),
             open_order_id=order_id
         )
         Trade.session.add(trade)
@@ -348,16 +360,73 @@ class FreqtradeBot(object):
         Tries to execute a sell trade
         :return: True if executed
         """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            trade.update(exchange.get_order(trade.open_order_id))
+        try:
+            # Get order details for actual price per unit
+            if trade.open_order_id:
+                # Update trade with order values
+                logger.info('Found open order for %s', trade)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
+                # Try update amount (binance-fix)
+                try:
+                    new_amount = self.get_real_amount(trade, order)
+                    if order['amount'] != new_amount:
+                        order['amount'] = new_amount
+                        # Fee was applied, so set to 0
+                        trade.fee_open = 0
 
-        if trade.is_open and trade.open_order_id is None:
-            # Check if we can sell our current pair
-            return self.handle_trade(trade)
+                except OperationalException as exception:
+                    logger.warning("could not update trade amount: %s", exception)
+
+                trade.update(order)
+
+            if trade.is_open and trade.open_order_id is None:
+                # Check if we can sell our current pair
+                return self.handle_trade(trade)
+        except DependencyException as exception:
+            logger.warning('Unable to sell trade: %s', exception)
         return False
+
+    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+        """
+        Get real amount for the trade
+        Necessary for exchanges which charge fees in base currency (e.g. binance)
+        """
+        order_amount = order['amount']
+        # Only run for closed orders
+        if trade.fee_open == 0 or order['status'] == 'open':
+            return order_amount
+
+        # use fee from order-dict if possible
+        if 'fee' in order and order['fee']:
+            if trade.pair.startswith(order['fee']['currency']):
+                new_amount = order_amount - order['fee']['cost']
+                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
+                            trade, order['amount'], new_amount)
+                return new_amount
+
+        # Fallback to Trades
+        trades = exchange.get_trades_for_order(trade.open_order_id, trade.pair, trade.open_date)
+
+        if len(trades) == 0:
+            logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            return order_amount
+        amount = 0
+        fee_abs = 0
+        for exectrade in trades:
+            amount += exectrade['amount']
+            if "fee" in exectrade:
+                # only applies if fee is in quote currency!
+                if trade.pair.startswith(exectrade['fee']['currency']):
+                    fee_abs += exectrade['fee']['cost']
+
+        if amount != order_amount:
+            logger.warning("amount {} does not match amount {}".format(amount, trade.amount))
+            raise OperationalException("Half bought? Amounts don't match")
+        real_amount = amount - fee_abs
+        if fee_abs != 0:
+            logger.info("Applying fee on amount for {} (from {} to {}) from Trades".format(
+                        trade, order['amount'], real_amount))
+        return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:
         """
@@ -391,22 +460,22 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
-                order = exchange.get_order(trade.open_order_id)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
                     traceback.format_exc())
                 continue
-            ordertime = arrow.get(order['opened'])
+            ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
                 continue
 
-            if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
+            if order['side'] == 'buy' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_buy(trade, order)
-            elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
+            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
@@ -416,7 +485,7 @@ class FreqtradeBot(object):
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        exchange.cancel_order(trade.open_order_id)
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
@@ -446,7 +515,7 @@ class FreqtradeBot(object):
         """
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
-            exchange.cancel_order(trade.open_order_id)
+            exchange.cancel_order(trade.open_order_id, trade.pair)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
@@ -468,13 +537,14 @@ class FreqtradeBot(object):
         :return: None
         """
         # Execute sell and update trade record
-        order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+        order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
+        trade.close_rate_requested = limit
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
         profit_trade = trade.calc_profit(rate=limit)
-        current_rate = exchange.get_ticker(trade.pair, False)['bid']
-        profit = trade.calc_profit_percent(current_rate)
+        current_rate = exchange.get_ticker(trade.pair)['bid']
+        profit = trade.calc_profit_percent(limit)
 
         message = "*{exchange}:* Selling\n" \
                   "*Current Pair:* [{pair}]({pair_url})\n" \
