@@ -196,7 +196,7 @@ class CryptoToFiatConverter(object):
                 self._coinmarketcap.ticker(
                     currency=self._cryptomap[crypto_symbol],
                     convert=fiat_symbol
-                )[0]['price_' + fiat_symbol.lower()]
+                )['data']['quotes'][fiat_symbol.upper()]['price']
             )
         except BaseException as ex:
             logger.error("Error in _find_price: %s", ex)
