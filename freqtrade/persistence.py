@@ -141,7 +141,7 @@ class Trade(_DECL_BASE):
             else:
                 logger.debug("keeping current stop loss")
 
-        print(
+        logger.debug(
             "{} - current price {:.8f}, bought at {:.8f} and calculated "
             "stop loss is at: {:.8f} initial stop at {:.8f}. trailing stop loss saved us: {:.8f} "
             "and max observed rate was {:.8f}".format(

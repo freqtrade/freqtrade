@@ -203,7 +203,6 @@ class Analyze(object):
         # evaluate if the stoploss was hit
         if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
 
-            # just for debugging
             if 'trailing_stop' in self.config and self.config['trailing_stop']:
                 logger.warning(
                     "HIT STOP: current price at {:.6f}, stop loss is {:.6f}, "
@@ -216,7 +215,19 @@ class Analyze(object):
 
         # update the stop loss afterwards, after all by definition it's supposed to be hanging
         if 'trailing_stop' in self.config and self.config['trailing_stop']:
-            trade.adjust_stop_loss(current_rate, self.strategy.stoploss)
+
+            # check if we have a special stop loss for positive condition
+            # and if profit is positive
+            stop_loss_value = self.strategy.stoploss
+            if isinstance(self.config['trailing_stop'], dict) and \
+                    'positive' in self.config['trailing_stop'] and \
+                    current_profit > 0:
+
+                print("using positive stop loss mode: {} since we have profit {}".format(
+                    self.config['trailing_stop']['positive'], current_profit))
+                stop_loss_value = self.config['trailing_stop']['positive']
+
+            trade.adjust_stop_loss(current_rate, stop_loss_value)
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
