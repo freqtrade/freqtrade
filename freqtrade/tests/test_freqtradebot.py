@@ -8,7 +8,6 @@ import logging
 import re
 import time
 from copy import deepcopy
-from typing import Dict, Optional
 from unittest.mock import MagicMock
 
 import arrow
@@ -20,7 +19,7 @@ from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
-from freqtrade.tests.conftest import log_has
+from freqtrade.tests.conftest import log_has, patch_coinmarketcap
 
 
 # Functions for recurrent object patching
@@ -62,20 +61,6 @@ def patch_RPCManager(mocker) -> MagicMock:
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     rpc_mock = mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     return rpc_mock
-
-
-def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
-    """
-    Mocker to coinmarketcap to speed up tests
-    :param mocker: mocker to patch coinmarketcap class
-    :return: None
-    """
-    mock = MagicMock()
-
-    if value:
-        mock.ticker = {'price_usd': 12345.0}
-
-    mocker.patch('freqtrade.fiat_convert.Market', mock)
 
 
 # Unit tests

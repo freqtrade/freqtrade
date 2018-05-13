@@ -2,6 +2,7 @@
 import json
 import logging
 from datetime import datetime
+from typing import Dict, Optional
 from functools import reduce
 from unittest.mock import MagicMock
 
@@ -34,7 +35,8 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :param config: Config to pass to the bot
     :return: None
     """
-    mocker.patch('freqtrade.fiat_convert.Market', {'price_usd': 12345.0})
+    # mocker.patch('freqtrade.fiat_convert.Market', {'price_usd': 12345.0})
+    patch_coinmarketcap(mocker, {'price_usd': 12345.0})
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
@@ -44,6 +46,25 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
 
     return FreqtradeBot(config, create_engine('sqlite://'))
+
+
+def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
+    """
+    Mocker to coinmarketcap to speed up tests
+    :param mocker: mocker to patch coinmarketcap class
+    :return: None
+    """
+    mock = MagicMock()
+
+    if value:
+        mock.ticker = {'price_usd': 12345.0}
+    mock.listings = {'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
+                               'website_slug': 'bitcoin'},
+                              {'id': 1027, 'name': 'Ethereum', 'symbol': 'ETH',
+                               'website_slug': 'ethereum'}
+                              ]}
+
+    mocker.patch('freqtrade.fiat_convert.Market', mock)
 
 
 @pytest.fixture(scope="function")
