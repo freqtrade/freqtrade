@@ -24,7 +24,7 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
-from freqtradeimport constants
+from freqtrade import constants
 
 
 import freqtrade.optimize as optimize
@@ -158,13 +158,13 @@ def plot_profit(args: Namespace) -> None:
     # Plot the pairs average close prices, and total profit growth
     #
 
-    avgclose = go.Scattergl(
+    avgclose = go.Scatter(
         x=dates,
         y=avgclose,
         name='Avg close price',
     )
 
-    profit = go.Scattergl(
+    profit = go.Scatter(
         x=dates,
         y=pg,
         name='Profit',
@@ -177,7 +177,7 @@ def plot_profit(args: Namespace) -> None:
 
     for pair in pairs:
         pg = make_profit_array(data, num_iterations, min_date, tick_interval, pair)
-        pair_profit = go.Scattergl(
+        pair_profit = go.Scatter(
             x=dates,
             y=pg,
             name=pair,
