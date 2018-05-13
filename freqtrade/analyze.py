@@ -224,7 +224,7 @@ class Analyze(object):
                     'positive' in self.config['trailing_stop'] and \
                     current_profit > 0:
 
-                print("using positive stop loss mode: {} since we have profit {}".format(
+                logger.debug("using positive stop loss mode: {} since we have profit {}".format(
                     self.config['trailing_stop']['positive'], current_profit))
                 stop_loss_value = self.config['trailing_stop']['positive']
 
