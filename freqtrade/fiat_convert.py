@@ -92,7 +92,7 @@ class CryptoToFiatConverter(object):
     def _load_cryptomap(self) -> None:
         try:
             coinlistings = self._coinmarketcap.listings()
-            self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"]),
+            self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"])),
                                        coinlistings["data"]))
         except ValueError:
             logger.error("Could not load FIAT Cryptocurrency map")
