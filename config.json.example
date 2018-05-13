@@ -5,7 +5,7 @@
     "fiat_display_currency": "USD",
     "dry_run": false,
     "trailing_stop": {
-        "positive" : 0.01
+        "positive" : 0.005
     },
     "unfilledtimeout": 600,
     "bid_strategy": {
