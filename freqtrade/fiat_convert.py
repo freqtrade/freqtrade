@@ -198,5 +198,6 @@ class CryptoToFiatConverter(object):
                     convert=fiat_symbol
                 )[0]['price_' + fiat_symbol.lower()]
             )
-        except BaseException:
+        except BaseException as ex:
+            logger.error("Error in _find_price: %s", ex)
             return 0.0
