@@ -128,7 +128,9 @@ def test_fiat_convert_without_network():
 
     fiat_convert = CryptoToFiatConverter()
 
+    cmc_temp = CryptoToFiatConverter._coinmarketcap
     CryptoToFiatConverter._coinmarketcap = None
 
     assert fiat_convert._coinmarketcap is None
     assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
+    CryptoToFiatConverter._coinmarketcap = cmc_temp
