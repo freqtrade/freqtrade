@@ -54,17 +54,19 @@ def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> Non
     :param mocker: mocker to patch coinmarketcap class
     :return: None
     """
-    mock = MagicMock()
 
-    if value:
-        mock.ticker = {'price_usd': 12345.0}
-    mock.listings = {'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
-                               'website_slug': 'bitcoin'},
-                              {'id': 1027, 'name': 'Ethereum', 'symbol': 'ETH',
-                               'website_slug': 'ethereum'}
-                              ]}
+    tickermock = MagicMock(return_value={'price_usd': 12345.0})
+    listmock = MagicMock(return_value={'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
+                                                 'website_slug': 'bitcoin'},
+                                                {'id': 1027, 'name': 'Ethereum', 'symbol': 'ETH',
+                                                 'website_slug': 'ethereum'}
+                                                ]})
+    mocker.patch.multiple(
+        'freqtrade.fiat_convert.Market',
+        ticker=tickermock,
+        listings=listmock,
 
-    mocker.patch('freqtrade.fiat_convert.Market', mock)
+    )
 
 
 @pytest.fixture(scope="function")
