@@ -208,7 +208,8 @@ class Analyze(object):
                     "HIT STOP: current price at {:.6f}, stop loss is {:.6f}, "
                     "initial stop loss was at {:.6f}, trade opened at {:.6f}".format(
                         current_rate, trade.stop_loss, trade.initial_stop_loss, trade.open_rate))
-                logger.debug("trailing stop saved us: {:.6f}".format(trade.stop_loss - trade.initial_stop_loss))
+                logger.debug("trailing stop saved us: {:.6f}"
+                             .format(trade.stop_loss - trade.initial_stop_loss))
 
             logger.debug('Stop loss hit.')
             return True
