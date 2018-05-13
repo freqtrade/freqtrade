@@ -128,7 +128,7 @@ class Trade(_DECL_BASE):
                 self.max_rate = current_price
 
         # no stop loss assigned yet
-        if self.stop_loss is None:
+        if self.stop_loss is None or self.stop_loss == 0:
             logger.debug("assigning new stop loss")
             self.stop_loss = new_loss
             self.initial_stop_loss = new_loss
@@ -142,12 +142,12 @@ class Trade(_DECL_BASE):
                 logger.debug("keeping current stop loss")
 
         print(
-            "{} - current price {:.6f}, bought at {:.6f} and calculated "
-            "stop loss is at: {:.6f} initial stop at {:.6f}. trailing stop loss saved us: {:.6f} "
-            "and max observed rate was {:.6f}".format(
+            "{} - current price {:.8f}, bought at {:.8f} and calculated "
+            "stop loss is at: {:.8f} initial stop at {:.8f}. trailing stop loss saved us: {:.8f} "
+            "and max observed rate was {:.8f}".format(
                 self.pair, current_price, self.open_rate,
                 self.initial_stop_loss,
-                self.stop_loss, self.stop_loss - self.initial_stop_loss,
+                self.stop_loss, float(self.stop_loss) - float(self.initial_stop_loss),
                 self.max_rate
 
             ))
