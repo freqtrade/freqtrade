@@ -6,13 +6,16 @@ This module load custom strategies
 import importlib.util
 import inspect
 import logging
-import os
 from collections import OrderedDict
 from typing import Optional, Dict, Type
 
 from freqtrade import constants
 from freqtrade.strategy.interface import IStrategy
-
+import tempfile
+from urllib.parse import urlparse
+import os
+import requests
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +80,25 @@ class StrategyResolver(object):
         if extra_dir:
             # Add extra strategy directory on top of search paths
             abs_paths.insert(0, extra_dir)
+
+        try:
+            # check if given strategy matches an url
+            logger.debug("requesting remote strategy from {}".format(strategy_name))
+            resp = requests.get(strategy_name, stream=True)
+            if resp.status_code == 200:
+                temp = Path(tempfile.mkdtemp("freq", "strategy"))
+                name = os.path.basename(urlparse(strategy_name).path)
+
+                temp.joinpath(name).write_text(resp.text)
+                temp.joinpath("__init__.py").touch()
+
+                strategy_name = os.path.splitext(name)[0]
+
+                # register temp path with the bot
+                abs_paths.insert(0, temp.absolute())
+
+        except requests.RequestException:
+            logger.debug("received error trying to fetch strategy remotely, carry on!")
 
         for path in abs_paths:
             strategy = self._search_strategy(path, strategy_name)
