@@ -26,6 +26,15 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
+def test_load_strategy_from_url(result):
+    resolver = StrategyResolver()
+    resolver._load_strategy('https://raw.githubusercontent.com/berlinguyinca'
+                            '/freqtrade-trading-strategies'
+                            '/master/user_data/strategies/Simple.py')
+    assert hasattr(resolver.strategy, 'populate_indicators')
+    assert 'adx' in resolver.strategy.populate_indicators(result)
+
+
 def test_load_strategy_custom_directory(result):
     resolver = StrategyResolver()
     extra_dir = os.path.join('some', 'path')

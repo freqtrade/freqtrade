@@ -8,6 +8,7 @@ if version_info.major == 3 and version_info.minor < 6 or \
 
 from freqtrade import __version__
 
+
 setup(name='freqtrade',
       version=__version__,
       description='Simple High Frequency Trading Bot for crypto currencies',
