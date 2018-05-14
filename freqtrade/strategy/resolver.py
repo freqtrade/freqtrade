@@ -63,6 +63,13 @@ class StrategyResolver(object):
             key=lambda t: t[0]))
         self.strategy.stoploss = float(self.strategy.stoploss)
 
+    def compile(self, strategy_name: str, strategy_content: str) -> Optional[IStrategy]:
+        temp = Path(tempfile.mkdtemp("freq", "strategy"))
+        temp.joinpath(strategy_name + ".py").write_text(strategy_content)
+        temp.joinpath("__init__.py").touch()
+
+        return self._load_strategy(strategy_name, temp.absolute())
+
     def _load_strategy(
             self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:
         """
