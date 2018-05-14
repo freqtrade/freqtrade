@@ -245,35 +245,34 @@ class RPC(object):
         """
         :return: current account balance per crypto
         """
-        balances = [
-            c for c in exchange.get_balances()
-            if c['Balance'] or c['Available'] or c['Pending']
-        ]
-        if not balances:
-            return True, '`All balances are zero.`'
-
         output = []
         total = 0.0
-        for currency in balances:
-            coin = currency['Currency']
+        for coin, balance in exchange.get_balances().items():
+            if not balance['total']:
+                continue
+
+            rate = None
             if coin == 'BTC':
-                currency["Rate"] = 1.0
+                rate = 1.0
             else:
                 if coin == 'USDT':
-                    currency["Rate"] = 1.0 / exchange.get_ticker('BTC/USDT', False)['bid']
+                    rate = 1.0 / exchange.get_ticker('BTC/USDT', False)['bid']
                 else:
-                    currency["Rate"] = exchange.get_ticker(coin + '/BTC', False)['bid']
-            currency['BTC'] = currency["Rate"] * currency["Balance"]
-            total = total + currency['BTC']
+                    rate = exchange.get_ticker(coin + '/BTC', False)['bid']
+            est_btc: float = rate * balance['total']
+            total = total + est_btc
             output.append(
                 {
-                    'currency': currency['Currency'],
-                    'available': currency['Available'],
-                    'balance': currency['Balance'],
-                    'pending': currency['Pending'],
-                    'est_btc': currency['BTC']
+                    'currency': coin,
+                    'available': balance['free'],
+                    'balance': balance['total'],
+                    'pending': balance['used'],
+                    'est_btc': est_btc
                 }
             )
+        if total == 0.0:
+            return True, '`All balances are zero.`'
+
         fiat = self.freqtrade.fiat_converter
         symbol = fiat_display_currency
         value = fiat.convert_amount(total, 'BTC', symbol)

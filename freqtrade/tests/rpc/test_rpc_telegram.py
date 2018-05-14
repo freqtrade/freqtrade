@@ -554,36 +554,29 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     """
     Test _balance() method
     """
-    mock_balance = [
-        {
-            'Currency': 'BTC',
-            'Balance': 10.0,
-            'Available': 12.0,
-            'Pending': 0.0,
-            'CryptoAddress': 'XXXX',
+
+    mock_balance = {
+        'BTC': {
+            'total': 12.0,
+            'free': 12.0,
+            'used': 0.0
         },
-        {
-            'Currency': 'ETH',
-            'Balance': 0.0,
-            'Available': 0.0,
-            'Pending': 0.0,
-            'CryptoAddress': 'XXXX',
+        'ETH': {
+            'total': 0.0,
+            'free': 0.0,
+            'used': 0.0
         },
-        {
-            'Currency': 'USDT',
-            'Balance': 10000.0,
-            'Available': 0.0,
-            'Pending': 0.0,
-            'CryptoAddress': 'XXXX',
+        'USDT': {
+            'total': 10000.0,
+            'free': 10000.0,
+            'used': 0.0
         },
-        {
-            'Currency': 'LTC',
-            'Balance': 10.0,
-            'Available': 10.0,
-            'Pending': 0.0,
-            'CryptoAddress': 'XXXX',
+        'LTC': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0
         }
-    ]
+    }
 
     def mock_ticker(symbol, refresh):
         """
@@ -626,7 +619,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     assert '*Currency*: USDT' in result
     assert 'Balance' in result
     assert 'Est. BTC' in result
-    assert '*BTC*:  12.00000000' in result
+    assert '*BTC*:  14.00000000' in result
 
 
 def test_zero_balance_handle(default_conf, update, mocker) -> None:
@@ -636,7 +629,7 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.exchange.get_balances', return_value=[])
+    mocker.patch('freqtrade.freqtradebot.exchange.get_balances', return_value={})
 
     msg_mock = MagicMock()
     mocker.patch.multiple(
