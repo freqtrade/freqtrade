@@ -196,21 +196,22 @@ class Backtesting(object):
                 if ret:
                     row2, trade_entry, next_date = ret
                     lock_pair_until = next_date
+                    trade_entry = trade_entry + ( next_date,)
                     trades.append(trade_entry)
                     if record:
                         # Note, need to be json.dump friendly
                         # record a tuple of pair, current_profit_percent,
                         # entry-date, duration
                         records.append((pair, trade_entry[1],
-                                        row.date.strftime('%s'),
-                                        row2.date.strftime('%s'),
+                                        str(int(row.date.timestamp())),
+                                        str(int(row2.date.timestamp())),
                                         index, trade_entry[3]))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
             logger.info('Dumping backtest results')
             file_dump_json('backtest-result.json', records)
-        labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+        labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'sell_date']
         return DataFrame.from_records(trades, columns=labels)
 
     def start(self) -> None:

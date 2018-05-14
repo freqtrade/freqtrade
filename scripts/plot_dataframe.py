@@ -27,11 +27,7 @@ from freqtrade import exchange
 import freqtrade.optimize as optimize
 
 
-<<<<<<< HEAD
-logger = logging.getLogger('freqtrade')
-=======
 logger = logging.getLogger(__name__)
->>>>>>> bddf009a2b6d0e1a19cca558887ce972e99a6238
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
@@ -87,7 +83,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     )
 
     df_buy = data[data['buy'] == 1]
-    buys = go.Scattergl(
+    buys = go.Scatter(
         x=df_buy.date,
         y=df_buy.close,
         mode='markers',
@@ -100,7 +96,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         )
     )
     df_sell = data[data['sell'] == 1]
-    sells = go.Scattergl(
+    sells = go.Scatter(
         x=df_sell.date,
         y=df_sell.close,
         mode='markers',
