@@ -26,12 +26,7 @@ from freqtrade.analyze import Analyze
 from freqtrade import exchange
 import freqtrade.optimize as optimize
 
-
-<<<<<<< HEAD
-logger = logging.getLogger('freqtrade')
-=======
 logger = logging.getLogger(__name__)
->>>>>>> bddf009a2b6d0e1a19cca558887ce972e99a6238
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
