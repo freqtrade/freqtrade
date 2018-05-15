@@ -614,12 +614,12 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     telegram._balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert '*Currency*: BTC' in result
-    assert '*Currency*: ETH' not in result
-    assert '*Currency*: USDT' in result
-    assert 'Balance' in result
-    assert 'Est. BTC' in result
-    assert '*BTC*:  14.00000000' in result
+    assert '*BTC:*' in result
+    assert '*ETH:*' not in result
+    assert '*USDT:*' in result
+    assert 'Balance:' in result
+    assert 'Est. BTC:' in result
+    assert 'BTC:  14.00000000' in result
 
 
 def test_zero_balance_handle(default_conf, update, mocker) -> None:
