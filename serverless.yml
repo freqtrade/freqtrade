@@ -12,7 +12,7 @@ plugins:
 provider:
   name: aws
   runtime: python3.6
-  region: us-east-1
+  region: us-east-2
 
   #required permissions
   iamRoleStatements:
