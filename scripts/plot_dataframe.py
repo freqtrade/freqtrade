@@ -10,6 +10,7 @@ Optional Cli parameters
 -d / --datadir: path to pair backtest data
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
+-db / --db-url: Show trades stored in database
 """
 import logging
 import sys
@@ -21,14 +22,14 @@ from plotly import tools
 from plotly.offline import plot
 import plotly.graph_objs as go
 
+from typing import Dict, List, Any
+from sqlalchemy import create_engine
+
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
 from freqtrade import exchange
 import freqtrade.optimize as optimize
-
-from typing import Dict, List, Any
 from freqtrade import persistence
-from sqlalchemy import create_engine
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     tick_interval = analyze.strategy.ticker_interval
 
-    tickers = {}
+    tickers = []
     if args.live:
         logger.info('Downloading pair.')
         # Init Bittrex to use public API
