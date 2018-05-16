@@ -55,7 +55,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     tick_interval = analyze.strategy.ticker_interval
 
-    tickers = []
+    tickers = {}
     if args.live:
         logger.info('Downloading pair.')
         # Init Bittrex to use public API
@@ -74,7 +74,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     dataframe = analyze.populate_buy_trend(dataframe)
     dataframe = analyze.populate_sell_trend(dataframe)
 
-    trades = {}
+    trades = []
     if args.db_url:
         engine = create_engine('sqlite:///' + args.db_url)
         persistence.init(_CONF, engine)
