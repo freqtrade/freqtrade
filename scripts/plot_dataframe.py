@@ -285,7 +285,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     buys = go.Scattergl(
         x=df_buy.date,
-        y=df_buy.close * 0.995,
+        y=df_buy.close,
         mode='markers',
         name='buy',
         marker=dict(
@@ -299,7 +299,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     sells = go.Scatter(
         x=df_sell.date,
-        y=df_sell.close * 1.01,
+        y=df_sell.close,
         mode='markers+text',
         name='sell',
         text=df_sell.profit,
