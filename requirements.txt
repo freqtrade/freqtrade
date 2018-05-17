@@ -20,7 +20,7 @@ hyperopt==0.1
 networkx==1.11
 tabulate==0.8.2
 coinmarketcap==4.2.1
-
+simplejson
 # Required for plotting data
 #plotly==2.3.0
 

@@ -62,7 +62,23 @@ custom:
     createRoute53Record: true
 
   pythonRequirements:
-    dockerizePip: non-linux
+    slim: true
+    invalidateCaches: true
+    dockerizePip: false
+    noDeploy:
+      - pytest
+      - moto
+      - plotly
+      - boto3
+      - pytest-mock
+      - pytest-cov
+      - pymongo
+package:
+    exclude:
+        - test/**
+        - __pycache__/**
+        - node_modules/**
+
 ############################################################################################
 # this section defines all lambda function and triggers
 ############################################################################################
