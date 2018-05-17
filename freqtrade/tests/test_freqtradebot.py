@@ -1443,7 +1443,7 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
-    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=trades_for_order)
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=[trades_for_order])
     amount = float(sum(x['amount'] for x in trades_for_order))
     trade = Trade(
         pair='LTC/ETH',
@@ -1458,3 +1458,53 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
                    'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996) from Order',
                    caplog.record_tuples)
+
+
+def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order_fee, mocker):
+    """
+    Test get_real_amount with split trades (multiple trades for this order)
+    """
+    limit_buy_order = deepcopy(buy_order_fee)
+    limit_buy_order['fee'] = {'cost': 0.004}
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=[])
+    amount = float(sum(x['amount'] for x in trades_for_order))
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount does not change
+    assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
+
+
+def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, mocker):
+    """
+    Test get_real_amount - fees in Stake currency
+    """
+    # Remove "Currency" from fee dict
+    trades_for_order[0]['fee'] = {'cost': 0.008}
+
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = sum(x['amount'] for x in trades_for_order)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    # Amount does not change
+    assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
