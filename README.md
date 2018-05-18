@@ -4,6 +4,15 @@
 [![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/gcarq/freqtrade/maintainability)
 
+## First of all, this is a fork!
+
+Basically I required a lot more features than the awesome default freqtrade version has to offer and since pull requests always take longer than exspected or the standard disagreements. I decided to maintain on main branch for my changes, called wohlgemuth, which is incidentally my last name and have a ton of little branches, with added features.
+
+This basically allows people to use my version, or to easily merge changes into their forks or make PR's against the main repo, which is the best of both works.
+
+This reminds of the Torvalds kernel vs the Cox kernel...
+
+## Back to what this is actually about
 
 Simple High frequency trading bot for crypto currencies designed to 
 support multi exchanges and be controlled via Telegram.
@@ -69,6 +78,19 @@ want to avoid.
  of your profit/loss.
 - [x] **Performance status report**: Provide a performance status of 
 your current trades.
+
+### Additional features in this branch
+
+- [x] advanced plotting
+- [x] trailing stop loss
+- [x] more indicators
+- [x] more telegram features
+
+### Drawbacks
+
+- [x] not as good documentation
+- [x] maybe a bug here or there I haven't fixed yet
+
 
 ### Exchange supported
 - [x] Bittrex
