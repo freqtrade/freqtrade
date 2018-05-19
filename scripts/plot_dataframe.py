@@ -10,6 +10,7 @@ Optional Cli parameters
 -d / --datadir: path to pair backtest data
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
+-db / --db-url: Show trades stored in database
 """
 import logging
 import sys
@@ -21,13 +22,18 @@ from plotly import tools
 from plotly.offline import plot
 import plotly.graph_objs as go
 
+from typing import Dict, List, Any
+from sqlalchemy import create_engine
+
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
 from freqtrade import exchange
 import freqtrade.optimize as optimize
+from freqtrade import persistence
+from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
-
+_CONF: Dict[str, Any] = {}
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
     """
@@ -67,6 +73,12 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     dataframe = dataframes[pair]
     dataframe = analyze.populate_buy_trend(dataframe)
     dataframe = analyze.populate_sell_trend(dataframe)
+
+    trades = []
+    if args.db_url:
+        engine = create_engine('sqlite:///' + args.db_url)
+        persistence.init(_CONF, engine)
+        trades = Trade.query.filter(Trade.pair.is_(pair)).all()
 
     if len(dataframe.index) > 750:
         logger.warning('Ticker contained more than 750 candles, clipping.')
@@ -108,6 +120,31 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         )
     )
 
+    trade_buys = go.Scattergl(
+        x=[t.open_date.isoformat() for t in trades],
+        y=[t.open_rate for t in trades],
+        mode='markers',
+        name='trade_buy',
+        marker=dict(
+            symbol='square-open',
+            size=11,
+            line=dict(width=2),
+            color='green'
+        )
+    )
+    trade_sells = go.Scattergl(
+        x=[t.close_date.isoformat() for t in trades],
+        y=[t.close_rate for t in trades],
+        mode='markers',
+        name='trade_sell',
+        marker=dict(
+            symbol='square-open',
+            size=11,
+            line=dict(width=2),
+            color='red'
+        )
+    )
+
     bb_lower = go.Scatter(
         x=data.date,
         y=data.bb_lowerband,
@@ -142,6 +179,8 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     fig.append_trace(volume, 2, 1)
     fig.append_trace(macd, 3, 1)
     fig.append_trace(macdsignal, 3, 1)
+    fig.append_trace(trade_buys, 1, 1)
+    fig.append_trace(trade_sells, 1, 1)
 
     fig['layout'].update(title=args.pair)
     fig['layout']['yaxis1'].update(title='Price')
