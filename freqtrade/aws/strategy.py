@@ -1,5 +1,5 @@
 from freqtrade.strategy.resolver import StrategyResolver
-
+import boto3
 import os
 import simplejson as json
 import uuid
@@ -17,8 +17,12 @@ def names(event, context):
     :param context:
     :return:
     """
-    pass
+    table = Persistence(os.environ['strategyTable'])
 
+    return {
+        "statusCode": 200,
+        "body": json.dumps(table.list())
+    }
 
 def performance(event, context):
     """
@@ -51,19 +55,19 @@ def submit(event, context):
     # get data
     data = json.loads(event['body'])
 
-    print("received data")
-    print(data)
+    # print("received data")
+    # print(data)
 
     # validate against schema
     result = validate(data, __SUBMIT_STRATEGY_SCHEMA__)
 
-    print("data are validated");
-    print(result)
+    # print("data are validated");
+    # print(result)
 
     strategy = urlsafe_b64decode(data['content']).decode('utf-8')
 
-    print("loaded strategy")
-    print(strategy)
+    # print("loaded strategy")
+    # print(strategy)
     # try to load the strategy
     StrategyResolver().compile(data['name'], strategy)
 

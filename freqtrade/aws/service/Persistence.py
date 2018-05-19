@@ -1,5 +1,15 @@
 import boto3
 import simplejson as json
+import decimal
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
 
 
 class Persistence:
@@ -15,6 +25,22 @@ class Persistence:
 
         self.table = table
         self.db = boto3.resource('dynamodb')
+
+    def list(self):
+        table = self.db.Table(self.table)
+
+        response = table.scan()
+        result = []
+
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(
+                ExclusiveStartKey=response['LastEvaluatedKey']
+            )
+
+            for i in response['Items']:
+                result.append(i)
+
+        return result
 
     def load(self, sample):
         """
