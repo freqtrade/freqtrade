@@ -73,8 +73,6 @@ custom:
       - pytest-mock
       - pytest-cov
       - pymongo
-    pipCmdExtraArgs:
-      - "--no-binary :all:"
 package:
     exclude:
         - test/**

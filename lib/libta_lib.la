@@ -14,7 +14,7 @@ library_names='libta_lib.so.0.0.0 libta_lib.so.0 libta_lib.so'
 old_library='libta_lib.a'
 
 # Libraries that this one depends upon.
-dependency_libs=' -lpthread -ldl   '
+dependency_libs=' -lpthread -ldl'
 
 # Version information for libta_lib.
 current=0
@@ -22,7 +22,7 @@ age=0
 revision=0
 
 # Is this an already installed library?
-installed=no
+installed=yes
 
 # Should we warn about portability when linking against -modules?
 shouldnotlink=no

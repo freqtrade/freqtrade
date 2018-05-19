@@ -56,6 +56,7 @@ class TestStrategy(IStrategy):
         "public": False
     }
 
+    print(json.dumps(request))
 
     submit({
         "body": json.dumps(request)
