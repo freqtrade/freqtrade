@@ -1,31 +1,18 @@
-import os
-import ctypes
-
-#for d, dirs, files in os.walk('lib'):
-#    for f in files:
-#        if f.endswith('.a') or f.endswith('.la'):
-#            continue
-#        print("loading: {}".format(f))
-#        ctypes.cdll.LoadLibrary(os.path.join(d, f))
-#
-
-
-
 from freqtrade.strategy.resolver import StrategyResolver
 
+import os
 import simplejson as json
+import uuid
 from jsonschema import validate
 from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
 from base64 import urlsafe_b64decode
+from freqtrade.aws.service.Persistence import Persistence
+import time
 
-__HTTP_HEADERS__ = {
-    'Access-Control-Allow-Origin' : '*',
-    'Access-Control-Allow-Credentials' : True
-}
 
 def names(event, context):
     """
-            returns the names of all registered strategies, but public and private
+            returns the names of all registered strategies, both public and private
     :param event:
     :param context:
     :return:
@@ -80,11 +67,16 @@ def submit(event, context):
     # try to load the strategy
     StrategyResolver().compile(data['name'], strategy)
 
-    print("compiled strategy")
+    # generate id
+    data['id'] = str(uuid.uuid4())
+    data['time'] = int(time.time() * 1000)
+
     # save to DB
+    table = Persistence(os.environ['strategyTable'])
+
+    result = table.save(data)
 
     return {
-        "statusCode": 200,
-        "headers": __HTTP_HEADERS__,
-        "body": json.dumps({"success":True})
+        "statusCode": result['ResponseMetadata']['HTTPStatusCode'],
+        "body": json.dumps(result)
     }
