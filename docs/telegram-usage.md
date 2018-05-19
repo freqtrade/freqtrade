@@ -129,12 +129,8 @@ Day         Profit BTC      Profit USD
 > **Version:** `0.14.3` 
 
 ### using proxy with telegram
-in [freqtrade/freqtrade/rpc/telegram.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/rpc/telegram.py) replace
 ```
-self._updater = Updater(token=self._config['telegram']['token'], workers=0)
-```
-
-with
-```
-self._updater = Updater(token=self._config['telegram']['token'], request_kwargs={'proxy_url': 'socks5://127.0.0.1:1080/'}, workers=0)
+$ export HTTP_PROXY="http://addr:port"
+$ export HTTPS_PROXY="http://addr:port"
+$ freqtrade
 ```

@@ -264,17 +264,15 @@ class Telegram(RPC):
         (currencys, total, symbol, value) = result
         output = ''
         for currency in currencys:
-            output += """*Currency*: {currency}
-    *Available*: {available}
-    *Balance*: {balance}
-    *Pending*: {pending}
-    *Est. BTC*: {est_btc: .8f}
-    """.format(**currency)
+            output += "*{currency}:*\n" \
+                      "\t`Available: {available: .8f}`\n" \
+                      "\t`Balance: {balance: .8f}`\n" \
+                      "\t`Pending: {pending: .8f}`\n" \
+                      "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
 
-        output += """*Estimated Value*:
-    *BTC*: {0: .8f}
-    *{1}*: {2: .2f}
-    """.format(total, symbol, value)
+        output += "\n*Estimated Value*:\n" \
+                  "\t`BTC: {0: .8f}`\n" \
+                  "\t`{1}: {2: .2f}`\n".format(total, symbol, value)
         self.send_msg(output)
 
     @authorized_only
@@ -357,8 +355,9 @@ class Telegram(RPC):
 
         message = tabulate({
             'current': [len(trades)],
-            'max': [self._config['max_open_trades']]
-        }, headers=['current', 'max'], tablefmt='simple')
+            'max': [self._config['max_open_trades']],
+            'total stake': [sum((trade.open_rate * trade.amount) for trade in trades)]
+        }, headers=['current', 'max', 'total stake'], tablefmt='simple')
         message = "<pre>{}</pre>".format(message)
         logger.debug(message)
         self.send_msg(message, parse_mode=ParseMode.HTML)

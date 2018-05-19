@@ -288,22 +288,18 @@ def test_rpc_balance_handle(default_conf, mocker):
     """
     Test rpc_balance() method
     """
-    mock_balance = [
-        {
-            'Currency': 'BTC',
-            'Balance': 10.0,
-            'Available': 12.0,
-            'Pending': 0.0,
-            'CryptoAddress': 'XXXX',
+    mock_balance = {
+        'BTC': {
+            'free': 10.0,
+            'total': 12.0,
+            'used': 2.0,
         },
-        {
-            'Currency': 'ETH',
-            'Balance': 0.0,
-            'Available': 0.0,
-            'Pending': 0.0,
-            'CryptoAddress': 'XXXX',
+        'ETH': {
+            'free': 0.0,
+            'total': 0.0,
+            'used': 0.0,
         }
-    ]
+    }
 
     patch_get_signal(mocker, (True, False))
     mocker.patch.multiple(
@@ -324,15 +320,15 @@ def test_rpc_balance_handle(default_conf, mocker):
     (error, res) = rpc.rpc_balance(default_conf['fiat_display_currency'])
     assert not error
     (trade, x, y, z) = res
-    assert prec_satoshi(x, 10)
-    assert prec_satoshi(z, 150000)
+    assert prec_satoshi(x, 12)
+    assert prec_satoshi(z, 180000)
     assert 'USD' in y
     assert len(trade) == 1
     assert 'BTC' in trade[0]['currency']
-    assert prec_satoshi(trade[0]['available'], 12)
-    assert prec_satoshi(trade[0]['balance'], 10)
-    assert prec_satoshi(trade[0]['pending'], 0)
-    assert prec_satoshi(trade[0]['est_btc'], 10)
+    assert prec_satoshi(trade[0]['available'], 10)
+    assert prec_satoshi(trade[0]['balance'], 12)
+    assert prec_satoshi(trade[0]['pending'], 2)
+    assert prec_satoshi(trade[0]['est_btc'], 12)
 
 
 def test_rpc_start(mocker, default_conf) -> None:

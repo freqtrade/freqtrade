@@ -297,9 +297,10 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
             if not data_part:
                 break
 
-            logger.info('Downloaded data for time range [%s, %s]',
-                        arrow.get(data_part[0][0] / 1000).format(),
-                        arrow.get(data_part[-1][0] / 1000).format())
+            logger.debug('Downloaded data for %s time range [%s, %s]',
+                         pair,
+                         arrow.get(data_part[0][0] / 1000).format(),
+                         arrow.get(data_part[-1][0] / 1000).format())
 
             data.extend(data_part)
             since_ms = data[-1][0] + 1
