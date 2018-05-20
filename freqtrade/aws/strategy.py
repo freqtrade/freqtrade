@@ -1,13 +1,15 @@
-from freqtrade.strategy.resolver import StrategyResolver
-import boto3
 import os
-import simplejson as json
-import uuid
-from jsonschema import validate
-from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
-from base64 import urlsafe_b64decode
-from freqtrade.aws.service.Persistence import Persistence
 import time
+from base64 import urlsafe_b64decode
+
+import boto3
+import simplejson as json
+from jsonschema import validate
+
+from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
+from freqtrade.strategy.resolver import StrategyResolver
+
+db = boto3.resource('dynamodb')
 
 
 def names(event, context):
@@ -17,10 +19,19 @@ def names(event, context):
     :param context:
     :return:
     """
-    table = Persistence(os.environ['strategyTable'])
+    table = db.Table(os.environ['strategyTable'])
+    response = table.scan()
+    result = response['Items']
+
+    while 'LastEvaluatedKey' in response:
+        for i in response['Items']:
+            result.append(i)
+        response = table.scan(
+            ExclusiveStartKey=response['LastEvaluatedKey']
+        )
 
     # map results and hide informations
-    data = list(map(lambda x: {'name': x['name'], 'public': x['public'], 'user': x['user']}, table.list()))
+    data = list(map(lambda x: {'name': x['name'], 'public': x['public'], 'user': x['user']}, result))
 
     return {
         "statusCode": 200,
@@ -78,11 +89,13 @@ def submit(event, context):
     data['time'] = int(time.time() * 1000)
     data['type'] = "strategy"
 
-    # save to DB
-    table = Persistence(os.environ['strategyTable'])
+    # force serialization to deal with decimal number
+    data = json.dumps(data, use_decimal=True)
+    data = json.loads(data, use_decimal=True)
 
-    result = table.save(data)
+    table = db.Table(os.environ['strategyTable'])
 
+    result = table.put_item(Item=data)
     return {
         "statusCode": result['ResponseMetadata']['HTTPStatusCode'],
         "body": json.dumps(result)
