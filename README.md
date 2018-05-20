@@ -53,11 +53,8 @@ hesitate to read the source code and understand the mechanism of this bot.
     - [Software requirements](#software-requirements)
 
 ## Branches
-The project is currently setup in two main branches:
-- `develop` - This branch has often new features, but might also cause 
-breaking changes.
-- `master` - This branch contains the latest stable release. The bot 
-'should' be stable on this branch, and is generally well tested. 
+
+- `wohlgemuth` - This is my main branch, which will contain all my special features and is based of the develop branch!
 
 ## Features
 - [x] **Based on Python 3.6+**: For botting on any operating system - 
