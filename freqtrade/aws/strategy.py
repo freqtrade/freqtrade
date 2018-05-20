@@ -19,10 +19,14 @@ def names(event, context):
     """
     table = Persistence(os.environ['strategyTable'])
 
+    # map results and hide informations
+    data = list(map(lambda x: {'name': x['name'], 'public': x['public'], 'user': x['user']}, table.list()))
+
     return {
         "statusCode": 200,
-        "body": json.dumps(table.list())
+        "body": json.dumps(data)
     }
+
 
 def performance(event, context):
     """
@@ -71,9 +75,8 @@ def submit(event, context):
     # try to load the strategy
     StrategyResolver().compile(data['name'], strategy)
 
-    # generate id
-    data['id'] = str(uuid.uuid4())
     data['time'] = int(time.time() * 1000)
+    data['type'] = "strategy"
 
     # save to DB
     table = Persistence(os.environ['strategyTable'])

@@ -2,6 +2,7 @@ import boto3
 import simplejson as json
 import decimal
 
+
 class DecimalEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, decimal.Decimal):
@@ -30,15 +31,14 @@ class Persistence:
         table = self.db.Table(self.table)
 
         response = table.scan()
-        result = []
+        result = response['Items']
 
         while 'LastEvaluatedKey' in response:
+            for i in response['Items']:
+                result.append(i)
             response = table.scan(
                 ExclusiveStartKey=response['LastEvaluatedKey']
             )
-
-            for i in response['Items']:
-                result.append(i)
 
         return result
 

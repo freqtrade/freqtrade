@@ -1,6 +1,6 @@
 import simplejson as json
 from base64 import urlsafe_b64encode
-from freqtrade.aws.strategy import submit
+import freqtrade.aws.strategy as aws
 
 
 def test_strategy(lambda_context):
@@ -56,8 +56,44 @@ class TestStrategy(IStrategy):
         "public": False
     }
 
-    print(json.dumps(request))
-
-    submit({
+    # db should be empty
+    assert (len(json.loads(aws.names({}, {})['body'])) == 0)
+    # now we add an entry
+    aws.submit({
         "body": json.dumps(request)
     }, {})
+
+    # now we should have items
+    assert (len(json.loads(aws.names({}, {})['body'])) == 1)
+
+    # able to add a second strategy with the sample name, but different user
+
+    request = {
+        "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH",
+        "description": "simple test strategy",
+        "name": "TestStrategy",
+        "content": urlsafe_b64encode(content.encode('utf-8')),
+        "public": False
+    }
+
+    aws.submit({
+        "body": json.dumps(request)
+    }, {})
+
+    assert (len(json.loads(aws.names({}, {})['body'])) == 2)
+
+    # able to add a duplicated strategy, which should overwrite the existing strategy
+
+    request = {
+        "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH",
+        "description": "simple test strategy",
+        "name": "TestStrategy",
+        "content": urlsafe_b64encode(content.encode('utf-8')),
+        "public": False
+    }
+
+    aws.submit({
+        "body": json.dumps(request)
+    }, {})
+
+    assert (len(json.loads(aws.names({}, {})['body'])) == 2)

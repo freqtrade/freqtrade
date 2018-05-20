@@ -497,6 +497,7 @@ def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
 
+
 # FIX:
 # Create an fixture/function
 # that inserts a trade of some type and open-status
@@ -593,7 +594,6 @@ def buy_order_fee():
 
 @pytest.fixture
 def lambda_context():
-
     # mock the different AWS features we need
     sns = moto.mock_sns()
     sns.start()
@@ -608,6 +608,34 @@ def lambda_context():
 
     client = session.client('sns')
     dynamodb = boto3.resource('dynamodb')
+    os.environ["strategyTable"] = "StrategyTable"
+
+    dynamodb.create_table(
+        TableName=os.environ["strategyTable"],
+        KeySchema=[
+            {
+                'AttributeName': 'user',
+                'KeyType': 'HASH'
+            },
+            {
+                'AttributeName': 'name',
+                'KeyType': 'RANGE'
+            }
+        ],
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'user',
+                'AttributeType': 'S'
+            }, {
+                'AttributeName': 'name',
+                'AttributeType': 'S'
+            }
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 1,
+            'WriteCapacityUnits': 1
+        }
+    )
 
     # here we will define required tables later
     yield
