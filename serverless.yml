@@ -117,7 +117,6 @@ functions:
     environment:
       strategyTable: ${self:custom.strategyTable}
 
-  #TODO
   #returns the source code of this given strategy
   #unless it's private
   code:
@@ -125,12 +124,13 @@ functions:
     handler: freqtrade/aws/strategy.code
     events:
       - http:
-          path: strategies/{name}/code
+          path: strategies/{user}/{name}/code
           method: get
           cors: true
           request:
             parameter:
               paths:
+                user: true
                 name: true
           response:
             headers:
@@ -139,7 +139,24 @@ functions:
     environment:
       strategyTable: ${self:custom.strategyTable}
 
-  #TODO
+  # loads the details of the specific strategy
+  get:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.get
+    events:
+      - http:
+          path: strategies/{user}/{name}
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                user: true
+                name: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+
   #submits a new strategy to the system
   submit:
     memorySize: 128
