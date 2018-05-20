@@ -49,6 +49,15 @@ def performance(event, context):
     pass
 
 
+def get(event, context):
+    """
+        loads a strategy
+    :param event:
+    :param context:
+    :return:
+    """
+    pass
+
 def code(event, context):
     """
         returns the code of the requested strategy, if it's public

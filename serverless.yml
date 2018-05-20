@@ -105,12 +105,13 @@ functions:
     handler: freqtrade/aws/strategy.performance
     events:
       - http:
-          path: strategies/{name}/performance
+          path: strategies/{user}/{name}/performance
           method: get
           cors: true
           request:
             parameter:
               paths:
+                user: true
                 name: true
 
     environment:

@@ -73,7 +73,7 @@ class TestStrategy(IStrategy):
         "description": "simple test strategy",
         "name": "TestStrategy",
         "content": urlsafe_b64encode(content.encode('utf-8')),
-        "public": False
+        "public": True
     }
 
     aws.submit({
@@ -89,7 +89,7 @@ class TestStrategy(IStrategy):
         "description": "simple test strategy",
         "name": "TestStrategy",
         "content": urlsafe_b64encode(content.encode('utf-8')),
-        "public": False
+        "public": True
     }
 
     aws.submit({
@@ -97,3 +97,20 @@ class TestStrategy(IStrategy):
     }, {})
 
     assert (len(json.loads(aws.names({}, {})['body'])) == 2)
+
+    # we need to be able to get the code of the strategy
+    code = aws.code({'pathParameters': {
+        "name": "TestStrategy",
+        "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH"
+    }}, {})
+
+    # code should equal our initial content
+    assert code == content
+
+    # we need to be able to get a strategy ( code cannot be included )
+    strategy = json.loads(aws.get({}, {}))
+    assert "content" not in strategy
+    assert "user" in strategy
+    assert "name" in strategy
+    assert "description" in strategy
+    assert "public" in strategy
