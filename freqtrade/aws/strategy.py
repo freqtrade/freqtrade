@@ -112,7 +112,7 @@ def code(event, context):
 
             return {
                 "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
-                "body": content
+                "body": str(content)
             }
         else:
 
