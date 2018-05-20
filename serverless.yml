@@ -183,21 +183,6 @@ resources:
     FreqStrategyTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
-      Properties:
-        AttributeDefinitions:
-          -
-            AttributeName: user
-            AttributeType: S
-          -
-            AttributeName: content
-            AttributeType: S
-          -
-            AttributeName: name
-            AttributeType: S
-          -
-            AttributeName: description
-            AttributeType: S
-
 
         KeySchema:
             -
