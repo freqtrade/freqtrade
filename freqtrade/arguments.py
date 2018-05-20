@@ -331,6 +331,13 @@ class Arguments(object):
         )
 
 
+        self.parser.add_argument(
+            '-db', '--db-url',
+            help='Show trades stored in database.',
+            dest='db_url',
+            default=None
+        )
+
     def testdata_dl_options(self) -> None:
         """
         Parses given arguments for testdata download

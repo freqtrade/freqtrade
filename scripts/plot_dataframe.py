@@ -10,6 +10,7 @@ Optional Cli parameters
 -d / --datadir: path to pair backtest data
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
+-db / --db-url: Show trades stored in database
 """
 import datetime
 import logging
@@ -21,12 +22,22 @@ import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
 
+from typing import Dict, List, Any
+from sqlalchemy import create_engine
+
 import freqtrade.optimize as optimize
 from freqtrade import exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
+from freqtrade.analyze import Analyze
+from freqtrade import exchange
+import freqtrade.optimize as optimize
+from freqtrade import persistence
+from freqtrade.persistence import Trade
 from freqtrade.configuration import Configuration
 
+logger = logging.getLogger(__name__)
+_CONF: Dict[str, Any] = {}
 logger = logging.getLogger('freqtrade')
 
 def plot_dataframes_markers(data, fig, args):
@@ -271,6 +282,15 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     if len(dataframe.index) > args.plotticks:
         logger.warning('Ticker contained more than {} candles, clipping.'.format(args.plotticks))
     data = dataframe.tail(args.plotticks)
+    trades = []
+    if args.db_url:
+        engine = create_engine('sqlite:///' + args.db_url)
+        persistence.init(_CONF, engine)
+        trades = Trade.query.filter(Trade.pair.is_(pair)).all()
+
+    if len(dataframe.index) > 750:
+        logger.warning('Ticker contained more than 750 candles, clipping.')
+    data = dataframe.tail(750)
 
     candles = go.Candlestick(
         x=data.date,
@@ -311,6 +331,31 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             color='red',
         )
 
+    )
+
+    trade_buys = go.Scattergl(
+        x=[t.open_date.isoformat() for t in trades],
+        y=[t.open_rate for t in trades],
+        mode='markers',
+        name='trade_buy',
+        marker=dict(
+            symbol='square-open',
+            size=11,
+            line=dict(width=2),
+            color='green'
+        )
+    )
+    trade_sells = go.Scattergl(
+        x=[t.close_date.isoformat() for t in trades],
+        y=[t.close_rate for t in trades],
+        mode='markers',
+        name='trade_sell',
+        marker=dict(
+            symbol='square-open',
+            size=11,
+            line=dict(width=2),
+            color='red'
+        )
     )
 
     bb_lower = go.Scatter(

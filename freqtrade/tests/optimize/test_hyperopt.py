@@ -123,7 +123,7 @@ def test_loss_calculation_has_limited_profit(init_hyperopt) -> None:
     assert under > correct
 
 
-def test_log_results_if_loss_improves(capsys) -> None:
+def test_log_results_if_loss_improves(init_hyperopt, capsys) -> None:
     hyperopt = _HYPEROPT
     hyperopt.current_best_loss = 2
     hyperopt.log_results(

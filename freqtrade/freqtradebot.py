@@ -330,6 +330,7 @@ class FreqtradeBot(object):
             fee_open=fee,
             fee_close=fee,
             open_rate=buy_limit,
+            open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
             exchange=exchange.get_id(),
             open_order_id=order_id
@@ -396,7 +397,7 @@ class FreqtradeBot(object):
             return order_amount
 
         # use fee from order-dict if possible
-        if 'fee' in order and order['fee']:
+        if 'fee' in order and order['fee'] and (order['fee'].keys() >= {'currency', 'cost'}):
             if trade.pair.startswith(order['fee']['currency']):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
@@ -413,7 +414,7 @@ class FreqtradeBot(object):
         fee_abs = 0
         for exectrade in trades:
             amount += exectrade['amount']
-            if "fee" in exectrade:
+            if "fee" in exectrade and (exectrade['fee'].keys() >= {'currency', 'cost'}):
                 # only applies if fee is in quote currency!
                 if trade.pair.startswith(exectrade['fee']['currency']):
                     fee_abs += exectrade['fee']['cost']
@@ -538,6 +539,7 @@ class FreqtradeBot(object):
         # Execute sell and update trade record
         order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
+        trade.close_rate_requested = limit
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
         profit_trade = trade.calc_profit(rate=limit)

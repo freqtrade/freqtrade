@@ -5,6 +5,7 @@ e.g BTC to USD
 
 import logging
 import time
+from typing import Dict
 
 from coinmarketcap import Market
 
@@ -73,12 +74,7 @@ class CryptoToFiatConverter(object):
         "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
     ]
 
-    CRYPTOMAP = {
-        'BTC': 'bitcoin',
-        'ETH': 'ethereum',
-        'USDT': 'thether',
-        'BNB': 'binance-coin'
-    }
+    _cryptomap: Dict = {}
 
     def __new__(cls):
         if CryptoToFiatConverter.__instance is None:
@@ -91,6 +87,15 @@ class CryptoToFiatConverter(object):
 
     def __init__(self) -> None:
         self._pairs = []
+        self._load_cryptomap()
+
+    def _load_cryptomap(self) -> None:
+        try:
+            coinlistings = self._coinmarketcap.listings()
+            self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"])),
+                                       coinlistings["data"]))
+        except ValueError:
+            logger.error("Could not load FIAT Cryptocurrency map")
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:
         """
@@ -182,16 +187,17 @@ class CryptoToFiatConverter(object):
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
 
-        if crypto_symbol not in self.CRYPTOMAP:
+        if crypto_symbol not in self._cryptomap:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
             logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
             return 0.0
         try:
             return float(
                 self._coinmarketcap.ticker(
-                    currency=self.CRYPTOMAP[crypto_symbol],
+                    currency=self._cryptomap[crypto_symbol],
                     convert=fiat_symbol
-                )[0]['price_' + fiat_symbol.lower()]
+                )['data']['quotes'][fiat_symbol.upper()]['price']
             )
-        except BaseException:
+        except BaseException as ex:
+            logger.error("Error in _find_price: %s", ex)
             return 0.0
