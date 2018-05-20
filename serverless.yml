@@ -132,6 +132,9 @@ functions:
             parameter:
               paths:
                 name: true
+          response:
+            headers:
+              Content-Type: "'text/plain'"
 
     environment:
       strategyTable: ${self:custom.strategyTable}

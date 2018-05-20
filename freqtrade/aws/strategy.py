@@ -4,6 +4,7 @@ from base64 import urlsafe_b64decode
 
 import boto3
 import simplejson as json
+from boto3.dynamodb.conditions import Key, Attr
 from jsonschema import validate
 
 from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
@@ -51,12 +52,39 @@ def performance(event, context):
 
 def get(event, context):
     """
-        loads a strategy
+        returns the code of the requested strategy, if it's public
     :param event:
     :param context:
     :return:
     """
-    pass
+
+    assert 'pathParameters' in event
+    assert 'user' in event['pathParameters']
+    assert 'name' in event['pathParameters']
+
+    table = db.Table(os.environ['strategyTable'])
+
+    response = table.query(
+        KeyConditionExpression=Key('user').eq(event['pathParameters']['user']) &
+                               Key('name').eq(event['pathParameters']['name'])
+
+    )
+
+    if "Items" in response and len(response['Items']) > 0:
+        item = response['Items'][0]
+        item.pop('content')
+
+        return {
+            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "body": json.dumps(item)
+        }
+
+    else:
+        return {
+            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "body": json.dumps(response)
+        }
+
 
 def code(event, context):
     """
@@ -65,7 +93,39 @@ def code(event, context):
     :param context:
     :return:
     """
-    pass
+
+    assert 'pathParameters' in event
+    assert 'user' in event['pathParameters']
+    assert 'name' in event['pathParameters']
+
+    table = db.Table(os.environ['strategyTable'])
+
+    response = table.query(
+        KeyConditionExpression=Key('user').eq(event['pathParameters']['user']) &
+                               Key('name').eq(event['pathParameters']['name'])
+
+    )
+
+    if "Items" in response and len(response['Items']) > 0:
+        if response['Items'][0]["public"]:
+            content = urlsafe_b64decode(response['Items'][0]['content'])
+
+            return {
+                "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+                "body": content
+            }
+        else:
+
+            return {
+                "statusCode": 403,
+                "body": json.dumps({"success": False, "reason": "Denied"})
+            }
+
+    else:
+        return {
+            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "body": json.dumps(response)
+        }
 
 
 def submit(event, context):
@@ -76,17 +136,20 @@ def submit(event, context):
     :return:
     """
 
+    print(event)
     # get data
     data = json.loads(event['body'])
 
     # print("received data")
-    # print(data)
 
     # validate against schema
     result = validate(data, __SUBMIT_STRATEGY_SCHEMA__)
 
     # print("data are validated");
     # print(result)
+
+    # validate that the user is an Isaac User
+    # ToDo
 
     strategy = urlsafe_b64decode(data['content']).decode('utf-8')
 

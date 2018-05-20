@@ -4,6 +4,12 @@ import freqtrade.aws.strategy as aws
 
 
 def test_strategy(lambda_context):
+    """
+        very uggly long test
+
+    :param lambda_context:
+    :return:
+    """
     content = """# --- Do not remove these libs ---
 from freqtrade.strategy.interface import IStrategy
 from typing import Dict, List
@@ -98,19 +104,37 @@ class TestStrategy(IStrategy):
 
     assert (len(json.loads(aws.names({}, {})['body'])) == 2)
 
-    # we need to be able to get the code of the strategy
-    code = aws.code({'pathParameters': {
+    # we need to be able to get a strategy ( code cannot be included )
+    strategy = aws.get({'pathParameters': {
         "name": "TestStrategy",
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH"
     }}, {})
 
-    # code should equal our initial content
-    assert code == content
+    print(strategy)
+    strategy = json.loads(strategy['body'])
 
-    # we need to be able to get a strategy ( code cannot be included )
-    strategy = json.loads(aws.get({}, {}))
     assert "content" not in strategy
     assert "user" in strategy
     assert "name" in strategy
     assert "description" in strategy
     assert "public" in strategy
+    assert "content" not in strategy
+
+    # we need to be able to get the code of the strategy
+    code = aws.code({'pathParameters': {
+        "name": "TestStrategy",
+        "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH"
+    }}, {})['body']
+
+    # code should equal our initial content
+    assert code == content
+
+    # we are not allowed to load a private strategy
+    code = aws.code({'pathParameters': {
+        "name": "TestStrategy",
+        "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG"
+    }}, {})
+
+    # code should equal our initial content
+    assert code['statusCode'] == 403
+    assert json.loads(code['body']) == {"success": False, "reason": "Denied"}
