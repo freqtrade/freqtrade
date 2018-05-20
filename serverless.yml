@@ -201,10 +201,10 @@ resources:
 
         KeySchema:
             -
-                'AttributeName': 'user',
+                'AttributeName': 'user'
                 'KeyType': 'HASH'
             -
-                'AttributeName': 'name',
+                'AttributeName': 'name'
                 'KeyType': 'RANGE'
 
         ProvisionedThroughput:
