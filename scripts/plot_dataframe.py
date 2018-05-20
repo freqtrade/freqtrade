@@ -11,6 +11,22 @@ Optional Cli parameters
 --timerange: specify what timerange of data to use.
 -l / --live: Live, to download the latest ticker for the pair
 -db / --db-url: Show trades stored in database
+
+--plot-max-ticks N: plot N data points and overwrite the internal 750 cut of
+
+
+Plotting Subplots, require the name of the dataframe column.
+
+Each plot will be displayed as usual on exchanges
+
+--plot-rsi <RSI>
+--plot-cci <CCI>
+--plot-osc <CCI>
+--plot-macd <MACD>
+--plot-cmf <CMF>
+
+
+--
 """
 import datetime
 import logging
@@ -35,10 +51,12 @@ import freqtrade.optimize as optimize
 from freqtrade import persistence
 from freqtrade.persistence import Trade
 from freqtrade.configuration import Configuration
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
 logger = logging.getLogger('freqtrade')
+
 
 def plot_dataframes_markers(data, fig, args):
     """
@@ -51,7 +69,7 @@ def plot_dataframes_markers(data, fig, args):
 
     if args.plotdataframemarker:
         for x in args.plotdataframemarker:
-            filter = data[(data[x] == 100 ) | (data[x] == -100) ]
+            filter = data[(data[x] == 100) | (data[x] == -100)]
             marker = go.Scatter(
                 x=filter.date,
                 y=filter.low * 0.99,
@@ -125,6 +143,103 @@ def plot_rsi_dataframe(data, fig, args, plotnumber):
             rsi = go.Scattergl(x=data['date'], y=data[x], name=x)
             fig.append_trace(rsi, plotnumber, 1)
 
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'fillcolor': 'red',
+            'opacity': 0.1,
+            'type': 'rect',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': 70,
+            'y1': 100,
+            'line': {'color': 'gray'}
+        }
+    )
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'fillcolor': 'green',
+            'opacity': 0.1,
+            'type': 'rect',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': 0,
+            'y1': 30,
+            'line': {'color': 'gray'}
+        }
+    )
+
+
+def plot_osc_dataframe(data, fig, args, plotnumber):
+    """
+
+        this function plots an additional cci chart under the exiting charts
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+
+    if args.plotosc:
+        for x in args.plotosc:
+            chart = go.Scattergl(x=data['date'], y=data[x], name=x)
+            fig.append_trace(chart, plotnumber, 1)
+
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'fillcolor': 'gray',
+            'opacity': 0.1,
+            'type': 'rect',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': 0.3,
+            'y1': 0.7,
+            'line': {'color': 'gray'}
+        }
+    )
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'type': 'line',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': 0.6,
+            'y1': 0.6,
+            'line': {'color': 'red','width': 1}
+        }
+    )
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'type': 'line',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': 0.4,
+            'y1': 0.4,
+            'line': {'color': 'green','width':1}
+        }
+    )
+
+
+def plot_cmf_dataframe(data, fig, args, plotnumber):
+    """
+
+        this function plots an additional cci chart under the exiting charts
+    :param data:
+    :param fig:
+    :param args:
+    :return:
+    """
+
+    minValue = 0;
+    maxValue = 0;
+    if args.plotcmf:
+        for x in args.plotcmf:
+            chart = go.Bar(x=data['date'], y=data[x], name=x)
+            fig.append_trace(chart, plotnumber, 1)
+
 
 def plot_cci_dataframe(data, fig, args, plotnumber):
     """
@@ -135,11 +250,45 @@ def plot_cci_dataframe(data, fig, args, plotnumber):
     :param args:
     :return:
     """
+
+    minValue = 0;
+    maxValue = 0;
     if args.plotcci:
         for x in args.plotcci:
+            if minValue > min(data[x]):
+                minValue = min(data[x])
+            if maxValue < max(data[x]):
+                maxValue = max(data[x])
+
             chart = go.Scattergl(x=data['date'], y=data[x], name=x)
             fig.append_trace(chart, plotnumber, 1)
 
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'fillcolor': 'red',
+            'opacity': 0.1,
+            'type': 'rect',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': 100,
+            'y1': maxValue,
+            'line': {'color': 'gray'}
+        }
+    )
+    fig['layout']['shapes'].append(
+        {
+            'yref': 'y' + str(plotnumber),
+            'fillcolor': 'green',
+            'opacity': 0.1,
+            'type': 'rect',
+            'x0': DataFrame.min(data['date']),
+            'x1': DataFrame.max(data['date']),
+            'y0': -100,
+            'y1': minValue,
+            'line': {'color': 'gray'}
+        }
+    )
 
 
 def plot_stop_loss_trade(df_sell, fig, analyze, args):
@@ -391,6 +540,10 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         rowWidth.append(1)
     if args.plotcci:
         rowWidth.append(1)
+    if args.plotcmf:
+        rowWidth.append(1)
+    if args.plotosc:
+        rowWidth.append(1)
 
     # standard layout signal + volume
     fig = tools.make_subplots(
@@ -441,6 +594,16 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         subplots = subplots + 1
         plot_cci_dataframe(data, fig, args, subplots)
         fig['layout']['yaxis' + str(subplots)].update(title='CCI')
+
+    if args.plotosc:
+        subplots = subplots + 1
+        plot_osc_dataframe(data, fig, args, subplots)
+        fig['layout']['yaxis' + str(subplots)].update(title='OSC')
+
+    if args.plotcmf:
+        subplots = subplots + 1
+        plot_cmf_dataframe(data, fig, args, subplots)
+        fig['layout']['yaxis' + str(subplots)].update(title='CMF')
 
     # updated all the
 
