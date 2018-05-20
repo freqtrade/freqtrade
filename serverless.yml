@@ -173,3 +173,41 @@ functions:
     environment:
       topic: ${self:custom.snsTopic}
       strategyTable: ${self:custom.strategyTable}
+
+resources:
+  Resources:
+
+    #####################################################################
+    # keeps track of all strategfies, associated to their user accounts
+    #####################################################################
+    FreqStrategyTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: user
+            AttributeType: S
+          -
+            AttributeName: content
+            AttributeType: S
+          -
+            AttributeName: name
+            AttributeType: S
+          -
+            AttributeName: description
+            AttributeType: S
+
+
+        KeySchema:
+            -
+                'AttributeName': 'user',
+                'KeyType': 'HASH'
+            -
+                'AttributeName': 'name',
+                'KeyType': 'RANGE'
+
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.trackingTable}
