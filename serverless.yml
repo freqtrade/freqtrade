@@ -185,6 +185,16 @@ resources:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
 
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: name
+            AttributeType: S
+          -
+            AttributeName: user
+            AttributeType: S
+
+
         KeySchema:
             -
                 'AttributeName': 'user'
@@ -196,4 +206,4 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:custom.trackingTable}
+        TableName: ${self:custom.strategyTable}
