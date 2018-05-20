@@ -111,6 +111,7 @@ def code(event, context):
             content = urlsafe_b64decode(response['Items'][0]['content'])
 
             return {
+                "headers:": {"Content-Type": "text/plain"},
                 "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
                 "body": str(content)
             }

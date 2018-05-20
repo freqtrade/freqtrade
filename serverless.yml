@@ -83,7 +83,6 @@ package:
 ############################################################################################
 functions:
 
-  #TODO
   #returns all known strategy names from the server
   #and if they are private or not
   strategies:
