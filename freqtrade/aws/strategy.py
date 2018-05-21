@@ -94,6 +94,10 @@ def code(event, context):
     :return:
     """
 
+    print("event")
+    print(event)
+    print("context")
+    print(context)
     assert 'pathParameters' in event
     assert 'user' in event['pathParameters']
     assert 'name' in event['pathParameters']
@@ -112,11 +116,10 @@ def code(event, context):
 
             return {
                 "headers:": {"Content-Type": "text/plain"},
-                "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+                "statusCode": 200,
                 "body": str(content)
             }
         else:
-
             return {
                 "statusCode": 403,
                 "body": json.dumps({"success": False, "reason": "Denied"})
