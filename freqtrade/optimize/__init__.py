@@ -104,7 +104,7 @@ def load_data(datadir: str,
             result[pair] = pairdata
         else:
             logger.warn('No data for pair %s, use --update-pairs-cached to download the data', pair)
-        
+
     return result
 
 
