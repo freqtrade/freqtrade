@@ -126,6 +126,7 @@ functions:
           path: strategies/{user}/{name}/code
           method: get
           cors: true
+          integration: lambda
           request:
             parameter:
               paths:
