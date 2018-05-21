@@ -128,11 +128,7 @@ def code(event, context):
         if response['Items'][0]["public"]:
             content = urlsafe_b64decode(response['Items'][0]['content'])
 
-            return {
-                "headers:": {"Content-Type": "text/plain"},
-                "statusCode": 200,
-                "body": str(content)
-            }
+            return str(content)
         else:
             return {
                 "statusCode": 403,
