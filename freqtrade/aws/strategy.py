@@ -98,15 +98,29 @@ def code(event, context):
     print(event)
     print("context")
     print(context)
-    assert 'pathParameters' in event
-    assert 'user' in event['pathParameters']
-    assert 'name' in event['pathParameters']
+
+    user = ""
+    name = ""
+
+    # proxy based handling
+    if 'pathParameters' in event:
+        assert 'user' in event['pathParameters']
+        assert 'name' in event['pathParameters']
+        user = event['pathParameters']['user']
+        name = event['pathParameters']['name']
+
+    # plain lambda handling
+    elif 'path' in event:
+        assert 'user' in event['path']
+        assert 'name' in event['path']
+        user = event['path']['user']
+        name = event['path']['name']
 
     table = db.Table(os.environ['strategyTable'])
 
     response = table.query(
-        KeyConditionExpression=Key('user').eq(event['pathParameters']['user']) &
-                               Key('name').eq(event['pathParameters']['name'])
+        KeyConditionExpression=Key('user').eq(user) &
+                               Key('name').eq(name)
 
     )
 
