@@ -186,3 +186,18 @@ def submit(event, context):
         "statusCode": result['ResponseMetadata']['HTTPStatusCode'],
         "body": json.dumps(result)
     }
+
+
+def submit_github(event, context):
+    """
+        there has been a push to our github repository, so let's
+        update all the strategies.
+
+        The user account will be the provided secret
+
+    :param event:
+    :param context:
+    :return:
+    """
+
+    print(event)

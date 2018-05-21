@@ -31,6 +31,7 @@ class Backtesting(object):
     backtesting = Backtesting(config)
     backtesting.start()
     """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.analyze = None
@@ -71,15 +72,19 @@ class Backtesting(object):
             for frame in data.values()
         ]
         return min(timeframe, key=operator.itemgetter(0))[0], \
-            max(timeframe, key=operator.itemgetter(1))[1]
+               max(timeframe, key=operator.itemgetter(1))[1]
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
         Generates and returns a text table for the given backtest data and the results dataframe
         :return: pretty printed table with tabulate as str
         """
-        stake_currency = self.config.get('stake_currency')
+        floatfmt, headers, tabular_data = self.aggregate(data, results)
 
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
+
+    def aggregate(self, data, results):
+        stake_currency = self.config.get('stake_currency')
         floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %',
@@ -95,7 +100,6 @@ class Backtesting(object):
                 len(result[result.profit_BTC > 0]),
                 len(result[result.profit_BTC < 0])
             ])
-
         # Append Total
         tabular_data.append([
             'TOTAL',
@@ -106,7 +110,7 @@ class Backtesting(object):
             len(results[results.profit_BTC > 0]),
             len(results[results.profit_BTC < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
+        return floatfmt, headers, tabular_data
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
@@ -213,7 +217,7 @@ class Backtesting(object):
         labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
         return DataFrame.from_records(trades, columns=labels)
 
-    def start(self) -> None:
+    def start(self):
         """
         Run a backtesting end-to-end
         :return: None
@@ -281,6 +285,10 @@ class Backtesting(object):
                 results
             )
         )
+
+        # return date for data storage
+        temp = self.aggregate(data, results)
+        return DataFrame(data=temp[2][:-1], columns=temp[1])
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:

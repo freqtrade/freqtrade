@@ -162,13 +162,29 @@ functions:
     handler: freqtrade/aws/strategy.submit
     events:
       - http:
-          path: submit
+          path: strategies/submit
           method: post
           cors: true
 
     environment:
       topic: ${self:custom.snsTopic}
       strategyTable: ${self:custom.strategyTable}
+
+
+  #submits a new strategy to the system
+  submit_github:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.submit_github
+    events:
+      - http:
+          path: strategies/submit/github
+          method: post
+          cors: true
+
+    environment:
+      topic: ${self:custom.snsTopic}
+      strategyTable: ${self:custom.strategyTable}
+
 
   #TODO
   #backtests the strategy

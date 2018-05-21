@@ -5,7 +5,7 @@ import freqtrade.aws.strategy as aws
 
 def test_strategy(lambda_context):
     """
-        very uggly long test
+        very ugly long test
 
     :param lambda_context:
     :return:
