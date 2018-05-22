@@ -54,7 +54,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 
 ## Branches
 
-- `wohlgemuth` - This is my main branch, which will contain all my special features and is based of the develop branch!
+if you like to use this fork, I highly recommend to utilize the 'wohlgemuth' branch, since this is the most stable. It will be synced against the original development branch and be enriched with all my changes.
 
 ## Features
 - [x] **Based on Python 3.6+**: For botting on any operating system - 
@@ -78,10 +78,23 @@ your current trades.
 
 ### Additional features in this branch
 
-- [x] advanced plotting
+#### Cloud:
+
+- [x] aws lambda based backtesting
+- [x] automatically evaluating all strategies from: https://github.com/berlinguyinca/freqtrade-trading-strategies on an hourly basis
+- [x] persisting of backtesting results
+
+#### Strategy:
+
+- [x] loading strategies from Base64 encoded data in the config file
+- [x] loading strategies from urls
 - [x] trailing stop loss
+
+#### Others:
+
 - [x] more indicators
 - [x] more telegram features
+- [x] advanced plotting
 
 ### Drawbacks
 
