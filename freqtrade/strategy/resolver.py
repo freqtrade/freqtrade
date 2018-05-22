@@ -6,6 +6,7 @@ This module load custom strategies
 import importlib.util
 import inspect
 import logging
+from base64 import urlsafe_b64decode
 from collections import OrderedDict
 from typing import Optional, Dict, Type
 
@@ -88,15 +89,16 @@ class StrategyResolver(object):
             # Add extra strategy directory on top of search paths
             abs_paths.insert(0, extra_dir)
 
-        try:
-            # check if given strategy matches an url
-            logger.debug("requesting remote strategy from {}".format(strategy_name))
-            resp = requests.get(strategy_name, stream=True)
-            if resp.status_code == 200:
-                temp = Path(tempfile.mkdtemp("freq", "strategy"))
-                name = os.path.basename(urlparse(strategy_name).path)
+        # check if the given strategy is provided as name, value pair
+        # where the value is the strategy encoded in base 64
+        if ":" in strategy_name:
+            strat = strategy_name.split(":")
 
-                temp.joinpath(name).write_text(resp.text)
+            if len(strat) == 2:
+                temp = Path(tempfile.mkdtemp("freq", "strategy"))
+                name = strat[0] + ".py"
+
+                temp.joinpath(name).write_text(urlsafe_b64decode(strat[1]).decode('utf-8'))
                 temp.joinpath("__init__.py").touch()
 
                 strategy_name = os.path.splitext(name)[0]
@@ -104,8 +106,25 @@ class StrategyResolver(object):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.absolute())
 
-        except requests.RequestException:
-            logger.debug("received error trying to fetch strategy remotely, carry on!")
+        # check if given strategy matches an url
+        else:
+            try:
+                logger.debug("requesting remote strategy from {}".format(strategy_name))
+                resp = requests.get(strategy_name, stream=True)
+                if resp.status_code == 200:
+                    temp = Path(tempfile.mkdtemp("freq", "strategy"))
+                    name = os.path.basename(urlparse(strategy_name).path)
+
+                    temp.joinpath(name).write_text(resp.text)
+                    temp.joinpath("__init__.py").touch()
+
+                    strategy_name = os.path.splitext(name)[0]
+
+                    # register temp path with the bot
+                    abs_paths.insert(0, temp.absolute())
+
+            except requests.RequestException:
+                logger.debug("received error trying to fetch strategy remotely, carry on!")
 
         for path in abs_paths:
             strategy = self._search_strategy(path, strategy_name)

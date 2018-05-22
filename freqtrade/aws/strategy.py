@@ -95,11 +95,6 @@ def code(event, context):
     :return:
     """
 
-    print("event")
-    print(event)
-    print("context")
-    print(context)
-
     user = ""
     name = ""
 

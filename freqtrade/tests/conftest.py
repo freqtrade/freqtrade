@@ -642,7 +642,7 @@ def lambda_context():
     # do not mock requests to these urls
     responses.add_passthru('https://api.github.com')
     responses.add_passthru('https://bittrex.com')
-
+    responses.add_passthru('https://api.binance.com')
     # here we will define required tables later
     yield
     sns.stop()
