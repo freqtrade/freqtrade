@@ -9,6 +9,7 @@ from jsonschema import validate
 
 from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
 from freqtrade.strategy.resolver import StrategyResolver
+import requests
 
 db = boto3.resource('dynamodb')
 
@@ -94,11 +95,6 @@ def code(event, context):
     :return:
     """
 
-    print("event")
-    print(event)
-    print("context")
-    print(context)
-
     user = ""
     name = ""
 
@@ -164,27 +160,39 @@ def submit(event, context):
     # validate that the user is an Isaac User
     # ToDo
 
-    strategy = urlsafe_b64decode(data['content']).decode('utf-8')
-
-    # print("loaded strategy")
-    # print(strategy)
-    # try to load the strategy
-    StrategyResolver().compile(data['name'], strategy)
-
-    data['time'] = int(time.time() * 1000)
-    data['type'] = "strategy"
-
-    # force serialization to deal with decimal number
-    data = json.dumps(data, use_decimal=True)
-    data = json.loads(data, use_decimal=True)
-
-    table = db.Table(os.environ['strategyTable'])
-
-    result = table.put_item(Item=data)
+    result = __evaluate(data)
     return {
         "statusCode": result['ResponseMetadata']['HTTPStatusCode'],
         "body": json.dumps(result)
     }
+
+
+def __evaluate(data):
+    """
+        evaluates the given data object and submits it to the system
+        for persistence
+        0
+    :param data:
+    :return:
+    """
+
+    strategy = urlsafe_b64decode(data['content']).decode('utf-8')
+    # print("loaded strategy")
+    # print(strategy)
+    # try to load the strategy
+    strat = StrategyResolver().compile(data['name'], strategy)
+    data['time'] = int(time.time() * 1000)
+    data['type'] = "strategy"
+    data['roi'] = strat.minimal_roi
+    data['stoploss'] = strat.stoploss
+    data['ticker'] = strat.ticker_interval
+
+    # force serialization to deal with decimal number
+    data = json.dumps(data, use_decimal=True)
+    data = json.loads(data, use_decimal=True)
+    table = db.Table(os.environ['strategyTable'])
+    result = table.put_item(Item=data)
+    return result
 
 
 def submit_github(event, context):
@@ -199,4 +207,33 @@ def submit_github(event, context):
     :return:
     """
 
-    print(event)
+    print("download all strategies and updating the system")
+    result = requests.get(
+        "https://api.github.com/repos/berlinguyinca/freqtrade-trading-strategies/git/trees/master?recursive=1").json()
+
+    if 'tree' in result:
+        strategies = 0
+        for x in result['tree']:
+            if x['path'].endswith(".py") and x['type'] == 'blob':
+                file = requests.get(x['url']).json()
+
+                if "content" in file:
+                    # assemble submit object
+
+                    # generate simple id
+
+                    # submit it
+                    try:
+                        __evaluate({
+                            "name": x['path'].split("/")[-1].split(".py")[0],
+                            "content": file['content'],
+                            "user": "GBPAQEFGGWCMWVFU34PMVGS4P2NJR4IDFNVI4LTCZAKJAD3JCXUMBI4J",
+                            "public": True,
+                            "description": "imported from github repository: berlinguyinca/freqtrade-trading-strategies"
+                        })
+                        strategies = strategies + 1
+                    except ImportError as e:
+                        print("error: {}".format(e))
+        print("imported/updated: {} strategies".format(strategies))
+    else:
+        print("invalid response received \n{}\n".format(result))
