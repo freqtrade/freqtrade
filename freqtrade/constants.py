@@ -32,7 +32,10 @@ CONF_SCHEMA = {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
-        'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'stake_amount': {'anyOf': [
+            {'type': 'integer', 'minimum': 0.0005},
+            {'constant': 'unlimited'}
+        ]},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
                                                              'CLP', 'CNY', 'CZK', 'DKK',
                                                              'EUR', 'GBP', 'HKD', 'HUF',

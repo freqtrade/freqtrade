@@ -255,6 +255,24 @@ class FreqtradeBot(object):
         balance = self.config['bid_strategy']['ask_last_balance']
         return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
+    def _get_trade_stake_amount(self) -> float:
+        stake_amount = self.config['stake_amount']
+        avaliable_amount = exchange.get_balance(self.config['stake_currency'])
+
+        if stake_amount == 'unlimited':
+            open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
+            if open_trades == self.config['max_open_trades']:
+                return 0
+            return avaliable_amount / (self.config['max_open_trades'] - open_trades)
+
+        # Check if stake_amount is fulfilled
+        if avaliable_amount < stake_amount:
+            raise DependencyException(
+                'stake amount is not fulfilled (currency={})'.format(self.config['stake_currency'])
+            )
+
+        return stake_amount
+
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
@@ -263,19 +281,14 @@ class FreqtradeBot(object):
         :param interval: Ticker interval used for Analyze
         :return: True if a trade object has been created and persisted, False otherwise
         """
-        stake_amount = self.config['stake_amount']
         interval = self.analyze.get_ticker_interval()
+        stake_amount = self._get_trade_stake_amount()
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
             stake_amount
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
-        # Check if stake_amount is fulfilled
-        if exchange.get_balance(self.config['stake_currency']) < stake_amount:
-            raise DependencyException(
-                'stake amount is not fulfilled (currency={})'.format(self.config['stake_currency'])
-            )
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
