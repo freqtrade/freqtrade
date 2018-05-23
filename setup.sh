@@ -89,13 +89,21 @@ function config_generator () {
     echo "General configuration"
     echo "-------------------------"
     echo
-    read -p "Max open trades: (Default: 3) " max_trades
+    default_max_trades=3
+    read -p "Max open trades: (Default: $default_max_trades) " max_trades
+    max_trades=${max_trades:-$default_max_trades}
 
-    read -p "Stake amount: (Default: 0.05) " stake_amount
+    default_stake_amount=0.05
+    read -p "Stake amount: (Default: $default_stake_amount) " stake_amount
+    stake_amount=${stake_amount:-$default_stake_amount}
 
-    read -p "Stake currency: (Default: BTC) " stake_currency
+    default_stake_currency="BTC"
+    read -p "Stake currency: (Default: $default_stake_currency) " stake_currency
+    stake_currency=${stake_currency:-$default_stake_currency}
 
-    read -p "Fiat currency: (Default: USD) " fiat_currency
+    default_fiat_currency="USD"
+    read -p "Fiat currency: (Default: $default_fiat_currency) " fiat_currency
+    fiat_currency=${fiat_currency:-$default_fiat_currency}
 
     echo "------------------------"
     echo "Bittrex config generator"
