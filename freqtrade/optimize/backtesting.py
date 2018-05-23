@@ -143,7 +143,9 @@ class Backtesting(object):
                         pair,
                         trade.calc_profit_percent(rate=sell_row.close),
                         trade.calc_profit(rate=sell_row.close),
-                        (sell_row.date - buy_row.date).seconds // 60
+                        (sell_row.date - buy_row.date).seconds // 60,
+                        buy_row.date,
+                        sell_row.date
                     ), \
                     sell_row.date
         return None
@@ -200,6 +202,7 @@ class Backtesting(object):
                 if ret:
                     row2, trade_entry, next_date = ret
                     lock_pair_until = next_date
+
                     trades.append(trade_entry)
                     if record:
                         # Note, need to be json.dump friendly
@@ -214,7 +217,8 @@ class Backtesting(object):
         if record and record.find('trades') >= 0:
             logger.info('Dumping backtest results')
             file_dump_json('backtest-result.json', records)
-        labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+        labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'entry', 'exit']
+
         return DataFrame.from_records(trades, columns=labels)
 
     def start(self):
@@ -287,8 +291,8 @@ class Backtesting(object):
         )
 
         # return date for data storage
-        temp = self.aggregate(data, results)
-        return DataFrame(data=temp[2][:-1], columns=temp[1])
+        self.aggregate(data, results)
+        return results
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:

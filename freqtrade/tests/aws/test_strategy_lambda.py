@@ -99,6 +99,8 @@ class TestStrategy(IStrategy):
         "public": True
     }
 
+    print(json.dumps(request))
+
     aws.submit({
         "body": json.dumps(request)
     }, {})

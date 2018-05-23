@@ -609,33 +609,8 @@ def lambda_context():
     client = session.client('sns')
     dynamodb = boto3.resource('dynamodb')
     os.environ["strategyTable"] = "StrategyTable"
-
-    dynamodb.create_table(
-        TableName=os.environ["strategyTable"],
-        KeySchema=[
-            {
-                'AttributeName': 'user',
-                'KeyType': 'HASH'
-            },
-            {
-                'AttributeName': 'name',
-                'KeyType': 'RANGE'
-            }
-        ],
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'user',
-                'AttributeType': 'S'
-            }, {
-                'AttributeName': 'name',
-                'AttributeType': 'S'
-            }
-        ],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 1,
-            'WriteCapacityUnits': 1
-        }
-    )
+    os.environ["tradeTable"] = "TradeTable"
+    os.environ["topic"] = "UnitTestTopic"
 
     import responses
 

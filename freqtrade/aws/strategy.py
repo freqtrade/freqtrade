@@ -8,6 +8,7 @@ from boto3.dynamodb.conditions import Key, Attr
 from jsonschema import validate
 
 from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
+from freqtrade.aws.tables import get_strategy_table
 from freqtrade.strategy.resolver import StrategyResolver
 import requests
 
@@ -21,7 +22,7 @@ def names(event, context):
     :param context:
     :return:
     """
-    table = db.Table(os.environ['strategyTable'])
+    table = get_strategy_table()
     response = table.scan()
     result = response['Items']
 
@@ -63,8 +64,7 @@ def get(event, context):
     assert 'user' in event['pathParameters']
     assert 'name' in event['pathParameters']
 
-    table = db.Table(os.environ['strategyTable'])
-
+    table = get_strategy_table()
     response = table.query(
         KeyConditionExpression=Key('user').eq(event['pathParameters']['user']) &
                                Key('name').eq(event['pathParameters']['name'])
@@ -112,8 +112,7 @@ def code(event, context):
         user = event['path']['user']
         name = event['path']['name']
 
-    table = db.Table(os.environ['strategyTable'])
-
+    table = get_strategy_table()
     response = table.query(
         KeyConditionExpression=Key('user').eq(user) &
                                Key('name').eq(name)
@@ -191,7 +190,7 @@ def __evaluate(data):
     # force serialization to deal with decimal number
     data = json.dumps(data, use_decimal=True)
     data = json.loads(data, use_decimal=True)
-    table = db.Table(os.environ['strategyTable'])
+    table = get_strategy_table()
     result = table.put_item(Item=data)
     return result
 
@@ -223,7 +222,8 @@ def submit_github(event, context):
 
                     # generate simple id
 
-                    # submit it
+                    # submit it - we should be able to support multiple repositories
+                    # maybe another database table, where we can map these?
                     try:
                         __evaluate({
                             "name": x['path'].split("/")[-1].split(".py")[0],
