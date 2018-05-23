@@ -121,9 +121,8 @@ def code(event, context):
 
     if "Items" in response and len(response['Items']) > 0:
         if response['Items'][0]["public"]:
-            content = urlsafe_b64decode(response['Items'][0]['content'])
-
-            return str(content)
+            content = urlsafe_b64decode(response['Items'][0]['content']).decode('utf-8')
+            return content
         else:
             return {
                 "statusCode": 403,

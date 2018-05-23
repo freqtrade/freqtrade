@@ -126,6 +126,7 @@ functions:
           path: strategies/{user}/{name}/code
           method: get
           cors: true
+          integration: lambda
           request:
             parameter:
               paths:
@@ -134,7 +135,8 @@ functions:
           response:
             headers:
               Content-Type: "'text/plain'"
-
+            template: $input.path('$')
+                        
     environment:
       strategyTable: ${self:custom.strategyTable}
 
