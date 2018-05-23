@@ -137,6 +137,7 @@ There is known issue in OSX Docker versions after 17.09.1, whereby /etc/localtim
 ```bash
 docker run --rm -e TZ=`ls -la /etc/localtime | cut -d/ -f8-9` -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
+More information on this docker issue and work-around can be read here: https://github.com/docker/for-mac/issues/2396
 
 In this example, the database will be created inside the docker instance and will be lost when you will refresh your image.
 
