@@ -132,6 +132,12 @@ You can run a one-off container that is immediately deleted upon exiting with th
 docker run --rm -v /etc/localtime:/etc/localtime:ro -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
 
+There is known issue in OSX Docker versions after 17.09.1, whereby /etc/localtime cannot be shared causing Docker to not start. A work-around for this is to start with the following cmd. 
+
+```bash
+docker run --rm -e TZ=`ls -la /etc/localtime | cut -d/ -f8-9` -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+```
+
 In this example, the database will be created inside the docker instance and will be lost when you will refresh your image.
 
 
