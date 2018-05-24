@@ -179,7 +179,11 @@ def __evaluate(data):
 
     # comment out hyper opt references, they are no supported here
     # due to lambda size limitations
-    strategy = "\n".join(list(map(lambda x: "#{}".format(x) if "hyperopt" in x else x, strategy.split("\n"))))
+    strategy = "\n".join(
+        list(
+            map(
+                lambda x: "#{} # this version does not support hyperopt!".format(x) if "hyperopt" in x else x,
+                strategy.split("\n"))))
 
     # print("loaded strategy")
     # print(strategy)
