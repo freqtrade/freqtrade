@@ -1,7 +1,6 @@
 import os
 
 import boto3
-from boto.dynamodb2.exceptions import ResourceInUseException
 
 db = boto3.resource('dynamodb')
 
@@ -47,7 +46,7 @@ def get_trade_table():
                     'WriteCapacityUnits': 1
                 }
             )
-        except ResourceInUseException as e:
+        except Exception as e:
             print("table already exist {}".format(e))
 
     return db.Table(table_name)
@@ -93,7 +92,7 @@ def get_strategy_table():
                     'WriteCapacityUnits': 1
                 }
             )
-        except ResourceInUseException as e:
+        except Exception as e:
             print("table already exist {}".format(e))
 
     return db.Table(table_name)
