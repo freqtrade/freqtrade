@@ -70,8 +70,8 @@ class MyFancyTestStrategy(IStrategy):
     request = {
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
         "name": "MyFancyTestStrategy",
-        "from": "20180501",
-        "till": "20180401"
+        "from": "20180401",
+        "till": "20180501"
 
     }
 

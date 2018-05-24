@@ -63,11 +63,15 @@ def backtest(event, context):
                 if 'from' in event['body']:
                     yesterday = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
                 if 'till' in event['body']:
-                    yesterday = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
+                    today = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
 
                 try:
                     if "Items" in response and len(response['Items']) > 0:
 
+                        print("backtesting from {} till {} for {} with {} vs {}".format(yesterday, today, name,
+                                                                                        response['Items'][0][
+                                                                                            'stake_currency'],
+                                                                                        response['Items'][0]['assets']))
                         content = response['Items'][0]['content']
                         configuration = {
                             "max_open_trades": 1,
