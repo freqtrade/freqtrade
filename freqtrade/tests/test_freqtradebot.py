@@ -224,23 +224,18 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
     """
     Test get_trade_stake_amount() method
     """
-    patch_get_signal(mocker)
+
     patch_RPCManager(mocker)
-    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_fee=fee,
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
     )
 
-    conf = deepcopy(default_conf)
-
-    freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     result = freqtrade._get_trade_stake_amount()
-    assert(result == conf['stake_amount'])
+    assert(result == default_conf['stake_amount'])
 
 
 def test_get_trade_stake_amount_no_stake_amount(default_conf,
@@ -251,21 +246,14 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
     """
     Test get_trade_stake_amount() method
     """
-    patch_get_signal(mocker)
     patch_RPCManager(mocker)
-    patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
-        get_ticker=ticker,
-        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5),
-        get_fee=fee,
+        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
     )
 
-    conf = deepcopy(default_conf)
-
-    freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         freqtrade._get_trade_stake_amount()
