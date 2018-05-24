@@ -82,7 +82,7 @@ def get(event, context):
 
     else:
         return {
-            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "statusCode": 404,
             "body": json.dumps(response)
         }
 
