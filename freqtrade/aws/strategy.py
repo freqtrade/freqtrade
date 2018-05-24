@@ -176,6 +176,11 @@ def __evaluate(data):
     """
 
     strategy = urlsafe_b64decode(data['content']).decode('utf-8')
+
+    # comment out hyper opt references, they are no supported here
+    # due to lambda size limitations
+    strategy = "\n".join(list(map(lambda x: "#{}".format(x) if "hyperopt" in x else x, strategy.split("\n"))))
+
     # print("loaded strategy")
     # print(strategy)
     # try to load the strategy
