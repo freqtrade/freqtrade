@@ -26,6 +26,7 @@ def names(event, context):
     response = table.scan()
     result = response['Items']
 
+    # no pagination here
     while 'LastEvaluatedKey' in response:
         for i in response['Items']:
             result.append(i)
@@ -36,6 +37,10 @@ def names(event, context):
     # map results and hide informations
     data = list(map(lambda x: {'name': x['name'], 'public': x['public'], 'user': x['user']}, result))
 
+    # keep in a result object, so we can later add pagination to it
+    data = {
+        "result": data
+    }
     return {
         "statusCode": 200,
         "body": json.dumps(data)
@@ -304,13 +309,25 @@ def get_trades(event, context):
 
     if "Items" in response and len(response['Items']) > 0:
 
+        # preparation for pagination
+        # TODO include in parameters an optional
+        # start key ExclusiveStartKey=response['LastEvaluatedKey']
+
+        data = {
+            "result": response['Items'],
+            "paginationKey": response.get('LastEvaluatedKey')
+        }
+
         return {
             "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
-            "body": json.dumps(response['Items'])
+            "body": json.dumps(data)
         }
 
     else:
         return {
-            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
-            "body": json.dumps(response)
+            "statusCode": 404,
+            "body": json.dumps({
+                "error": "sorry this query did not produce any results",
+                "event": event
+            })
         }

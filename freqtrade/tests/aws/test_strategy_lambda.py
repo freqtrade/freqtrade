@@ -87,7 +87,7 @@ class TestStrategy(IStrategy):
         "body": json.dumps(request)
     }, {})
 
-    assert (len(json.loads(aws.names({}, {})['body'])) == 2)
+    assert (len(json.loads(aws.names({}, {})['body']['result'])) == 2)
 
     # able to add a duplicated strategy, which should overwrite the existing strategy
 

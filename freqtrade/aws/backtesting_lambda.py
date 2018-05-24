@@ -57,12 +57,16 @@ def backtest(event, context):
 
                 )
 
-                print(response)
+                today = datetime.datetime.today()
+                yesterday = today - datetime.timedelta(days=1)
+
+                if 'from' in event['body']:
+                    yesterday = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
+                if 'till' in event['body']:
+                    yesterday = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
+
                 try:
                     if "Items" in response and len(response['Items']) > 0:
-
-                        today = datetime.datetime.today()
-                        yesterday = today - datetime.timedelta(days=1)
 
                         content = response['Items'][0]['content']
                         configuration = {
@@ -188,6 +192,14 @@ def cron(event, context):
                 "user": i['user'],
                 "name": i['name']
             }
+
+            # triggered over html, let's provide
+            # a date range for the backtesting
+            if 'pathParameters' in event:
+                if 'from' in event['pathParameters']:
+                    message['from'] = event['pathParameters']['from']
+                if 'till' in event['pathParameters']:
+                    message['till'] = event['pathParameters']['till']
 
             serialized = json.dumps(message, use_decimal=True)
             # submit item to queue for routing to the correct persistence
