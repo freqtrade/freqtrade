@@ -192,8 +192,6 @@ def cron(event, context):
                 MessageStructure='json'
             )
 
-            print(result)
-
         if 'LastEvaluatedKey' in response:
             return table.scan(
                 ExclusiveStartKey=response['LastEvaluatedKey']
@@ -207,4 +205,6 @@ def cron(event, context):
     while 'LastEvaluatedKey' in response:
         response = fetch(response, table)
 
-    pass
+    return {
+        "statusCode": 200
+    }

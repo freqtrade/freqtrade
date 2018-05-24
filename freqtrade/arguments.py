@@ -264,7 +264,6 @@ class Arguments(object):
             default=None
         )
 
-
         self.parser.add_argument(
             '--stop-loss',
             help='Renders stop/loss information in the main chart',
@@ -310,7 +309,6 @@ class Arguments(object):
             default=None
         )
 
-
         self.parser.add_argument(
             '--plot-macd',
             help='Renders a macd chart of the given '
@@ -352,7 +350,6 @@ class Arguments(object):
             default=750,
             type=int
         )
-
 
         self.parser.add_argument(
             '-db', '--db-url',
