@@ -8,7 +8,7 @@ from boto3.dynamodb.conditions import Key, Attr
 from jsonschema import validate
 
 from freqtrade.aws.schemas import __SUBMIT_STRATEGY_SCHEMA__
-from freqtrade.aws.tables import get_strategy_table
+from freqtrade.aws.tables import get_strategy_table, get_trade_table
 from freqtrade.strategy.resolver import StrategyResolver
 import requests
 
@@ -144,7 +144,7 @@ def submit(event, context):
     :return:
     """
 
-    print(event)
+    # print(event)
     # get data
     data = json.loads(event['body'])
 
@@ -253,3 +253,44 @@ def submit_github(event, context):
         print("imported/updated: {} strategies".format(strategies))
     else:
         print("invalid response received \n{}\n".format(result))
+
+
+def get_trades(event, context):
+    """
+        this function retuns all the knowns trades for a user, strategy and pair
+    :param event:
+    :param context:
+    :return:
+    """
+
+    assert 'pathParameters' in event
+    assert 'user' in event['pathParameters']
+    assert 'name' in event['pathParameters']
+    assert 'stake' in event['pathParameters']
+    assert 'asset' in event['pathParameters']
+
+    table = get_trade_table()
+
+    response = table.query(
+        KeyConditionExpression=Key('id').eq(
+            "{}.{}:{}/{}".format(
+                event['pathParameters']['user'],
+                event['pathParameters']['name'],
+                event['pathParameters']['asset'],
+                event['pathParameters']['stake']
+            )
+        )
+    )
+
+    if "Items" in response and len(response['Items']) > 0:
+
+        return {
+            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "body": json.dumps(response['Items'])
+        }
+
+    else:
+        return {
+            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "body": json.dumps(response)
+        }

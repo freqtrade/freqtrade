@@ -194,7 +194,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import backtesting, hyperopt
+        from freqtrade.optimize import backtesting
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -205,10 +205,14 @@ class Arguments(object):
         self.backtesting_options(backtesting_cmd)
 
         # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
-        hyperopt_cmd.set_defaults(func=hyperopt.start)
-        self.optimizer_shared_options(hyperopt_cmd)
-        self.hyperopt_options(hyperopt_cmd)
+        try:
+            from freqtrade.optimize import hyperopt
+            hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+            hyperopt_cmd.set_defaults(func=hyperopt.start)
+            self.optimizer_shared_options(hyperopt_cmd)
+            self.hyperopt_options(hyperopt_cmd)
+        except ImportError as e:
+            logging.warn("no hyper opt found - skipping support for it")
 
     @staticmethod
     def parse_timerange(text: str) -> Optional[Tuple[List, int, int]]:

@@ -158,6 +158,28 @@ functions:
     environment:
       strategyTable: ${self:custom.strategyTable}
 
+  # loads all trades for a strategy and it's associated pairs
+  trades:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.get_trades
+    events:
+      - http:
+          path: strategies/{user}/{name}/{stake}/{asset}
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                user: true
+                name: true
+                stake: true
+                asset: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+      tradeTable: ${self:custom.tradeTable}
+
+
   #submits a new strategy to the system
   submit:
     memorySize: 128

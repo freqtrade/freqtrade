@@ -5,7 +5,7 @@ import boto3
 import pytest
 import simplejson as json
 from freqtrade.aws.backtesting_lambda import backtest, cron
-from freqtrade.aws.strategy import submit
+from freqtrade.aws.strategy import submit, get_trades
 
 
 def test_backtest(lambda_context):
@@ -72,7 +72,7 @@ class MyFancyTestStrategy(IStrategy):
         "name": "MyFancyTestStrategy"
     }
 
-    backtest({
+    data = json.loads(backtest({
         "Records": [
             {
                 "Sns": {
@@ -80,7 +80,23 @@ class MyFancyTestStrategy(IStrategy):
                     "Message": json.dumps(request)
                 }
             }]
-    }, {})
+    }, {})['body'])
+
+    # evaluate that we now have trades in the database
+    # sadly not always a given at this tage
+    # due to the dynamic nature. Should pick a strategy for testing
+    # which generates a lot of trades
+    if len(data) > 0:
+        data = get_trades({
+            'pathParameters': {
+                'user': "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
+                "name": "MyFancyTestStrategy",
+                'stake': "USDT",
+                'asset': "{}".format(data[0]['pair'].split("/")[0])
+            }
+        }, {})['body']
+        print(data)
+        assert len(json.loads(data)) > 0
 
 
 def test_cron(lambda_context):
@@ -146,4 +162,4 @@ class MyFancyTestStrategy(IStrategy):
 
     cron({}, {})
 
-    #TODO test receiving of message some how
+    # TODO test receiving of message some how

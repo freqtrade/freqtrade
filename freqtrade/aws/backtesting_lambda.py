@@ -114,6 +114,7 @@ def backtest(event, context):
                     print("persist data in dynamo")
 
                     print(result)
+                    result_data = []
                     for index, row in result.iterrows():
                         data = {
                             "id": "{}.{}:{}".format(user, name, row['currency']),
@@ -129,9 +130,15 @@ def backtest(event, context):
 
                         data = json.dumps(data, use_decimal=True)
                         data = json.loads(data, use_decimal=True)
-                        print(data)
+
                         # persist data
                         trade_table.put_item(Item=data)
+                        result_data.append(data)
+
+                    return {
+                        "statusCode": 200,
+                        "body": json.dumps(result_data)
+                    }
                 else:
                     raise Exception(
                         "sorry we did not find any matching strategy for user {} and name {}".format(user, name))
