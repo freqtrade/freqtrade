@@ -56,92 +56,97 @@ def backtest(event, context):
                 )
 
                 print(response)
-                if "Items" in response and len(response['Items']) > 0:
+                try:
+                    if "Items" in response and len(response['Items']) > 0:
 
-                    today = datetime.datetime.today()
-                    yesterday = today - datetime.timedelta(days=1)
+                        today = datetime.datetime.today()
+                        yesterday = today - datetime.timedelta(days=1)
 
-                    content = response['Items'][0]['content']
-                    configuration = {
-                        "max_open_trades": 1,
-                        "stake_currency": response['Items'][0]['stake_currency'],
-                        "stake_amount": 1,
-                        "fiat_display_currency": "USD",
-                        "unfilledtimeout": 600,
-                        "trailing_stop": response['Items'][0]['trailing_stop'],
-                        "bid_strategy": {
-                            "ask_last_balance": 0.0
-                        },
-                        "exchange": {
-                            "name": response['Items'][0]['exchange'],
-                            "enabled": True,
-                            "key": "key",
-                            "secret": "secret",
-                            "pair_whitelist": list(
-                                map(lambda x: "{}/{}".format(x, response['Items'][0]['stake_currency']).upper(),
-                                    response['Items'][0]['assets']))
-                        },
-                        "telegram": {
-                            "enabled": False,
-                            "token": "token",
-                            "chat_id": "0"
-                        },
-                        "initial_state": "running",
-                        "datadir": ".",
-                        "experimental": {
-                            "use_sell_signal": response['Items'][0]['use_sell'],
-                            "sell_profit_only": True
-                        },
-                        "internals": {
-                            "process_throttle_secs": 5
-                        },
-                        'realistic_simulation': True,
-                        "loglevel": logging.DEBUG,
-                        "strategy": "{}:{}".format(name, content),
-                        "timerange": "{}-{}".format(yesterday.strftime('%Y%m%d'), today.strftime('%Y%m%d')),
-                        "refresh_pairs": True
+                        content = response['Items'][0]['content']
+                        configuration = {
+                            "max_open_trades": 1,
+                            "stake_currency": response['Items'][0]['stake_currency'],
+                            "stake_amount": 1,
+                            "fiat_display_currency": "USD",
+                            "unfilledtimeout": 600,
+                            "trailing_stop": response['Items'][0]['trailing_stop'],
+                            "bid_strategy": {
+                                "ask_last_balance": 0.0
+                            },
+                            "exchange": {
+                                "name": response['Items'][0]['exchange'],
+                                "enabled": True,
+                                "key": "key",
+                                "secret": "secret",
+                                "pair_whitelist": list(
+                                    map(lambda x: "{}/{}".format(x, response['Items'][0]['stake_currency']).upper(),
+                                        response['Items'][0]['assets']))
+                            },
+                            "telegram": {
+                                "enabled": False,
+                                "token": "token",
+                                "chat_id": "0"
+                            },
+                            "initial_state": "running",
+                            "datadir": ".",
+                            "experimental": {
+                                "use_sell_signal": response['Items'][0]['use_sell'],
+                                "sell_profit_only": True
+                            },
+                            "internals": {
+                                "process_throttle_secs": 5
+                            },
+                            'realistic_simulation': True,
+                            "loglevel": logging.DEBUG,
+                            "strategy": "{}:{}".format(name, content),
+                            "timerange": "{}-{}".format(yesterday.strftime('%Y%m%d'), today.strftime('%Y%m%d')),
+                            "refresh_pairs": True
 
-                    }
-
-                    print("generated configuration")
-                    print(configuration)
-
-                    print("initialized backtesting")
-                    backtesting = Backtesting(configuration)
-                    result = backtesting.start()
-                    print("finished test")
-
-                    print("persist data in dynamo")
-
-                    print(result)
-                    result_data = []
-                    for index, row in result.iterrows():
-                        data = {
-                            "id": "{}.{}:{}".format(user, name, row['currency']),
-                            "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
-                                                       row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
-                            "pair": row['currency'],
-                            "duration": row['duration'],
-                            "profit_percent": row['profit_percent'],
-                            "profit_stake": row['profit_BTC'],
-                            "entry_date": row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
-                            "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
                         }
 
-                        data = json.dumps(data, use_decimal=True)
-                        data = json.loads(data, use_decimal=True)
+                        print("initialized backtesting")
+                        backtesting = Backtesting(configuration)
+                        result = backtesting.start()
+                        print("finished test")
+                        print(result)
+                        result_data = []
+                        for index, row in result.iterrows():
+                            data = {
+                                "id": "{}.{}:{}".format(user, name, row['currency']),
+                                "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
+                                                           row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
+                                "pair": row['currency'],
+                                "duration": row['duration'],
+                                "profit_percent": row['profit_percent'],
+                                "profit_stake": row['profit_BTC'],
+                                "entry_date": row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
+                                "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
+                            }
 
-                        # persist data
-                        trade_table.put_item(Item=data)
-                        result_data.append(data)
+                            data = json.dumps(data, use_decimal=True)
+                            data = json.loads(data, use_decimal=True)
 
+                            # persist data
+                            trade_table.put_item(Item=data)
+                            result_data.append(data)
+
+                        return {
+                            "statusCode": 200,
+                            "body": json.dumps(result_data)
+                        }
+                    else:
+                        return {
+                            "statusCode": 404,
+                            "body": json.dumps({
+                                "error": "sorry we did not find any matching strategy for user {} and name {}".format(
+                                    user, name)})
+                        }
+
+                except ImportError as e:
                     return {
-                        "statusCode": 200,
-                        "body": json.dumps(result_data)
+                        "statusCode": 500,
+                        "body": json.dumps({"error": e})
                     }
-                else:
-                    raise Exception(
-                        "sorry we did not find any matching strategy for user {} and name {}".format(user, name))
     else:
         raise Exception("not a valid event: {}".format(event))
 

@@ -35,6 +35,12 @@ provider:
   deploymentBucket:
     name: lambdas-freq
 
+  # limit the invocations a bit to avoid overloading the server
+  usagePlan:
+    throttle:
+      burstLimit: 100
+      rateLimit: 50
+
 ############################################################################################
 #custom configuration settings
 ############################################################################################
@@ -230,9 +236,11 @@ functions:
 
     events:
       - schedule:
-          rate: rate(10 minutes)
+          rate: rate(1440 minutes)
+          enabled: false
+      - schedule:
+          rate: rate(5 minutes)
           enabled: true
-
     environment:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
