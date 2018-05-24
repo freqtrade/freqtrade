@@ -289,6 +289,25 @@ class Arguments(object):
         )
 
         self.parser.add_argument(
+            '--plot-osc',
+            help='Renders a osc chart of the given osc dataframe name, for example --plot-osc osc',
+            dest='plotosc',
+            nargs='+',
+
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-cmf',
+            help='Renders a cmf chart of the given cmf dataframe name, for example --plot-cmf cmf',
+            dest='plotcmf',
+            nargs='+',
+
+            default=None
+        )
+
+
+        self.parser.add_argument(
             '--plot-macd',
             help='Renders a macd chart of the given '
                  'dataframe name, for example --plot-macd macd',
@@ -330,6 +349,13 @@ class Arguments(object):
             type=int
         )
 
+
+        self.parser.add_argument(
+            '-db', '--db-url',
+            help='Show trades stored in database.',
+            dest='db_url',
+            default=None
+        )
 
     def testdata_dl_options(self) -> None:
         """

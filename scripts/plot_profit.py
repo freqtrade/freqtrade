@@ -26,18 +26,18 @@ from freqtrade.configuration import Configuration
 from freqtrade.analyze import Analyze
 from freqtrade import constants
 
-
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 
 
 logger = logging.getLogger(__name__)
 
+
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
 # data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
-def make_profit_array(
-        data: List, px: int, min_date: int,
-        interval: int, filter_pairs: Optional[List] = None) -> np.ndarray:
+def make_profit_array(data: List, px: int, min_date: int,
+                      interval: int,
+                      filter_pairs: Optional[List] = None) -> np.ndarray:
     pg = np.zeros(px)
     filter_pairs = filter_pairs or []
     # Go through the trades

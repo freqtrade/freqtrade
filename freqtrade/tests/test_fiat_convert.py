@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter
+from freqtrade.tests.conftest import patch_coinmarketcap
 
 
 def test_pair_convertion_object():
@@ -123,12 +124,23 @@ def test_fiat_convert_get_price(mocker):
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
+def test_loadcryptomap(mocker):
+    patch_coinmarketcap(mocker)
+
+    fiat_convert = CryptoToFiatConverter()
+    assert len(fiat_convert._cryptomap) == 2
+
+    assert fiat_convert._cryptomap["BTC"] == "1"
+
+
 def test_fiat_convert_without_network():
     # Because CryptoToFiatConverter is a Singleton we reset the value of _coinmarketcap
 
     fiat_convert = CryptoToFiatConverter()
 
+    cmc_temp = CryptoToFiatConverter._coinmarketcap
     CryptoToFiatConverter._coinmarketcap = None
 
     assert fiat_convert._coinmarketcap is None
     assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
+    CryptoToFiatConverter._coinmarketcap = cmc_temp
