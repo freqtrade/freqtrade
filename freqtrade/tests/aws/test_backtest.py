@@ -1,5 +1,7 @@
+import os
 from base64 import urlsafe_b64encode
 
+import boto3
 import pytest
 import simplejson as json
 from freqtrade.aws.backtesting_lambda import backtest, cron
@@ -64,15 +66,21 @@ class MyFancyTestStrategy(IStrategy):
         "body": json.dumps(request)
     }, {})
 
+    # build sns request
     request = {
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
-        "name": "MyFancyTestStrategy",
-        "stake_currency": "usdt",
-        "asset": ["ETH", "BTC", "XRP", "LTC"],
-        "exchange": "binance"
+        "name": "MyFancyTestStrategy"
     }
 
-    backtest({"body": json.dumps(request)}, {})
+    backtest({
+        "Records": [
+            {
+                "Sns": {
+                    "Subject": "backtesting",
+                    "Message": json.dumps(request)
+                }
+            }]
+    }, {})
 
 
 def test_cron(lambda_context):
@@ -135,4 +143,7 @@ class MyFancyTestStrategy(IStrategy):
     }, {})
 
     print("evaluating cron job")
+
     cron({}, {})
+
+    #TODO test receiving of message some how

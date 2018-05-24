@@ -186,6 +186,22 @@ def __evaluate(data):
     data['stoploss'] = strat.stoploss
     data['ticker'] = strat.ticker_interval
 
+    # default variables if not provided
+    if 'trailing_stop' not in data:
+        data['trailing_stop'] = False
+
+    if 'stake_currency' not in data:
+        data['stake_currency'] = "USDT"
+
+    if 'use_sell' not in data:
+        data['use_sell'] = True
+
+    if 'exchange' not in data:
+        data['exchange'] = 'binance'
+
+    if 'assets' not in data:
+        data['assets'] = ["BTC", "ETH", "LTC"]
+
     # force serialization to deal with decimal number
     data = json.dumps(data, use_decimal=True)
     data = json.loads(data, use_decimal=True)

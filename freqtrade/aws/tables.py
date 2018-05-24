@@ -13,6 +13,9 @@ def get_trade_table():
     :return:
     """
 
+    if 'tradeTable' not in os.environ:
+        os.environ['tradeTable'] = "FreqTradeTable"
+
     table_name = os.environ['tradeTable']
     existing_tables = boto3.client('dynamodb').list_tables()['TableNames']
     if table_name not in existing_tables:
@@ -55,6 +58,9 @@ def get_strategy_table():
         provides us access to the strategy table and if it doesn't exists creates it for us
     :return:
     """
+    if 'strategyTable' not in os.environ:
+        os.environ['strategyTable'] = "FreqStrategyTable"
+
     table_name = os.environ['strategyTable']
     existing_tables = boto3.client('dynamodb').list_tables()['TableNames']
 
@@ -62,7 +68,7 @@ def get_strategy_table():
     if table_name not in existing_tables:
         try:
             db.create_table(
-                TableName=os.environ[table_name],
+                TableName=table_name,
                 KeySchema=[
                     {
                         'AttributeName': 'user',

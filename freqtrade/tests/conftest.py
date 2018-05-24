@@ -628,12 +628,14 @@ def lambda_context():
     lamb.start()
 
     session = boto3.session.Session()
-
-    client = session.client('sns')
-    dynamodb = boto3.resource('dynamodb')
     os.environ["strategyTable"] = "StrategyTable"
     os.environ["tradeTable"] = "TradeTable"
     os.environ["topic"] = "UnitTestTopic"
+
+    client = session.client('sns')
+    client.create_topic(Name=os.environ["topic"])
+
+    dynamodb = boto3.resource('dynamodb')
 
     import responses
 
