@@ -188,59 +188,30 @@ functions:
       strategyTable: ${self:custom.strategyTable}
 
 
-  #TODO
   #backtests the strategy
   backtest:
     memorySize: 256
-    handler: freqtrade/aws/backtesting_lambda.run
+    handler: freqtrade/aws/backtesting_lambda.backtest
 
     events:
       - sns: ${self:custom.snsTopic}
     environment:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
-
-  #TODO
-  # schedules all registered strategies on a daily base
-  daily:
-    memorySize: 128
-    handler: freqtrade/aws/backtesting_lambda.run
-
-    events:
-      - sns: ${self:custom.snsTopic}
-    environment:
-      topic: ${self:custom.snsTopic}
       strategyTable: ${self:custom.strategyTable}
 
-resources:
-  Resources:
 
-    #####################################################################
-    # keeps track of all strategfies, associated to their user accounts
-    #####################################################################
-    FreqStrategyTable:
-      Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
+  # schedules all registered strategies on a daily base
+  schedule:
+    memorySize: 128
+    handler: freqtrade/aws/backtesting_lambda.cron
 
-      Properties:
-        AttributeDefinitions:
-          -
-            AttributeName: name
-            AttributeType: S
-          -
-            AttributeName: user
-            AttributeType: S
+    events:
+      - schedule:
+          rate: rate(10 minutes)
+          enabled: true
 
-
-        KeySchema:
-            -
-                'AttributeName': 'user'
-                'KeyType': 'HASH'
-            -
-                'AttributeName': 'name'
-                'KeyType': 'RANGE'
-
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        TableName: ${self:custom.strategyTable}
+    environment:
+      topic: ${self:custom.snsTopic}
+      tradeTable: ${self:custom.tradeTable}
+      strategyTable: ${self:custom.strategyTable}
