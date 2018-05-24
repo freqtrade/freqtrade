@@ -1,6 +1,6 @@
 import os
 import time
-from base64 import urlsafe_b64decode
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 import boto3
 import simplejson as json
@@ -185,8 +185,9 @@ def __evaluate(data):
                 lambda x: "#{} # this version does not support hyperopt!".format(x) if "hyperopt" in x else x,
                 strategy.split("\n"))))
 
-    # print("loaded strategy")
-    # print(strategy)
+    print("loaded strategy")
+    print(strategy)
+
     # try to load the strategy
     strat = StrategyResolver().compile(data['name'], strategy)
     data['time'] = int(time.time() * 1000)
@@ -194,6 +195,9 @@ def __evaluate(data):
     data['roi'] = strat.minimal_roi
     data['stoploss'] = strat.stoploss
     data['ticker'] = strat.ticker_interval
+
+    # ensure that the modified file is saved
+    data['content'] = urlsafe_b64encode(strategy.encode('utf-8'))
 
     # default variables if not provided
     if 'trailing_stop' not in data:
