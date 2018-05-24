@@ -69,13 +69,13 @@ def backtest(event, context):
                     if "Items" in response and len(response['Items']) > 0:
 
                         print("backtesting from {} till {} for {} with {} vs {}".format(yesterday, today, name,
-                                                                                        response['Items'][0][
+                                                                                        event['body'][
                                                                                             'stake_currency'],
-                                                                                        response['Items'][0]['assets']))
+                                                                                        event['body']['asset']))
                         content = response['Items'][0]['content']
                         configuration = {
                             "max_open_trades": 1,
-                            "stake_currency": response['Items'][0]['stake_currency'],
+                            "stake_currency": event['body']['stake_currency'].upper(),
                             "stake_amount": 1,
                             "fiat_display_currency": "USD",
                             "unfilledtimeout": 600,
@@ -88,9 +88,11 @@ def backtest(event, context):
                                 "enabled": True,
                                 "key": "key",
                                 "secret": "secret",
-                                "pair_whitelist": list(
-                                    map(lambda x: "{}/{}".format(x, response['Items'][0]['stake_currency']).upper(),
-                                        response['Items'][0]['assets']))
+                                "pair_whitelist": [
+                                    "{}/{}".format(event['body']['asset'].upper(),
+                                                   event['body']['stake_currency']).upper(),
+
+                                ]
                             },
                             "telegram": {
                                 "enabled": False,
@@ -191,29 +193,32 @@ def cron(event, context):
         for i in response['Items']:
             # fire a message to our queue
 
-            print(i)
-            message = {
-                "user": i['user'],
-                "name": i['name']
-            }
+            for x in i['assets']:
 
-            # triggered over html, let's provide
-            # a date range for the backtesting
-            if 'pathParameters' in event:
-                if 'from' in event['pathParameters']:
-                    message['from'] = event['pathParameters']['from']
-                if 'till' in event['pathParameters']:
-                    message['till'] = event['pathParameters']['till']
+                message = {
+                    "user": i['user'],
+                    "name": i['name'],
+                    "asset": x,
+                    "stake_currency": i['stake_currency']
+                }
 
-            serialized = json.dumps(message, use_decimal=True)
-            # submit item to queue for routing to the correct persistence
+                # triggered over html, let's provide
+                # a date range for the backtesting
+                if 'pathParameters' in event:
+                    if 'from' in event['pathParameters']:
+                        message['from'] = event['pathParameters']['from']
+                    if 'till' in event['pathParameters']:
+                        message['till'] = event['pathParameters']['till']
 
-            result = client.publish(
-                TopicArn=topic_arn,
-                Message=json.dumps({'default': serialized}),
-                Subject="schedule backtesting",
-                MessageStructure='json'
-            )
+                serialized = json.dumps(message, use_decimal=True)
+                # submit item to queue for routing to the correct persistence
+
+                result = client.publish(
+                    TopicArn=topic_arn,
+                    Message=json.dumps({'default': serialized}),
+                    Subject="schedule backtesting",
+                    MessageStructure='json'
+                )
 
         if 'LastEvaluatedKey' in response:
             return table.scan(

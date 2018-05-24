@@ -71,7 +71,9 @@ class MyFancyTestStrategy(IStrategy):
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
         "name": "MyFancyTestStrategy",
         "from": "20180401",
-        "till": "20180501"
+        "till": "20180501",
+        "stake_currency": "usdt",
+        "asset": "ltc"
 
     }
 
@@ -163,7 +165,9 @@ class MyFancyTestStrategy(IStrategy):
     # build sns request
     request = {
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
-        "name": "MyFancyTestStrategy"
+        "name": "MyFancyTestStrategy",
+        "stake_currency": "usdt",
+        "asset": "ltc"
     }
 
     data = json.loads(backtest({
@@ -184,9 +188,7 @@ class MyFancyTestStrategy(IStrategy):
         data = get_trades({
             'pathParameters': {
                 'user': "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
-                "name": "MyFancyTestStrategy",
-                'stake': "USDT",
-                'asset': "{}".format(data[0]['pair'].split("/")[0])
+                "name": "MyFancyTestStrategy"
             }
         }, {})['body']
         print(data)
