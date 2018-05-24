@@ -260,8 +260,15 @@ def submit_github(event, context):
                     except ImportError as e:
                         print("error: {}".format(e))
         print("imported/updated: {} strategies".format(strategies))
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"imported": strategies})
+        }
     else:
-        print("invalid response received \n{}\n".format(result))
+        return {
+            "statusCode": 404,
+            "body": json.dumps({"error": result})
+        }
 
 
 def get_trades(event, context):
