@@ -1,6 +1,8 @@
 import datetime
 import logging
 import os
+import tempfile
+
 import boto3
 import simplejson as json
 from boto3.dynamodb.conditions import Key
@@ -88,7 +90,7 @@ def backtest(event, context):
                                 "chat_id": "0"
                             },
                             "initial_state": "running",
-                            "datadir": ".",
+                            "datadir": tempfile.gettempdir(),
                             "experimental": {
                                 "use_sell_signal": response['Items'][0]['use_sell'],
                                 "sell_profit_only": True
