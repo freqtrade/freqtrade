@@ -112,8 +112,6 @@ class TestStrategy(IStrategy):
         "name": "TestStrategy",
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH"
     }}, {})
-
-    print(strategy)
     strategy = json.loads(strategy['body'])
 
     assert "content" not in strategy
@@ -128,6 +126,9 @@ class TestStrategy(IStrategy):
         "name": "TestStrategy",
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TH"
     }}, {})
+
+    print("code is")
+    print(code)
 
     # code should equal our initial content
     #assert code == content
