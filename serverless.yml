@@ -236,11 +236,11 @@ functions:
 
     events:
       - schedule:
-          rate: rate(1440 minutes)
-          enabled: false
+          rate: rate(240 minutes)
+          enabled: true
       - schedule:
           rate: rate(5 minutes)
-          enabled: true
+          enabled: false
     environment:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
