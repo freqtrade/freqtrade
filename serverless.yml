@@ -218,7 +218,7 @@ functions:
 
   #backtests the strategy
   backtest:
-    memorySize: 256
+    memorySize: 2048
     handler: freqtrade/aws/backtesting_lambda.backtest
 
     events:
