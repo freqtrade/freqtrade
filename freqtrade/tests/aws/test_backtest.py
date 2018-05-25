@@ -188,7 +188,9 @@ class MyFancyTestStrategy(IStrategy):
         data = get_trades({
             'pathParameters': {
                 'user': "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
-                "name": "MyFancyTestStrategy"
+                "name": "MyFancyTestStrategy",
+                "stake": "usdt",
+                "asset": "ltc"
             }
         }, {})['body']
         print(data)

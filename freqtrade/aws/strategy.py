@@ -301,8 +301,8 @@ def get_trades(event, context):
             "{}.{}:{}/{}".format(
                 event['pathParameters']['user'],
                 event['pathParameters']['name'],
-                event['pathParameters']['asset'],
-                event['pathParameters']['stake']
+                event['pathParameters']['asset'].upper(),
+                event['pathParameters']['stake'].upper()
             )
         )
     )

@@ -57,18 +57,18 @@ def backtest(event, context):
 
                 )
 
-                today = datetime.datetime.today()
-                yesterday = today - datetime.timedelta(days=1)
+                till = datetime.datetime.today()
+                fromDate = till - datetime.timedelta(days=30)
 
                 if 'from' in event['body']:
-                    yesterday = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
+                    fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
                 if 'till' in event['body']:
-                    today = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
+                    till = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
 
                 try:
                     if "Items" in response and len(response['Items']) > 0:
 
-                        print("backtesting from {} till {} for {} with {} vs {}".format(yesterday, today, name,
+                        print("backtesting from {} till {} for {} with {} vs {}".format(fromDate, till, name,
                                                                                         event['body'][
                                                                                             'stake_currency'],
                                                                                         event['body']['asset']))
@@ -111,20 +111,17 @@ def backtest(event, context):
                             'realistic_simulation': True,
                             "loglevel": logging.DEBUG,
                             "strategy": "{}:{}".format(name, content),
-                            "timerange": "{}-{}".format(yesterday.strftime('%Y%m%d'), today.strftime('%Y%m%d')),
+                            "timerange": "{}-{}".format(fromDate.strftime('%Y%m%d'), till.strftime('%Y%m%d')),
                             "refresh_pairs": True
 
                         }
 
-                        print("initialized backtesting")
                         backtesting = Backtesting(configuration)
                         result = backtesting.start()
-                        print("finished test")
-                        print(result)
                         result_data = []
                         for index, row in result.iterrows():
                             data = {
-                                "id": "{}.{}:{}".format(user, name, row['currency']),
+                                "id": "{}.{}:{}".format(user, name, row['currency'].upper()),
                                 "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
                                                            row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
                                 "pair": row['currency'],
@@ -207,8 +204,12 @@ def cron(event, context):
                 if 'pathParameters' in event:
                     if 'from' in event['pathParameters']:
                         message['from'] = event['pathParameters']['from']
+                    else:
+                        message['from'] = datetime.datetime.today().strftime('%Y%m%d')
                     if 'till' in event['pathParameters']:
                         message['till'] = event['pathParameters']['till']
+                    else:
+                        message['till'] = (datetime.datetime.today() - datetime.timedelta(days=30)).strftime('%Y%m%d')
 
                 serialized = json.dumps(message, use_decimal=True)
                 # submit item to queue for routing to the correct persistence
