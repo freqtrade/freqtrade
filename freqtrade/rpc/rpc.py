@@ -316,8 +316,10 @@ class RPC(object):
                         and order['side'] == 'buy':
                     exchange.cancel_order(trade.open_order_id, trade.pair)
                     trade.close(order.get('price') or trade.open_rate)
-                    # TODO: sell amount which has been bought already
-                    return
+                    # Do the best effort, if we don't know 'filled' amount, don't try selling
+                    if order['filled'] is None:
+                        return
+                    trade.amount = order['filled']
 
                 # Ignore trades with an attached LIMIT_SELL order
                 if order and order['status'] == 'open' \
