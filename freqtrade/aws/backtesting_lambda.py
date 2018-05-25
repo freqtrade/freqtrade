@@ -121,6 +121,16 @@ def backtest(event, context):
 
 
 def _generate_configuration(event, fromDate, name, response, till):
+    """
+        generates the configuration for us on the fly
+    :param event:
+    :param fromDate:
+    :param name:
+    :param response:
+    :param till:
+    :return:
+    """
+
     content = response['Items'][0]['content']
     configuration = {
         "max_open_trades": 1,
@@ -170,7 +180,7 @@ def _generate_configuration(event, fromDate, name, response, till):
 def cron(event, context):
     """
 
-    this functions submits a new strategy to the backtesting queue
+    this functions submits all strategies to the backtesting queue
 
     :param event:
     :param context:
@@ -198,6 +208,7 @@ def cron(event, context):
             # fire a message to our queue
 
             for x in i['assets']:
+                # test each asset by it self
 
                 message = {
                     "user": i['user'],
@@ -216,7 +227,7 @@ def cron(event, context):
                     if 'till' in event['pathParameters']:
                         message['till'] = event['pathParameters']['till']
                     else:
-                        message['till'] = (datetime.datetime.today() - datetime.timedelta(days=30)).strftime('%Y%m%d')
+                        message['till'] = (datetime.datetime.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
 
                 serialized = json.dumps(message, use_decimal=True)
                 # submit item to queue for routing to the correct persistence
