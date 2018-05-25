@@ -218,7 +218,7 @@ functions:
 
   #backtests the strategy
   backtest:
-    memorySize: 2048
+    memorySize: 128
     handler: freqtrade/aws/backtesting_lambda.backtest
 
     events:
@@ -229,11 +229,8 @@ functions:
       tradeTable: ${self:custom.tradeTable}
       strategyTable: ${self:custom.strategyTable}
 
-  usagePlan:
-    # we want to use as few lambdas as possible
-    throttle:
-      burstLimit: 1
-      rateLimit: 1
+    # not more than 2 runners at any given time
+    reservedConcurrency: 2
 
   # schedules all registered strategies on a daily base
   schedule:
@@ -242,7 +239,7 @@ functions:
 
     events:
       - schedule:
-          rate: rate(240 minutes)
+          rate: rate(1440 minutes)
           enabled: true
       - schedule:
           rate: rate(5 minutes)

@@ -58,7 +58,7 @@ def backtest(event, context):
                 )
 
                 till = datetime.datetime.today()
-                fromDate = till - datetime.timedelta(days=5)
+                fromDate = till - datetime.timedelta(days=7)
 
                 if 'from' in event['body']:
                     fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
