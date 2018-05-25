@@ -9,6 +9,7 @@ TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
+UNLIMITED_STAKE_AMOUNT = 'unlimited'
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -34,7 +35,7 @@ CONF_SCHEMA = {
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'anyOf': [
             {'type': 'integer', 'minimum': 0.0005},
-            {'constant': 'unlimited'}
+            {'constant': UNLIMITED_STAKE_AMOUNT}
         ]},
         'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
                                                              'CLP', 'CNY', 'CZK', 'DKK',

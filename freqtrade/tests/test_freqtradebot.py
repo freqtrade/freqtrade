@@ -15,7 +15,7 @@ import pytest
 import requests
 from sqlalchemy import create_engine
 
-from freqtrade import DependencyException, OperationalException, TemporaryError
+from freqtrade import constants, DependencyException, OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
@@ -280,7 +280,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     )
 
     conf = deepcopy(default_conf)
-    conf['stake_amount'] = 'unlimited'
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
     conf['max_open_trades'] = 2
 
     freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))

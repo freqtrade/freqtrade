@@ -259,7 +259,7 @@ class FreqtradeBot(object):
         stake_amount = self.config['stake_amount']
         avaliable_amount = exchange.get_balance(self.config['stake_currency'])
 
-        if stake_amount == 'unlimited':
+        if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
             if open_trades == self.config['max_open_trades']:
                 return 0
