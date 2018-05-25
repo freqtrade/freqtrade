@@ -229,6 +229,11 @@ functions:
       tradeTable: ${self:custom.tradeTable}
       strategyTable: ${self:custom.strategyTable}
 
+  usagePlan:
+    # we want to use as few lambdas as possible
+    throttle:
+      burstLimit: 1
+      rateLimit: 1
 
   # schedules all registered strategies on a daily base
   schedule:
