@@ -61,6 +61,7 @@ def set_loggers() -> None:
     :return: None
     """
     logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
+    logging.getLogger('ccxt.base.exchange').setLevel(logging.INFO)
     logging.getLogger('telegram').setLevel(logging.INFO)
 
 
