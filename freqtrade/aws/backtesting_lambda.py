@@ -58,7 +58,7 @@ def backtest(event, context):
                 )
 
                 till = datetime.datetime.today()
-                fromDate = till - datetime.timedelta(days=30)
+                fromDate = till - datetime.timedelta(days=5)
 
                 if 'from' in event['body']:
                     fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
@@ -72,49 +72,7 @@ def backtest(event, context):
                                                                                         event['body'][
                                                                                             'stake_currency'],
                                                                                         event['body']['asset']))
-                        content = response['Items'][0]['content']
-                        configuration = {
-                            "max_open_trades": 1,
-                            "stake_currency": event['body']['stake_currency'].upper(),
-                            "stake_amount": 1,
-                            "fiat_display_currency": "USD",
-                            "unfilledtimeout": 600,
-                            "trailing_stop": response['Items'][0]['trailing_stop'],
-                            "bid_strategy": {
-                                "ask_last_balance": 0.0
-                            },
-                            "exchange": {
-                                "name": response['Items'][0]['exchange'],
-                                "enabled": True,
-                                "key": "key",
-                                "secret": "secret",
-                                "pair_whitelist": [
-                                    "{}/{}".format(event['body']['asset'].upper(),
-                                                   event['body']['stake_currency']).upper(),
-
-                                ]
-                            },
-                            "telegram": {
-                                "enabled": False,
-                                "token": "token",
-                                "chat_id": "0"
-                            },
-                            "initial_state": "running",
-                            "datadir": tempfile.gettempdir(),
-                            "experimental": {
-                                "use_sell_signal": response['Items'][0]['use_sell'],
-                                "sell_profit_only": True
-                            },
-                            "internals": {
-                                "process_throttle_secs": 5
-                            },
-                            'realistic_simulation': True,
-                            "loglevel": logging.DEBUG,
-                            "strategy": "{}:{}".format(name, content),
-                            "timerange": "{}-{}".format(fromDate.strftime('%Y%m%d'), till.strftime('%Y%m%d')),
-                            "refresh_pairs": True
-
-                        }
+                        configuration = _generate_configuration(event, fromDate, name, response, till)
 
                         backtesting = Backtesting(configuration)
                         result = backtesting.start()
@@ -139,6 +97,8 @@ def backtest(event, context):
                             trade_table.put_item(Item=data)
                             result_data.append(data)
 
+                        # fire request message to aggregate this strategy now
+
                         return {
                             "statusCode": 200,
                             "body": json.dumps(result_data)
@@ -158,6 +118,53 @@ def backtest(event, context):
                     }
     else:
         raise Exception("not a valid event: {}".format(event))
+
+
+def _generate_configuration(event, fromDate, name, response, till):
+    content = response['Items'][0]['content']
+    configuration = {
+        "max_open_trades": 1,
+        "stake_currency": event['body']['stake_currency'].upper(),
+        "stake_amount": 1,
+        "fiat_display_currency": "USD",
+        "unfilledtimeout": 600,
+        "trailing_stop": response['Items'][0]['trailing_stop'],
+        "bid_strategy": {
+            "ask_last_balance": 0.0
+        },
+        "exchange": {
+            "name": response['Items'][0]['exchange'],
+            "enabled": True,
+            "key": "key",
+            "secret": "secret",
+            "pair_whitelist": [
+                "{}/{}".format(event['body']['asset'].upper(),
+                               event['body']['stake_currency']).upper(),
+
+            ]
+        },
+        "telegram": {
+            "enabled": False,
+            "token": "token",
+            "chat_id": "0"
+        },
+        "initial_state": "running",
+        "datadir": tempfile.gettempdir(),
+        "experimental": {
+            "use_sell_signal": response['Items'][0]['use_sell'],
+            "sell_profit_only": True
+        },
+        "internals": {
+            "process_throttle_secs": 5
+        },
+        'realistic_simulation': True,
+        "loglevel": logging.DEBUG,
+        "strategy": "{}:{}".format(name, content),
+        "timerange": "{}-{}".format(fromDate.strftime('%Y%m%d'), till.strftime('%Y%m%d')),
+        "refresh_pairs": True
+
+    }
+    return configuration
 
 
 def cron(event, context):
