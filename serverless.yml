@@ -217,6 +217,9 @@ functions:
 
 
   #backtests the strategy
+  #should be switched to utilze aws fargate instead
+  #and running a container
+  #so that we can evaluate long running tasks
   backtest:
     memorySize: 128
     handler: freqtrade/aws/backtesting_lambda.backtest
