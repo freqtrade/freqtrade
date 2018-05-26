@@ -55,7 +55,7 @@ python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180
 ```bash
 python3 ./freqtrade/main.py -s TestStrategy backtesting
 ```
-Where `-s TestStrategy` refers to the class name within the stratgey file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
+Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
 
 **Exporting trades to file**
 ```bash
