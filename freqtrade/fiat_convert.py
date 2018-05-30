@@ -5,7 +5,7 @@ e.g BTC to USD
 
 import logging
 import time
-from typing import Dict
+from typing import Dict, List
 
 from coinmarketcap import Market
 from requests.exceptions import RequestException
@@ -65,7 +65,7 @@ class CryptoToFiatConverter(object):
     This object is also a Singleton
     """
     __instance = None
-    _coinmarketcap = None
+    _coinmarketcap: Market = None
 
     # Constants
     SUPPORTED_FIAT = [
@@ -87,7 +87,7 @@ class CryptoToFiatConverter(object):
         return CryptoToFiatConverter.__instance
 
     def __init__(self) -> None:
-        self._pairs = []
+        self._pairs: List[CryptoFiat] = []
         self._load_cryptomap()
 
     def _load_cryptomap(self) -> None:
