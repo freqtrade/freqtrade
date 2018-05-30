@@ -34,7 +34,7 @@ class CryptoFiat(object):
         self.price = 0.0
 
         # Private attributes
-        self._expiration = 0
+        self._expiration = 0.0
 
         self.crypto_symbol = crypto_symbol.upper()
         self.fiat_symbol = fiat_symbol.upper()
