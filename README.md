@@ -70,10 +70,10 @@ want to avoid.
 - [x] **Performance status report**: Provide a performance status of 
 your current trades.
 
-### Exchange supported
-- [x] Bittrex
-- [ ] Binance
-- [ ] Others
+### Exchange marketplaces supported
+- [X] [Bittrex](https://bittrex.com/)
+- [X] [Binance](https://www.binance.com/)
+- [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ## Quick start
 This quick start section is a very short explanation on how to test the 
