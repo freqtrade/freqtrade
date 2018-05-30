@@ -33,6 +33,8 @@ function install_macos () {
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
     brew install python3 wget ta-lib
+
+    test_and_fix_python_on_mac
 }
 
 # Install bot Debian_ubuntu
@@ -79,6 +81,19 @@ function reset () {
     echo
     python3.6 -m venv .env
     updateenv
+}
+
+function test_and_fix_python_on_mac() {
+
+    if ! [ -x "$(command -v python3.6)" ]
+    then
+        echo "-------------------------"
+        echo "Fixing Python"
+        echo "-------------------------"
+        echo "Python 3.6 is not linked in your system. Fixing it..."
+        brew link --overwrite python
+        echo
+    fi
 }
 
 function config_generator () {
