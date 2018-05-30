@@ -144,8 +144,9 @@ to understand the requirements before sending your pull-requests.
 ### Bot commands
 
 ```bash
-usage: main.py [-h] [-v] [--version] [-c PATH] [--dry-run-db] [--datadir PATH]
-               [--dynamic-whitelist [INT]]
+usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+               [--strategy-path PATH] [--dynamic-whitelist [INT]]
+               [--dry-run-db]
                {backtesting,hyperopt} ...
 
 Simple High Frequency Trading Bot for crypto currencies
@@ -161,13 +162,18 @@ optional arguments:
   --version             show program's version number and exit
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
-  --datadir PATH        path to backtest data (default freqdata/tests/testdata
+  -d PATH, --datadir PATH
+                        path to backtest data (default:
+                        freqtrade/tests/testdata
+  -s NAME, --strategy NAME
+                        specify strategy class name (default: DefaultStrategy)
+  --strategy-path PATH  specify additional strategy lookup path
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
                         BaseVolume (Default 20 currencies)
+  --dry-run-db          Force dry run to use a local DB
+                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
+                        only if dry_run is enabled.
 ```
 More details on:
 - [How to run the bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
