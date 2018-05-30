@@ -4,8 +4,8 @@ import gzip
 import json
 import logging
 import os
+from typing import Optional, List, Dict, Tuple, Any
 import arrow
-from typing import Optional, List, Dict, Tuple
 
 from freqtrade import misc, constants
 from freqtrade.exchange import get_ticker_history
@@ -139,7 +139,9 @@ def download_pairs(datadir, pairs: List[str],
 
 def load_cached_data_for_updating(filename: str,
                                   tick_interval: str,
-                                  timerange: Optional[Tuple[Tuple, int, int]]) -> Tuple[list, int]:
+                                  timerange: Optional[Tuple[Tuple, int, int]]) -> Tuple[
+                                                                                  List[Any],
+                                                                                  Optional[int]]:
     """
     Load cached data and choose what part of the data should be updated
     """
