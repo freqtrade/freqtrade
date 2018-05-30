@@ -56,19 +56,14 @@ Windows, macOS and Linux
 - [x] **Persistence**: Persistence is achieved through sqlite
 - [x] **Dry-run**: Run the bot without playing money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
-- [x] **Strategy Optimization**: Optimize your buy/sell strategy 
-parameters with Hyperopts.
-- [x] **Whitelist crypto-currencies**: Select which crypto-currency you
-want to trade.
-- [x] **Blacklist crypto-currencies**: Select which crypto-currency you
-want to avoid.
+- [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell
+strategy parameters with real exchange data.
+- [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade.
+- [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram
-- [x] **Display profit/loss in fiat**: Display your profit/loss in
-33 fiat.
-- [x] **Daily summary of profit/loss**: Provide a daily summary
- of your profit/loss.
-- [x] **Performance status report**: Provide a performance status of 
-your current trades.
+- [x] **Display profit/loss in fiat**: Display your profit/loss in 33 fiat.
+- [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
+- [x] **Performance status report**: Provide a performance status of your current trades.
 
 ### Exchange marketplaces supported
 - [X] [Bittrex](https://bittrex.com/)
