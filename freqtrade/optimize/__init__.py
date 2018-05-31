@@ -49,7 +49,8 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
 def load_tickerdata_file(
         datadir: str, pair: str,
         ticker_interval: str,
-        timerange: Optional[Tuple[Tuple, int, int]] = None) -> Optional[List[Dict]]:
+        timerange: Optional[Tuple[Tuple, int, int]] = None,
+        load_count=1 ) -> Optional[List[Dict]]:
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
@@ -74,6 +75,34 @@ def load_tickerdata_file(
             pairdata = json.load(tickerdata)
     else:
         return None
+    """
+    Check if timerange is in the pairdata loaded
+    Return None is not, which will then download the file.
+    This is to avoid trim_tickerlist throwing
+    "list index out of range" error else.
+    If we've been around the download loop and still missng a start 
+    or end date, return pair data there is without trimming and log 
+    exchange does not have the range requested
+    """
+    if timerange:
+        stype, start, stop = timerange
+        if stype[0] == 'date':
+            if ((pairdata[0][0]) > (start * 1000)):
+                if load_count > 1:
+                    logger.info('Start timerange unavailable from exchange')
+                    return pairdata
+                else:
+                    logger.info('Start timerange not in cached data')
+                    return None
+        if stype[1] == 'date':
+            if (pairdata[(len(pairdata) - 1)][0]) < (stop * 1000):
+                logger.info('End timerange not in cached data')
+                if load_count > 1:
+                    logger.info('End timerange for unavailable from exchange')
+                    return pairdata
+                else:
+                    logger.info('End timerange for not in cached data')
+                    return None
 
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
@@ -99,12 +128,18 @@ def load_data(datadir: str,
         download_pairs(datadir, _pairs, ticker_interval, timerange=timerange)
 
     for pair in _pairs:
-        pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
-        if pairdata:
-            result[pair] = pairdata
-        else:
-            logger.warn('No data for pair %s, use --update-pairs-cached to download the data', pair)
-
+        pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange, load_count=1)
+        if not pairdata:
+            # download the tickerdata from exchange
+            download_backtesting_testdata(datadir,
+                                          pair=pair,
+                                          tick_interval=ticker_interval,
+                                          timerange=timerange)
+            # and retry reading the pair
+            # TODO if load_tickerdata returns None we're doing nothing with it.
+            # Added load_count argument
+            pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange, load_count=2)
+        result[pair] = pairdata
     return result
 
 
