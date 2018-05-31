@@ -195,7 +195,8 @@ class Analyze(object):
         :return True if bot should sell at current rate
         """
         current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:  # type: ignore
+        if self.strategy.stoploss is not None \
+           and current_profit < self.strategy.stoploss:  # type: ignore
             logger.debug('Stop loss hit.')
             return True
 
