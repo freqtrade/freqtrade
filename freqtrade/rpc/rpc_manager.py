@@ -1,7 +1,7 @@
 """
 This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
-from typing import Any, Optional, List
+from typing import Any, List
 import logging
 
 from freqtrade.rpc.telegram import Telegram

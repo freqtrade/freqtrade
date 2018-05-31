@@ -5,7 +5,7 @@ This module contains the class to persist trades into SQLite
 import logging
 from datetime import datetime
 from decimal import Decimal, getcontext
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
