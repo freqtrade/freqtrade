@@ -33,7 +33,7 @@ class StrategyResolver(object):
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
-        self.strategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
+        self.strategy: IStrategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
 
         # Set attributes
         # Check if we need to override configuration
@@ -61,7 +61,7 @@ class StrategyResolver(object):
         self.strategy.stoploss = float(self.strategy.stoploss)
 
     def _load_strategy(
-            self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:
+            self, strategy_name: str, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
