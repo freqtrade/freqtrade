@@ -4,7 +4,7 @@ This module contains class to define a RPC communications
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Tuple, Any
+from typing import Dict, Tuple, Any, Optional
 
 import arrow
 import sqlalchemy as sql
@@ -114,7 +114,7 @@ class RPC(object):
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Tuple[bool, Any]:
         today = datetime.utcnow().date()
-        profit_days = {}
+        profit_days: Dict[int, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
             return True, '*Daily [n]:* `must be an integer greater than 0`'
@@ -172,7 +172,7 @@ class RPC(object):
         durations = []
 
         for trade in trades:
-            current_rate = None
+            current_rate: Optional[float] = None
 
             if not trade.open_rate:
                 continue
@@ -278,7 +278,7 @@ class RPC(object):
         value = fiat.convert_amount(total, 'BTC', symbol)
         return False, (output, total, symbol, value)
 
-    def rpc_start(self) -> (bool, str):
+    def rpc_start(self) -> Tuple[bool, str]:
         """
         Handler for start.
         """
@@ -288,7 +288,7 @@ class RPC(object):
         self.freqtrade.state = State.RUNNING
         return False, '`Starting trader ...`'
 
-    def rpc_stop(self) -> (bool, str):
+    def rpc_stop(self) -> Tuple[bool, str]:
         """
         Handler for stop.
         """
