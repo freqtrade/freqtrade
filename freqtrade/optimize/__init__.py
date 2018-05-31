@@ -74,11 +74,10 @@ def load_tickerdata_file(
             pairdata = json.load(tickerdata)
     else:
         return None
-
+    
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
     return pairdata
-
 
 def load_data(datadir: str,
               ticker_interval: str,
