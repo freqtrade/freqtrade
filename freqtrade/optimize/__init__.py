@@ -74,6 +74,23 @@ def load_tickerdata_file(
             pairdata = json.load(tickerdata)
     else:
         return None
+    """
+    Check if timerange is fully within the pairdata loaded
+    Do not call trim_tickerlist if not, as will fail with -index out of range- error.
+    Log to user to run with --refresh-pairs-cached.
+    """
+    if timerange:
+        stype, start, stop = timerange
+        if stype[0] == 'date':
+            if ((pairdata[0][0]) > (start * 1000)):
+                logger.warn('Start timerange for %s not in cache, to update cache use', pair)
+                logger.info('--refresh-pairs-cached. *NB The coin may be newer to the exchange')
+                return pairdata
+        if stype[1] == 'date':
+            if (pairdata[(len(pairdata) - 1)][0]) < (stop * 1000):
+                logger.warn('End timerange for %s not in cache, to update cache use', pair)
+                logger.info('--refresh-pairs-cached. *NB The coin may no longer be on the exchange')
+                return pairdata
 
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
