@@ -19,7 +19,7 @@ class Arguments(object):
 
     def __init__(self, args: List[str], description: str) -> None:
         self.args = args
-        self.parsed_arg = None
+        self.parsed_arg: Optional[argparse.Namespace] = None
         self.parser = argparse.ArgumentParser(description=description)
 
     def _load_args(self) -> None:
@@ -211,7 +211,7 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: str) -> Optional[Tuple[List, int, int]]:
+    def parse_timerange(text: str) -> Optional[Tuple[Tuple, Optional[int], Optional[int]]]:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
@@ -231,21 +231,21 @@ class Arguments(object):
             if match:  # Regex has matched
                 rvals = match.groups()
                 index = 0
-                start = None
-                stop = None
+                start: Optional[int] = None
+                stop: Optional[int] = None
                 if stype[0]:
-                    start = rvals[index]
+                    starts = rvals[index]
                     if stype[0] == 'date':
-                        start = arrow.get(start, 'YYYYMMDD').timestamp
+                        start = arrow.get(starts, 'YYYYMMDD').timestamp
                     else:
-                        start = int(start)
+                        start = int(starts)
                     index += 1
                 if stype[1]:
-                    stop = rvals[index]
+                    stops = rvals[index]
                     if stype[1] == 'date':
-                        stop = arrow.get(stop, 'YYYYMMDD').timestamp
+                        stop = arrow.get(stops, 'YYYYMMDD').timestamp
                     else:
-                        stop = int(stop)
+                        stop = int(stops)
                 return stype, start, stop
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
