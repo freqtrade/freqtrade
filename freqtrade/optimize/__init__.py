@@ -29,7 +29,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
     if stype[0] == 'index':
         start_index = start
     elif stype[0] == 'date':
-        while tickerlist[start_index][0] < start * 1000:
+        while start_index < len(tickerlist) and tickerlist[start_index][0] < start * 1000:
             start_index += 1
 
     if stype[1] == 'line':
@@ -37,7 +37,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
     if stype[1] == 'index':
         stop_index = stop
     elif stype[1] == 'date':
-        while tickerlist[stop_index-1][0] > stop * 1000:
+        while stop_index > 0 and tickerlist[stop_index-1][0] > stop * 1000:
             stop_index -= 1
 
     if start_index > stop_index:
