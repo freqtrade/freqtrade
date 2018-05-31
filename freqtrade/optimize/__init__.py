@@ -74,6 +74,25 @@ def load_tickerdata_file(
             pairdata = json.load(tickerdata)
     else:
         return None
+    
+    """
+    Check if timerange is in the pairdata loaded
+    Return None is not, which will then download the file.
+    
+    This is to avoid trim_tickerlist throwing
+    "list index out of range" error else.
+    """
+    if timerange:
+        howmany = (len(pairdata) - 1)
+        first_file_timestamp = (pairdata[0][0])
+        last_file_timestamp =  (pairdata[howmany][0])
+        stype, start, stop = timerange
+        if stype[0] == 'date':
+            if first_file_timestamp > (start * 1000):
+                return None
+        if stype[1] == 'date':
+            if last_file_timestamp < (stop * 1000):
+                return None
 
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
