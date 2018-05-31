@@ -101,7 +101,7 @@ class StrategyResolver(object):
         # Generate spec based on absolute path
         spec = importlib.util.spec_from_file_location('user_data.strategies', module_path)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        spec.loader.exec_module(module)  # type: ignore
 
         valid_strategies_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
