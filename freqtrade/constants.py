@@ -40,7 +40,8 @@ CONF_SCHEMA = {
                                                              'KRW', 'MXN', 'MYR', 'NOK',
                                                              'NZD', 'PHP', 'PKR', 'PLN',
                                                              'RUB', 'SEK', 'SGD', 'THB',
-                                                             'TRY', 'TWD', 'ZAR', 'USD']},
+                                                             'TRY', 'TWD', 'ZAR', 'USD',
+                                                             'USDT']},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
