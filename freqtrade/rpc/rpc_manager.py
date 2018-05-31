@@ -1,6 +1,7 @@
 """
 This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
+from typing import Any, Optional, List
 import logging
 
 from freqtrade.rpc.telegram import Telegram
@@ -21,8 +22,8 @@ class RPCManager(object):
         """
         self.freqtrade = freqtrade
 
-        self.registered_modules = []
-        self.telegram = None
+        self.registered_modules: List[str] = []
+        self.telegram: Any = None
         self._init()
 
     def _init(self) -> None:
