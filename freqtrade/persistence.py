@@ -149,11 +149,11 @@ class Trade(_DECL_BASE):
     close_date = Column(DateTime)
     open_order_id = Column(String)
     # absolute value of the stop loss
-    stop_loss = Column(Float, nullable=False, default=0.0)
+    stop_loss = Column(Float, nullable=True, default=0.0)
     # absolute value of the initial stop loss
-    initial_stop_loss = Column(Float, nullable=False, default=0.0)
+    initial_stop_loss = Column(Float, nullable=True, default=0.0)
     # absolute value of the highest reached price
-    max_rate = Column(Float, nullable=False, default=0.0)
+    max_rate = Column(Float, nullable=True, default=0.0)
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(

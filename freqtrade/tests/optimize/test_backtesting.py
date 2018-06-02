@@ -95,8 +95,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
             'stake_amount': config['stake_amount'],
             'processed': processed,
             'max_open_trades': 1,
-            'realistic': True,
-            'trailing_stop' : False
+            'realistic': True
         }
     )
 
