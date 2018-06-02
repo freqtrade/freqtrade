@@ -444,6 +444,8 @@ def test_migrate_new(default_conf, fee):
                                 close_profit FLOAT,
                                 stake_amount FLOAT NOT NULL,
                                 amount FLOAT,
+                                initial_stop_loss FLOAT,
+                                max_rate FLOAT,
                                 open_date DATETIME NOT NULL,
                                 close_date DATETIME,
                                 open_order_id VARCHAR,

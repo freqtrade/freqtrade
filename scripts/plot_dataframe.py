@@ -159,6 +159,15 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         fillcolor="rgba(0,176,246,0.2)",
         line={'color': "transparent"},
     )
+    bb_middle = go.Scatter(
+        x=data.date,
+        y=data.bb_middleband,
+        name='BB middle',
+        fill="tonexty",
+        fillcolor="rgba(0,176,246,0.2)",
+        line={'color': "red"},
+    )
+
     macd = go.Scattergl(x=data['date'], y=data['macd'], name='MACD')
     macdsignal = go.Scattergl(x=data['date'], y=data['macdsignal'], name='MACD signal')
     volume = go.Bar(x=data['date'], y=data['volume'], name='Volume')
@@ -173,7 +182,9 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     fig.append_trace(candles, 1, 1)
     fig.append_trace(bb_lower, 1, 1)
+    fig.append_trace(bb_middle, 1, 1)
     fig.append_trace(bb_upper, 1, 1)
+
     fig.append_trace(buys, 1, 1)
     fig.append_trace(sells, 1, 1)
     fig.append_trace(volume, 2, 1)

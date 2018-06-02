@@ -106,6 +106,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert 'just now' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
     assert '-0.59%' in result['Profit'].all()
+    assert 'Value' in result
 
 
 def test_rpc_daily_profit(default_conf, update, ticker, fee,

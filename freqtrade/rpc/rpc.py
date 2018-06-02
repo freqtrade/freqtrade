@@ -98,10 +98,11 @@ class RPC(object):
                     trade.id,
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
+                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate)),
+                    '{:.6f}'.format(trade.amount * current_rate)
                 ])
 
-            columns = ['ID', 'Pair', 'Since', 'Profit']
+            columns = ['ID', 'Pair', 'Since', 'Profit', 'Value']
             df_statuses = DataFrame.from_records(trades_list, columns=columns)
             df_statuses = df_statuses.set_index(columns[0])
             # The style used throughout is to return a tuple

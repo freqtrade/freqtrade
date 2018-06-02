@@ -14,7 +14,6 @@ from freqtrade.exchange import get_ticker_history
 from freqtrade.persistence import Trade
 from freqtrade.strategy.resolver import StrategyResolver
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +30,7 @@ class Analyze(object):
     Analyze class contains everything the bot need to determine if the situation is good for
     buying or selling.
     """
+
     def __init__(self, config: dict) -> None:
         """
         Init Analyze
@@ -195,9 +195,40 @@ class Analyze(object):
         :return True if bot should sell at current rate
         """
         current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
+
+        if trade.stop_loss is None:
+            # initially adjust the stop loss to the base value
+            trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss)
+
+        # evaluate if the stoploss was hit
+        if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
+
+            if 'trailing_stop' in self.config and self.config['trailing_stop']:
+                logger.warning(
+                    "HIT STOP: current price at {:.6f}, stop loss is {:.6f}, "
+                    "initial stop loss was at {:.6f}, trade opened at {:.6f}".format(
+                        current_rate, trade.stop_loss, trade.initial_stop_loss, trade.open_rate))
+                logger.debug("trailing stop saved us: {:.6f}"
+                             .format(trade.stop_loss - trade.initial_stop_loss))
+
             logger.debug('Stop loss hit.')
             return True
+
+        # update the stop loss afterwards, after all by definition it's supposed to be hanging
+        if 'trailing_stop' in self.config and self.config['trailing_stop']:
+
+            # check if we have a special stop loss for positive condition
+            # and if profit is positive
+            stop_loss_value = self.strategy.stoploss
+            if isinstance(self.config['trailing_stop'], dict) and \
+                    'positive' in self.config['trailing_stop'] and \
+                    current_profit > 0:
+
+                logger.debug("using positive stop loss mode: {} since we have profit {}".format(
+                    self.config['trailing_stop']['positive'], current_profit))
+                stop_loss_value = self.config['trailing_stop']['positive']
+
+            trade.adjust_stop_loss(current_rate, stop_loss_value)
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
