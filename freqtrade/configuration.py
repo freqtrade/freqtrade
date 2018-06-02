@@ -145,7 +145,7 @@ class Configuration(object):
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})
-            logger.info('Parameter --datadir detected: %s ...', self.args.datadir)
+            logger.info('Using data folder: %s ...', self.args.datadir)
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
