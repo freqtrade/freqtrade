@@ -49,7 +49,7 @@ custom:
   region: ${opt:region, self:provider.region}
 
   snsTopic: "FreqQueue-${self:custom.stage}"
-  snsTadeTopic: "FreqTradeQueue-${self:custom.stage}"
+  snsTradeTopic: "FreqTradeQueue-${self:custom.stage}"
 
   tradeTable: "FreqTradesTable-${self:custom.stage}"
   strategyTable: "FreqStrategyTable-${self:custom.stage}"
