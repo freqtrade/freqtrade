@@ -5,8 +5,10 @@ e.g BTC to USD
 
 import logging
 import time
+from typing import Dict
 
 from coinmarketcap import Market
+from requests.exceptions import RequestException
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +75,7 @@ class CryptoToFiatConverter(object):
         "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
     ]
 
-    CRYPTOMAP = {
-        'BTC': 'bitcoin',
-        'ETH': 'ethereum',
-        'USDT': 'thether'
-    }
+    _cryptomap: Dict = {}
 
     def __new__(cls):
         if CryptoToFiatConverter.__instance is None:
@@ -90,6 +88,15 @@ class CryptoToFiatConverter(object):
 
     def __init__(self) -> None:
         self._pairs = []
+        self._load_cryptomap()
+
+    def _load_cryptomap(self) -> None:
+        try:
+            coinlistings = self._coinmarketcap.listings()
+            self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"])),
+                                       coinlistings["data"]))
+        except (ValueError, RequestException) as e:
+            logger.error("Could not load FIAT Cryptocurrency map for the following problem: %s", e)
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:
         """
@@ -99,6 +106,8 @@ class CryptoToFiatConverter(object):
         :param fiat_symbol: fiat to convert to
         :return: float, value in fiat of the crypto-currency amount
         """
+        if crypto_symbol == fiat_symbol:
+            return crypto_amount
         price = self.get_price(crypto_symbol=crypto_symbol, fiat_symbol=fiat_symbol)
         return float(crypto_amount) * float(price)
 
@@ -179,15 +188,17 @@ class CryptoToFiatConverter(object):
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
 
-        if crypto_symbol not in self.CRYPTOMAP:
-            raise ValueError(
-                'The crypto symbol {} is not supported.'.format(crypto_symbol))
+        if crypto_symbol not in self._cryptomap:
+            # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
+            logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
+            return 0.0
         try:
             return float(
                 self._coinmarketcap.ticker(
-                    currency=self.CRYPTOMAP[crypto_symbol],
+                    currency=self._cryptomap[crypto_symbol],
                     convert=fiat_symbol
-                )[0]['price_' + fiat_symbol.lower()]
+                )['data']['quotes'][fiat_symbol.upper()]['price']
             )
-        except BaseException:
+        except BaseException as ex:
+            logger.error("Error in _find_price: %s", ex)
             return 0.0

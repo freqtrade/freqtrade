@@ -6,11 +6,11 @@ import json
 import logging
 from argparse import Namespace
 from typing import Dict, Any
-
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
+import ccxt
 
-from freqtrade import constants
+from freqtrade import OperationalException, constants
 
 
 logger = logging.getLogger(__name__)
@@ -108,6 +108,9 @@ class Configuration(object):
             else:
                 logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
+        # Check if the exchange set by the user is supported
+        self.check_exchange(config)
+
         return config
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -121,7 +124,7 @@ class Configuration(object):
         if 'ticker_interval' in self.args and self.args.ticker_interval:
             config.update({'ticker_interval': self.args.ticker_interval})
             logger.info('Parameter -i/--ticker-interval detected ...')
-            logger.info('Using ticker_interval: %d ...', config.get('ticker_interval'))
+            logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
 
         # If -l/--live is used we add it to the configuration
         if 'live' in self.args and self.args.live:
@@ -206,3 +209,23 @@ class Configuration(object):
             self.config = self.load_config()
 
         return self.config
+
+    def check_exchange(self, config: Dict[str, Any]) -> bool:
+        """
+        Check if the exchange name in the config file is supported by Freqtrade
+        :return: True or raised an exception if the exchange if not supported
+        """
+        exchange = config.get('exchange', {}).get('name').lower()
+        if exchange not in ccxt.exchanges:
+
+            exception_msg = 'Exchange "{}" not supported.\n' \
+                            'The following exchanges are supported: {}'\
+                .format(exchange, ', '.join(ccxt.exchanges))
+
+            logger.critical(exception_msg)
+            raise OperationalException(
+                exception_msg
+            )
+
+        logger.debug('Exchange "%s" supported', exchange)
+        return True

@@ -1,5 +1,5 @@
 """ FreqTrade bot """
-__version__ = '0.16.0'
+__version__ = '0.17.0'
 
 
 class DependencyException(BaseException):
@@ -16,9 +16,9 @@ class OperationalException(BaseException):
     """
 
 
-class NotEnoughFundsExeption(BaseException):
+class TemporaryError(BaseException):
     """
-    This happens when the exchange reports that not enough funds where available.
-    We do not want to stop the bot in this case and just keep it going and suppress
-    this message
+    Temporary network or exchange related error.
+    This could happen when an exchange is congested, unavailable, or the user
+    has networking problems. Usually resolves itself after a time.
     """
