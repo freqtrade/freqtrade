@@ -8,13 +8,13 @@ import arrow
 
 from freqtrade import (exchange, arguments, misc)
 
-DEFAULT_DL_PATH = 'freqtrade/tests/testdata'
+DEFAULT_DL_PATH = 'user_data/data'
 
 arguments = arguments.Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
 args = arguments.parse_args()
 
-TICKER_INTERVALS = ['1m', '5m', '1h', '4h']
+TICKER_INTERVALS = ['1m', '5m', '15m', '30m', '1h', '4h']
 PAIRS = [
     "ETH/BTC",
     "LTC/BTC",
