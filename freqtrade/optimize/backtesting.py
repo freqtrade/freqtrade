@@ -218,7 +218,8 @@ class Backtesting(object):
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
-            timerange = Arguments.parse_timerange(str(self.config.get('timerange')))
+            timerange = Arguments.parse_timerange(None if self.config.get(
+                'timerange') is None else str(self.config.get('timerange')))
             data = optimize.load_data(  # type: ignore
                 self.config['datadir'],
                 pairs=pairs,
