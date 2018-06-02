@@ -84,6 +84,7 @@ def load_data_test(what):
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
@@ -94,9 +95,11 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
             'stake_amount': config['stake_amount'],
             'processed': processed,
             'max_open_trades': 1,
-            'realistic': True
+            'realistic': True,
+            'trailing_stop' : False
         }
     )
+
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
 
