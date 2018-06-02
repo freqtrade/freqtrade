@@ -4,6 +4,8 @@ from base64 import urlsafe_b64encode
 import boto3
 import pytest
 import simplejson as json
+from mock import Mock
+
 from freqtrade.aws.backtesting_lambda import backtest, cron
 from freqtrade.aws.strategy import submit, get_trades
 
@@ -73,11 +75,11 @@ class MyFancyTestStrategy(IStrategy):
         "from": "20180401",
         "till": "20180501",
         "stake_currency": "usdt",
-        "asset": "ltc"
+        "assets": ["ltc"]
 
     }
 
-    data = json.loads(backtest({
+    assert backtest({
         "Records": [
             {
                 "Sns": {
@@ -85,29 +87,14 @@ class MyFancyTestStrategy(IStrategy):
                     "Message": json.dumps(request)
                 }
             }]
-    }, {})['body'])
-
-    # evaluate that we now have trades in the database
-    # sadly not always a given at this tage
-    # due to the dynamic nature. Should pick a strategy for testing
-    # which generates a lot of trades
-    if len(data) > 0:
-        data = get_trades({
-            'pathParameters': {
-                'user': "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
-                "name": "MyFancyTestStrategy",
-                'stake': "USDT",
-                'asset': "{}".format(data[0]['pair'].split("/")[0])
-            }
-        }, {})['body']
-        print(data)
-        assert len(json.loads(data)) > 0
+    }, {})['statusCode'] == 200
 
 
 def test_backtest(lambda_context):
     content = """# --- Do not remove these libs ---
 from freqtrade.strategy.interface import IStrategy
 from typing import Dict, List
+
 from hyperopt import hp
 from functools import reduce
 from pandas import DataFrame
@@ -167,10 +154,10 @@ class MyFancyTestStrategy(IStrategy):
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
         "name": "MyFancyTestStrategy",
         "stake_currency": "usdt",
-        "asset": "ltc"
+        "assets": ["ltc"]
     }
 
-    data = json.loads(backtest({
+    assert backtest({
         "Records": [
             {
                 "Sns": {
@@ -178,23 +165,7 @@ class MyFancyTestStrategy(IStrategy):
                     "Message": json.dumps(request)
                 }
             }]
-    }, {})['body'])
-
-    # evaluate that we now have trades in the database
-    # sadly not always a given at this tage
-    # due to the dynamic nature. Should pick a strategy for testing
-    # which generates a lot of trades
-    if len(data) > 0:
-        data = get_trades({
-            'pathParameters': {
-                'user': "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
-                "name": "MyFancyTestStrategy",
-                "stake": "usdt",
-                "asset": "ltc"
-            }
-        }, {})['body']
-        print(data)
-        assert len(json.loads(data)) > 0
+    }, {})['statusCode'] == 200
 
 
 def test_cron(lambda_context):

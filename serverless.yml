@@ -199,7 +199,31 @@ functions:
     environment:
       topic: ${self:custom.snsTopic}
       strategyTable: ${self:custom.strategyTable}
+      BASE_URL: ${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
 
+  # submits a new trade to the system
+  trade:
+    memorySize: 128
+    handler: freqtrade/aws/trade.submit
+    events:
+      - http:
+          path: trade
+          method: post
+          cors: true
+
+    environment:
+      tradeTopic: ${self:custom.snsTradeTopic}
+
+  # stores the received message in the trade table
+  trade-store:
+    memorySize: 128
+    handler: freqtrade/aws/trade.store
+
+    events:
+      - sns: ${self:custom.snsTradeTopic}
+
+    environment:
+      tradeTable: ${self:custom.tradeTable}
 
   #submits a new strategy to the system
   submit_github:
@@ -231,9 +255,6 @@ functions:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
       strategyTable: ${self:custom.strategyTable}
-
-    # not more than 2 runners at any given time
-    reservedConcurrency: 2
 
   # schedules all registered strategies on a daily base
   schedule:

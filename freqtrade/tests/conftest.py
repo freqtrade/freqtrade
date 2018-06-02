@@ -631,6 +631,7 @@ def lambda_context():
     os.environ["strategyTable"] = "StrategyTable"
     os.environ["tradeTable"] = "TradeTable"
     os.environ["topic"] = "UnitTestTopic"
+    os.environ["BASE_URL"] = "http://127.0.0.1/test"
 
     client = session.client('sns')
     client.create_topic(Name=os.environ["topic"])
@@ -643,7 +644,7 @@ def lambda_context():
     responses.add_passthru('https://api.github.com')
     responses.add_passthru('https://bittrex.com')
     responses.add_passthru('https://api.binance.com')
-    # here we will define required tables later
+
     yield
     sns.stop()
     dynamo.stop()

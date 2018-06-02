@@ -7,8 +7,9 @@ import boto3
 import simplejson as json
 from boto3.dynamodb.conditions import Key
 
-from freqtrade.aws.tables import get_trade_table, get_strategy_table
+from freqtrade.aws.tables import get_strategy_table
 from freqtrade.optimize.backtesting import Backtesting
+from requests import post
 
 db = boto3.resource('dynamodb')
 
@@ -25,7 +26,7 @@ def backtest(event, context):
             {
                 'strategy' : 'url handle where we can find the strategy'
                 'stake_currency' : 'our desired stake currency'
-                'asset' : '[] asset we are interested in. If empy, we fill use a default list
+                'asset' : '[] asset we are interested in.
                 'username' : user who's strategy should be evaluated
                 'name' : name of the strategy we want to evaluate
                 'exchange' : name of the exchange we should be using
@@ -48,7 +49,6 @@ def backtest(event, context):
                 name = event['body']['name']
                 user = event['body']['user']
 
-                trade_table = get_trade_table()
                 table = get_strategy_table()
 
                 response = table.query(
@@ -58,7 +58,7 @@ def backtest(event, context):
                 )
 
                 till = datetime.datetime.today()
-                fromDate = till - datetime.timedelta(days=7)
+                fromDate = till - datetime.timedelta(days=1)
 
                 if 'from' in event['body']:
                     fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
@@ -71,15 +71,14 @@ def backtest(event, context):
                         print("backtesting from {} till {} for {} with {} vs {}".format(fromDate, till, name,
                                                                                         event['body'][
                                                                                             'stake_currency'],
-                                                                                        event['body']['asset']))
+                                                                                        event['body']['assets']))
                         configuration = _generate_configuration(event, fromDate, name, response, till)
 
                         backtesting = Backtesting(configuration)
                         result = backtesting.start()
-                        result_data = []
                         for index, row in result.iterrows():
                             data = {
-                                "id": "{}.{}:{}".format(user, name, row['currency'].upper()),
+                                "id": "{}.{}:{}:test".format(user, name, row['currency'].upper()),
                                 "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
                                                            row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
                                 "pair": row['currency'],
@@ -90,18 +89,12 @@ def backtest(event, context):
                                 "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
                             }
 
-                            data = json.dumps(data, use_decimal=True)
-                            data = json.loads(data, use_decimal=True)
-
-                            # persist data
-                            trade_table.put_item(Item=data)
-                            result_data.append(data)
+                            _submit_result_to_backend(data)
 
                         # fire request message to aggregate this strategy now
 
                         return {
-                            "statusCode": 200,
-                            "body": json.dumps(result_data)
+                            "statusCode": 200
                         }
                     else:
                         return {
@@ -118,6 +111,19 @@ def backtest(event, context):
                     }
     else:
         raise Exception("not a valid event: {}".format(event))
+
+
+def _submit_result_to_backend(data):
+    """
+        submits the given result to the backend system for further processing and analysis
+    :param data:
+    :return:
+    """
+    print(data)
+    try:
+        print(post("{}/trade".format(os.environ['BASE_URL']), data=data))
+    except Exception as e:
+        print("submission ignored: {}".format(e))
 
 
 def _generate_configuration(event, fromDate, name, response, till):
@@ -147,11 +153,9 @@ def _generate_configuration(event, fromDate, name, response, till):
             "enabled": True,
             "key": "key",
             "secret": "secret",
-            "pair_whitelist": [
-                "{}/{}".format(event['body']['asset'].upper(),
-                               event['body']['stake_currency']).upper(),
-
-            ]
+            "pair_whitelist": list(
+                map(lambda x: "{}/{}".format(x, response['Items'][0]['stake_currency']).upper(),
+                    response['Items'][0]['assets']))
         },
         "telegram": {
             "enabled": False,
@@ -207,37 +211,34 @@ def cron(event, context):
         for i in response['Items']:
             # fire a message to our queue
 
-            for x in i['assets']:
-                # test each asset by it self
+            message = {
+                "user": i['user'],
+                "name": i['name'],
+                "asset": i['assets'],
+                "stake_currency": i['stake_currency']
+            }
 
-                message = {
-                    "user": i['user'],
-                    "name": i['name'],
-                    "asset": x,
-                    "stake_currency": i['stake_currency']
-                }
+            # triggered over html, let's provide
+            # a date range for the backtesting
+            if 'pathParameters' in event:
+                if 'from' in event['pathParameters']:
+                    message['from'] = event['pathParameters']['from']
+                else:
+                    message['from'] = datetime.datetime.today().strftime('%Y%m%d')
+                if 'till' in event['pathParameters']:
+                    message['till'] = event['pathParameters']['till']
+                else:
+                    message['till'] = (datetime.datetime.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
 
-                # triggered over html, let's provide
-                # a date range for the backtesting
-                if 'pathParameters' in event:
-                    if 'from' in event['pathParameters']:
-                        message['from'] = event['pathParameters']['from']
-                    else:
-                        message['from'] = datetime.datetime.today().strftime('%Y%m%d')
-                    if 'till' in event['pathParameters']:
-                        message['till'] = event['pathParameters']['till']
-                    else:
-                        message['till'] = (datetime.datetime.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
+            serialized = json.dumps(message, use_decimal=True)
+            # submit item to queue for routing to the correct persistence
 
-                serialized = json.dumps(message, use_decimal=True)
-                # submit item to queue for routing to the correct persistence
-
-                result = client.publish(
-                    TopicArn=topic_arn,
-                    Message=json.dumps({'default': serialized}),
-                    Subject="schedule backtesting",
-                    MessageStructure='json'
-                )
+            result = client.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps({'default': serialized}),
+                Subject="schedule",
+                MessageStructure='json'
+            )
 
         if 'LastEvaluatedKey' in response:
             return table.scan(
