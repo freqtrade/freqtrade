@@ -303,28 +303,34 @@ class Arguments(object):
             '--pairs-file',
             help='File containing a list of pairs to download',
             dest='pairs_file',
-            default=None
+            default=None,
+            metavar='PATH',
         )
 
         self.parser.add_argument(
             '--export',
             help='Export files to given dir',
             dest='export',
-            default=None)
+            default=None,
+            metavar='PATH',
+        )
 
         self.parser.add_argument(
             '--days',
             help='Download data for number of days',
             dest='days',
             type=int,
-            default=None)
+            metavar='INT',
+            default=None
+        )
 
         self.parser.add_argument(
             '--exchange',
             help='Exchange name (default: %(default)s)',
             dest='exchange',
             type=str,
-            default='bittrex')
+            default='bittrex'
+        )
 
         self.parser.add_argument(
             '-t', '--timeframes',
