@@ -33,7 +33,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None):
+    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None)-> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
@@ -93,7 +93,7 @@ class FreqtradeBot(object):
         persistence.cleanup()
         return True
 
-    def worker(self, old_state: None) -> State:
+    def worker(self, old_state: State = None) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call
