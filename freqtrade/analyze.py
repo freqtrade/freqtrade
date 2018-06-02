@@ -95,7 +95,7 @@ class Analyze(object):
         Return ticker interval to use
         :return: Ticker interval value to use
         """
-        return self.strategy.ticker_interval  # type: ignore
+        return self.strategy.ticker_interval
 
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
@@ -195,14 +195,13 @@ class Analyze(object):
         :return True if bot should sell at current rate
         """
         current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None \
-           and current_profit < self.strategy.stoploss:  # type: ignore
+        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
             logger.debug('Stop loss hit.')
             return True
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
-        for duration, threshold in self.strategy.minimal_roi.items():  # type: ignore
+        for duration, threshold in self.strategy.minimal_roi.items():
             if time_diff <= duration:
                 return False
             if current_profit > threshold:
