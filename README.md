@@ -73,12 +73,6 @@ strategy parameters with real exchange data.
 
 ### Additional features in this branch
 
-#### Cloud:
-
-- [x] aws lambda based backtesting
-- [x] automatically evaluating all strategies from: https://github.com/berlinguyinca/freqtrade-trading-strategies on an hourly basis
-- [x] persisting of backtesting results
-
 #### Strategy:
 
 - [x] loading strategies from Base64 encoded data in the config file
