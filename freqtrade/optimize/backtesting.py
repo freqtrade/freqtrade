@@ -78,7 +78,7 @@ class Backtesting(object):
         Generates and returns a text table for the given backtest data and the results dataframe
         :return: pretty printed table with tabulate as str
         """
-        stake_currency = self.config.get('stake_currency')
+        stake_currency = str(self.config.get('stake_currency'))
 
         floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
         tabular_data = []
@@ -168,7 +168,7 @@ class Backtesting(object):
         record = args.get('record', None)
         records = []
         trades = []
-        trade_count_lock = {}
+        trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
@@ -230,7 +230,7 @@ class Backtesting(object):
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
-            timerange = Arguments.parse_timerange(self.config.get('timerange'))
+            timerange = Arguments.parse_timerange(str(self.config.get('timerange')))
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
