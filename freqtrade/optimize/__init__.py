@@ -15,6 +15,63 @@ from user_data.hyperopt_conf import hyperopt_optimize_conf
 logger = logging.getLogger(__name__)
 
 
+def sanitize_start_stop_date(tickerlist: List[Dict], timerange, pair):
+    """
+    This function is called when either timerange start or stop are type date
+    -
+    Prevent index out or range error in trim_tickerlist, which occurs when trying
+    to process a stop or start range outside that in the cached data
+    returns (start, stop, nothing_to_trim)
+    nothing_to_trim  > 0 is a flag to later not send the pair data to trim_tickerlist
+    -
+    Function Logic:
+     - if cache records begin after timerange start - reset start to first record
+     - if cache records end before timerange stop - reset stop to last record
+     - if start or stop are fully after or before cache records - return, nothing_to_trim.
+     - if only 1 of stop or start are set in timerange use the first or last
+       record appropriately from the cache as the unset value
+    """
+
+    # Do nothing if timerange does not contain a type date.
+    stype, start, stop = timerange
+    nothing_to_trim = 0
+    if stype[0] != 'date' or stype[1] != 'date':
+        sanitized_dates = [start, stop, nothing_to_trim]
+        return sanitized_dates
+
+    # If no arg for stop or start then set to the first or last record in the cache
+    stop = stop if stype[1] == 'date' else int(((tickerlist[(len(tickerlist) - 1)][0]) / 1000))
+    start = start if stype[0] == 'date' else int(((tickerlist[0][0]) / 1000))
+
+    # If requested range start is after cache records end - no data to be trimmed
+    # If requested start range is before start of cache, move it to first nearest record
+    if stype[0] == 'date':
+        if (tickerlist[0][0]) > (stop * 1000):
+            logger.warn('No data for %s timerange in cache, update cache ', pair)
+            nothing_to_trim = nothing_to_trim + 1
+        elif (tickerlist[0][0]) > (start * 1000):
+            start = (tickerlist[0][0] / 1000)
+            logger.warn('Requested start timerange for %s not in cache, update cache ', pair)
+
+    # If requested range stop is before cache records begin - no data to be trimmed
+    # If requested stop range is after end of cache, move it to last nearest record
+    if stype[1] == 'date':
+        if (tickerlist[(len(tickerlist) - 1)][0]) < (start * 1000):
+            logger.warn('No data for %s timerange in cache, update cache ', pair)
+            nothing_to_trim = nothing_to_trim + 2
+        elif (tickerlist[(len(tickerlist) - 1)][0]) < (stop * 1000):
+            stop = (tickerlist[(len(tickerlist) - 1)][0] / 1000)
+            logger.warn('Requested stop timerange for %s not in cache, update cache ', pair)
+
+    # Impossible range, nothing to trim.
+    if start > stop:
+        nothing_to_trim = nothing_to_trim + 4
+        logger.warn('Check timerange for %s', pair)
+
+    sanitized_dates = [start, stop, nothing_to_trim]
+    return sanitized_dates
+
+
 def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -> List[Dict]:
     if not tickerlist:
         return tickerlist
@@ -23,7 +80,6 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
 
     start_index = 0
     stop_index = len(tickerlist)
-
     if stype[0] == 'line':
         stop_index = start
     if stype[0] == 'index':
@@ -74,6 +130,20 @@ def load_tickerdata_file(
             pairdata = json.load(tickerdata)
     else:
         return None
+
+    """
+    Call to function to catch if a start or stop date from timerange  is outside
+    range of records in the cached ticker list.
+    This prevents "index out of range" error.
+    """
+    if timerange:
+        stype, start, stop = timerange
+        if stype[0] == 'date' or stype[1] == 'date':
+            sanitized_dates = sanitize_start_stop_date(pairdata, timerange, pair)
+            timerange = (('date', 'date'), int(sanitized_dates[0]), int(sanitized_dates[1]))
+            # If no overlap of timerange to cache data return pairdata, do not call trim_tickerlist
+            if sanitized_dates[2] > 0:
+                return pairdata
 
     if timerange:
         pairdata = trim_tickerlist(pairdata, timerange)
