@@ -9,7 +9,8 @@ it.
 
 ## Bot commands
 ```
-usage: main.py [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist [INT]]
+usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+               [--strategy-path PATH] [--dynamic-whitelist [INT]]
                [--dry-run-db]
                {backtesting,hyperopt} ...
 
@@ -26,17 +27,18 @@ optional arguments:
   --version             show program's version number and exit
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
+  -d PATH, --datadir PATH
+                        path to backtest data (default:
+                        freqtrade/tests/testdata
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
   --strategy-path PATH  specify additional strategy lookup path
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
-  --datadir PATH
-                        path to backtest data (default freqdata/tests/testdata
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
                         BaseVolume (Default 20 currencies)
+  --dry-run-db          Force dry run to use a local DB
+                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
+                        only if dry_run is enabled.
 ```
 
 ### How to use a different config file?

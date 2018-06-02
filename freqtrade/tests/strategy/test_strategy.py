@@ -42,7 +42,8 @@ def test_load_strategy_custom_directory(result):
     if os.name == 'nt':
         with pytest.raises(
                 FileNotFoundError,
-                match="FileNotFoundError: [WinError 3] The system cannot find the path specified: '{}'".format(extra_dir)):
+                match="FileNotFoundError: [WinError 3] The system cannot find the "
+                      "path specified: '{}'".format(extra_dir)):
             resolver._load_strategy('TestStrategy', extra_dir)
     else:
         with pytest.raises(
