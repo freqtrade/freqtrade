@@ -161,7 +161,8 @@ def test_fiat_init_network_exception(mocker):
     fiat_convert._cryptomap = {}
     fiat_convert._load_cryptomap()
 
-    assert len(fiat_convert._cryptomap) == 0
+    length_cryptomap = len(fiat_convert._cryptomap)
+    assert length_cryptomap == 0
 
 
 def test_fiat_convert_without_network():
@@ -175,3 +176,22 @@ def test_fiat_convert_without_network():
     assert fiat_convert._coinmarketcap is None
     assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
     CryptoToFiatConverter._coinmarketcap = cmc_temp
+
+
+def test_convert_amount(mocker):
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
+
+    fiat_convert = CryptoToFiatConverter()
+    result = fiat_convert.convert_amount(
+        crypto_amount=1.23,
+        crypto_symbol="BTC",
+        fiat_symbol="USD"
+    )
+    assert result == 15184.35
+
+    result = fiat_convert.convert_amount(
+        crypto_amount=1.23,
+        crypto_symbol="BTC",
+        fiat_symbol="BTC"
+    )
+    assert result == 1.23
