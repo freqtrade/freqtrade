@@ -99,7 +99,20 @@ def test_load_data_with_new_pair_1min(ticker_history, mocker, caplog) -> None:
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
 
     _backup_file(file)
-    optimize.load_data(None, ticker_interval='1m', pairs=['MEME/BTC'])
+    # do not download a new pair if refresh_pairs isn't set
+    optimize.load_data(None,
+                       ticker_interval='1m',
+                       refresh_pairs=False,
+                       pairs=['MEME/BTC'])
+    assert os.path.isfile(file) is False
+    assert log_has('No data for pair MEME/BTC, use --update-pairs-cached to download the data',
+                   caplog.record_tuples)
+
+    # download a new pair if refresh_pairs is set
+    optimize.load_data(None,
+                       ticker_interval='1m',
+                       refresh_pairs=True,
+                       pairs=['MEME/BTC'])
     assert os.path.isfile(file) is True
     assert log_has('Download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
     _clean_test_file(file)
