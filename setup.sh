@@ -2,16 +2,17 @@
 #encoding=utf8
 
 function updateenv () {
-    echo "
-    -------------------------
-    Update your virtual env
-    -------------------------
-    "
+    echo "-------------------------"
+    echo "Update your virtual env"
+    echo "-------------------------"
     source .env/bin/activate
-    pip3.6 install --upgrade pip
-    pip3 install -r requirements.txt --upgrade
-    pip3 install -r requirements.txt
-    pip3 install -e .
+    echo "pip3 install in-progress. Please wait..."
+    pip3.6 install --quiet --upgrade pip
+    pip3 install --quiet -r requirements.txt --upgrade
+    pip3 install --quiet -r requirements.txt
+    pip3 install --quiet -e .
+    echo "pip3 install completed"
+    echo
 }
 
 # Install tab lib
@@ -29,10 +30,11 @@ function install_macos () {
         echo "-------------------------"
         echo "Install Brew"
         echo "-------------------------"
-        echo
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
     brew install python3 wget ta-lib
+
+    test_and_fix_python_on_mac
 }
 
 # Install bot Debian_ubuntu
@@ -54,7 +56,6 @@ function reset () {
     echo "----------------------------"
     echo "Reset branch and virtual env"
     echo "----------------------------"
-    echo
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* master") ]
     then
         if [ -d ".env" ]; then
@@ -77,18 +78,30 @@ function reset () {
         echo "Reset ignored because you are not on 'master' or 'develop'."
     fi
 
+    echo
     python3.6 -m venv .env
     updateenv
+}
+
+function test_and_fix_python_on_mac() {
+
+    if ! [ -x "$(command -v python3.6)" ]
+    then
+        echo "-------------------------"
+        echo "Fixing Python"
+        echo "-------------------------"
+        echo "Python 3.6 is not linked in your system. Fixing it..."
+        brew link --overwrite python
+        echo
+    fi
 }
 
 function config_generator () {
 
     echo "Starting to generate config.json"
-
-    echo "-------------------------"
+    echo
     echo "General configuration"
     echo "-------------------------"
-    echo
     default_max_trades=3
     read -p "Max open trades: (Default: $default_max_trades) " max_trades
     max_trades=${max_trades:-$default_max_trades}
@@ -105,14 +118,13 @@ function config_generator () {
     read -p "Fiat currency: (Default: $default_fiat_currency) " fiat_currency
     fiat_currency=${fiat_currency:-$default_fiat_currency}
 
-    echo "------------------------"
-    echo "Bittrex config generator"
-    echo "------------------------"
     echo
+    echo "Exchange config generator"
+    echo "------------------------"
     read -p "Exchange API key: " api_key
     read -p "Exchange API Secret: " api_secret
 
-    echo "-------------------------"
+    echo
     echo "Telegram config generator"
     echo "-------------------------"
     read -p "Telegram Token: " token
@@ -131,6 +143,10 @@ function config_generator () {
 }
 
 function config () {
+
+    echo "-------------------------"
+    echo "Config file generator"
+    echo "-------------------------"
     if [ -f config.json ]
     then
     read -p "A config file already exist, do you want to override it [Y/N]? "
@@ -144,22 +160,26 @@ function config () {
         config_generator
     fi
 
+    echo
+    echo "-------------------------"
+    echo "Config file generated"
+    echo "-------------------------"
     echo "Edit ./config.json to modify Pair and other configurations."
+    echo
 }
 
 function install () {
     echo "-------------------------"
     echo "Install mandatory dependencies"
     echo "-------------------------"
-    echo
 
     if [ "$(uname -s)" == "Darwin" ]
     then
-        echo "- You are on macOS"
+        echo "macOS detected. Setup for this system in-progress"
         install_macos
     elif [ -x "$(command -v apt-get)" ]
     then
-        echo "- You are on Debian/Ubuntu"
+        echo "Debian/Ubuntu detected. Setup for this system in-progress"
         install_debian
     else
         echo "This script does not support your OS."
@@ -167,12 +187,13 @@ function install () {
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi
+    echo
     reset
-    echo "
-    - Install complete.
-    "
     config
-    echo "You can now use the bot by executing 'source .env/bin/activate; python3 freqtrade/main.py'."
+    echo "-------------------------"
+    echo "Run the bot"
+    echo "-------------------------"
+    echo "You can now use the bot by executing 'source .env/bin/activate; python3.6 freqtrade/main.py'."
 }
 
 function plot () {
