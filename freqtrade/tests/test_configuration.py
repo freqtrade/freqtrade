@@ -13,6 +13,7 @@ from jsonschema import ValidationError
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.tests.conftest import log_has
+from freqtrade import OperationalException
 
 
 def test_configuration_object() -> None:
@@ -28,19 +29,19 @@ def test_configuration_object() -> None:
     assert hasattr(Configuration, 'get_config')
 
 
-def test_load_config_invalid_pair(default_conf, mocker) -> None:
+def test_load_config_invalid_pair(default_conf) -> None:
     """
     Test the configuration validator with an invalid PAIR format
     """
     conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('BTC-ETH')
+    conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         configuration = Configuration([])
         configuration._validate_config(conf)
 
 
-def test_load_config_missing_attributes(default_conf, mocker) -> None:
+def test_load_config_missing_attributes(default_conf) -> None:
     """
     Test the configuration validator with a missing attribute
     """
@@ -65,6 +66,21 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
     assert 'internals' in validated_conf
+    assert log_has('Validating configuration ...', caplog.record_tuples)
+
+
+def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
+    """
+    Test Configuration._load_config_file() method
+    """
+    conf = deepcopy(default_conf)
+    conf['max_open_trades'] = 0
+    file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    Configuration([])._load_config_file('somefile')
+    assert file_mock.call_count == 1
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
@@ -251,7 +267,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
         'backtesting',
-        '--ticker-interval', '1',
+        '--ticker-interval', '1m',
         '--live',
         '--realistic-simulation',
         '--refresh-pairs-cached',
@@ -276,7 +292,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
     assert log_has(
-        'Using ticker_interval: 1 ...',
+        'Using ticker_interval: 1m ...',
         caplog.record_tuples
     )
 
@@ -334,3 +350,29 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert 'spaces' in config
     assert config['spaces'] == ['all']
     assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
+
+
+def test_check_exchange(default_conf) -> None:
+    """
+    Test the configuration validator with a missing attribute
+    """
+    conf = deepcopy(default_conf)
+    configuration = Configuration([])
+
+    # Test a valid exchange
+    conf.get('exchange').update({'name': 'BITTREX'})
+    assert configuration.check_exchange(conf)
+
+    # Test a valid exchange
+    conf.get('exchange').update({'name': 'binance'})
+    assert configuration.check_exchange(conf)
+
+    # Test a invalid exchange
+    conf.get('exchange').update({'name': 'unknown_exchange'})
+    configuration.config = conf
+
+    with pytest.raises(
+        OperationalException,
+        match=r'.*Exchange "unknown_exchange" not supported.*'
+    ):
+        configuration.check_exchange(conf)

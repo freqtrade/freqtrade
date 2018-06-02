@@ -43,6 +43,10 @@ python scripts/plot_dataframe.py -p BTC_ETH --timerange=100-200
 ```
 Timerange doesn't work with live data.
 
+To plot trades stored in a database use `--db-url` argument:
+```
+python scripts/plot_dataframe.py --db-url tradesv3.dry_run.sqlite -p BTC_ETH
+```
 
 ## Plot profit
 

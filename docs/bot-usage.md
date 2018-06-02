@@ -9,7 +9,8 @@ it.
 
 ## Bot commands
 ```
-usage: main.py [-h] [-c PATH] [-v] [--version] [--dynamic-whitelist [INT]]
+usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+               [--strategy-path PATH] [--dynamic-whitelist [INT]]
                [--dry-run-db]
                {backtesting,hyperopt} ...
 
@@ -26,17 +27,18 @@ optional arguments:
   --version             show program's version number and exit
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
+  -d PATH, --datadir PATH
+                        path to backtest data (default:
+                        freqtrade/tests/testdata
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
   --strategy-path PATH  specify additional strategy lookup path
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
-  --datadir PATH
-                        path to backtest data (default freqdata/tests/testdata
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
                         BaseVolume (Default 20 currencies)
+  --dry-run-db          Force dry run to use a local DB
+                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
+                        only if dry_run is enabled.
 ```
 
 ### How to use a different config file?
@@ -123,13 +125,13 @@ optional arguments:
   -h, --help            show this help message and exit
   -l, --live            using live data
   -i INT, --ticker-interval INT
-                        specify ticker interval in minutes (default: 5)
+                        specify ticker interval (default: '5m')
   --realistic-simulation
                         uses max_open_trades from config to simulate real
                         world limitations
   -r, --refresh-pairs-cached
                         refresh the pairs files in tests/testdata with 
-                        the latest data from Bittrex. Use it if you want
+                        the latest data from the exchange. Use it if you want
                         to run your backtesting with up-to-date data.
 ```
 
