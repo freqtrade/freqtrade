@@ -105,7 +105,7 @@ def test_load_data_with_new_pair_1min(ticker_history, mocker, caplog) -> None:
                        refresh_pairs=False,
                        pairs=['MEME/BTC'])
     assert os.path.isfile(file) is False
-    assert log_has('No data for pair MEME/BTC, use --update-pairs-cached to download the data',
+    assert log_has('No data for pair MEME/BTC, use --refresh-pairs-cached to download the data',
                    caplog.record_tuples)
 
     # download a new pair if refresh_pairs is set
