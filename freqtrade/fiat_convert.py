@@ -95,8 +95,11 @@ class CryptoToFiatConverter(object):
             coinlistings = self._coinmarketcap.listings()
             self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"])),
                                        coinlistings["data"]))
-        except (ValueError, RequestException) as e:
-            logger.error("Could not load FIAT Cryptocurrency map for the following problem: %s", e)
+        except (ValueError, RequestException) as exception:
+            logger.error(
+                "Could not load FIAT Cryptocurrency map for the following problem: %s",
+                exception
+            )
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:
         """
@@ -188,6 +191,10 @@ class CryptoToFiatConverter(object):
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
 
+        # No need to convert if both crypto and fiat are the same
+        if crypto_symbol == fiat_symbol:
+            return 1.0
+
         if crypto_symbol not in self._cryptomap:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
             logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
@@ -199,6 +206,6 @@ class CryptoToFiatConverter(object):
                     convert=fiat_symbol
                 )['data']['quotes'][fiat_symbol.upper()]['price']
             )
-        except BaseException as ex:
-            logger.error("Error in _find_price: %s", ex)
+        except BaseException as exception:
+            logger.error("Error in _find_price: %s", exception)
             return 0.0
