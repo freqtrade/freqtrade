@@ -219,7 +219,7 @@ class Backtesting(object):
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
             timerange = Arguments.parse_timerange(str(self.config.get('timerange')))
-            data = optimize.load_data(
+            data = optimize.load_data(  # type: ignore
                 self.config['datadir'],
                 pairs=pairs,
                 ticker_interval=self.ticker_interval,

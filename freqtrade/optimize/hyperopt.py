@@ -494,9 +494,9 @@ class Hyperopt(Backtesting):
                 )
 
     def start(self) -> None:
-        timerange = Arguments.parse_timerange(self.config.get('timerange') if self.config.get(
+        timerange = Arguments.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
-        data = load_data(
+        data = load_data(  # type: ignore
             datadir=str(self.config.get('datadir')),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.ticker_interval,

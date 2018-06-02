@@ -211,7 +211,8 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: str) -> Optional[Tuple[Tuple, Optional[int], Optional[int]]]:
+    def parse_timerange(text: Optional[str]) -> Optional[Tuple[Tuple,
+                                                         Optional[int], Optional[int]]]:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
