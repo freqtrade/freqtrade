@@ -83,6 +83,8 @@ The full timerange specification:
 - Use tickframes till 2018/01/31: `--timerange=-20180131`
 - Use tickframes since 2018/01/31: `--timerange=20180131-`
 - Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
+- Use tickframes between POSIX timestamps 1527595200 1527618600:
+                                                `--timerange=1527595200-1527618600`
 
 
 **Update testdata directory**
