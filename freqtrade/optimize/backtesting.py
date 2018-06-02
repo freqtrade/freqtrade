@@ -33,18 +33,6 @@ class Backtesting(object):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.analyze = None
-        self.ticker_interval = None
-        self.tickerdata_to_dataframe = None
-        self.populate_buy_trend = None
-        self.populate_sell_trend = None
-        self._init()
-
-    def _init(self) -> None:
-        """
-        Init objects required for backtesting
-        :return: None
-        """
         self.analyze = Analyze(self.config)
         self.ticker_interval = self.analyze.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
