@@ -9,7 +9,7 @@ import pytest
 from requests.exceptions import RequestException
 
 from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter
-from freqtrade.tests.conftest import patch_coinmarketcap
+from freqtrade.tests.conftest import log_has, patch_coinmarketcap
 
 
 def test_pair_convertion_object():
@@ -88,6 +88,13 @@ def test_fiat_convert_find_price(mocker):
 
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=13000.2)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
+
+
+def test_fiat_convert_unsupported_crypto(mocker, caplog):
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
+    fiat_convert = CryptoToFiatConverter()
+    assert fiat_convert._find_price(crypto_symbol='CRYPTO_123', fiat_symbol='EUR') == 0.0
+    assert log_has('unsupported crypto-symbol CRYPTO_123 - returning 0.0', caplog.record_tuples)
 
 
 def test_fiat_convert_get_price(mocker):
