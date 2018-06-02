@@ -165,6 +165,11 @@ class Arguments(object):
 
     @staticmethod
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
+        """
+        Parses given common arguments for Backtesting and Hyperopt scripts.
+        :param parser:
+        :return:
+        """
         parser.add_argument(
             '-i', '--ticker-interval',
             help='specify ticker interval (1m, 5m, 30m, 1h, 1d)',
