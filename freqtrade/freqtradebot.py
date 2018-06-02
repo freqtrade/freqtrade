@@ -51,9 +51,9 @@ class FreqtradeBot(object):
 
         # Init objects
         self.config = config
-        self.analyze = None
-        self.fiat_converter = None
-        self.rpc = None
+        self.analyze = Analyze(self.config)
+        self.fiat_converter = CryptoToFiatConverter()
+        self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = None
 
@@ -66,9 +66,6 @@ class FreqtradeBot(object):
         :return: None
         """
         # Initialize all modules
-        self.analyze = Analyze(self.config)
-        self.fiat_converter = CryptoToFiatConverter()
-        self.rpc = RPCManager(self)
 
         persistence.init(self.config, db_url)
         exchange.init(self.config)
