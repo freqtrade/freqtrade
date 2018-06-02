@@ -214,7 +214,7 @@ def cron(event, context):
             message = {
                 "user": i['user'],
                 "name": i['name'],
-                "asset": i['assets'],
+                "assets": i['assets'],
                 "stake_currency": i['stake_currency']
             }
 
