@@ -269,12 +269,12 @@ functions:
           enabled: true
       - schedule:
           rate: rate(5 minutes)
-          enabled: false
+          enabled: true
 
       # manual trigger for a longer range
       # TODO protect with api key
       - http:
-          path: strategies/backtest/{from}/{till}
+          path: backtest/{from}/{till}
           method: post
           cors: true
           request:
