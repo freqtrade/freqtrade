@@ -222,6 +222,9 @@ class Arguments(object):
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
+                  (r'^-(\d{10})$', (None, 'date')),
+                  (r'^(\d{10})-$', ('date', None)),
+                  (r'^(\d{10})-(\d{10})$', ('date', 'date')),
                   (r'^(-\d+)$', (None, 'line')),
                   (r'^(\d+)-$', ('line', None)),
                   (r'^(\d+)-(\d+)$', ('index', 'index'))]
@@ -236,14 +239,16 @@ class Arguments(object):
                 if stype[0]:
                     start = rvals[index]
                     if stype[0] == 'date':
-                        start = arrow.get(start, 'YYYYMMDD').timestamp
+                        start = int(start) if len(start) == 10 \
+                            else arrow.get(start, 'YYYYMMDD').timestamp
                     else:
                         start = int(start)
                     index += 1
                 if stype[1]:
                     stop = rvals[index]
                     if stype[1] == 'date':
-                        stop = arrow.get(stop, 'YYYYMMDD').timestamp
+                        stop = int(stop) if len(stop) == 10 \
+                            else arrow.get(stop, 'YYYYMMDD').timestamp
                     else:
                         stop = int(stop)
                 return stype, start, stop
