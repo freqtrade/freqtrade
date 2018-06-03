@@ -9,6 +9,7 @@ from typing import Dict, List
 
 from coinmarketcap import Market
 from requests.exceptions import RequestException
+from freqtrade.constants import SUPPORTED_FIAT
 
 logger = logging.getLogger(__name__)
 
@@ -66,14 +67,6 @@ class CryptoToFiatConverter(object):
     """
     __instance = None
     _coinmarketcap: Market = None
-
-    # Constants
-    SUPPORTED_FIAT = [
-        "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
-        "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
-        "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
-        "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
-    ]
 
     _cryptomap: Dict = {}
 
@@ -175,7 +168,7 @@ class CryptoToFiatConverter(object):
 
         fiat = fiat.upper()
 
-        return fiat in self.SUPPORTED_FIAT
+        return fiat in SUPPORTED_FIAT
 
     def _find_price(self, crypto_symbol: str, fiat_symbol: str) -> float:
         """
