@@ -8,18 +8,26 @@ import arrow
 
 from freqtrade import (exchange, arguments, misc)
 
-DEFAULT_DL_PATH = 'freqtrade/tests/testdata'
-
 arguments = arguments.Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
 args = arguments.parse_args()
 
+# Added exchange as a subdirectory to download into
+# as Freqtrad now supports multiple exchanges.
+DEFAULT_DL_PATH = 'freqtrade/tests/testdata/' + args.exchange
+DEFAULT_PAIR_FILE = DEFAULT_DL_PATH + "/" + "pairs.json"
+
 TICKER_INTERVALS = ['1m', '5m']
 PAIRS = []
 
+# Added a check for a default pairs file in per exchange specific dir
 if args.pairs_file:
     with open(args.pairs_file) as file:
         PAIRS = json.load(file)
+elif os.path.isfile(DEFAULT_PAIR_FILE) is True:
+    with open(DEFAULT_PAIR_FILE) as file:
+        PAIRS = json.load(file)
+
 PAIRS = list(set(PAIRS))
 
 dl_path = DEFAULT_DL_PATH

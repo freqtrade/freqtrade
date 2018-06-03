@@ -4,7 +4,6 @@ This module contains the argument manager class
 
 import argparse
 import logging
-import os
 import re
 import arrow
 from typing import List, Tuple, Optional
@@ -70,12 +69,16 @@ class Arguments(object):
             type=str,
             metavar='PATH',
         )
+        # default to none, if none passed we build a default
+        # which includes exchange as a subdir in config
+        # has to be this way around as config.json is not read yet to capture
+        # exchange value
         self.parser.add_argument(
             '-d', '--datadir',
-            help='path to backtest data (default: %(default)s',
+            help='path to backtest data (help_hints',
             dest='datadir',
-            default=os.path.join('freqtrade', 'tests', 'testdata'),
             type=str,
+            default=None,
             metavar='PATH',
         )
         self.parser.add_argument(
