@@ -118,21 +118,25 @@ python3 ./freqtrade/main.py -c config.json --dry-run-db
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: freqtrade backtesting [-h] [-l] [-i INT] [--realistic-simulation]
-                             [-r]
+usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
+                           [--timerange TIMERANGE] [-l] [-r] [--export EXPORT]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -l, --live            using live data
-  -i INT, --ticker-interval INT
-                        specify ticker interval (default: '5m')
+  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
   --realistic-simulation
                         uses max_open_trades from config to simulate real
                         world limitations
+  --timerange TIMERANGE
+                        specify what timerange of data to use.
+  -l, --live            using live data
   -r, --refresh-pairs-cached
-                        refresh the pairs files in tests/testdata with 
-                        the latest data from the exchange. Use it if you want
-                        to run your backtesting with up-to-date data.
+                        refresh the pairs files in tests/testdata with the
+                        latest data from the exchange. Use it if you want to
+                        run your backtesting with up-to-date data.
+  --export EXPORT       export backtest results, argument are: trades Example
+                        --export=trades
 ```
 
 ### How to use --refresh-pairs-cached parameter?
@@ -155,14 +159,25 @@ Hyperopt uses an internal json config return by `hyperopt_optimize_conf()`
 located in `freqtrade/optimize/hyperopt_conf.py`.
 
 ```
-usage: freqtrade hyperopt [-h] [-e INT] [--use-mongodb]
+usage: main.py hyperopt [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
+                        [--timerange TIMERANGE] [-e INT] [--use-mongodb]
+                        [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+  --realistic-simulation
+                        uses max_open_trades from config to simulate real
+                        world limitations
+  --timerange TIMERANGE
+                        specify what timerange of data to use.
   -e INT, --epochs INT  specify number of epochs (default: 100)
   --use-mongodb         parallelize evaluations with mongodb (requires mongod
                         in PATH)
-
+  -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]
+                        Specify which parameters to hyperopt. Space separate
+                        list. Default: all
 ```
 
 ## A parameter missing in the configuration?
