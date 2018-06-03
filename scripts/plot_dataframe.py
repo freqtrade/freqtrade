@@ -13,18 +13,14 @@ Optional Cli parameters
 -db / --db-url: Show trades stored in database
 """
 import logging
+import os
 import sys
 from argparse import Namespace
-
-from typing import List
-
+from typing import Dict, List, Any
+from sqlalchemy import create_engine
 from plotly import tools
 from plotly.offline import plot
 import plotly.graph_objs as go
-
-from typing import Dict, List, Any
-from sqlalchemy import create_engine
-
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
 from freqtrade import exchange
@@ -34,6 +30,7 @@ from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
+
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
     """
@@ -187,7 +184,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     fig['layout']['yaxis2'].update(title='Volume')
     fig['layout']['yaxis3'].update(title='MACD')
 
-    plot(fig, filename='freqtrade-plot.html')
+    plot(fig, filename=os.path.join('user_data', 'freqtrade-plot.html'))
 
 
 def plot_parse_args(args: List[str]) -> Namespace:
