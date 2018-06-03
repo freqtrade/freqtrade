@@ -33,7 +33,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None):
+    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None)-> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
@@ -51,9 +51,9 @@ class FreqtradeBot(object):
 
         # Init objects
         self.config = config
-        self.analyze = None
-        self.fiat_converter = None
-        self.rpc = None
+        self.analyze = Analyze(self.config)
+        self.fiat_converter = CryptoToFiatConverter()
+        self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = None
 
@@ -66,9 +66,6 @@ class FreqtradeBot(object):
         :return: None
         """
         # Initialize all modules
-        self.analyze = Analyze(self.config)
-        self.fiat_converter = CryptoToFiatConverter()
-        self.rpc = RPCManager(self)
 
         persistence.init(self.config, db_url)
         exchange.init(self.config)
@@ -93,7 +90,7 @@ class FreqtradeBot(object):
         persistence.cleanup()
         return True
 
-    def worker(self, old_state: None) -> State:
+    def worker(self, old_state: State = None) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call

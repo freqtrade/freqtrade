@@ -13,7 +13,7 @@ def went_down(series: Series) -> bool:
     return series < series.shift(1)
 
 
-def ehlers_super_smoother(series: Series, smoothing: float = 6) -> type(Series):
+def ehlers_super_smoother(series: Series, smoothing: float = 6) -> Series:
     magic = pi * sqrt(2) / smoothing
     a1 = exp(-magic)
     coeff2 = 2 * a1 * cos(magic)

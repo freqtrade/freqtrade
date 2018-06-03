@@ -290,7 +290,7 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
         # chached data was already downloaded
         till_time_ms = min(till_time_ms, arrow.utcnow().shift(minutes=-10).timestamp * 1000)
 
-        data = []
+        data: List[Dict[Any, Any]] = []
         while not since_ms or since_ms < till_time_ms:
             data_part = _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
 

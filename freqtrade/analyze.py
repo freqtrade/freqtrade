@@ -12,7 +12,7 @@ from pandas import DataFrame, to_datetime
 from freqtrade import constants
 from freqtrade.exchange import get_ticker_history
 from freqtrade.persistence import Trade
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class Analyze(object):
         :param config: Bot configuration (use the one from Configuration())
         """
         self.config = config
-        self.strategy = StrategyResolver(self.config).strategy
+        self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:

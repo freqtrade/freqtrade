@@ -14,7 +14,7 @@ from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Optional
 
 import numpy
 import talib.abstract as ta
@@ -60,7 +60,7 @@ class Hyperopt(Backtesting):
         self.expected_max_profit = 3.0
 
         # Configuration and data used by hyperopt
-        self.processed = None
+        self.processed: Optional[Dict[str, Any]] = None
 
         # Hyperopt Trials
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
@@ -344,7 +344,7 @@ class Hyperopt(Backtesting):
         """
         Return the space to use during Hyperopt
         """
-        spaces = {}
+        spaces: Dict = {}
         if self.has_space('buy'):
             spaces = {**spaces, **Hyperopt.indicator_space()}
         if self.has_space('roi'):
@@ -495,16 +495,17 @@ class Hyperopt(Backtesting):
                 )
 
     def start(self) -> None:
-        timerange = Arguments.parse_timerange(self.config.get('timerange'))
-        data = load_data(
-            datadir=self.config.get('datadir'),
+        timerange = Arguments.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+        data = load_data(  # type: ignore # timerange will be refactored
+            datadir=str(self.config.get('datadir')),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.ticker_interval,
             timerange=timerange
         )
 
         if self.has_space('buy'):
-            self.analyze.populate_indicators = Hyperopt.populate_indicators
+            self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
 
         if self.config.get('mongodb'):
