@@ -4,7 +4,7 @@ This module contains the configuration class
 
 import json
 import logging
-import os
+from os import path, makedirs
 from argparse import Namespace
 from typing import Optional, Dict, Any
 from jsonschema import Draft4Validator, validate
@@ -150,15 +150,15 @@ class Configuration(object):
         else:
             exchange = config.get('exchange', {}).get('name').lower()
             if exchange:
-                default = os.path.join('freqtrade', 'tests', 'testdata', exchange)
+                default = path.join('freqtrade', 'tests', 'testdata', exchange)
                 config.update({'datadir': default})
             # What if user has no exchange as arg or in file - set catchall
             else:
                 logger.info("No exchange set")
-                default = os.path.join('freqtrade', 'tests', 'testdata', 'catchall')
+                default = path.join('freqtrade', 'tests', 'testdata', 'catchall')
 
-        if not os.path.exists(config['datadir']):
-            os.makedirs(config['datadir'])
+        if not path.exists(config['datadir']):
+            makedirs(config['datadir'])
             logger.info("Made directory: %s", config['datadir'])
 
         logger.info('Using data folder: %s ...', config['datadir'])

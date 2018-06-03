@@ -266,14 +266,14 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
-        '--datadir', '/foo/bar',
+        '--datadir', 'freqtrade/tests/testdata/',
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
         '--realistic-simulation',
         '--refresh-pairs-cached',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', 'user_data/data'
     ]
 
     args = Arguments(arglist, '').get_parsed_arg()
