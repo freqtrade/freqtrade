@@ -455,6 +455,7 @@ class Hyperopt(Backtesting):
 
         if trade_count == 0 or trade_duration > self.max_accepted_trade_duration:
             print('.', end='')
+            sys.stdout.flush()
             return {
                 'status': STATUS_FAIL,
                 'loss': float('inf')
