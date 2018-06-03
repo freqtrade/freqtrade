@@ -1541,3 +1541,28 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
     freqtrade = FreqtradeBot(default_conf)
     # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
+
+
+def test_get_real_amount_open_trade(default_conf, mocker):
+    """
+    Test get_real_amount condition trade.fee_open == 0 or order['status'] == 'open'
+    """
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    amount = 12345
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    order = {
+        'id': 'mocked_order',
+        'amount': amount,
+        'status': 'open',
+    }
+    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    assert freqtrade.get_real_amount(trade, order) == amount
