@@ -23,6 +23,8 @@ from plotly.offline import plot
 import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
+from freqtrade.optimize.backtesting import setup_configuration
+from freqtrade.configuration import Configuration
 from freqtrade import exchange
 import freqtrade.optimize as optimize
 from freqtrade import persistence
@@ -37,12 +39,19 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     Calls analyze() and plots the returned dataframe
     :return: None
     """
-    pair = args.pair.replace('-', '_')
+
+    # Load the configuration
+    config = setup_configuration(args)
+
+    # Set the pair to audit
+    pair = args.pair
+
+    # Set timerange to use
     timerange = Arguments.parse_timerange(args.timerange)
 
-    # Init strategy
+    # Load the strategy
     try:
-        analyze = Analyze({'strategy': args.strategy})
+        analyze = Analyze(config)
     except AttributeError:
         logger.critical(
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
@@ -50,13 +59,15 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         )
         exit()
 
-    tick_interval = analyze.strategy.ticker_interval
+    # Set the ticker to use
+    tick_interval = analyze.get_ticker_interval()
 
+    # Load pqir tickers
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
         # Init Bittrex to use public API
-        exchange.init({'key': '', 'secret': ''})
+        exchange.init(config)
         tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
@@ -66,20 +77,31 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             refresh_pairs=False,
             timerange=timerange
         )
-    dataframes = analyze.tickerdata_to_dataframe(tickers)
-    dataframe = dataframes[pair]
-    dataframe = analyze.populate_buy_trend(dataframe)
-    dataframe = analyze.populate_sell_trend(dataframe)
 
+    # Get trades already made from the DB
     trades = []
     if args.db_url:
         engine = create_engine('sqlite:///' + args.db_url)
         persistence.init(_CONF, engine)
         trades = Trade.query.filter(Trade.pair.is_(pair)).all()
 
+
+    dataframes = analyze.tickerdata_to_dataframe(tickers)
+    dataframe = dataframes[pair]
+    dataframe = analyze.populate_buy_trend(dataframe)
+    dataframe = analyze.populate_sell_trend(dataframe)
+
     if len(dataframe.index) > 750:
         logger.warning('Ticker contained more than 750 candles, clipping.')
-    data = dataframe.tail(750)
+
+    generate_graph(
+        pair=pair,
+        trades=trades,
+        data=dataframe.tail(750)
+    )
+
+
+def generate_graph(pair, trades, data):
 
     candles = go.Candlestick(
         x=data.date,
@@ -168,6 +190,8 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         vertical_spacing=0.0001,
     )
 
+    # Row 1
+
     fig.append_trace(candles, 1, 1)
     fig.append_trace(bb_lower, 1, 1)
     fig.append_trace(bb_upper, 1, 1)
@@ -179,7 +203,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     fig.append_trace(trade_buys, 1, 1)
     fig.append_trace(trade_sells, 1, 1)
 
-    fig['layout'].update(title=args.pair)
+    fig['layout'].update(title=pair)
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title='Volume')
     fig['layout']['yaxis3'].update(title='MACD')
