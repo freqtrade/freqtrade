@@ -294,6 +294,11 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
         while not since_ms or since_ms < till_time_ms:
             data_part = _API.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
 
+            # Because some exchange sort Tickers ASC and other DESC.
+            # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
+            # when GDAX returns a list of tickers DESC (newest first, oldest last)
+            data_part = sorted(data_part, key=lambda x: x[0])
+
             if not data_part:
                 break
 
