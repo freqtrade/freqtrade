@@ -104,8 +104,10 @@ def load_data(datadir: str,
             result[pair] = pairdata
         else:
             logger.warning(
-                'No data for pair %s, use --refresh-pairs-cached to download the data',
-                pair
+                'No data for pair: "%s", Interval: %s. '
+                'Use --refresh-pairs-cached to download the data',
+                pair,
+                ticker_interval
             )
 
     return result
