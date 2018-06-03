@@ -62,6 +62,12 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 python3 ./freqtrade/main.py backtesting --export trades
 ```
 
+**Exporting trades to file specifying a custom filename**
+```bash
+python3 ./freqtrade/main.py backtesting --export trades --export-filename=backtest_teststrategy.json
+```
+
+
 **Running backtest with smaller testset**  
 Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
