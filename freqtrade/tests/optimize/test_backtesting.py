@@ -218,7 +218,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--realistic-simulation',
         '--refresh-pairs-cached',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', '/bar/foo',
+        '--export-filename', 'foo_bar.json'
     ]
 
     config = setup_configuration(get_args(args))
@@ -259,6 +260,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'Parameter --export detected: {} ...'.format(config['export']),
         caplog.record_tuples
     )
+    assert 'exportfilename' in config
+    assert log_has(
+        'Storing backtest results to {} ...'.format(config['exportfilename']),
+        caplog.record_tuples
+    )
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:
@@ -284,23 +290,6 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
         caplog.record_tuples
     )
     assert start_mock.call_count == 1
-
-
-def test_backtesting__init__(mocker, default_conf) -> None:
-    """
-    Test Backtesting.__init__() method
-    """
-    init_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._init', init_mock)
-
-    backtesting = Backtesting(default_conf)
-    assert backtesting.config == default_conf
-    assert backtesting.analyze is None
-    assert backtesting.ticker_interval is None
-    assert backtesting.tickerdata_to_dataframe is None
-    assert backtesting.populate_buy_trend is None
-    assert backtesting.populate_sell_trend is None
-    assert init_mock.call_count == 1
 
 
 def test_backtesting_init(mocker, default_conf) -> None:
@@ -374,16 +363,15 @@ def test_generate_text_table(default_conf, mocker):
     )
 
     result_str = (
-        'pair       buy count    avg profit %    '
-        'total profit BTC    avg duration    profit    loss\n'
-        '-------  -----------  --------------  '
-        '------------------  --------------  --------  ------\n'
-        'ETH/BTC            2           15.00          '
-        '0.60000000            20.0         2       0\n'
-        'TOTAL              2           15.00          '
-        '0.60000000            20.0         2       0'
+        '| pair    |   buy count |   avg profit % |   '
+        'total profit BTC |   avg duration |   profit |   loss |\n'
+        '|:--------|------------:|---------------:|'
+        '-------------------:|---------------:|---------:|-------:|\n'
+        '| ETH/BTC |           2 |          15.00 |         '
+        '0.60000000 |           20.0 |        2 |      0 |\n'
+        '| TOTAL   |           2 |          15.00 |         '
+        '0.60000000 |           20.0 |        2 |      0 |'
     )
-
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 

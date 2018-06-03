@@ -126,6 +126,20 @@ def test_fiat_convert_get_price(mocker):
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
+def test_fiat_convert_same_currencies(mocker):
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+
+    assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='USD') == 1.0
+
+
+def test_fiat_convert_two_FIAT(mocker):
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+
+    assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='EUR') == 0.0
+
+
 def test_loadcryptomap(mocker):
     patch_coinmarketcap(mocker)
 

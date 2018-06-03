@@ -13,7 +13,7 @@ addons:
 install:
 - ./install_ta-lib.sh
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-- pip install --upgrade flake8 coveralls pytest-random-order
+- pip install --upgrade flake8 coveralls pytest-random-order mypy
 - pip install -r requirements.txt
 - pip install -e .
 jobs:
@@ -26,6 +26,7 @@ jobs:
       - cp config.json.example config.json
       - python freqtrade/main.py hyperopt -e 5
     - script: flake8 freqtrade
+    - script: mypy freqtrade
 after_success:
 - coveralls
 notifications:

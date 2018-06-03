@@ -18,7 +18,7 @@ from freqtrade.rpc.rpc import RPC
 logger = logging.getLogger(__name__)
 
 
-def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
+def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Callable[..., Any]:
     """
     Decorator to check if the message comes from the correct chat_id
     :param command_handler: Telegram CommandHandler
@@ -65,7 +65,7 @@ class Telegram(RPC):
         """
         super().__init__(freqtrade)
 
-        self._updater = None
+        self._updater: Updater = None
         self._config = freqtrade.config
         self._init()
 

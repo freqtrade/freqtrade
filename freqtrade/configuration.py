@@ -5,7 +5,7 @@ This module contains the configuration class
 import json
 import logging
 from argparse import Namespace
-from typing import Dict, Any
+from typing import Optional, Dict, Any
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 import ccxt
@@ -23,7 +23,7 @@ class Configuration(object):
     """
     def __init__(self, args: Namespace) -> None:
         self.args = args
-        self.config = None
+        self.config: Optional[Dict[str, Any]] = None
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -157,6 +157,11 @@ class Configuration(object):
             config.update({'export': self.args.export})
             logger.info('Parameter --export detected: %s ...', self.args.export)
 
+        # If --export-filename is used we add it to the configuration
+        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
+            config.update({'exportfilename': self.args.exportfilename})
+            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
+
         return config
 
     def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -192,7 +197,7 @@ class Configuration(object):
             validate(conf, constants.CONF_SCHEMA)
             return conf
         except ValidationError as exception:
-            logger.fatal(
+            logger.critical(
                 'Invalid configuration. See config.json.example. Reason: %s',
                 exception
             )
