@@ -120,6 +120,8 @@ Backtesting also uses the config specified via `-c/--config`.
 ```
 usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
                            [--timerange TIMERANGE] [-l] [-r] [--export EXPORT]
+                           [--export-filename EXPORTFILENAME]
+
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -137,6 +139,11 @@ optional arguments:
                         run your backtesting with up-to-date data.
   --export EXPORT       export backtest results, argument are: trades Example
                         --export=trades
+  --export-filename EXPORTFILENAME
+                        Save backtest results to this filename requires
+                        --export to be set as well Example --export-
+                        filename=backtest_today.json (default: backtest-
+                        result.json
 ```
 
 ### How to use --refresh-pairs-cached parameter?

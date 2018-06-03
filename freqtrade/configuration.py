@@ -157,6 +157,11 @@ class Configuration(object):
             config.update({'export': self.args.export})
             logger.info('Parameter --export detected: %s ...', self.args.export)
 
+        # If --export-filename is used we add it to the configuration
+        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
+            config.update({'exportfilename': self.args.exportfilename})
+            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
+
         return config
 
     def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:

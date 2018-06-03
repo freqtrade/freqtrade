@@ -154,6 +154,7 @@ class Backtesting(object):
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', False)
         record = args.get('record', None)
+        recordfilename = args.get('recordfn', 'backtest-result.json')
         records = []
         trades = []
         trade_count_lock: Dict = {}
@@ -196,8 +197,8 @@ class Backtesting(object):
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
-            logger.info('Dumping backtest results')
-            file_dump_json('backtest-result.json', records)
+            logger.info('Dumping backtest results to %s', recordfilename)
+            file_dump_json(recordfilename, records)
         labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
         return DataFrame.from_records(trades, columns=labels)
 
@@ -257,7 +258,8 @@ class Backtesting(object):
                 'realistic': self.config.get('realistic_simulation', False),
                 'sell_profit_only': sell_profit_only,
                 'use_sell_signal': use_sell_signal,
-                'record': self.config.get('export')
+                'record': self.config.get('export'),
+                'recordfn': self.config.get('exportfilename'),
             }
         )
         logger.info(

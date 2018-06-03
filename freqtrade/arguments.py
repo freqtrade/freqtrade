@@ -137,6 +137,16 @@ class Arguments(object):
             default=None,
             dest='export',
         )
+        parser.add_argument(
+            '--export-filename',
+            help='Save backtest results to this filename \
+                  requires --export to be set as well\
+                  Example --export-filename=backtest_today.json\
+                  (default: %(default)s',
+            type=str,
+            default='backtest-result.json',
+            dest='exportfilename',
+        )
 
     @staticmethod
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:

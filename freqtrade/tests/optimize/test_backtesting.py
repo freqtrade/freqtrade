@@ -218,7 +218,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--realistic-simulation',
         '--refresh-pairs-cached',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', '/bar/foo',
+        '--export-filename', 'foo_bar.json'
     ]
 
     config = setup_configuration(get_args(args))
@@ -257,6 +258,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'export' in config
     assert log_has(
         'Parameter --export detected: {} ...'.format(config['export']),
+        caplog.record_tuples
+    )
+    assert 'exportfilename' in config
+    assert log_has(
+        'Storing backtest results to {} ...'.format(config['exportfilename']),
         caplog.record_tuples
     )
 
