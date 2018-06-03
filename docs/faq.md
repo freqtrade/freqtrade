@@ -27,7 +27,7 @@ like pauses. You can stop your bot, adjust settings and start it again.
 #### I want to improve the bot with a new strategy
 
 That's great. We have a nice backtesting and hyperoptimizing setup. See 
-the tutorial [here|Testing-new-strategies-with-Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands).
+the tutorial [here|Testing-new-strategies-with-Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands).
 
 #### Is there a setting to only SELL the coins being held and not 
 perform anymore BUYS?

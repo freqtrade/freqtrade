@@ -68,7 +68,7 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 If the bot does not find your strategy file, it will display in an error 
 message the reason (File not found, or errors in your code).
 
-Learn more about strategy file in [optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
+Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
 
 ### How to use --strategy-path?
 This parameter allows you to add an additional strategy lookup path, which gets
@@ -189,9 +189,9 @@ optional arguments:
 
 ## A parameter missing in the configuration?
 All parameters for `main.py`, `backtesting`, `hyperopt` are referenced
-in [misc.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/misc.py#L84)
+in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L84)
 
 ## Next step
 The optimal strategy of the bot will change with time depending of the
 market trends. The next step is to 
-[optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
+[optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
