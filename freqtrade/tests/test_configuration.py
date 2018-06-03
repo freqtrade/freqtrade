@@ -62,7 +62,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
     conf['stake_amount'] = 'fake'
 
     with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
-        configuration = Configuration([])
+        configuration = Configuration(Namespace())
         configuration._validate_config(conf)
 
 
