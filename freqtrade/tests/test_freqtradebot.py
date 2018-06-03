@@ -295,6 +295,12 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     result = freqtrade._get_trade_stake_amount()
     assert(result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1))
 
+    # create 2 trades, order amount should be 0
+    freqtrade.create_trade()
+
+    result = freqtrade._get_trade_stake_amount()
+    assert(result == 0)
+
 
 def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """

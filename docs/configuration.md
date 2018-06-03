@@ -42,6 +42,13 @@ The table below will list all configuration parameters.
 The definition of each config parameters is in 
 [misc.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/misc.py#L205).
 
+### Understand stake_amount
+`stake_amount` is an amount of crypto-currency your bot will use for each trade.
+The minimal value is 0.0005. If there is not enough crypto-currency in 
+the account an exception is generated.
+To allow the bot to trade all the avaliable `stake_currency` in your account set `stake_amount` = `unlimited`.
+In this case a trade amount is calclulated as `currency_balanse / (max_open_trades - current_open_trades)`.
+
 ### Understand minimal_roi
 `minimal_roi` is a JSON object where the key is a duration
 in minutes and the value is the minimum ROI in percent.
