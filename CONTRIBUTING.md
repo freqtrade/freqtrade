@@ -42,4 +42,16 @@ pip3.6 install flake8 coveralls
 flake8 freqtrade
 ```
 
+## 3. Test if all type-hints are correct
 
+**Install packages** (If not already installed)
+
+``` bash
+pip3.6 install mypy
+```
+
+**Run mypy**
+
+``` bash
+mypy freqtrade
+```
