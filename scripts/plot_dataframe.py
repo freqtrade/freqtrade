@@ -24,7 +24,6 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.analyze import Analyze
 from freqtrade.optimize.backtesting import setup_configuration
-from freqtrade.configuration import Configuration
 from freqtrade import exchange
 import freqtrade.optimize as optimize
 from freqtrade import persistence
@@ -52,6 +51,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     # Load the strategy
     try:
         analyze = Analyze(config)
+        exchange.init(config)
     except AttributeError:
         logger.critical(
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
@@ -67,16 +67,19 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     if args.live:
         logger.info('Downloading pair.')
         # Init Bittrex to use public API
-        exchange.init(config)
         tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
             datadir=args.datadir,
             pairs=[pair],
             ticker_interval=tick_interval,
-            refresh_pairs=False,
+            refresh_pairs=config.get('refresh_pairs', False),
             timerange=timerange
         )
+
+        # No ticker found, or impossible to download
+        if tickers == {}:
+            exit()
 
     # Get trades already made from the DB
     trades = []
