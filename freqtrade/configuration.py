@@ -5,7 +5,7 @@ This module contains the configuration class
 import json
 import logging
 from argparse import Namespace
-from typing import Dict, Any
+from typing import Optional, Dict, Any
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 import ccxt
@@ -23,7 +23,7 @@ class Configuration(object):
     """
     def __init__(self, args: Namespace) -> None:
         self.args = args
-        self.config = None
+        self.config: Optional[Dict[str, Any]] = None
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -145,7 +145,7 @@ class Configuration(object):
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})
-            logger.info('Parameter --datadir detected: %s ...', self.args.datadir)
+            logger.info('Using data folder: %s ...', self.args.datadir)
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
@@ -192,7 +192,7 @@ class Configuration(object):
             validate(conf, constants.CONF_SCHEMA)
             return conf
         except ValidationError as exception:
-            logger.fatal(
+            logger.critical(
                 'Invalid configuration. See config.json.example. Reason: %s',
                 exception
             )

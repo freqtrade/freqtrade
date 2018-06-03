@@ -24,7 +24,7 @@ The table below will list all configuration parameters.
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `unfilledtimeout` | 0 | No | How long (in minutes) the bot will wait for an unfilled order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
-| `exchange.name` | bittrex | Yes | Name of the exchange class to use.
+| `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
@@ -86,6 +86,18 @@ use the `last` price and values between those interpolate between ask and last
 price. Using `ask` price will guarantee quick success in bid, but bot will also
 end up paying more then would probably have been necessary.
 
+### What values for exchange.name?
+Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115 cryptocurrency
+exchange markets and trading APIs. The complete up-to-date list can be found in the
+[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
+with only Bittrex and Binance.
+
+The bot was tested with the following exchanges:
+- [Bittrex](https://bittrex.com/): "bittrex"
+- [Binance](https://www.binance.com/): "binance"
+
+Feel free to test other exchanges and submit your PR to improve the bot.
+
 ### What values for fiat_display_currency?
 `fiat_display_currency` set the fiat to use for the conversion form coin to fiat in Telegram. 
 The valid value are: "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
@@ -103,7 +115,7 @@ creating trades.
 "dry_run": true,
 ```
 
-3. Remove your Bittrex API key (change them by fake api credentials)
+3. Remove your Exchange API key (change them by fake api credentials)
 ```json
 "exchange": {
         "name": "bittrex",
@@ -129,7 +141,7 @@ you run it in production mode.
 "dry_run": false,
 ```
 
-3. Insert your Bittrex API key (change them by fake api keys)
+3. Insert your Exchange API key (change them by fake api keys)
 ```json
 "exchange": {
         "name": "bittrex",

@@ -4,8 +4,8 @@ import gzip
 import json
 import logging
 import os
+from typing import Optional, List, Dict, Tuple, Any
 import arrow
-from typing import Optional, List, Dict, Tuple
 
 from freqtrade import misc, constants
 from freqtrade.exchange import get_ticker_history
@@ -29,7 +29,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
     if stype[0] == 'index':
         start_index = start
     elif stype[0] == 'date':
-        while tickerlist[start_index][0] < start * 1000:
+        while start_index < len(tickerlist) and tickerlist[start_index][0] < start * 1000:
             start_index += 1
 
     if stype[1] == 'line':
@@ -37,7 +37,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
     if stype[1] == 'index':
         stop_index = stop
     elif stype[1] == 'date':
-        while tickerlist[stop_index-1][0] > stop * 1000:
+        while stop_index > 0 and tickerlist[stop_index-1][0] > stop * 1000:
             stop_index -= 1
 
     if start_index > stop_index:
@@ -100,15 +100,16 @@ def load_data(datadir: str,
 
     for pair in _pairs:
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
-        if not pairdata:
-            # download the tickerdata from exchange
-            download_backtesting_testdata(datadir,
-                                          pair=pair,
-                                          tick_interval=ticker_interval,
-                                          timerange=timerange)
-            # and retry reading the pair
-            pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
-        result[pair] = pairdata
+        if pairdata:
+            result[pair] = pairdata
+        else:
+            logger.warning(
+                'No data for pair: "%s", Interval: %s. '
+                'Use --refresh-pairs-cached to download the data',
+                pair,
+                ticker_interval
+            )
+
     return result
 
 
@@ -143,7 +144,9 @@ def download_pairs(datadir, pairs: List[str],
 
 def load_cached_data_for_updating(filename: str,
                                   tick_interval: str,
-                                  timerange: Optional[Tuple[Tuple, int, int]]) -> Tuple[list, int]:
+                                  timerange: Optional[Tuple[Tuple, int, int]]) -> Tuple[
+                                                                                  List[Any],
+                                                                                  Optional[int]]:
     """
     Load cached data and choose what part of the data should be updated
     """

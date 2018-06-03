@@ -25,6 +25,12 @@ TICKER_INTERVAL_MINUTES = {
     '1w': 10080,
 }
 
+SUPPORTED_FIAT = [
+    "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
+    "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
+    "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
+    "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
+    ]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
@@ -32,20 +38,13 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
+        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],
             "minimum": 0.0005,
             "pattern": UNLIMITED_STAKE_AMOUNT
         },
-        'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
-                                                             'CLP', 'CNY', 'CZK', 'DKK',
-                                                             'EUR', 'GBP', 'HKD', 'HUF',
-                                                             'IDR', 'ILS', 'INR', 'JPY',
-                                                             'KRW', 'MXN', 'MYR', 'NOK',
-                                                             'NZD', 'PHP', 'PKR', 'PLN',
-                                                             'RUB', 'SEK', 'SGD', 'THB',
-                                                             'TRY', 'TWD', 'ZAR', 'USD']},
+        'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',

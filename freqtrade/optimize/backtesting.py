@@ -33,18 +33,6 @@ class Backtesting(object):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.analyze = None
-        self.ticker_interval = None
-        self.tickerdata_to_dataframe = None
-        self.populate_buy_trend = None
-        self.populate_sell_trend = None
-        self._init()
-
-    def _init(self) -> None:
-        """
-        Init objects required for backtesting
-        :return: None
-        """
         self.analyze = Analyze(self.config)
         self.ticker_interval = self.analyze.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
@@ -78,7 +66,7 @@ class Backtesting(object):
         Generates and returns a text table for the given backtest data and the results dataframe
         :return: pretty printed table with tabulate as str
         """
-        stake_currency = self.config.get('stake_currency')
+        stake_currency = str(self.config.get('stake_currency'))
 
         floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
         tabular_data = []
@@ -106,7 +94,7 @@ class Backtesting(object):
             len(results[results.profit_BTC > 0]),
             len(results[results.profit_BTC < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
@@ -168,7 +156,7 @@ class Backtesting(object):
         record = args.get('record', None)
         records = []
         trades = []
-        trade_count_lock = {}
+        trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
@@ -230,8 +218,9 @@ class Backtesting(object):
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
-            timerange = Arguments.parse_timerange(self.config.get('timerange'))
-            data = optimize.load_data(
+            timerange = Arguments.parse_timerange(None if self.config.get(
+                'timerange') is None else str(self.config.get('timerange')))
+            data = optimize.load_data(  # type: ignore # timerange will be refactored
                 self.config['datadir'],
                 pairs=pairs,
                 ticker_interval=self.ticker_interval,

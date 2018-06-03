@@ -449,20 +449,44 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
     # make an limit-buy open trade
+    trade = Trade.query.filter(Trade.id == '1').first()
+    filled_amount = trade.amount / 2
     mocker.patch(
         'freqtrade.freqtradebot.exchange.get_order',
         return_value={
             'status': 'open',
             'type': 'limit',
-            'side': 'buy'
+            'side': 'buy',
+            'filled': filled_amount
         }
     )
-    # check that the trade is called, which is done
-    # by ensuring exchange.cancel_order is called
+    # check that the trade is called, which is done by ensuring exchange.cancel_order is called
+    # and trade amount is updated
     (error, res) = rpc.rpc_forcesell('1')
     assert not error
     assert res == ''
     assert cancel_order_mock.call_count == 1
+    assert trade.amount == filled_amount
+
+    freqtradebot.create_trade()
+    trade = Trade.query.filter(Trade.id == '2').first()
+    amount = trade.amount
+    # make an limit-buy open trade, if there is no 'filled', don't sell it
+    mocker.patch(
+        'freqtrade.freqtradebot.exchange.get_order',
+        return_value={
+            'status': 'open',
+            'type': 'limit',
+            'side': 'buy',
+            'filled': None
+        }
+    )
+    # check that the trade is called, which is done by ensuring exchange.cancel_order is called
+    (error, res) = rpc.rpc_forcesell('2')
+    assert not error
+    assert res == ''
+    assert cancel_order_mock.call_count == 2
+    assert trade.amount == amount
 
     freqtradebot.create_trade()
     # make an limit-sell open trade
@@ -474,11 +498,11 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
             'side': 'sell'
         }
     )
-    (error, res) = rpc.rpc_forcesell('2')
+    (error, res) = rpc.rpc_forcesell('3')
     assert not error
     assert res == ''
     # status quo, no exchange calls
-    assert cancel_order_mock.call_count == 1
+    assert cancel_order_mock.call_count == 2
 
 
 def test_performance_handle(default_conf, ticker, limit_buy_order, fee,

@@ -393,6 +393,78 @@ def test_get_ticker_history(default_conf, mocker):
         get_ticker_history('EFGH/BTC', default_conf['ticker_interval'])
 
 
+def test_get_ticker_history_sort(default_conf, mocker):
+    api_mock = MagicMock()
+
+    # GDAX use-case (real data from GDAX)
+    # This ticker history is ordered DESC (newest first, oldest last)
+    tick = [
+        [1527833100000, 0.07666, 0.07671, 0.07666, 0.07668, 16.65244264],
+        [1527832800000, 0.07662, 0.07666, 0.07662, 0.07666, 1.30051526],
+        [1527832500000, 0.07656, 0.07661, 0.07656, 0.07661, 12.034778840000001],
+        [1527832200000, 0.07658, 0.07658, 0.07655, 0.07656, 0.59780186],
+        [1527831900000, 0.07658, 0.07658, 0.07658, 0.07658, 1.76278136],
+        [1527831600000, 0.07658, 0.07658, 0.07658, 0.07658, 2.22646521],
+        [1527831300000, 0.07655, 0.07657, 0.07655, 0.07657, 1.1753],
+        [1527831000000, 0.07654, 0.07654, 0.07651, 0.07651, 0.8073060299999999],
+        [1527830700000, 0.07652, 0.07652, 0.07651, 0.07652, 10.04822687],
+        [1527830400000, 0.07649, 0.07651, 0.07649, 0.07651, 2.5734867]
+    ]
+    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
+    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
+    mocker.patch('freqtrade.exchange._API', api_mock)
+
+    # Test the ticker history sort
+    ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])
+    assert ticks[0][0] == 1527830400000
+    assert ticks[0][1] == 0.07649
+    assert ticks[0][2] == 0.07651
+    assert ticks[0][3] == 0.07649
+    assert ticks[0][4] == 0.07651
+    assert ticks[0][5] == 2.5734867
+
+    assert ticks[9][0] == 1527833100000
+    assert ticks[9][1] == 0.07666
+    assert ticks[9][2] == 0.07671
+    assert ticks[9][3] == 0.07666
+    assert ticks[9][4] == 0.07668
+    assert ticks[9][5] == 16.65244264
+
+    # Bittrex use-case (real data from Bittrex)
+    # This ticker history is ordered ASC (oldest first, newest last)
+    tick = [
+        [1527827700000, 0.07659999, 0.0766, 0.07627, 0.07657998, 1.85216924],
+        [1527828000000, 0.07657995, 0.07657995, 0.0763, 0.0763, 26.04051037],
+        [1527828300000, 0.0763, 0.07659998, 0.0763, 0.0764, 10.36434124],
+        [1527828600000, 0.0764, 0.0766, 0.0764, 0.0766, 5.71044773],
+        [1527828900000, 0.0764, 0.07666998, 0.0764, 0.07666998, 47.48888565],
+        [1527829200000, 0.0765, 0.07672999, 0.0765, 0.07672999, 3.37640326],
+        [1527829500000, 0.0766, 0.07675, 0.0765, 0.07675, 8.36203831],
+        [1527829800000, 0.07675, 0.07677999, 0.07620002, 0.076695, 119.22963884],
+        [1527830100000, 0.076695, 0.07671, 0.07624171, 0.07671, 1.80689244],
+        [1527830400000, 0.07671, 0.07674399, 0.07629216, 0.07655213, 2.31452783]
+    ]
+    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
+    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
+    mocker.patch('freqtrade.exchange._API', api_mock)
+
+    # Test the ticker history sort
+    ticks = get_ticker_history('ETH/BTC', default_conf['ticker_interval'])
+    assert ticks[0][0] == 1527827700000
+    assert ticks[0][1] == 0.07659999
+    assert ticks[0][2] == 0.0766
+    assert ticks[0][3] == 0.07627
+    assert ticks[0][4] == 0.07657998
+    assert ticks[0][5] == 1.85216924
+
+    assert ticks[9][0] == 1527830400000
+    assert ticks[9][1] == 0.07671
+    assert ticks[9][2] == 0.07674399
+    assert ticks[9][3] == 0.07629216
+    assert ticks[9][4] == 0.07655213
+    assert ticks[9][5] == 2.31452783
+
+
 def test_cancel_order_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     mocker.patch.dict('freqtrade.exchange._CONF', default_conf)

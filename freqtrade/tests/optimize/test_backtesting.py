@@ -182,7 +182,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Parameter --datadir detected: {} ...'.format(config['datadir']),
+        'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -230,7 +230,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Parameter --datadir detected: {} ...'.format(config['datadir']),
+        'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -309,23 +309,6 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
-def test_backtesting__init__(mocker, default_conf) -> None:
-    """
-    Test Backtesting.__init__() method
-    """
-    init_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._init', init_mock)
-
-    backtesting = Backtesting(default_conf)
-    assert backtesting.config == default_conf
-    assert backtesting.analyze is None
-    assert backtesting.ticker_interval is None
-    assert backtesting.tickerdata_to_dataframe is None
-    assert backtesting.populate_buy_trend is None
-    assert backtesting.populate_sell_trend is None
-    assert init_mock.call_count == 1
-
-
 def test_backtesting_init(mocker, default_conf) -> None:
     """
     Test Backtesting._init() method
@@ -397,16 +380,15 @@ def test_generate_text_table(default_conf, mocker):
     )
 
     result_str = (
-        'pair       buy count    avg profit %    '
-        'total profit BTC    avg duration    profit    loss\n'
-        '-------  -----------  --------------  '
-        '------------------  --------------  --------  ------\n'
-        'ETH/BTC            2           15.00          '
-        '0.60000000            20.0         2       0\n'
-        'TOTAL              2           15.00          '
-        '0.60000000            20.0         2       0'
+        '| pair    |   buy count |   avg profit % |   '
+        'total profit BTC |   avg duration |   profit |   loss |\n'
+        '|:--------|------------:|---------------:|'
+        '-------------------:|---------------:|---------:|-------:|\n'
+        '| ETH/BTC |           2 |          15.00 |         '
+        '0.60000000 |           20.0 |        2 |      0 |\n'
+        '| TOTAL   |           2 |          15.00 |         '
+        '0.60000000 |           20.0 |        2 |      0 |'
     )
-
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
@@ -655,7 +637,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Parameter -l/--live detected ...',
         'Using max_open_trades: 1 ...',
         'Parameter --timerange detected: -100 ..',
-        'Parameter --datadir detected: freqtrade/tests/testdata ...',
+        'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',

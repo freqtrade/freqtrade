@@ -53,9 +53,9 @@ python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180
 
 **With a (custom) strategy file**
 ```bash
-python3 ./freqtrade/main.py -s currentstrategy backtesting
+python3 ./freqtrade/main.py -s TestStrategy backtesting
 ```
-Where `-s currentstrategy` refers to a filename `currentstrategy.py` in `freqtrade/user_data/strategies`
+Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
 
 **Exporting trades to file**
 ```bash
@@ -83,6 +83,8 @@ The full timerange specification:
 - Use tickframes till 2018/01/31: `--timerange=-20180131`
 - Use tickframes since 2018/01/31: `--timerange=20180131-`
 - Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
+- Use tickframes between POSIX timestamps 1527595200 1527618600:
+                                                `--timerange=1527595200-1527618600`
 
 
 **Update testdata directory**

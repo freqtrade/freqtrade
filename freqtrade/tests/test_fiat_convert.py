@@ -6,6 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from requests.exceptions import RequestException
+
 from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter
 from freqtrade.tests.conftest import patch_coinmarketcap
 
@@ -124,6 +126,20 @@ def test_fiat_convert_get_price(mocker):
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
+def test_fiat_convert_same_currencies(mocker):
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+
+    assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='USD') == 1.0
+
+
+def test_fiat_convert_two_FIAT(mocker):
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+
+    assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='EUR') == 0.0
+
+
 def test_loadcryptomap(mocker):
     patch_coinmarketcap(mocker)
 
@@ -131,6 +147,21 @@ def test_loadcryptomap(mocker):
     assert len(fiat_convert._cryptomap) == 2
 
     assert fiat_convert._cryptomap["BTC"] == "1"
+
+
+def test_fiat_init_network_exception(mocker):
+    # Because CryptoToFiatConverter is a Singleton we reset the listings
+    listmock = MagicMock(side_effect=RequestException)
+    mocker.patch.multiple(
+        'freqtrade.fiat_convert.Market',
+        listings=listmock,
+    )
+    # with pytest.raises(RequestEsxception):
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert._cryptomap = {}
+    fiat_convert._load_cryptomap()
+
+    assert len(fiat_convert._cryptomap) == 0
 
 
 def test_fiat_convert_without_network():

@@ -17,9 +17,9 @@ class Arguments(object):
     Arguments Class. Manage the arguments received by the cli
     """
 
-    def __init__(self, args: List[str], description: str):
+    def __init__(self, args: List[str], description: str) -> None:
         self.args = args
-        self.parsed_arg = None
+        self.parsed_arg: Optional[argparse.Namespace] = None
         self.parser = argparse.ArgumentParser(description=description)
 
     def _load_args(self) -> None:
@@ -211,7 +211,8 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: str) -> Optional[Tuple[List, int, int]]:
+    def parse_timerange(text: Optional[str]) -> Optional[Tuple[Tuple,
+                                                         Optional[int], Optional[int]]]:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
@@ -222,6 +223,9 @@ class Arguments(object):
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
+                  (r'^-(\d{10})$', (None, 'date')),
+                  (r'^(\d{10})-$', ('date', None)),
+                  (r'^(\d{10})-(\d{10})$', ('date', 'date')),
                   (r'^(-\d+)$', (None, 'line')),
                   (r'^(\d+)-$', ('line', None)),
                   (r'^(\d+)-(\d+)$', ('index', 'index'))]
@@ -231,21 +235,23 @@ class Arguments(object):
             if match:  # Regex has matched
                 rvals = match.groups()
                 index = 0
-                start = None
-                stop = None
+                start: Optional[int] = None
+                stop: Optional[int] = None
                 if stype[0]:
-                    start = rvals[index]
+                    starts = rvals[index]
                     if stype[0] == 'date':
-                        start = arrow.get(start, 'YYYYMMDD').timestamp
+                        start = int(starts) if len(starts) == 10 \
+                            else arrow.get(starts, 'YYYYMMDD').timestamp
                     else:
-                        start = int(start)
+                        start = int(starts)
                     index += 1
                 if stype[1]:
-                    stop = rvals[index]
+                    stops = rvals[index]
                     if stype[1] == 'date':
-                        stop = arrow.get(stop, 'YYYYMMDD').timestamp
+                        stop = int(stops) if len(stops) == 10 \
+                            else arrow.get(stops, 'YYYYMMDD').timestamp
                     else:
-                        stop = int(stop)
+                        stop = int(stops)
                 return stype, start, stop
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
