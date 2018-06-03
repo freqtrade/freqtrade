@@ -455,6 +455,7 @@ class Hyperopt(Backtesting):
 
         if trade_count == 0 or trade_duration > self.max_accepted_trade_duration:
             print('.', end='')
+            sys.stdout.flush()
             return {
                 'status': STATUS_FAIL,
                 'loss': float('inf')
@@ -479,16 +480,16 @@ class Hyperopt(Backtesting):
             'result': result_explanation,
         }
 
-    @staticmethod
-    def format_results(results: DataFrame) -> str:
+    def format_results(self, results: DataFrame) -> str:
         """
         Return the format result in a string
         """
         return ('{:6d} trades. Avg profit {: 5.2f}%. '
-                'Total profit {: 11.8f} BTC ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
+                'Total profit {: 11.8f} {} ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
                     len(results.index),
                     results.profit_percent.mean() * 100.0,
                     results.profit_BTC.sum(),
+                    self.config['stake_currency'],
                     results.profit_percent.sum(),
                     results.duration.mean(),
                 )

@@ -116,6 +116,12 @@ def test_parse_timerange_incorrect() -> None:
     timerange = Arguments.parse_timerange('20100522-20150730')
     assert timerange == (('date', 'date'), 1274486400, 1438214400)
 
+    # Added test for unix timestamp - BTC genesis date
+    assert (('date', None), 1231006505, None) == Arguments.parse_timerange('1231006505-')
+    assert ((None, 'date'), None, 1233360000) == Arguments.parse_timerange('-1233360000')
+    timerange = Arguments.parse_timerange('1231006505-1233360000')
+    assert timerange == (('date', 'date'), 1231006505, 1233360000)
+
     with pytest.raises(Exception, match=r'Incorrect syntax.*'):
         Arguments.parse_timerange('-')
 

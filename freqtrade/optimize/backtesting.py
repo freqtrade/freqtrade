@@ -94,7 +94,7 @@ class Backtesting(object):
             len(results[results.profit_BTC > 0]),
             len(results[results.profit_BTC < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
