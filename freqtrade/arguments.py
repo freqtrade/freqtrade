@@ -291,6 +291,7 @@ class Arguments(object):
             '--pairs-file',
             help='File containing a list of pairs to download',
             dest='pairs_file',
+            required=True,
             default=None
         )
 

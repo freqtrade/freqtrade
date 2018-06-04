@@ -15,12 +15,9 @@ arguments.testdata_dl_options()
 args = arguments.parse_args()
 
 TICKER_INTERVALS = ['1m', '5m']
-PAIRS = []
 
-if args.pairs_file:
-    with open(args.pairs_file) as file:
-        PAIRS = json.load(file)
-PAIRS = list(set(PAIRS))
+with open(args.pairs_file) as file:
+    PAIRS = list(set(json.load(file)))
 
 dl_path = DEFAULT_DL_PATH
 if args.export and os.path.exists(args.export):
