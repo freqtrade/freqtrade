@@ -92,7 +92,7 @@ The bot was tested with the following exchanges:
 Feel free to test other exchanges and submit your PR to improve the bot.
 
 ### What values for fiat_display_currency?
-`fiat_display_currency` set the base currency to use for the conversion form coin to fiat in Telegram.
+`fiat_display_currency` set the base currency to use for the conversion from coin to fiat in Telegram.
 The valid values are: "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
 In addition to central bank currencies, a range of cryto currencies are supported.
 The valid values are: "BTC", "ETH", "XRP", "LTC", "BCH", "USDT".
