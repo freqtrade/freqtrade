@@ -40,7 +40,7 @@ The table below will list all configuration parameters.
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
 The definition of each config parameters is in 
-[misc.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/misc.py#L205).
+[misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L205).
 
 ### Understand minimal_roi
 `minimal_roi` is a JSON object where the key is a duration
@@ -141,12 +141,12 @@ you run it in production mode.
         "key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         ...
-}       
+}
 ```
 If you have not your Bittrex API key yet, 
-[see our tutorial](https://github.com/gcarq/freqtrade/blob/develop/docs/pre-requisite.md).
+[see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
 
 
 ## Next step
 Now you have configured your config.json, the next step is to 
-[start your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md).
+[start your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md).

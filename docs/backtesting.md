@@ -14,7 +14,7 @@ real data. This is what we call
 
 Backtesting will use the crypto-currencies (pair) from your config file
 and load static tickers located in 
-[/freqtrade/tests/testdata](https://github.com/gcarq/freqtrade/tree/develop/freqtrade/tests/testdata).  
+[/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).  
 If the 5 min and 1 min ticker for the crypto-currencies to test is not 
 already in the `testdata` folder, backtesting will download them 
 automatically. Testdata files will not be updated until you specify it.
@@ -166,4 +166,4 @@ strategies, your configuration, and the crypto-currency you have set up.
 ## Next step
 Great, your strategy is profitable. What if the bot can give your the
 optimal parameters to use for your strategy?  
-Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/hyperopt.md)
+Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
