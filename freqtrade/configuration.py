@@ -4,6 +4,7 @@ This module contains the configuration class
 
 import json
 import logging
+from os import path, makedirs
 from argparse import Namespace
 from typing import Optional, Dict, Any
 from jsonschema import Draft4Validator, validate
@@ -143,9 +144,24 @@ class Configuration(object):
             logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
 
         # If --datadir is used we add it to the configuration
+        # If not passed as an arg, we build testdata path including 'exchange' as a sub dir
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})
-            logger.info('Using data folder: %s ...', self.args.datadir)
+        else:
+            exchange = config.get('exchange', {}).get('name').lower()
+            if exchange:
+                default = path.join('freqtrade', 'tests', 'testdata', exchange)
+                config.update({'datadir': default})
+            # What if user has no exchange as arg or in file - set catchall
+            else:
+                logger.info("No exchange set")
+                default = path.join('freqtrade', 'tests', 'testdata', 'catchall')
+
+        if not path.exists(config['datadir']):
+            makedirs(config['datadir'])
+            logger.info("Made directory: %s", config['datadir'])
+
+        logger.info('Using data folder: %s ...', config['datadir'])
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
