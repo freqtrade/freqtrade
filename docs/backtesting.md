@@ -97,17 +97,17 @@ The full timerange specification:
 To update your testdata directory, or download into another testdata directory:
 ```bash
 mkdir -p user_data/data/testdata-20180113
-cp freqtrade/tests/testdata/pairs.json user_data/data-20180113
-cd user_data/data-20180113
+cp freqtrade/tests/testdata/pairs.json user_data/data/testdata-20180113
+cd user_data/data/testdata-20180113
 ```
 
-Possibly edit pairs.json file to include/exclude pairs
+Possibly edit `pairs.json` file to include/exclude pairs
 
 ```bash
 python3 freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
 ```
 
-The script will read your pairs.json file, and download ticker data
+The script will read your `pairs.json` file, and download ticker data
 into the current working directory.
 
 
