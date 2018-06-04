@@ -16,8 +16,10 @@ args = arguments.parse_args()
 
 TICKER_INTERVALS = ['1m', '5m']
 
-dl_path = args.export if args.export and os.path.exists(args.export) \
-    else os.path.join(DEFAULT_DL_PATH, args.exchange)
+dl_path = os.path.join(DEFAULT_DL_PATH, args.exchange)
+if args.export:
+    dl_path = args.export
+
 if not os.path.isdir(dl_path):
     sys.exit(f'Directory {dl_path} does not exist.')
 
