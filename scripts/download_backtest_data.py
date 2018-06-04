@@ -14,7 +14,7 @@ arguments = arguments.Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
 args = arguments.parse_args()
 
-TICKER_INTERVALS = ['1m', '5m']
+timeframes = args.timeframes
 
 dl_path = os.path.join(DEFAULT_DL_PATH, args.exchange)
 if args.export:
@@ -44,7 +44,7 @@ exchange._API = exchange.init_ccxt({'key': '',
 
 
 for pair in PAIRS:
-    for tick_interval in TICKER_INTERVALS:
+    for tick_interval in timeframes:
         print(f'downloading pair {pair}, interval {tick_interval}')
 
         data = exchange.get_ticker_history(pair, tick_interval, since_ms=since_time)
