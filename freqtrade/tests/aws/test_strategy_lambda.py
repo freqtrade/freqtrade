@@ -63,15 +63,14 @@ class TestStrategy(IStrategy):
         "public": False
     }
 
-    # db should be empty
-    assert (len(json.loads(aws.names({}, {})['body']['result'])) == 0)
     # now we add an entry
     aws.submit({
         "body": json.dumps(request)
     }, {})
 
     # now we should have items
-    assert (len(json.loads(aws.names({}, {})['body']['result'])) == 1)
+    print(json.loads(aws.names({}, {})['body']))
+    assert (len(json.loads(aws.names({}, {})['body'])['result']) == 1)
 
     # able to add a second strategy with the sample name, but different user
 
@@ -87,7 +86,7 @@ class TestStrategy(IStrategy):
         "body": json.dumps(request)
     }, {})
 
-    assert (len(json.loads(aws.names({}, {})['body']['result'])) == 2)
+    assert (len(json.loads(aws.names({}, {})['body'])['result']) == 2)
 
     # able to add a duplicated strategy, which should overwrite the existing strategy
 
@@ -99,13 +98,11 @@ class TestStrategy(IStrategy):
         "public": True
     }
 
-    print(json.dumps(request))
-
     aws.submit({
         "body": json.dumps(request)
     }, {})
 
-    assert (len(json.loads(aws.names({}, {})['body'])) == 2)
+    assert (len(json.loads(aws.names({}, {})['body'])['result']) == 2)
 
     # we need to be able to get a strategy ( code cannot be included )
     strategy = aws.get({'pathParameters': {
@@ -131,7 +128,7 @@ class TestStrategy(IStrategy):
     print(code)
 
     # code should equal our initial content
-    #assert code == content
+    # assert code == content
 
     # we are not allowed to load a private strategy
     code = aws.code({'pathParameters': {

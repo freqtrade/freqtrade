@@ -59,7 +59,7 @@ def backtest(event, context):
                 )
 
                 till = datetime.datetime.today()
-                fromDate = till - datetime.timedelta(days=1)
+                fromDate = till - datetime.timedelta(days=90)
 
                 if 'from' in event['body']:
                     fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
@@ -69,7 +69,7 @@ def backtest(event, context):
                 try:
                     if "Items" in response and len(response['Items']) > 0:
 
-                        print("schedule backtesting from {} till {} for {} with {} vs {}".format(fromDate, till, name,
+                        print("schedule back testing from {} till {} for {} with {} vs {}".format(fromDate, till, name,
                                                                                                  event['body'][
                                                                                                      'stake_currency'],
                                                                                                  event['body'][
@@ -129,7 +129,7 @@ def _submit_result_to_backend(data):
     """
     print(data)
     try:
-        print(post("{}/trade".format(os.environ['BASE_URL']), data=data))
+        print(post("{}/trade".format(os.environ.get('BASE_URL', 'http://freq.isaac.international/dev/trade')), data=data))
     except Exception as e:
         print("submission ignored: {}".format(e))
 
@@ -171,7 +171,7 @@ def _generate_configuration(event, fromDate, name, response, till):
             "chat_id": "0"
         },
         "initial_state": "running",
-        "datadir": os.environ("FREQ_DATA_DIR", tempfile.gettempdir()),
+        "datadir": tempfile.gettempdir(),
         "experimental": {
             "use_sell_signal": response['Items'][0]['use_sell'],
             "sell_profit_only": True
@@ -183,7 +183,7 @@ def _generate_configuration(event, fromDate, name, response, till):
         "loglevel": logging.INFO,
         "strategy": "{}:{}".format(name, content),
         "timerange": "{}-{}".format(fromDate.strftime('%Y%m%d'), till.strftime('%Y%m%d')),
-        "refresh_pairs": True
+        "refresh_pairs": False  # no longer required, we will maintain static files for the future
 
     }
     return configuration
