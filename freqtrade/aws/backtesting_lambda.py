@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import tempfile
+from base64 import urlsafe_b64encode
 
 import boto3
 import simplejson as json
@@ -68,30 +69,18 @@ def backtest(event, context):
                 try:
                     if "Items" in response and len(response['Items']) > 0:
 
-                        print("backtesting from {} till {} for {} with {} vs {}".format(fromDate, till, name,
-                                                                                        event['body'][
-                                                                                            'stake_currency'],
-                                                                                        event['body']['assets']))
+                        print("schedule backtesting from {} till {} for {} with {} vs {}".format(fromDate, till, name,
+                                                                                                 event['body'][
+                                                                                                     'stake_currency'],
+                                                                                                 event['body'][
+                                                                                                     'assets']))
                         configuration = _generate_configuration(event, fromDate, name, response, till)
 
-                        backtesting = Backtesting(configuration)
-                        result = backtesting.start()
-                        for index, row in result.iterrows():
-                            data = {
-                                "id": "{}.{}:{}:test".format(user, name, row['currency'].upper()),
-                                "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
-                                                           row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
-                                "pair": row['currency'],
-                                "duration": row['duration'],
-                                "profit_percent": row['profit_percent'],
-                                "profit_stake": row['profit_BTC'],
-                                "entry_date": row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
-                                "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
-                            }
+                        print("configuration: \n{}\n".format(
+                            urlsafe_b64encode(json.dumps(configuration).encode('utf-8')).decode('utf-8')))
 
-                            _submit_result_to_backend(data)
-
-                        # fire request message to aggregate this strategy now
+                        # fire AWS fargate instance now
+                        run_backtest(configuration, name, user)
 
                         return {
                             "statusCode": 200
@@ -111,6 +100,25 @@ def backtest(event, context):
                     }
     else:
         raise Exception("not a valid event: {}".format(event))
+
+
+def run_backtest(configuration, name, user):
+    backtesting = Backtesting(configuration)
+    result = backtesting.start()
+    for index, row in result.iterrows():
+        data = {
+            "id": "{}.{}:{}:test".format(user, name, row['currency'].upper()),
+            "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
+                                       row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
+            "pair": row['currency'],
+            "duration": row['duration'],
+            "profit_percent": row['profit_percent'],
+            "profit_stake": row['profit_BTC'],
+            "entry_date": row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
+            "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+        _submit_result_to_backend(data)
 
 
 def _submit_result_to_backend(data):
@@ -163,7 +171,7 @@ def _generate_configuration(event, fromDate, name, response, till):
             "chat_id": "0"
         },
         "initial_state": "running",
-        "datadir": tempfile.gettempdir(),
+        "datadir": os.environ("FREQ_DATA_DIR", tempfile.gettempdir()),
         "experimental": {
             "use_sell_signal": response['Items'][0]['use_sell'],
             "sell_profit_only": True
@@ -172,7 +180,7 @@ def _generate_configuration(event, fromDate, name, response, till):
             "process_throttle_secs": 5
         },
         'realistic_simulation': True,
-        "loglevel": logging.DEBUG,
+        "loglevel": logging.INFO,
         "strategy": "{}:{}".format(name, content),
         "timerange": "{}-{}".format(fromDate.strftime('%Y%m%d'), till.strftime('%Y%m%d')),
         "refresh_pairs": True

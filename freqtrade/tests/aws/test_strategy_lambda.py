@@ -64,14 +64,14 @@ class TestStrategy(IStrategy):
     }
 
     # db should be empty
-    assert (len(json.loads(aws.names({}, {})['body'])) == 0)
+    assert (len(json.loads(aws.names({}, {})['body']['result'])) == 0)
     # now we add an entry
     aws.submit({
         "body": json.dumps(request)
     }, {})
 
     # now we should have items
-    assert (len(json.loads(aws.names({}, {})['body'])) == 1)
+    assert (len(json.loads(aws.names({}, {})['body']['result'])) == 1)
 
     # able to add a second strategy with the sample name, but different user
 
