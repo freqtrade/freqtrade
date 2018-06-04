@@ -310,7 +310,7 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--exchange',
-            help='Exchange name',
+            help='Exchange name (default: %(default)s)',
             dest='exchange',
             type=str,
             default='bittrex')
