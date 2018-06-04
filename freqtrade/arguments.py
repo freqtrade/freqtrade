@@ -4,7 +4,6 @@ This module contains the argument manager class
 
 import argparse
 import logging
-import os
 import re
 import arrow
 from typing import List, Tuple, Optional
@@ -72,9 +71,9 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '-d', '--datadir',
-            help='path to backtest data (default: %(default)s',
+            help='path to backtest data',
             dest='datadir',
-            default=os.path.join('freqtrade', 'tests', 'testdata'),
+            default=None,
             type=str,
             metavar='PATH',
         )
@@ -309,7 +308,7 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--exchange',
-            help='Exchange name',
+            help='Exchange name (default: %(default)s)',
             dest='exchange',
             type=str,
             default='bittrex')

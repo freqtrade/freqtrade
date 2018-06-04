@@ -93,22 +93,30 @@ The full timerange specification:
                                                 `--timerange=1527595200-1527618600`
 
 
-**Update testdata directory**
-To update your testdata directory, or download into another testdata directory:
-```bash
-mkdir -p user_data/data/testdata-20180113
-cp freqtrade/tests/testdata/pairs.json user_data/data/testdata-20180113
-cd user_data/data/testdata-20180113
-```
+**Downloading new set of ticker data**
+To download new set of backtesting ticker data, you can use a download script.
 
-Possibly edit `pairs.json` file to include/exclude pairs
+If you are using Binance for example:
+- create a folder `user_data/data/binance` and copy `pairs.json` in that folder.
+- update the `pairs.json` to contain the currency pairs you are interested in.
 
 ```bash
-python3 freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
+mkdir -p user_data/data/binance
+cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 ```
 
-The script will read your `pairs.json` file, and download ticker data
-into the current working directory.
+Then run:
+
+```bash
+python scripts/download_backtest_data --exchange binance
+```
+
+This will download ticker data for all the currency pairs you defined in `pairs.json`.
+
+- To use a different folder than the exchange specific default, use `--export user_data/data/some_directory`.
+- To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
+- To use `pairs.json` from some other folder, use `--pairs-file some_other_dir/pairs.json`.
+- To download ticker data for only 10 days, use `--days 10`.
 
 
 For help about backtesting usage, please refer to 
