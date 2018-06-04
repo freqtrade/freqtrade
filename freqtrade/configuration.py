@@ -1,7 +1,7 @@
 """
 This module contains the configuration class
 """
-
+import os
 import json
 import logging
 from argparse import Namespace
@@ -113,6 +113,14 @@ class Configuration(object):
 
         return config
 
+    def _create_default_datadir(self, config: Dict[str, Any]) -> str:
+        exchange_name = config.get('exchange', {}).get('name').lower()
+        default_path = os.path.join('user_data', 'data', exchange_name)
+        if not os.path.isdir(default_path):
+            os.makedirs(default_path)
+            logger.info(f'Created data directory: {default_path}')
+        return default_path
+
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load Backtesting configuration
@@ -145,7 +153,9 @@ class Configuration(object):
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})
-            logger.info('Using data folder: %s ...', self.args.datadir)
+        else:
+            config.update({'datadir': self._create_default_datadir(config)})
+        logger.info('Using data folder: %s ...', config.get('datadir'))
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
