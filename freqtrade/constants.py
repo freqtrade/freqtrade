@@ -28,7 +28,8 @@ SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
-    "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
+    "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
+    "USDT"
     ]
 
 # Required json-schema for user specified config
