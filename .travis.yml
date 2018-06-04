@@ -21,10 +21,10 @@ jobs:
     - script: pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
     - script:
       - cp config.json.example config.json
-      - python freqtrade/main.py backtesting
+      - python freqtrade/main.py --datadir freqtrade/tests/testdata backtesting
     - script:
       - cp config.json.example config.json
-      - python freqtrade/main.py hyperopt -e 5
+      - python freqtrade/main.py --datadir freqtrade/tests/testdata hyperopt -e 5
     - script: flake8 freqtrade
     - script: mypy freqtrade
 after_success:
