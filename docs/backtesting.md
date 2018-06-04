@@ -117,6 +117,7 @@ This will download ticker data for all the currency pairs you defined in `pairs.
 - To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
 - To use `pairs.json` from some other folder, use `--pairs-file some_other_dir/pairs.json`.
 - To download ticker data for only 10 days, use `--days 10`.
+- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
 
 
 For help about backtesting usage, please refer to 
