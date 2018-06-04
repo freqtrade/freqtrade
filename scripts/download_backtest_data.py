@@ -8,7 +8,7 @@ import arrow
 
 from freqtrade import (exchange, arguments, misc)
 
-DEFAULT_DL_PATH = 'freqtrade/tests/testdata'
+DEFAULT_DL_PATH = 'user_data/data'
 
 arguments = arguments.Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
@@ -16,12 +16,16 @@ args = arguments.parse_args()
 
 TICKER_INTERVALS = ['1m', '5m']
 
-with open(args.pairs_file) as file:
-    PAIRS = list(set(json.load(file)))
+dl_path = args.export if args.export and os.path.exists(args.export) else os.path.join(DEFAULT_DL_PATH, args.exchange)
+if not os.path.isdir(dl_path):
+    sys.exit(f'Directory {dl_path} does not exist.')
 
-dl_path = DEFAULT_DL_PATH
-if args.export and os.path.exists(args.export):
-    dl_path = args.export
+pairs_file = args.pairs_file if args.pairs_file else os.path.join(dl_path, 'pairs.json')
+if not os.path.isfile(pairs_file):
+    sys.exit(f'No pairs file found with path {pairs_file}.')
+
+with open(pairs_file) as file:
+    PAIRS = list(set(json.load(file)))
 
 since_time = None
 if args.days:
