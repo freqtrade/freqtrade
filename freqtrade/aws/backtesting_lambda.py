@@ -4,15 +4,10 @@ import os
 import tempfile
 from base64 import urlsafe_b64encode
 
-import boto3
 import simplejson as json
-from boto3.dynamodb.conditions import Key
 
-from freqtrade.aws.tables import get_strategy_table
 from freqtrade.optimize.backtesting import Backtesting
 from requests import post
-
-db = boto3.resource('dynamodb')
 
 
 def backtest(event, context):
@@ -41,6 +36,8 @@ def backtest(event, context):
         :return:
             no return
     """
+    from boto3.dynamodb.conditions import Key
+    from freqtrade.aws.tables import get_strategy_table
 
     if 'Records' in event:
         for x in event['Records']:
@@ -70,10 +67,10 @@ def backtest(event, context):
                     if "Items" in response and len(response['Items']) > 0:
 
                         print("schedule back testing from {} till {} for {} with {} vs {}".format(fromDate, till, name,
-                                                                                                 event['body'][
-                                                                                                     'stake_currency'],
-                                                                                                 event['body'][
-                                                                                                     'assets']))
+                                                                                                  event['body'][
+                                                                                                      'stake_currency'],
+                                                                                                  event['body'][
+                                                                                                      'assets']))
                         configuration = _generate_configuration(event, fromDate, name, response, till)
 
                         print("configuration: \n{}\n".format(
@@ -129,7 +126,8 @@ def _submit_result_to_backend(data):
     """
     print(data)
     try:
-        print(post("{}/trade".format(os.environ.get('BASE_URL', 'http://freq.isaac.international/dev/trade')), data=data))
+        print(
+            post("{}/trade".format(os.environ.get('BASE_URL', 'http://freq.isaac.international/dev/trade')), data=data))
     except Exception as e:
         print("submission ignored: {}".format(e))
 
@@ -198,6 +196,8 @@ def cron(event, context):
     :param context:
     :return:
     """
+    import boto3
+    from freqtrade.aws.tables import get_strategy_table
 
     # if topic exists, we just reuse it
     client = boto3.client('sns')
