@@ -2,6 +2,7 @@
 This module contains the argument manager class
 """
 
+import os
 import argparse
 import logging
 import re
