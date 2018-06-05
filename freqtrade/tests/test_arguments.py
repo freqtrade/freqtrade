@@ -126,7 +126,6 @@ def test_parse_timerange_incorrect() -> None:
     timerange = Arguments.parse_timerange('1231006505000-1233360000000')
     assert TimeRange('date', 'date', 1231006505, 1233360000) != timerange
 
-
     with pytest.raises(Exception, match=r'Incorrect syntax.*'):
         Arguments.parse_timerange('-')
 
