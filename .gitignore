@@ -8,6 +8,7 @@ logfile.txt
 hyperopt_trials.pickle
 user_data/
 freqtrade-plot.html
+freqtrade-profit-plot.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

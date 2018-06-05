@@ -8,9 +8,12 @@ Mandatory Cli parameters:
 Optional Cli parameters
 -c / --config: specify configuration file
 -s / --strategy: strategy to use
---timerange: specify what timerange of data to use.
+-d / --datadir: path to pair backtest data
+--timerange: specify what timerange of data to use
+--export-filename: Specify where the backtest export is located.
 """
 import logging
+import os
 import sys
 import json
 from argparse import Namespace
@@ -90,7 +93,18 @@ def plot_profit(args: Namespace) -> None:
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
             config.get('strategy')
         )
-        exit()
+        exit(0)
+
+    # Load the profits results
+    try:
+        filename = args.exportfilename
+        with open(filename) as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        logger.critical(
+            'File "backtest-result.json" not found. This script require backtesting '
+            'results to run.\nPlease run a backtesting with the parameter --export.')
+        exit(0)
 
     # Take pairs from the cli otherwise switch to the pair in the config file
     if args.pair:
@@ -140,18 +154,7 @@ def plot_profit(args: Namespace) -> None:
         num += 1
     avgclose /= num
 
-    # Load the profits results
-    # And make an profits-growth array
-
-    try:
-        filename = 'backtest-result.json'
-        with open(filename) as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        logger.critical('File "backtest-result.json" not found. This script require backtesting '
-                        'results to run.\nPlease run a backtesting with the parameter --export.')
-        exit(0)
-
+    # make an profits-growth array
     pg = make_profit_array(data, num_iterations, min_date, tick_interval, filter_pairs)
 
     #
@@ -184,7 +187,7 @@ def plot_profit(args: Namespace) -> None:
         )
         fig.append_trace(pair_profit, 3, 1)
 
-    plot(fig, filename='freqtrade-profit-plot.html')
+    plot(fig, filename=os.path.join('user_data', 'freqtrade-profit-plot.html'))
 
 
 def define_index(min_date: int, max_date: int, interval: str) -> int:

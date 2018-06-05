@@ -2,6 +2,7 @@
 This module contains the argument manager class
 """
 
+import os
 import argparse
 import logging
 import re
@@ -123,8 +124,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '-r', '--refresh-pairs-cached',
-            help='refresh the pairs files in tests/testdata with the latest data from the exchange. \
-                  Use it if you want to run your backtesting with up-to-date data.',
+            help='refresh the pairs files in tests/testdata with the latest data from the '
+                 'exchange. Use it if you want to run your backtesting with up-to-date data.',
             action='store_true',
             dest='refresh_pairs',
         )
@@ -140,11 +141,12 @@ class Arguments(object):
             '--export-filename',
             help='Save backtest results to this filename \
                   requires --export to be set as well\
-                  Example --export-filename=backtest_today.json\
-                  (default: %(default)s',
+                  Example --export-filename=user_data/backtest_data/backtest_today.json\
+                  (default: %(default)s)',
             type=str,
-            default='backtest-result.json',
+            default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
             dest='exportfilename',
+            metavar='PATH',
         )
 
     @staticmethod
@@ -220,8 +222,8 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: Optional[str]) -> Optional[Tuple[Tuple,
-                                                         Optional[int], Optional[int]]]:
+    def parse_timerange(text: Optional[str]) -> \
+            Optional[Tuple[Tuple, Optional[int], Optional[int]]]:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
