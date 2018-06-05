@@ -19,6 +19,10 @@ Optional Cli parameters
 Indicators recommended
 Row 1: sma, ema3, ema5, ema10, ema50
 Row 3: macd, rsi, fisher_rsi, mfi, slowd, slowk, fastd, fastk
+
+Example of usage:
+> python3 scripts/plot_dataframe.py --pair BTC/EUR -d user_data/data/ --indicators1 sma,ema3
+--indicators2 fastk,fastd
 """
 import logging
 import os
