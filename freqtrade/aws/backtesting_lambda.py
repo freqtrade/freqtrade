@@ -195,8 +195,8 @@ def run_backtest(configuration, name, user, interval, timerange):
     backtesting = Backtesting(configuration)
     result = backtesting.start()
 
-    # store individual trades
-    _store_trade_data(interval, name, result, timerange, user)
+    # store individual trades - not really needed
+    # _store_trade_data(interval, name, result, timerange, user)
 
     # store aggregated values
     _store_aggregated_data(interval, name, result, timerange, user)
@@ -354,6 +354,7 @@ def cron(event, context):
                         "days": day
                     }
 
+                    print("submitting: {}".format(message))
                     serialized = json.dumps(message, use_decimal=True)
                     # submit item to queue for routing to the correct persistence
 
@@ -363,6 +364,8 @@ def cron(event, context):
                         Subject="schedule",
                         MessageStructure='json'
                     )
+
+                    print(result)
 
         if 'LastEvaluatedKey' in response:
             return table.scan(
