@@ -13,7 +13,11 @@ from freqtrade import __version__, constants
 
 
 class TimeRange(NamedTuple):
-
+    """
+    NamedTuple Defining timerange inputs.
+    [start/stop]type defines if [start/stop]ts shall be used.
+    if *type is none, don't use corresponding startvalue.
+    """
     starttype: Optional[str] = None
     stoptype: Optional[str] = None
     startts: int = 0
