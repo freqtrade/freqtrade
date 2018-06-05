@@ -83,11 +83,12 @@ end up paying more then would probably have been necessary.
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115 cryptocurrency
 exchange markets and trading APIs. The complete up-to-date list can be found in the
 [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
-with only Bittrex and Binance.
+with the exchange listed below.
 
 The bot was tested with the following exchanges:
 - [Bittrex](https://bittrex.com/): "bittrex"
 - [Binance](https://www.binance.com/): "binance"
+- [HitBTC v2](https://hitbtc.com/): "hitbtc2"
 
 Feel free to test other exchanges and submit your PR to improve the bot.
 
