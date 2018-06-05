@@ -8,6 +8,7 @@ To understand how to set up the bot please read the [Bot Configuration](https://
 
 * [Table of Contents](#table-of-contents)
 * [Easy Installation - Linux Script](#easy-installation---linux-script)
+* [Manual installation](#manual-installation)
 * [Automatic Installation - Docker](#automatic-installation---docker)
 * [Custom Linux MacOS Installation](#custom-installation)
 	- [Requirements](#requirements)
@@ -54,6 +55,28 @@ Reset parameter will hard reset your branch (only if you are on `master` or `dev
 ### --config
 
 Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
+
+
+## Manual installation - Linux/MacOS
+The following steps are made for Linux/MacOS environment
+
+**1. Clone the repo**
+```bash
+git clone git@github.com:freqtrade/freqtrade.git
+git checkout develop
+cd freqtrade
+```
+**2. Create the config file**  
+Switch `"dry_run": true,`
+```bash
+cp config.json.example config.json
+vi config.json
+```
+**3. Build your docker image and run it**
+```bash
+docker build -t freqtrade .
+docker run --rm -v /etc/localtime:/etc/localtime:ro -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+```
 
 ------
 
