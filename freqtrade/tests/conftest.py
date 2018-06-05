@@ -627,6 +627,31 @@ def lambda_context():
     lamb = moto.mock_lambda()
     lamb.start()
 
+    ecs = moto.mock_ecs()
+    ecs.start()
+
+    cluster = boto3.client('ecs')
+    cluster.create_cluster(clusterName='fargate')
+
+    cluster.register_task_definition(
+        containerDefinitions=[
+            {
+                'name': 'freqtrade-backtesting',
+                'command': [
+                    'sleep',
+                    '360',
+                ],
+                'cpu': 10,
+                'essential': True,
+                'image': 'busybox',
+                'memory': 10,
+            },
+        ],
+        family='sleep360',
+        taskRoleArn='',
+        volumes=[
+        ],
+    )
     session = boto3.session.Session()
     os.environ["strategyTable"] = "StrategyTable"
     os.environ["tradeTable"] = "TradeTable"
@@ -649,3 +674,4 @@ def lambda_context():
     sns.stop()
     dynamo.stop()
     lamb.stop()
+    ecs.stop()

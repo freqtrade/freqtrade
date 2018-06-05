@@ -72,7 +72,7 @@ def backtest(event, context):
                 refresh = True
 
                 if 'refresh' in event['body']:
-                    refresh = event['body']
+                    refresh = event['body']['refresh']
 
                 print("time range between dates is: {} days".format(timerange))
 
@@ -96,15 +96,13 @@ def backtest(event, context):
                         if "local" in event['body'] and event['body']['local']:
                             print("running in local mode")
                             run_backtest(configuration, name, user, ticker, timerange)
-                            return {
-                                "statusCode": 200
-                            }
                         else:
                             print("running in remote mode")
-                            return {
-                                "statusCode": 200,
-                                "body": json.dumps(_submit_job(configuration, user, ticker, timerange))
-                            }
+                            json.dumps(_submit_job(configuration, user, ticker, timerange))
+
+                        return {
+                            "statusCode": 200
+                        }
                     else:
                         return {
                             "statusCode": 404,
@@ -340,34 +338,31 @@ def cron(event, context):
         for i in response['Items']:
             # fire a message to our queue
 
-            message = {
-                "user": i['user'],
-                "name": i['name'],
-                "assets": i['assets'],
-                "stake_currency": i['stake_currency']
-            }
+            # we want to evaluate several time spans for the strategy
+            for day in [1, 7, 30, 90]:
 
-            # triggered over html, let's provide
-            # a date range for the backtesting
-            if 'pathParameters' in event:
-                if 'from' in event['pathParameters']:
-                    message['from'] = event['pathParameters']['from']
-                else:
-                    message['from'] = datetime.datetime.today().strftime('%Y%m%d')
-                if 'till' in event['pathParameters']:
-                    message['till'] = event['pathParameters']['till']
-                else:
-                    message['till'] = (datetime.datetime.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
+                # we want to evaluate several time intervals for each strategy
+                for interval in ['5m', '15m', '30m', '1h']:
+                    message = {
+                        "user": i['user'],
+                        "name": i['name'],
+                        "assets": i['assets'],
+                        "stake_currency": i['stake_currency'],
+                        "local": False,
+                        "refresh": True,
+                        "ticker": interval,
+                        "days": day
+                    }
 
-            serialized = json.dumps(message, use_decimal=True)
-            # submit item to queue for routing to the correct persistence
+                    serialized = json.dumps(message, use_decimal=True)
+                    # submit item to queue for routing to the correct persistence
 
-            result = client.publish(
-                TopicArn=topic_arn,
-                Message=json.dumps({'default': serialized}),
-                Subject="schedule",
-                MessageStructure='json'
-            )
+                    result = client.publish(
+                        TopicArn=topic_arn,
+                        Message=json.dumps({'default': serialized}),
+                        Subject="schedule",
+                        MessageStructure='json'
+                    )
 
         if 'LastEvaluatedKey' in response:
             return table.scan(
