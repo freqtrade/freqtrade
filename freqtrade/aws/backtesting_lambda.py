@@ -38,6 +38,7 @@ def backtest(event, context):
     """
     from boto3.dynamodb.conditions import Key
     from freqtrade.aws.tables import get_strategy_table
+    import boto3
 
     if 'Records' in event:
         for x in event['Records']:
@@ -72,15 +73,11 @@ def backtest(event, context):
                                                                                                   event['body'][
                                                                                                       'assets']))
                         configuration = _generate_configuration(event, fromDate, name, response, till)
-
-                        print("configuration: \n{}\n".format(
-                            urlsafe_b64encode(json.dumps(configuration).encode('utf-8')).decode('utf-8')))
-
-                        # fire AWS fargate instance now
-                        run_backtest(configuration, name, user)
+                        response = _submit_job(configuration, user)
 
                         return {
-                            "statusCode": 200
+                            "statusCode": 200,
+                            "body": json.dumps(response)
                         }
                     else:
                         return {
@@ -97,6 +94,52 @@ def backtest(event, context):
                     }
     else:
         raise Exception("not a valid event: {}".format(event))
+
+
+def _submit_job(configuration, user):
+    """
+        submits a new task to the cluster
+
+    :param configuration:
+    :param user:
+    :return:
+    """
+    import boto3
+    configuration = urlsafe_b64encode(json.dumps(configuration).encode('utf-8')).decode('utf-8')
+    # fire AWS fargate instance now
+    # run_backtest(configuration, name, user)
+    # kinda ugly right now and needs more customization
+    client = boto3.client('ecs')
+    response = client.run_task(
+        cluster=os.environ.get('FREQ_CLUSTER_NAME', 'fargate'),  # name of the cluster
+        launchType='FARGATE',
+        taskDefinition=os.environ.get('FREQ_TASK_NAME', 'freqtrade-backtesting:1'),
+        count=1,
+        platformVersion='LATEST',
+        networkConfiguration={
+            'awsvpcConfiguration': {
+                'subnets': [
+                    os.environ.get('FREQ_SUBNET', 'subnet-c35bdcab')
+                ],
+                'assignPublicIp': 'ENABLED'
+            }
+        },
+        overrides={"containerOverrides": [{
+            "name": "freqtrade-backtest",
+            "environment": [
+                {
+                    "name": "FREQ_USER",
+                    "value": "{}".format(user)
+                },
+                {
+                    "name": "FREQ_CONFIG",
+                    "value": "{}".format(configuration)
+                }
+
+            ]
+        }]},
+    )
+    return response
 
 
 def run_backtest(configuration, name, user):

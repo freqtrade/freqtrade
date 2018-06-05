@@ -25,6 +25,7 @@ def submit(event, context):
     :return:
     """
 
+    print(event)
     data = json.loads(event['body'])
     client = boto3.client('sns')
     topic_arn = client.create_topic(Name=os.environ['tradeTopic'])['TopicArn']
