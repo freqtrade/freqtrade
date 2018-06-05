@@ -5,9 +5,9 @@ import tempfile
 from base64 import urlsafe_b64encode
 
 import simplejson as json
+from requests import post
 
 from freqtrade.optimize.backtesting import Backtesting
-from requests import post
 
 
 def backtest(event, context):
@@ -38,7 +38,6 @@ def backtest(event, context):
     """
     from boto3.dynamodb.conditions import Key
     from freqtrade.aws.tables import get_strategy_table
-    import boto3
 
     if 'Records' in event:
         for x in event['Records']:
@@ -59,10 +58,23 @@ def backtest(event, context):
                 till = datetime.datetime.today()
                 fromDate = till - datetime.timedelta(days=90)
 
-                if 'from' in event['body']:
-                    fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
-                if 'till' in event['body']:
-                    till = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
+                if 'days' in event['body']:
+                    fromDate = till - datetime.timedelta(days=event['body']['days'])
+                else:
+                    if 'from' in event['body']:
+                        fromDate = datetime.datetime.strptime(event['body']['from'], '%Y%m%d')
+                    if 'till' in event['body']:
+                        till = datetime.datetime.strptime(event['body']['till'], '%Y%m%d')
+
+                timerange = (till - fromDate).days
+
+                # by default we refresh data
+                refresh = True
+
+                if 'refresh' in event['body']:
+                    refresh = event['body']
+
+                print("time range between dates is: {} days".format(timerange))
 
                 try:
                     if "Items" in response and len(response['Items']) > 0:
@@ -72,13 +84,27 @@ def backtest(event, context):
                                                                                                       'stake_currency'],
                                                                                                   event['body'][
                                                                                                       'assets']))
-                        configuration = _generate_configuration(event, fromDate, name, response, till)
-                        response = _submit_job(configuration, user)
+                        configuration = _generate_configuration(event, fromDate, name, response, till, refresh)
 
-                        return {
-                            "statusCode": 200,
-                            "body": json.dumps(response)
-                        }
+                        ticker = response['Items'][0]['ticker']
+
+                        if "ticker" in event['body']:
+                            ticker = event['body']['ticker']
+
+                        print("using ticker of {}".format(ticker))
+
+                        if "local" in event['body'] and event['body']['local']:
+                            print("running in local mode")
+                            run_backtest(configuration, name, user, ticker, timerange)
+                            return {
+                                "statusCode": 200
+                            }
+                        else:
+                            print("running in remote mode")
+                            return {
+                                "statusCode": 200,
+                                "body": json.dumps(_submit_job(configuration, user, ticker, timerange))
+                            }
                     else:
                         return {
                             "statusCode": 404,
@@ -96,7 +122,7 @@ def backtest(event, context):
         raise Exception("not a valid event: {}".format(event))
 
 
-def _submit_job(configuration, user):
+def _submit_job(configuration, user, interval, timerange):
     """
         submits a new task to the cluster
 
@@ -119,7 +145,7 @@ def _submit_job(configuration, user):
         networkConfiguration={
             'awsvpcConfiguration': {
                 'subnets': [
-                    #we need at least 2, to insure network stability
+                    # we need at least 2, to insure network stability
                     os.environ.get('FREQ_SUBNET_1', 'subnet-c35bdcab'),
                     os.environ.get('FREQ_SUBNET_2', 'subnet-be46b9c4'),
                     os.environ.get('FREQ_SUBNET_3', 'subnet-234ab559'),
@@ -137,6 +163,14 @@ def _submit_job(configuration, user):
                 {
                     "name": "FREQ_CONFIG",
                     "value": "{}".format(configuration)
+                },
+                {
+                    "name": "FREQ_TICKER",
+                    "value": "{}".format(interval)
+                },
+                {
+                    "name": "FREQ_TIMERANGE",
+                    "value": "{}".format(timerange)
                 }
 
             ]
@@ -145,12 +179,60 @@ def _submit_job(configuration, user):
     return response
 
 
-def run_backtest(configuration, name, user):
+def run_backtest(configuration, name, user, interval, timerange):
+    """
+        this backtests the specified evaluation
+
+    :param configuration:
+    :param name:
+    :param user:
+    :param interval:
+    :param timerange:
+
+    :return:
+    """
+
+    configuration['ticker_interval'] = interval
+
     backtesting = Backtesting(configuration)
     result = backtesting.start()
-    for index, row in result.iterrows():
+
+    # store individual trades
+    _store_trade_data(interval, name, result, timerange, user)
+
+    # store aggregated values
+    _store_aggregated_data(interval, name, result, timerange, user)
+
+    return result
+
+
+def _store_aggregated_data(interval, name, result, timerange, user):
+    for row in result[1][2]:
+        if row[1] > 0:
+            data = {
+                "id": "{}.{}:{}:{}:test".format(user, name, interval, timerange),
+                "trade": "aggregate:{}".format(row[0].upper()),
+                "pair": row[0],
+                "trades": row[1],
+                "losses": row[6],
+                "wins": row[5],
+                "duration": row[4],
+                "profit_percent": row[2],
+            }
+
+            print(data)
+            try:
+                print(
+                    post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
+                         json=data))
+            except Exception as e:
+                print("submission ignored: {}".format(e))
+
+
+def _store_trade_data(interval, name, result, timerange, user):
+    for index, row in result[0].iterrows():
         data = {
-            "id": "{}.{}:{}:test".format(user, name, row['currency'].upper()),
+            "id": "{}.{}:{}:{}:{}:test".format(user, name, interval, timerange, row['currency'].upper()),
             "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
                                        row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
             "pair": row['currency'],
@@ -161,25 +243,17 @@ def run_backtest(configuration, name, user):
             "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
         }
 
-        _submit_result_to_backend(data)
+        print(data)
+        try:
+            print(
+                post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
+                     json=data))
+        except Exception as e:
+            print("submission ignored: {}".format(e))
+    return data
 
 
-def _submit_result_to_backend(data):
-    """
-        submits the given result to the backend system for further processing and analysis
-    :param data:
-    :return:
-    """
-    print(data)
-    try:
-        print(
-            post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
-                 json=data))
-    except Exception as e:
-        print("submission ignored: {}".format(e))
-
-
-def _generate_configuration(event, fromDate, name, response, till):
+def _generate_configuration(event, fromDate, name, response, till, refresh):
     """
         generates the configuration for us on the fly
     :param event:
@@ -228,7 +302,7 @@ def _generate_configuration(event, fromDate, name, response, till):
         "loglevel": logging.INFO,
         "strategy": "{}:{}".format(name, content),
         "timerange": "{}-{}".format(fromDate.strftime('%Y%m%d'), till.strftime('%Y%m%d')),
-        "refresh_pairs": False  # no longer required, we will maintain static files for the future
+        "refresh_pairs": refresh
 
     }
     return configuration

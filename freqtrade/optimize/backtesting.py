@@ -291,8 +291,8 @@ class Backtesting(object):
         )
 
         # return date for data storage
-        self.aggregate(data, results)
-        return results
+        table = self.aggregate(data, results)
+        return (results, table)
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:

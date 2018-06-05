@@ -60,7 +60,10 @@ class MyFancyTestStrategy(IStrategy):
         "description": "simple test strategy",
         "name": "MyFancyTestStrategy",
         "content": urlsafe_b64encode(content.encode('utf-8')),
-        "public": False
+        "public": False,
+        "days": 1,
+        "local": True
+
     }
 
     # now we add an entry
@@ -154,7 +157,9 @@ class MyFancyTestStrategy(IStrategy):
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
         "name": "MyFancyTestStrategy",
         "stake_currency": "usdt",
-        "assets": ["ltc"]
+        "assets": ["ltc"],
+        "days": 2,
+        "local": True
     }
 
     assert backtest({
