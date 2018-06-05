@@ -174,7 +174,7 @@ class Arguments(object):
     @staticmethod
     def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         """
-        Parses given arguments foér Hyperopt scripts.
+        Parses given arguments for Hyperopt scripts.
         """
         parser.add_argument(
             '-e', '--epochs',
