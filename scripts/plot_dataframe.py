@@ -76,11 +76,10 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     # Set the ticker to use
     tick_interval = analyze.get_ticker_interval()
 
-    # Load pqir tickers
+    # Load pair tickers
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
-        # Init Bittrex to use public API
         tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
