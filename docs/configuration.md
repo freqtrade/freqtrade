@@ -73,6 +73,12 @@ value. This parameter is optional. If you use it, it will take over the
 Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
+### Understand process_throttle_secs
+`process_throttle_secs` is an optional field that defines in seconds how long the bot should wait
+before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
+every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
+the static list of pairs) if we should buy.
+
 ### Understand ask_last_balance
 `ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
 use the `last` price and values between those interpolate between ask and last
@@ -147,7 +153,6 @@ you run it in production mode.
 ```
 If you have not your Bittrex API key yet, 
 [see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
-
 
 ## Next step
 Now you have configured your config.json, the next step is to 
