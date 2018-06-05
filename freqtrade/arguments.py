@@ -141,7 +141,7 @@ class Arguments(object):
             help='Save backtest results to this filename \
                   requires --export to be set as well\
                   Example --export-filename=user_data/backtest_data/backtest_today.json\
-                  (default: %(default)s',
+                  (default: %(default)s)',
             type=str,
             default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
             dest='exportfilename',
