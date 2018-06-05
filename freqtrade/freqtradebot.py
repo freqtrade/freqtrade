@@ -258,14 +258,16 @@ class FreqtradeBot(object):
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
-            if open_trades == self.config['max_open_trades']:
+            if open_trades >= self.config['max_open_trades']:
                 return 0
             return avaliable_amount / (self.config['max_open_trades'] - open_trades)
 
         # Check if stake_amount is fulfilled
         if avaliable_amount < stake_amount:
             raise DependencyException(
-                'stake amount is not fulfilled (currency={})'.format(self.config['stake_currency'])
+                'Available balance(%f %s) is lower than stake amount(%f %s)' % (
+                    avaliable_amount, self.config['stake_currency'],
+                    stake_amount, self.config['stake_currency'])
             )
 
         return stake_amount

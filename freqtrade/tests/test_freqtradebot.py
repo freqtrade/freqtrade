@@ -301,6 +301,12 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     result = freqtrade._get_trade_stake_amount()
     assert(result == 0)
 
+    # set max_open_trades = 0, so do not trade
+    conf['max_open_trades'] = 0
+    freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
+    result = freqtrade._get_trade_stake_amount()
+    assert(result == 0)
+
 
 def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
