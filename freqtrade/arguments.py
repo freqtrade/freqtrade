@@ -173,7 +173,7 @@ class Arguments(object):
     @staticmethod
     def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         """
-        Parses given arguments for Hyperopt scripts.
+        Parses given arguments foér Hyperopt scripts.
         """
         parser.add_argument(
             '-e', '--epochs',
@@ -222,7 +222,7 @@ class Arguments(object):
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> \
-                        Optional[Tuple[Tuple, Optional[int], Optional[int]]]:
+            Optional[Tuple[Tuple, Optional[int], Optional[int]]]:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
