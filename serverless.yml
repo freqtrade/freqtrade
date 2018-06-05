@@ -269,20 +269,8 @@ functions:
           rate: rate(1440 minutes)
           enabled: true
       - schedule:
-          rate: rate(5 minutes)
-          enabled: true
-
-      # manual trigger for a longer range
-      # TODO protect with api key
-      - http:
-          path: backtest/{from}/{till}
-          method: post
-          cors: true
-          request:
-            parameter:
-              paths:
-                from: true
-                till: true
+          rate: rate(10 minutes)
+          enabled: false
 
     environment:
       topic: ${self:custom.snsTopic}
