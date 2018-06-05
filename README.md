@@ -68,7 +68,10 @@ strategy parameters with real exchange data.
 ### Exchange marketplaces supported
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [Binance](https://www.binance.com/)
-- [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+- [X] [HitBTC v2](https://hitbtc.com/)
+- [ ] [112 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+You have tried an exchange not listed here and it is working here?
+[Let us know](https://github.com/freqtrade/freqtrade/issues ).
 
 ## Quick start
 This quick start section is a very short explanation on how to test the 
