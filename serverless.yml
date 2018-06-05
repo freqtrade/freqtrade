@@ -257,7 +257,7 @@ functions:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
       strategyTable: ${self:custom.strategyTable}
-      BASE_URL: ${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
+      BASE_URL: https://${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
 
   # schedules all registered strategies on a daily base
   schedule:
@@ -269,7 +269,7 @@ functions:
           rate: rate(1440 minutes)
           enabled: true
       - schedule:
-          rate: rate(5 minutes)
+          rate: rate(60 minutes)
           enabled: true
 
       # manual trigger for a longer range
