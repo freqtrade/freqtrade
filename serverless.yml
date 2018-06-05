@@ -272,18 +272,6 @@ functions:
           rate: rate(60 minutes)
           enabled: true
 
-      # manual trigger for a longer range
-      # TODO protect with api key
-      - http:
-          path: backtest/{from}/{till}
-          method: post
-          cors: true
-          request:
-            parameter:
-              paths:
-                from: true
-                till: true
-
     environment:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
