@@ -36,3 +36,8 @@ def submit(event, context):
         Subject="persist data",
         MessageStructure='json'
     )
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps(result)
+    }

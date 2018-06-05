@@ -119,8 +119,11 @@ def _submit_job(configuration, user):
         networkConfiguration={
             'awsvpcConfiguration': {
                 'subnets': [
-                    os.environ.get('FREQ_SUBNET', 'subnet-c35bdcab')
-                ],
+                    #we need at least 2, to insure network stability
+                    os.environ.get('FREQ_SUBNET_1', 'subnet-c35bdcab'),
+                    os.environ.get('FREQ_SUBNET_2', 'subnet-be46b9c4'),
+                    os.environ.get('FREQ_SUBNET_3', 'subnet-234ab559'),
+                    os.environ.get('FREQ_SUBNET_4', 'subnet-234ab559')],
                 'assignPublicIp': 'ENABLED'
             }
         },
@@ -170,7 +173,8 @@ def _submit_result_to_backend(data):
     print(data)
     try:
         print(
-            post("{}/trade".format(os.environ.get('BASE_URL', 'http://freq.isaac.international/dev/trade')), data=data))
+            post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev/trade')),
+                 data=data))
     except Exception as e:
         print("submission ignored: {}".format(e))
 
@@ -307,3 +311,46 @@ def cron(event, context):
     return {
         "statusCode": 200
     }
+
+
+if __name__ == "__main__":
+    import boto3
+
+    client = boto3.client('ecs')
+    response = client.run_task(
+        cluster=os.environ.get('FREQ_CLUSTER_NAME', 'fargate'),  # name of the cluster
+        launchType='FARGATE',
+        taskDefinition=os.environ.get('FREQ_TASK_NAME', 'freqtrade-backtesting:1'),
+        count=1,
+        platformVersion='LATEST',
+        networkConfiguration={
+            'awsvpcConfiguration': {
+                'subnets': [
+                    os.environ.get('FREQ_SUBNET_1', 'subnet-c35bdcab'),
+                    os.environ.get('FREQ_SUBNET_2', 'subnet-be46b9c4'),
+                    os.environ.get('FREQ_SUBNET_3', 'subnet-234ab559'),
+                    os.environ.get('FREQ_SUBNET_4', 'subnet-234ab559')
+                ],
+                'assignPublicIp': 'ENABLED'
+            }
+        },
+        overrides={"containerOverrides": [{
+            "name": "freqtrade-backtest",
+            "environment": [
+                {
+                    "name": "FREQ_USER",
+                    "value": "12345"
+                },
+                {
+                    "name": "FREQ_CONFIG",
+                    "value": "eyJtYXhfb3Blbl90cmFkZXMiOiAxLCAic3Rha2VfY3VycmVuY3kiOiAiVVNEVCIsICJzdGFrZV9hbW91bnQiOiAxLCAiZmlhdF9kaXNwbGF5X2N1cnJlbmN5IjogIlVTRCIsICJ1bmZpbGxlZHRpbWVvdXQiOiA2MDAsICJ0cmFpbGluZ19zdG9wIjogZmFsc2UsICJiaWRfc3RyYXRlZ3kiOiB7ImFza19sYXN0X2JhbGFuY2UiOiAwLjB9LCAiZXhjaGFuZ2UiOiB7Im5hbWUiOiAiYmluYW5jZSIsICJlbmFibGVkIjogdHJ1ZSwgImtleSI6ICJrZXkiLCAic2VjcmV0IjogInNlY3JldCIsICJwYWlyX3doaXRlbGlzdCI6IFsiQlRDL1VTRFQiLCAiRVRIL1VTRFQiLCAiTFRDL1VTRFQiXX0sICJ0ZWxlZ3JhbSI6IHsiZW5hYmxlZCI6IGZhbHNlLCAidG9rZW4iOiAidG9rZW4iLCAiY2hhdF9pZCI6ICIwIn0sICJpbml0aWFsX3N0YXRlIjogInJ1bm5pbmciLCAiZGF0YWRpciI6ICJDOlxcVXNlcnNcXHdvaGxnXFxBcHBEYXRhXFxMb2NhbFxcVGVtcCIsICJleHBlcmltZW50YWwiOiB7InVzZV9zZWxsX3NpZ25hbCI6IHRydWUsICJzZWxsX3Byb2ZpdF9vbmx5IjogdHJ1ZX0sICJpbnRlcm5hbHMiOiB7InByb2Nlc3NfdGhyb3R0bGVfc2VjcyI6IDV9LCAicmVhbGlzdGljX3NpbXVsYXRpb24iOiB0cnVlLCAibG9nbGV2ZWwiOiAyMCwgInN0cmF0ZWd5IjogIk15RmFuY3lUZXN0U3RyYXRlZ3k6SXlBdExTMGdSRzhnYm05MElISmxiVzkyWlNCMGFHVnpaU0JzYVdKeklDMHRMUXBtY205dElHWnlaWEYwY21Ga1pTNXpkSEpoZEdWbmVTNXBiblJsY21aaFkyVWdhVzF3YjNKMElFbFRkSEpoZEdWbmVRcG1jbTl0SUhSNWNHbHVaeUJwYlhCdmNuUWdSR2xqZEN3Z1RHbHpkQW9qWm5KdmJTQm9lWEJsY205d2RDQnBiWEJ2Y25RZ2FIQWdJeUIwYUdseklIWmxjbk5wYjI0Z1pHOWxjeUJ1YjNRZ2MzVndjRzl5ZENCb2VYQmxjbTl3ZENFS1puSnZiU0JtZFc1amRHOXZiSE1nYVcxd2IzSjBJSEpsWkhWalpRcG1jbTl0SUhCaGJtUmhjeUJwYlhCdmNuUWdSR0YwWVVaeVlXMWxDaU1nTFMwdExTMHRMUzB0TFMwdExTMHRMUzB0TFMwdExTMHRMUzB0TFMwdExTMEtDbWx0Y0c5eWRDQjBZV3hwWWk1aFluTjBjbUZqZENCaGN5QjBZUXBwYlhCdmNuUWdabkpsY1hSeVlXUmxMblpsYm1SdmNpNXhkSEI1YkdsaUxtbHVaR2xqWVhSdmNuTWdZWE1nY1hSd2VXeHBZZ29LWTJ4aGMzTWdUWGxHWVc1amVWUmxjM1JUZEhKaGRHVm5lU2hKVTNSeVlYUmxaM2twT2dvZ0lDQWdiV2x1YVcxaGJGOXliMmtnUFNCN0NpQWdJQ0FnSUNBZ0lqQWlPaUF3TGpVS0lDQWdJSDBLSUNBZ0lITjBiM0JzYjNOeklEMGdMVEF1TWdvZ0lDQWdkR2xqYTJWeVgybHVkR1Z5ZG1Gc0lEMGdKelZ0SndvS0lDQWdJR1JsWmlCd2IzQjFiR0YwWlY5cGJtUnBZMkYwYjNKektITmxiR1lzSUdSaGRHRm1jbUZ0WlRvZ1JHRjBZVVp5WVcxbEtTQXRQaUJFWVhSaFJuSmhiV1U2Q2lBZ0lDQWdJQ0FnYldGalpDQTlJSFJoTGsxQlEwUW9aR0YwWVdaeVlXMWxLUW9nSUNBZ0lDQWdJR1JoZEdGbWNtRnRaVnNuYldGVGFHOXlkQ2RkSUQwZ2RHRXVSVTFCS0dSaGRHRm1jbUZ0WlN3Z2RHbHRaWEJsY21sdlpEMDRLUW9nSUNBZ0lDQWdJR1JoZEdGbWNtRnRaVnNuYldGTlpXUnBkVzBuWFNBOUlIUmhMa1ZOUVNoa1lYUmhabkpoYldVc0lIUnBiV1Z3WlhKcGIyUTlNakVwQ2lBZ0lDQWdJQ0FnY21WMGRYSnVJR1JoZEdGbWNtRnRaUW9LSUNBZ0lHUmxaaUJ3YjNCMWJHRjBaVjlpZFhsZmRISmxibVFvYzJWc1ppd2daR0YwWVdaeVlXMWxPaUJFWVhSaFJuSmhiV1VwSUMwLUlFUmhkR0ZHY21GdFpUb0tJQ0FnSUNBZ0lDQmtZWFJoWm5KaGJXVXViRzlqV3dvZ0lDQWdJQ0FnSUNBZ0lDQW9DaUFnSUNBZ0lDQWdJQ0FnSUNBZ0lDQnhkSEI1YkdsaUxtTnliM056WldSZllXSnZkbVVvWkdGMFlXWnlZVzFsV3lkdFlWTm9iM0owSjEwc0lHUmhkR0ZtY21GdFpWc25iV0ZOWldScGRXMG5YU2tLSUNBZ0lDQWdJQ0FnSUNBZ0tTd0tJQ0FnSUNBZ0lDQWdJQ0FnSjJKMWVTZGRJRDBnTVFvS0lDQWdJQ0FnSUNCeVpYUjFjbTRnWkdGMFlXWnlZVzFsQ2dvZ0lDQWdaR1ZtSUhCdmNIVnNZWFJsWDNObGJHeGZkSEpsYm1Rb2MyVnNaaXdnWkdGMFlXWnlZVzFsT2lCRVlYUmhSbkpoYldVcElDMC1JRVJoZEdGR2NtRnRaVG9LSUNBZ0lDQWdJQ0JrWVhSaFpuSmhiV1V1Ykc5ald3b2dJQ0FnSUNBZ0lDQWdJQ0FvQ2lBZ0lDQWdJQ0FnSUNBZ0lDQWdJQ0J4ZEhCNWJHbGlMbU55YjNOelpXUmZZV0p2ZG1Vb1pHRjBZV1p5WVcxbFd5ZHRZVTFsWkdsMWJTZGRMQ0JrWVhSaFpuSmhiV1ZiSjIxaFUyaHZjblFuWFNrS0lDQWdJQ0FnSUNBZ0lDQWdLU3dLSUNBZ0lDQWdJQ0FnSUNBZ0ozTmxiR3duWFNBOUlERUtJQ0FnSUNBZ0lDQnlaWFIxY200Z1pHRjBZV1p5WVcxbENnb0tJQ0FnSUNBZ0lDQT0iLCAidGltZXJhbmdlIjogIjIwMTgwNDAxLTIwMTgwNTAxIiwgInJlZnJlc2hfcGFpcnMiOiBmYWxzZX0="
+                },
+                {
+                    "name": "BASE_URL",
+                    "value": "https://freq.isaac.international/dev/trade"
+                }
+
+            ]
+        }]},
+    )
+    print(response)
