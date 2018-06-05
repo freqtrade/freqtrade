@@ -132,6 +132,7 @@ def generate_graph(pair, trades, data, args) -> tools.make_subplots:
     :param pair: Pair to Display on the graph
     :param trades: All trades created
     :param data: Dataframe
+    :param args: sys.argv that contrains the two params indicators1, and indicators2
     :return: None
     """
 
