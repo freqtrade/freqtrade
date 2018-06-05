@@ -195,8 +195,8 @@ def run_backtest(configuration, name, user, interval, timerange):
     backtesting = Backtesting(configuration)
     result = backtesting.start()
 
-    # store individual trades
-    _store_trade_data(interval, name, result, timerange, user)
+    # store individual trades - not really needed
+    # _store_trade_data(interval, name, result, timerange, user)
 
     # store aggregated values
     _store_aggregated_data(interval, name, result, timerange, user)
