@@ -173,8 +173,8 @@ def _submit_result_to_backend(data):
     print(data)
     try:
         print(
-            post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev/trade')),
-                 data=data))
+            post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
+                 json=data))
     except Exception as e:
         print("submission ignored: {}".format(e))
 
@@ -347,7 +347,7 @@ if __name__ == "__main__":
                 },
                 {
                     "name": "BASE_URL",
-                    "value": "https://freq.isaac.international/dev/trade"
+                    "value": "https://freq.isaac.international/dev"
                 }
 
             ]

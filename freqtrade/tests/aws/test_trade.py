@@ -1,4 +1,4 @@
-from freqtrade.aws.trade import store
+from freqtrade.aws.trade import store, submit
 from freqtrade.aws.tables import get_trade_table
 import simplejson as json
 from boto3.dynamodb.conditions import Key, Attr
