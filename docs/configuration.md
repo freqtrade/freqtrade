@@ -74,9 +74,9 @@ Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
 ### Understand process_throttle_secs
-`process_throttle_secs` is an optional field in seconds that defines in seconds how long the bot should wait
-before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked for
-every opened trade wether or not we should buy, and for all the remaining pairs (either the dynamic list of pairs or
+`process_throttle_secs` is an optional field that defines in seconds how long the bot should wait
+before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
+every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
 the static list of pairs) if we should buy.
 
 ### Understand ask_last_balance
