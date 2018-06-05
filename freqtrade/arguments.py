@@ -7,9 +7,17 @@ import argparse
 import logging
 import re
 import arrow
-from typing import List, Tuple, Optional
+from typing import List, Optional, NamedTuple
 
 from freqtrade import __version__, constants
+
+
+class TimeRange(NamedTuple):
+
+    starttype: Optional[str] = None
+    stoptype: Optional[str] = None
+    startts: int = 0
+    stopts: int = 0
 
 
 class Arguments(object):
@@ -222,15 +230,14 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: Optional[str]) -> \
-            Optional[Tuple[Tuple, Optional[int], Optional[int]]]:
+    def parse_timerange(text: Optional[str]) -> TimeRange:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
         :return: Start and End range period
         """
         if text is None:
-            return None
+            return TimeRange()
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
@@ -246,8 +253,8 @@ class Arguments(object):
             if match:  # Regex has matched
                 rvals = match.groups()
                 index = 0
-                start: Optional[int] = None
-                stop: Optional[int] = None
+                start: int = 0
+                stop: int = 0
                 if stype[0]:
                     starts = rvals[index]
                     if stype[0] == 'date':
@@ -263,7 +270,7 @@ class Arguments(object):
                             else arrow.get(stops, 'YYYYMMDD').timestamp
                     else:
                         stop = int(stops)
-                return stype, start, stop
+                return TimeRange(stype[0], stype[1], start, stop)
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
     def scripts_options(self) -> None:
