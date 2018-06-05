@@ -208,8 +208,8 @@ def _store_aggregated_data(interval, name, result, timerange, user):
     for row in result[1][2]:
         if row[1] > 0:
             data = {
-                "id": "{}.{}:{}:{}:test".format(user, name, interval, timerange),
-                "trade": "aggregate:{}".format(row[0].upper()),
+                "id": "aggregate:{}:{}:{}:test".format(row[0].upper(), interval, timerange),
+                "trade": "{}.{}".format(user, name),
                 "pair": row[0],
                 "trades": row[1],
                 "losses": row[6],
