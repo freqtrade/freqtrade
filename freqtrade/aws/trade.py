@@ -43,6 +43,7 @@ def submit(event, context):
         "body": json.dumps(result)
     }
 
+
 def get_aggregated_trades(event, context):
     """
         returns the aggregated trades for the given key combination
@@ -52,10 +53,45 @@ def get_aggregated_trades(event, context):
     """
 
     assert 'pathParameters' in event
-    assert 'user' in event['pathParameters']
-    assert 'name' in event['pathParameters']
     assert 'ticker' in event['pathParameters']
     assert 'days' in event['pathParameters']
+
+    table = get_trade_table()
+
+    response = table.query(
+        KeyConditionExpression=Key('id').eq(
+            "aggregate:{}:{}:{}:test".format(
+                "TOTAL",
+                event['pathParameters']['ticker'],
+                event['pathParameters']['days']
+            )
+        )
+    )
+
+    if "Items" in response and len(response['Items']) > 0:
+
+        # preparation for pagination
+        # TODO include in parameters an optional
+        # start key ExclusiveStartKey=response['LastEvaluatedKey']
+
+        data = {
+            "result": response['Items'],
+            "paginationKey": response.get('LastEvaluatedKey')
+        }
+
+        return {
+            "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
+            "body": json.dumps(data)
+        }
+
+    else:
+        return {
+            "statusCode": 404,
+            "body": json.dumps({
+                "error": "sorry this query did not produce any results",
+                "event": event
+            })
+        }
 
 
 def get_trades(event, context):

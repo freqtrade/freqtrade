@@ -354,6 +354,7 @@ def cron(event, context):
                         "days": day
                     }
 
+                    print("submitting: {}".format(message))
                     serialized = json.dumps(message, use_decimal=True)
                     # submit item to queue for routing to the correct persistence
 
@@ -363,6 +364,8 @@ def cron(event, context):
                         Subject="schedule",
                         MessageStructure='json'
                     )
+
+                    print(result)
 
         if 'LastEvaluatedKey' in response:
             return table.scan(
