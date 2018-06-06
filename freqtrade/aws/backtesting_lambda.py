@@ -244,6 +244,11 @@ def _store_aggregated_data(interval, name, result, timerange, user):
 
 
 def _submit_to_remote(data):
+    """
+    submits data to the backend to be persisted in the database
+    :param data:
+    :return:
+    """
     try:
         print(
             post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
@@ -253,6 +258,16 @@ def _submit_to_remote(data):
 
 
 def _store_trade_data(interval, name, result, timerange, user):
+    """
+        stores individual trades on the remote system
+
+    :param interval:
+    :param name:
+    :param result:
+    :param timerange:
+    :param user:
+    :return:
+    """
     for index, row in result[0].iterrows():
         _submit_to_remote({
             "id": "{}.{}:{}:{}:{}:test".format(user, name, interval, timerange, row['currency'].upper()),
