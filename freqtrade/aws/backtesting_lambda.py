@@ -285,6 +285,8 @@ def generate_configuration(fromDate, till, name, refresh, user, remote=True):
 
         )['Items'][0]
 
+    print(response)
+
     content = response['content']
     configuration = {
         "max_open_trades": 1,
