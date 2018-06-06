@@ -156,6 +156,10 @@ def _submit_job(name, user, ticker, fromDate, till):
                 {
                     "name": "FREQ_STRATEGY",
                     "value": "{}".format(name)
+                },
+                {
+                    "name": "BASE_URL",
+                    "value": "https://freq.isaac.international/dev"
                 }
             ]
         }]},
