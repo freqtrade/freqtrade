@@ -669,6 +669,7 @@ def lambda_context():
     responses.add_passthru('https://api.github.com')
     responses.add_passthru('https://bittrex.com')
     responses.add_passthru('https://api.binance.com')
+    responses.add_passthru('https://freq.isaac.international')
 
     yield
     sns.stop()

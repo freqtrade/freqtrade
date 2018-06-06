@@ -1,13 +1,15 @@
 from base64 import urlsafe_b64encode
 
+import os
 import pytest
 import simplejson as json
+from datetime import datetime, timedelta
 
-from freqtrade.aws.backtesting_lambda import backtest, cron
+from freqtrade.aws.backtesting_lambda import backtest, cron, generate_configuration
 from freqtrade.aws.strategy import submit
 
 
-@pytest.mark.skip(reason="no way of currently testing this")
+# @pytest.mark.skip(reason="no way of currently testing this")
 def test_backtest_remote(lambda_context):
     content = """# --- Do not remove these libs ---
 from freqtrade.strategy.interface import IStrategy
@@ -20,7 +22,7 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
-class MyFancyTestStrategy(IStrategy):
+class TestStrategy(IStrategy):
     minimal_roi = {
         "0": 0.5
     }
@@ -56,7 +58,7 @@ class MyFancyTestStrategy(IStrategy):
     request = {
         "user": "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG",
         "description": "simple test strategy",
-        "name": "MyFancyTestStrategy",
+        "name": "TestStrategy",
         "content": urlsafe_b64encode(content.encode('utf-8')),
         "public": False
     }
@@ -315,3 +317,14 @@ class MyFancyTestStrategy(IStrategy):
     cron({}, {})
 
     # TODO test receiving of message some how
+
+
+def test_generate_configuration(lambda_context):
+    os.environ["BASE_URL"] = "https://freq.isaac.international/dev"
+    till = datetime.today()
+    fromDate = till - timedelta(days=90)
+
+    config = generate_configuration(fromDate, till, "TestStrategy", True,
+                           "GCU4LW2XXZW3A3FM2XZJTEJHNWHTWDKY2DIJLCZJ5ULVZ4K7LZ7D23TG", True)
+
+    print(config)

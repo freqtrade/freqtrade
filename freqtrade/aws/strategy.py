@@ -78,6 +78,8 @@ def get(event, context):
 
     if "Items" in response and len(response['Items']) > 0:
         item = response['Items'][0]
+
+        # content is private...
         item.pop('content')
 
         return {

@@ -4,6 +4,7 @@ import os
 import tempfile
 from base64 import urlsafe_b64encode
 
+import requests
 import simplejson as json
 from requests import post
 
@@ -36,8 +37,6 @@ def backtest(event, context):
         :return:
             no return
     """
-    from boto3.dynamodb.conditions import Key
-    from freqtrade.aws.tables import get_strategy_table
 
     if 'Records' in event:
         for x in event['Records']:
@@ -46,14 +45,6 @@ def backtest(event, context):
                 event['body'] = json.loads(x['Sns']['Message'])
                 name = event['body']['name']
                 user = event['body']['user']
-
-                table = get_strategy_table()
-
-                response = table.query(
-                    KeyConditionExpression=Key('user').eq(user) &
-                                           Key('name').eq(name)
-
-                )
 
                 till = datetime.datetime.today()
                 fromDate = till - datetime.timedelta(days=90)
@@ -77,39 +68,30 @@ def backtest(event, context):
                 print("time range between dates is: {} days".format(timerange))
 
                 try:
-                    if "Items" in response and len(response['Items']) > 0:
 
-                        print("schedule back testing from {} till {} for {} with {} vs {}".format(fromDate, till, name,
-                                                                                                  event['body'][
-                                                                                                      'stake_currency'],
-                                                                                                  event['body'][
-                                                                                                      'assets']))
-                        configuration = _generate_configuration(event, fromDate, name, response, till, refresh)
+                    print("schedule back testing from {} till {} for {} with {} vs {}".format(fromDate, till, name,
+                                                                                              event['body'][
+                                                                                                  'stake_currency'],
+                                                                                              event['body'][
+                                                                                                  'assets']))
 
-                        ticker = response['Items'][0]['ticker']
-
-                        if "ticker" in event['body']:
-                            ticker = event['body']['ticker']
-
-                        print("using ticker of {}".format(ticker))
-
-                        if "local" in event['body'] and event['body']['local']:
-                            print("running in local mode")
-                            run_backtest(configuration, name, user, ticker, timerange)
-                        else:
-                            print("running in remote mode")
-                            json.dumps(_submit_job(configuration, user, ticker, timerange))
-
-                        return {
-                            "statusCode": 200
-                        }
+                    if "ticker" in event['body']:
+                        ticker = event['body']['ticker']
                     else:
-                        return {
-                            "statusCode": 404,
-                            "body": json.dumps({
-                                "error": "sorry we did not find any matching strategy for user {} and name {}".format(
-                                    user, name)})
-                        }
+                        ticker = '5m'
+
+                    if "local" in event['body'] and event['body']['local']:
+                        print("running in local mode")
+                        configuration = generate_configuration(fromDate, till, name, refresh, user, False)
+
+                        run_backtest(configuration, name, user, ticker, fromDate, till)
+                    else:
+                        print("running in remote mode")
+                        _submit_job(name, user, ticker, fromDate, till)
+
+                    return {
+                        "statusCode": 200
+                    }
 
                 except ImportError as e:
                     return {
@@ -120,7 +102,7 @@ def backtest(event, context):
         raise Exception("not a valid event: {}".format(event))
 
 
-def _submit_job(configuration, user, interval, timerange):
+def _submit_job(name, user, ticker, fromDate, till):
     """
         submits a new task to the cluster
 
@@ -129,7 +111,8 @@ def _submit_job(configuration, user, interval, timerange):
     :return:
     """
     import boto3
-    configuration = urlsafe_b64encode(json.dumps(configuration).encode('utf-8')).decode('utf-8')
+    timerange = (till - fromDate).days
+
     # fire AWS fargate instance now
     # run_backtest(configuration, name, user)
     # kinda ugly right now and needs more customization
@@ -159,25 +142,28 @@ def _submit_job(configuration, user, interval, timerange):
                     "value": "{}".format(user)
                 },
                 {
-                    "name": "FREQ_CONFIG",
-                    "value": "{}".format(configuration)
-                },
-                {
                     "name": "FREQ_TICKER",
-                    "value": "{}".format(interval)
+                    "value": "{}".format(ticker)
                 },
                 {
-                    "name": "FREQ_TIMERANGE",
-                    "value": "{}".format(timerange)
+                    "name": "FREQ_FROM",
+                    "value": "{}".format(fromDate.strftime('%Y%m%d'))
+                },
+                {
+                    "name": "FREQ_TILL",
+                    "value": "{}".format(till.strftime('%Y%m%d'))
+                },
+                {
+                    "name": "FREQ_STRATEGY",
+                    "value": "{}".format(name)
                 }
-
             ]
         }]},
     )
     return response
 
 
-def run_backtest(configuration, name, user, interval, timerange):
+def run_backtest(configuration, name, user, interval, fromDate, till):
     """
         this backtests the specified evaluation
 
@@ -189,6 +175,8 @@ def run_backtest(configuration, name, user, interval, timerange):
 
     :return:
     """
+
+    timerange = (till - fromDate).days
 
     configuration['ticker_interval'] = interval
 
@@ -255,12 +243,14 @@ def _store_trade_data(interval, name, result, timerange, user):
                      json=data))
         except Exception as e:
             print("submission ignored: {}".format(e))
-    return data
 
 
-def _generate_configuration(event, fromDate, name, response, till, refresh):
+def generate_configuration(fromDate, till, name, refresh, user, remote=True):
     """
-        generates the configuration for us on the fly
+        generates the configuration for us on the fly for a given
+        strategy. This is loaded from a remote url if specfied or
+        the internal dynamodb
+
     :param event:
     :param fromDate:
     :param name:
@@ -269,25 +259,51 @@ def _generate_configuration(event, fromDate, name, response, till, refresh):
     :return:
     """
 
-    content = response['Items'][0]['content']
+    response = {}
+
+    if remote:
+        print("using remote mode to query strategy details")
+        response = requests.get(
+            "{}/strategies/{}/{}".format(os.environ.get('BASE_URL', "https://freq.isaac.international/dev"), user,
+                                         name)).json()
+
+        # load associated content right now this only works for public strategies obviously TODO
+        response['content'] = urlsafe_b64encode(requests.get(
+            "{}/strategies/{}/{}/code".format(os.environ.get('BASE_URL', "https://freq.isaac.international/dev"), user,
+                                              name)).content)
+
+    else:
+        print("using local mode to query strategy details")
+        from boto3.dynamodb.conditions import Key
+        from freqtrade.aws.tables import get_strategy_table
+
+        table = get_strategy_table()
+
+        response = table.query(
+            KeyConditionExpression=Key('user').eq(user) &
+                                   Key('name').eq(name)
+
+        )['Items'][0]
+
+    content = response['content']
     configuration = {
         "max_open_trades": 1,
-        "stake_currency": event['body']['stake_currency'].upper(),
+        "stake_currency": response['stake_currency'].upper(),
         "stake_amount": 1,
         "fiat_display_currency": "USD",
         "unfilledtimeout": 600,
-        "trailing_stop": response['Items'][0]['trailing_stop'],
+        "trailing_stop": response['trailing_stop'],
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
         "exchange": {
-            "name": response['Items'][0]['exchange'],
+            "name": response['exchange'],
             "enabled": True,
             "key": "key",
             "secret": "secret",
             "pair_whitelist": list(
-                map(lambda x: "{}/{}".format(x, response['Items'][0]['stake_currency']).upper(),
-                    response['Items'][0]['assets']))
+                map(lambda x: "{}/{}".format(x, response['stake_currency']).upper(),
+                    response['assets']))
         },
         "telegram": {
             "enabled": False,
@@ -297,7 +313,7 @@ def _generate_configuration(event, fromDate, name, response, till, refresh):
         "initial_state": "running",
         "datadir": tempfile.gettempdir(),
         "experimental": {
-            "use_sell_signal": response['Items'][0]['use_sell'],
+            "use_sell_signal": response['use_sell'],
             "sell_profit_only": True
         },
         "internals": {
