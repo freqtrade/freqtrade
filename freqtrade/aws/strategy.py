@@ -199,7 +199,6 @@ def __evaluate(data):
     data['type'] = "strategy"
     data['roi'] = strat.minimal_roi
     data['stoploss'] = strat.stoploss
-    data['ticker'] = strat.ticker_interval
 
     # ensure that the modified file is saved
     data['content'] = urlsafe_b64encode(strategy.encode('utf-8'))
