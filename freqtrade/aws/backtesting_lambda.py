@@ -215,7 +215,9 @@ def _store_aggregated_data(interval, name, result, timerange, user):
                 "losses": row[6],
                 "wins": row[5],
                 "duration": row[4],
-                "profit_percent": row[2]
+                "profit_percent": row[2],
+                "strategy": name,
+                "user": user
             }
 
             print(data)
@@ -238,7 +240,10 @@ def _store_trade_data(interval, name, result, timerange, user):
             "profit_percent": row['profit_percent'],
             "profit_stake": row['profit_BTC'],
             "entry_date": row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
-            "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S')
+            "exit_date": row['exit'].strftime('%Y-%m-%d %H:%M:%S'),
+            "strategy": name,
+            "user": user
+
         }
 
         print(data)
