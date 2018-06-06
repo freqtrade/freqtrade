@@ -333,6 +333,10 @@ def test_get_ticker(default_conf, mocker):
         mocker.patch('freqtrade.exchange._API', api_mock)
         get_ticker(pair='ETH/BTC', refresh=True)
 
+    api_mock.fetch_ticker = MagicMock(return_value={})
+    mocker.patch('freqtrade.exchange._API', api_mock)
+    get_ticker(pair='ETH/BTC', refresh=True)
+
 
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
