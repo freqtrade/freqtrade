@@ -346,6 +346,7 @@ def cancel_order(order_id: str, pair: str) -> None:
 @retrier
 def get_order(order_id: str, pair: str) -> Dict:
     if _CONF['dry_run']:
+        global _DRY_RUN_OPEN_ORDERS
         order = _DRY_RUN_OPEN_ORDERS[order_id]
         order.update({
             'id': order_id
