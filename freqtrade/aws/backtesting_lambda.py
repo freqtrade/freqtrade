@@ -217,7 +217,9 @@ def _store_aggregated_data(interval, name, result, timerange, user):
                 "duration": row[4],
                 "profit_percent": row[2],
                 "strategy": name,
-                "user": user
+                "user": user,
+                "ticker": interval,
+                "days": timerange
             }
 
             print(data)
