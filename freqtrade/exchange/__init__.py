@@ -275,6 +275,7 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
             try:
                 _CACHED_TICKER[pair] = {
                     'bid': float(data['bid']),
+                    'ask': float(data['ask']),
                 }
             except KeyError as e:
                 logger.debug("Could not cache ticker data for %s", pair)

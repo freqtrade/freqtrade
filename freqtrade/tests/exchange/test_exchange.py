@@ -310,8 +310,18 @@ def test_get_ticker(default_conf, mocker):
     # if not fetching a new result we should get the cached ticker
     ticker = get_ticker(pair='ETH/BTC')
 
+    assert api_mock.fetch_ticker.call_count == 1
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
+
+    assert 'ETH/BTC' in exchange._CACHED_TICKER
+    assert exchange._CACHED_TICKER['ETH/BTC']['bid'] == 0.5
+    assert exchange._CACHED_TICKER['ETH/BTC']['ask'] == 1
+
+    # Test caching
+    api_mock.fetch_ticker = MagicMock()
+    get_ticker(pair='ETH/BTC', refresh=False)
+    assert api_mock.fetch_ticker.call_count == 0
 
     with pytest.raises(TemporaryError):  # test retrier
         api_mock.fetch_ticker = MagicMock(side_effect=ccxt.NetworkError)
