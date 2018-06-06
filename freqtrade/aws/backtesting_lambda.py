@@ -420,8 +420,15 @@ if __name__ == "__main__":
                 {
                     "name": "BASE_URL",
                     "value": "https://freq.isaac.international/dev"
+                },
+                {
+                    "name": "FREQ_TICKER",
+                    "value": "{}".format('5m')
+                },
+                {
+                    "name": "FREQ_TIMERANGE",
+                    "value": "{}".format(30)
                 }
-
             ]
         }]},
     )

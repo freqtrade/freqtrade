@@ -33,7 +33,7 @@ def submit(event, context):
 
     result = client.publish(
         TopicArn=topic_arn,
-        Message=json.dumps({'default': data}),
+        Message=json.dumps({'default': json.dumps(data, use_decimal=True)}),
         Subject="persist data",
         MessageStructure='json'
     )
