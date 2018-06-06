@@ -287,7 +287,7 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
         except ccxt.BaseError as e:
             raise OperationalException(e)
     else:
-        logger.info("returning cached data for %s", pair)
+        logger.info("returning cached ticker-data for %s", pair)
         return _CACHED_TICKER[pair]
 
 
