@@ -215,7 +215,7 @@ def _store_aggregated_data(interval, name, result, timerange, user):
                 "losses": row[6],
                 "wins": row[5],
                 "duration": row[4],
-                "profit_percent": row[2],
+                "profit_percent": row[2]
             }
 
             print(data)

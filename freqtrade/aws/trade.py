@@ -1,7 +1,7 @@
 import boto3
 import simplejson as json
 import os
-from freqtrade.aws.tables import get_trade_table
+from freqtrade.aws.tables import get_trade_table, get_strategy_table
 from boto3.dynamodb.conditions import Key, Attr
 
 
@@ -15,7 +15,24 @@ def store(event, context):
         for x in event['Records']:
             if 'Sns' in x and 'Message' in x['Sns']:
                 data = json.loads(x['Sns']['Message'], use_decimal=True)
-                get_trade_table().put_item(Item=data)
+
+                table = get_strategy_table()
+
+                response = table.query(
+                    KeyConditionExpression=Key('user').eq(data['user']) &
+                                           Key('name').eq(data['strategy'])
+                )
+
+                if "Items" in response and len(response['Items']) > 0:
+                    item = response['Items'][0]
+
+                    data['strategy'] = {
+                        "name": item['name'],
+                        "user": item['user'],
+                        "public": item['public']
+                    }
+
+                    get_trade_table().put_item(Item=data)
 
 
 def submit(event, context):
