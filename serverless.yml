@@ -28,6 +28,10 @@ provider:
       Action:
         - ecs:RunTask
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - iam:PassRole
+      Resource: "*"
 
   memorySize: 128
   timeout: 90
