@@ -250,6 +250,7 @@ def _submit_to_remote(data):
     :return:
     """
     try:
+        print("submitting data: {}".format(data))
         print(
             post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
                  json=data))
