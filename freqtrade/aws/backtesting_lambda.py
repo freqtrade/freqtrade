@@ -197,11 +197,19 @@ def run_backtest(configuration, name, user, interval, fromDate, till):
 
 
 def _store_aggregated_data(interval, name, result, timerange, user):
+    """
+    stores aggregated data for ease of access, yay for dynamodb data duplication...
+
+    :param interval:
+    :param name:
+    :param result:
+    :param timerange:
+    :param user:
+    :return:
+    """
     for row in result[1][2]:
         if row[1] > 0:
             data = {
-                "id": "aggregate:{}:{}:{}:test".format(row[0].upper(), interval, timerange),
-                "trade": "{}.{}".format(user, name),
                 "pair": row[0],
                 "trades": row[1],
                 "losses": row[6],
@@ -213,19 +221,40 @@ def _store_aggregated_data(interval, name, result, timerange, user):
                 "ticker": interval,
                 "days": timerange
             }
+            # aggregate by pair + interval + time range for each strategy
+            data['id'] = "aggregate:{}:{}:{}:test".format(row[0].upper(), interval, timerange)
+            data['trade'] = "{}.{}".format(user, name)
+            _submit_to_remote(data)
 
-            print(data)
-            try:
-                print(
-                    post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
-                         json=data))
-            except Exception as e:
-                print("submission ignored: {}".format(e))
+            # id: aggregate by strategy + user + range + pair
+            # range: ticker
+            # allows us to easily see on which ticker the strategy works best
+            data['id'] = "aggregate:ticker:{}:{}:{}:{}:test".format(user, name, row[0].upper(), timerange),
+            data['trade'] = "{}".format(interval)
+
+            _submit_to_remote(data)
+
+            # id: aggregate by strategy + user + ticker + pair
+            # range: timerange
+            # allows us to easily see on which time range the strategy works best
+            data['id'] = "aggregate:timerange:{}:{}:{}:{}:test".format(user, name, row[0].upper(), interval),
+            data['trade'] = "{}".format(timerange)
+
+            _submit_to_remote(data)
+
+
+def _submit_to_remote(data):
+    try:
+        print(
+            post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
+                 json=data))
+    except Exception as e:
+        print("submission ignored: {}".format(e))
 
 
 def _store_trade_data(interval, name, result, timerange, user):
     for index, row in result[0].iterrows():
-        data = {
+        _submit_to_remote({
             "id": "{}.{}:{}:{}:{}:test".format(user, name, interval, timerange, row['currency'].upper()),
             "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
                                        row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
@@ -238,15 +267,7 @@ def _store_trade_data(interval, name, result, timerange, user):
             "strategy": name,
             "user": user
 
-        }
-
-        print(data)
-        try:
-            print(
-                post("{}/trade".format(os.environ.get('BASE_URL', 'https://freq.isaac.international/dev')),
-                     json=data))
-        except Exception as e:
-            print("submission ignored: {}".format(e))
+        })
 
 
 def generate_configuration(fromDate, till, name, refresh, user, remote=True):
