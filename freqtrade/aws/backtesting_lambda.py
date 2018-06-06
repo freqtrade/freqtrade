@@ -120,7 +120,7 @@ def _submit_job(name, user, ticker, fromDate, till):
     response = client.run_task(
         cluster=os.environ.get('FREQ_CLUSTER_NAME', 'fargate'),  # name of the cluster
         launchType='FARGATE',
-        taskDefinition=os.environ.get('FREQ_TASK_NAME', 'freqtrade-backtesting:1'),
+        taskDefinition=os.environ.get('FREQ_TASK_NAME', 'freqtrade-backtesting:2'),
         count=1,
         platformVersion='LATEST',
         networkConfiguration={
@@ -156,6 +156,10 @@ def _submit_job(name, user, ticker, fromDate, till):
                 {
                     "name": "FREQ_STRATEGY",
                     "value": "{}".format(name)
+                },
+                {
+                    "name": "BASE_URL",
+                    "value": "https://freq.isaac.international/dev"
                 }
             ]
         }]},
@@ -284,6 +288,8 @@ def generate_configuration(fromDate, till, name, refresh, user, remote=True):
                                    Key('name').eq(name)
 
         )['Items'][0]
+
+    print(response)
 
     content = response['content']
     configuration = {
