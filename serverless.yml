@@ -24,6 +24,10 @@ provider:
       Action:
         - SNS:*
       Resource: { "Fn::Join" : [":", ["arn:aws:sns:${self:custom.region}",  "*:*" ] ]  }
+    - Effect: "Allow"
+      Action:
+        - ecs:RunTask
+      Resource: "*"
 
   memorySize: 128
   timeout: 90
