@@ -15,8 +15,11 @@ def store(event, context):
         for x in event['Records']:
             if 'Sns' in x and 'Message' in x['Sns']:
                 data = json.loads(x['Sns']['Message'], use_decimal=True)
-                print("storing data: {}".format(data))
+                print("storing {} data trade results".format(len(x)))
+
                 for x in data:
+                    print("storing data: {}".format(x))
+
                     get_trade_table().put_item(Item=x)
 
 
