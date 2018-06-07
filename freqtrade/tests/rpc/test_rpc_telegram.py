@@ -11,7 +11,6 @@ from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock
 
-from sqlalchemy import create_engine
 from telegram import Update, Message, Chat
 from telegram.error import NetworkError
 
@@ -156,7 +155,7 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['telegram']['enabled'] = False
-    dummy = DummyCls(FreqtradeBot(conf, create_engine('sqlite://')))
+    dummy = DummyCls(FreqtradeBot(conf))
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is True
     assert log_has(
@@ -187,7 +186,7 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['telegram']['enabled'] = False
-    dummy = DummyCls(FreqtradeBot(conf, create_engine('sqlite://')))
+    dummy = DummyCls(FreqtradeBot(conf))
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
     assert not log_has(
@@ -217,7 +216,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['telegram']['enabled'] = False
-    dummy = DummyCls(FreqtradeBot(conf, create_engine('sqlite://')))
+    dummy = DummyCls(FreqtradeBot(conf))
     dummy.dummy_exception(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
     assert not log_has(
@@ -263,7 +262,7 @@ def test_status(default_conf, update, mocker, fee, ticker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(conf)
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -301,7 +300,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -348,7 +347,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     conf = deepcopy(default_conf)
     conf['stake_amount'] = 15.0
-    freqtradebot = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -402,7 +401,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -470,7 +469,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Try invalid data
@@ -511,7 +510,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._profit(bot=MagicMock(), update=update)
@@ -608,7 +607,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
         send_msg=msg_mock
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._balance(bot=MagicMock(), update=update)
@@ -638,7 +637,7 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
         send_msg=msg_mock
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._balance(bot=MagicMock(), update=update)
@@ -661,7 +660,7 @@ def test_start_handle(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -685,7 +684,7 @@ def test_start_handle_already_running(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.RUNNING
@@ -710,7 +709,7 @@ def test_stop_handle(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.RUNNING
@@ -735,7 +734,7 @@ def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -762,7 +761,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee, ticker_sell_up, moc
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -802,7 +801,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee, ticker_sell_do
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -847,7 +846,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -880,7 +879,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Trader is not running
@@ -927,7 +926,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
         get_fee=fee
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -962,7 +961,7 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
         send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     # Trader is not running
@@ -991,7 +990,7 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
         buy=MagicMock(return_value={'id': 'mocked_order_id'})
     )
     mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -1027,7 +1026,7 @@ def test_help_handle(default_conf, update, mocker) -> None:
         _init=MagicMock(),
         send_msg=msg_mock
     )
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._help(bot=MagicMock(), update=update)
@@ -1047,7 +1046,7 @@ def test_version_handle(default_conf, update, mocker) -> None:
         _init=MagicMock(),
         send_msg=msg_mock
     )
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._version(bot=MagicMock(), update=update)
@@ -1064,7 +1063,7 @@ def test_send_msg(default_conf, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     conf = deepcopy(default_conf)
     bot = MagicMock()
-    freqtradebot = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(conf)
     telegram = Telegram(freqtradebot)
 
     telegram._config['telegram']['enabled'] = False
@@ -1087,7 +1086,7 @@ def test_send_msg_network_error(default_conf, mocker, caplog) -> None:
     conf = deepcopy(default_conf)
     bot = MagicMock()
     bot.send_message = MagicMock(side_effect=NetworkError('Oh snap'))
-    freqtradebot = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(conf)
     telegram = Telegram(freqtradebot)
 
     telegram._config['telegram']['enabled'] = True

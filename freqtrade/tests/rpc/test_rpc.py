@@ -7,8 +7,6 @@ Unit test file for rpc/rpc.py
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from sqlalchemy import create_engine
-
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc import RPC
@@ -39,7 +37,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -88,7 +86,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -123,7 +121,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
 
@@ -180,7 +178,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
 
@@ -243,7 +241,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
 
@@ -314,7 +312,7 @@ def test_rpc_balance_handle(default_conf, mocker):
         get_balances=MagicMock(return_value=mock_balance)
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
     (error, res) = rpc.rpc_balance(default_conf['fiat_display_currency'])
@@ -344,7 +342,7 @@ def test_rpc_start(mocker, default_conf) -> None:
         get_ticker=MagicMock()
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
     freqtradebot.state = State.STOPPED
 
@@ -372,7 +370,7 @@ def test_rpc_stop(mocker, default_conf) -> None:
         get_ticker=MagicMock()
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
     freqtradebot.state = State.RUNNING
 
@@ -411,7 +409,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
         get_fee=fee,
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -521,7 +519,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
         get_fee=fee
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
     # Create some test data
@@ -560,7 +558,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
         get_fee=fee,
     )
 
-    freqtradebot = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
     (error, trades) = rpc.rpc_count()

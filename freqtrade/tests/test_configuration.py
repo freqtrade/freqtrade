@@ -118,7 +118,6 @@ def test_load_config(default_conf, mocker) -> None:
     assert validated_conf.get('strategy') == 'DefaultStrategy'
     assert validated_conf.get('strategy_path') is None
     assert 'dynamic_whitelist' not in validated_conf
-    assert 'dry_run_db' not in validated_conf
 
 
 def test_load_config_with_params(default_conf, mocker) -> None:
@@ -133,7 +132,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path',
-        '--dry-run-db',
+        '--db-url', 'sqlite:///someurl',
     ]
     args = Arguments(arglist, '').get_parsed_arg()
 
@@ -143,7 +142,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('dynamic_whitelist') == 10
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
-    assert validated_conf.get('dry_run_db') is True
+    assert validated_conf.get('db_url') == 'sqlite:///someurl'
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
@@ -178,7 +177,7 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
-        '--dry-run-db'
+        '--db-url', 'sqlite:///tmp/testdb',
     ]
     args = Arguments(arglist, '').get_parsed_arg()
 
@@ -192,23 +191,8 @@ def test_show_info(default_conf, mocker, caplog) -> None:
         caplog.record_tuples
     )
 
-    assert log_has(
-        'Parameter --dry-run-db detected ...',
-        caplog.record_tuples
-    )
-
-    assert log_has(
-        'Dry_run will use the DB file: "tradesv3.dry_run.sqlite"',
-        caplog.record_tuples
-    )
-
-    # Test the Dry run condition
-    configuration.config.update({'dry_run': False})  # type: ignore
-    configuration._load_common_config(configuration.config)  # type: ignore
-    assert log_has(
-        'Dry run is disabled. (--dry_run_db ignored)',
-        caplog.record_tuples
-    )
+    assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog.record_tuples)
+    assert log_has('Dry run is enabled', caplog.record_tuples)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
