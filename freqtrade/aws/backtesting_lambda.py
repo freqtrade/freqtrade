@@ -97,8 +97,29 @@ def _submit_job(name, user, ticker, days):
     :return:
     """
     import boto3
-    timerange = (till - fromDate).days
+    overrides = {"containerOverrides": [{
+        "name": "freqtrade-backtest",
+        "environment": [
+            {
+                "name": "FREQ_USER",
+                "value": "{}".format(user)
+            },
+            {
+                "name": "FREQ_TICKER",
+                "value": "{}".format(json.dumps(ticker))
+            },
+            {
+                "name": "FREQ_DAYS",
+                "value": "{}".format(json.dumps(days, use_decimal=False))
+            },
+            {
+                "name": "FREQ_STRATEGY",
+                "value": "{}".format(name)
+            }
+        ]
+    }]}
 
+    print(overrides)
     # fire AWS fargate instance now
     # run_backtest(configuration, name, user)
     # kinda ugly right now and needs more customization
@@ -120,31 +141,7 @@ def _submit_job(name, user, ticker, days):
                 'assignPublicIp': 'ENABLED'
             }
         },
-        overrides={"containerOverrides": [{
-            "name": "freqtrade-backtest",
-            "environment": [
-                {
-                    "name": "FREQ_USER",
-                    "value": "{}".format(user)
-                },
-                {
-                    "name": "FREQ_TICKER",
-                    "value": "{}".format(json.dumps(ticker))
-                },
-                {
-                    "name": "FREQ_DAYS",
-                    "value": "{}".format(json.dumps(days))
-                },
-                {
-                    "name": "FREQ_STRATEGY",
-                    "value": "{}".format(name)
-                },
-                {
-                    "name": "BASE_URL",
-                    "value": "https://freq.isaac.international/dev"
-                }
-            ]
-        }]},
+        overrides=overrides,
     )
     return response
 
