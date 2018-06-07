@@ -103,12 +103,12 @@ class Configuration(object):
 
         if config.get('dry_run', False):
             logger.info('Dry run is enabled')
-            if config.get('db_url') in [None, constants.DEFAULT_DB_URL]:
+            if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:
                 # Default to in-memory db for dry_run if not specified
-                config['db_url'] = 'sqlite://'
+                config['db_url'] = constants.DEFAULT_DB_DRYRUN_URL
         else:
             if not config.get('db_url', None):
-                config['db_url'] = constants.DEFAULT_DB_URL
+                config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
         logger.info('Using DB: "{}"'.format(config['db_url']))

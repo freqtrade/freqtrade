@@ -16,6 +16,8 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from freqtrade import constants
+
 logger = logging.getLogger(__name__)
 
 _CONF = {}
@@ -35,10 +37,8 @@ def init(config: Dict) -> None:
     db_url = _CONF.get('db_url', None)
     kwargs = {}
 
-    if not db_url and _CONF.get('dry_run', False):
-        # Default to in-memory db if not specified
-        # and take care of thread ownership if in-memory db
-        db_url = 'sqlite://'
+    if db_url == constants.DEFAULT_DB_DRYRUN_URL:
+        # Take care of thread ownership if in-memory db
         kwargs.update({
             'connect_args': {'check_same_thread': False},
             'poolclass': StaticPool,
@@ -53,7 +53,7 @@ def init(config: Dict) -> None:
     check_migrate(engine)
 
     # Clean dry_run DB
-    if _CONF.get('dry_run', False) and db_url != 'sqlite://':
+    if _CONF.get('dry_run', False) and db_url != constants.DEFAULT_DB_DRYRUN_URL:
         clean_dry_run_db()
 
 
