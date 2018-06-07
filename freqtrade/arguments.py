@@ -95,20 +95,23 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '--dynamic-whitelist',
-            help='dynamically generate and update whitelist \
-                                  based on 24h BaseVolume (Default 20 currencies)',  # noqa
+            help='dynamically generate and update whitelist'
+                 ' based on 24h BaseVolume (default: %(default)s)',
             dest='dynamic_whitelist',
             const=constants.DYNAMIC_WHITELIST,
+            default=constants.DYNAMIC_WHITELIST,
             type=int,
             metavar='INT',
             nargs='?',
         )
         self.parser.add_argument(
-            '--dry-run-db',
-            help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" \
-                                  instead of memory DB. Work only if dry_run is enabled.',
-            action='store_true',
-            dest='dry_run_db',
+            '--db-url',
+            help='Override trades database URL, this is useful if dry_run is enabled'
+                 ' or in custom deployments (default: %(default)s)',
+            dest='db_url',
+            default=constants.DEFAULT_DB_URL,
+            type=str,
+            metavar='PATH',
         )
 
     @staticmethod
@@ -274,13 +277,6 @@ class Arguments(object):
             '-p', '--pair',
             help='Show profits for only this pairs. Pairs are comma-separated.',
             dest='pair',
-            default=None
-        )
-
-        self.parser.add_argument(
-            '-db', '--db-url',
-            help='Show trades stored in database.',
-            dest='db_url',
             default=None
         )
 

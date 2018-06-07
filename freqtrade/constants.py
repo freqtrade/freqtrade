@@ -9,6 +9,7 @@ TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
+DEFAULT_DB_URL = 'sqlite:///tradesv3.sqlite'
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -83,6 +84,7 @@ CONF_SCHEMA = {
             },
             'required': ['enabled', 'token', 'chat_id']
         },
+        'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'internals': {
             'type': 'object',
