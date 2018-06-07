@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from freqtrade import OperationalException
 from freqtrade.main import main, set_loggers
 from freqtrade.tests.conftest import log_has
 
@@ -60,7 +61,7 @@ def test_set_loggers() -> None:
     assert value2 is logging.INFO
 
 
-def test_main(mocker, caplog) -> None:
+def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     """
     Test main() function
     In this test we are skipping the while True loop by throwing an exception.
@@ -68,26 +69,74 @@ def test_main(mocker, caplog) -> None:
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
-        worker=MagicMock(
-            side_effect=KeyboardInterrupt
-        ),
+        worker=MagicMock(side_effect=Exception),
         clean=MagicMock(),
     )
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+
     args = ['-c', 'config.json.example']
 
     # Test Main + the KeyboardInterrupt exception
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
-        main(args)
-        log_has('Starting freqtrade', caplog.record_tuples)
-        log_has('Got SIGINT, aborting ...', caplog.record_tuples)
-        assert pytest_wrapped_e.type == SystemExit
-        assert pytest_wrapped_e.value.code == 42
-
-    # Test the BaseException case
-    mocker.patch(
-        'freqtrade.freqtradebot.FreqtradeBot.worker',
-        MagicMock(side_effect=BaseException)
-    )
     with pytest.raises(SystemExit):
         main(args)
-        log_has('Got fatal exception!', caplog.record_tuples)
+    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
+    assert log_has('Fatal exception!', caplog.record_tuples)
+
+
+def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
+    """
+    Test main() function
+    In this test we are skipping the while True loop by throwing an exception.
+    """
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        _init_modules=MagicMock(),
+        worker=MagicMock(side_effect=KeyboardInterrupt),
+        clean=MagicMock(),
+    )
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+
+    args = ['-c', 'config.json.example']
+
+    # Test Main + the KeyboardInterrupt exception
+    with pytest.raises(SystemExit):
+        main(args)
+    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
+    assert log_has('SIGINT received, aborting ...', caplog.record_tuples)
+
+
+def test_main_operational_exception(mocker, default_conf, caplog) -> None:
+    """
+    Test main() function
+    In this test we are skipping the while True loop by throwing an exception.
+    """
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        _init_modules=MagicMock(),
+        worker=MagicMock(side_effect=OperationalException('Oh snap!')),
+        clean=MagicMock(),
+    )
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+
+    args = ['-c', 'config.json.example']
+
+    # Test Main + the KeyboardInterrupt exception
+    with pytest.raises(SystemExit):
+        main(args)
+    assert log_has('Using config: config.json.example ...', caplog.record_tuples)
+    assert log_has('Oh snap!', caplog.record_tuples)
