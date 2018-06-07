@@ -188,4 +188,4 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 99 # partial candle was removed
+    assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed
