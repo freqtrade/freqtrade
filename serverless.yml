@@ -112,6 +112,7 @@ functions:
 
     environment:
       strategyTable: ${self:custom.strategyTable}
+    reservedConcurrency: 5
 
   #returns the source code of this given strategy
   #unless it's private
@@ -136,6 +137,7 @@ functions:
                         
     environment:
       strategyTable: ${self:custom.strategyTable}
+    reservedConcurrency: 5
 
   # loads the details of the specific strategy
   get:
@@ -154,6 +156,80 @@ functions:
 
     environment:
       strategyTable: ${self:custom.strategyTable}
+    reservedConcurrency: 5
+
+  # loads the aggregation report for the given strategy based on different tickers
+  get_aggregate_interval:
+    memorySize: 128
+    handler: freqtrade/aws/aggregate/strategy.ticker
+    events:
+      - http:
+          path: strategies/{user}/{name}/aggregate/ticker
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                user: true
+                name: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+      tradeTable: ${self:custom.tradeTable}
+    reservedConcurrency: 5
+
+  # loads the aggregation report for the given strategy based on different tickers
+  get_aggregate_timeframe:
+    memorySize: 128
+    handler: freqtrade/aws/aggregate/strategy.timeframe
+    events:
+      - http:
+          path: strategies/{user}/{name}/aggregate/timeframe
+          method: get
+          cors: true
+          request:
+            parameter:
+              paths:
+                user: true
+                name: true
+
+    environment:
+      strategyTable: ${self:custom.strategyTable}
+      tradeTable: ${self:custom.tradeTable}
+    reservedConcurrency: 5
+
+  #submits a new strategy to the system
+  submit:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.submit
+    events:
+      - http:
+          path: strategies/submit
+          method: post
+          cors: true
+
+    environment:
+      topic: ${self:custom.snsTopic}
+      strategyTable: ${self:custom.strategyTable}
+      BASE_URL: ${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
+    reservedConcurrency: 5
+
+  #submits a new strategy to the system
+  submit_github:
+    memorySize: 128
+    handler: freqtrade/aws/strategy.submit_github
+    events:
+      - http:
+          path: strategies/submit/github
+          method: post
+          cors: true
+
+    environment:
+      topic: ${self:custom.snsTopic}
+      strategyTable: ${self:custom.strategyTable}
+    reservedConcurrency: 1
+
+### TRADE REQUESTS
 
   # loads all trades for a strategy and it's associated pairs
   trades:
@@ -175,22 +251,7 @@ functions:
     environment:
       strategyTable: ${self:custom.strategyTable}
       tradeTable: ${self:custom.tradeTable}
-
-
-  #submits a new strategy to the system
-  submit:
-    memorySize: 128
-    handler: freqtrade/aws/strategy.submit
-    events:
-      - http:
-          path: strategies/submit
-          method: post
-          cors: true
-
-    environment:
-      topic: ${self:custom.snsTopic}
-      strategyTable: ${self:custom.strategyTable}
-      BASE_URL: ${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
+    reservedConcurrency: 5
 
   # submits a new trade to the system
   trade:
@@ -204,19 +265,9 @@ functions:
 
     environment:
       tradeTopic: ${self:custom.snsTradeTopic}
+    reservedConcurrency: 5
 
-  # stores the received message in the trade table
-  trade-store:
-    memorySize: 128
-    handler: freqtrade/aws/trade.store
-
-    events:
-      - sns: ${self:custom.snsTradeTopic}
-
-    environment:
-      tradeTable: ${self:custom.tradeTable}
-
-  # stores the received message in the trade table
+  # query aggregates by day and ticker for all strategies
   trade-aggregate:
     memorySize: 128
     handler: freqtrade/aws/trade.get_aggregated_trades
@@ -234,21 +285,21 @@ functions:
     environment:
       tradeTable: ${self:custom.tradeTable}
 
-  #submits a new strategy to the system
-  submit_github:
+    reservedConcurrency: 5
+### SNS TRIGGERED FUNCTIONS
+
+  # stores the received message in the trade table
+  trade-store:
     memorySize: 128
-    handler: freqtrade/aws/strategy.submit_github
+    handler: freqtrade/aws/trade.store
+
     events:
-      - http:
-          path: strategies/submit/github
-          method: post
-          cors: true
+      - sns: ${self:custom.snsTradeTopic}
 
     environment:
-      topic: ${self:custom.snsTopic}
-      strategyTable: ${self:custom.strategyTable}
+      tradeTable: ${self:custom.tradeTable}
 
-
+    reservedConcurrency: 1
   #backtests the strategy
   #should be switched to utilze aws fargate instead
   #and running a container
@@ -275,7 +326,7 @@ functions:
 
     events:
       - schedule:
-          rate: rate(580 minutes)
+          rate: rate(1440 minutes)
           enabled: true
 
     environment:
