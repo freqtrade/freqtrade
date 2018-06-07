@@ -9,6 +9,7 @@ from typing import Dict, Tuple, Any
 import arrow
 import sqlalchemy as sql
 from pandas import DataFrame
+from numpy import mean, nan_to_num
 
 from freqtrade import exchange
 from freqtrade.misc import shorten_date
@@ -209,14 +210,14 @@ class RPC(object):
         fiat = self.freqtrade.fiat_converter
         # Prepare data to display
         profit_closed_coin = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
+        profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
         profit_closed_fiat = fiat.convert_amount(
             profit_closed_coin,
             stake_currency,
             fiat_display_currency
         )
         profit_all_coin = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(sum(profit_all_percent) * 100, 2)
+        profit_all_percent = round(nan_to_num(mean(profit_all_percent)) * 100, 2)
         profit_all_fiat = fiat.convert_amount(
             profit_all_coin,
             stake_currency,
