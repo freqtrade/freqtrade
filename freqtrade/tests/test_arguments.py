@@ -46,6 +46,11 @@ def test_parse_args_config() -> None:
     assert args.config == '/dev/null'
 
 
+def test_parse_args_db_url() -> None:
+    args = Arguments(['--db-url', 'sqlite:///test.sqlite'], '').get_parsed_arg()
+    assert args.db_url == 'sqlite:///test.sqlite'
+
+
 def test_parse_args_verbose() -> None:
     args = Arguments(['-v'], '').get_parsed_arg()
     assert args.loglevel == logging.DEBUG

@@ -9,10 +9,10 @@ it.
 
 ## Bot commands
 ```
-usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-               [--strategy-path PATH] [--dynamic-whitelist [INT]]
-               [--dry-run-db]
-               {backtesting,hyperopt} ...
+usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH]
+                 {backtesting,hyperopt} ...
 
 Simple High Frequency Trading Bot for crypto currencies
 
@@ -28,17 +28,16 @@ optional arguments:
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
   -d PATH, --datadir PATH
-                        path to backtest data (default:
-                        freqtrade/tests/testdata
+                        path to backtest data
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
   --strategy-path PATH  specify additional strategy lookup path
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
-                        BaseVolume (Default 20 currencies)
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
+                        BaseVolume (default: 20)
+  --db-url PATH         Override trades database URL, this is useful if
+                        dry_run is enabled or in custom deployments (default:
+                        sqlite:///tradesv3.sqlite)
 ```
 
 ### How to use a different config file?
@@ -102,14 +101,14 @@ python3 ./freqtrade/main.py --dynamic-whitelist 30
 negative value (e.g -2), `--dynamic-whitelist` will use the default
 value (20).
 
-### How to use --dry-run-db?
+### How to use --db-url?
 When you run the bot in Dry-run mode, per default no transactions are 
 stored in a database. If you want to store your bot actions in a DB 
-using `--dry-run-db`. This command will use a separate database file 
-`tradesv3.dry_run.sqlite`
+using `--db-url`. This can also be used to specify a custom database
+in production mode. Example command:
 
 ```bash
-python3 ./freqtrade/main.py -c config.json --dry-run-db
+python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
 

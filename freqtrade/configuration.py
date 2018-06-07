@@ -97,16 +97,21 @@ class Configuration(object):
                 '(not applicable with Backtesting and Hyperopt)'
             )
 
-        # Add dry_run_db if found and the bot in dry run
-        if self.args.dry_run_db and config.get('dry_run', False):
-            config.update({'dry_run_db': True})
-            logger.info('Parameter --dry-run-db detected ...')
+        if self.args.db_url != constants.DEFAULT_DB_PROD_URL:
+            config.update({'db_url': self.args.db_url})
+            logger.info('Parameter --db-url detected ...')
 
-        if config.get('dry_run_db', False):
-            if config.get('dry_run', False):
-                logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite"')
-            else:
-                logger.info('Dry run is disabled. (--dry_run_db ignored)')
+        if config.get('dry_run', False):
+            logger.info('Dry run is enabled')
+            if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:
+                # Default to in-memory db for dry_run if not specified
+                config['db_url'] = constants.DEFAULT_DB_DRYRUN_URL
+        else:
+            if not config.get('db_url', None):
+                config['db_url'] = constants.DEFAULT_DB_PROD_URL
+            logger.info('Dry run is disabled')
+
+        logger.info('Using DB: "{}"'.format(config['db_url']))
 
         # Check if the exchange set by the user is supported
         self.check_exchange(config)

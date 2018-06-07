@@ -9,7 +9,6 @@ from unittest.mock import MagicMock
 import arrow
 import pytest
 from jsonschema import validate
-from sqlalchemy import create_engine
 from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
@@ -45,7 +44,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
 
-    return FreqtradeBot(config, create_engine('sqlite://'))
+    return FreqtradeBot(config)
 
 
 def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
@@ -108,7 +107,8 @@ def default_conf():
             "chat_id": "0"
         },
         "initial_state": "running",
-        "loglevel": logging.DEBUG
+        "db_url": "sqlite://",
+        "loglevel": logging.DEBUG,
     }
     validate(configuration, constants.CONF_SCHEMA)
     return configuration

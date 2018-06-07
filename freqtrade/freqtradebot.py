@@ -33,12 +33,11 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None)-> None:
+    def __init__(self, config: Dict[str, Any])-> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
         method to get the config dict.
-        :param db_url: database connector string for sqlalchemy (Optional)
         """
 
         logger.info(
@@ -57,17 +56,16 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = None
 
-        self._init_modules(db_url=db_url)
+        self._init_modules()
 
-    def _init_modules(self, db_url: Optional[str] = None) -> None:
+    def _init_modules(self) -> None:
         """
         Initializes all modules and updates the config
-        :param db_url: database connector string for sqlalchemy (Optional)
         :return: None
         """
         # Initialize all modules
 
-        persistence.init(self.config, db_url)
+        persistence.init(self.config)
         exchange.init(self.config)
 
         # Set initial application state
