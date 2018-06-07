@@ -161,11 +161,15 @@ class Backtesting(object):
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.populate_sell_trend(self.populate_buy_trend(pair_data))[headers]
+            ticker_data = self.populate_sell_trend(
+                self.populate_buy_trend(pair_data))[headers].copy()
 
-            # to avoid using data from future, we buy/sell with signal from previous candle, not current
-            ticker_data.buy = ticker_data.buy.shift(1)
-            ticker_data.sell = ticker_data.sell.shift(1)
+            # to avoid using data from future, we buy/sell with signal from previous candle
+            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+
+            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+
             ticker = [x for x in ticker_data.itertuples()]
 
             lock_pair_until = None

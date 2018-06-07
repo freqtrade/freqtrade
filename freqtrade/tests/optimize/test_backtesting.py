@@ -30,7 +30,7 @@ def trim_dictlist(dict_list, num):
 
 
 def load_data_test(what):
-    timerange = TimeRange(None, 'line', 0, -100)
+    timerange = TimeRange(None, 'line', 0, -101)
     data = optimize.load_data(None, ticker_interval='1m',
                               pairs=['UNITTEST/BTC'], timerange=timerange)
     pair = data['UNITTEST/BTC']
@@ -110,14 +110,14 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
 # use for mock freqtrade.exchange.get_ticker_history'
 def _load_pair_as_ticks(pair, tickfreq):
     ticks = optimize.load_data(None, ticker_interval=tickfreq, pairs=[pair])
-    ticks = trim_dictlist(ticks, -200)
+    ticks = trim_dictlist(ticks, -201)
     return ticks[pair]
 
 
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = optimize.load_data(None, ticker_interval='8m', pairs=[pair])
-    data = trim_dictlist(data, -200)
+    data = trim_dictlist(data, -201)
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
     backtesting = Backtesting(conf)
     return {
