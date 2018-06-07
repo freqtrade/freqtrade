@@ -34,6 +34,7 @@ The table below will list all configuration parameters.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
+| `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
 | `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
@@ -111,9 +112,10 @@ creating trades.
 
 ### To switch your bot in Dry-run mode:
 1. Edit your `config.json`  file
-2. Switch dry-run to true
+2. Switch dry-run to true and specify db_url for a persistent db
 ```json
 "dry_run": true,
+"db_url": "sqlite///tradesv3.dryrun.sqlite",
 ```
 
 3. Remove your Exchange API key (change them by fake api credentials)
