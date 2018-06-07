@@ -48,6 +48,12 @@ To plot trades stored in a database use `--db-url` argument:
 python scripts/plot_dataframe.py --db-url tradesv3.dry_run.sqlite -p BTC_ETH
 ```
 
+To plot a test strategy the strategy should have first be backtested. 
+The results may then be plotted with the -s argument:
+```
+python scripts/plot_dataframe.py -s Strategy_Name -p BTC/ETH --datadir user_data/data/<exchange_name>/
+```
+
 ## Plot profit
 
 The profit plotter show a picture with three plots:
