@@ -85,9 +85,9 @@ class Backtesting(object):
 
     def aggregate(self, data, results):
         stake_currency = self.config.get('stake_currency')
-        floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f')
         tabular_data = []
-        headers = ['pair', 'buy count', 'avg profit %',
+        headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
         for pair in data:
             result = results[results.currency == pair]
@@ -95,6 +95,7 @@ class Backtesting(object):
                 pair,
                 len(result.index),
                 result.profit_percent.mean() * 100.0,
+                result.profit_percent.sum() * 100.0,
                 result.profit_BTC.sum(),
                 result.duration.mean(),
                 len(result[result.profit_BTC > 0]),
@@ -105,6 +106,7 @@ class Backtesting(object):
             'TOTAL',
             len(results.index),
             results.profit_percent.mean() * 100.0,
+            results.profit_percent.sum() * 100.0,
             results.profit_BTC.sum(),
             results.duration.mean(),
             len(results[results.profit_BTC > 0]),
