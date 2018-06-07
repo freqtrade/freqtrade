@@ -13,7 +13,7 @@ from arrow import Arrow
 
 from freqtrade import optimize
 from freqtrade.analyze import Analyze
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
 from freqtrade.tests.conftest import log_has
 
@@ -30,7 +30,7 @@ def trim_dictlist(dict_list, num):
 
 
 def load_data_test(what):
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -100)
     data = optimize.load_data(None, ticker_interval='1m',
                               pairs=['UNITTEST/BTC'], timerange=timerange)
     pair = data['UNITTEST/BTC']
@@ -311,7 +311,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     Test Backtesting.tickerdata_to_dataframe() method
     """
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -100)
     tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
 

@@ -221,7 +221,7 @@ class Backtesting(object):
 
             timerange = Arguments.parse_timerange(None if self.config.get(
                 'timerange') is None else str(self.config.get('timerange')))
-            data = optimize.load_data(  # type: ignore # timerange will be refactored
+            data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
                 ticker_interval=self.ticker_interval,

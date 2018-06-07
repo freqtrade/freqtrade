@@ -1,4 +1,4 @@
-ccxt==1.14.121
+ccxt==1.14.155
 SQLAlchemy==1.2.8
 python-telegram-bot==10.1.0
 arrow==0.12.1
@@ -10,14 +10,14 @@ pandas==0.23.0
 scikit-learn==0.19.1
 scipy==1.1.0
 jsonschema==2.6.0
-numpy==1.14.3
+numpy==1.14.4
 TA-Lib==0.4.17
-pytest==3.6.0
+pytest==3.6.1
 pytest-mock==1.10.0
 pytest-cov==2.5.1
 hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
-networkx==1.11
+networkx==1.11 # pyup: ignore
 tabulate==0.8.2
 coinmarketcap==5.0.3
 
