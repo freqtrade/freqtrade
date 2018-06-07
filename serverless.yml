@@ -315,7 +315,7 @@ functions:
       topic: ${self:custom.snsTopic}
       tradeTable: ${self:custom.tradeTable}
       strategyTable: ${self:custom.strategyTable}
-      BASE_URL: ${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
+      BASE_URL: https://${self:custom.customDomain.domainName}/${self:custom.customDomain.stage}
 
     reservedConcurrency: 1
 
