@@ -196,6 +196,7 @@ def _store_aggregated_data(interval, name, result, timerange, user):
                 "duration": row[5],
                 "profit_mean_percent": row[2],
                 "profit_cum_percent": row[3],
+                "daily_return": row[3] / timerange,
                 "strategy": name,
                 "user": user,
                 "ticker": interval,
