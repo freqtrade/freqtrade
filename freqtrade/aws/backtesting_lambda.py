@@ -186,6 +186,7 @@ def _store_aggregated_data(interval, name, result, timerange, user):
     :param user:
     :return:
     """
+    submit_data = []
     for row in result[1][2]:
         if row[1] > 0:
             data = {
@@ -205,7 +206,7 @@ def _store_aggregated_data(interval, name, result, timerange, user):
             # aggregate by pair + interval + time range for each strategy
             data['id'] = "aggregate:{}:{}:{}:test".format(row[0].upper(), interval, timerange)
             data['trade'] = "{}.{}".format(user, name)
-            _submit_to_remote(data)
+            submit_data.append(data.copy())
 
             # id: aggregate by strategy + user + range + pair
             # range: ticker
@@ -213,15 +214,16 @@ def _store_aggregated_data(interval, name, result, timerange, user):
             data['id'] = "aggregate:ticker:{}:{}:{}:{}:test".format(user, name, row[0].upper(), timerange),
             data['trade'] = "{}".format(interval)
 
-            _submit_to_remote(data)
+            submit_data.append(data.copy())
 
             # id: aggregate by strategy + user + ticker + pair
             # range: timerange
             # allows us to easily see on which time range the strategy works best
             data['id'] = "aggregate:timerange:{}:{}:{}:{}:test".format(user, name, row[0].upper(), interval),
             data['trade'] = "{}".format(timerange)
+            submit_data.append(data.copy())
 
-            _submit_to_remote(data)
+    _submit_to_remote(submit_data)
 
 
 def _submit_to_remote(data):
@@ -250,8 +252,9 @@ def _store_trade_data(interval, name, result, timerange, user):
     :param user:
     :return:
     """
+    submit_data = []
     for index, row in result[0].iterrows():
-        _submit_to_remote({
+        submit_data.append({
             "id": "{}.{}:{}:{}:{}:test".format(user, name, interval, timerange, row['currency'].upper()),
             "trade": "{} to {}".format(row['entry'].strftime('%Y-%m-%d %H:%M:%S'),
                                        row['exit'].strftime('%Y-%m-%d %H:%M:%S')),
@@ -265,6 +268,8 @@ def _store_trade_data(interval, name, result, timerange, user):
             "user": user
 
         })
+
+    _submit_to_remote(submit_data)
 
 
 def generate_configuration(fromDate, till, name, refresh, user, remote=True):

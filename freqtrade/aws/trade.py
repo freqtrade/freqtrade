@@ -16,7 +16,8 @@ def store(event, context):
             if 'Sns' in x and 'Message' in x['Sns']:
                 data = json.loads(x['Sns']['Message'], use_decimal=True)
                 print("storing data: {}".format(data))
-                get_trade_table().put_item(Item=data)
+                for x in data:
+                    get_trade_table().put_item(Item=x)
 
 
 def submit(event, context):
