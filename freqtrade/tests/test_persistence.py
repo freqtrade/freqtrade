@@ -406,9 +406,9 @@ def test_migrate_new(mocker, default_conf, fee):
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
                                      )
+    engine = create_engine('sqlite://')
     mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
 
-    engine = create_engine('sqlite://')
     # Create table using the old format
     engine.execute(create_table_old)
     engine.execute(insert_table_old)
