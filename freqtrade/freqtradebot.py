@@ -257,7 +257,8 @@ class FreqtradeBot(object):
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
             if open_trades >= self.config['max_open_trades']:
-                return 0
+                logger.warning('Can\'t open a new trade: max number of trades is reached')
+                return None
             return avaliable_amount / (self.config['max_open_trades'] - open_trades)
 
         # Check if stake_amount is fulfilled
@@ -280,6 +281,9 @@ class FreqtradeBot(object):
         """
         interval = self.analyze.get_ticker_interval()
         stake_amount = self._get_trade_stake_amount()
+
+        if not stake_amount:
+            return False
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',

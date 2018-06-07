@@ -231,7 +231,7 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
     )
 
-    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(default_conf)
 
     result = freqtrade._get_trade_stake_amount()
     assert(result == default_conf['stake_amount'])
@@ -252,7 +252,7 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
     )
 
-    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         freqtrade._get_trade_stake_amount()
@@ -282,29 +282,29 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
     conf['max_open_trades'] = 2
 
-    freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(conf)
 
     # no open trades, order amount should be 'balance / max_open_trades'
     result = freqtrade._get_trade_stake_amount()
-    assert(result == default_conf['stake_amount'] / conf['max_open_trades'])
+    assert result == default_conf['stake_amount'] / conf['max_open_trades']
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
     freqtrade.create_trade()
 
     result = freqtrade._get_trade_stake_amount()
-    assert(result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1))
+    assert result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1)
 
-    # create 2 trades, order amount should be 0
+    # create 2 trades, order amount should be None
     freqtrade.create_trade()
 
     result = freqtrade._get_trade_stake_amount()
-    assert(result == 0)
+    assert result is None
 
-    # set max_open_trades = 0, so do not trade
+    # set max_open_trades = None, so do not trade
     conf['max_open_trades'] = 0
-    freqtrade = FreqtradeBot(conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(conf)
     result = freqtrade._get_trade_stake_amount()
-    assert(result == 0)
+    assert result is None
 
 
 def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
@@ -322,7 +322,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5),
         get_fee=fee,
     )
-    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
         freqtrade.create_trade()
@@ -389,7 +389,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order, fee,
     assert rate * amount >= conf['stake_amount']
 
 
-def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
+def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     """
     Test create_trade() method
     """
@@ -401,13 +401,17 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order, fee
         validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5),
+        get_balance=MagicMock(return_value=default_conf['stake_amount']),
         get_fee=fee,
     )
-    freqtrade = FreqtradeBot(default_conf)
+    conf = deepcopy(default_conf)
+    conf['max_open_trades'] = 0
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
 
-    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        freqtrade.create_trade()
+    freqtrade = FreqtradeBot(conf)
+
+    assert freqtrade.create_trade() is False
+    assert freqtrade._get_trade_stake_amount() is None
 
 
 def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
