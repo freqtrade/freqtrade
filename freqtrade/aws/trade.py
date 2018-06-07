@@ -1,3 +1,5 @@
+from time import sleep
+
 import boto3
 import simplejson as json
 import os
@@ -19,7 +21,7 @@ def store(event, context):
 
                 for x in data:
                     print("storing data: {}".format(x))
-
+                    sleep(0.5) # throttle to not overwhelm the DB, lambda is cheaper than dynamo
                     get_trade_table().put_item(Item=x)
 
 
