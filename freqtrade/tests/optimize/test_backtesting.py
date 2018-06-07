@@ -317,7 +317,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
 
     backtesting = Backtesting(default_conf)
     data = backtesting.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 100
+    assert len(data['UNITTEST/BTC']) == 99
 
     # Load Analyze to compare the result between Backtesting function and Analyze are the same
     analyze = Analyze(default_conf)
@@ -341,7 +341,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
     )
     min_date, max_date = backtesting.get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
-    assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
 
 
 def test_generate_text_table(default_conf, mocker):
@@ -478,7 +478,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
-    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
+    tests = [['raise', 17], ['lower', 0], ['sine', 16]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 

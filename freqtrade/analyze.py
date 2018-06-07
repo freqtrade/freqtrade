@@ -62,6 +62,7 @@ class Analyze(object):
             'close': 'last',
             'volume': 'max',
         })
+        frame.drop(frame.tail(1).index, inplace=True) # eliminate partial candle
         return frame
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:

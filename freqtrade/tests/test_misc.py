@@ -39,7 +39,7 @@ def test_datesarray_to_datetimearray(ticker_history):
     assert dates[0].minute == 50
 
     date_len = len(dates)
-    assert date_len == 3
+    assert date_len == 2
 
 
 def test_common_datearray(default_conf) -> None:
