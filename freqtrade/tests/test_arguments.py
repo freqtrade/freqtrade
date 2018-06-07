@@ -9,7 +9,7 @@ import logging
 
 import pytest
 
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import Arguments, TimeRange
 
 
 def test_arguments_object() -> None:
@@ -44,6 +44,11 @@ def test_parse_args_config() -> None:
 
     args = Arguments(['--config', '/dev/null'], '').get_parsed_arg()
     assert args.config == '/dev/null'
+
+
+def test_parse_args_db_url() -> None:
+    args = Arguments(['--db-url', 'sqlite:///test.sqlite'], '').get_parsed_arg()
+    assert args.db_url == 'sqlite:///test.sqlite'
 
 
 def test_parse_args_verbose() -> None:
@@ -107,20 +112,24 @@ def test_parse_args_dynamic_whitelist_invalid_values() -> None:
 
 
 def test_parse_timerange_incorrect() -> None:
-    assert ((None, 'line'), None, -200) == Arguments.parse_timerange('-200')
-    assert (('line', None), 200, None) == Arguments.parse_timerange('200-')
-    assert (('index', 'index'), 200, 500) == Arguments.parse_timerange('200-500')
+    assert TimeRange(None, 'line', 0, -200) == Arguments.parse_timerange('-200')
+    assert TimeRange('line', None, 200, 0) == Arguments.parse_timerange('200-')
+    assert TimeRange('index', 'index', 200, 500) == Arguments.parse_timerange('200-500')
 
-    assert (('date', None), 1274486400, None) == Arguments.parse_timerange('20100522-')
-    assert ((None, 'date'), None, 1274486400) == Arguments.parse_timerange('-20100522')
+    assert TimeRange('date', None, 1274486400, 0) == Arguments.parse_timerange('20100522-')
+    assert TimeRange(None, 'date', 0, 1274486400) == Arguments.parse_timerange('-20100522')
     timerange = Arguments.parse_timerange('20100522-20150730')
-    assert timerange == (('date', 'date'), 1274486400, 1438214400)
+    assert timerange == TimeRange('date', 'date', 1274486400, 1438214400)
 
     # Added test for unix timestamp - BTC genesis date
-    assert (('date', None), 1231006505, None) == Arguments.parse_timerange('1231006505-')
-    assert ((None, 'date'), None, 1233360000) == Arguments.parse_timerange('-1233360000')
+    assert TimeRange('date', None, 1231006505, 0) == Arguments.parse_timerange('1231006505-')
+    assert TimeRange(None, 'date', 0, 1233360000) == Arguments.parse_timerange('-1233360000')
     timerange = Arguments.parse_timerange('1231006505-1233360000')
-    assert timerange == (('date', 'date'), 1231006505, 1233360000)
+    assert TimeRange('date', 'date', 1231006505, 1233360000) == timerange
+
+    # TODO: Find solution for the following case (passing timestamp in ms)
+    timerange = Arguments.parse_timerange('1231006505000-1233360000000')
+    assert TimeRange('date', 'date', 1231006505, 1233360000) != timerange
 
     with pytest.raises(Exception, match=r'Incorrect syntax.*'):
         Arguments.parse_timerange('-')

@@ -9,10 +9,10 @@ it.
 
 ## Bot commands
 ```
-usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-               [--strategy-path PATH] [--dynamic-whitelist [INT]]
-               [--dry-run-db]
-               {backtesting,hyperopt} ...
+usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH]
+                 {backtesting,hyperopt} ...
 
 Simple High Frequency Trading Bot for crypto currencies
 
@@ -28,17 +28,16 @@ optional arguments:
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
   -d PATH, --datadir PATH
-                        path to backtest data (default:
-                        freqtrade/tests/testdata
+                        path to backtest data
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
   --strategy-path PATH  specify additional strategy lookup path
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
-                        BaseVolume (Default 20 currencies)
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
+                        BaseVolume (default: 20)
+  --db-url PATH         Override trades database URL, this is useful if
+                        dry_run is enabled or in custom deployments (default:
+                        sqlite:///tradesv3.sqlite)
 ```
 
 ### How to use a different config file?
@@ -68,7 +67,7 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 If the bot does not find your strategy file, it will display in an error 
 message the reason (File not found, or errors in your code).
 
-Learn more about strategy file in [optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
+Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
 
 ### How to use --strategy-path?
 This parameter allows you to add an additional strategy lookup path, which gets
@@ -102,14 +101,14 @@ python3 ./freqtrade/main.py --dynamic-whitelist 30
 negative value (e.g -2), `--dynamic-whitelist` will use the default
 value (20).
 
-### How to use --dry-run-db?
+### How to use --db-url?
 When you run the bot in Dry-run mode, per default no transactions are 
 stored in a database. If you want to store your bot actions in a DB 
-using `--dry-run-db`. This command will use a separate database file 
-`tradesv3.dry_run.sqlite`
+using `--db-url`. This can also be used to specify a custom database
+in production mode. Example command:
 
 ```bash
-python3 ./freqtrade/main.py -c config.json --dry-run-db
+python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
 
@@ -120,6 +119,8 @@ Backtesting also uses the config specified via `-c/--config`.
 ```
 usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
                            [--timerange TIMERANGE] [-l] [-r] [--export EXPORT]
+                           [--export-filename EXPORTFILENAME]
+
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -137,6 +138,11 @@ optional arguments:
                         run your backtesting with up-to-date data.
   --export EXPORT       export backtest results, argument are: trades Example
                         --export=trades
+  --export-filename EXPORTFILENAME
+                        Save backtest results to this filename requires
+                        --export to be set as well Example --export-
+                        filename=backtest_today.json (default: backtest-
+                        result.json
 ```
 
 ### How to use --refresh-pairs-cached parameter?
@@ -182,9 +188,9 @@ optional arguments:
 
 ## A parameter missing in the configuration?
 All parameters for `main.py`, `backtesting`, `hyperopt` are referenced
-in [misc.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/misc.py#L84)
+in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L84)
 
 ## Next step
 The optimal strategy of the bot will change with time depending of the
 market trends. The next step is to 
-[optimize your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md).
+[optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).

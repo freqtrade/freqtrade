@@ -13,6 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.analyze import Analyze, SignalType
 from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.arguments import TimeRange
 from freqtrade.tests.conftest import log_has
 
 # Avoid to reinit the same object again and again
@@ -183,7 +184,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     """
     analyze = Analyze(default_conf)
 
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -100)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)

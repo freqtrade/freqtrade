@@ -14,7 +14,7 @@ real data. This is what we call
 
 Backtesting will use the crypto-currencies (pair) from your config file
 and load static tickers located in 
-[/freqtrade/tests/testdata](https://github.com/gcarq/freqtrade/tree/develop/freqtrade/tests/testdata).  
+[/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).  
 If the 5 min and 1 min ticker for the crypto-currencies to test is not 
 already in the `testdata` folder, backtesting will download them 
 automatically. Testdata files will not be updated until you specify it.
@@ -62,6 +62,12 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 python3 ./freqtrade/main.py backtesting --export trades
 ```
 
+**Exporting trades to file specifying a custom filename**
+```bash
+python3 ./freqtrade/main.py backtesting --export trades --export-filename=backtest_teststrategy.json
+```
+
+
 **Running backtest with smaller testset**  
 Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
@@ -87,22 +93,31 @@ The full timerange specification:
                                                 `--timerange=1527595200-1527618600`
 
 
-**Update testdata directory**
-To update your testdata directory, or download into another testdata directory:
-```bash
-mkdir -p user_data/data/testdata-20180113
-cp freqtrade/tests/testdata/pairs.json user_data/data-20180113
-cd user_data/data-20180113
-```
+**Downloading new set of ticker data**
+To download new set of backtesting ticker data, you can use a download script.
 
-Possibly edit pairs.json file to include/exclude pairs
+If you are using Binance for example:
+- create a folder `user_data/data/binance` and copy `pairs.json` in that folder.
+- update the `pairs.json` to contain the currency pairs you are interested in.
 
 ```bash
-python3 freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
+mkdir -p user_data/data/binance
+cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 ```
 
-The script will read your pairs.json file, and download ticker data
-into the current working directory.
+Then run:
+
+```bash
+python scripts/download_backtest_data --exchange binance
+```
+
+This will download ticker data for all the currency pairs you defined in `pairs.json`.
+
+- To use a different folder than the exchange specific default, use `--export user_data/data/some_directory`.
+- To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
+- To use `pairs.json` from some other folder, use `--pairs-file some_other_dir/pairs.json`.
+- To download ticker data for only 10 days, use `--days 10`.
+- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
 
 
 For help about backtesting usage, please refer to 
@@ -160,4 +175,4 @@ strategies, your configuration, and the crypto-currency you have set up.
 ## Next step
 Great, your strategy is profitable. What if the bot can give your the
 optimal parameters to use for your strategy?  
-Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/hyperopt.md)
+Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)

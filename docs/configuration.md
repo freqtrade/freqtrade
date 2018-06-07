@@ -34,13 +34,14 @@ The table below will list all configuration parameters.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
+| `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
 | `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
 The definition of each config parameters is in 
-[misc.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/misc.py#L205).
+[misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L205).
 
 ### Understand stake_amount
 `stake_amount` is an amount of crypto-currency your bot will use for each trade.
@@ -80,6 +81,12 @@ value. This parameter is optional. If you use it, it will take over the
 Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
 
+### Understand process_throttle_secs
+`process_throttle_secs` is an optional field that defines in seconds how long the bot should wait
+before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
+every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
+the static list of pairs) if we should buy.
+
 ### Understand ask_last_balance
 `ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
 use the `last` price and values between those interpolate between ask and last
@@ -99,8 +106,10 @@ The bot was tested with the following exchanges:
 Feel free to test other exchanges and submit your PR to improve the bot.
 
 ### What values for fiat_display_currency?
-`fiat_display_currency` set the fiat to use for the conversion form coin to fiat in Telegram. 
-The valid value are: "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
+`fiat_display_currency` set the base currency to use for the conversion from coin to fiat in Telegram.
+The valid values are: "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
+In addition to central bank currencies, a range of cryto currencies are supported.
+The valid values are: "BTC", "ETH", "XRP", "LTC", "BCH", "USDT".
 
 ## Switch to dry-run mode
 We recommend starting the bot in dry-run mode to see how your bot will
@@ -110,9 +119,10 @@ creating trades.
 
 ### To switch your bot in Dry-run mode:
 1. Edit your `config.json`  file
-2. Switch dry-run to true
+2. Switch dry-run to true and specify db_url for a persistent db
 ```json
 "dry_run": true,
+"db_url": "sqlite///tradesv3.dryrun.sqlite",
 ```
 
 3. Remove your Exchange API key (change them by fake api credentials)
@@ -136,7 +146,7 @@ you run it in production mode.
 ### To switch your bot in production mode:
 1. Edit your `config.json`  file
 
-2. Switch dry-run to false
+2. Switch dry-run to false and don't forget to adapt your database URL if set
 ```json
 "dry_run": false,
 ```
@@ -148,12 +158,11 @@ you run it in production mode.
         "key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         ...
-}       
+}
 ```
 If you have not your Bittrex API key yet, 
-[see our tutorial](https://github.com/gcarq/freqtrade/blob/develop/docs/pre-requisite.md).
-
+[see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
 
 ## Next step
 Now you have configured your config.json, the next step is to 
-[start your bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md).
+[start your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md).

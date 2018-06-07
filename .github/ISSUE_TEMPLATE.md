@@ -1,6 +1,6 @@
 ## Step 1: Have you search for this issue before posting it?
 
-If you have discovered a bug in the bot, please [search our issue tracker](https://github.com/gcarq/freqtrade/issues?q=is%3Aissue). 
+If you have discovered a bug in the bot, please [search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue). 
 If it hasn't been reported, please create a new issue.
 
 ## Step 2: Describe your environment

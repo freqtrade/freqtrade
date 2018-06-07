@@ -11,6 +11,7 @@ from freqtrade.misc import file_dump_json
 from freqtrade.optimize.__init__ import make_testdata_path, download_pairs, \
     download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, \
     load_cached_data_for_updating
+from freqtrade.arguments import TimeRange
 from freqtrade.tests.conftest import log_has
 
 # Change this if modifying UNITTEST/BTC testdatafile
@@ -176,7 +177,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # timeframe starts earlier than the cached data
     # should fully update data
-    timerange = (('date', None), test_data[0][0] / 1000 - 1, None)
+    timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
                                                    timerange)
@@ -187,13 +188,13 @@ def test_load_cached_data_for_updating(mocker) -> None:
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 120
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
-                                                   ((None, 'line'), None, -num_lines))
+                                                   TimeRange(None, 'line', 0, -num_lines))
     assert data == []
     assert start_ts < test_data[0][0] - 1
 
     # timeframe starts in the center of the cached data
     # should return the chached data w/o the last item
-    timerange = (('date', None), test_data[0][0] / 1000 + 1, None)
+    timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
                                                    timerange)
@@ -202,7 +203,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # same with 'line' timeframe
     num_lines = (test_data[-1][0] - test_data[1][0]) / 1000 / 60 + 30
-    timerange = ((None, 'line'), None, -num_lines)
+    timerange = TimeRange(None, 'line', 0, -num_lines)
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
                                                    timerange)
@@ -211,7 +212,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # timeframe starts after the chached data
     # should return the chached data w/o the last item
-    timerange = (('date', None), test_data[-1][0] / 1000 + 1, None)
+    timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 1, 0)
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
                                                    timerange)
@@ -220,7 +221,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # same with 'line' timeframe
     num_lines = 30
-    timerange = ((None, 'line'), None, -num_lines)
+    timerange = TimeRange(None, 'line', 0, -num_lines)
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
                                                    timerange)
@@ -230,7 +231,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # no timeframe is set
     # should return the chached data w/o the last item
     num_lines = 30
-    timerange = ((None, 'line'), None, -num_lines)
+    timerange = TimeRange(None, 'line', 0, -num_lines)
     data, start_ts = load_cached_data_for_updating(test_filename,
                                                    '1m',
                                                    timerange)
@@ -239,7 +240,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # no datafile exist
     # should return timestamp start time
-    timerange = (('date', None), now_ts - 10000, None)
+    timerange = TimeRange('date', None, now_ts - 10000, 0)
     data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
                                                    '1m',
                                                    timerange)
@@ -248,7 +249,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # same with 'line' timeframe
     num_lines = 30
-    timerange = ((None, 'line'), None, -num_lines)
+    timerange = TimeRange(None, 'line', 0, -num_lines)
     data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
                                                    '1m',
                                                    timerange)
@@ -343,7 +344,7 @@ def test_trim_tickerlist() -> None:
 
     # Test the pattern ^(-\d+)$
     # This pattern uses the latest N elements
-    timerange = ((None, 'line'), None, -5)
+    timerange = TimeRange(None, 'line', 0, -5)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -353,7 +354,7 @@ def test_trim_tickerlist() -> None:
 
     # Test the pattern ^(\d+)-$
     # This pattern keep X element from the end
-    timerange = (('line', None), 5, None)
+    timerange = TimeRange('line', None, 5, 0)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -363,7 +364,7 @@ def test_trim_tickerlist() -> None:
 
     # Test the pattern ^(\d+)-(\d+)$
     # This pattern extract a window
-    timerange = (('index', 'index'), 5, 10)
+    timerange = TimeRange('index', 'index', 5, 10)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -374,7 +375,7 @@ def test_trim_tickerlist() -> None:
 
     # Test the pattern ^(\d{8})-(\d{8})$
     # This pattern extract a window between the dates
-    timerange = (('date', 'date'), ticker_list[5][0] / 1000, ticker_list[10][0] / 1000 - 1)
+    timerange = TimeRange('date', 'date', ticker_list[5][0] / 1000, ticker_list[10][0] / 1000 - 1)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -385,7 +386,7 @@ def test_trim_tickerlist() -> None:
 
     # Test the pattern ^-(\d{8})$
     # This pattern extracts elements from the start to the date
-    timerange = ((None, 'date'), None, ticker_list[10][0] / 1000 - 1)
+    timerange = TimeRange(None, 'date', 0, ticker_list[10][0] / 1000 - 1)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -395,7 +396,7 @@ def test_trim_tickerlist() -> None:
 
     # Test the pattern ^(\d{8})-$
     # This pattern extracts elements from the date to now
-    timerange = (('date', None), ticker_list[10][0] / 1000 - 1, None)
+    timerange = TimeRange('date', None, ticker_list[10][0] / 1000 - 1, None)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 
@@ -405,7 +406,7 @@ def test_trim_tickerlist() -> None:
 
     # Test a wrong pattern
     # This pattern must return the list unchanged
-    timerange = ((None, None), None, 5)
+    timerange = TimeRange(None, None, None, 5)
     ticker = trim_tickerlist(ticker_list, timerange)
     ticker_len = len(ticker)
 

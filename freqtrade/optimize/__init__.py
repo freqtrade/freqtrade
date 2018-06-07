@@ -9,39 +9,40 @@ import arrow
 
 from freqtrade import misc, constants
 from freqtrade.exchange import get_ticker_history
+from freqtrade.arguments import TimeRange
 
 from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 logger = logging.getLogger(__name__)
 
 
-def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -> List[Dict]:
+def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     if not tickerlist:
         return tickerlist
-
-    stype, start, stop = timerange
 
     start_index = 0
     stop_index = len(tickerlist)
 
-    if stype[0] == 'line':
-        stop_index = start
-    if stype[0] == 'index':
-        start_index = start
-    elif stype[0] == 'date':
-        while start_index < len(tickerlist) and tickerlist[start_index][0] < start * 1000:
+    if timerange.starttype == 'line':
+        stop_index = timerange.startts
+    if timerange.starttype == 'index':
+        start_index = timerange.startts
+    elif timerange.starttype == 'date':
+        while (start_index < len(tickerlist) and
+               tickerlist[start_index][0] < timerange.startts * 1000):
             start_index += 1
 
-    if stype[1] == 'line':
-        start_index = len(tickerlist) + stop
-    if stype[1] == 'index':
-        stop_index = stop
-    elif stype[1] == 'date':
-        while stop_index > 0 and tickerlist[stop_index-1][0] > stop * 1000:
+    if timerange.stoptype == 'line':
+        start_index = len(tickerlist) + timerange.stopts
+    if timerange.stoptype == 'index':
+        stop_index = timerange.stopts
+    elif timerange.stoptype == 'date':
+        while (stop_index > 0 and
+               tickerlist[stop_index-1][0] > timerange.stopts * 1000):
             stop_index -= 1
 
     if start_index > stop_index:
-        raise ValueError(f'The timerange [{start},{stop}] is incorrect')
+        raise ValueError(f'The timerange [{timerange.startts},{timerange.stopts}] is incorrect')
 
     return tickerlist[start_index:stop_index]
 
@@ -49,7 +50,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
 def load_tickerdata_file(
         datadir: str, pair: str,
         ticker_interval: str,
-        timerange: Optional[Tuple[Tuple, int, int]] = None) -> Optional[List[Dict]]:
+        timerange: Optional[TimeRange] = None) -> Optional[List[Dict]]:
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
@@ -84,7 +85,7 @@ def load_data(datadir: str,
               ticker_interval: str,
               pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False,
-              timerange: Optional[Tuple[Tuple, int, int]] = None) -> Dict[str, List]:
+              timerange: TimeRange = TimeRange()) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :return: dict
@@ -124,7 +125,7 @@ def make_testdata_path(datadir: str) -> str:
 
 def download_pairs(datadir, pairs: List[str],
                    ticker_interval: str,
-                   timerange: Optional[Tuple[Tuple, int, int]] = None) -> bool:
+                   timerange: TimeRange = TimeRange()) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
@@ -144,7 +145,7 @@ def download_pairs(datadir, pairs: List[str],
 
 def load_cached_data_for_updating(filename: str,
                                   tick_interval: str,
-                                  timerange: Optional[Tuple[Tuple, int, int]]) -> Tuple[
+                                  timerange: Optional[TimeRange]) -> Tuple[
                                                                                   List[Any],
                                                                                   Optional[int]]:
     """
@@ -155,10 +156,10 @@ def load_cached_data_for_updating(filename: str,
 
     # user sets timerange, so find the start time
     if timerange:
-        if timerange[0][0] == 'date':
-            since_ms = timerange[1] * 1000
-        elif timerange[0][1] == 'line':
-            num_minutes = timerange[2] * constants.TICKER_INTERVAL_MINUTES[tick_interval]
+        if timerange.starttype == 'date':
+            since_ms = timerange.startts * 1000
+        elif timerange.stoptype == 'line':
+            num_minutes = timerange.stopts * constants.TICKER_INTERVAL_MINUTES[tick_interval]
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
@@ -188,7 +189,7 @@ def load_cached_data_for_updating(filename: str,
 def download_backtesting_testdata(datadir: str,
                                   pair: str,
                                   tick_interval: str = '5m',
-                                  timerange: Optional[Tuple[Tuple, int, int]] = None) -> None:
+                                  timerange: Optional[TimeRange] = None) -> None:
 
     """
     Download the latest ticker intervals from the exchange for the pairs passed in parameters

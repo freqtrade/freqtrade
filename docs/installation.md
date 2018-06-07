@@ -2,7 +2,7 @@
 
 This page explains how to prepare your environment for running the bot.
 
-To understand how to set up the bot please read the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page.
+To understand how to set up the bot please read the [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md) page.
 
 ## Table of Contents
 
@@ -69,7 +69,7 @@ Once you have Docker installed, simply create the config file (e.g. `config.json
 #### 1.1. Clone the git repository
 
 ```bash
-git clone https://github.com/gcarq/freqtrade.git
+git clone https://github.com/freqtrade/freqtrade.git
 ```
 
 #### 1.2. (Optional) Checkout the develop branch
@@ -90,7 +90,7 @@ cd freqtrade
 cp -n config.json.example config.json
 ```
 
-> To edit the config please refer to the [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md) page.
+> To edit the config please refer to the [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md) page.
 
 #### 1.5. Create your database file *(optional - the bot will create it if it is missing)*
 
@@ -162,10 +162,10 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -v ~/.freqtrade/config.json:/freqtrade/config.json \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
-  freqtrade
+  freqtrade --db-url sqlite:///tradesv3.sqlite
 ```
-
-If you are using `dry_run=True` it's not necessary to mount `tradesv3.sqlite`, but you can mount `tradesv3.dryrun.sqlite` if you plan to use the dry run mode with the param `--dry-run-db`.
+NOTE: db-url defaults to `sqlite:///tradesv3.sqlite` but it defaults to `sqlite://` if `dry_run=True` is being used.
+To override this behaviour use a custom db-url value: i.e.: `--db-url sqlite:///tradesv3.dryrun.sqlite`
 
 ### 6. Monitor your Docker instance
 
@@ -237,7 +237,7 @@ sudo apt-get install mongodb-org
 Clone the git repository:
 
 ```bash
-git clone https://github.com/gcarq/freqtrade.git
+git clone https://github.com/freqtrade/freqtrade.git
 ```
 
 Optionally checkout the develop branch:
@@ -287,7 +287,7 @@ export PATH=<path_freqtrade>/env/mongodb/bin:$PATH
 Clone the git repository:
 
 ```bash
-git clone https://github.com/gcarq/freqtrade.git
+git clone https://github.com/freqtrade/freqtrade.git
 ```
 
 Optionally checkout the develop branch:
@@ -306,7 +306,7 @@ cd freqtrade
 cp config.json.example config.json
 ```
 
-> *To edit the config please refer to [Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md).*
+> *To edit the config please refer to [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md).*
 
 
 #### 2. Setup your Python virtual environment (virtualenv)
@@ -350,8 +350,8 @@ copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 >python main.py
 ```
 
-> Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/gcarq/freqtrade/issues/222)
+> Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/freqtrade/freqtrade/issues/222)
 
 
 Now you have an environment ready, the next step is
-[Bot Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)...
+[Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md)...

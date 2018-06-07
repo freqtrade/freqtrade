@@ -2,14 +2,26 @@
 This module contains the argument manager class
 """
 
+import os
 import argparse
 import logging
-import os
 import re
 import arrow
-from typing import List, Tuple, Optional
+from typing import List, Optional, NamedTuple
 
 from freqtrade import __version__, constants
+
+
+class TimeRange(NamedTuple):
+    """
+    NamedTuple Defining timerange inputs.
+    [start/stop]type defines if [start/stop]ts shall be used.
+    if *type is none, don't use corresponding startvalue.
+    """
+    starttype: Optional[str] = None
+    stoptype: Optional[str] = None
+    startts: int = 0
+    stopts: int = 0
 
 
 class Arguments(object):
@@ -72,9 +84,9 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '-d', '--datadir',
-            help='path to backtest data (default: %(default)s',
+            help='path to backtest data',
             dest='datadir',
-            default=os.path.join('freqtrade', 'tests', 'testdata'),
+            default=None,
             type=str,
             metavar='PATH',
         )
@@ -95,8 +107,8 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '--dynamic-whitelist',
-            help='dynamically generate and update whitelist \
-                                  based on 24h BaseVolume (Default 20 currencies)',  # noqa
+            help='dynamically generate and update whitelist'
+                 ' based on 24h BaseVolume (default: %(const)s)',
             dest='dynamic_whitelist',
             const=constants.DYNAMIC_WHITELIST,
             type=int,
@@ -104,11 +116,13 @@ class Arguments(object):
             nargs='?',
         )
         self.parser.add_argument(
-            '--dry-run-db',
-            help='Force dry run to use a local DB "tradesv3.dry_run.sqlite" \
-                                  instead of memory DB. Work only if dry_run is enabled.',
-            action='store_true',
-            dest='dry_run_db',
+            '--db-url',
+            help='Override trades database URL, this is useful if dry_run is enabled'
+                 ' or in custom deployments (default: %(default)s)',
+            dest='db_url',
+            default=constants.DEFAULT_DB_PROD_URL,
+            type=str,
+            metavar='PATH',
         )
 
     @staticmethod
@@ -124,8 +138,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '-r', '--refresh-pairs-cached',
-            help='refresh the pairs files in tests/testdata with the latest data from the exchange. \
-                  Use it if you want to run your backtesting with up-to-date data.',
+            help='refresh the pairs files in tests/testdata with the latest data from the '
+                 'exchange. Use it if you want to run your backtesting with up-to-date data.',
             action='store_true',
             dest='refresh_pairs',
         )
@@ -136,6 +150,17 @@ class Arguments(object):
             type=str,
             default=None,
             dest='export',
+        )
+        parser.add_argument(
+            '--export-filename',
+            help='Save backtest results to this filename \
+                  requires --export to be set as well\
+                  Example --export-filename=user_data/backtest_data/backtest_today.json\
+                  (default: %(default)s)',
+            type=str,
+            default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
+            dest='exportfilename',
+            metavar='PATH',
         )
 
     @staticmethod
@@ -211,15 +236,14 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
     @staticmethod
-    def parse_timerange(text: Optional[str]) -> Optional[Tuple[Tuple,
-                                                         Optional[int], Optional[int]]]:
+    def parse_timerange(text: Optional[str]) -> TimeRange:
         """
         Parse the value of the argument --timerange to determine what is the range desired
         :param text: value from --timerange
         :return: Start and End range period
         """
         if text is None:
-            return None
+            return TimeRange()
         syntax = [(r'^-(\d{8})$', (None, 'date')),
                   (r'^(\d{8})-$', ('date', None)),
                   (r'^(\d{8})-(\d{8})$', ('date', 'date')),
@@ -235,8 +259,8 @@ class Arguments(object):
             if match:  # Regex has matched
                 rvals = match.groups()
                 index = 0
-                start: Optional[int] = None
-                stop: Optional[int] = None
+                start: int = 0
+                stop: int = 0
                 if stype[0]:
                     starts = rvals[index]
                     if stype[0] == 'date' and len(starts) == 8:
@@ -250,7 +274,7 @@ class Arguments(object):
                         stop = arrow.get(stops, 'YYYYMMDD').timestamp
                     else:
                         stop = int(stops)
-                return stype, start, stop
+                return TimeRange(stype[0], stype[1], start, stop)
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
     def scripts_options(self) -> None:
@@ -261,13 +285,6 @@ class Arguments(object):
             '-p', '--pair',
             help='Show profits for only this pairs. Pairs are comma-separated.',
             dest='pair',
-            default=None
-        )
-
-        self.parser.add_argument(
-            '-db', '--db-url',
-            help='Show trades stored in database.',
-            dest='db_url',
             default=None
         )
 
@@ -297,7 +314,18 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--exchange',
-            help='Exchange name',
+            help='Exchange name (default: %(default)s)',
             dest='exchange',
             type=str,
             default='bittrex')
+
+        self.parser.add_argument(
+            '-t', '--timeframes',
+            help='Specify which tickers to download. Space separated list. \
+                  Default: %(default)s',
+            choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
+                     '6h', '8h', '12h', '1d', '3d', '1w'],
+            default=['1m', '5m'],
+            nargs='+',
+            dest='timeframes',
+        )

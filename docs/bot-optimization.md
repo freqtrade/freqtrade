@@ -49,7 +49,7 @@ If you want to use a strategy from a different folder you can pass `--strategy-p
 python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
 ```
 
-**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
 file as reference.**
 
 ### Buy strategy 
@@ -138,15 +138,15 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
 ```
 
 **Want more indicators example?**  
-Look into the [user_data/strategies/test_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py).  
+Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).  
 Then uncomment indicators you need.
 
 
 ### Where is the default strategy?
 The default buy strategy is located in the file 
-[freqtrade/default_strategy.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/strategy/default_strategy.py). 
+[freqtrade/default_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/strategy/default_strategy.py). 
 
 
 ## Next step
 Now you have a perfect strategy you probably want to backtesting it. 
-Your next step is to learn [How to use the Backtesting](https://github.com/gcarq/freqtrade/blob/develop/docs/backtesting.md).
+Your next step is to learn [How to use the Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md).

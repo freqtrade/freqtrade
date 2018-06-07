@@ -18,6 +18,8 @@ _API: ccxt.Exchange = None
 _CONF: Dict = {}
 API_RETRY_COUNT = 4
 
+_CACHED_TICKER: Dict[str, Any] = {}
+
 # Holds all open sell orders for dry_run
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
@@ -264,17 +266,29 @@ def get_tickers() -> Dict:
         raise OperationalException(e)
 
 
-# TODO: remove refresh argument, keeping it to keep track of where it was intended to be used
 @retrier
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
-    try:
-        return _API.fetch_ticker(pair)
-    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-        raise TemporaryError(
-            'Could not load ticker history due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
-    except ccxt.BaseError as e:
-        raise OperationalException(e)
+    global _CACHED_TICKER
+    if refresh or pair not in _CACHED_TICKER.keys():
+        try:
+            data = _API.fetch_ticker(pair)
+            try:
+                _CACHED_TICKER[pair] = {
+                    'bid': float(data['bid']),
+                    'ask': float(data['ask']),
+                }
+            except KeyError as e:
+                logger.debug("Could not cache ticker data for %s", pair)
+            return data
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                'Could not load ticker history due to {}. Message: {}'.format(
+                    e.__class__.__name__, e))
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
+    else:
+        logger.info("returning cached ticker-data for %s", pair)
+        return _CACHED_TICKER[pair]
 
 
 @retrier

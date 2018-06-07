@@ -1,9 +1,11 @@
 # pragma pylint: disable=missing-docstring, C0103
-import os
+from copy import deepcopy
+from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
 
+from freqtrade import constants, OperationalException
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
@@ -21,77 +23,54 @@ def test_init_create_session(default_conf, mocker):
     assert 'Session' in type(Trade.session).__name__
 
 
-def test_init_dry_run_db(default_conf, mocker):
-    default_conf.update({'dry_run_db': True})
-    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+def test_init_custom_db_url(default_conf, mocker):
+    conf = deepcopy(default_conf)
 
-    # First, protect the existing 'tradesv3.dry_run.sqlite' (Do not delete user data)
-    dry_run_db = 'tradesv3.dry_run.sqlite'
-    dry_run_db_swp = dry_run_db + '.swp'
+    # Update path to a value other than default, but still in-memory
+    conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
+    create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
+    mocker.patch.dict('freqtrade.persistence._CONF', conf)
 
-    if os.path.isfile(dry_run_db):
-        os.rename(dry_run_db, dry_run_db_swp)
-
-    # Check if the new tradesv3.dry_run.sqlite was created
-    init(default_conf)
-    assert os.path.isfile(dry_run_db) is True
-
-    # Delete the file made for this unitest and rollback to the previous
-    # tradesv3.dry_run.sqlite file
-
-    # 1. Delete file from the test
-    if os.path.isfile(dry_run_db):
-        os.remove(dry_run_db)
-
-    # 2. Rollback to the initial file
-    if os.path.isfile(dry_run_db_swp):
-        os.rename(dry_run_db_swp, dry_run_db)
+    init(conf)
+    assert create_engine_mock.call_count == 1
+    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tmp/freqtrade2_test.sqlite'
 
 
-def test_init_dry_run_without_db(default_conf, mocker):
-    default_conf.update({'dry_run_db': False})
-    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+def test_init_invalid_db_url(default_conf, mocker):
+    conf = deepcopy(default_conf)
 
-    # First, protect the existing 'tradesv3.dry_run.sqlite' (Do not delete user data)
-    dry_run_db = 'tradesv3.dry_run.sqlite'
-    dry_run_db_swp = dry_run_db + '.swp'
+    # Update path to a value other than default, but still in-memory
+    conf.update({'db_url': 'unknown:///some.url'})
+    mocker.patch.dict('freqtrade.persistence._CONF', conf)
 
-    if os.path.isfile(dry_run_db):
-        os.rename(dry_run_db, dry_run_db_swp)
-
-    # Check if the new tradesv3.dry_run.sqlite was created
-    init(default_conf)
-    assert os.path.isfile(dry_run_db) is False
-
-    # Rollback to the initial 'tradesv3.dry_run.sqlite' file
-    if os.path.isfile(dry_run_db_swp):
-        os.rename(dry_run_db_swp, dry_run_db)
+    with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
+        init(conf)
 
 
 def test_init_prod_db(default_conf, mocker):
-    default_conf.update({'dry_run': False})
-    mocker.patch.dict('freqtrade.persistence._CONF', default_conf)
+    conf = deepcopy(default_conf)
+    conf.update({'dry_run': False})
+    conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})
 
-    # First, protect the existing 'tradesv3.sqlite' (Do not delete user data)
-    prod_db = 'tradesv3.sqlite'
-    prod_db_swp = prod_db + '.swp'
+    create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
+    mocker.patch.dict('freqtrade.persistence._CONF', conf)
 
-    if os.path.isfile(prod_db):
-        os.rename(prod_db, prod_db_swp)
+    init(conf)
+    assert create_engine_mock.call_count == 1
+    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
 
-    # Check if the new tradesv3.sqlite was created
-    init(default_conf)
-    assert os.path.isfile(prod_db) is True
 
-    # Delete the file made for this unitest and rollback to the previous tradesv3.sqlite file
+def test_init_dryrun_db(default_conf, mocker):
+    conf = deepcopy(default_conf)
+    conf.update({'dry_run': True})
+    conf.update({'db_url': constants.DEFAULT_DB_DRYRUN_URL})
 
-    # 1. Delete file from the test
-    if os.path.isfile(prod_db):
-        os.remove(prod_db)
+    create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
+    mocker.patch.dict('freqtrade.persistence._CONF', conf)
 
-    # Rollback to the initial 'tradesv3.sqlite' file
-    if os.path.isfile(prod_db_swp):
-        os.rename(prod_db_swp, prod_db)
+    init(conf)
+    assert create_engine_mock.call_count == 1
+    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite://'
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -328,7 +307,7 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
 
 
 def test_clean_dry_run_db(default_conf, fee):
-    init(default_conf, create_engine('sqlite://'))
+    init(default_conf)
 
     # Simulate dry_run entries
     trade = Trade(
@@ -377,7 +356,7 @@ def test_clean_dry_run_db(default_conf, fee):
     assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 1
 
 
-def test_migrate_old(default_conf, fee):
+def test_migrate_old(mocker, default_conf, fee):
     """
     Test Database migration(starting with old pairformat)
     """
@@ -409,11 +388,13 @@ def test_migrate_old(default_conf, fee):
                                      amount=amount
                                      )
     engine = create_engine('sqlite://')
+    mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
+
     # Create table using the old format
     engine.execute(create_table_old)
     engine.execute(insert_table_old)
     # Run init to test migration
-    init(default_conf, engine)
+    init(default_conf)
 
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()
@@ -428,7 +409,7 @@ def test_migrate_old(default_conf, fee):
     assert trade.exchange == "bittrex"
 
 
-def test_migrate_new(default_conf, fee):
+def test_migrate_new(mocker, default_conf, fee):
     """
     Test Database migration (starting with new pairformat)
     """
@@ -460,11 +441,13 @@ def test_migrate_new(default_conf, fee):
                                      amount=amount
                                      )
     engine = create_engine('sqlite://')
+    mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
+
     # Create table using the old format
     engine.execute(create_table_old)
     engine.execute(insert_table_old)
     # Run init to test migration
-    init(default_conf, engine)
+    init(default_conf)
 
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()

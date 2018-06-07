@@ -14,7 +14,7 @@ from arrow import Arrow
 
 from freqtrade import optimize, constants, DependencyException
 from freqtrade.analyze import Analyze
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
 from freqtrade.tests.conftest import log_has
 
@@ -31,7 +31,7 @@ def trim_dictlist(dict_list, num):
 
 
 def load_data_test(what):
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -101)
     data = optimize.load_data(None, ticker_interval='1m',
                               pairs=['UNITTEST/BTC'], timerange=timerange)
     pair = data['UNITTEST/BTC']
@@ -111,14 +111,14 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
 # use for mock freqtrade.exchange.get_ticker_history'
 def _load_pair_as_ticks(pair, tickfreq):
     ticks = optimize.load_data(None, ticker_interval=tickfreq, pairs=[pair])
-    ticks = trim_dictlist(ticks, -200)
+    ticks = trim_dictlist(ticks, -201)
     return ticks[pair]
 
 
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = optimize.load_data(None, ticker_interval='8m', pairs=[pair])
-    data = trim_dictlist(data, -200)
+    data = trim_dictlist(data, -201)
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
     backtesting = Backtesting(conf)
     return {
@@ -219,7 +219,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--realistic-simulation',
         '--refresh-pairs-cached',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', '/bar/foo',
+        '--export-filename', 'foo_bar.json'
     ]
 
     config = setup_configuration(get_args(args))
@@ -258,6 +259,11 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'export' in config
     assert log_has(
         'Parameter --export detected: {} ...'.format(config['export']),
+        caplog.record_tuples
+    )
+    assert 'exportfilename' in config
+    assert log_has(
+        'Storing backtest results to {} ...'.format(config['exportfilename']),
         caplog.record_tuples
     )
 
@@ -328,7 +334,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     Test Backtesting.tickerdata_to_dataframe() method
     """
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -100)
     tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
 

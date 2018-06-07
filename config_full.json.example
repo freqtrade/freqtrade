@@ -45,6 +45,7 @@
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"
     },
+    "db_url": "sqlite:///tradesv3.sqlite",
     "initial_state": "running",
     "internals": {
         "process_throttle_secs": 5
