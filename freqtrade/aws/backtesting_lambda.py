@@ -220,7 +220,7 @@ def _store_aggregated_data(interval, name, result, timerange, user):
             # range: timerange
             # allows us to easily see on which time range the strategy works best
             data['id'] = "aggregate:timerange:{}:{}:{}:{}:test".format(user, name, row[0].upper(), interval),
-            data['trade'] = "{}".format(timerange)
+            data['trade'] = "{}d".format(timerange)
             submit_data.append(data.copy())
 
     _submit_to_remote(submit_data)
