@@ -97,7 +97,7 @@ class Configuration(object):
                 '(not applicable with Backtesting and Hyperopt)'
             )
 
-        if self.args.db_url and config.get('db_url', None):
+        if self.args.db_url != constants.DEFAULT_DB_PROD_URL:
             config.update({'db_url': self.args.db_url})
             logger.info('Parameter --db-url detected ...')
 
