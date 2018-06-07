@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade import constants
+from freqtrade import constants, OperationalException
 from freqtrade.persistence import Trade, init, clean_dry_run_db
 
 
@@ -27,13 +27,24 @@ def test_init_custom_db_url(default_conf, mocker):
     conf = deepcopy(default_conf)
 
     # Update path to a value other than default, but still in-memory
-    conf.update({'db_url': 'sqlite:////tmp/freqtrade2_test.sqlite'})
+    conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
     create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
     mocker.patch.dict('freqtrade.persistence._CONF', conf)
 
     init(conf)
     assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:////tmp/freqtrade2_test.sqlite'
+    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tmp/freqtrade2_test.sqlite'
+
+
+def test_init_invalid_db_url(default_conf, mocker):
+    conf = deepcopy(default_conf)
+
+    # Update path to a value other than default, but still in-memory
+    conf.update({'db_url': 'unknown:///some.url'})
+    mocker.patch.dict('freqtrade.persistence._CONF', conf)
+
+    with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
+        init(conf)
 
 
 def test_init_prod_db(default_conf, mocker):

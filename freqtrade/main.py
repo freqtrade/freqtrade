@@ -7,6 +7,7 @@ import logging
 import sys
 from typing import List
 
+from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.freqtradebot import FreqtradeBot
@@ -47,6 +48,9 @@ def main(sysargv: List[str]) -> None:
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
+    except OperationalException as e:
+        logger.error(str(e))
+        return_code = 2
     except BaseException:
         logger.exception('Fatal exception!')
     finally:

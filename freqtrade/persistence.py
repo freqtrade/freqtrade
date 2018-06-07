@@ -11,10 +11,13 @@ import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
                         create_engine)
 from sqlalchemy import inspect
+from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+from freqtrade import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,14 @@ def init(config: Dict) -> None:
             'echo': False,
         })
 
-    engine = create_engine(db_url, **kwargs)
+    try:
+        engine = create_engine(db_url, **kwargs)
+    except NoSuchModuleError:
+        error = 'Given value for db_url: \'{}\' is no valid database URL! (See {}).'.format(
+            db_url, 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
+        )
+        raise OperationalException(error)
+
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
     Trade.query = session.query_property()
