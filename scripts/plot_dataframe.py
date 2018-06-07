@@ -29,16 +29,17 @@ import os
 import sys
 from argparse import Namespace
 from typing import Dict, List, Any
-from sqlalchemy import create_engine
+
+import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
-import plotly.graph_objs as go
-from freqtrade.arguments import Arguments
-from freqtrade.analyze import Analyze
-from freqtrade.optimize.backtesting import setup_configuration
-from freqtrade import exchange
+
 import freqtrade.optimize as optimize
+from freqtrade import exchange
 from freqtrade import persistence
+from freqtrade.analyze import Analyze
+from freqtrade.arguments import Arguments
+from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -50,9 +51,10 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     Calls analyze() and plots the returned dataframe
     :return: None
     """
+    global _CONF
 
     # Load the configuration
-    config = setup_configuration(args)
+    _CONF.update(setup_configuration(args))
 
     # Set the pair to audit
     pair = args.pair
@@ -65,14 +67,13 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         logger.critical('--pair format must be XXX/YYY')
         exit()
 
-
     # Set timerange to use
     timerange = Arguments.parse_timerange(args.timerange)
 
     # Load the strategy
     try:
-        analyze = Analyze(config)
-        exchange.init(config)
+        analyze = Analyze(_CONF)
+        exchange.init(_CONF)
     except AttributeError:
         logger.critical(
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
@@ -93,7 +94,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             datadir=args.datadir,
             pairs=[pair],
             ticker_interval=tick_interval,
-            refresh_pairs=config.get('refresh_pairs', False),
+            refresh_pairs=_CONF.get('refresh_pairs', False),
             timerange=timerange
         )
 
@@ -102,10 +103,9 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             exit()
 
     # Get trades already made from the DB
-    trades = []
+    trades: List[Trade] = []
     if args.db_url:
-        engine = create_engine('sqlite:///' + args.db_url)
-        persistence.init(_CONF, engine)
+        persistence.init(_CONF)
         trades = Trade.query.filter(Trade.pair.is_(pair)).all()
 
     dataframes = analyze.tickerdata_to_dataframe(tickers)
