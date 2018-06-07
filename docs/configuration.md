@@ -139,7 +139,7 @@ you run it in production mode.
 ### To switch your bot in production mode:
 1. Edit your `config.json`  file
 
-2. Switch dry-run to false
+2. Switch dry-run to false and don't forget to adapt your database URL if set
 ```json
 "dry_run": false,
 ```
