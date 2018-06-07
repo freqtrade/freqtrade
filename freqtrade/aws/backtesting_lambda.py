@@ -211,7 +211,7 @@ def _store_aggregated_data(interval, name, result, timerange, user):
             # id: aggregate by strategy + user + range + pair
             # range: ticker
             # allows us to easily see on which ticker the strategy works best
-            data['id'] = "aggregate:ticker:{}:{}:{}:{}:test".format(user, name, row[0].upper(), timerange),
+            data['id'] = "aggregate:ticker:{}:{}:{}:{}:test".format(user, name, row[0].upper(), timerange)
             data['trade'] = "{}".format(interval)
 
             submit_data.append(data.copy())
@@ -219,8 +219,8 @@ def _store_aggregated_data(interval, name, result, timerange, user):
             # id: aggregate by strategy + user + ticker + pair
             # range: timerange
             # allows us to easily see on which time range the strategy works best
-            data['id'] = "aggregate:timerange:{}:{}:{}:{}:test".format(user, name, row[0].upper(), interval),
-            data['trade'] = "{}d".format(timerange)
+            data['id'] = "aggregate:timerange:{}:{}:{}:{}:test".format(user, name, row[0].upper(), interval)
+            data['trade'] = "{}".format(timerange)
             submit_data.append(data.copy())
 
     _submit_to_remote(submit_data)
