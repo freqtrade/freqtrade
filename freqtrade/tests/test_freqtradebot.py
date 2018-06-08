@@ -68,7 +68,7 @@ def test_freqtradebot_object() -> None:
     Test the FreqtradeBot object has the mandatory public methods
     """
     assert hasattr(FreqtradeBot, 'worker')
-    assert hasattr(FreqtradeBot, 'clean')
+    assert hasattr(FreqtradeBot, 'cleanup')
     assert hasattr(FreqtradeBot, 'create_trade')
     assert hasattr(FreqtradeBot, 'get_target_bid')
     assert hasattr(FreqtradeBot, 'process_maybe_execute_buy')
@@ -93,7 +93,7 @@ def test_freqtradebot(mocker, default_conf) -> None:
     assert freqtrade.state is State.STOPPED
 
 
-def test_clean(mocker, default_conf, caplog) -> None:
+def test_cleanup(mocker, default_conf, caplog) -> None:
     """
     Test clean() method
     """
@@ -101,11 +101,8 @@ def test_clean(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.persistence.cleanup', mock_cleanup)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    assert freqtrade.state == State.RUNNING
-
-    assert freqtrade.clean()
-    assert freqtrade.state == State.STOPPED
-    assert log_has('Stopping trader and cleaning up modules...', caplog.record_tuples)
+    freqtrade.cleanup()
+    assert log_has('Cleaning up modules ...', caplog.record_tuples)
     assert mock_cleanup.call_count == 1
 
 

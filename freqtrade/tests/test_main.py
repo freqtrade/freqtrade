@@ -70,7 +70,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
         worker=MagicMock(side_effect=Exception),
-        clean=MagicMock(),
+        cleanup=MagicMock(),
     )
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',
@@ -97,7 +97,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
         worker=MagicMock(side_effect=KeyboardInterrupt),
-        clean=MagicMock(),
+        cleanup=MagicMock(),
     )
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',
@@ -124,7 +124,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
         worker=MagicMock(side_effect=OperationalException('Oh snap!')),
-        clean=MagicMock(),
+        cleanup=MagicMock(),
     )
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',

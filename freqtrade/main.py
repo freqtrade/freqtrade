@@ -55,7 +55,8 @@ def main(sysargv: List[str]) -> None:
         logger.exception('Fatal exception!')
     finally:
         if freqtrade:
-            freqtrade.clean()
+            freqtrade.rpc.send_msg('*Status:* `Stopping trader...`')
+            freqtrade.cleanup()
         sys.exit(return_code)
 
 
