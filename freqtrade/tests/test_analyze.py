@@ -46,7 +46,7 @@ def test_analyze_object() -> None:
 
 def test_dataframe_correct_length(result):
     dataframe = Analyze.parse_ticker_dataframe(result)
-    assert len(result.index) == len(dataframe.index)
+    assert len(result.index) - 1 == len(dataframe.index)    # last partial candle removed
 
 
 def test_dataframe_correct_columns(result):
@@ -188,4 +188,4 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 100
+    assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed

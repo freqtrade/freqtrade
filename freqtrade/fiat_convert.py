@@ -192,6 +192,7 @@ class CryptoToFiatConverter(object):
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
             logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
             return 0.0
+
         try:
             return float(
                 self._coinmarketcap.ticker(
