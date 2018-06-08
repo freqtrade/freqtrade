@@ -1564,5 +1564,5 @@ def test_get_real_amount_open_trade(default_conf, mocker):
         'amount': amount,
         'status': 'open',
     }
-    freqtrade = FreqtradeBot(default_conf, create_engine('sqlite://'))
+    freqtrade = FreqtradeBot(default_conf)
     assert freqtrade.get_real_amount(trade, order) == amount
