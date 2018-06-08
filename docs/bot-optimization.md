@@ -165,7 +165,9 @@ To get additional Ideas for strategies, head over to our [strategy repository](h
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
+We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) which is a great place to get and/or share ideas.
+
 ## Next step
 
-Now you have a perfect strategy you probably want to backtesting it.
+Now you have a perfect strategy you probably want to backtest it.
 Your next step is to learn [How to use the Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md).
