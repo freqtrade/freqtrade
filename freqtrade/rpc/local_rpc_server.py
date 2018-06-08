@@ -50,7 +50,7 @@ class LocalRPCControls(object):
 
 class LocalRPCSuperWrap(RPC):
     """
-    Telegram, this class send messages to Telegram
+    Class to start thread with ZeroRPC running
     """
     def __init__(self, freqtrade) -> None:
         """
