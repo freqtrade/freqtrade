@@ -22,6 +22,7 @@ def store(event, context):
 
                 for x in data:
                     print("storing data: {}".format(x))
+                    x['ttl'] = (datetime.datetime.today() + datetime.timedelta(days=1)).timestamp()
                     sleep(0.5)  # throttle to not overwhelm the DB, lambda is cheaper than dynamo
                     get_trade_table().put_item(Item=x)
 
@@ -36,7 +37,6 @@ def submit(event, context):
 
     print(event)
     data = json.loads(event['body'])
-    data['ttl'] = (datetime.datetime.today() + datetime.timedelta(days=1)).timestamp()
     client = boto3.client('sns')
     topic_arn = client.create_topic(Name=os.environ['tradeTopic'])['TopicArn']
 
