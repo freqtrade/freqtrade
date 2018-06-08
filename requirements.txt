@@ -25,4 +25,4 @@ coinmarketcap==5.0.3
 #plotly==2.3.0
 
 #Added for localRCP
-zerorpc==
+zerorpc==0.6.1
