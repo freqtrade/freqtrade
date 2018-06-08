@@ -453,8 +453,10 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
-                # FIXME: Somehow the query above returns results where the open_order_id is in fact None.
-                # This is probably because the record got updated via /forcesell in a different thread.
+                # FIXME: Somehow the query above returns results
+                # where the open_order_id is in fact None.
+                # This is probably because the record got
+                # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
                 order = exchange.get_order(trade.open_order_id, trade.pair)
