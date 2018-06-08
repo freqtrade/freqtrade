@@ -26,9 +26,7 @@ def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Call
     :return: decorated function
     """
     def wrapper(self, *args, **kwargs):
-        """
-        Decorator logic
-        """
+        """ Decorator logic """
         update = kwargs.get('update') or args[1]
 
         # Reject unauthorized messages
@@ -55,9 +53,7 @@ def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Call
 
 
 class Telegram(RPC):
-    """
-    Telegram, this class send messages to Telegram
-    """
+    """  This class handles all telegram communication """
 
     @property
     def name(self) -> str:
@@ -241,9 +237,7 @@ class Telegram(RPC):
 
     @authorized_only
     def _balance(self, bot: Bot, update: Update) -> None:
-        """
-        Handler for /balance
-        """
+        """ Handler for /balance """
         try:
             currencys, total, symbol, value = \
                 self._rpc_balance(self._config['fiat_display_currency'])

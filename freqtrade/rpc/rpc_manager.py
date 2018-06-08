@@ -25,8 +25,9 @@ class RPCManager(object):
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
+        logger.info('Cleaning up rpc modules ...')
         for mod in self.registered_modules:
-            logger.info('Cleaning up rpc.%s ...', mod.name)
+            logger.debug('Cleaning up rpc.%s ...', mod.name)
             mod.cleanup()
 
         self.registered_modules = []

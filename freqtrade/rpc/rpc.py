@@ -21,6 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 class RPCException(Exception):
+    """
+    Should be raised with a rpc-formatted message in an _rpc_* method
+    if the required state is wrong, i.e.:
+
+    raise RPCException('*Status:* `no active trade`')
+    """
     pass
 
 
