@@ -89,3 +89,4 @@ target/
 .vscode
 
 .pytest_cache/
+.mypy_cache/
