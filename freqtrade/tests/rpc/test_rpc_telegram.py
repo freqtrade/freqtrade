@@ -32,6 +32,9 @@ class DummyCls(Telegram):
         super().__init__(freqtrade)
         self.state = {'called': False}
 
+    def _init(self):
+        pass
+
     @authorized_only
     def dummy_handler(self, *args, **kwargs) -> None:
         """
@@ -78,21 +81,6 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert log_has(message_str, caplog.record_tuples)
 
 
-def test_init_disabled(default_conf, mocker, caplog) -> None:
-    """
-    Test _init() method when Telegram is disabled
-    """
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    Telegram(get_patched_freqtradebot(mocker, conf))
-
-    message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
-                  "['balance'], ['start'], ['stop'], ['forcesell'], ['performance'], ['daily'], " \
-                  "['count'], ['help'], ['version']]"
-
-    assert not log_has(message_str, caplog.record_tuples)
-
-
 def test_cleanup(default_conf, mocker) -> None:
     """
     Test cleanup() method
@@ -101,42 +89,9 @@ def test_cleanup(default_conf, mocker) -> None:
     updater_mock.stop = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', updater_mock)
 
-    # not enabled
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    telegram = Telegram(get_patched_freqtradebot(mocker, conf))
-    telegram.cleanup()
-    assert telegram._updater is None
-    assert updater_mock.call_count == 0
-    assert not hasattr(telegram._updater, 'stop')
-    assert updater_mock.stop.call_count == 0
-
-    # enabled
-    conf['telegram']['enabled'] = True
-    telegram = Telegram(get_patched_freqtradebot(mocker, conf))
+    telegram = Telegram(get_patched_freqtradebot(mocker, default_conf))
     telegram.cleanup()
     assert telegram._updater.stop.call_count == 1
-
-
-def test_is_enabled(default_conf, mocker) -> None:
-    """
-    Test is_enabled() method
-    """
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
-
-    telegram = Telegram(get_patched_freqtradebot(mocker, default_conf))
-    assert telegram.is_enabled()
-
-
-def test_is_not_enabled(default_conf, mocker) -> None:
-    """
-    Test is_enabled() method
-    """
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    telegram = Telegram(get_patched_freqtradebot(mocker, conf))
-
-    assert not telegram.is_enabled()
 
 
 def test_authorized_only(default_conf, mocker, caplog) -> None:
@@ -1086,11 +1041,6 @@ def test_send_msg(default_conf, mocker) -> None:
     bot = MagicMock()
     freqtradebot = FreqtradeBot(conf)
     telegram = Telegram(freqtradebot)
-
-    telegram._config['telegram']['enabled'] = False
-    telegram._send_msg('test', bot)
-    assert not bot.method_calls
-    bot.reset_mock()
 
     telegram._config['telegram']['enabled'] = True
     telegram._send_msg('test', bot)

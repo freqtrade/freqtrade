@@ -80,12 +80,7 @@ class Telegram(RPC):
         Initializes this module with the given config,
         registers all known command handlers
         and starts polling for message updates
-        :param config: config to use
-        :return: None
         """
-        if not self.is_enabled():
-            return
-
         self._updater = Updater(token=self._config['telegram']['token'], workers=0)
 
         # Register command handler and start telegram message polling
@@ -121,20 +116,11 @@ class Telegram(RPC):
         Stops all running telegram threads.
         :return: None
         """
-        if not self.is_enabled():
-            return
-
         self._updater.stop()
 
     def send_msg(self, msg: str) -> None:
         """ Send a message to telegram channel """
         self._send_msg(msg)
-
-    def is_enabled(self) -> bool:
-        """
-        Returns True if the telegram module is activated, False otherwise
-        """
-        return bool(self._config.get('telegram', {}).get('enabled', False))
 
     @authorized_only
     def _status(self, bot: Bot, update: Update) -> None:
@@ -418,9 +404,6 @@ class Telegram(RPC):
         :param parse_mode: telegram parse mode
         :return: None
         """
-        if not self.is_enabled():
-            return
-
         bot = bot or self._updater.bot
 
         keyboard = [['/daily', '/profit', '/balance'],
