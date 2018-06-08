@@ -12,7 +12,7 @@ from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
-from freqtrade.rpc.rpc import RPC
+from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
 
@@ -151,13 +151,11 @@ class Telegram(RPC):
             self._status_table(bot, update)
             return
 
-        # Fetch open trade
-        (error, trades) = self.rpc_trade_status()
-        if error:
-            self._send_msg(trades, bot=bot)
-        else:
-            for trademsg in trades:
-                self._send_msg(trademsg, bot=bot)
+        try:
+            for trade_msg in self._rpc_trade_status():
+                self._send_msg(trade_msg, bot=bot)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _status_table(self, bot: Bot, update: Update) -> None:
@@ -168,15 +166,12 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        # Fetch open trade
-        (err, df_statuses) = self.rpc_status_table()
-        if err:
-            self._send_msg(df_statuses, bot=bot)
-        else:
+        try:
+            df_statuses = self._rpc_status_table()
             message = tabulate(df_statuses, headers='keys', tablefmt='simple')
-            message = "<pre>{}</pre>".format(message)
-
-            self._send_msg(message, parse_mode=ParseMode.HTML)
+            self._send_msg("<pre>{}</pre>".format(message), parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _daily(self, bot: Bot, update: Update) -> None:
@@ -191,14 +186,12 @@ class Telegram(RPC):
             timescale = int(update.message.text.replace('/daily', '').strip())
         except (TypeError, ValueError):
             timescale = 7
-        (error, stats) = self.rpc_daily_profit(
-            timescale,
-            self._config['stake_currency'],
-            self._config['fiat_display_currency']
-        )
-        if error:
-            self._send_msg(stats, bot=bot)
-        else:
+        try:
+            stats = self._rpc_daily_profit(
+                timescale,
+                self._config['stake_currency'],
+                self._config['fiat_display_currency']
+            )
             stats = tabulate(stats,
                              headers=[
                                  'Day',
@@ -207,11 +200,10 @@ class Telegram(RPC):
                              ],
                              tablefmt='simple')
             message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'\
-                      .format(
-                          timescale,
-                          stats
-                      )
+                      .format(timescale, stats)
             self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _profit(self, bot: Bot, update: Update) -> None:
@@ -222,67 +214,65 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, stats) = self.rpc_trade_statistics(
-            self._config['stake_currency'],
-            self._config['fiat_display_currency']
-        )
-        if error:
-            self._send_msg(stats, bot=bot)
-            return
+        try:
+            stats = self._rpc_trade_statistics(
+                self._config['stake_currency'],
+                self._config['fiat_display_currency'])
 
-        # Message to display
-        markdown_msg = "*ROI:* Close trades\n" \
-                       "∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`\n" \
-                       "∙ `{profit_closed_fiat:.3f} {fiat}`\n" \
-                       "*ROI:* All trades\n" \
-                       "∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`\n" \
-                       "∙ `{profit_all_fiat:.3f} {fiat}`\n" \
-                       "*Total Trade Count:* `{trade_count}`\n" \
-                       "*First Trade opened:* `{first_trade_date}`\n" \
-                       "*Latest Trade opened:* `{latest_trade_date}`\n" \
-                       "*Avg. Duration:* `{avg_duration}`\n" \
-                       "*Best Performing:* `{best_pair}: {best_rate:.2f}%`"\
-                       .format(
-                           coin=self._config['stake_currency'],
-                           fiat=self._config['fiat_display_currency'],
-                           profit_closed_coin=stats['profit_closed_coin'],
-                           profit_closed_percent=stats['profit_closed_percent'],
-                           profit_closed_fiat=stats['profit_closed_fiat'],
-                           profit_all_coin=stats['profit_all_coin'],
-                           profit_all_percent=stats['profit_all_percent'],
-                           profit_all_fiat=stats['profit_all_fiat'],
-                           trade_count=stats['trade_count'],
-                           first_trade_date=stats['first_trade_date'],
-                           latest_trade_date=stats['latest_trade_date'],
-                           avg_duration=stats['avg_duration'],
-                           best_pair=stats['best_pair'],
-                           best_rate=stats['best_rate']
-                       )
-        self._send_msg(markdown_msg, bot=bot)
+            # Message to display
+            markdown_msg = "*ROI:* Close trades\n" \
+                           "∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`\n" \
+                           "∙ `{profit_closed_fiat:.3f} {fiat}`\n" \
+                           "*ROI:* All trades\n" \
+                           "∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`\n" \
+                           "∙ `{profit_all_fiat:.3f} {fiat}`\n" \
+                           "*Total Trade Count:* `{trade_count}`\n" \
+                           "*First Trade opened:* `{first_trade_date}`\n" \
+                           "*Latest Trade opened:* `{latest_trade_date}`\n" \
+                           "*Avg. Duration:* `{avg_duration}`\n" \
+                           "*Best Performing:* `{best_pair}: {best_rate:.2f}%`"\
+                           .format(
+                               coin=self._config['stake_currency'],
+                               fiat=self._config['fiat_display_currency'],
+                               profit_closed_coin=stats['profit_closed_coin'],
+                               profit_closed_percent=stats['profit_closed_percent'],
+                               profit_closed_fiat=stats['profit_closed_fiat'],
+                               profit_all_coin=stats['profit_all_coin'],
+                               profit_all_percent=stats['profit_all_percent'],
+                               profit_all_fiat=stats['profit_all_fiat'],
+                               trade_count=stats['trade_count'],
+                               first_trade_date=stats['first_trade_date'],
+                               latest_trade_date=stats['latest_trade_date'],
+                               avg_duration=stats['avg_duration'],
+                               best_pair=stats['best_pair'],
+                               best_rate=stats['best_rate']
+                           )
+            self._send_msg(markdown_msg, bot=bot)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _balance(self, bot: Bot, update: Update) -> None:
         """
         Handler for /balance
         """
-        (error, result) = self.rpc_balance(self._config['fiat_display_currency'])
-        if error:
-            self._send_msg('`All balances are zero.`')
-            return
+        try:
+            currencys, total, symbol, value = \
+                self._rpc_balance(self._config['fiat_display_currency'])
+            output = ''
+            for currency in currencys:
+                output += "*{currency}:*\n" \
+                          "\t`Available: {available: .8f}`\n" \
+                          "\t`Balance: {balance: .8f}`\n" \
+                          "\t`Pending: {pending: .8f}`\n" \
+                          "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
 
-        (currencys, total, symbol, value) = result
-        output = ''
-        for currency in currencys:
-            output += "*{currency}:*\n" \
-                      "\t`Available: {available: .8f}`\n" \
-                      "\t`Balance: {balance: .8f}`\n" \
-                      "\t`Pending: {pending: .8f}`\n" \
-                      "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
-
-        output += "\n*Estimated Value*:\n" \
-                  "\t`BTC: {0: .8f}`\n" \
-                  "\t`{1}: {2: .2f}`\n".format(total, symbol, value)
-        self._send_msg(output)
+            output += "\n*Estimated Value*:\n" \
+                      "\t`BTC: {0: .8f}`\n" \
+                      "\t`{1}: {2: .2f}`\n".format(total, symbol, value)
+            self._send_msg(output, bot=bot)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _start(self, bot: Bot, update: Update) -> None:
@@ -293,9 +283,8 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, msg) = self.rpc_start()
-        if error:
-            self._send_msg(msg, bot=bot)
+        msg = self._rpc_start()
+        self._send_msg(msg, bot=bot)
 
     @authorized_only
     def _stop(self, bot: Bot, update: Update) -> None:
@@ -306,7 +295,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, msg) = self.rpc_stop()
+        msg = self._rpc_stop()
         self._send_msg(msg, bot=bot)
 
     @authorized_only
@@ -332,10 +321,10 @@ class Telegram(RPC):
         """
 
         trade_id = update.message.text.replace('/forcesell', '').strip()
-        (error, message) = self.rpc_forcesell(trade_id)
-        if error:
-            self._send_msg(message, bot=bot)
-            return
+        try:
+            self._rpc_forcesell(trade_id)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _performance(self, bot: Bot, update: Update) -> None:
@@ -346,19 +335,18 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, trades) = self.rpc_performance()
-        if error:
-            self._send_msg(trades, bot=bot)
-            return
-
-        stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
-            index=i + 1,
-            pair=trade['pair'],
-            profit=trade['profit'],
-            count=trade['count']
-        ) for i, trade in enumerate(trades))
-        message = '<b>Performance:</b>\n{}'.format(stats)
-        self._send_msg(message, parse_mode=ParseMode.HTML)
+        try:
+            trades = self._rpc_performance()
+            stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
+                index=i + 1,
+                pair=trade['pair'],
+                profit=trade['profit'],
+                count=trade['count']
+            ) for i, trade in enumerate(trades))
+            message = '<b>Performance:</b>\n{}'.format(stats)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _count(self, bot: Bot, update: Update) -> None:
@@ -369,19 +357,18 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, trades) = self.rpc_count()
-        if error:
-            self._send_msg(trades, bot=bot)
-            return
-
-        message = tabulate({
-            'current': [len(trades)],
-            'max': [self._config['max_open_trades']],
-            'total stake': [sum((trade.open_rate * trade.amount) for trade in trades)]
-        }, headers=['current', 'max', 'total stake'], tablefmt='simple')
-        message = "<pre>{}</pre>".format(message)
-        logger.debug(message)
-        self._send_msg(message, parse_mode=ParseMode.HTML)
+        try:
+            trades = self._rpc_count()
+            message = tabulate({
+                'current': [len(trades)],
+                'max': [self._config['max_open_trades']],
+                'total stake': [sum((trade.open_rate * trade.amount) for trade in trades)]
+            }, headers=['current', 'max', 'total stake'], tablefmt='simple')
+            message = "<pre>{}</pre>".format(message)
+            logger.debug(message)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
 
     @authorized_only
     def _help(self, bot: Bot, update: Update) -> None:

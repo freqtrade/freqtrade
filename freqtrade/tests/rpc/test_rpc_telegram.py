@@ -60,9 +60,7 @@ def test__init__(default_conf, mocker) -> None:
 
 
 def test_init(default_conf, mocker, caplog) -> None:
-    """
-    Test _init() method
-    """
+    """ Test _init() method """
     start_polling = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock(return_value=start_polling))
 
@@ -256,7 +254,7 @@ def test_status(default_conf, update, mocker, fee, ticker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        rpc_trade_status=MagicMock(return_value=(False, [1, 2, 3])),
+        _rpc_trade_status=MagicMock(return_value=[1, 2, 3]),
         _status_table=status_table,
         _send_msg=msg_mock
     )
@@ -667,7 +665,7 @@ def test_start_handle(default_conf, update, mocker) -> None:
     assert freqtradebot.state == State.STOPPED
     telegram._start(bot=MagicMock(), update=update)
     assert freqtradebot.state == State.RUNNING
-    assert msg_mock.call_count == 0
+    assert msg_mock.call_count == 1
 
 
 def test_start_handle_already_running(default_conf, update, mocker) -> None:

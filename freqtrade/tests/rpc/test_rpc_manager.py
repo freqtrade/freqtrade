@@ -104,7 +104,7 @@ def test_send_msg_telegram_disabled(mocker, default_conf, caplog) -> None:
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg('test')
 
-    assert log_has('test', caplog.record_tuples)
+    assert log_has('Sending rpc message: test', caplog.record_tuples)
     assert telegram_mock.call_count == 0
 
 
@@ -119,5 +119,5 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg('test')
 
-    assert log_has('test', caplog.record_tuples)
+    assert log_has('Sending rpc message: test', caplog.record_tuples)
     assert telegram_mock.call_count == 1
