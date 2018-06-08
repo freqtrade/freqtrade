@@ -61,11 +61,9 @@ class Configuration(object):
             with open(path) as file:
                 conf = json.load(file)
         except FileNotFoundError:
-            logger.critical(
-                'Config file "%s" not found. Please create your config file',
-                path
-            )
-            exit(0)
+            raise OperationalException(
+                'Config file "{}" not found!'
+                ' Please create a config file or check whether it exists.'.format(path))
 
         if 'internals' not in conf:
             conf['internals'] = {}
