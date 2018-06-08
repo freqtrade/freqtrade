@@ -2,20 +2,20 @@
 This module contains class to define a RPC communications
 """
 import logging
+from abc import abstractmethod
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 from typing import Dict, Tuple, Any
 
 import arrow
 import sqlalchemy as sql
-from pandas import DataFrame
 from numpy import mean, nan_to_num
+from pandas import DataFrame
 
 from freqtrade import exchange
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,19 @@ class RPC(object):
         :return: None
         """
         self.freqtrade = freqtrade
+
+    @abstractmethod
+    def cleanup(self) -> str:
+        """ Cleanup pending module resources """
+
+    @property
+    @abstractmethod
+    def name(self) -> None:
+        """ Returns the lowercase name of this module """
+
+    @abstractmethod
+    def send_msg(self, msg: str) -> None:
+        """ Sends a message to all registered rpc modules """
 
     def rpc_trade_status(self) -> Tuple[bool, Any]:
         """
