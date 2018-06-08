@@ -5,7 +5,6 @@ import logging
 from typing import List
 
 from freqtrade.rpc.rpc import RPC
-from freqtrade.rpc.telegram import Telegram
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +20,7 @@ class RPCManager(object):
         # Enable telegram
         if freqtrade.config['telegram'].get('enabled', False):
             logger.info('Enabling rpc.telegram ...')
+            from freqtrade.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(freqtrade))
 
     def cleanup(self) -> None:

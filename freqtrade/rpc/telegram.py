@@ -16,6 +16,8 @@ from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
 
+logger.debug('Included module rpc.telegram ...')
+
 
 def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Callable[..., Any]:
     """

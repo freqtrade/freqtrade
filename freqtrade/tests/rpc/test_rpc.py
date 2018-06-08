@@ -31,7 +31,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -77,7 +77,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -110,7 +110,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -165,7 +165,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -241,7 +241,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -312,7 +312,7 @@ def test_rpc_balance_handle(default_conf, mocker):
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -340,7 +340,7 @@ def test_rpc_start(mocker, default_conf) -> None:
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -366,7 +366,7 @@ def test_rpc_stop(mocker, default_conf) -> None:
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -392,7 +392,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
@@ -495,7 +495,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
@@ -533,7 +533,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     """
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.rpc_manager.Telegram', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
