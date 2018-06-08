@@ -254,8 +254,6 @@ class FreqtradeBot(object):
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
-        :param stake_amount: amount of btc to spend
-        :param interval: Ticker interval used for Analyze
         :return: True if a trade object has been created and persisted, False otherwise
         """
         stake_amount = self.config['stake_amount']
@@ -455,6 +453,10 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
+                # FIXME: Somehow the query above returns results where the open_order_id is in fact None.
+                # This is probably because the record got updated via /forcesell in a different thread.
+                if not trade.open_order_id:
+                    continue
                 order = exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 logger.info(
@@ -484,8 +486,6 @@ class FreqtradeBot(object):
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
-            # FIX? do we really need to flush, caller of
-            #      check_handle_timedout will flush afterwards
             Trade.session.flush()
             logger.info('Buy order timeout for %s.', trade)
             self.rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
