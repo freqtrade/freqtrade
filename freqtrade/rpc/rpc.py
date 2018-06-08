@@ -34,7 +34,7 @@ class RPC(object):
         :param freqtrade: Instance of a freqtrade bot
         :return: None
         """
-        self.freqtrade = freqtrade
+        self._freqtrade = freqtrade
 
     @abstractmethod
     def cleanup(self) -> None:
@@ -56,7 +56,7 @@ class RPC(object):
         """
         # Fetch open trade
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self.freqtrade.state != State.RUNNING:
+        if self._freqtrade.state != State.RUNNING:
             raise RPCException('*Status:* `trader is not running`')
         elif not trades:
             raise RPCException('*Status:* `no active trade`')
@@ -102,7 +102,7 @@ class RPC(object):
 
     def _rpc_status_table(self) -> DataFrame:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self.freqtrade.state != State.RUNNING:
+        if self._freqtrade.state != State.RUNNING:
             raise RPCException('*Status:* `trader is not running`')
         elif not trades:
             raise RPCException('*Status:* `no active order`')
@@ -132,7 +132,7 @@ class RPC(object):
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('*Daily [n]:* `must be an integer greater than 0`')
 
-        fiat = self.freqtrade.fiat_converter
+        fiat = self._freqtrade.fiat_converter
         for day in range(0, timescale):
             profitday = today - timedelta(days=day)
             trades = Trade.query \
@@ -216,7 +216,7 @@ class RPC(object):
 
         # FIX: we want to keep fiatconverter in a state/environment,
         #      doing this will utilize its caching functionallity, instead we reinitialize it here
-        fiat = self.freqtrade.fiat_converter
+        fiat = self._freqtrade.fiat_converter
         # Prepare data to display
         profit_closed_coin = round(sum(profit_closed_coin), 8)
         profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
@@ -277,23 +277,23 @@ class RPC(object):
         if total == 0.0:
             raise RPCException('`All balances are zero.`')
 
-        fiat = self.freqtrade.fiat_converter
+        fiat = self._freqtrade.fiat_converter
         symbol = fiat_display_currency
         value = fiat.convert_amount(total, 'BTC', symbol)
         return output, total, symbol, value
 
     def _rpc_start(self) -> str:
         """ Handler for start """
-        if self.freqtrade.state == State.RUNNING:
+        if self._freqtrade.state == State.RUNNING:
             return '*Status:* `already running`'
 
-        self.freqtrade.state = State.RUNNING
+        self._freqtrade.state = State.RUNNING
         return '`Starting trader ...`'
 
     def _rpc_stop(self) -> str:
         """ Handler for stop """
-        if self.freqtrade.state == State.RUNNING:
-            self.freqtrade.state = State.STOPPED
+        if self._freqtrade.state == State.RUNNING:
+            self._freqtrade.state = State.STOPPED
             return '`Stopping trader ...`'
 
         return '*Status:* `already stopped`'
@@ -333,10 +333,10 @@ class RPC(object):
 
             # Get current rate and execute sell
             current_rate = exchange.get_ticker(trade.pair, False)['bid']
-            self.freqtrade.execute_sell(trade, current_rate)
+            self._freqtrade.execute_sell(trade, current_rate)
         # ---- EOF def _exec_forcesell ----
 
-        if self.freqtrade.state != State.RUNNING:
+        if self._freqtrade.state != State.RUNNING:
             raise RPCException('`trader is not running`')
 
         if trade_id == 'all':
@@ -364,7 +364,7 @@ class RPC(object):
         Handler for performance.
         Shows a performance statistic from finished trades
         """
-        if self.freqtrade.state != State.RUNNING:
+        if self._freqtrade.state != State.RUNNING:
             raise RPCException('`trader is not running`')
 
         pair_rates = Trade.session.query(Trade.pair,
@@ -381,7 +381,7 @@ class RPC(object):
 
     def _rpc_count(self) -> List[Trade]:
         """ Returns the number of trades running """
-        if self.freqtrade.state != State.RUNNING:
+        if self._freqtrade.state != State.RUNNING:
             raise RPCException('`trader is not running`')
 
         return Trade.query.filter(Trade.is_open.is_(True)).all()
