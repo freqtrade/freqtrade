@@ -3,8 +3,10 @@ This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
 from typing import Any, List
 import logging
+import time
 
 from freqtrade.rpc.telegram import Telegram
+from freqtrade.rpc.local_rpc_server import LocalRPCSuperWrap
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,12 @@ class RPCManager(object):
             logger.info('Enabling rpc.telegram ...')
             self.registered_modules.append('telegram')
             self.telegram = Telegram(self.freqtrade)
+
+        # Added another RPC client - for cmdline local client.
+        # Uses existing superclass RPC build for Telegram
+        if self.freqtrade.config['localrpc'].get('enabled', False):
+            self.localRPC = LocalRPCSuperWrap(self.freqtrade)
+            time.sleep(1)
 
     def cleanup(self) -> None:
         """

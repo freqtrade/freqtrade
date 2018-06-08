@@ -23,3 +23,6 @@ coinmarketcap==5.0.3
 
 # Required for plotting data
 #plotly==2.3.0
+
+#Added for localRCP
+zerorpc==
