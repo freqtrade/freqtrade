@@ -34,7 +34,7 @@ class CLIENT(object):
 
     def server_trade_status(self) -> Tuple[bool, Any]:
         """
-        Below follows the CLIENT backend it is prefixed with rpc_ to raise awareness that it is
+        Below follows the CLIENT backend it is prefixed with server_ to raise awareness that it is
         a remotely exposed function
         :return:
         """
