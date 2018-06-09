@@ -12,7 +12,7 @@ from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
-from freqtrade.rpc.rpc import RPC
+from freqtrade.clients.common_client import CLIENT
 
 
 logger = logging.getLogger(__name__)
@@ -53,13 +53,13 @@ def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Call
     return wrapper
 
 
-class Telegram(RPC):
+class Telegram(CLIENT):
     """
     Telegram, this class send messages to Telegram
     """
     def __init__(self, freqtrade) -> None:
         """
-        Init the Telegram call, and init the super class RPC
+        Init the Telegram call, and init the super class CLIENT
         :param freqtrade: Instance of a freqtrade bot
         :return: None
         """
@@ -143,7 +143,7 @@ class Telegram(RPC):
             return
 
         # Fetch open trade
-        (error, trades) = self.rpc_trade_status()
+        (error, trades) = self.server_trade_status()
         if error:
             self.send_msg(trades, bot=bot)
         else:
@@ -160,7 +160,7 @@ class Telegram(RPC):
         :return: None
         """
         # Fetch open trade
-        (err, df_statuses) = self.rpc_status_table()
+        (err, df_statuses) = self.server_status_table()
         if err:
             self.send_msg(df_statuses, bot=bot)
         else:
@@ -182,7 +182,7 @@ class Telegram(RPC):
             timescale = int(update.message.text.replace('/daily', '').strip())
         except (TypeError, ValueError):
             timescale = 7
-        (error, stats) = self.rpc_daily_profit(
+        (error, stats) = self.server_daily_profit(
             timescale,
             self._config['stake_currency'],
             self._config['fiat_display_currency']
@@ -213,7 +213,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, stats) = self.rpc_trade_statistics(
+        (error, stats) = self.server_trade_statistics(
             self._config['stake_currency'],
             self._config['fiat_display_currency']
         )
@@ -256,7 +256,7 @@ class Telegram(RPC):
         """
         Handler for /balance
         """
-        (error, result) = self.rpc_balance(self._config['fiat_display_currency'])
+        (error, result) = self.server_balance(self._config['fiat_display_currency'])
         if error:
             self.send_msg('`All balances are zero.`')
             return
@@ -284,7 +284,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, msg) = self.rpc_start()
+        (error, msg) = self.server_start()
         if error:
             self.send_msg(msg, bot=bot)
 
@@ -297,7 +297,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, msg) = self.rpc_stop()
+        (error, msg) = self.server_stop()
         self.send_msg(msg, bot=bot)
 
     @authorized_only
@@ -311,7 +311,7 @@ class Telegram(RPC):
         """
 
         trade_id = update.message.text.replace('/forcesell', '').strip()
-        (error, message) = self.rpc_forcesell(trade_id)
+        (error, message) = self.server_forcesell(trade_id)
         if error:
             self.send_msg(message, bot=bot)
             return
@@ -325,7 +325,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, trades) = self.rpc_performance()
+        (error, trades) = self.server_performance()
         if error:
             self.send_msg(trades, bot=bot)
             return
@@ -348,7 +348,7 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        (error, trades) = self.rpc_count()
+        (error, trades) = self.server_count()
         if error:
             self.send_msg(trades, bot=bot)
             return

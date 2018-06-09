@@ -77,7 +77,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
         lambda *args, **kwargs: default_conf
     )
     mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.ClientManager', MagicMock())
 
     args = ['-c', 'config.json.example']
 
@@ -104,7 +104,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
         lambda *args, **kwargs: default_conf
     )
     mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.ClientManager', MagicMock())
 
     args = ['-c', 'config.json.example']
 
@@ -131,7 +131,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
         lambda *args, **kwargs: default_conf
     )
     mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.ClientManager', MagicMock())
 
     args = ['-c', 'config.json.example']
 

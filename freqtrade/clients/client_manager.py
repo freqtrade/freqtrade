@@ -1,18 +1,18 @@
 """
-This module contains class to manage RPC communications (Telegram, Slack, ...)
+This module contains class to manage CLIENT communications (Telegram, Slack, ...)
 """
 from typing import Any, List
 import logging
 
-from freqtrade.rpc.telegram import Telegram
+from freqtrade.clients.rpc.telegram import Telegram
 
 
 logger = logging.getLogger(__name__)
 
 
-class RPCManager(object):
+class ClientManager(object):
     """
-    Class to manage RPC objects (Telegram, Slack, ...)
+    Class to manage CLIENT objects (Telegram, Slack, ...)
     """
     def __init__(self, freqtrade) -> None:
         """
@@ -28,7 +28,7 @@ class RPCManager(object):
 
     def _init(self) -> None:
         """
-        Init RPC modules
+        Init CLIENT modules
         :return:
         """
         if self.freqtrade.config['telegram'].get('enabled', False):
