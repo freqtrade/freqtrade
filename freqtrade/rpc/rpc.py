@@ -354,6 +354,7 @@ class RPC(object):
             return True, 'Invalid argument.'
 
         _exec_forcesell(trade)
+        Trade.session.flush()
         return False, ''
 
     def rpc_performance(self) -> Tuple[bool, Any]:
