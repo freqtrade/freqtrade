@@ -277,7 +277,7 @@ def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
                     'bid': float(data['bid']),
                     'ask': float(data['ask']),
                 }
-            except KeyError as e:
+            except KeyError:
                 logger.debug("Could not cache ticker data for %s", pair)
             return data
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

@@ -93,7 +93,7 @@ def plot_profit(args: Namespace) -> None:
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
             config.get('strategy')
         )
-        exit(0)
+        exit(1)
 
     # Load the profits results
     try:
@@ -104,7 +104,7 @@ def plot_profit(args: Namespace) -> None:
         logger.critical(
             'File "backtest-result.json" not found. This script require backtesting '
             'results to run.\nPlease run a backtesting with the parameter --export.')
-        exit(0)
+        exit(1)
 
     # Take pairs from the cli otherwise switch to the pair in the config file
     if args.pair:
