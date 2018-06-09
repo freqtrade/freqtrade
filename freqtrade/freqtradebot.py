@@ -412,7 +412,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
         if fee_abs != 0:
-            logger.info(f"Applying fee on amount for {trade} (from {order_amount} to {real_amount}) from Trades")
+            logger.info(f"""Applying fee on amount for {trade} \
+(from {order_amount} to {real_amount}) from Trades""")
         return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:
