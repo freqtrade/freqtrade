@@ -277,16 +277,12 @@ class Backtesting(object):
         )
 
         # Execute backtest and print results
-        sell_profit_only = self.config.get('experimental', {}).get('sell_profit_only', False)
-        use_sell_signal = self.config.get('experimental', {}).get('use_sell_signal', False)
         results = self.backtest(
             {
                 'stake_amount': self.config.get('stake_amount'),
                 'processed': preprocessed,
                 'max_open_trades': max_open_trades,
                 'realistic': self.config.get('realistic_simulation', False),
-                'sell_profit_only': sell_profit_only,
-                'use_sell_signal': use_sell_signal,
                 'record': self.config.get('export'),
                 'recordfn': self.config.get('exportfilename'),
             }
