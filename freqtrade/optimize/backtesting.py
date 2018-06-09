@@ -130,6 +130,21 @@ class Backtesting(object):
                         (sell_row.date - buy_row.date).seconds // 60
                     ), \
                     sell_row.date
+        if partial_ticker:
+            # no sell condition found - trade stil open at end of backtest period
+            sell_row = partial_ticker[-1]
+            logger.info('Force_selling still open trade %s with %s perc - %s', pair,
+                        trade.calc_profit_percent(rate=sell_row.close),
+                        trade.calc_profit(rate=sell_row.close))
+            return \
+                sell_row, \
+                (
+                    pair,
+                    trade.calc_profit_percent(rate=sell_row.close),
+                    trade.calc_profit(rate=sell_row.close),
+                    (sell_row.date - buy_row.date).seconds // 60
+                ), \
+                sell_row.date
         return None
 
     def backtest(self, args: Dict) -> DataFrame:
@@ -170,6 +185,7 @@ class Backtesting(object):
 
             ticker_data.drop(ticker_data.head(1).index, inplace=True)
 
+            # TODO: why convert from Pandas to list??
             ticker = [x for x in ticker_data.itertuples()]
 
             lock_pair_until = None
@@ -202,6 +218,11 @@ class Backtesting(object):
                                         row.date.strftime('%s'),
                                         row2.date.strftime('%s'),
                                         index, trade_entry[3]))
+                else:
+                    # Set lock_pair_until to end of testing period if trade could not be closed
+                    # This happens only if the buy-signal was with the last candle
+                    lock_pair_until = ticker_data.iloc[-1].date
+
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
