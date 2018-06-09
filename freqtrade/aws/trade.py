@@ -21,8 +21,9 @@ def store(event, context):
                 print("storing {} data trade results".format(len(x)))
 
                 for x in data:
+                    x['ttl'] = int((datetime.datetime.today() + datetime.timedelta(days=1)).timestamp())
                     print("storing data: {}".format(x))
-                    x['ttl'] = (datetime.datetime.today() + datetime.timedelta(days=1)).timestamp()
+
                     sleep(0.5)  # throttle to not overwhelm the DB, lambda is cheaper than dynamo
                     get_trade_table().put_item(Item=x)
 
