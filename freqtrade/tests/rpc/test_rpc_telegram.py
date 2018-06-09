@@ -70,12 +70,12 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert start_polling.call_count == 0
 
     # number of handles registered
-    assert start_polling.dispatcher.add_handler.call_count == 11
+    assert start_polling.dispatcher.add_handler.call_count > 0
     assert start_polling.start_polling.call_count == 1
 
     message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
                   "['balance'], ['start'], ['stop'], ['forcesell'], ['performance'], ['daily'], " \
-                  "['count'], ['help'], ['version']]"
+                  "['count'], ['reload_conf'], ['help'], ['version']]"
 
     assert log_has(message_str, caplog.record_tuples)
 
@@ -743,6 +743,29 @@ def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
     assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
     assert 'already stopped' in msg_mock.call_args_list[0][0][0]
+
+
+def test_reload_conf_handle(default_conf, update, mocker) -> None:
+    """ Test _reload_conf() method """
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        send_msg=msg_mock
+    )
+    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+
+    freqtradebot = FreqtradeBot(default_conf)
+    telegram = Telegram(freqtradebot)
+
+    freqtradebot.state = State.RUNNING
+    assert freqtradebot.state == State.RUNNING
+    telegram._reload_conf(bot=MagicMock(), update=update)
+    assert freqtradebot.state == State.RELOAD_CONF
+    assert msg_mock.call_count == 1
+    assert 'Reloading config' in msg_mock.call_args_list[0][0][0]
 
 
 def test_forcesell_handle(default_conf, update, ticker, fee, ticker_sell_up, mocker) -> None:
