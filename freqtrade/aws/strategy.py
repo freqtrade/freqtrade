@@ -14,6 +14,8 @@ import requests
 
 db = boto3.resource('dynamodb')
 
+from freqtrade.aws.headers import __HTTP_HEADERS__
+
 
 def names(event, context):
     """
@@ -42,19 +44,10 @@ def names(event, context):
         "result": data
     }
     return {
+        "headers": __HTTP_HEADERS__,
         "statusCode": 200,
         "body": json.dumps(data)
     }
-
-
-def performance(event, context):
-    """
-        returns the performance of the specified strategy
-    :param event:
-    :param context:
-    :return:
-    """
-    pass
 
 
 def get(event, context):
@@ -83,12 +76,14 @@ def get(event, context):
         item.pop('content')
 
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
             "body": json.dumps(item)
         }
 
     else:
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": 404,
             "body": json.dumps(response)
         }
@@ -129,15 +124,18 @@ def code(event, context):
     if "Items" in response and len(response['Items']) > 0:
         if response['Items'][0]["public"]:
             content = urlsafe_b64decode(response['Items'][0]['content']).decode('utf-8')
+            content["headers"]: __HTTP_HEADERS__
             return content
         else:
             return {
+                "headers": __HTTP_HEADERS__,
                 "statusCode": 403,
                 "body": json.dumps({"success": False, "reason": "Denied"})
             }
 
     else:
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
             "body": json.dumps(response)
         }
@@ -168,6 +166,7 @@ def submit(event, context):
 
     result = __evaluate(data)
     return {
+        "headers": __HTTP_HEADERS__,
         "statusCode": result['ResponseMetadata']['HTTPStatusCode'],
         "body": json.dumps(result)
     }
@@ -271,11 +270,13 @@ def submit_github(event, context):
                         print("error: {}".format(e))
         print("imported/updated: {} strategies".format(strategies))
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": 200,
             "body": json.dumps({"imported": strategies})
         }
     else:
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": 404,
             "body": json.dumps({"error": result})
         }

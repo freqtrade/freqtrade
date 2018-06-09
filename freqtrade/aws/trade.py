@@ -6,6 +6,7 @@ import simplejson as json
 import os
 from freqtrade.aws.tables import get_trade_table, get_strategy_table
 from boto3.dynamodb.conditions import Key, Attr
+from freqtrade.aws.headers import __HTTP_HEADERS__
 
 
 def store(event, context):
@@ -49,6 +50,7 @@ def submit(event, context):
     )
 
     return {
+        "headers": __HTTP_HEADERS__,
         "statusCode": 200,
         "body": json.dumps(result)
     }
@@ -85,17 +87,20 @@ def get_aggregated_trades(event, context):
         # start key ExclusiveStartKey=response['LastEvaluatedKey']
 
         data = {
+            "headers": __HTTP_HEADERS__,
             "result": response['Items'],
             "paginationKey": response.get('LastEvaluatedKey')
         }
 
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
             "body": json.dumps(data)
         }
 
     else:
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": 404,
             "body": json.dumps({
                 "error": "sorry this query did not produce any results",
@@ -143,12 +148,14 @@ def get_trades(event, context):
         }
 
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
             "body": json.dumps(data)
         }
 
     else:
         return {
+            "headers": __HTTP_HEADERS__,
             "statusCode": 404,
             "body": json.dumps({
                 "error": "sorry this query did not produce any results",
