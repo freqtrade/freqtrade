@@ -26,11 +26,11 @@ class RPCManager(object):
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
-        for mod in self.registered_modules:
+        while self.registered_modules:
+            mod = self.registered_modules.pop()
             logger.debug('Cleaning up rpc.%s ...', mod.name)
             mod.cleanup()
-
-        self.registered_modules = []
+            del mod
 
     def send_msg(self, msg: str) -> None:
         """
