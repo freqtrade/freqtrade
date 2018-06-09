@@ -119,7 +119,7 @@ class CryptoToFiatConverter(object):
 
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
-            raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
+            raise ValueError(f'The fiat {fiat_symbol} is not supported.')
 
         # Get the pair that interest us and return the price in fiat
         for pair in self._pairs:
@@ -182,7 +182,7 @@ class CryptoToFiatConverter(object):
         """
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
-            raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
+            raise ValueError(f'The fiat {fiat_symbol} is not supported.')
 
         # No need to convert if both crypto and fiat are the same
         if crypto_symbol == fiat_symbol:

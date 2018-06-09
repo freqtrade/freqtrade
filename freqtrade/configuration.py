@@ -236,9 +236,8 @@ class Configuration(object):
         exchange = config.get('exchange', {}).get('name').lower()
         if exchange not in ccxt.exchanges:
 
-            exception_msg = 'Exchange "{}" not supported.\n' \
-                            'The following exchanges are supported: {}'\
-                .format(exchange, ', '.join(ccxt.exchanges))
+            exception_msg = f'Exchange "{exchange}" not supported.\n' \
+                            f'The following exchanges are supported: {", ".join(ccxt.exchanges)}'
 
             logger.critical(exception_msg)
             raise OperationalException(
