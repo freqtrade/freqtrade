@@ -478,7 +478,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
-    tests = [['raise', 17], ['lower', 0], ['sine', 16]]
+    tests = [['raise', 18], ['lower', 0], ['sine', 16]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 
