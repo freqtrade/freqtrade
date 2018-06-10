@@ -400,7 +400,7 @@ def test_format_results(init_hyperopt):
         ('LTC/BTC', 1, 1, 123),
         ('XPR/BTC', -1, -2, -246)
     ]
-    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+    labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
     df = pd.DataFrame.from_records(trades, columns=labels)
 
     result = _HYPEROPT.format_results(df)
@@ -530,7 +530,7 @@ def test_generate_optimizer(mocker, init_hyperopt, default_conf) -> None:
     trades = [
         ('POWR/BTC', 0.023117, 0.000233, 100)
     ]
-    labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
+    labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)
 
     mocker.patch(
