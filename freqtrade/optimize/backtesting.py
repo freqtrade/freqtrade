@@ -241,7 +241,6 @@ class Backtesting(object):
         if record and record.find('trades') >= 0:
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
-        labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
@@ -318,7 +317,7 @@ class Backtesting(object):
             '%s',
             self._generate_text_table(
                 data,
-                results.loc[results.open_at_end == True]
+                results.loc[results.open_at_end]
             )
         )
 
