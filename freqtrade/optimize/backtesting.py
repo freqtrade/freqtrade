@@ -185,7 +185,8 @@ class Backtesting(object):
 
             ticker_data.drop(ticker_data.head(1).index, inplace=True)
 
-            # TODO: why convert from Pandas to list??
+            # Convert from Pandas to list for performance reasons
+            # (Looping Pandas is slow.)
             ticker = [x for x in ticker_data.itertuples()]
 
             lock_pair_until = None
