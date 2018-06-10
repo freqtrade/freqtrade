@@ -128,8 +128,7 @@ class Backtesting(object):
                         trade.calc_profit_percent(rate=sell_row.close),
                         trade.calc_profit(rate=sell_row.close),
                         (sell_row.date - buy_row.date).seconds // 60
-                    ), \
-                    sell_row.date
+                    )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
             sell_row = partial_ticker[-1]
@@ -143,8 +142,7 @@ class Backtesting(object):
                     trade.calc_profit_percent(rate=sell_row.close),
                     trade.calc_profit(rate=sell_row.close),
                     (sell_row.date - buy_row.date).seconds // 60
-                ), \
-                sell_row.date
+                )
         return None
 
     def backtest(self, args: Dict) -> DataFrame:
@@ -208,8 +206,8 @@ class Backtesting(object):
                                                  trade_count_lock, args)
 
                 if ret:
-                    row2, trade_entry, next_date = ret
-                    lock_pair_until = next_date
+                    row2, trade_entry = ret
+                    lock_pair_until = row2.date
                     trades.append(trade_entry)
                     if record:
                         # Note, need to be json.dump friendly
