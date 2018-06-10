@@ -538,7 +538,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     backtesting.populate_buy_trend = _trend_alternate  # Override
     backtesting.populate_sell_trend = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
-    assert len(results) == 3
+    assert len(results) == 4
 
 
 def test_backtest_record(default_conf, fee, mocker):
