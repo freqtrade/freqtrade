@@ -6,6 +6,7 @@ This module contains the backtesting logic
 import logging
 import operator
 from argparse import Namespace
+from datetime import datetime
 from typing import Dict, Tuple, Any, List, Optional, NamedTuple
 
 import arrow
@@ -30,8 +31,8 @@ class BacktestResult(NamedTuple):
     pair: str
     profit_percent: float
     profit_abs: float
-    open_time: float
-    close_time: float
+    open_time: datetime
+    close_time: datetime
     trade_duration: float
 
 
