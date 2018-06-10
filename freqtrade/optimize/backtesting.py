@@ -34,6 +34,7 @@ class BacktestResult(NamedTuple):
     open_time: datetime
     close_time: datetime
     trade_duration: float
+    open_at_end: bool
 
 
 class Backtesting(object):
@@ -140,7 +141,8 @@ class Backtesting(object):
                                       profit_abs=trade.calc_profit(rate=sell_row.close),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
-                                      trade_duration=(sell_row.date - buy_row.date).seconds // 60
+                                      trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                      open_at_end=False
                                       )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
@@ -150,7 +152,8 @@ class Backtesting(object):
                                  profit_abs=trade.calc_profit(rate=sell_row.close),
                                  open_time=buy_row.date,
                                  close_time=sell_row.date,
-                                 trade_duration=(sell_row.date - buy_row.date).seconds // 60
+                                 trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                 open_at_end=True
                                  )
             logger.info('Force_selling still open trade %s with %s perc - %s', btr.pair,
                         btr.profit_percent, btr.profit_abs)
