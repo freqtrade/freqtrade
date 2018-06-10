@@ -606,10 +606,12 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
+        '--datadir', 'freqtrade/tests/testdata',
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--timerange', '-100'
+        '--timerange', '-100',
+        '--realistic-simulation'
     ]
     args = get_args(args)
     start(args)
@@ -619,13 +621,14 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
         'Using max_open_trades: 1 ...',
-        'Parameter --timerange detected: -100 ..',
+        'Parameter --timerange detected: -100 ...',
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
-        'Measuring data from 2017-11-14T19:32:00+00:00 up to 2017-11-14T22:59:00+00:00 (0 days)..'
+        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Parameter --realistic-simulation detected ...'
     ]
 
     for line in exists:
-        log_has(line, caplog.record_tuples)
+        assert log_has(line, caplog.record_tuples)
