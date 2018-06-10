@@ -226,7 +226,7 @@ class Backtesting(object):
                         records.append((pair, trade_entry.profit_percent,
                                         trade_entry.open_time.strftime('%s'),
                                         trade_entry.close_time.strftime('%s'),
-                                        index, trade_entry[3]))
+                                        index, trade_entry.trade_duration))
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
                     # This happens only if the buy-signal was with the last candle
