@@ -311,6 +311,17 @@ class Backtesting(object):
             )
         )
 
+        logger.info(
+            '\n==================================== '
+            'LEFT OPEN TRADES REPORT'
+            ' ====================================\n'
+            '%s',
+            self._generate_text_table(
+                data,
+                results.loc[results.open_at_end == True]
+            )
+        )
+
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
     """
