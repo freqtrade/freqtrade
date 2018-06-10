@@ -30,7 +30,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: None
     """
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.ClientManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
     patch_coinmarketcap(mocker)
@@ -53,12 +53,12 @@ def patch_get_signal(mocker, value=(True, False)) -> None:
 
 def patch_RPCManager(mocker) -> MagicMock:
     """
-    This function mock RPC manager to avoid repeating this code in almost every tests
-    :param mocker: mocker to patch RPCManager class
-    :return: RPCManager.send_msg MagicMock to track if this method is called
+    This function mock CLIENT manager to avoid repeating this code in almost every tests
+    :param mocker: mocker to patch ClientManager class
+    :return: ClientManager.send_msg MagicMock to track if this method is called
     """
-    mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
-    rpc_mock = mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
+    mocker.patch('freqtrade.freqtradebot.ClientManager._init', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.freqtradebot.ClientManager.send_msg', MagicMock())
     return rpc_mock
 
 

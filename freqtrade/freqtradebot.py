@@ -21,7 +21,7 @@ from freqtrade import constants
 from freqtrade.analyze import Analyze
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
-from freqtrade.rpc.rpc_manager import RPCManager
+from freqtrade.clients.client_manager import ClientManager
 from freqtrade.state import State
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class FreqtradeBot(object):
         self.config = config
         self.analyze = Analyze(self.config)
         self.fiat_converter = CryptoToFiatConverter()
-        self.rpc: RPCManager = RPCManager(self)
+        self.rpc: ClientManager = ClientManager(self)
         self.persistence = None
         self.exchange = None
 

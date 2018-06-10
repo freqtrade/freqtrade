@@ -1,5 +1,5 @@
 """
-This module contains class to define a RPC communications
+This module contains class to define a CLIENT communications
 """
 import logging
 from datetime import datetime, timedelta, date
@@ -20,9 +20,9 @@ from freqtrade.state import State
 logger = logging.getLogger(__name__)
 
 
-class RPC(object):
+class CLIENT(object):
     """
-    RPC class can be used to have extra feature, like bot data, and access to DB data
+    CLIENT class can be used to have extra feature, like bot data, and access to DB data
     """
     def __init__(self, freqtrade) -> None:
         """
@@ -32,9 +32,9 @@ class RPC(object):
         """
         self.freqtrade = freqtrade
 
-    def rpc_trade_status(self) -> Tuple[bool, Any]:
+    def server_trade_status(self) -> Tuple[bool, Any]:
         """
-        Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
+        Below follows the CLIENT backend it is prefixed with server_ to raise awareness that it is
         a remotely exposed function
         :return:
         """
@@ -84,7 +84,7 @@ class RPC(object):
                 result.append(message)
             return False, result
 
-    def rpc_status_table(self) -> Tuple[bool, Any]:
+    def server_status_table(self) -> Tuple[bool, Any]:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if self.freqtrade.state != State.RUNNING:
             return True, '*Status:* `trader is not running`'
@@ -111,7 +111,7 @@ class RPC(object):
             # result, or raise error
             return False, df_statuses
 
-    def rpc_daily_profit(
+    def server_daily_profit(
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Tuple[bool, Any]:
         today = datetime.utcnow().date()
@@ -159,7 +159,7 @@ class RPC(object):
         ]
         return False, stats
 
-    def rpc_trade_statistics(
+    def server_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Tuple[bool, Any]:
         """
         :return: cumulative profit statistics.
@@ -242,7 +242,7 @@ class RPC(object):
             }
         )
 
-    def rpc_balance(self, fiat_display_currency: str) -> Tuple[bool, Any]:
+    def server_balance(self, fiat_display_currency: str) -> Tuple[bool, Any]:
         """
         :return: current account balance per crypto
         """
@@ -279,7 +279,7 @@ class RPC(object):
         value = fiat.convert_amount(total, 'BTC', symbol)
         return False, (output, total, symbol, value)
 
-    def rpc_start(self) -> Tuple[bool, str]:
+    def server_start(self) -> Tuple[bool, str]:
         """
         Handler for start.
         """
@@ -289,7 +289,7 @@ class RPC(object):
         self.freqtrade.state = State.RUNNING
         return False, '`Starting trader ...`'
 
-    def rpc_stop(self) -> Tuple[bool, str]:
+    def server_stop(self) -> Tuple[bool, str]:
         """
         Handler for stop.
         """
@@ -300,7 +300,7 @@ class RPC(object):
         return True, '*Status:* `already stopped`'
 
     # FIX: no test for this!!!!
-    def rpc_forcesell(self, trade_id) -> Tuple[bool, Any]:
+    def server_forcesell(self, trade_id) -> Tuple[bool, Any]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -357,7 +357,7 @@ class RPC(object):
         Trade.session.flush()
         return False, ''
 
-    def rpc_performance(self) -> Tuple[bool, Any]:
+    def server_performance(self) -> Tuple[bool, Any]:
         """
         Handler for performance.
         Shows a performance statistic from finished trades
@@ -378,7 +378,7 @@ class RPC(object):
 
         return False, trades
 
-    def rpc_count(self) -> Tuple[bool, Any]:
+    def server_count(self) -> Tuple[bool, Any]:
         """
         Returns the number of trades running
         :return: None
