@@ -560,12 +560,12 @@ def test_backtest_record(default_conf, fee, mocker):
     backtesting.populate_buy_trend = _trend_alternate  # Override
     backtesting.populate_sell_trend = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
-    assert len(results) == 3
+    assert len(results) == 4
     # Assert file_dump_json was only called once
     assert names == ['backtest-result.json']
     records = records[0]
     # Ensure records are of correct type
-    assert len(records) == 3
+    assert len(records) == 4
     # ('UNITTEST/BTC', 0.00331158, '1510684320', '1510691700', 0, 117)
     # Below follows just a typecheck of the schema/type of trade-records
     oix = None
