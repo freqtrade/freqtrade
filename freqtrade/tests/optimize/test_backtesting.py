@@ -353,10 +353,10 @@ def test_generate_text_table(default_conf, mocker):
 
     results = pd.DataFrame(
         {
-            'currency': ['ETH/BTC', 'ETH/BTC'],
+            'pair': ['ETH/BTC', 'ETH/BTC'],
             'profit_percent': [0.1, 0.2],
-            'profit_BTC': [0.2, 0.4],
-            'duration': [10, 30],
+            'profit_abs': [0.2, 0.4],
+            'trade_duration': [10, 30],
             'profit': [2, 0],
             'loss': [0, 0]
         }
