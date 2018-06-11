@@ -249,9 +249,19 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
     )
 
+    # test defined stake amount
     freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
+        freqtrade._get_trade_stake_amount()
+
+    # test UNLIMITED_STAKE_AMOUNT
+    conf = deepcopy(default_conf)
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    conf['max_open_trades'] = 2
+    freqtrade = FreqtradeBot(conf)
+
+    with pytest.raises(DependencyException, match=r'.*is lower than minimal.*'):
         freqtrade._get_trade_stake_amount()
 
 

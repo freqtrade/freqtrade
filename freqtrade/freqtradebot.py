@@ -234,7 +234,7 @@ class FreqtradeBot(object):
 
         return final_list
 
-    def get_target_bid(self, ticker: Dict[str, float]) -> Optional[float]:
+    def get_target_bid(self, ticker: Dict[str, float]) -> float:
         """
         Calculates bid target between current ask price and last price
         :param ticker: Ticker to use for getting Ask and Last Price
@@ -245,7 +245,7 @@ class FreqtradeBot(object):
         balance = self.config['bid_strategy']['ask_last_balance']
         return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
-    def _get_trade_stake_amount(self) -> float:
+    def _get_trade_stake_amount(self) -> Optional[float]:
         stake_amount = self.config['stake_amount']
         avaliable_amount = exchange.get_balance(self.config['stake_currency'])
 
@@ -254,7 +254,13 @@ class FreqtradeBot(object):
             if open_trades >= self.config['max_open_trades']:
                 logger.warning('Can\'t open a new trade: max number of trades is reached')
                 return None
-            return avaliable_amount / (self.config['max_open_trades'] - open_trades)
+            trade_stake_amount = avaliable_amount / (self.config['max_open_trades'] - open_trades)
+            if trade_stake_amount < 0.0005:
+                raise DependencyException(
+                    'Available balance(%f %s) is lower than minimal' % (
+                        avaliable_amount, self.config['stake_currency'])
+                    )
+            return trade_stake_amount
 
         # Check if stake_amount is fulfilled
         if avaliable_amount < stake_amount:
