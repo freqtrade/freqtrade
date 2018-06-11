@@ -30,6 +30,8 @@ if not os.path.isfile(pairs_file):
 with open(pairs_file) as file:
     PAIRS = list(set(json.load(file)))
 
+PAIRS.sort()
+
 since_time = None
 if args.days:
     since_time = arrow.utcnow().shift(days=-args.days).timestamp * 1000
@@ -41,9 +43,15 @@ print(f'About to download pairs: {PAIRS} to {dl_path}')
 exchange._API = exchange.init_ccxt({'key': '',
                                     'secret': '',
                                     'name': args.exchange})
-
+pairs_not_available = []
+# Make sure API markets is initialized
+exchange._API.load_markets()
 
 for pair in PAIRS:
+    if pair not in exchange._API.markets:
+        pairs_not_available.append(pair)
+        print(f"skipping pair {pair}")
+        continue
     for tick_interval in timeframes:
         print(f'downloading pair {pair}, interval {tick_interval}')
 
@@ -60,3 +68,7 @@ for pair in PAIRS:
         pair_print = pair.replace('/', '_')
         filename = f'{pair_print}-{tick_interval}.json'
         misc.file_dump_json(os.path.join(dl_path, filename), data)
+
+
+if pairs_not_available:
+    print(f"Pairs [{','.join(pairs_not_available)}] not availble.")
