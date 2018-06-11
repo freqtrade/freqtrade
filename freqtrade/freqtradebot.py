@@ -7,7 +7,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Callable, Optional
+from typing import Dict, List, Optional, Any, Callable
 
 import arrow
 import requests
