@@ -299,6 +299,11 @@ class RPC(object):
 
         return True, '*Status:* `already stopped`'
 
+    def rpc_reload_conf(self) -> str:
+        """ Handler for reload_conf. """
+        self.freqtrade.state = State.RELOAD_CONF
+        return '*Status:* `Reloading config ...`'
+
     # FIX: no test for this!!!!
     def rpc_forcesell(self, trade_id) -> Tuple[bool, Any]:
         """
@@ -354,6 +359,7 @@ class RPC(object):
             return True, 'Invalid argument.'
 
         _exec_forcesell(trade)
+        Trade.session.flush()
         return False, ''
 
     def rpc_performance(self) -> Tuple[bool, Any]:

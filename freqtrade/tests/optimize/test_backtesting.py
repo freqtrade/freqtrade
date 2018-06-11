@@ -340,7 +340,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
 
     backtesting = Backtesting(default_conf)
     data = backtesting.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 100
+    assert len(data['UNITTEST/BTC']) == 99
 
     # Load Analyze to compare the result between Backtesting function and Analyze are the same
     analyze = Analyze(default_conf)
@@ -364,7 +364,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
     )
     min_date, max_date = backtesting.get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
-    assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
 
 
 def test_generate_text_table(default_conf, mocker):
@@ -501,7 +501,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
-    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
+    tests = [['raise', 17], ['lower', 0], ['sine', 16]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 
@@ -629,10 +629,12 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
+        '--datadir', 'freqtrade/tests/testdata',
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--timerange', '-100'
+        '--timerange', '-100',
+        '--realistic-simulation'
     ]
     args = get_args(args)
     start(args)
@@ -642,13 +644,14 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
         'Using max_open_trades: 1 ...',
-        'Parameter --timerange detected: -100 ..',
+        'Parameter --timerange detected: -100 ...',
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
-        'Measuring data from 2017-11-14T19:32:00+00:00 up to 2017-11-14T22:59:00+00:00 (0 days)..'
+        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Parameter --realistic-simulation detected ...'
     ]
 
     for line in exists:
-        log_has(line, caplog.record_tuples)
+        assert log_has(line, caplog.record_tuples)
