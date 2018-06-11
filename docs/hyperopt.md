@@ -14,13 +14,13 @@ parameters with Hyperopt.
 
 ## Prepare Hyperopt
 Before we start digging in Hyperopt, we recommend you to take a look at 
-your strategy file located into [user_data/strategies/](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+your strategy file located into [user_data/strategies/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
  
 ### 1. Configure your Guards and Triggers
 There are two places you need to change in your strategy file to add a 
 new buy strategy for testing:
-- Inside [populate_buy_trend()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L278-L294).
-- Inside [hyperopt_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297) known as `SPACE`.
+- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L278-L294).
+- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297) known as `SPACE`.
 
 There you have two different type of indicators: 1. `guards` and 2. 
 `triggers`.
@@ -110,13 +110,13 @@ cannot use your config file. It is also made on purpose to allow you
 testing your strategy with different configurations.
 
 The Hyperopt configuration is located in 
-[user_data/hyperopt_conf.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopt_conf.py).
+[user_data/hyperopt_conf.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopt_conf.py).
 
 
 ## Advanced notions
 ### Understand the Guards and Triggers
 When you need to add the new guards and triggers to be hyperopt 
-parameters, you do this by adding them into the [hyperopt_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297).
+parameters, you do this by adding them into the [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297).
 
 If it's a trigger, you add one line to the 'trigger' choice group and that's it.
 
@@ -312,4 +312,4 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
 
 ## Next step
 Now you have a perfect bot and want to control it from Telegram. Your
-next step is to learn the [Telegram usage](https://github.com/gcarq/freqtrade/blob/develop/docs/telegram-usage.md).
+next step is to learn the [Telegram usage](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md).

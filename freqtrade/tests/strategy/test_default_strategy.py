@@ -9,7 +9,7 @@ from freqtrade.strategy.default_strategy import DefaultStrategy
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/BTC_ETH-1.json') as data_file:
+    with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
 
 
@@ -27,7 +27,7 @@ def test_default_strategy(result):
 
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float
-    assert type(strategy.ticker_interval) is int
+    assert type(strategy.ticker_interval) is str
     indicators = strategy.populate_indicators(result)
     assert type(indicators) is DataFrame
     assert type(strategy.populate_buy_trend(indicators)) is DataFrame

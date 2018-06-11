@@ -3,7 +3,6 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
 import copy
-import json
 import logging
 import time
 import traceback
@@ -12,18 +11,18 @@ from typing import Dict, List, Optional, Any, Callable
 
 import arrow
 import requests
-from cachetools import cached, TTLCache
+from cachetools import TTLCache, cached
 
 from freqtrade import (
-    DependencyException, OperationalException, exchange, persistence, __version__
+    DependencyException, OperationalException, TemporaryError,
+    exchange, persistence, __version__,
 )
-from freqtrade.analyze import Analyze
 from freqtrade import constants
+from freqtrade.analyze import Analyze
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
 from freqtrade.state import State
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +33,11 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None):
+    def __init__(self, config: Dict[str, Any])-> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
         method to get the config dict.
-        :param db_url: database connector string for sqlalchemy (Optional)
         """
 
         logger.info(
@@ -52,26 +50,22 @@ class FreqtradeBot(object):
 
         # Init objects
         self.config = config
-        self.analyze = None
-        self.fiat_converter = None
-        self.rpc = None
+        self.analyze = Analyze(self.config)
+        self.fiat_converter = CryptoToFiatConverter()
+        self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = None
 
-        self._init_modules(db_url=db_url)
+        self._init_modules()
 
-    def _init_modules(self, db_url: Optional[str] = None) -> None:
+    def _init_modules(self) -> None:
         """
         Initializes all modules and updates the config
-        :param db_url: database connector string for sqlalchemy (Optional)
         :return: None
         """
         # Initialize all modules
-        self.analyze = Analyze(self.config)
-        self.fiat_converter = CryptoToFiatConverter()
-        self.rpc = RPCManager(self)
 
-        persistence.init(self.config, db_url)
+        persistence.init(self.config)
         exchange.init(self.config)
 
         # Set initial application state
@@ -94,7 +88,7 @@ class FreqtradeBot(object):
         persistence.cleanup()
         return True
 
-    def worker(self, old_state: None) -> State:
+    def worker(self, old_state: State = None) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call
@@ -103,7 +97,7 @@ class FreqtradeBot(object):
         # Log state transition
         state = self.state
         if state != old_state:
-            self.rpc.send_msg('*Status:* `{}`'.format(state.name.lower()))
+            self.rpc.send_msg(f'*Status:* `{state.name.lower()}`')
             logger.info('Changing state to: %s', state.name)
 
         if state == State.STOPPED:
@@ -173,66 +167,74 @@ class FreqtradeBot(object):
                 self.check_handle_timedout(self.config['unfilledtimeout'])
                 Trade.session.flush()
 
-        except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
+        except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(constants.RETRY_TIMEOUT)
         except OperationalException:
+            tb = traceback.format_exc()
+            hint = 'Issue `/start` if you think it is safe to restart.'
             self.rpc.send_msg(
-                '*Status:* OperationalException:\n```\n{traceback}```{hint}'
-                .format(
-                    traceback=traceback.format_exc(),
-                    hint='Issue `/start` if you think it is safe to restart.'
-                )
+                f'*Status:* OperationalException:\n```\n{tb}```{hint}'
             )
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
         return state_changed
 
     @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str = 'BaseVolume') -> List[str]:
+    def _gen_pair_whitelist(self, base_currency: str, key: str = 'quoteVolume') -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
-        :param key: sort key (defaults to 'BaseVolume')
+        :param key: sort key (defaults to 'quoteVolume')
         :return: List of pairs
         """
-        summaries = sorted(
-            (s for s in exchange.get_market_summaries() if
-             s['MarketName'].startswith(base_currency)),
-            key=lambda s: s.get(key) or 0.0,
-            reverse=True
-        )
 
-        return [s['MarketName'].replace('-', '_') for s in summaries]
+        if not exchange.exchange_has('fetchTickers'):
+            raise OperationalException(
+                'Exchange does not support dynamic whitelist.'
+                'Please edit your config and restart the bot'
+            )
+
+        tickers = exchange.get_tickers()
+        # check length so that we make sure that '/' is actually in the string
+        tickers = [v for k, v in tickers.items()
+                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
+
+        sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
+        pairs = [s['symbol'] for s in sorted_tickers]
+        return pairs
 
     def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
         """
-        Check wallet health and remove pair from whitelist if necessary
+        Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
         trade
         :return: the list of pairs the user wants to trade without the one unavailable or
         black_listed
         """
         sanitized_whitelist = whitelist
-        health = exchange.get_wallet_health()
+        markets = exchange.get_markets()
+
+        markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
         known_pairs = set()
-        for status in health:
-            pair = '{}_{}'.format(self.config['stake_currency'], status['Currency'])
+        for market in markets:
+            pair = market['symbol']
             # pair is not int the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
                 continue
             # else the pair is valid
             known_pairs.add(pair)
             # Market is not active
-            if not status['IsActive']:
+            if not market['active']:
                 sanitized_whitelist.remove(pair)
                 logger.info(
-                    'Ignoring %s from whitelist (reason: %s).',
-                    pair, status.get('Notice') or 'wallet is not active'
+                    'Ignoring %s from whitelist. Market is not active.',
+                    pair
                 )
 
         # We need to remove pairs that are unknown
         final_list = [x for x in sanitized_whitelist if x in known_pairs]
+
         return final_list
 
     def get_target_bid(self, ticker: Dict[str, float]) -> float:
@@ -250,12 +252,13 @@ class FreqtradeBot(object):
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
-        :param stake_amount: amount of btc to spend
-        :param interval: Ticker interval used for Analyze
         :return: True if a trade object has been created and persisted, False otherwise
         """
         stake_amount = self.config['stake_amount']
         interval = self.analyze.get_ticker_interval()
+        stake_currency = self.config['stake_currency']
+        fiat_currency = self.config['fiat_display_currency']
+        exc_name = exchange.get_name()
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -263,10 +266,9 @@ class FreqtradeBot(object):
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
         # Check if stake_amount is fulfilled
-        if exchange.get_balance(self.config['stake_currency']) < stake_amount:
+        if exchange.get_balance(stake_currency) < stake_amount:
             raise DependencyException(
-                'stake amount is not fulfilled (currency={})'.format(self.config['stake_currency'])
-            )
+                f'stake amount is not fulfilled (currency={stake_currency})')
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
@@ -277,7 +279,7 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on StochRSI buy signals
+        # Pick pair based on buy signals
         for _pair in whitelist:
             (buy, sell) = self.analyze.get_signal(_pair, interval)
             if buy and not sell:
@@ -285,42 +287,38 @@ class FreqtradeBot(object):
                 break
         else:
             return False
-
+        pair_s = pair.replace('_', '/')
+        pair_url = exchange.get_pair_detail_url(pair)
         # Calculate amount
         buy_limit = self.get_target_bid(exchange.get_ticker(pair))
         amount = stake_amount / buy_limit
 
-        order_id = exchange.buy(pair, buy_limit, amount)
+        order_id = exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(
             stake_amount,
-            self.config['stake_currency'],
-            self.config['fiat_display_currency']
+            stake_currency,
+            fiat_currency
         )
 
         # Create trade entity and return
         self.rpc.send_msg(
-            '*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '
-            .format(
-                exchange.get_name().upper(),
-                pair.replace('_', '/'),
-                exchange.get_pair_detail_url(pair),
-                buy_limit,
-                stake_amount,
-                self.config['stake_currency'],
-                stake_amount_fiat,
-                self.config['fiat_display_currency']
-            )
+            f"""*{exc_name}:* Buying [{pair_s}]({pair_url}) \
+with limit `{buy_limit:.8f} ({stake_amount:.6f} \
+{stake_currency}, {stake_amount_fiat:.3f} {fiat_currency})`"""
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+        fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
-            fee=exchange.get_fee(),
+            fee_open=fee,
+            fee_close=fee,
             open_rate=buy_limit,
+            open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
-            exchange=exchange.get_name().upper(),
+            exchange=exchange.get_id(),
             open_order_id=order_id
         )
         Trade.session.add(trade)
@@ -348,16 +346,73 @@ class FreqtradeBot(object):
         Tries to execute a sell trade
         :return: True if executed
         """
-        # Get order details for actual price per unit
-        if trade.open_order_id:
-            # Update trade with order values
-            logger.info('Found open order for %s', trade)
-            trade.update(exchange.get_order(trade.open_order_id))
+        try:
+            # Get order details for actual price per unit
+            if trade.open_order_id:
+                # Update trade with order values
+                logger.info('Found open order for %s', trade)
+                order = exchange.get_order(trade.open_order_id, trade.pair)
+                # Try update amount (binance-fix)
+                try:
+                    new_amount = self.get_real_amount(trade, order)
+                    if order['amount'] != new_amount:
+                        order['amount'] = new_amount
+                        # Fee was applied, so set to 0
+                        trade.fee_open = 0
 
-        if trade.is_open and trade.open_order_id is None:
-            # Check if we can sell our current pair
-            return self.handle_trade(trade)
+                except OperationalException as exception:
+                    logger.warning("could not update trade amount: %s", exception)
+
+                trade.update(order)
+
+            if trade.is_open and trade.open_order_id is None:
+                # Check if we can sell our current pair
+                return self.handle_trade(trade)
+        except DependencyException as exception:
+            logger.warning('Unable to sell trade: %s', exception)
         return False
+
+    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+        """
+        Get real amount for the trade
+        Necessary for exchanges which charge fees in base currency (e.g. binance)
+        """
+        order_amount = order['amount']
+        # Only run for closed orders
+        if trade.fee_open == 0 or order['status'] == 'open':
+            return order_amount
+
+        # use fee from order-dict if possible
+        if 'fee' in order and order['fee'] and (order['fee'].keys() >= {'currency', 'cost'}):
+            if trade.pair.startswith(order['fee']['currency']):
+                new_amount = order_amount - order['fee']['cost']
+                logger.info("Applying fee on amount for %s (from %s to %s) from Order",
+                            trade, order['amount'], new_amount)
+                return new_amount
+
+        # Fallback to Trades
+        trades = exchange.get_trades_for_order(trade.open_order_id, trade.pair, trade.open_date)
+
+        if len(trades) == 0:
+            logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            return order_amount
+        amount = 0
+        fee_abs = 0
+        for exectrade in trades:
+            amount += exectrade['amount']
+            if "fee" in exectrade and (exectrade['fee'].keys() >= {'currency', 'cost'}):
+                # only applies if fee is in quote currency!
+                if trade.pair.startswith(exectrade['fee']['currency']):
+                    fee_abs += exectrade['fee']['cost']
+
+        if amount != order_amount:
+            logger.warning(f"amount {amount} does not match amount {trade.amount}")
+            raise OperationalException("Half bought? Amounts don't match")
+        real_amount = amount - fee_abs
+        if fee_abs != 0:
+            logger.info(f"""Applying fee on amount for {trade} \
+(from {order_amount} to {real_amount}) from Trades""")
+        return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:
         """
@@ -365,7 +420,7 @@ class FreqtradeBot(object):
         :return: True if trade has been sold, False otherwise
         """
         if not trade.is_open:
-            raise ValueError('attempt to handle closed trade: {}'.format(trade))
+            raise ValueError(f'attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
         current_rate = exchange.get_ticker(trade.pair)['bid']
@@ -391,22 +446,28 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
-                order = exchange.get_order(trade.open_order_id)
+                # FIXME: Somehow the query above returns results
+                # where the open_order_id is in fact None.
+                # This is probably because the record got
+                # updated via /forcesell in a different thread.
+                if not trade.open_order_id:
+                    continue
+                order = exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
                     traceback.format_exc())
                 continue
-            ordertime = arrow.get(order['opened'])
+            ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
                 continue
 
-            if order['type'] == "LIMIT_BUY" and ordertime < timeoutthreashold:
+            if order['side'] == 'buy' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_buy(trade, order)
-            elif order['type'] == "LIMIT_SELL" and ordertime < timeoutthreashold:
+            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
                 self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
@@ -416,16 +477,14 @@ class FreqtradeBot(object):
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        exchange.cancel_order(trade.open_order_id)
+        pair_s = trade.pair.replace('_', '/')
+        exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
-            # FIX? do we really need to flush, caller of
-            #      check_handle_timedout will flush afterwards
             Trade.session.flush()
             logger.info('Buy order timeout for %s.', trade)
-            self.rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
-                trade.pair.replace('_', '/')))
+            self.rpc.send_msg(f'*Timeout:* Unfilled buy order for {pair_s} cancelled')
             return True
 
         # if trade is partially complete, edit the stake details for the trade
@@ -434,8 +493,7 @@ class FreqtradeBot(object):
         trade.stake_amount = trade.amount * trade.open_rate
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
-        self.rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
-            trade.pair.replace('_', '/')))
+        self.rpc.send_msg(f'*Timeout:* Remaining buy order for {pair_s} cancelled')
         return False
 
     # FIX: 20180110, should cancel_order() be cond. or unconditionally called?
@@ -444,16 +502,16 @@ class FreqtradeBot(object):
         Sell timeout - cancel order and update trade
         :return: True if order was fully cancelled
         """
+        pair_s = trade.pair.replace('_', '/')
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
-            exchange.cancel_order(trade.open_order_id)
+            exchange.cancel_order(trade.open_order_id, trade.pair)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
-            self.rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
-                trade.pair.replace('_', '/')))
+            self.rpc.send_msg(f'*Timeout:* Unfilled sell order for {pair_s} cancelled')
             logger.info('Sell order timeout for %s.', trade)
             return True
 
@@ -467,51 +525,42 @@ class FreqtradeBot(object):
         :param limit: limit rate for the sell order
         :return: None
         """
+        exc = trade.exchange
+        pair = trade.pair
         # Execute sell and update trade record
-        order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+        order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
+        trade.close_rate_requested = limit
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
         profit_trade = trade.calc_profit(rate=limit)
-        current_rate = exchange.get_ticker(trade.pair, False)['bid']
-        profit = trade.calc_profit_percent(current_rate)
+        current_rate = exchange.get_ticker(trade.pair)['bid']
+        profit = trade.calc_profit_percent(limit)
+        pair_url = exchange.get_pair_detail_url(trade.pair)
+        gain = "profit" if fmt_exp_profit > 0 else "loss"
 
-        message = "*{exchange}:* Selling\n" \
-                  "*Current Pair:* [{pair}]({pair_url})\n" \
-                  "*Limit:* `{limit}`\n" \
-                  "*Amount:* `{amount}`\n" \
-                  "*Open Rate:* `{open_rate:.8f}`\n" \
-                  "*Current Rate:* `{current_rate:.8f}`\n" \
-                  "*Profit:* `{profit:.2f}%`" \
-                  "".format(
-                      exchange=trade.exchange,
-                      pair=trade.pair,
-                      pair_url=exchange.get_pair_detail_url(trade.pair),
-                      limit=limit,
-                      open_rate=trade.open_rate,
-                      current_rate=current_rate,
-                      amount=round(trade.amount, 8),
-                      profit=round(profit * 100, 2),
-                  )
+        message = f"*{exc}:* Selling\n" \
+                  f"*Current Pair:* [{pair}]({pair_url})\n" \
+                  f"*Limit:* `{limit}`\n" \
+                  f"*Amount:* `{round(trade.amount, 8)}`\n" \
+                  f"*Open Rate:* `{trade.open_rate:.8f}`\n" \
+                  f"*Current Rate:* `{current_rate:.8f}`\n" \
+                  f"*Profit:* `{round(profit * 100, 2):.2f}%`" \
+                  ""
 
         # For regular case, when the configuration exists
         if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
+            stake = self.config['stake_currency']
+            fiat = self.config['fiat_display_currency']
             fiat_converter = CryptoToFiatConverter()
             profit_fiat = fiat_converter.convert_amount(
                 profit_trade,
-                self.config['stake_currency'],
-                self.config['fiat_display_currency']
+                stake,
+                fiat
             )
-            message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
-                       '` / {profit_fiat:.3f} {fiat})`' \
-                       ''.format(
-                           gain="profit" if fmt_exp_profit > 0 else "loss",
-                           profit_percent=fmt_exp_profit,
-                           profit_coin=profit_trade,
-                           coin=self.config['stake_currency'],
-                           profit_fiat=profit_fiat,
-                           fiat=self.config['fiat_display_currency'],
-                       )
+            message += f'` ({gain}: {fmt_exp_profit:.2f}%, {profit_trade:.8f} {stake}`' \
+                       f'` / {profit_fiat:.3f} {fiat})`'\
+                       ''
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well
         else:

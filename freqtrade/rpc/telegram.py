@@ -18,7 +18,7 @@ from freqtrade.rpc.rpc import RPC
 logger = logging.getLogger(__name__)
 
 
-def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[..., Any]:
+def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Callable[..., Any]:
     """
     Decorator to check if the message comes from the correct chat_id
     :param command_handler: Telegram CommandHandler
@@ -65,7 +65,7 @@ class Telegram(RPC):
         """
         super().__init__(freqtrade)
 
-        self._updater = None
+        self._updater: Updater = None
         self._config = freqtrade.config
         self._init()
 
@@ -264,17 +264,15 @@ class Telegram(RPC):
         (currencys, total, symbol, value) = result
         output = ''
         for currency in currencys:
-            output += """*Currency*: {currency}
-    *Available*: {available}
-    *Balance*: {balance}
-    *Pending*: {pending}
-    *Est. BTC*: {est_btc: .8f}
-    """.format(**currency)
+            output += "*{currency}:*\n" \
+                      "\t`Available: {available: .8f}`\n" \
+                      "\t`Balance: {balance: .8f}`\n" \
+                      "\t`Pending: {pending: .8f}`\n" \
+                      "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
 
-        output += """*Estimated Value*:
-    *BTC*: {0: .8f}
-    *{1}*: {2: .2f}
-    """.format(total, symbol, value)
+        output += "\n*Estimated Value*:\n" \
+                  "\t`BTC: {0: .8f}`\n" \
+                  "\t`{1}: {2: .2f}`\n".format(total, symbol, value)
         self.send_msg(output)
 
     @authorized_only

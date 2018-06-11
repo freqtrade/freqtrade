@@ -5,6 +5,7 @@ Various tool function for Freqtrade and scripts
 import json
 import logging
 import re
+import gzip
 from datetime import datetime
 from typing import Dict
 
@@ -63,12 +64,28 @@ def common_datearray(dfs: Dict[str, DataFrame]) -> np.ndarray:
     return np.sort(arr, axis=0)
 
 
-def file_dump_json(filename, data) -> None:
+def file_dump_json(filename, data, is_zip=False) -> None:
     """
     Dump JSON data into a file
     :param filename: file to create
     :param data: JSON Data to save
     :return:
     """
-    with open(filename, 'w') as fp:
-        json.dump(data, fp, default=str)
+    print(f'dumping json to "{filename}"')
+
+    if is_zip:
+        if not filename.endswith('.gz'):
+            filename = filename + '.gz'
+        with gzip.open(filename, 'w') as fp:
+            json.dump(data, fp, default=str)
+    else:
+        with open(filename, 'w') as fp:
+            json.dump(data, fp, default=str)
+
+
+def format_ms_time(date: int) -> str:
+    """
+    convert MS date to readable format.
+    : epoch-string in ms
+    """
+    return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')

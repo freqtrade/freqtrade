@@ -2,7 +2,7 @@
 IStrategy interface
 This module defines the interface to apply for strategies
 """
-
+from typing import Dict
 from abc import ABC, abstractmethod
 
 from pandas import DataFrame
@@ -16,8 +16,12 @@ class IStrategy(ABC):
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
         stoploss -> float: optimal stoploss designed for the strategy
-        ticker_interval -> int: value of the ticker interval to use for the strategy
+        ticker_interval -> str: value of the ticker interval to use for the strategy
     """
+
+    minimal_roi: Dict
+    stoploss: float
+    ticker_interval: str
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:

@@ -9,9 +9,10 @@ from typing import Dict, List, Tuple
 import arrow
 from pandas import DataFrame, to_datetime
 
+from freqtrade import constants
 from freqtrade.exchange import get_ticker_history
 from freqtrade.persistence import Trade
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class Analyze(object):
         :param config: Bot configuration (use the one from Configuration())
         """
         self.config = config
-        self.strategy = StrategyResolver(self.config).strategy
+        self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:
@@ -45,21 +46,23 @@ class Analyze(object):
         :param ticker: See exchange.get_ticker_history
         :return: DataFrame
         """
-        columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
-        frame = DataFrame(ticker).rename(columns=columns)
-        if 'BV' in frame:
-            frame.drop('BV', axis=1, inplace=True)
+        cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+        frame = DataFrame(ticker, columns=cols)
 
-        frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+        frame['date'] = to_datetime(frame['date'],
+                                    unit='ms',
+                                    utc=True,
+                                    infer_datetime_format=True)
 
         # group by index and aggregate results to eliminate duplicate ticks
         frame = frame.groupby(by='date', as_index=False, sort=True).agg({
-            'close': 'last',
+            'open': 'first',
             'high': 'max',
             'low': 'min',
-            'open': 'first',
+            'close': 'last',
             'volume': 'max',
         })
+        frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
         return frame
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
@@ -88,7 +91,7 @@ class Analyze(object):
         """
         return self.strategy.populate_sell_trend(dataframe=dataframe)
 
-    def get_ticker_interval(self) -> int:
+    def get_ticker_interval(self) -> str:
         """
         Return ticker interval to use
         :return: Ticker interval value to use
@@ -107,10 +110,10 @@ class Analyze(object):
         dataframe = self.populate_sell_trend(dataframe)
         return dataframe
 
-    def get_signal(self, pair: str, interval: int) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, interval: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
-        :param pair: pair in format BTC_ANT or BTC-ANT
+        :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
@@ -144,7 +147,8 @@ class Analyze(object):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        if signal_date < arrow.utcnow() - timedelta(minutes=(interval + 5)):
+        interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
+        if signal_date < arrow.utcnow() - timedelta(minutes=(interval_minutes + 5)):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,

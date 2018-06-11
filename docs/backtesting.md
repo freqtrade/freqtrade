@@ -14,7 +14,7 @@ real data. This is what we call
 
 Backtesting will use the crypto-currencies (pair) from your config file
 and load static tickers located in 
-[/freqtrade/tests/testdata](https://github.com/gcarq/freqtrade/tree/develop/freqtrade/tests/testdata).  
+[/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).  
 If the 5 min and 1 min ticker for the crypto-currencies to test is not 
 already in the `testdata` folder, backtesting will download them 
 automatically. Testdata files will not be updated until you specify it.
@@ -33,10 +33,10 @@ python3 ./freqtrade/main.py backtesting --realistic-simulation
 
 **With 1 min tickers**
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1
+python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
 ```
 
-**Reload your testdata files**
+**Update cached pairs with the latest data**
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
 ```
@@ -53,14 +53,20 @@ python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180
 
 **With a (custom) strategy file**
 ```bash
-python3 ./freqtrade/main.py -s currentstrategy backtesting
+python3 ./freqtrade/main.py -s TestStrategy backtesting
 ```
-Where `-s currentstrategy` refers to a filename `currentstrategy.py` in `freqtrade/user_data/strategies`
+Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
 
 **Exporting trades to file**
 ```bash
 python3 ./freqtrade/main.py backtesting --export trades
 ```
+
+**Exporting trades to file specifying a custom filename**
+```bash
+python3 ./freqtrade/main.py backtesting --export trades --export-filename=backtest_teststrategy.json
+```
+
 
 **Running backtest with smaller testset**  
 Use the `--timerange` argument to change how much of the testset
@@ -80,30 +86,38 @@ The full timerange specification:
 - Use last 123 tickframes of data: `--timerange=-123`
 - Use first 123 tickframes of data: `--timerange=123-`
 - Use tickframes from line 123 through 456: `--timerange=123-456`
+- Use tickframes till 2018/01/31: `--timerange=-20180131`
+- Use tickframes since 2018/01/31: `--timerange=20180131-`
+- Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
+- Use tickframes between POSIX timestamps 1527595200 1527618600:
+                                                `--timerange=1527595200-1527618600`
 
 
-Incoming feature, not implemented yet:
-- `--timerange=-20180131`
--  `--timerange=20180101-`
-- `--timerange=20180101-20181231`
+**Downloading new set of ticker data**
+To download new set of backtesting ticker data, you can use a download script.
 
-
-**Update testdata directory**
-To update your testdata directory, or download into another testdata directory:
-```bash
-mkdir -p user_data/data/testdata-20180113
-cp freqtrade/tests/testdata/pairs.json user_data/data-20180113
-cd user_data/data-20180113
-```
-
-Possibly edit pairs.json file to include/exclude pairs
+If you are using Binance for example:
+- create a folder `user_data/data/binance` and copy `pairs.json` in that folder.
+- update the `pairs.json` to contain the currency pairs you are interested in.
 
 ```bash
-python3 freqtrade/tests/testdata/download_backtest_data.py -p pairs.json
+mkdir -p user_data/data/binance
+cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 ```
 
-The script will read your pairs.json file, and download ticker data
-into the current working directory.
+Then run:
+
+```bash
+python scripts/download_backtest_data --exchange binance
+```
+
+This will download ticker data for all the currency pairs you defined in `pairs.json`.
+
+- To use a different folder than the exchange specific default, use `--export user_data/data/some_directory`.
+- To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
+- To use `pairs.json` from some other folder, use `--pairs-file some_other_dir/pairs.json`.
+- To download ticker data for only 10 days, use `--days 10`.
+- Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
 
 
 For help about backtesting usage, please refer to 
@@ -117,16 +131,16 @@ A backtesting result will look like that:
 ====================== BACKTESTING REPORT ================================
 pair        buy count    avg profit %    total profit BTC    avg duration
 --------  -----------  --------------  ------------------  --------------
-BTC_ETH            56           -0.67         -0.00075455            62.3
-BTC_LTC            38           -0.48         -0.00036315            57.9
-BTC_ETC            42           -1.15         -0.00096469            67.0
-BTC_DASH           72           -0.62         -0.00089368            39.9
-BTC_ZEC            45           -0.46         -0.00041387            63.2
-BTC_XLM            24           -0.88         -0.00041846            47.7
-BTC_NXT            24            0.68          0.00031833            40.2
-BTC_POWR           35            0.98          0.00064887            45.3
-BTC_ADA            43           -0.39         -0.00032292            55.0
-BTC_XMR            40           -0.40         -0.00032181            47.4
+ETH/BTC            56           -0.67         -0.00075455            62.3
+LTC/BTC            38           -0.48         -0.00036315            57.9
+ETC/BTC            42           -1.15         -0.00096469            67.0
+DASH/BTC           72           -0.62         -0.00089368            39.9
+ZEC/BTC            45           -0.46         -0.00041387            63.2
+XLM/BTC            24           -0.88         -0.00041846            47.7
+NXT/BTC            24            0.68          0.00031833            40.2
+POWR/BTC           35            0.98          0.00064887            45.3
+ADA/BTC            43           -0.39         -0.00032292            55.0
+XMR/BTC            40           -0.40         -0.00032181            47.4
 TOTAL             419           -0.41         -0.00348593            52.9
 ```
 
@@ -161,4 +175,4 @@ strategies, your configuration, and the crypto-currency you have set up.
 ## Next step
 Great, your strategy is profitable. What if the bot can give your the
 optimal parameters to use for your strategy?  
-Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/hyperopt.md)
+Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
