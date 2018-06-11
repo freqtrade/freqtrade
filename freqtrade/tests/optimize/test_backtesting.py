@@ -437,7 +437,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    conf['ticker_interval'] = 1
+    conf['ticker_interval'] = "1m"
     conf['live'] = False
     conf['datadir'] = None
     conf['export'] = None
@@ -446,14 +446,8 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
     backtesting = Backtesting(conf)
     backtesting.start()
     # check the logs, that will contain the backtest result
-    exists = [
-        'Using local backtesting data (using whitelist in given config) ...',
-        'Using stake_currency: BTC ...',
-        'Using stake_amount: 0.001 ...',
-        'No data found. Terminating.'
-    ]
-    for line in exists:
-        assert log_has(line, caplog.record_tuples)
+
+    assert log_has('No data found. Terminating.', caplog.record_tuples)
 
 
 def test_backtest(default_conf, fee, mocker) -> None:
