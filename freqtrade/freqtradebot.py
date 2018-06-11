@@ -7,7 +7,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any, Callable, Optional
 
 import arrow
 import requests
@@ -239,7 +239,7 @@ class FreqtradeBot(object):
 
         return final_list
 
-    def get_target_bid(self, ticker: Dict[str, float]) -> float:
+    def get_target_bid(self, ticker: Dict[str, float]) -> Optional[float]:
         """
         Calculates bid target between current ask price and last price
         :param ticker: Ticker to use for getting Ask and Last Price
