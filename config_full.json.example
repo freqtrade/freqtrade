@@ -14,7 +14,9 @@
     "stoploss": -0.10,
     "unfilledtimeout": 600,
     "bid_strategy": {
-        "ask_last_balance": 0.0
+        "ask_last_balance": 0.0,
+        "use_book_order": true,
+        "book_order_top": 6
     },
     "exchange": {
         "name": "bittrex",

@@ -234,16 +234,25 @@ class FreqtradeBot(object):
 
         return final_list
 
-    def get_target_bid(self, ticker: Dict[str, float]) -> float:
+    def get_target_bid(self, pair: str) -> float:
         """
         Calculates bid target between current ask price and last price
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
-        if ticker['ask'] < ticker['last']:
-            return ticker['ask']
-        balance = self.config['bid_strategy']['ask_last_balance']
-        return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
+        if self.config['bid_strategy']['use_book_order']:
+            logger.info('Using order book ')
+            orderBook = exchange.get_order_book(pair)
+            return orderBook['bids'][self.config['bid_strategy']['use_book_order']][0]
+        else:
+            logger.info('Using Ask / Last Price')
+            ticker = exchange.get_ticker(pair);
+            if ticker['ask'] < ticker['last']:
+                return ticker['ask']
+            balance = self.config['bid_strategy']['ask_last_balance']
+            return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
 
     def create_trade(self) -> bool:
         """
@@ -287,7 +296,7 @@ class FreqtradeBot(object):
         pair_s = pair.replace('_', '/')
         pair_url = exchange.get_pair_detail_url(pair)
         # Calculate amount
-        buy_limit = self.get_target_bid(exchange.get_ticker(pair))
+        buy_limit = self.get_target_bid(pair)
         amount = stake_amount / buy_limit
 
         order_id = exchange.buy(pair, buy_limit, amount)['id']

@@ -239,6 +239,19 @@ def get_balances() -> dict:
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
+@retrier
+def get_order_book(pair: str, refresh: Optional[bool] = True) -> dict:
+    try:
+        return _API.fetch_order_book(pair)
+    except ccxt.NotSupported as e:
+        raise OperationalException(
+            f'Exchange {_API.name} does not support fetching order book.'
+            f'Message: {e}')
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            f'Could not load order book due to {e.__class__.__name__}. Message: {e}')
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 @retrier
 def get_tickers() -> Dict:
