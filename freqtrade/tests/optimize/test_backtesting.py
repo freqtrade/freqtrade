@@ -416,6 +416,46 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         assert log_has(line, caplog.record_tuples)
 
 
+def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
+    """
+    Test Backtesting.start() method if no data is found
+    """
+
+    def get_timeframe(input1, input2):
+        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+
+    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
+    mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.get_ticker_history')
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    mocker.patch.multiple(
+        'freqtrade.optimize.backtesting.Backtesting',
+        backtest=MagicMock(),
+        _generate_text_table=MagicMock(return_value='1'),
+        get_timeframe=get_timeframe,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    conf['ticker_interval'] = 1
+    conf['live'] = False
+    conf['datadir'] = None
+    conf['export'] = None
+    conf['timerange'] = '20180101-20180102'
+
+    backtesting = Backtesting(conf)
+    backtesting.start()
+    # check the logs, that will contain the backtest result
+    exists = [
+        'Using local backtesting data (using whitelist in given config) ...',
+        'Using stake_currency: BTC ...',
+        'Using stake_amount: 0.001 ...',
+        'No data found. Terminating.'
+    ]
+    for line in exists:
+        assert log_has(line, caplog.record_tuples)
+
+
 def test_backtest(default_conf, fee, mocker) -> None:
     """
     Test Backtesting.backtest() method
