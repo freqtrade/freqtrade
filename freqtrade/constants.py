@@ -65,6 +65,8 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False
                 },
+                'use_book_order': {'type': 'boolean'},
+                'book_order_top': {'type': 'number', 'maximum':20,'minimum':1}
             },
             'required': ['ask_last_balance']
         },
