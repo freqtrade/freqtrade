@@ -234,8 +234,8 @@ class Backtesting(object):
                         # record a tuple of pair, current_profit_percent,
                         # entry-date, duration
                         records.append((pair, trade_entry.profit_percent,
-                                        trade_entry.open_time.strftime('%s'),
-                                        trade_entry.close_time.strftime('%s'),
+                                        trade_entry.open_time.timestamp(),
+                                        trade_entry.close_time.timestamp(),
                                         index, trade_entry.trade_duration))
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
