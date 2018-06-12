@@ -14,7 +14,7 @@ import numpy # noqa
 class TestStrategy(IStrategy):
     """
     This is a test strategy to inspire you.
-    More information in https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md
+    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
 
     You can:
     - Rename the class name (Do not forget to update class_name)

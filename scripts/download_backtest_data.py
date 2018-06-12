@@ -8,146 +8,29 @@ import arrow
 
 from freqtrade import (exchange, arguments, misc)
 
-DEFAULT_DL_PATH = 'freqtrade/tests/testdata'
+DEFAULT_DL_PATH = 'user_data/data'
 
 arguments = arguments.Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
 args = arguments.parse_args()
 
-TICKER_INTERVALS = ['1m', '5m', '1h', '4h']
-PAIRS = [
-    "ETH/BTC",
-    "LTC/BTC",
-    "BNB/BTC",
-    "NEO/BTC",
-    "GAS/BTC",
-    "MCO/BTC",
-    "WTC/BTC",
-    "QTUM/BTC",
-    "OMG/BTC",
-    "ZRX/BTC",
-    "STRAT/BTC",
-    "SNGLS/BTC",
-    "BQX/BTC",
-    "KNC/BTC",
-    "FUN/BTC",
-    "SNM/BTC",
-    "LINK/BTC",
-    "XVG/BTC",
-    "SALT/BTC",
-    "IOTA/BTC",
-    "MDA/BTC",
-    "MTL/BTC",
-    "SUB/BTC",
-    "EOS/BTC",
-    "SNT/BTC",
-    "ETC/BTC",
-    "MTH/BTC",
-    "ENG/BTC",
-    "DNT/BTC",
-    "BNT/BTC",
-    "AST/BTC",
-    "DASH/BTC",
-    "ICN/BTC",
-    "OAX/BTC",
-    "BTG/BTC",
-    "EVX/BTC",
-    "REQ/BTC",
-    "LRC/BTC",
-    "VIB/BTC",
-    "HSR/BTC",
-    "TRX/BTC",
-    "POWR/BTC",
-    "ARK/BTC",
-    "XRP/BTC",
-    "MOD/BTC",
-    "ENJ/BTC",
-    "STORJ/BTC",
-    "VEN/BTC",
-    "KMD/BTC",
-    "RCN/BTC",
-    "NULS/BTC",
-    "RDN/BTC",
-    "XMR/BTC",
-    "DLT/BTC",
-    "AMB/BTC",
-    "BAT/BTC",
-    "ZEC/BTC",
-    "BCPT/BTC",
-    "ARN/BTC",
-    "GVT/BTC",
-    "CDT/BTC",
-    "GXS/BTC",
-    "POE/BTC",
-    "QSP/BTC",
-    "BTS/BTC",
-    "XZC/BTC",
-    "LSK/BTC",
-    "TNT/BTC",
-    "FUEL/BTC",
-    "MANA/BTC",
-    "BCD/BTC",
-    "DGD/BTC",
-    "ADX/BTC",
-    "ADA/BTC",
-    "PPT/BTC",
-    "CMT/BTC",
-    "XLM/BTC",
-    "CND/BTC",
-    "LEND/BTC",
-    "WABI/BTC",
-    "TNB/BTC",
-    "WAVES/BTC",
-    "ICX/BTC",
-    "GTO/BTC",
-    "OST/BTC",
-    "ELF/BTC",
-    "AION/BTC",
-    "NEBL/BTC",
-    "BRD/BTC",
-    "EDO/BTC",
-    "WINGS/BTC",
-    "NAV/BTC",
-    "LUN/BTC",
-    "TRIG/BTC",
-    "APPC/BTC",
-    "VIBE/BTC",
-    "RLC/BTC",
-    "INS/BTC",
-    "PIVX/BTC",
-    "IOST/BTC",
-    "CHAT/BTC",
-    "STEEM/BTC",
-    "VIA/BTC",
-    "BLZ/BTC",
-    "AE/BTC",
-    "RPX/BTC",
-    "NCASH/BTC",
-    "POA/BTC",
-    "ZIL/BTC",
-    "ONT/BTC",
-    "STORM/BTC",
-    "XEM/BTC",
-    "WAN/BTC",
-    "QLC/BTC",
-    "SYS/BTC",
-    "WPR/BTC",
-    "GRS/BTC",
-    "CLOAK/BTC",
-    "GNT/BTC",
-    "LOOM/BTC",
-    "BCN/BTC",
-    "REP/BTC"
-]
+timeframes = args.timeframes
 
-if args.pairs_file:
-    with open(args.pairs_file) as file:
-        PAIRS = json.load(file)
-PAIRS = list(set(PAIRS))
-
-dl_path = DEFAULT_DL_PATH
-if args.export and os.path.exists(args.export):
+dl_path = os.path.join(DEFAULT_DL_PATH, args.exchange)
+if args.export:
     dl_path = args.export
+
+if not os.path.isdir(dl_path):
+    sys.exit(f'Directory {dl_path} does not exist.')
+
+pairs_file = args.pairs_file if args.pairs_file else os.path.join(dl_path, 'pairs.json')
+if not os.path.isfile(pairs_file):
+    sys.exit(f'No pairs file found with path {pairs_file}.')
+
+with open(pairs_file) as file:
+    PAIRS = list(set(json.load(file)))
+
+PAIRS.sort()
 
 since_time = None
 if args.days:
@@ -159,9 +42,16 @@ print(f'About to download pairs: {PAIRS} to {dl_path}')
 exchange._API = exchange.init_ccxt({'key': '',
                                     'secret': '',
                                     'name': args.exchange})
+pairs_not_available = []
+# Make sure API markets is initialized
+exchange._API.load_markets()
 
 for pair in PAIRS:
-    for tick_interval in TICKER_INTERVALS:
+    if pair not in exchange._API.markets:
+        pairs_not_available.append(pair)
+        print(f"skipping pair {pair}")
+        continue
+    for tick_interval in timeframes:
         print(f'downloading pair {pair}, interval {tick_interval}')
 
         data = exchange.get_ticker_history(pair, tick_interval, since_ms=since_time)
@@ -177,3 +67,7 @@ for pair in PAIRS:
         pair_print = pair.replace('/', '_')
         filename = f'{pair_print}-{tick_interval}.json'
         misc.file_dump_json(os.path.join(dl_path, filename), data)
+
+
+if pairs_not_available:
+    print(f"Pairs [{','.join(pairs_not_available)}] not availble.")

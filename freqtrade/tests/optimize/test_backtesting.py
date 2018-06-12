@@ -13,7 +13,7 @@ from arrow import Arrow
 
 from freqtrade import optimize
 from freqtrade.analyze import Analyze
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
 from freqtrade.tests.conftest import log_has
 
@@ -30,7 +30,7 @@ def trim_dictlist(dict_list, num):
 
 
 def load_data_test(what):
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -101)
     data = optimize.load_data(None, ticker_interval='1m',
                               pairs=['UNITTEST/BTC'], timerange=timerange)
     pair = data['UNITTEST/BTC']
@@ -112,14 +112,14 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
 # use for mock freqtrade.exchange.get_ticker_history'
 def _load_pair_as_ticks(pair, tickfreq):
     ticks = optimize.load_data(None, ticker_interval=tickfreq, pairs=[pair])
-    ticks = trim_dictlist(ticks, -200)
+    ticks = trim_dictlist(ticks, -201)
     return ticks[pair]
 
 
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = optimize.load_data(None, ticker_interval='8m', pairs=[pair])
-    data = trim_dictlist(data, -200)
+    data = trim_dictlist(data, -201)
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
     backtesting = Backtesting(conf)
     return {
@@ -313,13 +313,13 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     Test Backtesting.tickerdata_to_dataframe() method
     """
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
-    timerange = ((None, 'line'), None, -100)
+    timerange = TimeRange(None, 'line', 0, -100)
     tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
 
     backtesting = Backtesting(default_conf)
     data = backtesting.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 100
+    assert len(data['UNITTEST/BTC']) == 99
 
     # Load Analyze to compare the result between Backtesting function and Analyze are the same
     analyze = Analyze(default_conf)
@@ -343,7 +343,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
     )
     min_date, max_date = backtesting.get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
-    assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
 
 
 def test_generate_text_table(default_conf, mocker):
@@ -418,6 +418,40 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         assert log_has(line, caplog.record_tuples)
 
 
+def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
+    """
+    Test Backtesting.start() method if no data is found
+    """
+
+    def get_timeframe(input1, input2):
+        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+
+    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
+    mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.get_ticker_history')
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    mocker.patch.multiple(
+        'freqtrade.optimize.backtesting.Backtesting',
+        backtest=MagicMock(),
+        _generate_text_table=MagicMock(return_value='1'),
+        get_timeframe=get_timeframe,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    conf['ticker_interval'] = "1m"
+    conf['live'] = False
+    conf['datadir'] = None
+    conf['export'] = None
+    conf['timerange'] = '20180101-20180102'
+
+    backtesting = Backtesting(conf)
+    backtesting.start()
+    # check the logs, that will contain the backtest result
+
+    assert log_has('No data found. Terminating.', caplog.record_tuples)
+
+
 def test_backtest(default_conf, fee, mocker) -> None:
     """
     Test Backtesting.backtest() method
@@ -480,7 +514,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
-    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
+    tests = [['raise', 17], ['lower', 0], ['sine', 16]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 
@@ -608,10 +642,12 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
+        '--datadir', 'freqtrade/tests/testdata',
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--timerange', '-100'
+        '--timerange', '-100',
+        '--realistic-simulation'
     ]
     args = get_args(args)
     start(args)
@@ -621,13 +657,14 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
         'Using max_open_trades: 1 ...',
-        'Parameter --timerange detected: -100 ..',
+        'Parameter --timerange detected: -100 ...',
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
-        'Measuring data from 2017-11-14T19:32:00+00:00 up to 2017-11-14T22:59:00+00:00 (0 days)..'
+        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Parameter --realistic-simulation detected ...'
     ]
 
     for line in exists:
-        log_has(line, caplog.record_tuples)
+        assert log_has(line, caplog.record_tuples)
