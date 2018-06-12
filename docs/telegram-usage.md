@@ -4,7 +4,7 @@ This page explains how to command your bot with Telegram.
 
 ## Pre-requisite
 To control your bot with Telegram, you need first to 
-[set up a Telegram bot](https://github.com/gcarq/freqtrade/blob/develop/docs/pre-requisite.md) 
+[set up a Telegram bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md) 
 and add your Telegram API keys into your config file.
 
 ## Telegram commands

@@ -7,6 +7,7 @@ config*.json
 logfile.txt
 hyperopt_trials.pickle
 freqtrade-plot.html
+freqtrade-profit-plot.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -89,3 +90,4 @@ target/
 .vscode
 
 .pytest_cache/
+.mypy_cache/

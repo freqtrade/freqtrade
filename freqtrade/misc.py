@@ -83,7 +83,7 @@ def file_dump_json(filename, data, is_zip=False) -> None:
             json.dump(data, fp, default=str)
 
 
-def format_ms_time(date: str) -> str:
+def format_ms_time(date: int) -> str:
     """
     convert MS date to readable format.
     : epoch-string in ms
