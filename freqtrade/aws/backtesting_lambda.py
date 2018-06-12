@@ -371,64 +371,30 @@ def cron(event, context):
     :return:
     """
     import boto3
-    from freqtrade.aws.tables import get_strategy_table
 
     # if topic exists, we just reuse it
     client = boto3.client('sns')
     topic_arn = client.create_topic(Name=os.environ['topic'])['TopicArn']
 
-    table = get_strategy_table()
-    response = table.scan()
+    message = {
+        "local": False,
+        "refresh": True,
+        "ticker": ['5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d'],
+        "days": [1, 2, 3, 4, 5, 6, 7, 14, 30, 90]
+    }
 
-    def fetch(response, table):
-        """
-            fetches all strategies from the server
-            technically code duplications
-            TODO refacture
-        :param response:
-        :param table:
-        :return:
-        """
+    print("submitting: {}".format(message))
+    serialized = json.dumps(message, use_decimal=True)
+    # submit item to queue for routing to the correct persistence
 
-        for i in response['Items']:
-            # fire a message to our queue
+    result = client.publish(
+        TopicArn=topic_arn,
+        Message=json.dumps({'default': serialized}),
+        Subject="schedule",
+        MessageStructure='json'
+    )
 
-            message = {
-                "user": i['user'],
-                "name": i['name'],
-                "assets": i['assets'],
-                "stake_currency": i['stake_currency'],
-                "local": False,
-                "refresh": True,
-                "ticker": ['5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d'],
-                "days": [1, 2, 3, 4, 5, 6, 7, 14, 30, 90]
-            }
-
-            print("submitting: {}".format(message))
-            serialized = json.dumps(message, use_decimal=True)
-            # submit item to queue for routing to the correct persistence
-
-            result = client.publish(
-                TopicArn=topic_arn,
-                Message=json.dumps({'default': serialized}),
-                Subject="schedule",
-                MessageStructure='json'
-            )
-
-            print(result)
-
-        if 'LastEvaluatedKey' in response:
-            return table.scan(
-                ExclusiveStartKey=response['LastEvaluatedKey']
-            )
-        else:
-            return {}
-
-    # do/while simulation
-    response = fetch(response, table)
-
-    while 'LastEvaluatedKey' in response:
-        response = fetch(response, table)
+    print(result)
 
     return {
         "statusCode": 200

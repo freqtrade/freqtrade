@@ -141,16 +141,16 @@ def get_trades(event, context):
         # preparation for pagination
         # TODO include in parameters an optional
         # start key ExclusiveStartKey=response['LastEvaluatedKey']
-
-        data = {
-            "result": response['Items'],
-            "paginationKey": response.get('LastEvaluatedKey')
-        }
+        #
+        # data = {
+        #     "result": response['Items'],
+        #     "paginationKey": response.get('LastEvaluatedKey')
+        # }
 
         return {
             "headers": __HTTP_HEADERS__,
             "statusCode": response['ResponseMetadata']['HTTPStatusCode'],
-            "body": json.dumps(data)
+            "body": response['Items']
         }
 
     else:

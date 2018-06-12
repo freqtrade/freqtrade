@@ -39,10 +39,6 @@ def names(event, context):
     # map results and hide informations
     data = list(map(lambda x: {'name': x['name'], 'public': x['public'], 'user': x['user']}, result))
 
-    # keep in a result object, so we can later add pagination to it
-    data = {
-        "result": data
-    }
     return {
         "headers": __HTTP_HEADERS__,
         "statusCode": 200,
