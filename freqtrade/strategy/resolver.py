@@ -33,7 +33,8 @@ class StrategyResolver(object):
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
-        self.strategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
+        self.strategy: IStrategy = self._load_strategy(strategy_name,
+                                                       extra_dir=config.get('strategy_path'))
 
         # Set attributes
         # Check if we need to override configuration
@@ -61,7 +62,7 @@ class StrategyResolver(object):
         self.strategy.stoploss = float(self.strategy.stoploss)
 
     def _load_strategy(
-            self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:
+            self, strategy_name: str, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
@@ -101,7 +102,7 @@ class StrategyResolver(object):
         # Generate spec based on absolute path
         spec = importlib.util.spec_from_file_location('user_data.strategies', module_path)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
 
         valid_strategies_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)

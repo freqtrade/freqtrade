@@ -33,12 +33,11 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], db_url: Optional[str] = None):
+    def __init__(self, config: Dict[str, Any])-> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
         method to get the config dict.
-        :param db_url: database connector string for sqlalchemy (Optional)
         """
 
         logger.info(
@@ -51,26 +50,22 @@ class FreqtradeBot(object):
 
         # Init objects
         self.config = config
-        self.analyze = None
-        self.fiat_converter = None
-        self.rpc = None
+        self.analyze = Analyze(self.config)
+        self.fiat_converter = CryptoToFiatConverter()
+        self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = None
 
-        self._init_modules(db_url=db_url)
+        self._init_modules()
 
-    def _init_modules(self, db_url: Optional[str] = None) -> None:
+    def _init_modules(self) -> None:
         """
         Initializes all modules and updates the config
-        :param db_url: database connector string for sqlalchemy (Optional)
         :return: None
         """
         # Initialize all modules
-        self.analyze = Analyze(self.config)
-        self.fiat_converter = CryptoToFiatConverter()
-        self.rpc = RPCManager(self)
 
-        persistence.init(self.config, db_url)
+        persistence.init(self.config)
         exchange.init(self.config)
 
         # Set initial application state
@@ -93,7 +88,7 @@ class FreqtradeBot(object):
         persistence.cleanup()
         return True
 
-    def worker(self, old_state: None) -> State:
+    def worker(self, old_state: State = None) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call
@@ -102,7 +97,7 @@ class FreqtradeBot(object):
         # Log state transition
         state = self.state
         if state != old_state:
-            self.rpc.send_msg('*Status:* `{}`'.format(state.name.lower()))
+            self.rpc.send_msg(f'*Status:* `{state.name.lower()}`')
             logger.info('Changing state to: %s', state.name)
 
         if state == State.STOPPED:
@@ -176,12 +171,10 @@ class FreqtradeBot(object):
             logger.warning('%s, retrying in 30 seconds...', error)
             time.sleep(constants.RETRY_TIMEOUT)
         except OperationalException:
+            tb = traceback.format_exc()
+            hint = 'Issue `/start` if you think it is safe to restart.'
             self.rpc.send_msg(
-                '*Status:* OperationalException:\n```\n{traceback}```{hint}'
-                .format(
-                    traceback=traceback.format_exc(),
-                    hint='Issue `/start` if you think it is safe to restart.'
-                )
+                f'*Status:* OperationalException:\n```\n{tb}```{hint}'
             )
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
@@ -244,27 +237,37 @@ class FreqtradeBot(object):
 
         return final_list
 
-    def get_target_bid(self, ticker: Dict[str, float]) -> float:
+    def get_target_bid(self, pair: str) -> float:
         """
         Calculates bid target between current ask price and last price
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
-        if ticker['ask'] < ticker['last']:
-            return ticker['ask']
-        balance = self.config['bid_strategy']['ask_last_balance']
-        return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
+        if self.config['bid_strategy']['use_book_order']:
+            logger.info('Getting price from Order Book')
+            orderBook = exchange.get_order_book(pair)
+            return orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
+        else:
+            logger.info('Using Ask / Last Price')
+            ticker = exchange.get_ticker(pair);
+            if ticker['ask'] < ticker['last']:
+                return ticker['ask']
+            balance = self.config['bid_strategy']['ask_last_balance']
+            return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
 
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
-        :param stake_amount: amount of btc to spend
-        :param interval: Ticker interval used for Analyze
         :return: True if a trade object has been created and persisted, False otherwise
         """
         stake_amount = self.config['stake_amount']
         interval = self.analyze.get_ticker_interval()
+        stake_currency = self.config['stake_currency']
+        fiat_currency = self.config['fiat_display_currency']
+        exc_name = exchange.get_name()
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -272,10 +275,9 @@ class FreqtradeBot(object):
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
         # Check if stake_amount is fulfilled
-        if exchange.get_balance(self.config['stake_currency']) < stake_amount:
+        if exchange.get_balance(stake_currency) < stake_amount:
             raise DependencyException(
-                'stake amount is not fulfilled (currency={})'.format(self.config['stake_currency'])
-            )
+                f'stake amount is not fulfilled (currency={stake_currency})')
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
@@ -294,32 +296,25 @@ class FreqtradeBot(object):
                 break
         else:
             return False
-
+        pair_s = pair.replace('_', '/')
+        pair_url = exchange.get_pair_detail_url(pair)
         # Calculate amount
-        buy_limit = self.get_target_bid(exchange.get_ticker(pair))
+        buy_limit = self.get_target_bid(pair)
         amount = stake_amount / buy_limit
 
         order_id = exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(
             stake_amount,
-            self.config['stake_currency'],
-            self.config['fiat_display_currency']
+            stake_currency,
+            fiat_currency
         )
 
         # Create trade entity and return
         self.rpc.send_msg(
-            '*{}:* Buying [{}]({}) with limit `{:.8f} ({:.6f} {}, {:.3f} {})` '
-            .format(
-                exchange.get_name(),
-                pair.replace('_', '/'),
-                exchange.get_pair_detail_url(pair),
-                buy_limit,
-                stake_amount,
-                self.config['stake_currency'],
-                stake_amount_fiat,
-                self.config['fiat_display_currency']
-            )
+            f"""*{exc_name}:* Buying [{pair_s}]({pair_url}) \
+with limit `{buy_limit:.8f} ({stake_amount:.6f} \
+{stake_currency}, {stake_amount_fiat:.3f} {fiat_currency})`"""
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
@@ -420,12 +415,12 @@ class FreqtradeBot(object):
                     fee_abs += exectrade['fee']['cost']
 
         if amount != order_amount:
-            logger.warning("amount {} does not match amount {}".format(amount, trade.amount))
+            logger.warning(f"amount {amount} does not match amount {trade.amount}")
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
         if fee_abs != 0:
-            logger.info("Applying fee on amount for {} (from {} to {}) from Trades".format(
-                        trade, order['amount'], real_amount))
+            logger.info(f"""Applying fee on amount for {trade} \
+(from {order_amount} to {real_amount}) from Trades""")
         return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:
@@ -434,20 +429,37 @@ class FreqtradeBot(object):
         :return: True if trade has been sold, False otherwise
         """
         if not trade.is_open:
-            raise ValueError('attempt to handle closed trade: {}'.format(trade))
+            raise ValueError(f'attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
-        current_rate = exchange.get_ticker(trade.pair)['bid']
+        sell_rate = exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
-        if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
-            self.execute_sell(trade, current_rate)
-            return True
+        if self.config['ask_strategy']['use_book_order']:
+            logger.info('Using order book for selling...')
+            orderBook = exchange.get_order_book(trade.pair)
+            # logger.debug('Order book %s',orderBook)
+            for i in range(self.config['ask_strategy']['book_order_min'],self.config['ask_strategy']['book_order_max']):
+                sell_rate = orderBook['asks'][i-1][0]
+                logger.debug('checking sell rate %s) %.8f > %.8f (%f %%)',i,trade.open_rate,sell_rate,((sell_rate/trade.open_rate)*100)-100)
+                if self.check_sell(trade, sell_rate, buy, sell):
+                    return True
+                    break
+        else:
+            if self.check_sell(trade, sell_rate, buy, sell):
+                return True
+            
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
+        return False
+
+    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool ) -> bool:
+        if self.analyze.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell):
+            self.execute_sell(trade, sell_rate)
+            return True
         return False
 
     def check_handle_timedout(self, timeoutvalue: int) -> None:
@@ -460,6 +472,12 @@ class FreqtradeBot(object):
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
+                # FIXME: Somehow the query above returns results
+                # where the open_order_id is in fact None.
+                # This is probably because the record got
+                # updated via /forcesell in a different thread.
+                if not trade.open_order_id:
+                    continue
                 order = exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 logger.info(
@@ -485,16 +503,14 @@ class FreqtradeBot(object):
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
+        pair_s = trade.pair.replace('_', '/')
         exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
-            # FIX? do we really need to flush, caller of
-            #      check_handle_timedout will flush afterwards
             Trade.session.flush()
             logger.info('Buy order timeout for %s.', trade)
-            self.rpc.send_msg('*Timeout:* Unfilled buy order for {} cancelled'.format(
-                trade.pair.replace('_', '/')))
+            self.rpc.send_msg(f'*Timeout:* Unfilled buy order for {pair_s} cancelled')
             return True
 
         # if trade is partially complete, edit the stake details for the trade
@@ -503,8 +519,7 @@ class FreqtradeBot(object):
         trade.stake_amount = trade.amount * trade.open_rate
         trade.open_order_id = None
         logger.info('Partial buy order timeout for %s.', trade)
-        self.rpc.send_msg('*Timeout:* Remaining buy order for {} cancelled'.format(
-            trade.pair.replace('_', '/')))
+        self.rpc.send_msg(f'*Timeout:* Remaining buy order for {pair_s} cancelled')
         return False
 
     # FIX: 20180110, should cancel_order() be cond. or unconditionally called?
@@ -513,6 +528,7 @@ class FreqtradeBot(object):
         Sell timeout - cancel order and update trade
         :return: True if order was fully cancelled
         """
+        pair_s = trade.pair.replace('_', '/')
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
             exchange.cancel_order(trade.open_order_id, trade.pair)
@@ -521,8 +537,7 @@ class FreqtradeBot(object):
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
-            self.rpc.send_msg('*Timeout:* Unfilled sell order for {} cancelled'.format(
-                trade.pair.replace('_', '/')))
+            self.rpc.send_msg(f'*Timeout:* Unfilled sell order for {pair_s} cancelled')
             logger.info('Sell order timeout for %s.', trade)
             return True
 
@@ -536,6 +551,8 @@ class FreqtradeBot(object):
         :param limit: limit rate for the sell order
         :return: None
         """
+        exc = trade.exchange
+        pair = trade.pair
         # Execute sell and update trade record
         order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
@@ -545,43 +562,31 @@ class FreqtradeBot(object):
         profit_trade = trade.calc_profit(rate=limit)
         current_rate = exchange.get_ticker(trade.pair)['bid']
         profit = trade.calc_profit_percent(limit)
+        pair_url = exchange.get_pair_detail_url(trade.pair)
+        gain = "profit" if fmt_exp_profit > 0 else "loss"
 
-        message = "*{exchange}:* Selling\n" \
-                  "*Current Pair:* [{pair}]({pair_url})\n" \
-                  "*Limit:* `{limit}`\n" \
-                  "*Amount:* `{amount}`\n" \
-                  "*Open Rate:* `{open_rate:.8f}`\n" \
-                  "*Current Rate:* `{current_rate:.8f}`\n" \
-                  "*Profit:* `{profit:.2f}%`" \
-                  "".format(
-                      exchange=trade.exchange,
-                      pair=trade.pair,
-                      pair_url=exchange.get_pair_detail_url(trade.pair),
-                      limit=limit,
-                      open_rate=trade.open_rate,
-                      current_rate=current_rate,
-                      amount=round(trade.amount, 8),
-                      profit=round(profit * 100, 2),
-                  )
+        message = f"*{exc}:* Selling\n" \
+                  f"*Current Pair:* [{pair}]({pair_url})\n" \
+                  f"*Limit:* `{limit}`\n" \
+                  f"*Amount:* `{round(trade.amount, 8)}`\n" \
+                  f"*Open Rate:* `{trade.open_rate:.8f}`\n" \
+                  f"*Current Rate:* `{current_rate:.8f}`\n" \
+                  f"*Profit:* `{round(profit * 100, 2):.2f}%`" \
+                  ""
 
         # For regular case, when the configuration exists
         if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
+            stake = self.config['stake_currency']
+            fiat = self.config['fiat_display_currency']
             fiat_converter = CryptoToFiatConverter()
             profit_fiat = fiat_converter.convert_amount(
                 profit_trade,
-                self.config['stake_currency'],
-                self.config['fiat_display_currency']
+                stake,
+                fiat
             )
-            message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f} {coin}`' \
-                       '` / {profit_fiat:.3f} {fiat})`' \
-                       ''.format(
-                           gain="profit" if fmt_exp_profit > 0 else "loss",
-                           profit_percent=fmt_exp_profit,
-                           profit_coin=profit_trade,
-                           coin=self.config['stake_currency'],
-                           profit_fiat=profit_fiat,
-                           fiat=self.config['fiat_display_currency'],
-                       )
+            message += f'` ({gain}: {fmt_exp_profit:.2f}%, {profit_trade:.8f} {stake}`' \
+                       f'` / {profit_fiat:.3f} {fiat})`'\
+                       ''
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well
         else:

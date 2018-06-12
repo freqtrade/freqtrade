@@ -12,7 +12,8 @@ class DependencyException(BaseException):
 class OperationalException(BaseException):
     """
     Requires manual intervention.
-    This happens when an exchange returns an unexpected error during runtime.
+    This happens when an exchange returns an unexpected error during runtime
+    or given configuration is invalid.
     """
 
 

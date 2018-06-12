@@ -33,18 +33,6 @@ class Backtesting(object):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.analyze = None
-        self.ticker_interval = None
-        self.tickerdata_to_dataframe = None
-        self.populate_buy_trend = None
-        self.populate_sell_trend = None
-        self._init()
-
-    def _init(self) -> None:
-        """
-        Init objects required for backtesting
-        :return: None
-        """
         self.analyze = Analyze(self.config)
         self.ticker_interval = self.analyze.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
@@ -78,7 +66,7 @@ class Backtesting(object):
         Generates and returns a text table for the given backtest data and the results dataframe
         :return: pretty printed table with tabulate as str
         """
-        stake_currency = self.config.get('stake_currency')
+        stake_currency = str(self.config.get('stake_currency'))
 
         floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
         tabular_data = []
@@ -106,7 +94,7 @@ class Backtesting(object):
             len(results[results.profit_BTC > 0]),
             len(results[results.profit_BTC < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt)
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
@@ -166,13 +154,22 @@ class Backtesting(object):
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', False)
         record = args.get('record', None)
+        recordfilename = args.get('recordfn', 'backtest-result.json')
         records = []
         trades = []
-        trade_count_lock = {}
+        trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.populate_sell_trend(self.populate_buy_trend(pair_data))[headers]
+            ticker_data = self.populate_sell_trend(
+                self.populate_buy_trend(pair_data))[headers].copy()
+
+            # to avoid using data from future, we buy/sell with signal from previous candle
+            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+
+            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+
             ticker = [x for x in ticker_data.itertuples()]
 
             lock_pair_until = None
@@ -208,8 +205,8 @@ class Backtesting(object):
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
-            logger.info('Dumping backtest results')
-            file_dump_json('backtest-result.json', records)
+            logger.info('Dumping backtest results to %s', recordfilename)
+            file_dump_json(recordfilename, records)
         labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
         return DataFrame.from_records(trades, columns=labels)
 
@@ -230,7 +227,8 @@ class Backtesting(object):
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
-            timerange = Arguments.parse_timerange(self.config.get('timerange'))
+            timerange = Arguments.parse_timerange(None if self.config.get(
+                'timerange') is None else str(self.config.get('timerange')))
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
@@ -268,7 +266,8 @@ class Backtesting(object):
                 'realistic': self.config.get('realistic_simulation', False),
                 'sell_profit_only': sell_profit_only,
                 'use_sell_signal': use_sell_signal,
-                'record': self.config.get('export')
+                'record': self.config.get('export'),
+                'recordfn': self.config.get('exportfilename'),
             }
         )
         logger.info(

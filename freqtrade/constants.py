@@ -9,9 +9,12 @@ TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
+DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
+DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
+    '3m': 3,
     '5m': 5,
     '15m': 15,
     '30m': 30,
@@ -19,11 +22,20 @@ TICKER_INTERVAL_MINUTES = {
     '2h': 120,
     '4h': 240,
     '6h': 360,
+    '8h': 480,
     '12h': 720,
     '1d': 1440,
+    '3d': 4320,
     '1w': 10080,
 }
 
+SUPPORTED_FIAT = [
+    "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
+    "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
+    "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
+    "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
+    "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
+    ]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
@@ -31,16 +43,9 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
+        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {'type': 'number', 'minimum': 0.0005},
-        'fiat_display_currency': {'type': 'string', 'enum': ['AUD', 'BRL', 'CAD', 'CHF',
-                                                             'CLP', 'CNY', 'CZK', 'DKK',
-                                                             'EUR', 'GBP', 'HKD', 'HUF',
-                                                             'IDR', 'ILS', 'INR', 'JPY',
-                                                             'KRW', 'MXN', 'MYR', 'NOK',
-                                                             'NZD', 'PHP', 'PKR', 'PLN',
-                                                             'RUB', 'SEK', 'SGD', 'THB',
-                                                             'TRY', 'TWD', 'ZAR', 'USD']},
+        'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -60,8 +65,18 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False
                 },
+                'use_book_order': {'type': 'boolean'},
+                'book_order_top': {'type': 'number', 'maximum':20,'minimum':1}
             },
             'required': ['ask_last_balance']
+        },
+        'ask_strategy': {
+            'type': 'object',
+            'properties': {
+                'use_book_order': {'type': 'boolean'},
+                'book_order_min': {'type': 'number', 'minimum':1},
+                'book_order_max': {'type': 'number', 'minimum':1}
+            },
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
@@ -80,6 +95,7 @@ CONF_SCHEMA = {
             },
             'required': ['enabled', 'token', 'chat_id']
         },
+        'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'internals': {
             'type': 'object',

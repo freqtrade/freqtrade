@@ -2,13 +2,14 @@
 This module contains class to define a RPC communications
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from decimal import Decimal
-from typing import Tuple, Any
+from typing import Dict, Tuple, Any
 
 import arrow
 import sqlalchemy as sql
 from pandas import DataFrame
+from numpy import mean, nan_to_num
 
 from freqtrade import exchange
 from freqtrade.misc import shorten_date
@@ -114,7 +115,7 @@ class RPC(object):
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Tuple[bool, Any]:
         today = datetime.utcnow().date()
-        profit_days = {}
+        profit_days: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
             return True, '*Daily [n]:* `must be an integer greater than 0`'
@@ -172,7 +173,7 @@ class RPC(object):
         durations = []
 
         for trade in trades:
-            current_rate = None
+            current_rate: float = 0.0
 
             if not trade.open_rate:
                 continue
@@ -209,14 +210,14 @@ class RPC(object):
         fiat = self.freqtrade.fiat_converter
         # Prepare data to display
         profit_closed_coin = round(sum(profit_closed_coin), 8)
-        profit_closed_percent = round(sum(profit_closed_percent) * 100, 2)
+        profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
         profit_closed_fiat = fiat.convert_amount(
             profit_closed_coin,
             stake_currency,
             fiat_display_currency
         )
         profit_all_coin = round(sum(profit_all_coin), 8)
-        profit_all_percent = round(sum(profit_all_percent) * 100, 2)
+        profit_all_percent = round(nan_to_num(mean(profit_all_percent)) * 100, 2)
         profit_all_fiat = fiat.convert_amount(
             profit_all_coin,
             stake_currency,
@@ -278,7 +279,7 @@ class RPC(object):
         value = fiat.convert_amount(total, 'BTC', symbol)
         return False, (output, total, symbol, value)
 
-    def rpc_start(self) -> (bool, str):
+    def rpc_start(self) -> Tuple[bool, str]:
         """
         Handler for start.
         """
@@ -288,7 +289,7 @@ class RPC(object):
         self.freqtrade.state = State.RUNNING
         return False, '`Starting trader ...`'
 
-    def rpc_stop(self) -> (bool, str):
+    def rpc_stop(self) -> Tuple[bool, str]:
         """
         Handler for stop.
         """
@@ -316,8 +317,10 @@ class RPC(object):
                         and order['side'] == 'buy':
                     exchange.cancel_order(trade.open_order_id, trade.pair)
                     trade.close(order.get('price') or trade.open_rate)
-                    # TODO: sell amount which has been bought already
-                    return
+                    # Do the best effort, if we don't know 'filled' amount, don't try selling
+                    if order['filled'] is None:
+                        return
+                    trade.amount = order['filled']
 
                 # Ignore trades with an attached LIMIT_SELL order
                 if order and order['status'] == 'open' \
@@ -351,6 +354,7 @@ class RPC(object):
             return True, 'Invalid argument.'
 
         _exec_forcesell(trade)
+        Trade.session.flush()
         return False, ''
 
     def rpc_performance(self) -> Tuple[bool, Any]:

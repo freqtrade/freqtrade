@@ -6,6 +6,7 @@ Unit test file for configuration.py
 import json
 from copy import deepcopy
 from unittest.mock import MagicMock
+from argparse import Namespace
 
 import pytest
 from jsonschema import ValidationError
@@ -37,7 +38,7 @@ def test_load_config_invalid_pair(default_conf) -> None:
     conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
-        configuration = Configuration([])
+        configuration = Configuration(Namespace())
         configuration._validate_config(conf)
 
 
@@ -49,7 +50,7 @@ def test_load_config_missing_attributes(default_conf) -> None:
     conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
-        configuration = Configuration([])
+        configuration = Configuration(Namespace())
         configuration._validate_config(conf)
 
 
@@ -61,7 +62,7 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
         read_data=json.dumps(default_conf)
     ))
 
-    configuration = Configuration([])
+    configuration = Configuration(Namespace())
     validated_conf = configuration._load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
@@ -79,12 +80,12 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
         read_data=json.dumps(conf)
     ))
 
-    Configuration([])._load_config_file('somefile')
+    Configuration(Namespace())._load_config_file('somefile')
     assert file_mock.call_count == 1
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
-def test_load_config_file_exception(mocker, caplog) -> None:
+def test_load_config_file_exception(mocker) -> None:
     """
     Test Configuration._load_config_file() method
     """
@@ -92,14 +93,10 @@ def test_load_config_file_exception(mocker, caplog) -> None:
         'freqtrade.configuration.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
     )
-    configuration = Configuration([])
+    configuration = Configuration(Namespace())
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(OperationalException, match=r'.*Config file "somefile" not found!*'):
         configuration._load_config_file('somefile')
-    assert log_has(
-        'Config file "somefile" not found. Please create your config file',
-        caplog.record_tuples
-    )
 
 
 def test_load_config(default_conf, mocker) -> None:
@@ -117,7 +114,6 @@ def test_load_config(default_conf, mocker) -> None:
     assert validated_conf.get('strategy') == 'DefaultStrategy'
     assert validated_conf.get('strategy_path') is None
     assert 'dynamic_whitelist' not in validated_conf
-    assert 'dry_run_db' not in validated_conf
 
 
 def test_load_config_with_params(default_conf, mocker) -> None:
@@ -128,13 +124,13 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         read_data=json.dumps(default_conf)
     ))
 
-    args = [
+    arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path',
-        '--dry-run-db',
+        '--db-url', 'sqlite:///someurl',
     ]
-    args = Arguments(args, '').get_parsed_arg()
+    args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
@@ -142,7 +138,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('dynamic_whitelist') == 10
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
-    assert validated_conf.get('dry_run_db') is True
+    assert validated_conf.get('db_url') == 'sqlite:///someurl'
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
@@ -174,12 +170,12 @@ def test_show_info(default_conf, mocker, caplog) -> None:
         read_data=json.dumps(default_conf)
     ))
 
-    args = [
+    arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
-        '--dry-run-db'
+        '--db-url', 'sqlite:///tmp/testdb',
     ]
-    args = Arguments(args, '').get_parsed_arg()
+    args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
     configuration.get_config()
@@ -191,23 +187,8 @@ def test_show_info(default_conf, mocker, caplog) -> None:
         caplog.record_tuples
     )
 
-    assert log_has(
-        'Parameter --dry-run-db detected ...',
-        caplog.record_tuples
-    )
-
-    assert log_has(
-        'Dry_run will use the DB file: "tradesv3.dry_run.sqlite"',
-        caplog.record_tuples
-    )
-
-    # Test the Dry run condition
-    configuration.config.update({'dry_run': False})
-    configuration._load_common_config(configuration.config)
-    assert log_has(
-        'Dry run is disabled. (--dry_run_db ignored)',
-        caplog.record_tuples
-    )
+    assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog.record_tuples)
+    assert log_has('Dry run is enabled', caplog.record_tuples)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -218,13 +199,13 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         read_data=json.dumps(default_conf)
     ))
 
-    args = [
+    arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         'backtesting'
     ]
 
-    args = Arguments(args, '').get_parsed_arg()
+    args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -235,7 +216,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Parameter --datadir detected: {} ...'.format(config['datadir']),
+        'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -262,7 +243,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         read_data=json.dumps(default_conf)
     ))
 
-    args = [
+    arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
         '--datadir', '/foo/bar',
@@ -275,7 +256,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--export', '/bar/foo'
     ]
 
-    args = Arguments(args, '').get_parsed_arg()
+    args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -286,7 +267,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Parameter --datadir detected: {} ...'.format(config['datadir']),
+        'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -326,14 +307,14 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
         read_data=json.dumps(default_conf)
     ))
 
-    args = [
+    arglist = [
         'hyperopt',
         '--epochs', '10',
         '--use-mongodb',
         '--spaces', 'all',
     ]
 
-    args = Arguments(args, '').get_parsed_arg()
+    args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
@@ -357,7 +338,7 @@ def test_check_exchange(default_conf) -> None:
     Test the configuration validator with a missing attribute
     """
     conf = deepcopy(default_conf)
-    configuration = Configuration([])
+    configuration = Configuration(Namespace())
 
     # Test a valid exchange
     conf.get('exchange').update({'name': 'BITTREX'})
