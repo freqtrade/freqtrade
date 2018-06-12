@@ -112,6 +112,21 @@ class Backtesting(object):
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
+    def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
+
+        records = []
+        print(results)
+        for index, trade_entry in results.iterrows():
+            pass
+            records.append((trade_entry.pair, trade_entry.profit_percent,
+                            trade_entry.open_time.timestamp(),
+                            trade_entry.close_time.timestamp(),
+                            trade_entry.open_index - 1, trade_entry.trade_duration))
+
+        if records:
+            logger.info('Dumping backtest results to %s', recordfilename)
+            file_dump_json(recordfilename, records)
+
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
             partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
@@ -144,8 +159,8 @@ class Backtesting(object):
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
                                       trade_duration=(sell_row.date - buy_row.date).seconds // 60,
-                                      open_index=buy_row.index,
-                                      close_index=sell_row.index,
+                                      open_index=buy_row.Index,
+                                      close_index=sell_row.Index,
                                       open_at_end=False
                                       )
         if partial_ticker:
@@ -157,8 +172,8 @@ class Backtesting(object):
                                  open_time=buy_row.date,
                                  close_time=sell_row.date,
                                  trade_duration=(sell_row.date - buy_row.date).seconds // 60,
-                                 open_index=buy_row.index,
-                                 close_index=sell_row.index,
+                                 open_index=buy_row.Index,
+                                 close_index=sell_row.Index,
                                  open_at_end=True
                                  )
             logger.info('Force_selling still open trade %s with %s perc - %s', btr.pair,
@@ -179,17 +194,12 @@ class Backtesting(object):
             processed: a processed dictionary with format {pair, data}
             max_open_trades: maximum number of concurrent trades (default: 0, disabled)
             realistic: do we try to simulate realistic trades? (default: True)
-            sell_profit_only: sell if profit only
-            use_sell_signal: act on sell-signal
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', False)
-        record = args.get('record', None)
-        recordfilename = args.get('recordfn', 'backtest-result.json')
-        records = []
         trades = []
         trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
@@ -229,24 +239,11 @@ class Backtesting(object):
                 if trade_entry:
                     lock_pair_until = trade_entry.close_time
                     trades.append(trade_entry)
-                    if record:
-                        # Note, need to be json.dump friendly
-                        # record a tuple of pair, current_profit_percent,
-                        # entry-date, duration
-                        records.append((pair, trade_entry.profit_percent,
-                                        trade_entry.open_time.timestamp(),
-                                        trade_entry.close_time.timestamp(),
-                                        index, trade_entry.trade_duration))
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
                     # This happens only if the buy-signal was with the last candle
                     lock_pair_until = ticker_data.iloc[-1].date
 
-        # For now export inside backtest(), maybe change so that backtest()
-        # returns a tuple like: (dataframe, records, logs, etc)
-        if record and record.find('trades') >= 0:
-            logger.info('Dumping backtest results to %s', recordfilename)
-            file_dump_json(recordfilename, records)
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
@@ -301,10 +298,12 @@ class Backtesting(object):
                 'processed': preprocessed,
                 'max_open_trades': max_open_trades,
                 'realistic': self.config.get('realistic_simulation', False),
-                'record': self.config.get('export'),
-                'recordfn': self.config.get('exportfilename'),
             }
         )
+
+        if self.config.get('export', False):
+            self._store_backtest_result(self.config.get('exportfilename'), results)
+
         logger.info(
             '\n==================================== '
             'BACKTESTING REPORT'
