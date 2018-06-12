@@ -237,6 +237,9 @@ class Backtesting(object):
                 timerange=timerange
             )
 
+        if not data:
+            logger.critical("No data found. Terminating.")
+            return
         # Ignore max_open_trades in backtesting, except realistic flag was passed
         if self.config.get('realistic_simulation', False):
             max_open_trades = self.config['max_open_trades']

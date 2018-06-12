@@ -42,6 +42,11 @@ pip3.6 install flake8 coveralls
 flake8 freqtrade
 ```
 
+We receive a lot of code that fails the `flake8` checks.
+To help with that, we encourage you to install the git pre-commit 
+hook that will warn you when you try to commit code that fails these checks. 
+Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using-hooks.html).
+
 ## 3. Test if all type-hints are correct
 
 **Install packages** (If not already installed)
