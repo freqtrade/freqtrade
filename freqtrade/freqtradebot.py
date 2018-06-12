@@ -248,6 +248,7 @@ class FreqtradeBot(object):
             logger.info('Using order book ')
             orderBook = exchange.get_order_book(pair)
             return orderBook['bids'][self.config['bid_strategy']['use_book_order']][0]
+            return orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
         else:
             logger.info('Using Ask / Last Price')
             ticker = exchange.get_ticker(pair);
