@@ -11,6 +11,11 @@
         "use_book_order": true,
         "book_order_top": 6
     },
+    "ask_strategy":{
+        "use_book_order": true,
+        "book_order_min": 1,
+        "book_order_max": 30
+    },
     "exchange": {
         "name": "bittrex",
         "key": "your_exchange_key",

@@ -70,6 +70,14 @@ CONF_SCHEMA = {
             },
             'required': ['ask_last_balance']
         },
+        'ask_strategy': {
+            'type': 'object',
+            'properties': {
+                'use_book_order': {'type': 'boolean'},
+                'book_order_min': {'type': 'number', 'minimum':1},
+                'book_order_max': {'type': 'number', 'minimum':1}
+            },
+        },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
             'type': 'object',

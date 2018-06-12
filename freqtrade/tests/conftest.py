@@ -87,7 +87,14 @@ def default_conf():
         "stoploss": -0.10,
         "unfilledtimeout": 600,
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "use_book_order": False,
+            "book_order_top": 6,
+            "ask_last_balance": 0.0,
+        },
+        "ask_strategy": {
+            "use_book_order": False,
+            "book_order_min": 1,
+            "book_order_max": 10
         },
         "exchange": {
             "name": "bittrex",

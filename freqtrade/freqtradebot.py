@@ -245,9 +245,8 @@ class FreqtradeBot(object):
         """
 
         if self.config['bid_strategy']['use_book_order']:
-            logger.info('Using order book ')
+            logger.info('Getting price from Order Book')
             orderBook = exchange.get_order_book(pair)
-            return orderBook['bids'][self.config['bid_strategy']['use_book_order']][0]
             return orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
         else:
             logger.info('Using Ask / Last Price')
@@ -433,17 +432,34 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             raise ValueError(f'attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
-        current_rate = exchange.get_ticker(trade.pair)['bid']
+        sell_rate = exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
-        if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
-            self.execute_sell(trade, current_rate)
-            return True
+        if self.config['ask_strategy']['use_book_order']:
+            logger.info('Using order book for selling...')
+            orderBook = exchange.get_order_book(trade.pair)
+            # logger.debug('Order book %s',orderBook)
+            for i in range(self.config['ask_strategy']['book_order_min'],self.config['ask_strategy']['book_order_max']):
+                sell_rate = orderBook['asks'][i-1][0]
+                logger.debug('checking sell rate %s) %.8f > %.8f (%f %%)',i,trade.open_rate,sell_rate,((sell_rate/trade.open_rate)*100)-100)
+                if self.check_sell(trade, sell_rate, buy, sell):
+                    return True
+                    break
+        else:
+            if self.check_sell(trade, sell_rate, buy, sell):
+                return True
+            
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
+        return False
+
+    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool ) -> bool:
+        if self.analyze.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell):
+            self.execute_sell(trade, sell_rate)
+            return True
         return False
 
     def check_handle_timedout(self, timeoutvalue: int) -> None:
