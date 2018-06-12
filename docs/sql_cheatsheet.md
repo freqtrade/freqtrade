@@ -85,7 +85,7 @@ INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close, open_rate, sta
 
 ## Fix wrong fees in the table
 If your DB was created before 
-[PR#200](https://github.com/gcarq/freqtrade/pull/200) was merged
+[PR#200](https://github.com/freqtrade/freqtrade/pull/200) was merged
 (before 12/23/17).
 
 ```sql

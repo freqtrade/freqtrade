@@ -18,6 +18,8 @@ _API: ccxt.Exchange = None
 _CONF: Dict = {}
 API_RETRY_COUNT = 4
 
+_CACHED_TICKER: Dict[str, Any] = {}
+
 # Holds all open sell orders for dry_run
 _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
 
@@ -57,7 +59,7 @@ def init_ccxt(exchange_config: dict) -> ccxt.Exchange:
     name = exchange_config['name']
 
     if name not in ccxt.exchanges:
-        raise OperationalException('Exchange {} is not supported'.format(name))
+        raise OperationalException(f'Exchange {name} is not supported')
     try:
         api = getattr(ccxt, name.lower())({
             'apiKey': exchange_config.get('key'),
@@ -67,7 +69,7 @@ def init_ccxt(exchange_config: dict) -> ccxt.Exchange:
             'enableRateLimit': True,
         })
     except (KeyError, AttributeError):
-        raise OperationalException('Exchange {} is not supported'.format(name))
+        raise OperationalException(f'Exchange {name} is not supported')
 
     return api
 
@@ -116,11 +118,10 @@ def validate_pairs(pairs: List[str]) -> None:
         # TODO: add a support for having coins in BTC/USDT format
         if not pair.endswith(stake_cur):
             raise OperationalException(
-                'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
-            )
+                f'Pair {pair} not compatible with stake_currency: {stake_cur}')
         if pair not in markets:
             raise OperationalException(
-                'Pair {} is not available at {}'.format(pair, get_name()))
+                f'Pair {pair} is not available at {get_name()}')
 
 
 def exchange_has(endpoint: str) -> bool:
@@ -136,7 +137,7 @@ def exchange_has(endpoint: str) -> bool:
 def buy(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
-        order_id = 'dry_run_buy_{}'.format(randint(0, 10**6))
+        order_id = f'dry_run_buy_{randint(0, 10**6)}'
         _DRY_RUN_OPEN_ORDERS[order_id] = {
             'pair': pair,
             'price': rate,
@@ -154,20 +155,17 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
         return _API.create_limit_buy_order(pair, amount, rate)
     except ccxt.InsufficientFunds as e:
         raise DependencyException(
-            'Insufficient funds to create limit buy order on market {}.'
-            'Tried to buy amount {} at rate {} (total {}).'
-            'Message: {}'.format(pair, amount, rate, rate*amount, e)
-        )
+            f'Insufficient funds to create limit buy order on market {pair}.'
+            f'Tried to buy amount {amount} at rate {rate} (total {rate*amount}).'
+            f'Message: {e}')
     except ccxt.InvalidOrder as e:
         raise DependencyException(
-            'Could not create limit buy order on market {}.'
-            'Tried to buy amount {} at rate {} (total {}).'
-            'Message: {}'.format(pair, amount, rate, rate*amount, e)
-        )
+            f'Could not create limit buy order on market {pair}.'
+            f'Tried to buy amount {amount} at rate {rate} (total {rate*amount}).'
+            f'Message: {e}')
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not place buy order due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not place buy order due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -175,7 +173,7 @@ def buy(pair: str, rate: float, amount: float) -> Dict:
 def sell(pair: str, rate: float, amount: float) -> Dict:
     if _CONF['dry_run']:
         global _DRY_RUN_OPEN_ORDERS
-        order_id = 'dry_run_sell_{}'.format(randint(0, 10**6))
+        order_id = f'dry_run_sell_{randint(0, 10**6)}'
         _DRY_RUN_OPEN_ORDERS[order_id] = {
             'pair': pair,
             'price': rate,
@@ -192,20 +190,17 @@ def sell(pair: str, rate: float, amount: float) -> Dict:
         return _API.create_limit_sell_order(pair, amount, rate)
     except ccxt.InsufficientFunds as e:
         raise DependencyException(
-            'Insufficient funds to create limit sell order on market {}.'
-            'Tried to sell amount {} at rate {} (total {}).'
-            'Message: {}'.format(pair, amount, rate, rate*amount, e)
-        )
+            f'Insufficient funds to create limit sell order on market {pair}.'
+            f'Tried to sell amount {amount} at rate {rate} (total {rate*amount}).'
+            f'Message: {e}')
     except ccxt.InvalidOrder as e:
         raise DependencyException(
-            'Could not create limit sell order on market {}.'
-            'Tried to sell amount {} at rate {} (total {}).'
-            'Message: {}'.format(pair, amount, rate, rate*amount, e)
-        )
+            f'Could not create limit sell order on market {pair}.'
+            f'Tried to sell amount {amount} at rate {rate} (total {rate*amount}).'
+            f'Message: {e}')
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not place sell order due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not place sell order due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -220,8 +215,7 @@ def get_balance(currency: str) -> float:
     balance = balances.get(currency)
     if balance is None:
         raise TemporaryError(
-            'Could not get {} balance due to malformed exchange response: {}'.format(
-                currency, balances))
+            f'Could not get {currency} balance due to malformed exchange response: {balances}')
     return balance['free']
 
 
@@ -241,11 +235,23 @@ def get_balances() -> dict:
         return balances
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not get balance due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not get balance due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
+@retrier
+def get_order_book(pair: str, refresh: Optional[bool] = True) -> dict:
+    try:
+        return _API.fetch_order_book(pair)
+    except ccxt.NotSupported as e:
+        raise OperationalException(
+            f'Exchange {_API.name} does not support fetching order book.'
+            f'Message: {e}')
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        raise TemporaryError(
+            f'Could not load order book due to {e.__class__.__name__}. Message: {e}')
+    except ccxt.BaseError as e:
+        raise OperationalException(e)
 
 @retrier
 def get_tickers() -> Dict:
@@ -253,28 +259,37 @@ def get_tickers() -> Dict:
         return _API.fetch_tickers()
     except ccxt.NotSupported as e:
         raise OperationalException(
-            'Exchange {} does not support fetching tickers in batch.'
-            'Message: {}'.format(_API.name, e)
-        )
+            f'Exchange {_API.name} does not support fetching tickers in batch.'
+            f'Message: {e}')
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not load tickers due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not load tickers due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
 
-# TODO: remove refresh argument, keeping it to keep track of where it was intended to be used
 @retrier
 def get_ticker(pair: str, refresh: Optional[bool] = True) -> dict:
-    try:
-        return _API.fetch_ticker(pair)
-    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-        raise TemporaryError(
-            'Could not load ticker history due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
-    except ccxt.BaseError as e:
-        raise OperationalException(e)
+    global _CACHED_TICKER
+    if refresh or pair not in _CACHED_TICKER.keys():
+        try:
+            data = _API.fetch_ticker(pair)
+            try:
+                _CACHED_TICKER[pair] = {
+                    'bid': float(data['bid']),
+                    'ask': float(data['ask']),
+                }
+            except KeyError:
+                logger.debug("Could not cache ticker data for %s", pair)
+            return data
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
+    else:
+        logger.info("returning cached ticker-data for %s", pair)
+        return _CACHED_TICKER[pair]
 
 
 @retrier
@@ -313,15 +328,13 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
         return data
     except ccxt.NotSupported as e:
         raise OperationalException(
-            'Exchange {} does not support fetching historical candlestick data.'
-            'Message: {}'.format(_API.name, e)
-        )
+            f'Exchange {_API.name} does not support fetching historical candlestick data.'
+            f'Message: {e}')
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not load ticker history due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
-        raise OperationalException('Could not fetch ticker data. Msg: {}'.format(e))
+        raise OperationalException(f'Could not fetch ticker data. Msg: {e}')
 
 
 @retrier
@@ -333,12 +346,10 @@ def cancel_order(order_id: str, pair: str) -> None:
         return _API.cancel_order(order_id, pair)
     except ccxt.InvalidOrder as e:
         raise DependencyException(
-            'Could not cancel order. Message: {}'.format(e)
-        )
+            f'Could not cancel order. Message: {e}')
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not cancel order due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not cancel order due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -355,12 +366,10 @@ def get_order(order_id: str, pair: str) -> Dict:
         return _API.fetch_order(order_id, pair)
     except ccxt.InvalidOrder as e:
         raise DependencyException(
-            'Could not get order. Message: {}'.format(e)
-        )
+            f'Could not get order. Message: {e}')
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not get order due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not get order due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -379,8 +388,7 @@ def get_trades_for_order(order_id: str, pair: str, since: datetime) -> List:
 
     except ccxt.NetworkError as e:
         raise TemporaryError(
-            'Could not get trades due to networking error. Message: {}'.format(e)
-        )
+            f'Could not get trades due to networking error. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -402,8 +410,7 @@ def get_markets() -> List[dict]:
         return _API.fetch_markets()
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not load markets due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not load markets due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
@@ -428,8 +435,7 @@ def get_fee(symbol='ETH/BTC', type='', side='', amount=1,
                                   price=price, takerOrMaker=taker_or_maker)['rate']
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         raise TemporaryError(
-            'Could not get fee info due to {}. Message: {}'.format(
-                e.__class__.__name__, e))
+            f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
 

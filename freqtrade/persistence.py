@@ -10,13 +10,14 @@ from typing import Dict, Optional, Any
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
                         create_engine)
-from sqlalchemy.engine import Engine
+from sqlalchemy import inspect
+from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
-from sqlalchemy import inspect
 
+from freqtrade import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -24,29 +25,34 @@ _CONF = {}
 _DECL_BASE: Any = declarative_base()
 
 
-def init(config: dict, engine: Optional[Engine] = None) -> None:
+def init(config: Dict) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
     :param config: config to use
-    :param engine: database engine for sqlalchemy (Optional)
     :return: None
     """
     _CONF.update(config)
-    if not engine:
-        if _CONF.get('dry_run', False):
-            # the user wants dry run to use a DB
-            if _CONF.get('dry_run_db', False):
-                engine = create_engine('sqlite:///tradesv3.dry_run.sqlite')
-            # Otherwise dry run will store in memory
-            else:
-                engine = create_engine('sqlite://',
-                                       connect_args={'check_same_thread': False},
-                                       poolclass=StaticPool,
-                                       echo=False)
-        else:
-            engine = create_engine('sqlite:///tradesv3.sqlite')
+
+    db_url = _CONF.get('db_url', None)
+    kwargs = {}
+
+    # Take care of thread ownership if in-memory db
+    if db_url == 'sqlite://':
+        kwargs.update({
+            'connect_args': {'check_same_thread': False},
+            'poolclass': StaticPool,
+            'echo': False,
+        })
+
+    try:
+        engine = create_engine(db_url, **kwargs)
+    except NoSuchModuleError:
+        error = 'Given value for db_url: \'{}\' is no valid database URL! (See {}).'.format(
+            db_url, 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
+        )
+        raise OperationalException(error)
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
@@ -54,8 +60,8 @@ def init(config: dict, engine: Optional[Engine] = None) -> None:
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
-    # Clean dry_run DB
-    if _CONF.get('dry_run', False) and _CONF.get('dry_run_db', False):
+    # Clean dry_run DB if the db is not in-memory
+    if _CONF.get('dry_run', False) and db_url != 'sqlite://':
         clean_dry_run_db()
 
 
