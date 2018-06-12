@@ -93,6 +93,7 @@ class Telegram(RPC):
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
+            CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -298,6 +299,18 @@ class Telegram(RPC):
         :return: None
         """
         (error, msg) = self.rpc_stop()
+        self.send_msg(msg, bot=bot)
+
+    @authorized_only
+    def _reload_conf(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /reload_conf.
+        Triggers a config file reload
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        msg = self.rpc_reload_conf()
         self.send_msg(msg, bot=bot)
 
     @authorized_only

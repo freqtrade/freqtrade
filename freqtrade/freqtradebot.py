@@ -76,17 +76,14 @@ class FreqtradeBot(object):
         else:
             self.state = State.STOPPED
 
-    def clean(self) -> bool:
+    def cleanup(self) -> None:
         """
-        Cleanup the application state und finish all pending tasks
+        Cleanup pending resources on an already stopped bot
         :return: None
         """
-        self.rpc.send_msg('*Status:* `Stopping trader...`')
-        logger.info('Stopping trader and cleaning up modules...')
-        self.state = State.STOPPED
+        logger.info('Cleaning up modules ...')
         self.rpc.cleanup()
         persistence.cleanup()
-        return True
 
     def worker(self, old_state: State = None) -> State:
         """

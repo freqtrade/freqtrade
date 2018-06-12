@@ -6,10 +6,12 @@ If it hasn't been reported, please create a new issue.
 ## Step 2: Describe your environment
 
   * Python Version: _____ (`python -V`)
+  * CCXT version: _____ (`pip freeze | grep ccxt`)
   * Branch: Master | Develop
   * Last Commit ID: _____ (`git log --format="%H" -n 1`)
- 
+  
 ## Step 3: Describe the problem:
+
 *Explain the problem you have encountered*
 
 ### Steps to reproduce:
