@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.
 """
 Simple command line client into RPC commands
 Can be used as an alternate to Telegram

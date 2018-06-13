@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class Daily(Resource):
     # called by http://127.0.0.1:/daily?timescale=7
-    # where 7 is the number of days to report back with.
+    # where 7 is the number of days to report back with
 
     def __init__(self, freqtrade) -> None:
         """
