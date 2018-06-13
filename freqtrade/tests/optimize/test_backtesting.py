@@ -435,6 +435,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
         }
     )
     assert not results.empty
+    assert len(results) == 2
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
@@ -457,6 +458,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
         }
     )
     assert not results.empty
+    assert len(results) == 1
 
 
 def test_processed(default_conf, mocker) -> None:
@@ -538,7 +540,10 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     backtesting.populate_buy_trend = _trend_alternate  # Override
     backtesting.populate_sell_trend = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
+    backtesting._store_backtest_result("test_.json", results)
     assert len(results) == 4
+    # One trade was force-closed at the end
+    assert len(results.loc[results.open_at_end]) == 1
 
 
 def test_backtest_record(default_conf, fee, mocker):
