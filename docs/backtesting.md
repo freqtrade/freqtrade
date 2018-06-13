@@ -1,16 +1,18 @@
 # Backtesting
+
 This page explains how to validate your strategy performance by using 
 Backtesting.
 
 ## Table of Contents
+
 - [Test your strategy with Backtesting](#test-your-strategy-with-backtesting)
 - [Understand the backtesting result](#understand-the-backtesting-result)
 
 ## Test your strategy with Backtesting
+
 Now you have good Buy and Sell strategies, you want to test it against
 real data. This is what we call 
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
-
 
 Backtesting will use the crypto-currencies (pair) from your config file
 and load static tickers located in 
@@ -19,70 +21,80 @@ If the 5 min and 1 min ticker for the crypto-currencies to test is not
 already in the `testdata` folder, backtesting will download them 
 automatically. Testdata files will not be updated until you specify it.
 
-The result of backtesting will confirm you if your bot as more chance to
-make a profit than a loss.
-
+The result of backtesting will confirm you if your bot as more chance to make a profit than a loss.
 
 The backtesting is very easy with freqtrade.
 
 ### Run a backtesting against the currencies listed in your config file
-**With 5 min tickers (Per default)**
+#### With 5 min tickers (Per default)
+
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation
 ```
 
-**With 1 min tickers**
+#### With 1 min tickers
+
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
 ```
 
-**Update cached pairs with the latest data**
+#### Update cached pairs with the latest data
+
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
 ```
 
-**With live data (do not alter your testdata files)**
+#### With live data (do not alter your testdata files)
+
 ```bash
 python3 ./freqtrade/main.py backtesting --realistic-simulation --live
 ```
 
-**Using a different on-disk ticker-data source**
+#### Using a different on-disk ticker-data source
+
 ```bash
 python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
-**With a (custom) strategy file**
+#### With a (custom) strategy file
+
 ```bash
 python3 ./freqtrade/main.py -s TestStrategy backtesting
 ```
+
 Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
 
-**Exporting trades to file**
+#### Exporting trades to file
+
 ```bash
 python3 ./freqtrade/main.py backtesting --export trades
 ```
 
-**Exporting trades to file specifying a custom filename**
+#### Exporting trades to file specifying a custom filename
+
 ```bash
 python3 ./freqtrade/main.py backtesting --export trades --export-filename=backtest_teststrategy.json
 ```
 
+#### Running backtest with smaller testset
 
-**Running backtest with smaller testset**  
 Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
 
 Example:
+
 ```bash
 python3 ./freqtrade/main.py backtesting --timerange=-200
 ```
 
-***Advanced use of timerange***  
+#### Advanced use of timerange
+
 Doing `--timerange=-200` will get the last 200 timeframes
 from your inputdata. You can also specify specific dates,
 or a range span indexed by start and stop.
 
 The full timerange specification:
+
 - Use last 123 tickframes of data: `--timerange=-123`
 - Use first 123 tickframes of data: `--timerange=123-`
 - Use tickframes from line 123 through 456: `--timerange=123-456`
@@ -92,11 +104,12 @@ The full timerange specification:
 - Use tickframes between POSIX timestamps 1527595200 1527618600:
                                                 `--timerange=1527595200-1527618600`
 
+#### Downloading new set of ticker data
 
-**Downloading new set of ticker data**
 To download new set of backtesting ticker data, you can use a download script.
 
 If you are using Binance for example:
+
 - create a folder `user_data/data/binance` and copy `pairs.json` in that folder.
 - update the `pairs.json` to contain the currency pairs you are interested in.
 
@@ -119,14 +132,14 @@ This will download ticker data for all the currency pairs you defined in `pairs.
 - To download ticker data for only 10 days, use `--days 10`.
 - Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
 
-
-For help about backtesting usage, please refer to 
-[Backtesting commands](#backtesting-commands).
+For help about backtesting usage, please refer to [Backtesting commands](#backtesting-commands).
 
 ## Understand the backtesting result
+
 The most important in the backtesting is to understand the result.
 
 A backtesting result will look like that:
+
 ```
 ====================== BACKTESTING REPORT ================================
 pair        buy count    avg profit %    total profit BTC    avg duration
@@ -146,6 +159,7 @@ TOTAL             419           -0.41         -0.00348593            52.9
 
 The last line will give you the overall performance of your strategy,
 here:
+
 ```
 TOTAL             419           -0.41         -0.00348593            52.9
 ```
@@ -161,6 +175,7 @@ strategy, your sell strategy, and also by the `minimal_roi` and
 As for an example if your minimal_roi is only `"0":  0.01`. You cannot
 expect the bot to make more profit than 1% (because it will sell every 
 time a trade will reach 1%).
+
 ```json
 "minimal_roi": {
     "0":  0.01
@@ -173,6 +188,7 @@ profit. Hence, keep in mind that your performance is a mix of your
 strategies, your configuration, and the crypto-currency you have set up.
 
 ## Next step
+
 Great, your strategy is profitable. What if the bot can give your the
 optimal parameters to use for your strategy?  
 Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
