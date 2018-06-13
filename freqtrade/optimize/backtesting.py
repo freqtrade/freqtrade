@@ -114,14 +114,11 @@ class Backtesting(object):
 
     def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
 
-        records = []
-        print(results)
-        for index, trade_entry in results.iterrows():
-            pass
-            records.append((trade_entry.pair, trade_entry.profit_percent,
-                            trade_entry.open_time.timestamp(),
-                            trade_entry.close_time.timestamp(),
-                            trade_entry.open_index - 1, trade_entry.trade_duration))
+        records = [(trade_entry.pair, trade_entry.profit_percent,
+                    trade_entry.open_time.timestamp(),
+                    trade_entry.close_time.timestamp(),
+                    trade_entry.open_index - 1, trade_entry.trade_duration)
+                   for index, trade_entry in results.iterrows()]
 
         if records:
             logger.info('Dumping backtest results to %s', recordfilename)
