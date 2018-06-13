@@ -6,7 +6,7 @@ import logging
 import time
 
 from freqtrade.rpc.telegram import Telegram
-from freqtrade.rpc.local_rpc_server import LocalRPCSuperWrap
+from freqtrade.rpc.local_rest_server import LocalRestSuperWrap
 
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,8 @@ class RPCManager(object):
 
         # Added another RPC client - for cmdline local client.
         # Uses existing superclass RPC build for Telegram
-        if self.freqtrade.config['localrpc'].get('enabled', False):
-            self.localRPC = LocalRPCSuperWrap(self.freqtrade)
+        if self.freqtrade.config['rest_cmd'].get('enabled', False):
+            self.localRPC = LocalRestSuperWrap(self.freqtrade)
             time.sleep(1)
 
     def cleanup(self) -> None:
