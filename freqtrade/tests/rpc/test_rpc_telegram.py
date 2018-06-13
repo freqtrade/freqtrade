@@ -32,6 +32,9 @@ class DummyCls(Telegram):
         super().__init__(freqtrade)
         self.state = {'called': False}
 
+    def _init(self):
+        pass
+
     @authorized_only
     def dummy_handler(self, *args, **kwargs) -> None:
         """
@@ -60,9 +63,7 @@ def test__init__(default_conf, mocker) -> None:
 
 
 def test_init(default_conf, mocker, caplog) -> None:
-    """
-    Test _init() method
-    """
+    """ Test _init() method """
     start_polling = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock(return_value=start_polling))
 
@@ -80,21 +81,6 @@ def test_init(default_conf, mocker, caplog) -> None:
     assert log_has(message_str, caplog.record_tuples)
 
 
-def test_init_disabled(default_conf, mocker, caplog) -> None:
-    """
-    Test _init() method when Telegram is disabled
-    """
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    Telegram(get_patched_freqtradebot(mocker, conf))
-
-    message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
-                  "['balance'], ['start'], ['stop'], ['forcesell'], ['performance'], ['daily'], " \
-                  "['count'], ['help'], ['version']]"
-
-    assert not log_has(message_str, caplog.record_tuples)
-
-
 def test_cleanup(default_conf, mocker) -> None:
     """
     Test cleanup() method
@@ -103,42 +89,9 @@ def test_cleanup(default_conf, mocker) -> None:
     updater_mock.stop = MagicMock()
     mocker.patch('freqtrade.rpc.telegram.Updater', updater_mock)
 
-    # not enabled
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    telegram = Telegram(get_patched_freqtradebot(mocker, conf))
-    telegram.cleanup()
-    assert telegram._updater is None
-    assert updater_mock.call_count == 0
-    assert not hasattr(telegram._updater, 'stop')
-    assert updater_mock.stop.call_count == 0
-
-    # enabled
-    conf['telegram']['enabled'] = True
-    telegram = Telegram(get_patched_freqtradebot(mocker, conf))
+    telegram = Telegram(get_patched_freqtradebot(mocker, default_conf))
     telegram.cleanup()
     assert telegram._updater.stop.call_count == 1
-
-
-def test_is_enabled(default_conf, mocker) -> None:
-    """
-    Test is_enabled() method
-    """
-    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
-
-    telegram = Telegram(get_patched_freqtradebot(mocker, default_conf))
-    assert telegram.is_enabled()
-
-
-def test_is_not_enabled(default_conf, mocker) -> None:
-    """
-    Test is_enabled() method
-    """
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    telegram = Telegram(get_patched_freqtradebot(mocker, conf))
-
-    assert not telegram.is_enabled()
 
 
 def test_authorized_only(default_conf, mocker, caplog) -> None:
@@ -256,9 +209,9 @@ def test_status(default_conf, update, mocker, fee, ticker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        rpc_trade_status=MagicMock(return_value=(False, [1, 2, 3])),
+        _rpc_trade_status=MagicMock(return_value=[1, 2, 3]),
         _status_table=status_table,
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -296,7 +249,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
         _status_table=status_table,
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -341,7 +294,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -397,7 +350,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -465,7 +418,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -506,7 +459,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -604,7 +557,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -634,7 +587,7 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -656,7 +609,7 @@ def test_start_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -667,7 +620,7 @@ def test_start_handle(default_conf, update, mocker) -> None:
     assert freqtradebot.state == State.STOPPED
     telegram._start(bot=MagicMock(), update=update)
     assert freqtradebot.state == State.RUNNING
-    assert msg_mock.call_count == 0
+    assert msg_mock.call_count == 1
 
 
 def test_start_handle_already_running(default_conf, update, mocker) -> None:
@@ -680,7 +633,7 @@ def test_start_handle_already_running(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -705,7 +658,7 @@ def test_stop_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -730,7 +683,7 @@ def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -753,7 +706,7 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
@@ -898,7 +851,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
 
@@ -940,7 +893,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -981,7 +934,7 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
     freqtradebot = FreqtradeBot(default_conf)
@@ -1004,7 +957,7 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch.multiple(
         'freqtrade.freqtradebot.exchange',
@@ -1047,7 +1000,7 @@ def test_help_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
@@ -1067,7 +1020,7 @@ def test_version_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     freqtradebot = FreqtradeBot(default_conf)
     telegram = Telegram(freqtradebot)
@@ -1089,13 +1042,8 @@ def test_send_msg(default_conf, mocker) -> None:
     freqtradebot = FreqtradeBot(conf)
     telegram = Telegram(freqtradebot)
 
-    telegram._config['telegram']['enabled'] = False
-    telegram.send_msg('test', bot)
-    assert not bot.method_calls
-    bot.reset_mock()
-
     telegram._config['telegram']['enabled'] = True
-    telegram.send_msg('test', bot)
+    telegram._send_msg('test', bot)
     assert len(bot.method_calls) == 1
 
 
@@ -1113,7 +1061,7 @@ def test_send_msg_network_error(default_conf, mocker, caplog) -> None:
     telegram = Telegram(freqtradebot)
 
     telegram._config['telegram']['enabled'] = True
-    telegram.send_msg('test', bot)
+    telegram._send_msg('test', bot)
 
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
