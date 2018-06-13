@@ -176,8 +176,8 @@ class Backtesting(object):
                                  close_index=sell_row.Index,
                                  open_at_end=True
                                  )
-            logger.info('Force_selling still open trade %s with %s perc - %s', btr.pair,
-                        btr.profit_percent, btr.profit_abs)
+            logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
+                         btr.profit_percent, btr.profit_abs)
             return btr
         return None
 
