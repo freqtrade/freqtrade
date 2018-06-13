@@ -1,19 +1,19 @@
 import threading
-import time
-import zerorpc
 import logging
 import json
 
+from flask import Flask, request
+from flask_restful import Resource, Api
+from json import dumps
 from freqtrade.rpc.rpc import RPC
 
 
 logger = logging.getLogger(__name__)
 
-class LocalRPCControls(object):
-    """
-    zeroRPC - allows local cmdline calls to super class in rpc.py
-    as used by Telegram.py
-    """
+
+class Daily(Resource):
+    # called by http://127.0.0.1:/daily?timescale=7
+    # where 7 is the number of days to report back with.
 
     def __init__(self, freqtrade) -> None:
         """
@@ -24,18 +24,9 @@ class LocalRPCControls(object):
         self.freqtrade = freqtrade
         self._config = freqtrade.config
 
-    # # Example of calling none serialed call
-    # # without decorator - left if as template while in dev for me
-    # def add_42(self, n):
-    #     """ Add 42 to an integer argument to make it cooler, and return the
-    #     result. """
-    #     n = int(n)
-    #     r = n + 42
-    #     s = str(r)
-    #     return s
 
-    @zerorpc.stream
-    def daily(self, timescale):
+    def get(self):
+        timescale = request.args.get('timescale')
         logger.info("LocalRPC - Daily Command Called")
         timescale = int(timescale)
 
@@ -43,18 +34,21 @@ class LocalRPCControls(object):
                                           self._config['stake_currency'],
                                           self._config['fiat_display_currency']
                                           )
+        if error == False:
+            stats = dumps(stats, indent=4, sort_keys=True, default=str)
+            return stats
+        else:
+            json.dumps(error)
+            return error
 
-        #Everything in stats to a string, serialised, then back to client.
-        stats = json.dumps(stats, indent=4, sort_keys=True, default=str)
-        return(error, stats)
 
-class LocalRPCSuperWrap(RPC):
+class LocalRestSuperWrap(RPC):
     """
-    Telegram, this class send messages to Telegram
+    This class is for REST cmd line client
     """
     def __init__(self, freqtrade) -> None:
         """
-        Init the LocalRPCServer call, and init the super class RPC
+        Init the LocalRestServer call, and init the super class RPC
         :param freqtrade: Instance of a freqtrade bot
         :return: None
         """
@@ -73,11 +67,17 @@ class LocalRPCSuperWrap(RPC):
         """ Method that runs forever """
         self._config = freqtrade.config
 
+
         # TODO add IP address / port to bind to in config.json and use in below.
-        while True:
-            # Do something
-            logger.info('Starting Local RPC Listener')
-            s = zerorpc.Server(LocalRPCControls(freqtrade))
-            s.bind("tcp://0.0.0.0:4242")
-            s.run()
-            time.sleep(self.interval)
+        logger.info('Starting Local Rest Server')
+
+        my_freqtrade = freqtrade
+        app = Flask(__name__)
+        api = Api(app)
+
+        # Our resources for restful apps go here, pass freqtrade object across
+        api.add_resource(Daily, '/daily', methods=['GET'],
+                         resource_class_kwargs={'freqtrade': my_freqtrade})  # Route for returning daily
+
+        #run the server
+        app.run(port='5002')
