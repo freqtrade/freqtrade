@@ -5,11 +5,14 @@ Read the documentation to know what cli arguments you need.
 """
 import logging
 import sys
+from argparse import Namespace
 from typing import List
 
+from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.state import State
 
 logger = logging.getLogger('freqtrade')
 
@@ -43,16 +46,39 @@ def main(sysargv: List[str]) -> None:
         state = None
         while 1:
             state = freqtrade.worker(old_state=state)
+            if state == State.RELOAD_CONF:
+                freqtrade = reconfigure(freqtrade, args)
 
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
+    except OperationalException as e:
+        logger.error(str(e))
+        return_code = 2
     except BaseException:
         logger.exception('Fatal exception!')
     finally:
         if freqtrade:
-            freqtrade.clean()
+            freqtrade.rpc.send_msg('*Status:* `Process died ...`')
+            freqtrade.cleanup()
         sys.exit(return_code)
+
+
+def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
+    """
+    Cleans up current instance, reloads the configuration and returns the new instance
+    """
+    # Clean up current modules
+    freqtrade.cleanup()
+
+    # Create new instance
+    freqtrade = FreqtradeBot(Configuration(args).get_config())
+    freqtrade.rpc.send_msg(
+        '*Status:* `Config reloaded ...`'.format(
+            freqtrade.state.name.lower()
+        )
+    )
+    return freqtrade
 
 
 def set_loggers() -> None:
@@ -61,6 +87,7 @@ def set_loggers() -> None:
     :return: None
     """
     logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
+    logging.getLogger('ccxt.base.exchange').setLevel(logging.INFO)
     logging.getLogger('telegram').setLevel(logging.INFO)
 
 

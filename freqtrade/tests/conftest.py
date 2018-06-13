@@ -9,7 +9,6 @@ from unittest.mock import MagicMock
 import arrow
 import pytest
 from jsonschema import validate
-from sqlalchemy import create_engine
 from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
@@ -49,7 +48,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
 
-    return FreqtradeBot(config, create_engine('sqlite://'))
+    return FreqtradeBot(config)
 
 
 def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
@@ -92,7 +91,14 @@ def default_conf():
         "stoploss": -0.10,
         "unfilledtimeout": 600,
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "use_book_order": False,
+            "book_order_top": 6,
+            "ask_last_balance": 0.0,
+        },
+        "ask_strategy": {
+            "use_book_order": False,
+            "book_order_min": 1,
+            "book_order_max": 10
         },
         "exchange": {
             "name": "bittrex",
@@ -112,7 +118,8 @@ def default_conf():
             "chat_id": "0"
         },
         "initial_state": "running",
-        "loglevel": logging.DEBUG
+        "db_url": "sqlite://",
+        "loglevel": logging.DEBUG,
     }
     validate(configuration, constants.CONF_SCHEMA)
     return configuration
@@ -613,66 +620,3 @@ def buy_order_fee():
         'status': 'closed',
         'fee': None
     }
-
-
-@pytest.fixture
-def lambda_context():
-    # mock the different AWS features we need
-    sns = moto.mock_sns()
-    sns.start()
-
-    dynamo = moto.mock_dynamodb2()
-    dynamo.start()
-
-    lamb = moto.mock_lambda()
-    lamb.start()
-
-    ecs = moto.mock_ecs()
-    ecs.start()
-
-    cluster = boto3.client('ecs')
-    cluster.create_cluster(clusterName='fargate')
-
-    cluster.register_task_definition(
-        containerDefinitions=[
-            {
-                'name': 'freqtrade-backtesting',
-                'command': [
-                    'sleep',
-                    '360',
-                ],
-                'cpu': 10,
-                'essential': True,
-                'image': 'busybox',
-                'memory': 10,
-            },
-        ],
-        family='sleep360',
-        taskRoleArn='',
-        volumes=[
-        ],
-    )
-    session = boto3.session.Session()
-    os.environ["strategyTable"] = "StrategyTable"
-    os.environ["tradeTable"] = "TradeTable"
-    os.environ["topic"] = "UnitTestTopic"
-    os.environ["BASE_URL"] = "http://127.0.0.1/test"
-
-    client = session.client('sns')
-    client.create_topic(Name=os.environ["topic"])
-
-    dynamodb = boto3.resource('dynamodb')
-
-    import responses
-
-    # do not mock requests to these urls
-    responses.add_passthru('https://api.github.com')
-    responses.add_passthru('https://bittrex.com')
-    responses.add_passthru('https://api.binance.com')
-    responses.add_passthru('https://freq.isaac.international')
-
-    yield
-    sns.stop()
-    dynamo.stop()
-    lamb.stop()
-    ecs.stop()

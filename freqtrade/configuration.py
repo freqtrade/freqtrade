@@ -1,11 +1,11 @@
 """
 This module contains the configuration class
 """
-
+import os
 import json
 import logging
 from argparse import Namespace
-from typing import Dict, Any
+from typing import Optional, Dict, Any
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 import ccxt
@@ -23,7 +23,7 @@ class Configuration(object):
     """
     def __init__(self, args: Namespace) -> None:
         self.args = args
-        self.config = None
+        self.config: Optional[Dict[str, Any]] = None
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -61,11 +61,9 @@ class Configuration(object):
             with open(path) as file:
                 conf = json.load(file)
         except FileNotFoundError:
-            logger.critical(
-                'Config file "%s" not found. Please create your config file',
-                path
-            )
-            exit(0)
+            raise OperationalException(
+                'Config file "{}" not found!'
+                ' Please create a config file or check whether it exists.'.format(path))
 
         if 'internals' not in conf:
             conf['internals'] = {}
@@ -97,21 +95,34 @@ class Configuration(object):
                 '(not applicable with Backtesting and Hyperopt)'
             )
 
-        # Add dry_run_db if found and the bot in dry run
-        if self.args.dry_run_db and config.get('dry_run', False):
-            config.update({'dry_run_db': True})
-            logger.info('Parameter --dry-run-db detected ...')
+        if self.args.db_url != constants.DEFAULT_DB_PROD_URL:
+            config.update({'db_url': self.args.db_url})
+            logger.info('Parameter --db-url detected ...')
 
-        if config.get('dry_run_db', False):
-            if config.get('dry_run', False):
-                logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite"')
-            else:
-                logger.info('Dry run is disabled. (--dry_run_db ignored)')
+        if config.get('dry_run', False):
+            logger.info('Dry run is enabled')
+            if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:
+                # Default to in-memory db for dry_run if not specified
+                config['db_url'] = constants.DEFAULT_DB_DRYRUN_URL
+        else:
+            if not config.get('db_url', None):
+                config['db_url'] = constants.DEFAULT_DB_PROD_URL
+            logger.info('Dry run is disabled')
+
+        logger.info('Using DB: "{}"'.format(config['db_url']))
 
         # Check if the exchange set by the user is supported
         self.check_exchange(config)
 
         return config
+
+    def _create_default_datadir(self, config: Dict[str, Any]) -> str:
+        exchange_name = config.get('exchange', {}).get('name').lower()
+        default_path = os.path.join('user_data', 'data', exchange_name)
+        if not os.path.isdir(default_path):
+            os.makedirs(default_path)
+            logger.info(f'Created data directory: {default_path}')
+        return default_path
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -145,7 +156,9 @@ class Configuration(object):
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})
-            logger.info('Parameter --datadir detected: %s ...', self.args.datadir)
+        else:
+            config.update({'datadir': self._create_default_datadir(config)})
+        logger.info('Using data folder: %s ...', config.get('datadir'))
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
@@ -156,6 +169,11 @@ class Configuration(object):
         if 'export' in self.args and self.args.export:
             config.update({'export': self.args.export})
             logger.info('Parameter --export detected: %s ...', self.args.export)
+
+        # If --export-filename is used we add it to the configuration
+        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
+            config.update({'exportfilename': self.args.exportfilename})
+            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
 
         return config
 
@@ -192,7 +210,7 @@ class Configuration(object):
             validate(conf, constants.CONF_SCHEMA)
             return conf
         except ValidationError as exception:
-            logger.fatal(
+            logger.critical(
                 'Invalid configuration. See config.json.example. Reason: %s',
                 exception
             )
@@ -218,9 +236,8 @@ class Configuration(object):
         exchange = config.get('exchange', {}).get('name').lower()
         if exchange not in ccxt.exchanges:
 
-            exception_msg = 'Exchange "{}" not supported.\n' \
-                            'The following exchanges are supported: {}'\
-                .format(exchange, ', '.join(ccxt.exchanges))
+            exception_msg = f'Exchange "{exchange}" not supported.\n' \
+                            f'The following exchanges are supported: {", ".join(ccxt.exchanges)}'
 
             logger.critical(exception_msg)
             raise OperationalException(

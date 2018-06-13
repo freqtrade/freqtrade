@@ -4,7 +4,7 @@ This page explains how to command your bot with Telegram.
 
 ## Pre-requisite
 To control your bot with Telegram, you need first to 
-[set up a Telegram bot](https://github.com/gcarq/freqtrade/blob/develop/docs/pre-requisite.md) 
+[set up a Telegram bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md) 
 and add your Telegram API keys into your config file.
 
 ## Telegram commands
@@ -16,6 +16,7 @@ official commands. You can ask at any moment for help with `/help`.
 |----------|---------|-------------|
 | `/start` | | Starts the trader
 | `/stop` | | Stops the trader
+| `/reload_conf` | | Reloads the configuration file
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format
 | `/count` | | Displays number of trades used and available

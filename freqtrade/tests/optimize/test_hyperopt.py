@@ -389,10 +389,12 @@ def test_start_uses_mongotrials(mocker, init_hyperopt, default_conf) -> None:
 # test buy_strategy_generator def populate_buy_trend
 # test optimizer if 'ro_t1' in params
 
-def test_format_results():
+def test_format_results(init_hyperopt):
     """
     Test Hyperopt.format_results()
     """
+
+    # Test with BTC as stake_currency
     trades = [
         ('ETH/BTC', 2, 2, 123),
         ('LTC/BTC', 1, 1, 123),
@@ -400,8 +402,21 @@ def test_format_results():
     ]
     labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
     df = pd.DataFrame.from_records(trades, columns=labels)
-    x = Hyperopt.format_results(df)
-    assert x.find(' 66.67%')
+
+    result = _HYPEROPT.format_results(df)
+    assert result.find(' 66.67%')
+    assert result.find('Total profit 1.00000000 BTC')
+    assert result.find('2.0000Σ %')
+
+    # Test with EUR as stake_currency
+    trades = [
+        ('ETH/EUR', 2, 2, 123),
+        ('LTC/EUR', 1, 1, 123),
+        ('XPR/EUR', -1, -2, -246)
+    ]
+    df = pd.DataFrame.from_records(trades, columns=labels)
+    result = _HYPEROPT.format_results(df)
+    assert result.find('Total profit 1.00000000 EUR')
 
 
 def test_signal_handler(mocker, init_hyperopt):

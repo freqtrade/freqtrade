@@ -1,8 +1,8 @@
 # freqtrade
 
-[![Build Status](https://travis-ci.org/gcarq/freqtrade.svg?branch=develop)](https://travis-ci.org/gcarq/freqtrade)
-[![Coverage Status](https://coveralls.io/repos/github/gcarq/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/gcarq/freqtrade?branch=develop)
-[![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/gcarq/freqtrade/maintainability)
+[![Build Status](https://travis-ci.org/freqtrade/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
+[![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
 
 ## First of all, this is a fork!
 
@@ -17,7 +17,7 @@ This reminds of the Torvalds kernel vs the Cox kernel...
 Simple High frequency trading bot for crypto currencies designed to 
 support multi exchanges and be controlled via Telegram.
 
-![freqtrade](https://raw.githubusercontent.com/gcarq/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
+![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
 
 ## Disclaimer
 This software is for educational purposes only. Do not risk money which 
@@ -34,12 +34,12 @@ hesitate to read the source code and understand the mechanism of this bot.
 ## Table of Contents
 - [Features](#features)
 - [Quick start](#quick-start)
-- [Documentations](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md)
-   - [Installation](https://github.com/gcarq/freqtrade/blob/develop/docs/installation.md)
-   - [Configuration](https://github.com/gcarq/freqtrade/blob/develop/docs/configuration.md)
-   - [Strategy Optimization](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md)
-   - [Backtesting](https://github.com/gcarq/freqtrade/blob/develop/docs/backtesting.md)
-   - [Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/hyperopt.md)
+- [Documentations](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md)
+   - [Installation](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md)
+   - [Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md)
+   - [Strategy Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
+   - [Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
+   - [Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
 - [Support](#support)
    - [Help](#help--slack)
    - [Bugs](#bugs--issues)
@@ -62,27 +62,16 @@ Windows, macOS and Linux
 - [x] **Persistence**: Persistence is achieved through sqlite
 - [x] **Dry-run**: Run the bot without playing money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
-- [x] **Strategy Optimization**: Optimize your buy/sell strategy 
-parameters with Hyperopts.
-- [x] **Whitelist crypto-currencies**: Select which crypto-currency you
-want to trade.
-- [x] **Blacklist crypto-currencies**: Select which crypto-currency you
-want to avoid.
+- [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell
+strategy parameters with real exchange data.
+- [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade.
+- [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram
-- [x] **Display profit/loss in fiat**: Display your profit/loss in
-33 fiat.
-- [x] **Daily summary of profit/loss**: Provide a daily summary
- of your profit/loss.
-- [x] **Performance status report**: Provide a performance status of 
-your current trades.
+- [x] **Display profit/loss in fiat**: Display your profit/loss in 33 fiat.
+- [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
+- [x] **Performance status report**: Provide a performance status of your current trades.
 
 ### Additional features in this branch
-
-#### Cloud:
-
-- [x] aws lambda based backtesting
-- [x] automatically evaluating all strategies from: https://github.com/berlinguyinca/freqtrade-trading-strategies on an hourly basis
-- [x] persisting of backtesting results
 
 #### Strategy:
 
@@ -102,15 +91,15 @@ your current trades.
 - [x] maybe a bug here or there I haven't fixed yet
 
 
-### Exchange supported
-- [x] Bittrex
-- [ ] Binance
-- [ ] Others
+### Exchange marketplaces supported
+- [X] [Bittrex](https://bittrex.com/)
+- [X] [Binance](https://www.binance.com/)
+- [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ## Quick start
 This quick start section is a very short explanation on how to test the 
 bot in dry-run. We invite you to read the 
-[bot documentation](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md) 
+[bot documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md) 
 to ensure you understand how the bot is working.
 
 ### Easy installation
@@ -124,7 +113,7 @@ The following steps are made for Linux/MacOS environment
 
 **1. Clone the repo**
 ```bash
-git clone git@github.com:gcarq/freqtrade.git
+git clone git@github.com:freqtrade/freqtrade.git
 git checkout develop
 cd freqtrade
 ```
@@ -146,26 +135,26 @@ For any questions not covered by the documentation or for further
 information about the bot, we encourage you to join our slack channel.
 - [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
 
-### [Bugs / Issues](https://github.com/gcarq/freqtrade/issues?q=is%3Aissue)
+### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 If you discover a bug in the bot, please 
-[search our issue tracker](https://github.com/gcarq/freqtrade/issues?q=is%3Aissue) 
+[search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue) 
 first. If it hasn't been reported, please 
-[create a new issue](https://github.com/gcarq/freqtrade/issues/new) and 
+[create a new issue](https://github.com/freqtrade/freqtrade/issues/new) and 
 ensure you follow the template guide so that our team can assist you as 
 quickly as possible.
 
-### [Feature Requests](https://github.com/gcarq/freqtrade/labels/enhancement)
+### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
 Have you a great idea to improve the bot you want to share? Please,
-first search if this feature was not [already discussed](https://github.com/gcarq/freqtrade/labels/enhancement).
+first search if this feature was not [already discussed](https://github.com/freqtrade/freqtrade/labels/enhancement).
 If it hasn't been requested, please 
-[create a new request](https://github.com/gcarq/freqtrade/issues/new) 
+[create a new request](https://github.com/freqtrade/freqtrade/issues/new) 
 and ensure you follow the template guide so that it does not get lost 
 in the bug reports.
 
-### [Pull Requests](https://github.com/gcarq/freqtrade/pulls)
+### [Pull Requests](https://github.com/freqtrade/freqtrade/pulls)
 Feel like our bot is missing a feature? We welcome your pull requests! 
 Please read our 
-[Contributing document](https://github.com/gcarq/freqtrade/blob/develop/CONTRIBUTING.md)
+[Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests. 
 
 **Important:** Always create your PR against the `develop` branch, not 
@@ -176,8 +165,9 @@ to understand the requirements before sending your pull-requests.
 ### Bot commands
 
 ```bash
-usage: main.py [-h] [-v] [--version] [-c PATH] [--dry-run-db] [--datadir PATH]
-               [--dynamic-whitelist [INT]]
+usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+               [--strategy-path PATH] [--dynamic-whitelist [INT]]
+               [--dry-run-db]
                {backtesting,hyperopt} ...
 
 Simple High Frequency Trading Bot for crypto currencies
@@ -193,23 +183,28 @@ optional arguments:
   --version             show program's version number and exit
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
-  --datadir PATH        path to backtest data (default freqdata/tests/testdata
+  -d PATH, --datadir PATH
+                        path to backtest data (default:
+                        freqtrade/tests/testdata
+  -s NAME, --strategy NAME
+                        specify strategy class name (default: DefaultStrategy)
+  --strategy-path PATH  specify additional strategy lookup path
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
                         BaseVolume (Default 20 currencies)
+  --dry-run-db          Force dry run to use a local DB
+                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
+                        only if dry_run is enabled.
 ```
 More details on:
-- [How to run the bot](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
-- [How to use Backtesting](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
-- [How to use Hyperopt](https://github.com/gcarq/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands)
+- [How to run the bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
+- [How to use Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
+- [How to use Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands)
    
 ### Telegram RPC commands
 Telegram is not mandatory. However, this is a great way to control your
 bot. More details on our 
-[documentation](https://github.com/gcarq/freqtrade/blob/develop/docs/index.md)
+[documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md)
 
 - `/start`: Starts the trader
 - `/stop`: Stops the trader

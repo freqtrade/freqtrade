@@ -37,7 +37,8 @@ class StrategyResolver(object):
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
-        self.strategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
+        self.strategy: IStrategy = self._load_strategy(strategy_name,
+                                                       extra_dir=config.get('strategy_path'))
 
         # Set attributes
         # Check if we need to override configuration
@@ -72,7 +73,7 @@ class StrategyResolver(object):
         return self._load_strategy(strategy_name, temp.absolute())
 
     def _load_strategy(
-            self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:
+            self, strategy_name: str, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
@@ -91,7 +92,7 @@ class StrategyResolver(object):
 
         # check if the given strategy is provided as name, value pair
         # where the value is the strategy encoded in base 64
-        if ":" in strategy_name:
+        if ":" in strategy_name and "http" not in strategy_name:
             strat = strategy_name.split(":")
 
             if len(strat) == 2:
@@ -113,13 +114,18 @@ class StrategyResolver(object):
                 resp = requests.get(strategy_name, stream=True)
                 if resp.status_code == 200:
                     temp = Path(tempfile.mkdtemp("freq", "strategy"))
+
+                    if strategy_name.endswith("/code"):
+                        strategy_name = strategy_name.replace("/code", "")
+
                     name = os.path.basename(urlparse(strategy_name).path)
 
-                    temp.joinpath(name).write_text(resp.text)
+                    temp.joinpath("{}.py".format(name)).write_text(resp.text)
                     temp.joinpath("__init__.py").touch()
 
                     strategy_name = os.path.splitext(name)[0]
 
+                    print("stored downloaded stat at: {}".format(temp))
                     # register temp path with the bot
                     abs_paths.insert(0, temp.absolute())
 
@@ -149,7 +155,7 @@ class StrategyResolver(object):
         # Generate spec based on absolute path
         spec = importlib.util.spec_from_file_location('user_data.strategies', module_path)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
 
         valid_strategies_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
