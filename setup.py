@@ -19,7 +19,7 @@ setup(name='freqtrade',
       packages=['freqtrade'],
       scripts=['bin/freqtrade'],
       setup_requires=['pytest-runner'],
-      tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
+      tests_require=['pytest', 'pytest-mock', 'pytest-cov', 'moto'],
       install_requires=[
           'ccxt',
           'SQLAlchemy',
@@ -35,7 +35,9 @@ setup(name='freqtrade',
           'TA-Lib',
           'tabulate',
           'cachetools',
-          'coinmarketcap'
+          'coinmarketcap',
+          'boto3'
+
       ],
       include_package_data=True,
       zip_safe=False,

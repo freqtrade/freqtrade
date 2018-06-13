@@ -33,7 +33,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any])-> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
@@ -253,7 +253,6 @@ class FreqtradeBot(object):
             balance = self.config['bid_strategy']['ask_last_balance']
             return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
-
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
@@ -440,19 +439,20 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             logger.info('Using order book for selling...')
             orderBook = exchange.get_order_book(trade.pair)
             # logger.debug('Order book %s',orderBook)
-            for i in range(self.config['ask_strategy']['book_order_min'],self.config['ask_strategy']['book_order_max']+1):
-                sell_rate = orderBook['asks'][i-1][0]
+            for i in range(self.config['ask_strategy']['book_order_min'],
+                           self.config['ask_strategy']['book_order_max'] + 1):
+                sell_rate = orderBook['asks'][i - 1][0]
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
                     break
         else:
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
-            
+
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
 
-    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool ) -> bool:
+    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.analyze.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, sell_rate)
             return True
@@ -483,12 +483,15 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 continue
             ordertime = arrow.get(order['datetime']).datetime
 
+            print(order)
             # Check if trade is still actually open
-            if (int(order['filled']) == 0) and (order['status']=='open'):
-                if order['side'] == 'buy' and ordertime < timeoutthreashold:
-                    self.handle_timedout_limit_buy(trade, order)
-                elif order['side'] == 'sell' and ordertime < timeoutthreashold:
-                    self.handle_timedout_limit_sell(trade, order)
+# this makes no real sense and causes errors!
+#
+#            if (filled(int(order['filled']) == 0) and (order['status'] == 'open'):
+            if order['side'] == 'buy' and ordertime < timeoutthreashold:
+                self.handle_timedout_limit_buy(trade, order)
+            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
+                self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the
@@ -579,7 +582,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 fiat
             )
             message += f'` ({gain}: {fmt_exp_profit:.2f}%, {profit_trade:.8f} {stake}`' \
-                       f'` / {profit_fiat:.3f} {fiat})`'\
+                       f'` / {profit_fiat:.3f} {fiat})`' \
                        ''
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well

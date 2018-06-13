@@ -365,14 +365,10 @@ def test_generate_text_table(default_conf, mocker):
     )
 
     result_str = (
-        '| pair    |   buy count |   avg profit % |   '
-        'total profit BTC |   avg duration |   profit |   loss |\n'
-        '|:--------|------------:|---------------:|'
-        '-------------------:|---------------:|---------:|-------:|\n'
-        '| ETH/BTC |           2 |          15.00 |         '
-        '0.60000000 |           20.0 |        2 |      0 |\n'
-        '| TOTAL   |           2 |          15.00 |         '
-        '0.60000000 |           20.0 |        2 |      0 |'
+"""| pair    |   buy count |   avg profit % |   cum profit % |   total profit BTC |   avg duration |   profit |   loss |
+|:--------|------------:|---------------:|---------------:|-------------------:|---------------:|---------:|-------:|
+| ETH/BTC |           2 |          15.00 |          30.00 |         0.60000000 |           20.0 |        2 |      0 |
+| TOTAL   |           2 |          15.00 |          30.00 |         0.60000000 |           20.0 |        2 |      0 |"""
     )
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
@@ -598,6 +594,7 @@ def test_backtest_record(default_conf, fee, mocker):
     results = backtesting.backtest(backtest_conf)
     assert len(results) == 3
     # Assert file_dump_json was only called once
+    print(names)
     assert names == ['backtest-result.json']
     records = records[0]
     # Ensure records are of correct type

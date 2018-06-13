@@ -224,7 +224,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import backtesting, hyperopt
+        from freqtrade.optimize import backtesting
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -235,10 +235,14 @@ class Arguments(object):
         self.backtesting_options(backtesting_cmd)
 
         # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
-        hyperopt_cmd.set_defaults(func=hyperopt.start)
-        self.optimizer_shared_options(hyperopt_cmd)
-        self.hyperopt_options(hyperopt_cmd)
+        try:
+            from freqtrade.optimize import hyperopt
+            hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+            hyperopt_cmd.set_defaults(func=hyperopt.start)
+            self.optimizer_shared_options(hyperopt_cmd)
+            self.hyperopt_options(hyperopt_cmd)
+        except ImportError as e:
+            logging.warn("no hyper opt found - skipping support for it")
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
@@ -340,7 +344,6 @@ class Arguments(object):
             default=None
         )
 
-
         self.parser.add_argument(
             '--plot-macd',
             help='Renders a macd chart of the given '
@@ -381,14 +384,6 @@ class Arguments(object):
             dest='plotticks',
             default=750,
             type=int
-        )
-
-
-        self.parser.add_argument(
-            '-db', '--db-url',
-            help='Show trades stored in database.',
-            dest='db_url',
-            default=None
         )
 
     def testdata_dl_options(self) -> None:

@@ -28,10 +28,10 @@ def test_load_strategy(result):
 
 def test_load_strategy_from_url(result):
     resolver = StrategyResolver()
-    resolver._load_strategy('https://raw.githubusercontent.com/berlinguyinca'
-                            '/freqtrade-trading-strategies'
-                            '/master/user_data/strategies/Simple.py')
-    assert hasattr(resolver.strategy, 'populate_indicators')
+    resolver._load_strategy('https://freq.isaac.international/'
+                            'dev/strategies/GBPAQEFGGWCMWVFU34P'
+                            'MVGS4P2NJR4IDFNVI4LTCZAKJAD3JCXUMBI4J/AverageStrategy/code')
+    assert hasattr(resolver.strategy, 'minimal_roi')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 

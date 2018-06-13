@@ -17,9 +17,10 @@ pytest-mock==1.10.0
 pytest-cov==2.5.1
 hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
-networkx==1.11 # pyup: ignore
+#networkx==1.11
+git+git://github.com/berlinguyinca/networkx@v1.11
 tabulate==0.8.2
 coinmarketcap==5.0.3
-
+simplejson==3.15.0
 # Required for plotting data
 #plotly==2.3.0
