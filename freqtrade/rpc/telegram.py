@@ -289,8 +289,8 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
-        msg = self.rpc_reload_conf()
-        self.send_msg(msg, bot=bot)
+        msg = self._rpc_reload_conf()
+        self._send_msg(msg, bot=bot)
 
     @authorized_only
     def _forcesell(self, bot: Bot, update: Update) -> None:

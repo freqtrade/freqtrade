@@ -304,9 +304,9 @@ class RPC(object):
 
         return '*Status:* `already stopped`'
 
-    def rpc_reload_conf(self) -> str:
+    def _rpc_reload_conf(self) -> str:
         """ Handler for reload_conf. """
-        self.freqtrade.state = State.RELOAD_CONF
+        self._freqtrade.state = State.RELOAD_CONF
         return '*Status:* `Reloading config ...`'
 
     # FIX: no test for this!!!!

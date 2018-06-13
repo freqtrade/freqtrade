@@ -706,7 +706,7 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        send_msg=msg_mock
+        _send_msg=msg_mock
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
