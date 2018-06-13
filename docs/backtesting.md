@@ -141,21 +141,42 @@ The most important in the backtesting is to understand the result.
 A backtesting result will look like that:
 
 ```
-====================== BACKTESTING REPORT ================================
-pair        buy count    avg profit %    total profit BTC    avg duration
---------  -----------  --------------  ------------------  --------------
-ETH/BTC            56           -0.67         -0.00075455            62.3
-LTC/BTC            38           -0.48         -0.00036315            57.9
-ETC/BTC            42           -1.15         -0.00096469            67.0
-DASH/BTC           72           -0.62         -0.00089368            39.9
-ZEC/BTC            45           -0.46         -0.00041387            63.2
-XLM/BTC            24           -0.88         -0.00041846            47.7
-NXT/BTC            24            0.68          0.00031833            40.2
-POWR/BTC           35            0.98          0.00064887            45.3
-ADA/BTC            43           -0.39         -0.00032292            55.0
-XMR/BTC            40           -0.40         -0.00032181            47.4
-TOTAL             419           -0.41         -0.00348593            52.9
+======================================== BACKTESTING REPORT =========================================
+| pair     |   buy count |   avg profit % |   total profit BTC |   avg duration |   profit |   loss |
+|:---------|------------:|---------------:|-------------------:|---------------:|---------:|-------:|
+| ETH/BTC  |          44 |           0.18 |         0.00159118 |           50.9 |       44 |      0 |
+| LTC/BTC  |          27 |           0.10 |         0.00051931 |          103.1 |       26 |      1 |
+| ETC/BTC  |          24 |           0.05 |         0.00022434 |          166.0 |       22 |      2 |
+| DASH/BTC |          29 |           0.18 |         0.00103223 |          192.2 |       29 |      0 |
+| ZEC/BTC  |          65 |          -0.02 |        -0.00020621 |          202.7 |       62 |      3 |
+| XLM/BTC  |          35 |           0.02 |         0.00012877 |          242.4 |       32 |      3 |
+| BCH/BTC  |          12 |           0.62 |         0.00149284 |           50.0 |       12 |      0 |
+| POWR/BTC |          21 |           0.26 |         0.00108215 |          134.8 |       21 |      0 |
+| ADA/BTC  |          54 |          -0.19 |        -0.00205202 |          191.3 |       47 |      7 |
+| XMR/BTC  |          24 |          -0.43 |        -0.00206013 |          120.6 |       20 |      4 |
+| TOTAL    |         335 |           0.03 |         0.00175246 |          157.9 |      315 |     20 |
+2018-06-13 06:57:27,347 - freqtrade.optimize.backtesting - INFO -
+====================================== LEFT OPEN TRADES REPORT ======================================
+| pair     |   buy count |   avg profit % |   total profit BTC |   avg duration |   profit |   loss |
+|:---------|------------:|---------------:|-------------------:|---------------:|---------:|-------:|
+| ETH/BTC  |           3 |           0.16 |         0.00009619 |           25.0 |        3 |      0 |
+| LTC/BTC  |           1 |          -1.00 |        -0.00020118 |         1085.0 |        0 |      1 |
+| ETC/BTC  |           2 |          -1.80 |        -0.00071933 |         1092.5 |        0 |      2 |
+| DASH/BTC |           0 |         nan    |         0.00000000 |          nan   |        0 |      0 |
+| ZEC/BTC  |           3 |          -4.27 |        -0.00256826 |         1301.7 |        0 |      3 |
+| XLM/BTC  |           3 |          -1.11 |        -0.00066744 |          965.0 |        0 |      3 |
+| BCH/BTC  |           0 |         nan    |         0.00000000 |          nan   |        0 |      0 |
+| POWR/BTC |           0 |         nan    |         0.00000000 |          nan   |        0 |      0 |
+| ADA/BTC  |           7 |          -3.58 |        -0.00503604 |          850.0 |        0 |      7 |
+| XMR/BTC  |           4 |          -3.79 |        -0.00303456 |          291.2 |        0 |      4 |
+| TOTAL    |          23 |          -2.63 |        -0.01213062 |          750.4 |        3 |     20 |
+
 ```
+
+The 1st table will contain all trades the bot made.
+
+The 2nd table will contain all trades the bot had to `forcesell` at the end of the backtest period to prsent a full picture.
+These trades are also included in the first table, but are extracted separately for clarity.
 
 The last line will give you the overall performance of your strategy,
 here:
