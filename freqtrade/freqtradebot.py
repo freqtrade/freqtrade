@@ -443,9 +443,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             logger.info('Using order book for selling...')
             orderBook = exchange.get_order_book(trade.pair)
             # logger.debug('Order book %s',orderBook)
-            for i in range(self.config['ask_strategy']['book_order_min'],self.config['ask_strategy']['book_order_max']):
+            for i in range(self.config['ask_strategy']['book_order_min'],self.config['ask_strategy']['book_order_max']+1):
                 sell_rate = orderBook['asks'][i-1][0]
-                logger.debug('checking sell rate %s) %.8f > %.8f (%f %%)',i,trade.open_rate,sell_rate,((sell_rate/trade.open_rate)*100)-100)
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
                     break
@@ -488,13 +487,11 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if int(order['remaining']) == 0:
-                continue
-
-            if order['side'] == 'buy' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_buy(trade, order)
-            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_sell(trade, order)
+            if (int(order['filled']) == 0) and (order['status']=='open'):
+                if order['side'] == 'buy' and ordertime < timeoutthreashold:
+                    self.handle_timedout_limit_buy(trade, order)
+                elif order['side'] == 'sell' and ordertime < timeoutthreashold:
+                    self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the
