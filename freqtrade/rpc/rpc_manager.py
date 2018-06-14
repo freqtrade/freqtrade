@@ -1,5 +1,5 @@
 """
-This module contains class to manage RPC communications (Telegram, Slack, Rest ...)
+This module contains class to manage RPC communications (Telegram, Slack, Rest ....)
 """
 import logging
 from typing import List
