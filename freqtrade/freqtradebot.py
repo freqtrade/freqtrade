@@ -156,12 +156,15 @@ class FreqtradeBot(object):
                 state_changed |= self.process_maybe_execute_sell(trade)
 
             # Then looking for buy opportunities
-            if len(trades) < self.config['max_open_trades']:
-                state_changed = self.process_maybe_execute_buy()
+            if (self.config['disable_buy']):
+                logger.info('Buy disabled...')
+            else:
+                if len(trades) < self.config['max_open_trades']:
+                    state_changed = self.process_maybe_execute_buy()
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
-                self.check_handle_timedout(self.config['unfilledtimeout'])
+                self.check_handle_timedout()
                 Trade.session.flush()
 
         except TemporaryError as error:
@@ -241,17 +244,23 @@ class FreqtradeBot(object):
         :return: float: Price
         """
 
+        ticker = exchange.get_ticker(pair)
+        if ticker['ask'] < ticker['last']:
+            return ticker['ask']
+        balance = self.config['bid_strategy']['ask_last_balance']
+        ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
             orderBook = exchange.get_order_book(pair)
-            return orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
+            orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
+            # if ticker has lower rate, then use ticker ( usefull if down trending )
+            if ticker_rate < orderBook_rate:
+                return ticker_rate
+            return orderBook_rate
         else:
             logger.info('Using Ask / Last Price')
-            ticker = exchange.get_ticker(pair);
-            if ticker['ask'] < ticker['last']:
-                return ticker['ask']
-            balance = self.config['bid_strategy']['ask_last_balance']
-            return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+            return ticker_rate
 
     def create_trade(self) -> bool:
         """
@@ -439,9 +448,15 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             logger.info('Using order book for selling...')
             orderBook = exchange.get_order_book(trade.pair)
             # logger.debug('Order book %s',orderBook)
-            for i in range(self.config['ask_strategy']['book_order_min'],
-                           self.config['ask_strategy']['book_order_max'] + 1):
-                sell_rate = orderBook['asks'][i - 1][0]
+            orderBook_min = self.config['ask_strategy']['book_order_min']
+            orderBook_max = self.config['ask_strategy']['book_order_max']
+            for i in range(orderBook_min, orderBook_max+1):
+                orderBook_rate = orderBook['asks'][i-1][0]
+                # if orderbook has higher rate (high profit),
+                # use orderbook, otherwise just use sell rate
+                if (sell_rate < orderBook_rate):
+                    sell_rate = orderBook_rate
+
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
                     break
@@ -458,19 +473,22 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             return True
         return False
 
-    def check_handle_timedout(self, timeoutvalue: int) -> None:
+    def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if neccessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
-        timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
+        buy_timeout = self.config['unfilledtimeout']['buy']
+        sell_timeout = self.config['unfilledtimeout']['sell']
+        buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
+        sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.
-                # This is probably because the record got
+                # This is probably because the record get_trades_for_order
                 # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
@@ -485,13 +503,11 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
             print(order)
             # Check if trade is still actually open
-# this makes no real sense and causes errors!
-#
-#            if (filled(int(order['filled']) == 0) and (order['status'] == 'open'):
-            if order['side'] == 'buy' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_buy(trade, order)
-            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_sell(trade, order)
+            if (int(order['filled']) == 0) and (order['status'] == 'open'):
+                if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
+                    self.handle_timedout_limit_buy(trade, order)
+                elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
+                    self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the

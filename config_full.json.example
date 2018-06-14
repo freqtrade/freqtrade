@@ -4,6 +4,7 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
+    "disable_buy" : true,
     "ticker_interval": "5m",
     "trailing_stop": true,
     "minimal_roi": {
@@ -13,7 +14,10 @@
         "0":  0.04
     },
     "stoploss": -0.10,
-    "unfilledtimeout": 600,
+    "unfilledtimeout": {
+        "buy":10,
+        "sell":30
+    }
     "bid_strategy": {
         "ask_last_balance": 0.0,
         "use_book_order": true,

@@ -5,6 +5,11 @@
     "fiat_display_currency": "USD",
     "ticker_interval" : "5m",
     "dry_run": false,
+    "disable_buy" : true,
+    "unfilledtimeout": {
+        "buy":10,
+        "sell":30
+    }
     "trailing_stop": {
         "positive" : 0.005
     },
