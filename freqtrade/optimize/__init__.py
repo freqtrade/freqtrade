@@ -85,7 +85,7 @@ def load_data(datadir: str,
               ticker_interval: str,
               pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False,
-              timerange: TimeRange = TimeRange()) -> Dict[str, List]:
+              timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :return: dict
@@ -125,7 +125,7 @@ def make_testdata_path(datadir: str) -> str:
 
 def download_pairs(datadir, pairs: List[str],
                    ticker_interval: str,
-                   timerange: TimeRange = TimeRange()) -> bool:
+                   timerange: TimeRange = TimeRange(None, None, 0, 0)) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:

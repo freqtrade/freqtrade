@@ -85,7 +85,7 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
-def test_load_config_file_exception(mocker, caplog) -> None:
+def test_load_config_file_exception(mocker) -> None:
     """
     Test Configuration._load_config_file() method
     """
@@ -95,12 +95,8 @@ def test_load_config_file_exception(mocker, caplog) -> None:
     )
     configuration = Configuration(Namespace())
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(OperationalException, match=r'.*Config file "somefile" not found!*'):
         configuration._load_config_file('somefile')
-    assert log_has(
-        'Config file "somefile" not found. Please create your config file',
-        caplog.record_tuples
-    )
 
 
 def test_load_config(default_conf, mocker) -> None:
