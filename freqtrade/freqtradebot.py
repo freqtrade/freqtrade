@@ -164,8 +164,9 @@ class FreqtradeBot(object):
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
-                self.check_handle_timedout()
-                Trade.session.flush()
+                if not self.config['dry_run']:
+                    self.check_handle_timedout()
+                    Trade.session.flush()
 
         except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)

@@ -58,10 +58,10 @@ CONF_SCHEMA = {
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
-                'use_book_order': {'type': 'boolean'},
                 'buy': {'type': 'number', 'minimum': 3},
                 'sell': {'type': 'number', 'minimum': 10}
-            }
+            },
+            'required': ['buy','sell']
         },
         'bid_strategy': {
             'type': 'object',
@@ -75,7 +75,7 @@ CONF_SCHEMA = {
                 'use_book_order': {'type': 'boolean'},
                 'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1}
             },
-            'required': ['ask_last_balance']
+            'required': ['ask_last_balance','use_book_order']
         },
         'ask_strategy': {
             'type': 'object',
@@ -83,7 +83,8 @@ CONF_SCHEMA = {
                 'use_book_order': {'type': 'boolean'},
                 'book_order_min': {'type': 'number', 'minimum': 1},
                 'book_order_max': {'type': 'number', 'minimum': 1}
-            }
+            },
+            'required': ['use_book_order']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
