@@ -80,8 +80,6 @@ class Backtesting(object):
         for pair in data:
             result = results[results.currency == pair]
 
-            print(result)
-            print(result.profit_BTC)
             tabular_data.append([
                 pair,
                 len(result.index),

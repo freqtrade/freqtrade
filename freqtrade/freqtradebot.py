@@ -501,7 +501,6 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 continue
             ordertime = arrow.get(order['datetime']).datetime
 
-            print(order)
             # Check if trade is still actually open
             if (int(order['filled']) == 0) and (order['status'] == 'open'):
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:

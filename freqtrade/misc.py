@@ -71,7 +71,6 @@ def file_dump_json(filename, data, is_zip=False) -> None:
     :param data: JSON Data to save
     :return:
     """
-    print(f'dumping json to "{filename}"')
 
     if is_zip:
         if not filename.endswith('.gz'):
