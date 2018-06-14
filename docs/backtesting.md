@@ -21,7 +21,7 @@ If the 5 min and 1 min ticker for the crypto-currencies to test is not
 already in the `testdata` folder, backtesting will download them 
 automatically. Testdata files will not be updated until you specify it.
 
-The result of backtesting will confirm you if your bot as more chance to make a profit than a loss.
+The result of backtesting will confirm you if your bot has better odds of making a profit than a loss.
 
 The backtesting is very easy with freqtrade.
 
