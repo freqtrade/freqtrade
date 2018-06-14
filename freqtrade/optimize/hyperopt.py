@@ -128,13 +128,12 @@ class Hyperopt(Backtesting):
         Log results if it is better than any previous evaluation
         """
         if results['loss'] < self.current_best_loss:
+            current = results['current_tries']
+            total = results['total_tries']
+            res = results['result']
+            loss = results['loss']
             self.current_best_loss = results['loss']
-            log_msg = '\n{:5d}/{}: {}. Loss {:.5f}'.format(
-                results['current_tries'],
-                results['total_tries'],
-                results['result'],
-                results['loss']
-            )
+            log_msg = f'\n{current:5d}/{total}: {res}. Loss {loss:.5f}'
             print(log_msg)
         else:
             print('.', end='')
@@ -309,15 +308,16 @@ class Hyperopt(Backtesting):
         """
         Return the format result in a string
         """
-        return ('{:6d} trades. Avg profit {: 5.2f}%. '
-                'Total profit {: 11.8f} {} ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
-                    len(results.index),
-                    results.profit_percent.mean() * 100.0,
-                    results.profit_abs.sum(),
-                    self.config['stake_currency'],
-                    results.profit_percent.sum(),
-                    results.trade_duration.mean(),
-                )
+        trades = len(results.index)
+        avg_profit = results.profit_percent.mean() * 100.0
+        total_profit = results.profit_abs.sum()
+        stake_cur = self.config['stake_currency']
+        profit = results.profit_percent.sum()
+        duration = results.trade_duration.mean()
+
+        return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
+                f'Total profit {total_profit: 11.8f} {stake_cur} '
+                f'({profit:.4f}Σ%). Avg duration {duration:5.1f} mins.')
 
     def get_optimizer(self, cpu_count) -> Optimizer:
         return Optimizer(
