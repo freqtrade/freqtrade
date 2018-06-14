@@ -87,8 +87,8 @@ def default_conf():
         "stoploss": -0.10,
         "disable_buy": False,
         "unfilledtimeout": {
-            "buy":10,
-            "sell":30
+            "buy": 10,
+            "sell": 30
         },
         "bid_strategy": {
             "use_book_order": False,
@@ -253,7 +253,7 @@ def limit_buy_order():
         'amount': 90.99181073,
         'remaining': 0.0,
         'status': 'closed',
-        'filled':0.0
+        'filled': 0.0
     }
 
 
@@ -269,7 +269,7 @@ def limit_buy_order_old():
         'amount': 90.99181073,
         'remaining': 90.99181073,
         'status': 'open',
-        'filled':0.0
+        'filled': 0.0
     }
 
 
@@ -285,7 +285,7 @@ def limit_sell_order_old():
         'amount': 90.99181073,
         'remaining': 90.99181073,
         'status': 'open',
-        'filled':0.0
+        'filled': 0.0
     }
 
 
@@ -301,7 +301,7 @@ def limit_buy_order_old_partial():
         'amount': 90.99181073,
         'remaining': 67.99181073,
         'status': 'open',
-        'filled':0.0
+        'filled': 0.0
     }
 
 

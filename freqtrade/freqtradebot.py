@@ -247,7 +247,7 @@ class FreqtradeBot(object):
         :return: float: Price
         """
 
-        ticker = exchange.get_ticker(pair);
+        ticker = exchange.get_ticker(pair)
         if ticker['ask'] < ticker['last']:
             return ticker['ask']
         balance = self.config['bid_strategy']['ask_last_balance']
@@ -264,7 +264,6 @@ class FreqtradeBot(object):
         else:
             logger.info('Using Ask / Last Price')
             return ticker_rate
-
 
     def create_trade(self) -> bool:
         """
@@ -452,22 +451,25 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             logger.info('Using order book for selling...')
             orderBook = exchange.get_order_book(trade.pair)
             # logger.debug('Order book %s',orderBook)
-            for i in range(self.config['ask_strategy']['book_order_min'],self.config['ask_strategy']['book_order_max']+1):
+            orderBook_min = self.config['ask_strategy']['book_order_min']
+            orderBook_max = self.config['ask_strategy']['book_order_max']
+            for i in range(orderBook_min, orderBook_max+1):
                 orderBook_rate = orderBook['asks'][i-1][0]
-                # if orderbook has higher rate (high profit), use orderbook, otherwise just use sell rate
+                # if orderbook has higher rate (high profit),
+                # use orderbook, otherwise just use sell rate
                 if (sell_rate < orderBook_rate):
-                    sell_rate = orderBook_rate 
+                    sell_rate = orderBook_rate
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
                     break
         else:
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
-            
+
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
 
-    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool ) -> bool:
+    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.analyze.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, sell_rate)
             return True
@@ -488,7 +490,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.
-                # This is probably because the record got   
+                # This is probably because the record get_trades_for_order
                 # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
@@ -502,7 +504,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if (int(order['filled']) == 0) and (order['status']=='open'):
+            if (int(order['filled']) == 0) and (order['status'] == 'open'):
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:

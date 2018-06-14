@@ -239,6 +239,7 @@ def get_balances() -> dict:
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
+
 @retrier
 def get_order_book(pair: str, limit: Optional[int] = 1000) -> dict:
     try:
@@ -252,6 +253,7 @@ def get_order_book(pair: str, limit: Optional[int] = 1000) -> dict:
             f'Could not load order book due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
+
 
 @retrier
 def get_tickers() -> Dict:

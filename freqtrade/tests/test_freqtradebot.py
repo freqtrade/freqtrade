@@ -502,7 +502,8 @@ def test_balance_fully_ask_side(mocker) -> None:
     """
     Test get_target_bid() method
     """
-    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': {'use_book_order':False,'book_order_top':6,'ask_last_balance': 0.0}})
+    param = {'use_book_order': False, 'book_order_top': 6, 'ask_last_balance': 0.0}
+    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
     assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
 
@@ -511,7 +512,8 @@ def test_balance_fully_last_side(mocker) -> None:
     """
     Test get_target_bid() method
     """
-    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': {'use_book_order':False,'book_order_top':6,'ask_last_balance': 1.0}})
+    param = {'use_book_order': False, 'book_order_top': 6, 'ask_last_balance': 0.0}
+    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
     assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
 
@@ -520,7 +522,8 @@ def test_balance_bigger_last_ask(mocker) -> None:
     """
     Test get_target_bid() method
     """
-    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': {'use_book_order':False,'book_order_top':6,'ask_last_balance': 1.0}})
+    param = {'use_book_order': False, 'book_order_top': 6, 'ask_last_balance': 0.0}
+    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
     assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
 
