@@ -85,6 +85,19 @@ CONF_SCHEMA = {
             },
             'required': ['enabled', 'token', 'chat_id']
         },
+        'api_server': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'listen_ip_address': { "format": "ipv4"},
+                'listen_port': {
+                    'type': 'integer',
+                    "minimum": 1024,
+                    "maximum": 65535
+                },
+            },
+            'required': ['enabled', 'listen_ip_address', 'listen_port']
+        },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'internals': {

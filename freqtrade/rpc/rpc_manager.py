@@ -23,11 +23,12 @@ class RPCManager(object):
             from freqtrade.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(freqtrade))
 
-        # Enable local rest server for cmd line control
-        if freqtrade.config['rest_cmd_line'].get('enabled', False):
-            logger.info('Enabling rpc.local_rest_server ...')
-            from freqtrade.rpc.local_rest_server import LocalRestSuperWrap
-            self.registered_modules.append(LocalRestSuperWrap(freqtrade))
+        # Enable local rest api server for cmd line control
+        if freqtrade.config['api_server'].get('enabled', False):
+            logger.info('Enabling rpc.api_server')
+            from freqtrade.rpc.api_server import ApiServerSuperWrap
+            self.registered_modules.append(ApiServerSuperWrap(freqtrade))
+
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
