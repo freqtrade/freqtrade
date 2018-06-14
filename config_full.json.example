@@ -6,6 +6,7 @@
     "dry_run": false,
     "disable_buy" : true,
     "ticker_interval": "5m",
+    "trailing_stop": true,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,

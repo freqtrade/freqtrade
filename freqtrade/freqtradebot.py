@@ -33,7 +33,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any])-> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
@@ -76,17 +76,14 @@ class FreqtradeBot(object):
         else:
             self.state = State.STOPPED
 
-    def clean(self) -> bool:
+    def cleanup(self) -> None:
         """
-        Cleanup the application state und finish all pending tasks
+        Cleanup pending resources on an already stopped bot
         :return: None
         """
-        self.rpc.send_msg('*Status:* `Stopping trader...`')
-        logger.info('Stopping trader and cleaning up modules...')
-        self.state = State.STOPPED
+        logger.info('Cleaning up modules ...')
         self.rpc.cleanup()
         persistence.cleanup()
-        return True
 
     def worker(self, old_state: State = None) -> State:
         """
@@ -459,6 +456,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 # use orderbook, otherwise just use sell rate
                 if (sell_rate < orderBook_rate):
                     sell_rate = orderBook_rate
+
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
                     break
@@ -503,6 +501,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 continue
             ordertime = arrow.get(order['datetime']).datetime
 
+            print(order)
             # Check if trade is still actually open
             if (int(order['filled']) == 0) and (order['status'] == 'open'):
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
@@ -599,7 +598,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 fiat
             )
             message += f'` ({gain}: {fmt_exp_profit:.2f}%, {profit_trade:.8f} {stake}`' \
-                       f'` / {profit_fiat:.3f} {fiat})`'\
+                       f'` / {profit_fiat:.3f} {fiat})`' \
                        ''
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well

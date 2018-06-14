@@ -10,6 +10,10 @@
         "buy":10,
         "sell":30
     }
+    "trailing_stop": {
+        "positive" : 0.005
+    },
+    "unfilledtimeout": 600,
     "bid_strategy": {
         "ask_last_balance": 0.0,
         "use_book_order": true,

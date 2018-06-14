@@ -84,6 +84,7 @@ def load_data_test(what):
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
     mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
@@ -97,6 +98,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
             'realistic': True
         }
     )
+
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
 
@@ -363,14 +365,10 @@ def test_generate_text_table(default_conf, mocker):
     )
 
     result_str = (
-        '| pair    |   buy count |   avg profit % |   '
-        'total profit BTC |   avg duration |   profit |   loss |\n'
-        '|:--------|------------:|---------------:|'
-        '-------------------:|---------------:|---------:|-------:|\n'
-        '| ETH/BTC |           2 |          15.00 |         '
-        '0.60000000 |           20.0 |        2 |      0 |\n'
-        '| TOTAL   |           2 |          15.00 |         '
-        '0.60000000 |           20.0 |        2 |      0 |'
+"""| pair    |   buy count |   avg profit % |   cum profit % |   total profit BTC |   avg duration |   profit |   loss |
+|:--------|------------:|---------------:|---------------:|-------------------:|---------------:|---------:|-------:|
+| ETH/BTC |           2 |          15.00 |          30.00 |         0.60000000 |           20.0 |        2 |      0 |
+| TOTAL   |           2 |          15.00 |          30.00 |         0.60000000 |           20.0 |        2 |      0 |"""
     )
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
@@ -414,6 +412,40 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     ]
     for line in exists:
         assert log_has(line, caplog.record_tuples)
+
+
+def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
+    """
+    Test Backtesting.start() method if no data is found
+    """
+
+    def get_timeframe(input1, input2):
+        return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
+
+    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
+    mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.get_ticker_history')
+    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
+    mocker.patch.multiple(
+        'freqtrade.optimize.backtesting.Backtesting',
+        backtest=MagicMock(),
+        _generate_text_table=MagicMock(return_value='1'),
+        get_timeframe=get_timeframe,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    conf['ticker_interval'] = "1m"
+    conf['live'] = False
+    conf['datadir'] = None
+    conf['export'] = None
+    conf['timerange'] = '20180101-20180102'
+
+    backtesting = Backtesting(conf)
+    backtesting.start()
+    # check the logs, that will contain the backtest result
+
+    assert log_has('No data found. Terminating.', caplog.record_tuples)
 
 
 def test_backtest(default_conf, fee, mocker) -> None:
@@ -562,6 +594,7 @@ def test_backtest_record(default_conf, fee, mocker):
     results = backtesting.backtest(backtest_conf)
     assert len(results) == 3
     # Assert file_dump_json was only called once
+    print(names)
     assert names == ['backtest-result.json']
     records = records[0]
     # Ensure records are of correct type

@@ -15,6 +15,10 @@ from freqtrade.analyze import Analyze
 from freqtrade import constants
 from freqtrade.freqtradebot import FreqtradeBot
 
+import moto
+import boto3
+import os
+
 logging.getLogger('').setLevel(logging.INFO)
 
 
@@ -530,6 +534,7 @@ def tickers():
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
+
 
 # FIX:
 # Create an fixture/function

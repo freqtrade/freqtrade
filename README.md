@@ -4,6 +4,15 @@
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
 
+## First of all, this is a fork!
+
+Basically I required a lot more features than the awesome default freqtrade version has to offer and since pull requests always take longer than exspected or the standard disagreements. I decided to maintain on main branch for my changes, called wohlgemuth, which is incidentally my last name and have a ton of little branches, with added features.
+
+This basically allows people to use my version, or to easily merge changes into their forks or make PR's against the main repo, which is the best of both works.
+
+This reminds of the Torvalds kernel vs the Cox kernel...
+
+## Back to what this is actually about
 
 Simple High frequency trading bot for crypto currencies designed to 
 support multi exchanges and be controlled via Telegram.
@@ -44,11 +53,8 @@ hesitate to read the source code and understand the mechanism of this bot.
     - [Software requirements](#software-requirements)
 
 ## Branches
-The project is currently setup in two main branches:
-- `develop` - This branch has often new features, but might also cause 
-breaking changes.
-- `master` - This branch contains the latest stable release. The bot 
-'should' be stable on this branch, and is generally well tested. 
+
+if you like to use this fork, I highly recommend to utilize the 'wohlgemuth' branch, since this is the most stable. It will be synced against the original development branch and be enriched with all my changes.
 
 ## Features
 - [x] **Based on Python 3.6+**: For botting on any operating system - 
@@ -64,6 +70,26 @@ strategy parameters with real exchange data.
 - [x] **Display profit/loss in fiat**: Display your profit/loss in 33 fiat.
 - [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
 - [x] **Performance status report**: Provide a performance status of your current trades.
+
+### Additional features in this branch
+
+#### Strategy:
+
+- [x] loading strategies from Base64 encoded data in the config file
+- [x] loading strategies from urls
+- [x] trailing stop loss
+
+#### Others:
+
+- [x] more indicators
+- [x] more telegram features
+- [x] advanced plotting
+
+### Drawbacks
+
+- [x] not as good documentation
+- [x] maybe a bug here or there I haven't fixed yet
+
 
 ### Exchange marketplaces supported
 - [X] [Bittrex](https://bittrex.com/)

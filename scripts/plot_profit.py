@@ -121,7 +121,7 @@ def plot_profit(args: Namespace) -> None:
         logger.info('Filter, keep pairs %s' % pairs)
 
     tickers = optimize.load_data(
-        datadir=args.datadir,
+        datadir=config.get('datadir'),
         pairs=pairs,
         ticker_interval=tick_interval,
         refresh_pairs=False,
