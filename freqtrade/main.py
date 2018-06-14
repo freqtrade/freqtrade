@@ -74,10 +74,7 @@ def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
     # Create new instance
     freqtrade = FreqtradeBot(Configuration(args).get_config())
     freqtrade.rpc.send_msg(
-        '*Status:* `Config reloaded ...`'.format(
-            freqtrade.state.name.lower()
-        )
-    )
+        '*Status:* `Config reloaded {freqtrade.state.name.lower()}...`')
     return freqtrade
 
 

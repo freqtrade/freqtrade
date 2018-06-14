@@ -626,12 +626,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well
         else:
-            message += '` ({gain}: {profit_percent:.2f}%, {profit_coin:.8f})`'.format(
-                gain="profit" if fmt_exp_profit > 0 else "loss",
-                profit_percent=fmt_exp_profit,
-                profit_coin=profit_trade
-            )
-
+            gain = "profit" if fmt_exp_profit > 0 else "loss"
+            message += f'` ({gain}: {fmt_exp_profit:.2f}%, {profit_trade:.8f})`'
         # Send the message
         self.rpc.send_msg(message)
         Trade.session.flush()
