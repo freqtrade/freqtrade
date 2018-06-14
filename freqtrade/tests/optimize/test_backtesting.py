@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
+import pytest
 from arrow import Arrow
 
 from freqtrade import optimize
@@ -373,6 +374,7 @@ def test_generate_text_table(default_conf, mocker):
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
     """
     Test Backtesting.start() method
@@ -594,7 +596,6 @@ def test_backtest_record(default_conf, fee, mocker):
     results = backtesting.backtest(backtest_conf)
     assert len(results) == 3
     # Assert file_dump_json was only called once
-    print(names)
     assert names == ['backtest-result.json']
     records = records[0]
     # Ensure records are of correct type
@@ -615,6 +616,7 @@ def test_backtest_record(default_conf, fee, mocker):
         assert dur > 0
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_backtest_start_live(default_conf, mocker, caplog):
     conf = deepcopy(default_conf)
     conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
