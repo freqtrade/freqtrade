@@ -95,7 +95,7 @@ class LocalRestSuperWrap(RPC):
 
         """
         Section to handle configuration and running of the Rest serve
-        also to check and warn if not bound to 127.0.0.1 as a security risk
+        also to check and warn if not bound to 127.0.0.1 as a security risk.
         """
 
         rest_ip = self._config['rest_cmd_line']['listen_ip_address']
