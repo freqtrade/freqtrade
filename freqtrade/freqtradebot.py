@@ -164,7 +164,7 @@ class FreqtradeBot(object):
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
-                self.check_handle_timedout(self.config['unfilledtimeout'])
+                self.check_handle_timedout()
                 Trade.session.flush()
 
         except TemporaryError as error:
@@ -461,19 +461,22 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             return True
         return False
 
-    def check_handle_timedout(self, timeoutvalue: int) -> None:
+    def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if neccessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
-        timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
+        buy_timeout = self.config['unfilledtimeout']['buy']
+        sell_timeout = self.config['unfilledtimeout']['sell']
+        buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
+        sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.
-                # This is probably because the record got
+                # This is probably because the record got   
                 # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
@@ -488,9 +491,9 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
             # Check if trade is still actually open
             if (int(order['filled']) == 0) and (order['status']=='open'):
-                if order['side'] == 'buy' and ordertime < timeoutthreashold:
+                if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
-                elif order['side'] == 'sell' and ordertime < timeoutthreashold:
+                elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
                     self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas

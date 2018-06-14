@@ -55,7 +55,14 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'unfilledtimeout': {'type': 'integer', 'minimum': 0},
+        'unfilledtimeout': {
+            'type': 'object',
+            'properties': {
+                'use_book_order': {'type': 'boolean'},
+                'buy': {'type': 'number', 'minimum':3},
+                'sell': {'type': 'number', 'minimum':10}
+            }
+        },
         'bid_strategy': {
             'type': 'object',
             'properties': {
@@ -76,7 +83,7 @@ CONF_SCHEMA = {
                 'use_book_order': {'type': 'boolean'},
                 'book_order_min': {'type': 'number', 'minimum':1},
                 'book_order_max': {'type': 'number', 'minimum':1}
-            },
+            }
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
