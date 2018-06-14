@@ -240,9 +240,9 @@ def get_balances() -> dict:
         raise OperationalException(e)
 
 @retrier
-def get_order_book(pair: str, refresh: Optional[bool] = True) -> dict:
+def get_order_book(pair: str, limit: Optional[int] = 1000) -> dict:
     try:
-        return _API.fetch_order_book(pair)
+        return _API.fetch_order_book(pair, limit)
     except ccxt.NotSupported as e:
         raise OperationalException(
             f'Exchange {_API.name} does not support fetching order book.'

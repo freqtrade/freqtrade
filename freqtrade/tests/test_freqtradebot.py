@@ -852,7 +852,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
     Trade.session.add(trade_buy)
 
     # check it does cancel buy orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -893,7 +893,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     Trade.session.add(trade_sell)
 
     # check it does cancel sell orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
@@ -933,7 +933,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -984,7 +984,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
         'recent call last):\n.*'
     )
 
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert filter(regexp.match, caplog.record_tuples)
 
 
