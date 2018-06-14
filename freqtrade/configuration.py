@@ -62,8 +62,8 @@ class Configuration(object):
                 conf = json.load(file)
         except FileNotFoundError:
             raise OperationalException(
-                'Config file "{}" not found!'
-                ' Please create a config file or check whether it exists.'.format(path))
+                f'Config file "{path}" not found!'
+                ' Please create a config file or check whether it exists.')
 
         if 'internals' not in conf:
             conf['internals'] = {}
@@ -109,7 +109,7 @@ class Configuration(object):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
-        logger.info('Using DB: "{}"'.format(config['db_url']))
+        logger.info(f'Using DB: "{config["db_url"]}"')
 
         # Check if the exchange set by the user is supported
         self.check_exchange(config)

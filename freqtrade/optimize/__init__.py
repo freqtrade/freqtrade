@@ -54,11 +54,8 @@ def load_tickerdata_file(
     :return dict OR empty if unsuccesful
     """
     path = make_testdata_path(datadir)
-    pair_file_string = pair.replace('/', '_')
-    file = os.path.join(path, '{pair}-{ticker_interval}.json'.format(
-        pair=pair_file_string,
-        ticker_interval=ticker_interval,
-    ))
+    pair_s = pair.replace('/', '_')
+    file = os.path.join(path, f'{pair_s}-{ticker_interval}.json')
     gzipfile = file + '.gz'
 
     # If the file does not exist we download it when None is returned.
