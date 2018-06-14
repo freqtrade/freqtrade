@@ -6,26 +6,25 @@ from flask import Flask, request
 from flask_restful import Resource, Api
 from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
+from ipaddress import IPv4Address
 
 
 logger = logging.getLogger(__name__)
+app = Flask(__name__)
 
-class LocalRestSuperWrap(RPC):
+class ApiServerSuperWrap(RPC):
     """
-    This class is for REST cmd line client
+    This class is for REST calls across api server
     """
     def __init__(self, freqtrade) -> None:
         """
-        Init the LocalRestServer call, and init the super class RPC
+        Init the api server, and init the super class RPC
         :param freqtrade: Instance of a freqtrade bot
         :return: None
         """
         super().__init__(freqtrade)
-        """ Constructor
-        :type interval: int
-        :param interval: Check interval, in seconds
-        """
-        self.interval = int(1)
+
+        self.interval = 1
 
         thread = threading.Thread(target=self.run, args=(freqtrade,)) # extra comma as ref ! Tuple
         thread.daemon = True                            # Daemonize thread
@@ -35,11 +34,10 @@ class LocalRestSuperWrap(RPC):
     def run(self, freqtrade):
         """ Method that runs forever """
         self._config = freqtrade.config
-        app = Flask(__name__)
 
         """
-        Define the application routes here 
-        each Telegram command should have a like local substitute 
+        Define the application routes here
+        each Telegram command should have a like local substitute
         """
         @app.route("/")
         def hello():
@@ -97,17 +95,14 @@ class LocalRestSuperWrap(RPC):
         Section to handle configuration and running of the Rest serve
         also to check and warn if not bound to 127.0.0.1 as a security risk.
         """
+        rest_ip = self._config['api_server']['listen_ip_address']
+        rest_port = self._config['api_server']['listen_port']
 
-        rest_ip = self._config['rest_cmd_line']['listen_ip_address']
-        rest_port = self._config['rest_cmd_line']['listen_port']
-
-        if rest_ip != "127.0.0.1":
-            i=0
-            while i < 10:
-                logger.info("SECURITY WARNING - Local Rest Server listening to external connections")
-                logger.info("SECURITY WARNING - This is insecure please set to 127.0.0.1 in config.json")
-                i += 1
+        if not IPv4Address(rest_ip).is_loopback :
+            logger.info("SECURITY WARNING - Local Rest Server listening to external connections")
+            logger.info("SECURITY WARNING - This is insecure please set to your loopback, e.g 127.0.0.1 in config.json")
 
         # Run the Server
         logger.info('Starting Local Rest Server')
         app.run(host=rest_ip, port=rest_port)
+
