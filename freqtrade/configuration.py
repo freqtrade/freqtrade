@@ -188,11 +188,6 @@ class Configuration(object):
             logger.info('Parameter --epochs detected ...')
             logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
 
-        # If --mongodb is used we add it to the configuration
-        if 'mongodb' in self.args and self.args.mongodb:
-            config.update({'mongodb': self.args.mongodb})
-            logger.info('Parameter --use-mongodb detected ...')
-
         # If --spaces is used we add it to the configuration
         if 'spaces' in self.args and self.args.spaces:
             config.update({'spaces': self.args.spaces})

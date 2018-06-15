@@ -19,7 +19,6 @@ from typing import Dict, Any, Callable, Optional
 import numpy
 import talib.abstract as ta
 from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
-from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
@@ -507,31 +506,19 @@ class Hyperopt(Backtesting):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
 
-        if self.config.get('mongodb'):
-            logger.info('Using mongodb ...')
+        logger.info('Preparing Trials..')
+        signal.signal(signal.SIGINT, self.signal_handler)
+        # read trials file if we have one
+        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+            self.trials = self.read_trials()
+
+            self.current_tries = len(self.trials.results)
+            self.total_tries += self.current_tries
             logger.info(
-                'Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!'
+                'Continuing with trials. Current: %d, Total: %d',
+                self.current_tries,
+                self.total_tries
             )
-
-            db_name = 'freqtrade_hyperopt'
-            self.trials = MongoTrials(
-                arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
-                exp_key='exp1'
-            )
-        else:
-            logger.info('Preparing Trials..')
-            signal.signal(signal.SIGINT, self.signal_handler)
-            # read trials file if we have one
-            if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
-                self.trials = self.read_trials()
-
-                self.current_tries = len(self.trials.results)
-                self.total_tries += self.current_tries
-                logger.info(
-                    'Continuing with trials. Current: %d, Total: %d',
-                    self.current_tries,
-                    self.total_tries
-                )
 
         try:
             best_parameters = fmin(
@@ -588,7 +575,6 @@ def start(args: Namespace) -> None:
     """
 
     # Remove noisy log messages
-    logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
     logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
     # Initialize configuration

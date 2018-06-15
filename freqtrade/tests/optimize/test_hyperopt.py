@@ -247,7 +247,6 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker, init_hyperopt, defa
     conf = deepcopy(default_conf)
     conf.update({'config': 'config.json.example'})
     conf.update({'epochs': 1})
-    conf.update({'mongodb': False})
     conf.update({'timerange': None})
     conf.update({'spaces': 'all'})
 
@@ -341,7 +340,6 @@ def test_start_calls_fmin(mocker, init_hyperopt, default_conf) -> None:
     conf = deepcopy(default_conf)
     conf.update({'config': 'config.json.example'})
     conf.update({'epochs': 1})
-    conf.update({'mongodb': False})
     conf.update({'timerange': None})
     conf.update({'spaces': 'all'})
 
@@ -352,35 +350,6 @@ def test_start_calls_fmin(mocker, init_hyperopt, default_conf) -> None:
     hyperopt.start()
     mock_fmin.assert_called_once()
 
-
-def test_start_uses_mongotrials(mocker, init_hyperopt, default_conf) -> None:
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mock_fmin = mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
-    mock_mongotrials = mocker.patch(
-        'freqtrade.optimize.hyperopt.MongoTrials',
-        return_value=create_trials(mocker)
-    )
-
-    conf = deepcopy(default_conf)
-    conf.update({'config': 'config.json.example'})
-    conf.update({'epochs': 1})
-    conf.update({'mongodb': True})
-    conf.update({'timerange': None})
-    conf.update({'spaces': 'all'})
-    mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
-    mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
-
-    hyperopt = Hyperopt(conf)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
-
-    hyperopt.start()
-    mock_mongotrials.assert_called_once()
-    mock_fmin.assert_called_once()
-
-
-# test log_trials_result
-# test buy_strategy_generator def populate_buy_trend
-# test optimizer if 'ro_t1' in params
 
 def test_format_results(init_hyperopt):
     """

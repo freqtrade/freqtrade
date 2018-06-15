@@ -9,7 +9,6 @@ parameters with Hyperopt.
 - [Advanced Hyperopt notions](#advanced-notions)
     - [Understand the Guards and Triggers](#understand-the-guards-and-triggers)
 - [Execute Hyperopt](#execute-hyperopt)
-    - [Hyperopt with MongoDB](#hyperopt-with-mongoDB)
 - [Understand the hyperopts result](#understand-the-backtesting-result)
 
 ## Prepare Hyperopt
@@ -193,41 +192,6 @@ Legal values are:
 - `roi`: just optimize the minimal profit table for your strategy
 - `stoploss`: search for the best stoploss value
 - space-separated list of any of the above values for example `--spaces roi stoploss`
-
-### Hyperopt with MongoDB
-Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
-executing the previous command is the execution takes a long time. 
-To accelerate it you can use hyperopt with MongoDB.
-
-To run hyperopt with MongoDb you will need 3 terminals.
-
-**Terminal 1: Start MongoDB**
-```bash
-cd <freqtrade> 
-source .env/bin/activate
-python3 scripts/start-mongodb.py
-```
-
-**Terminal 2: Start Hyperopt worker**
-```bash
-cd <freqtrade> 
-source .env/bin/activate
-python3 scripts/start-hyperopt-worker.py
-```
-
-**Terminal 3: Start Hyperopt with MongoDB**
-```bash
-cd <freqtrade> 
-source .env/bin/activate
-python3 ./freqtrade/main.py -c config.json hyperopt --use-mongodb
-```
-
-**Re-run an Hyperopt**
-To re-run Hyperopt you have to delete the existing MongoDB table.
-```bash
-cd <freqtrade> 
-rm -rf .hyperopt/mongodb/
-```
 
 ## Understand the hyperopts result 
 Once Hyperopt is completed you can use the result to adding new buy 
