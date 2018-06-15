@@ -40,7 +40,6 @@ class StrategyResolver(object):
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        extra_dir=config.get('strategy_path'))
 
-        self.strategy.config = config
 
         # Set attributes
         # Check if we need to override configuration

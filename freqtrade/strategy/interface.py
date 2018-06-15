@@ -2,11 +2,11 @@
 IStrategy interface
 This module defines the interface to apply for strategies
 """
-from typing import Dict
-from abc import ABC, abstractmethod
-
-from pandas import DataFrame
 import warnings
+from typing import Dict
+
+from abc import ABC
+from pandas import DataFrame
 
 class IStrategy(ABC):
     """
@@ -28,9 +28,6 @@ class IStrategy(ABC):
     # associated ticker interval
     ticker_interval: str
 
-    # configuration used, just in case the strategy want's to use it for something
-    config: dict = {}
-
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
@@ -47,10 +44,7 @@ class IStrategy(ABC):
         :return: DataFrame with buy column
         """
         warnings.warn("deprecated - please replace this method with advise_buy!", DeprecationWarning)
-        dataframe.loc[
-            (
-            ),
-            'buy'] = 0
+        dataframe.loc[(), 'buy'] = 0
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
@@ -60,10 +54,7 @@ class IStrategy(ABC):
         :return: DataFrame with sell column
         """
         warnings.warn("deprecated - please replace this method with advise_sell!", DeprecationWarning)
-        dataframe.loc[
-            (
-            ),
-            'sell'] = 0
+        dataframe.loc[(), 'sell'] = 0
         return dataframe
 
     def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
