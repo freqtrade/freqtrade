@@ -160,9 +160,8 @@ the parameter `-l` or `--live`.
 
 ## Hyperopt commands
 
-It is possible to use hyperopt for trading strategy optimization.
-Hyperopt uses an internal json config return by `hyperopt_optimize_conf()` 
-located in `freqtrade/optimize/hyperopt_conf.py`.
+To optimize your strategy, you can use hyperopt parameter hyperoptimization
+to find optimal parameter values for your stategy.
 
 ```
 usage: main.py hyperopt [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
