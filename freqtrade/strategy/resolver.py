@@ -13,7 +13,6 @@ from typing import Optional, Dict, Type
 from freqtrade import constants
 from freqtrade.strategy.interface import IStrategy
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +34,8 @@ class StrategyResolver(object):
         strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        extra_dir=config.get('strategy_path'))
+
+        self.strategy.config = config
 
         # Set attributes
         # Check if we need to override configuration
