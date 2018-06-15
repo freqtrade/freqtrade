@@ -37,6 +37,8 @@ class StrategyResolver(object):
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))
 
+        self.strategy.config = config
+
         # Set attributes
         # Check if we need to override configuration
         if 'minimal_roi' in config:

@@ -10,6 +10,7 @@ from typing import Dict, List, NamedTuple, Tuple
 
 import arrow
 from pandas import DataFrame
+import warnings
 
 from freqtrade import constants
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
@@ -57,36 +58,52 @@ class IStrategy(ABC):
         ticker_interval -> str: value of the ticker interval to use for the strategy
     """
 
+    # associated minimal roi
     minimal_roi: Dict
+
+    # associated stoploss
     stoploss: float
+
+    # associated ticker interval
     ticker_interval: str
 
     def __init__(self, config: dict) -> None:
         self.config = config
 
-    @abstractmethod
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        warnings.warn("deprecated - please replace this method with advise_indicators!", DeprecationWarning)
+        return dataframe
 
-    @abstractmethod
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
+        warnings.warn("deprecated - please replace this method with advise_buy!", DeprecationWarning)
+        dataframe.loc[
+            (
+            ),
+            'buy'] = 0
+        return dataframe
 
-    @abstractmethod
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with sell column
         """
+        warnings.warn("deprecated - please replace this method with advise_sell!", DeprecationWarning)
+        dataframe.loc[
+            (
+            ),
+            'sell'] = 0
+        return dataframe
 
     def get_strategy_name(self) -> str:
         """
@@ -265,3 +282,34 @@ class IStrategy(ABC):
         """
         return {pair: self.populate_indicators(parse_ticker_dataframe(pair_data))
                 for pair, pair_data in tickerdata.items()}
+
+    def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
+        """
+
+        This wraps around the internal method
+
+        Populate indicators that will be used in the Buy and Sell strategy
+        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param pair: The currently traded pair
+        :return: a Dataframe with all mandatory indicators for the strategies
+        """
+        return self.populate_indicators(dataframe)
+
+    def advise_buy(self, dataframe: DataFrame, pair: str) -> DataFrame:
+        """
+        Based on TA indicators, populates the buy signal for the given dataframe
+        :param dataframe: DataFrame
+        :param pair: The currently traded pair
+        :return: DataFrame with buy column
+        """
+
+        return self.populate_buy_trend(dataframe)
+
+    def advise_sell(self, dataframe: DataFrame, pair: str) -> DataFrame:
+        """
+        Based on TA indicators, populates the sell signal for the given dataframe
+        :param dataframe: DataFrame
+        :param pair: The currently traded pair
+        :return: DataFrame with sell column
+        """
+        return self.populate_sell_trend(dataframe)
