@@ -1,9 +1,9 @@
 import threading
 import logging
-import json
+# import json
 
 from flask import Flask, request
-from flask_restful import Resource, Api
+# from flask_restful import Resource, Api
 from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
 from ipaddress import IPv4Address
@@ -36,10 +36,10 @@ class ApiServerSuperWrap(RPC):
         self._config = freqtrade.config
 
         """
-        Define the application routes here
+        Define the application methods here, called by app.add_url_rule
         each Telegram command should have a like local substitute
         """
-        @app.route("/")
+        # @app.route("/")
         def hello():
             # For simple rest server testing via browser
             # cmds = 'Try uri:/daily?timescale=7 /profit /balance /status
@@ -54,7 +54,6 @@ class ApiServerSuperWrap(RPC):
                        '<a href=/start>/start</a>'
             return rest_cmds
 
-        @app.route('/daily', methods=['GET'])
         def daily():
             try:
                 timescale = request.args.get('timescale')
@@ -71,29 +70,36 @@ class ApiServerSuperWrap(RPC):
             except RPCException as e:
                 return e
 
-        @app.route('/start', methods=['GET'])
         def start():
             """
             Handler for /start.
             Starts TradeThread
             """
             msg = self._rpc_start()
-            print("msg is", msg)
             return msg
 
-        @app.route('/stop', methods=['GET'])
         def stop():
             """
             Handler for /stop.
             Stops TradeThread
             """
             msg = self._rpc_stop()
-            print("msg is", msg)
             return msg
 
+        ## defines the url rules available on the api server
+        '''
+        First two arguments passed are /URL and 'Label'
+        Label can be used as a shortcut when refactoring
+        '''
+        app.add_url_rule('/', 'hello', view_func=hello, methods=['GET'])
+        app.add_url_rule('/stop', 'stop', view_func=stop, methods=['GET'])
+        app.add_url_rule('/start', 'start', view_func=start, methods=['GET'])
+        app.add_url_rule('/daily', 'daily', view_func=daily, methods=['GET'])
+
+
         """
-        Section to handle configuration and running of the Rest serve
-        also to check and warn if not bound to 127.0.0.1 as a security risk.
+        Section to handle configuration and running of the Rest server
+        also to check and warn if not bound to a loopback, warn on security risk.
         """
         rest_ip = self._config['api_server']['listen_ip_address']
         rest_port = self._config['api_server']['listen_port']
@@ -104,5 +110,9 @@ class ApiServerSuperWrap(RPC):
 
         # Run the Server
         logger.info('Starting Local Rest Server')
-        app.run(host=rest_ip, port=rest_port)
+        try:
+            app.run(host=rest_ip, port=rest_port)
+        except:
+            logger.exception("Api server failed to start, exception message is:")
+
 
