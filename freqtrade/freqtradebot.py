@@ -258,7 +258,7 @@ class FreqtradeBot(object):
             # if ticker has lower rate, then use ticker ( usefull if down trending )
             if ticker_rate < orderBook_rate:
                 return ticker_rate
-            return orderBook_rate
+            return orderBook_rate+0.00000001
         else:
             logger.info('Using Ask / Last Price')
             return ticker_rate
@@ -456,7 +456,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use sell rate
                 if (sell_rate < orderBook_rate):
-                    sell_rate = orderBook_rate
+                    sell_rate = orderBook_rate-0.00000001
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
