@@ -16,7 +16,7 @@ def load_dataframe_pair(pairs):
     dataframe = ld[pairs[0]]
 
     analyze = Analyze({'strategy': 'DefaultStrategy'})
-    dataframe = analyze.analyze_ticker(dataframe)
+    dataframe = analyze.analyze_ticker(dataframe, pairs[0])
     return dataframe
 
 
