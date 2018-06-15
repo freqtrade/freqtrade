@@ -253,7 +253,7 @@ class FreqtradeBot(object):
 
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
-            orderBook = exchange.get_order_book(pair)
+            orderBook = exchange.get_order_book(pair,self.config['bid_strategy']['book_order_top'])
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
             # if ticker has lower rate, then use ticker ( usefull if down trending )
             if ticker_rate < orderBook_rate:
@@ -447,10 +447,13 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         if self.config['ask_strategy']['use_book_order']:
             logger.info('Using order book for selling...')
-            orderBook = exchange.get_order_book(trade.pair)
+            
             # logger.debug('Order book %s',orderBook)
             orderBook_min = self.config['ask_strategy']['book_order_min']
             orderBook_max = self.config['ask_strategy']['book_order_max']
+
+            orderBook = exchange.get_order_book(trade.pair,orderBook_max)
+
             for i in range(orderBook_min, orderBook_max+1):
                 orderBook_rate = orderBook['asks'][i-1][0]
                 # if orderbook has higher rate (high profit),

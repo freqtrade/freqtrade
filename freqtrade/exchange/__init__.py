@@ -241,7 +241,7 @@ def get_balances() -> dict:
 
 
 @retrier
-def get_order_book(pair: str, limit: Optional[int] = 1000) -> dict:
+def get_order_book(pair: str, limit: Optional[int] = 100) -> dict:
     try:
         return _API.fetch_order_book(pair, limit)
     except ccxt.NotSupported as e:
