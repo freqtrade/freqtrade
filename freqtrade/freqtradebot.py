@@ -245,13 +245,13 @@ class FreqtradeBot(object):
         :return: float: Price
         """
 
-        # Why is this ASK not BID?
+        # Why is this Ask not BID?
         ticker = exchange.get_ticker(pair)
-        if ticker['bid'] < ticker['last']:
-            ticker_rate = ticker['bid']
+        if ticker['ask'] < ticker['last']:
+            ticker_rate = ticker['ask']
         else:
             balance = self.config['bid_strategy']['ask_last_balance']
-            ticker_rate = ticker['bid'] + balance * (ticker['last'] - ticker['bid'])
+            ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
