@@ -7,10 +7,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, NamedTuple, Tuple
+import warnings
 
 import arrow
 from pandas import DataFrame
-import warnings
 
 from freqtrade import constants
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
@@ -86,10 +86,7 @@ class IStrategy(ABC):
         :return: DataFrame with buy column
         """
         warnings.warn("deprecated - please replace this method with advise_buy!", DeprecationWarning)
-        dataframe.loc[
-            (
-            ),
-            'buy'] = 0
+        dataframe.loc[(), 'buy'] = 0
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
@@ -99,10 +96,7 @@ class IStrategy(ABC):
         :return: DataFrame with sell column
         """
         warnings.warn("deprecated - please replace this method with advise_sell!", DeprecationWarning)
-        dataframe.loc[
-            (
-            ),
-            'sell'] = 0
+        dataframe.loc[(), 'sell'] = 0
         return dataframe
 
     def get_strategy_name(self) -> str:
