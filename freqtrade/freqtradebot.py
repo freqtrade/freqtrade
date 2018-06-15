@@ -245,18 +245,22 @@ class FreqtradeBot(object):
         :return: float: Price
         """
 
+        # Why is this ASK not BID?
         ticker = exchange.get_ticker(pair)
-        if ticker['ask'] < ticker['last']:
-            return ticker['ask']
-        balance = self.config['bid_strategy']['ask_last_balance']
-        ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+        if ticker['bid'] < ticker['last']:
+            ticker_rate = ticker['bid']
+        else:
+            balance = self.config['bid_strategy']['ask_last_balance']
+            ticker_rate = ticker['bid'] + balance * (ticker['last'] - ticker['bid'])
 
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
             orderBook = exchange.get_order_book(pair,self.config['bid_strategy']['book_order_top'])
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
             # if ticker has lower rate, then use ticker ( usefull if down trending )
+            logger.info('...book order bid rate %0.8f',orderBook_rate+0.00000001)
             if ticker_rate < orderBook_rate:
+                logger.info('...using ticker rate instead %0.8f',ticker_rate )
                 return ticker_rate
             return orderBook_rate+0.00000001
         else:
@@ -437,9 +441,9 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         if not trade.is_open:
             raise ValueError(f'attempt to handle closed trade: {trade}')
 
-        logger.debug('Handling %s ...', trade)
+        logger.info('Handling %s ...', trade)
         sell_rate = exchange.get_ticker(trade.pair)['bid']
-
+        logger.info(' ticker rate %0.8f',sell_rate)
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
@@ -453,11 +457,12 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             orderBook_max = self.config['ask_strategy']['book_order_max']
 
             orderBook = exchange.get_order_book(trade.pair,orderBook_max)
-
+            
             for i in range(orderBook_min, orderBook_max+1):
                 orderBook_rate = orderBook['asks'][i-1][0]
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use sell rate
+                logger.info('  order book sell rate top %s: %0.8f',i,orderBook_rate)
                 if (sell_rate < orderBook_rate):
                     sell_rate = orderBook_rate-0.00000001
 
