@@ -225,17 +225,7 @@ cd ..
 rm -rf ./ta-lib*
 ```
 
-#### 3. [Optional] Install MongoDB
-
-Install MongoDB if you plan to optimize your strategy with Hyperopt.
-
-```bash
-sudo apt-get install mongodb-org
-```
-
-> Complete tutorial from Digital Ocean: [How to Install MongoDB on Ubuntu 16.04](https://www.digitalocean.com/community/tutorials/how-to-install-mongodb-on-ubuntu-16-04).
-
-#### 4. Install FreqTrade
+#### 3. Install FreqTrade
 
 Clone the git repository:
 
@@ -243,7 +233,7 @@ Clone the git repository:
 git clone https://github.com/freqtrade/freqtrade.git
 ```
 
-#### 5. Configure `freqtrade` as a `systemd` service
+#### 4. Configure `freqtrade` as a `systemd` service
 
 From the freqtrade repo... copy `freqtrade.service` to your systemd user directory (usually `~/.config/systemd/user`) and update `WorkingDirectory` and `ExecStart` to match your setup.
 
@@ -267,19 +257,7 @@ sudo loginctl enable-linger "$USER"
 brew install python3 git wget ta-lib
 ```
 
-#### 2. [Optional] Install MongoDB
-
-Install MongoDB if you plan to optimize your strategy with Hyperopt.
-
-```bash
-curl -O https://fastdl.mongodb.org/osx/mongodb-osx-ssl-x86_64-3.4.10.tgz
-tar -zxvf mongodb-osx-ssl-x86_64-3.4.10.tgz
-mkdir -p <path_freqtrade>/env/mongodb
-cp -R -n mongodb-osx-x86_64-3.4.10/ <path_freqtrade>/env/mongodb
-export PATH=<path_freqtrade>/env/mongodb/bin:$PATH
-```
-
-#### 3. Install FreqTrade
+#### 2. Install FreqTrade
 
 Clone the git repository:
 

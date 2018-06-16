@@ -310,7 +310,6 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     arglist = [
         'hyperopt',
         '--epochs', '10',
-        '--use-mongodb',
         '--spaces', 'all',
     ]
 
@@ -323,10 +322,6 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert int(config['epochs']) == 10
     assert log_has('Parameter --epochs detected ...', caplog.record_tuples)
     assert log_has('Will run Hyperopt with for 10 epochs ...', caplog.record_tuples)
-
-    assert 'mongodb' in config
-    assert config['mongodb'] is True
-    assert log_has('Parameter --use-mongodb detected ...', caplog.record_tuples)
 
     assert 'spaces' in config
     assert config['spaces'] == ['all']
