@@ -156,7 +156,7 @@ class FreqtradeBot(object):
                 state_changed |= self.process_maybe_execute_sell(trade)
 
             # Then looking for buy opportunities
-            if (self.config['disable_buy']):
+            if (self.config.get('disable_buy', False)):
                 logger.info('Buy disabled...')
             else:
                 if len(trades) < self.config['max_open_trades']:
@@ -250,7 +250,7 @@ class FreqtradeBot(object):
         balance = self.config['bid_strategy']['ask_last_balance']
         ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
-        if self.config['bid_strategy']['use_book_order']:
+        if self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
             orderBook = exchange.get_order_book(pair)
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
@@ -444,14 +444,14 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
-        if self.config['ask_strategy']['use_book_order']:
+        if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
             logger.info('Using order book for selling...')
             orderBook = exchange.get_order_book(trade.pair)
             # logger.debug('Order book %s',orderBook)
             orderBook_min = self.config['ask_strategy']['book_order_min']
             orderBook_max = self.config['ask_strategy']['book_order_max']
-            for i in range(orderBook_min, orderBook_max+1):
-                orderBook_rate = orderBook['asks'][i-1][0]
+            for i in range(orderBook_min, orderBook_max + 1):
+                orderBook_rate = orderBook['asks'][i - 1][0]
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use sell rate
                 if (sell_rate < orderBook_rate):
@@ -502,7 +502,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if (int(order['filled']) == 0) and (order['status'] == 'open'):
+            if order['status'] == 'open':
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
