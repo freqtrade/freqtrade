@@ -244,27 +244,29 @@ class FreqtradeBot(object):
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
-
-        # Why is this Ask not BID?
+        
         ticker = exchange.get_ticker(pair)
+        logger.info('ticker data %s',ticker)
+
         if ticker['ask'] < ticker['last']:
             ticker_rate = ticker['ask']
         else:
             balance = self.config['bid_strategy']['ask_last_balance']
             ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
-
+        
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
             orderBook = exchange.get_order_book(pair,self.config['bid_strategy']['book_order_top'])
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
+            orderBook_rate = orderBook_rate+0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
-            logger.info('...book order bid rate %0.8f',orderBook_rate+0.00000001)
+            logger.info('...book order bid rate %0.8f',orderBook_rate)
             if ticker_rate < orderBook_rate:
                 logger.info('...using ticker rate instead %0.8f',ticker_rate )
                 return ticker_rate
-            return orderBook_rate+0.00000001
+            return orderBook_rate
         else:
-            logger.info('Using Ask / Last Price')
+            logger.info('Using Last Ask / Last Price')
             return ticker_rate
 
     def create_trade(self) -> bool:
@@ -449,7 +451,12 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
-        if self.config['ask_strategy']['use_book_order']:
+        is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi')
+        if is_set_fullfilled_at_roi:
+            sell_rate = self.analyze.get_roi_rate(trade)
+            logger.info('trying to selling at roi rate %0.8f',sell_rate)
+
+        if self.config['ask_strategy']['use_book_order'] and not is_set_fullfilled_at_roi:
             logger.info('Using order book for selling...')
             
             # logger.debug('Order book %s',orderBook)
@@ -461,15 +468,16 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             for i in range(orderBook_min, orderBook_max+1):
                 orderBook_rate = orderBook['asks'][i-1][0]
                 # if orderbook has higher rate (high profit),
-                # use orderbook, otherwise just use sell rate
-                logger.info('  order book sell rate top %s: %0.8f',i,orderBook_rate)
+                # use orderbook, otherwise just use bids rate
+                logger.info('  order book asks top %s: %0.8f',i,orderBook_rate)
                 if (sell_rate < orderBook_rate):
-                    sell_rate = orderBook_rate-0.00000001
+                    sell_rate = orderBook_rate
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
                     break
         else:
+            logger.info('checking sell')
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
@@ -510,7 +518,6 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 continue
             ordertime = arrow.get(order['datetime']).datetime
 
-            print(order)
             # Check if trade is still actually open
             if (int(order['filled']) == 0) and (order['status'] == 'open'):
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:

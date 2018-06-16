@@ -58,8 +58,8 @@ CONF_SCHEMA = {
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'number', 'minimum': 3},
-                'sell': {'type': 'number', 'minimum': 10}
+                'buy': {'type': 'number', 'minimum': 1},
+                'sell': {'type': 'number', 'minimum': 1}
             },
             'required': ['buy','sell']
         },
