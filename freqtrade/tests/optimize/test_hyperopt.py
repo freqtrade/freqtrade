@@ -61,6 +61,10 @@ def test_start(mocker, default_conf, caplog) -> None:
     Test start() function
     """
     start_mock = MagicMock()
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
 
