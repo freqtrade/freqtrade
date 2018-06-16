@@ -57,7 +57,7 @@ def patch_RPCManager(mocker) -> MagicMock:
     :param mocker: mocker to patch RPCManager class
     :return: RPCManager.send_msg MagicMock to track if this method is called
     """
-    mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     rpc_mock = mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     return rpc_mock
 

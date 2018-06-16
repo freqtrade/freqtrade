@@ -19,7 +19,6 @@ from typing import Dict, Any, Callable, Optional
 import numpy
 import talib.abstract as ta
 from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
-from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
@@ -27,7 +26,6 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
-from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 logger = logging.getLogger(__name__)
 
@@ -451,7 +449,7 @@ class Hyperopt(Backtesting):
 
         total_profit = results.profit_percent.sum()
         trade_count = len(results.index)
-        trade_duration = results.duration.mean()
+        trade_duration = results.trade_duration.mean()
 
         if trade_count == 0 or trade_duration > self.max_accepted_trade_duration:
             print('.', end='')
@@ -488,10 +486,10 @@ class Hyperopt(Backtesting):
                 'Total profit {: 11.8f} {} ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
                     len(results.index),
                     results.profit_percent.mean() * 100.0,
-                    results.profit_BTC.sum(),
+                    results.profit_abs.sum(),
                     self.config['stake_currency'],
                     results.profit_percent.sum(),
-                    results.duration.mean(),
+                    results.trade_duration.mean(),
                 )
 
     def start(self) -> None:
@@ -508,31 +506,19 @@ class Hyperopt(Backtesting):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
 
-        if self.config.get('mongodb'):
-            logger.info('Using mongodb ...')
+        logger.info('Preparing Trials..')
+        signal.signal(signal.SIGINT, self.signal_handler)
+        # read trials file if we have one
+        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+            self.trials = self.read_trials()
+
+            self.current_tries = len(self.trials.results)
+            self.total_tries += self.current_tries
             logger.info(
-                'Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!'
+                'Continuing with trials. Current: %d, Total: %d',
+                self.current_tries,
+                self.total_tries
             )
-
-            db_name = 'freqtrade_hyperopt'
-            self.trials = MongoTrials(
-                arg='mongo://127.0.0.1:1234/{}/jobs'.format(db_name),
-                exp_key='exp1'
-            )
-        else:
-            logger.info('Preparing Trials..')
-            signal.signal(signal.SIGINT, self.signal_handler)
-            # read trials file if we have one
-            if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
-                self.trials = self.read_trials()
-
-                self.current_tries = len(self.trials.results)
-                self.total_tries += self.current_tries
-                logger.info(
-                    'Continuing with trials. Current: %d, Total: %d',
-                    self.current_tries,
-                    self.total_tries
-                )
 
         try:
             best_parameters = fmin(
@@ -589,18 +575,14 @@ def start(args: Namespace) -> None:
     """
 
     # Remove noisy log messages
-    logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
     logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 
     # Initialize configuration
     # Monkey patch the configuration with hyperopt_conf.py
     configuration = Configuration(args)
     logger.info('Starting freqtrade in Hyperopt mode')
+    config = configuration.load_config()
 
-    optimize_config = hyperopt_optimize_conf()
-    config = configuration._load_common_config(optimize_config)
-    config = configuration._load_backtesting_config(config)
-    config = configuration._load_hyperopt_config(config)
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 

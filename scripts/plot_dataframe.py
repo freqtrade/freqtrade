@@ -91,7 +91,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
-            datadir=args.datadir,
+            datadir=_CONF.get("datadir"),
             pairs=[pair],
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
