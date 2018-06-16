@@ -449,7 +449,7 @@ class Hyperopt(Backtesting):
 
         total_profit = results.profit_percent.sum()
         trade_count = len(results.index)
-        trade_duration = results.duration.mean()
+        trade_duration = results.trade_duration.mean()
 
         if trade_count == 0 or trade_duration > self.max_accepted_trade_duration:
             print('.', end='')
@@ -486,10 +486,10 @@ class Hyperopt(Backtesting):
                 'Total profit {: 11.8f} {} ({:.4f}Σ%). Avg duration {:5.1f} mins.').format(
                     len(results.index),
                     results.profit_percent.mean() * 100.0,
-                    results.profit_BTC.sum(),
+                    results.profit_abs.sum(),
                     self.config['stake_currency'],
                     results.profit_percent.sum(),
-                    results.duration.mean(),
+                    results.trade_duration.mean(),
                 )
 
     def start(self) -> None:

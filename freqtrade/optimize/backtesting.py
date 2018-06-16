@@ -6,7 +6,8 @@ This module contains the backtesting logic
 import logging
 import operator
 from argparse import Namespace
-from typing import Dict, Tuple, Any, List, Optional
+from datetime import datetime
+from typing import Dict, Tuple, Any, List, Optional, NamedTuple
 
 import arrow
 from pandas import DataFrame
@@ -21,6 +22,21 @@ from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
+
+
+class BacktestResult(NamedTuple):
+    """
+    NamedTuple Defining BacktestResults inputs.
+    """
+    pair: str
+    profit_percent: float
+    profit_abs: float
+    open_time: datetime
+    close_time: datetime
+    open_index: int
+    close_index: int
+    trade_duration: float
+    open_at_end: bool
 
 
 class Backtesting(object):
@@ -73,15 +89,15 @@ class Backtesting(object):
         headers = ['pair', 'buy count', 'avg profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
         for pair in data:
-            result = results[results.currency == pair]
+            result = results[results.pair == pair]
             tabular_data.append([
                 pair,
                 len(result.index),
                 result.profit_percent.mean() * 100.0,
-                result.profit_BTC.sum(),
-                result.duration.mean(),
-                len(result[result.profit_BTC > 0]),
-                len(result[result.profit_BTC < 0])
+                result.profit_abs.sum(),
+                result.trade_duration.mean(),
+                len(result[result.profit_abs > 0]),
+                len(result[result.profit_abs < 0])
             ])
 
         # Append Total
@@ -89,16 +105,28 @@ class Backtesting(object):
             'TOTAL',
             len(results.index),
             results.profit_percent.mean() * 100.0,
-            results.profit_BTC.sum(),
-            results.duration.mean(),
-            len(results[results.profit_BTC > 0]),
-            len(results[results.profit_BTC < 0])
+            results.profit_abs.sum(),
+            results.trade_duration.mean(),
+            len(results[results.profit_abs > 0]),
+            len(results[results.profit_abs < 0])
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
+    def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
+
+        records = [(trade_entry.pair, trade_entry.profit_percent,
+                    trade_entry.open_time.timestamp(),
+                    trade_entry.close_time.timestamp(),
+                    trade_entry.open_index - 1, trade_entry.trade_duration)
+                   for index, trade_entry in results.iterrows()]
+
+        if records:
+            logger.info('Dumping backtest results to %s', recordfilename)
+            file_dump_json(recordfilename, records)
+
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[Tuple]:
+            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
 
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
@@ -121,15 +149,33 @@ class Backtesting(object):
             buy_signal = sell_row.buy
             if self.analyze.should_sell(trade, sell_row.close, sell_row.date, buy_signal,
                                         sell_row.sell):
-                return \
-                    sell_row, \
-                    (
-                        pair,
-                        trade.calc_profit_percent(rate=sell_row.close),
-                        trade.calc_profit(rate=sell_row.close),
-                        (sell_row.date - buy_row.date).seconds // 60
-                    ), \
-                    sell_row.date
+
+                return BacktestResult(pair=pair,
+                                      profit_percent=trade.calc_profit_percent(rate=sell_row.close),
+                                      profit_abs=trade.calc_profit(rate=sell_row.close),
+                                      open_time=buy_row.date,
+                                      close_time=sell_row.date,
+                                      trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                      open_index=buy_row.Index,
+                                      close_index=sell_row.Index,
+                                      open_at_end=False
+                                      )
+        if partial_ticker:
+            # no sell condition found - trade stil open at end of backtest period
+            sell_row = partial_ticker[-1]
+            btr = BacktestResult(pair=pair,
+                                 profit_percent=trade.calc_profit_percent(rate=sell_row.close),
+                                 profit_abs=trade.calc_profit(rate=sell_row.close),
+                                 open_time=buy_row.date,
+                                 close_time=sell_row.date,
+                                 trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                 open_index=buy_row.Index,
+                                 close_index=sell_row.Index,
+                                 open_at_end=True
+                                 )
+            logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
+                         btr.profit_percent, btr.profit_abs)
+            return btr
         return None
 
     def backtest(self, args: Dict) -> DataFrame:
@@ -145,17 +191,12 @@ class Backtesting(object):
             processed: a processed dictionary with format {pair, data}
             max_open_trades: maximum number of concurrent trades (default: 0, disabled)
             realistic: do we try to simulate realistic trades? (default: True)
-            sell_profit_only: sell if profit only
-            use_sell_signal: act on sell-signal
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', False)
-        record = args.get('record', None)
-        recordfilename = args.get('recordfn', 'backtest-result.json')
-        records = []
         trades = []
         trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
@@ -170,6 +211,8 @@ class Backtesting(object):
 
             ticker_data.drop(ticker_data.head(1).index, inplace=True)
 
+            # Convert from Pandas to list for performance reasons
+            # (Looping Pandas is slow.)
             ticker = [x for x in ticker_data.itertuples()]
 
             lock_pair_until = None
@@ -187,28 +230,18 @@ class Backtesting(object):
 
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                ret = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
-                                                 trade_count_lock, args)
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
+                                                         trade_count_lock, args)
 
-                if ret:
-                    row2, trade_entry, next_date = ret
-                    lock_pair_until = next_date
+                if trade_entry:
+                    lock_pair_until = trade_entry.close_time
                     trades.append(trade_entry)
-                    if record:
-                        # Note, need to be json.dump friendly
-                        # record a tuple of pair, current_profit_percent,
-                        # entry-date, duration
-                        records.append((pair, trade_entry[1],
-                                        row.date.strftime('%s'),
-                                        row2.date.strftime('%s'),
-                                        index, trade_entry[3]))
-        # For now export inside backtest(), maybe change so that backtest()
-        # returns a tuple like: (dataframe, records, logs, etc)
-        if record and record.find('trades') >= 0:
-            logger.info('Dumping backtest results to %s', recordfilename)
-            file_dump_json(recordfilename, records)
-        labels = ['currency', 'profit_percent', 'profit_BTC', 'duration']
-        return DataFrame.from_records(trades, columns=labels)
+                else:
+                    # Set lock_pair_until to end of testing period if trade could not be closed
+                    # This happens only if the buy-signal was with the last candle
+                    lock_pair_until = ticker_data.iloc[-1].date
+
+        return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
         """
@@ -259,28 +292,37 @@ class Backtesting(object):
         )
 
         # Execute backtest and print results
-        sell_profit_only = self.config.get('experimental', {}).get('sell_profit_only', False)
-        use_sell_signal = self.config.get('experimental', {}).get('use_sell_signal', False)
         results = self.backtest(
             {
                 'stake_amount': self.config.get('stake_amount'),
                 'processed': preprocessed,
                 'max_open_trades': max_open_trades,
                 'realistic': self.config.get('realistic_simulation', False),
-                'sell_profit_only': sell_profit_only,
-                'use_sell_signal': use_sell_signal,
-                'record': self.config.get('export'),
-                'recordfn': self.config.get('exportfilename'),
             }
         )
+
+        if self.config.get('export', False):
+            self._store_backtest_result(self.config.get('exportfilename'), results)
+
         logger.info(
-            '\n==================================== '
+            '\n======================================== '
             'BACKTESTING REPORT'
-            ' ====================================\n'
+            ' =========================================\n'
             '%s',
             self._generate_text_table(
                 data,
                 results
+            )
+        )
+
+        logger.info(
+            '\n====================================== '
+            'LEFT OPEN TRADES REPORT'
+            ' ======================================\n'
+            '%s',
+            self._generate_text_table(
+                data,
+                results.loc[results.open_at_end]
             )
         )
 
