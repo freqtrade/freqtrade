@@ -98,6 +98,13 @@ class Analyze(object):
         """
         return self.strategy.ticker_interval
 
+    def get_stoploss(self) -> float:
+        """
+        Return stoploss to use
+        :return: Strategy stoploss value to use
+        """
+        return self.strategy.stoploss
+
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame

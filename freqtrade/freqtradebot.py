@@ -254,13 +254,7 @@ class FreqtradeBot(object):
             if open_trades >= self.config['max_open_trades']:
                 logger.warning('Can\'t open a new trade: max number of trades is reached')
                 return None
-            trade_stake_amount = avaliable_amount / (self.config['max_open_trades'] - open_trades)
-            if trade_stake_amount < 0.0005:
-                raise DependencyException(
-                    'Available balance(%f %s) is lower than minimal' % (
-                        avaliable_amount, self.config['stake_currency'])
-                    )
-            return trade_stake_amount
+            return avaliable_amount / (self.config['max_open_trades'] - open_trades)
 
         # Check if stake_amount is fulfilled
         if avaliable_amount < stake_amount:
@@ -271,6 +265,34 @@ class FreqtradeBot(object):
             )
 
         return stake_amount
+
+    def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
+        markets = exchange.get_markets()
+        markets = [m for m in markets if m['symbol'] == pair]
+        if not markets:
+            raise ValueError(f'Can\'t get market information for symbol {pair}')
+
+        market = markets[0]
+
+        if 'limits' not in market:
+            return None
+
+        min_stake_amounts = []
+        if 'cost' in market['limits'] and 'min' in market['limits']['cost']:
+            min_stake_amounts.append(market['limits']['cost']['min'])
+
+        if 'amount' in market['limits'] and 'min' in market['limits']['amount']:
+            min_stake_amounts.append(market['limits']['amount']['min'] * price)
+
+        if not min_stake_amounts:
+            return None
+
+        amount_reserve_percent = 1 - 0.05  # reserve 5% + stoploss
+        if self.analyze.get_stoploss() is not None:
+            amount_reserve_percent += self.analyze.get_stoploss()
+        # it should not be more than 50%
+        amount_reserve_percent = max(amount_reserve_percent, 0.5)
+        return min(min_stake_amounts)/amount_reserve_percent
 
     def create_trade(self) -> bool:
         """
@@ -314,8 +336,16 @@ class FreqtradeBot(object):
         pair_url = exchange.get_pair_detail_url(pair)
         # Calculate amount
         buy_limit = self.get_target_bid(exchange.get_ticker(pair))
-        amount = stake_amount / buy_limit
 
+        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
+        if min_stake_amount is not None and min_stake_amount > stake_amount:
+            logger.warning(
+                f'Can\'t open a new trade for {pair_s}: stake amount'
+                f' is too small ({stake_amount} < {min_stake_amount})'
+            )
+            return False
+
+        amount = stake_amount / buy_limit
         order_id = exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(

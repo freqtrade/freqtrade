@@ -174,7 +174,10 @@ def markets():
                     'max': 1000,
                 },
                 'price': 500000,
-                'cost': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
             },
             'info': '',
         },
@@ -196,7 +199,10 @@ def markets():
                     'max': 1000,
                 },
                 'price': 500000,
-                'cost': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
             },
             'info': '',
         },
@@ -218,7 +224,85 @@ def markets():
                     'max': 1000,
                 },
                 'price': 500000,
-                'cost': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
+            },
+            'info': '',
+        },
+        {
+            'id': 'ltcbtc',
+            'symbol': 'LTC/BTC',
+            'base': 'LTC',
+            'quote': 'BTC',
+            'active': False,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
+            },
+            'info': '',
+        },
+        {
+            'id': 'xrpbtc',
+            'symbol': 'XRP/BTC',
+            'base': 'XRP',
+            'quote': 'BTC',
+            'active': False,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
+            },
+            'info': '',
+        },
+        {
+            'id': 'neobtc',
+            'symbol': 'NEO/BTC',
+            'base': 'NEO',
+            'quote': 'BTC',
+            'active': False,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
             },
             'info': '',
         }
