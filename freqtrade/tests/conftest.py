@@ -13,6 +13,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade.analyze import Analyze
 from freqtrade import constants
+from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -24,6 +25,17 @@ def log_has(line, logs):
     return reduce(lambda a, b: a or b,
                   filter(lambda x: x[2] == line, logs),
                   False)
+
+
+def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
+
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    if api_mock:
+        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    else:
+        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
+    exchange = Exchange(config)
+    return exchange
 
 
 # Functions for recurrent object patching
