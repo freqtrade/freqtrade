@@ -27,13 +27,16 @@ def log_has(line, logs):
                   False)
 
 
-def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
-
+def patch_exchange(mocker, api_mock=None) -> None:
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
+
+
+def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
+    patch_exchange(mocker, api_mock)
     exchange = Exchange(config)
     return exchange
 
@@ -51,7 +54,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
+    patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
