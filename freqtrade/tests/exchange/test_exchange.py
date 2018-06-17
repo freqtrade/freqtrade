@@ -256,8 +256,47 @@ def test_get_balances_prod(default_conf, mocker):
     assert api_mock.fetch_balance.call_count == 1
 
 
-# This test is somewhat redundant with
-# test_exchange_bittrex.py::test_exchange_bittrex_get_ticker
+def test_get_tickers(default_conf, mocker):
+    api_mock = MagicMock()
+    tick = {'ETH/BTC': {
+          'symbol': 'ETH/BTC',
+          'bid': 0.5,
+          'ask': 1,
+          'last': 42,
+      }, 'BCH/BTC': {
+          'symbol': 'BCH/BTC',
+          'bid': 0.6,
+          'ask': 0.5,
+          'last': 41,
+      }
+      }
+    api_mock.fetch_tickers = MagicMock(return_value=tick)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    # retrieve original ticker
+    tickers = exchange.get_tickers()
+
+    assert 'ETH/BTC' in tickers
+    assert 'BCH/BTC' in tickers
+    assert tickers['ETH/BTC']['bid'] == 0.5
+    assert tickers['ETH/BTC']['ask'] == 1
+    assert tickers['BCH/BTC']['bid'] == 0.6
+    assert tickers['BCH/BTC']['ask'] == 0.5
+
+    with pytest.raises(TemporaryError):  # test retrier
+        api_mock.fetch_tickers = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_tickers()
+
+    with pytest.raises(OperationalException):
+        api_mock.fetch_tickers = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_tickers()
+
+    api_mock.fetch_tickers = MagicMock(return_value={})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange.get_tickers()
+
+
 def test_get_ticker(default_conf, mocker):
     api_mock = MagicMock()
     tick = {
