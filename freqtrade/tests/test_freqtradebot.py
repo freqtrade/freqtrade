@@ -18,7 +18,7 @@ from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
-from freqtrade.tests.conftest import log_has, patch_coinmarketcap
+from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
 
 
 # Functions for recurrent object patching
@@ -32,8 +32,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    patch_exchange(mocker)
     patch_coinmarketcap(mocker)
 
     return FreqtradeBot(config)

@@ -13,7 +13,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main, set_loggers, reconfigure
 from freqtrade.state import State
-from freqtrade.tests.conftest import log_has
+from freqtrade.tests.conftest import log_has, patch_exchange
 
 
 def test_parse_args_backtesting(mocker) -> None:
@@ -70,6 +70,7 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
     Test main() function
     In this test we are skipping the while True loop by throwing an exception.
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
@@ -97,6 +98,7 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
     Test main() function
     In this test we are skipping the while True loop by throwing an exception.
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
@@ -124,6 +126,7 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     Test main() function
     In this test we are skipping the while True loop by throwing an exception.
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
@@ -151,6 +154,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
     Test main() function
     In this test we are skipping the while True loop by throwing an exception.
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
@@ -178,6 +182,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
 
 def test_reconfigure(mocker, default_conf) -> None:
     """ Test recreate() function """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         _init_modules=MagicMock(),
