@@ -15,7 +15,7 @@ from freqtrade import optimize
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
-from freqtrade.tests.conftest import log_has
+from freqtrade.tests.conftest import log_has, patch_exchange
 
 
 def get_args(args) -> List[str]:
@@ -83,7 +83,7 @@ def load_data_test(what):
 
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
@@ -119,7 +119,7 @@ def _load_pair_as_ticks(pair, tickfreq):
 def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = optimize.load_data(None, ticker_interval='8m', pairs=[pair])
     data = trim_dictlist(data, -201)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(conf)
     return {
         'stake_amount': conf['stake_amount'],
@@ -274,7 +274,7 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     """
     start_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.start', start_mock)
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
@@ -297,7 +297,7 @@ def test_backtesting_init(mocker, default_conf) -> None:
     """
     Test Backtesting._init() method
     """
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert isinstance(backtesting.analyze, Analyze)
@@ -311,7 +311,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     """
     Test Backtesting.tickerdata_to_dataframe() method
     """
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
     tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
@@ -330,7 +330,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
     """
     Test Backtesting.get_timeframe() method
     """
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     data = backtesting.tickerdata_to_dataframe(
@@ -349,7 +349,7 @@ def test_generate_text_table(default_conf, mocker):
     """
     Test Backtesting.generate_text_table() method
     """
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     results = pd.DataFrame(
@@ -387,7 +387,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history')
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
         backtest=MagicMock(),
@@ -428,7 +428,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history')
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
         backtest=MagicMock(),
@@ -456,7 +456,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
     Test Backtesting.backtest() method
     """
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
@@ -478,7 +478,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     Test Backtesting.backtest() method with 1 min ticker
     """
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     # Run a backtesting for an exiting 5min ticker_interval
@@ -500,7 +500,7 @@ def test_processed(default_conf, mocker) -> None:
     """
     Test Backtesting.backtest() method with offline data
     """
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
     dict_of_tickerrows = load_data_test('raise')
@@ -523,7 +523,7 @@ def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
 # Test backtest using offline data (testdata directory)
 def test_backtest_ticks(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     ticks = [1, 5]
     fun = Backtesting(default_conf).populate_buy_trend
     for _ in ticks:
@@ -581,7 +581,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
 def test_backtest_record(default_conf, fee, mocker):
     names = []
     records = []
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch(
         'freqtrade.optimize.backtesting.file_dump_json',
@@ -632,7 +632,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history',
                  new=lambda s, n, i: _load_pair_as_ticks(n, i))
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
