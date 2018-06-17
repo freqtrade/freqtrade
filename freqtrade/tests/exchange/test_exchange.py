@@ -581,6 +581,20 @@ def test_get_fee(default_conf, mocker):
 
     assert exchange.get_fee() == 0.025
 
+    # test Exceptions
+    api_mock = MagicMock()
+    api_mock.calculate_fee = MagicMock(side_effect=ccxt.BaseError)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    with pytest.raises(OperationalException):
+        exchange.get_fee()
+
+    api_mock = MagicMock()
+    api_mock.calculate_fee = MagicMock(side_effect=ccxt.NetworkError)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    with pytest.raises(TemporaryError):
+        exchange.get_fee()
+    assert api_mock.calculate_fee.call_count == API_RETRY_COUNT + 1
+
 
 def test_get_amount_lots(default_conf, mocker):
     api_mock = MagicMock()
