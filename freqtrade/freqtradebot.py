@@ -253,6 +253,8 @@ class FreqtradeBot(object):
         else:
             balance = self.config['bid_strategy']['ask_last_balance']
             ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
+        used_rate = ticker_rate
         
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
@@ -263,11 +265,18 @@ class FreqtradeBot(object):
             logger.info('...book order bid rate %0.8f',orderBook_rate)
             if ticker_rate < orderBook_rate:
                 logger.info('...using ticker rate instead %0.8f',ticker_rate )
-                return ticker_rate
-            return orderBook_rate
+                used_rate = ticker_rate
+            used_rate = orderBook_rate
         else:
             logger.info('Using Last Ask / Last Price')
-            return ticker_rate
+            used_rate = ticker_rate
+
+        logger.info('used rate %0.8f',used_rate)
+
+        if self.config['bid_strategy']['percent_from_top'] > 0:
+            used_rate = self.analyze.trunc_num(used_rate - (used_rate * self.config['bid_strategy']['percent_from_top']),8)
+            logger.info('used rate xx %0.8f',used_rate)
+            return used_rate
 
     def create_trade(self) -> bool:
         """

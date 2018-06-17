@@ -73,7 +73,8 @@ CONF_SCHEMA = {
                     'exclusiveMaximum': False
                 },
                 'use_book_order': {'type': 'boolean'},
-                'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1}
+                'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
+                'percent_from_top' : {'type': 'number', 'minimum': 0}
             },
             'required': ['ask_last_balance','use_book_order']
         },
