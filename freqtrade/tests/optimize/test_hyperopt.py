@@ -22,8 +22,7 @@ _HYPEROPT = None
 def init_hyperopt(default_conf, mocker):
     global _HYPEROPT_INITIALIZED, _HYPEROPT
     if not _HYPEROPT_INITIALIZED:
-        mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
-        mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
+        mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
         _HYPEROPT = Hyperopt(default_conf)
         _HYPEROPT_INITIALIZED = True
 
@@ -66,7 +65,7 @@ def test_start(mocker, default_conf, caplog) -> None:
         lambda *args, **kwargs: default_conf
     )
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
-    mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
 
     args = [
         '--config', 'config.json',
@@ -182,7 +181,7 @@ def test_fmin_best_results(mocker, init_hyperopt, default_conf, caplog) -> None:
 
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value=fmin_result)
-    mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
 
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)
@@ -226,7 +225,7 @@ def test_fmin_throw_value_error(mocker, init_hyperopt, default_conf, caplog) -> 
     conf.update({'epochs': 1})
     conf.update({'timerange': None})
     conf.update({'spaces': 'all'})
-    mocker.patch('freqtrade.freqtradebot.exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
 
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)
@@ -267,7 +266,7 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker, init_hyperopt, defa
     mocker.patch('freqtrade.optimize.hyperopt.sorted', return_value=trials.results)
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
-    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
 
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)
@@ -338,7 +337,7 @@ def test_start_calls_fmin(mocker, init_hyperopt, default_conf) -> None:
     trials = create_trials(mocker)
     mocker.patch('freqtrade.optimize.hyperopt.sorted', return_value=trials.results)
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mock_fmin = mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
 
     conf = deepcopy(default_conf)
@@ -503,7 +502,7 @@ def test_generate_optimizer(mocker, init_hyperopt, default_conf) -> None:
         'freqtrade.optimize.hyperopt.Hyperopt.backtest',
         MagicMock(return_value=backtest_result)
     )
-    mocker.patch('freqtrade.exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
 
     optimizer_param = {
         'adx': {'enabled': False},
