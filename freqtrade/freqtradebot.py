@@ -54,7 +54,7 @@ class FreqtradeBot(object):
         self.fiat_converter = CryptoToFiatConverter()
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
-        self.exchange = None
+        self.exchange = Exchange(self.config)
 
         self._init_modules()
 
@@ -66,7 +66,6 @@ class FreqtradeBot(object):
         # Initialize all modules
 
         persistence.init(self.config)
-        self.exchange = Exchange(self.config)
 
         # Set initial application state
         initial_state = self.config.get('initial_state')
@@ -426,7 +425,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
-            (buy, sell) = self.analyze.get_signal(self.exchange, trade.pair, self.analyze.get_ticker_interval())
+            (buy, sell) = self.analyze.get_signal(self.exchange,
+                                                  trade.pair, self.analyze.get_ticker_interval())
 
         if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, current_rate)

@@ -67,7 +67,6 @@ def test_start(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
     patch_exchange(mocker)
 
-
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
@@ -183,7 +182,6 @@ def test_fmin_best_results(mocker, init_hyperopt, default_conf, caplog) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value=fmin_result)
     patch_exchange(mocker)
-
 
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)

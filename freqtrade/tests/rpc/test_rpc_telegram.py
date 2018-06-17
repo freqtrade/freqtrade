@@ -20,7 +20,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc.telegram import Telegram
 from freqtrade.rpc.telegram import authorized_only
 from freqtrade.state import State
-from freqtrade.tests.conftest import get_patched_freqtradebot,patch_exchange, log_has
+from freqtrade.tests.conftest import get_patched_freqtradebot, patch_exchange, log_has
 from freqtrade.tests.test_freqtradebot import patch_get_signal, patch_coinmarketcap
 
 

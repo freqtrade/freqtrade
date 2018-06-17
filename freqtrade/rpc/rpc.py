@@ -12,7 +12,6 @@ import sqlalchemy as sql
 from numpy import mean, nan_to_num
 from pandas import DataFrame
 
-from freqtrade.exchange import Exchange
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
