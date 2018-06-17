@@ -65,15 +65,18 @@ def test_validate_pairs_not_compatible(default_conf, mocker):
 def test_validate_pairs_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
-    api_mock.name = 'Binance'
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
-    exchange = Exchange(default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_name', MagicMock(return_value='Binance'))
+
     api_mock.load_markets = MagicMock(return_value={})
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
+
     with pytest.raises(OperationalException, match=r'Pair ETH/BTC is not available at Binance'):
-        exchange.validate_pairs(default_conf['exchange']['pair_whitelist'])
+        Exchange(default_conf)
 
     api_mock.load_markets = MagicMock(side_effect=ccxt.BaseError())
-    exchange.validate_pairs(default_conf['exchange']['pair_whitelist'])
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    Exchange(default_conf)
     assert log_has('Unable to validate pairs (assuming they are correct). Reason: ',
                    caplog.record_tuples)
 
@@ -83,14 +86,14 @@ def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
     conf = deepcopy(default_conf)
     conf['stake_currency'] = 'ETH'
     api_mock = MagicMock()
-    api_mock.name = 'binance'
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    api_mock.name = MagicMock(return_value='binance')
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
 
     with pytest.raises(
         OperationalException,
         match=r'Pair ETH/BTC not compatible with stake_currency: ETH'
     ):
-        exchange.validate_pairs(default_conf['exchange']['pair_whitelist'])
+        Exchange(conf)
 
 
 def test_buy_dry_run(default_conf, mocker):
