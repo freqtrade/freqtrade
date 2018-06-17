@@ -493,16 +493,14 @@ def test_cancel_order(default_conf, mocker):
 
 def test_get_order(default_conf, mocker):
     default_conf['dry_run'] = True
-    mocker.patch.dict('freqtrade.exchange.Exchange._CONF', default_conf)
     order = MagicMock()
     order.myid = 123
-    exchange = Exchange(default_conf)
+    exchange = get_patched_exchange(mocker, default_conf)
     exchange._DRY_RUN_OPEN_ORDERS['X'] = order
     print(exchange.get_order('X', 'TKN/BTC'))
     assert exchange.get_order('X', 'TKN/BTC').myid == 123
 
     default_conf['dry_run'] = False
-    mocker.patch.dict('freqtrade.exchange.Exchange._CONF', default_conf)
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock(return_value=456)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
