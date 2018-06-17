@@ -40,32 +40,6 @@ def retrier(f):
     return wrapper
 
 
-def init_ccxt(exchange_config: dict) -> ccxt.Exchange:
-    """
-    Initialize ccxt with given config and return valid
-    ccxt instance.
-    :param config: config to use
-    :return: ccxt
-    """
-    # Find matching class for the given exchange name
-    name = exchange_config['name']
-
-    if name not in ccxt.exchanges:
-        raise OperationalException(f'Exchange {name} is not supported')
-    try:
-        api = getattr(ccxt, name.lower())({
-            'apiKey': exchange_config.get('key'),
-            'secret': exchange_config.get('secret'),
-            'password': exchange_config.get('password'),
-            'uid': exchange_config.get('uid', ''),
-            'enableRateLimit': True,
-        })
-    except (KeyError, AttributeError):
-        raise OperationalException(f'Exchange {name} is not supported')
-
-    return api
-
-
 class Exchange(object):
 
     # Current selected exchange
@@ -92,12 +66,37 @@ class Exchange(object):
             logger.info('Instance is running with dry_run enabled')
 
         exchange_config = config['exchange']
-        self._API = init_ccxt(exchange_config)
+        self._API = self._init_ccxt(exchange_config)
 
         logger.info('Using Exchange "%s"', self.get_name())
 
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
+
+    def _init_ccxt(self, exchange_config: dict) -> ccxt.Exchange:
+        """
+        Initialize ccxt with given config and return valid
+        ccxt instance.
+        :param config: config to use
+        :return: ccxt
+        """
+        # Find matching class for the given exchange name
+        name = exchange_config['name']
+
+        if name not in ccxt.exchanges:
+            raise OperationalException(f'Exchange {name} is not supported')
+        try:
+            api = getattr(ccxt, name.lower())({
+                'apiKey': exchange_config.get('key'),
+                'secret': exchange_config.get('secret'),
+                'password': exchange_config.get('password'),
+                'uid': exchange_config.get('uid', ''),
+                'enableRateLimit': True,
+            })
+        except (KeyError, AttributeError):
+            raise OperationalException(f'Exchange {name} is not supported')
+
+        return api
 
     def get_name(self) -> str:
         return self._API.name
