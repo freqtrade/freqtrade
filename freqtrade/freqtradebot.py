@@ -426,7 +426,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
-            (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
+            (buy, sell) = self.analyze.get_signal(self.exchange, trade.pair, self.analyze.get_ticker_interval())
 
         if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, current_rate)
