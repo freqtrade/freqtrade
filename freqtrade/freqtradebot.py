@@ -14,11 +14,11 @@ import requests
 from cachetools import TTLCache, cached
 
 from freqtrade import (
-    DependencyException, OperationalException, TemporaryError,
-    exchange, persistence, __version__,
+    DependencyException, OperationalException, TemporaryError, persistence, __version__,
 )
 from freqtrade import constants
 from freqtrade.analyze import Analyze
+from freqtrade.exchange import Exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
@@ -66,7 +66,7 @@ class FreqtradeBot(object):
         # Initialize all modules
 
         persistence.init(self.config)
-        exchange.init(self.config)
+        self.exchange = Exchange(self.config)
 
         # Set initial application state
         initial_state = self.config.get('initial_state')
@@ -186,13 +186,13 @@ class FreqtradeBot(object):
         :return: List of pairs
         """
 
-        if not exchange.exchange_has('fetchTickers'):
+        if not self.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
                 'Exchange does not support dynamic whitelist.'
                 'Please edit your config and restart the bot'
             )
 
-        tickers = exchange.get_tickers()
+        tickers = self.exchange.get_tickers()
         # check length so that we make sure that '/' is actually in the string
         tickers = [v for k, v in tickers.items()
                    if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
@@ -210,7 +210,7 @@ class FreqtradeBot(object):
         black_listed
         """
         sanitized_whitelist = whitelist
-        markets = exchange.get_markets()
+        markets = self.exchange.get_markets()
 
         markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
         known_pairs = set()
@@ -255,7 +255,7 @@ class FreqtradeBot(object):
         interval = self.analyze.get_ticker_interval()
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
-        exc_name = exchange.get_name()
+        exc_name = self.exchange.get_name()
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -263,7 +263,7 @@ class FreqtradeBot(object):
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
         # Check if stake_amount is fulfilled
-        if exchange.get_balance(stake_currency) < stake_amount:
+        if self.exchange.get_balance(stake_currency) < stake_amount:
             raise DependencyException(
                 f'stake amount is not fulfilled (currency={stake_currency})')
 
@@ -278,19 +278,19 @@ class FreqtradeBot(object):
 
         # Pick pair based on buy signals
         for _pair in whitelist:
-            (buy, sell) = self.analyze.get_signal(_pair, interval)
+            (buy, sell) = self.analyze.get_signal(self.exchange, _pair, interval)
             if buy and not sell:
                 pair = _pair
                 break
         else:
             return False
         pair_s = pair.replace('_', '/')
-        pair_url = exchange.get_pair_detail_url(pair)
+        pair_url = self.exchange.get_pair_detail_url(pair)
         # Calculate amount
-        buy_limit = self.get_target_bid(exchange.get_ticker(pair))
+        buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
         amount = stake_amount / buy_limit
 
-        order_id = exchange.buy(pair, buy_limit, amount)['id']
+        order_id = self.exchange.buy(pair, buy_limit, amount)['id']
 
         stake_amount_fiat = self.fiat_converter.convert_amount(
             stake_amount,
@@ -305,7 +305,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 {stake_currency}, {stake_amount_fiat:.3f} {fiat_currency})`"""
         )
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-        fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
@@ -315,7 +315,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             open_rate=buy_limit,
             open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
-            exchange=exchange.get_id(),
+            exchange=self.exchange.get_id(),
             open_order_id=order_id
         )
         Trade.session.add(trade)
@@ -348,7 +348,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             if trade.open_order_id:
                 # Update trade with order values
                 logger.info('Found open order for %s', trade)
-                order = exchange.get_order(trade.open_order_id, trade.pair)
+                order = self.exchange.get_order(trade.open_order_id, trade.pair)
                 # Try update amount (binance-fix)
                 try:
                     new_amount = self.get_real_amount(trade, order)
@@ -372,7 +372,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
         Get real amount for the trade
-        Necessary for exchanges which charge fees in base currency (e.g. binance)
+        Necessary for self.exchanges which charge fees in base currency (e.g. binance)
         """
         order_amount = order['amount']
         # Only run for closed orders
@@ -388,7 +388,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 return new_amount
 
         # Fallback to Trades
-        trades = exchange.get_trades_for_order(trade.open_order_id, trade.pair, trade.open_date)
+        trades = self.exchange.get_trades_for_order(trade.open_order_id, trade.pair,
+                                                    trade.open_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
@@ -420,7 +421,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             raise ValueError(f'attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
-        current_rate = exchange.get_ticker(trade.pair)['bid']
+        current_rate = self.exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
 
@@ -449,7 +450,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
-                order = exchange.get_order(trade.open_order_id, trade.pair)
+                order = self.exchange.get_order(trade.open_order_id, trade.pair)
             except requests.exceptions.RequestException:
                 logger.info(
                     'Cannot query order for %s due to %s',
@@ -475,7 +476,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         :return: True if order was fully cancelled
         """
         pair_s = trade.pair.replace('_', '/')
-        exchange.cancel_order(trade.open_order_id, trade.pair)
+        self.exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
             Trade.session.delete(trade)
@@ -502,7 +503,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         pair_s = trade.pair.replace('_', '/')
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
-            exchange.cancel_order(trade.open_order_id, trade.pair)
+            self.exchange.cancel_order(trade.open_order_id, trade.pair)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
@@ -525,15 +526,15 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         exc = trade.exchange
         pair = trade.pair
         # Execute sell and update trade record
-        order_id = exchange.sell(str(trade.pair), limit, trade.amount)['id']
+        order_id = self.exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
 
         fmt_exp_profit = round(trade.calc_profit_percent(rate=limit) * 100, 2)
         profit_trade = trade.calc_profit(rate=limit)
-        current_rate = exchange.get_ticker(trade.pair)['bid']
+        current_rate = self.exchange.get_ticker(trade.pair)['bid']
         profit = trade.calc_profit_percent(limit)
-        pair_url = exchange.get_pair_detail_url(trade.pair)
+        pair_url = self.exchange.get_pair_detail_url(trade.pair)
         gain = "profit" if fmt_exp_profit > 0 else "loss"
 
         message = f"*{exc}:* Selling\n" \

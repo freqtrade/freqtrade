@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Tuple, Any
 import arrow
 
 from freqtrade import misc, constants
-from freqtrade.exchange import get_ticker_history
+from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
 logger = logging.getLogger(__name__)
@@ -183,6 +183,7 @@ def load_cached_data_for_updating(filename: str,
 
 
 def download_backtesting_testdata(datadir: str,
+                                  exchange: Exchange,
                                   pair: str,
                                   tick_interval: str = '5m',
                                   timerange: Optional[TimeRange] = None) -> None:
@@ -216,7 +217,8 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    new_data = get_ticker_history(pair=pair, tick_interval=tick_interval, since_ms=since_ms)
+    new_data = exchange.get_ticker_history(pair=pair, tick_interval=tick_interval,
+                                           since_ms=since_ms)
     data.extend(new_data)
 
     logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
