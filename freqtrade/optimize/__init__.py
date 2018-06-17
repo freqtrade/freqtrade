@@ -7,7 +7,7 @@ import os
 from typing import Optional, List, Dict, Tuple, Any
 import arrow
 
-from freqtrade import misc, constants
+from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
@@ -83,6 +83,7 @@ def load_data(datadir: str,
               ticker_interval: str,
               pairs: List[str],
               refresh_pairs: Optional[bool] = False,
+              exchange: Optional[Exchange] = None,
               timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -93,7 +94,10 @@ def load_data(datadir: str,
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in %s', datadir)
-        download_pairs(datadir, pairs, ticker_interval, timerange=timerange)
+        if not exchange:
+            raise OperationalException("Exchange needs to be initialized when "
+                                       "calling load_data with refresh_pairs=True")
+        download_pairs(datadir, exchange, pairs, ticker_interval, timerange=timerange)
 
     for pair in pairs:
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
@@ -119,13 +123,14 @@ def make_testdata_path(datadir: str) -> str:
     )
 
 
-def download_pairs(datadir, pairs: List[str],
+def download_pairs(datadir, exchange: Exchange, pairs: List[str],
                    ticker_interval: str,
                    timerange: TimeRange = TimeRange(None, None, 0, 0)) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
             download_backtesting_testdata(datadir,
+                                          exchange=exchange,
                                           pair=pair,
                                           tick_interval=ticker_interval,
                                           timerange=timerange)

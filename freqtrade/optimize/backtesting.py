@@ -267,6 +267,7 @@ class Backtesting(object):
                 pairs=pairs,
                 ticker_interval=self.ticker_interval,
                 refresh_pairs=self.config.get('refresh_pairs', False),
+                exchange=self.exchange,
                 timerange=timerange
             )
 
