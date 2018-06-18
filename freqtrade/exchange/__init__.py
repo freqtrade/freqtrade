@@ -74,8 +74,6 @@ class Exchange(object):
         """
         Initialize ccxt with given config and return valid
         ccxt instance.
-        :param config: config to use
-        :return: ccxt
         """
         # Find matching class for the given exchange name
         name = exchange_config['name']
