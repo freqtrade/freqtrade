@@ -657,6 +657,32 @@ def test_get_trades_for_order(default_conf, mocker):
     assert api_mock.fetch_my_trades.call_count == API_RETRY_COUNT + 1
 
 
+def test_get_markets(default_conf, mocker, markets):
+    api_mock = MagicMock()
+    api_mock.fetch_markets = markets
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    ret = exchange.get_markets()
+    assert isinstance(ret, list)
+    assert len(ret) == 3
+
+    assert ret[0]["id"] == "ethbtc"
+    assert ret[0]["symbol"] == "ETH/BTC"
+
+    # test Exceptions
+    api_mock = MagicMock()
+    api_mock.fetch_markets = MagicMock(side_effect=ccxt.BaseError)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    with pytest.raises(OperationalException):
+        exchange.get_markets()
+
+    api_mock = MagicMock()
+    api_mock.fetch_markets = MagicMock(side_effect=ccxt.NetworkError)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    with pytest.raises(TemporaryError):
+        exchange.get_markets()
+    assert api_mock.fetch_markets.call_count == API_RETRY_COUNT + 1
+
+
 def test_get_fee(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.calculate_fee = MagicMock(return_value={
