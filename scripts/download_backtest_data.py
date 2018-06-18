@@ -6,7 +6,8 @@ import sys
 import os
 import arrow
 
-from freqtrade import (exchange, arguments, misc)
+from freqtrade import (arguments, misc)
+from freqtrade.exchange import Exchange
 
 DEFAULT_DL_PATH = 'user_data/data'
 
@@ -39,16 +40,21 @@ if args.days:
 
 print(f'About to download pairs: {PAIRS} to {dl_path}')
 
+
 # Init exchange
-exchange._API = exchange.init_ccxt({'key': '',
-                                    'secret': '',
-                                    'name': args.exchange})
+exchange = Exchange({'key': '',
+                     'secret': '',
+                     'stake_currency': '',
+                     'dry_run': True,
+                     'exchange': {
+                        'name': args.exchange,
+                        'pair_whitelist': []
+                        }
+                     })
 pairs_not_available = []
-# Make sure API markets is initialized
-exchange._API.load_markets()
 
 for pair in PAIRS:
-    if pair not in exchange._API.markets:
+    if pair not in exchange._api.markets:
         pairs_not_available.append(pair)
         print(f"skipping pair {pair}")
         continue
