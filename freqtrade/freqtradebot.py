@@ -257,8 +257,9 @@ class FreqtradeBot(object):
 
         if self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
-            orderBook = exchange.get_order_book(pair, self.config['bid_strategy']['book_order_top'])
-            orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
+            orderBook_top = self.config.get('bid_strategy',{}).get('book_order_top',1)
+            orderBook = exchange.get_order_book(pair, orderBook_top)
+            orderBook_rate = orderBook['bids'][orderBook_top][0]
             orderBook_rate = orderBook_rate+0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
             logger.info('...book order buy rate %0.8f', orderBook_rate)
@@ -269,9 +270,9 @@ class FreqtradeBot(object):
         else:
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
-
+        percent_from_top = self.config.get('bid_strategy',{}).get('percent_from_top',0)
         if self.config['bid_strategy']['percent_from_top'] > 0:
-            used_rate = used_rate - (used_rate * self.config['bid_strategy']['percent_from_top'])
+            used_rate = used_rate - (used_rate * percent_from_top)
             used_rate = self.analyze.trunc_num(used_rate, 8)
             logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
         
@@ -462,7 +463,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
-        is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi')
+        is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi', False)
         if is_set_fullfilled_at_roi:
             sell_rate = self.analyze.get_roi_rate(trade)
             logger.info('trying to selling at roi rate %0.8f', sell_rate)
