@@ -587,11 +587,10 @@ def test_get_id(default_conf, mocker):
     assert exchange.get_id() == 'binance'
 
 
-def test_get_pair_detail_url(default_conf, mocker):
+def test_get_pair_detail_url(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs',
                  side_effect=lambda s: True)
     default_conf['exchange']['name'] = 'binance'
-    # exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange = Exchange(default_conf)
 
     url = exchange.get_pair_detail_url('TKN/ETH')
@@ -612,6 +611,12 @@ def test_get_pair_detail_url(default_conf, mocker):
     url = exchange.get_pair_detail_url('LOOONG/BTC')
     assert 'LOOONG' in url
     assert 'BTC' in url
+
+    default_conf['exchange']['name'] = 'poloniex'
+    exchange = Exchange(default_conf)
+    url = exchange.get_pair_detail_url('LOOONG/BTC')
+    assert '' == url
+    assert log_has('Could not get exchange url for Poloniex', caplog.record_tuples)
 
 
 def test_get_trades_for_order(default_conf, mocker):
