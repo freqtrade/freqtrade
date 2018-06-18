@@ -66,7 +66,7 @@ def test_validate_pairs_not_compatible(default_conf, mocker):
 def test_validate_pairs_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Exchange.get_name', MagicMock(return_value='Binance'))
+    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='Binance'))
 
     api_mock.load_markets = MagicMock(return_value={})
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
@@ -570,21 +570,21 @@ def test_get_order(default_conf, mocker):
     assert api_mock.fetch_order.call_count == 1
 
 
-def test_get_name(default_conf, mocker):
+def test_name(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs',
                  side_effect=lambda s: True)
     default_conf['exchange']['name'] = 'binance'
     exchange = Exchange(default_conf)
 
-    assert exchange.get_name() == 'Binance'
+    assert exchange.name == 'Binance'
 
 
-def test_get_id(default_conf, mocker):
+def test_id(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs',
                  side_effect=lambda s: True)
     default_conf['exchange']['name'] = 'binance'
     exchange = Exchange(default_conf)
-    assert exchange.get_id() == 'binance'
+    assert exchange.id == 'binance'
 
 
 def test_get_pair_detail_url(default_conf, mocker, caplog):

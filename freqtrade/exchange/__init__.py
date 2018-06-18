@@ -65,7 +65,7 @@ class Exchange(object):
         exchange_config = config['exchange']
         self._api = self._init_ccxt(exchange_config)
 
-        logger.info('Using Exchange "%s"', self.get_name())
+        logger.info('Using Exchange "%s"', self.name)
 
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
@@ -95,10 +95,14 @@ class Exchange(object):
 
         return api
 
-    def get_name(self) -> str:
+    @property
+    def name(self) -> str:
+        """exchange Name (from ccxt)"""
         return self._api.name
 
-    def get_id(self) -> str:
+    @property
+    def id(self) -> str:
+        """exchange ccxt id"""
         return self._api.id
 
     def validate_pairs(self, pairs: List[str]) -> None:
@@ -124,7 +128,7 @@ class Exchange(object):
                     f'Pair {pair} not compatible with stake_currency: {stake_cur}')
             if pair not in markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available at {self.get_name()}')
+                    f'Pair {pair} is not available at {self.name}')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -376,7 +380,7 @@ class Exchange(object):
 
             return url_base + _EXCHANGE_URLS[self._api.id].format(base=base, quote=quote)
         except KeyError:
-            logger.warning('Could not get exchange url for %s', self.get_name())
+            logger.warning('Could not get exchange url for %s', self.name)
             return ""
 
     @retrier

@@ -254,7 +254,7 @@ class FreqtradeBot(object):
         interval = self.analyze.get_ticker_interval()
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
-        exc_name = self.exchange.get_name()
+        exc_name = self.exchange.name
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -314,7 +314,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             open_rate=buy_limit,
             open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
-            exchange=self.exchange.get_id(),
+            exchange=self.exchange.id,
             open_order_id=order_id
         )
         Trade.session.add(trade)
