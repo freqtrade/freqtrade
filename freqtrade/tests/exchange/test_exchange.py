@@ -292,6 +292,11 @@ def test_get_tickers(default_conf, mocker):
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_tickers()
 
+    with pytest.raises(OperationalException):
+        api_mock.fetch_tickers = MagicMock(side_effect=ccxt.NotSupported)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_tickers()
+
     api_mock.fetch_tickers = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange.get_tickers()
@@ -643,16 +648,16 @@ def test_get_trades_for_order(default_conf, mocker):
     assert orders[0]['price'] == 165
 
     # test Exceptions
-    api_mock = MagicMock()
-    api_mock.fetch_my_trades = MagicMock(side_effect=ccxt.BaseError)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(OperationalException):
+        api_mock = MagicMock()
+        api_mock.fetch_my_trades = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_trades_for_order(order_id, 'LTC/BTC', since)
 
-    api_mock = MagicMock()
-    api_mock.fetch_my_trades = MagicMock(side_effect=ccxt.NetworkError)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(TemporaryError):
+        api_mock = MagicMock()
+        api_mock.fetch_my_trades = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_trades_for_order(order_id, 'LTC/BTC', since)
     assert api_mock.fetch_my_trades.call_count == API_RETRY_COUNT + 1
 
@@ -669,16 +674,16 @@ def test_get_markets(default_conf, mocker, markets):
     assert ret[0]["symbol"] == "ETH/BTC"
 
     # test Exceptions
-    api_mock = MagicMock()
-    api_mock.fetch_markets = MagicMock(side_effect=ccxt.BaseError)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(OperationalException):
+        api_mock = MagicMock()
+        api_mock.fetch_markets = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_markets()
 
-    api_mock = MagicMock()
-    api_mock.fetch_markets = MagicMock(side_effect=ccxt.NetworkError)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(TemporaryError):
+        api_mock = MagicMock()
+        api_mock.fetch_markets = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_markets()
     assert api_mock.fetch_markets.call_count == API_RETRY_COUNT + 1
 
@@ -696,16 +701,16 @@ def test_get_fee(default_conf, mocker):
     assert exchange.get_fee() == 0.025
 
     # test Exceptions
-    api_mock = MagicMock()
-    api_mock.calculate_fee = MagicMock(side_effect=ccxt.BaseError)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(OperationalException):
+        api_mock = MagicMock()
+        api_mock.calculate_fee = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_fee()
 
-    api_mock = MagicMock()
-    api_mock.calculate_fee = MagicMock(side_effect=ccxt.NetworkError)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(TemporaryError):
+        api_mock = MagicMock()
+        api_mock.calculate_fee = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
         exchange.get_fee()
     assert api_mock.calculate_fee.call_count == API_RETRY_COUNT + 1
 
