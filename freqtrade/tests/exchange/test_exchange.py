@@ -336,9 +336,9 @@ def test_get_ticker(default_conf, mocker):
     assert ticker['bid'] == 0.5
     assert ticker['ask'] == 1
 
-    assert 'ETH/BTC' in exchange._CACHED_TICKER
-    assert exchange._CACHED_TICKER['ETH/BTC']['bid'] == 0.5
-    assert exchange._CACHED_TICKER['ETH/BTC']['ask'] == 1
+    assert 'ETH/BTC' in exchange._cached_ticker
+    assert exchange._cached_ticker['ETH/BTC']['bid'] == 0.5
+    assert exchange._cached_ticker['ETH/BTC']['ask'] == 1
 
     # Test caching
     api_mock.fetch_ticker = MagicMock()
@@ -541,7 +541,7 @@ def test_get_order(default_conf, mocker):
     order = MagicMock()
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._DRY_RUN_OPEN_ORDERS['X'] = order
+    exchange._dry_run_open_orders['X'] = order
     print(exchange.get_order('X', 'TKN/BTC'))
     assert exchange.get_order('X', 'TKN/BTC').myid == 123
 

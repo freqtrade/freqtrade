@@ -44,11 +44,11 @@ class Exchange(object):
 
     # Current selected exchange
     _api: ccxt.Exchange = None
-    _CONF: Dict = {}
-    _CACHED_TICKER: Dict[str, Any] = {}
+    _conf: Dict = {}
+    _cached_ticker: Dict[str, Any] = {}
 
     # Holds all open sell orders for dry_run
-    _DRY_RUN_OPEN_ORDERS: Dict[str, Any] = {}
+    _dry_run_open_orders: Dict[str, Any] = {}
 
     def __init__(self, config: dict) -> None:
         """
@@ -57,7 +57,7 @@ class Exchange(object):
         exchange and pairs are valid.
         :return: None
         """
-        self._CONF.update(config)
+        self._conf.update(config)
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
@@ -115,7 +115,7 @@ class Exchange(object):
             logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
             return
 
-        stake_cur = self._CONF['stake_currency']
+        stake_cur = self._conf['stake_currency']
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
@@ -136,9 +136,9 @@ class Exchange(object):
         return endpoint in self._api.has and self._api.has[endpoint]
 
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
-        if self._CONF['dry_run']:
+        if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
-            self._DRY_RUN_OPEN_ORDERS[order_id] = {
+            self._dry_run_open_orders[order_id] = {
                 'pair': pair,
                 'price': rate,
                 'amount': amount,
@@ -170,9 +170,9 @@ class Exchange(object):
             raise OperationalException(e)
 
     def sell(self, pair: str, rate: float, amount: float) -> Dict:
-        if self._CONF['dry_run']:
+        if self._conf['dry_run']:
             order_id = f'dry_run_sell_{randint(0, 10**6)}'
-            self._DRY_RUN_OPEN_ORDERS[order_id] = {
+            self._dry_run_open_orders[order_id] = {
                 'pair': pair,
                 'price': rate,
                 'amount': amount,
@@ -204,7 +204,7 @@ class Exchange(object):
 
     @retrier
     def get_balance(self, currency: str) -> float:
-        if self._CONF['dry_run']:
+        if self._conf['dry_run']:
             return 999.9
 
         # ccxt exception is already handled by get_balances
@@ -217,7 +217,7 @@ class Exchange(object):
 
     @retrier
     def get_balances(self) -> dict:
-        if self._CONF['dry_run']:
+        if self._conf['dry_run']:
             return {}
 
         try:
@@ -251,11 +251,11 @@ class Exchange(object):
 
     @retrier
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
-        if refresh or pair not in self._CACHED_TICKER.keys():
+        if refresh or pair not in self._cached_ticker.keys():
             try:
                 data = self._api.fetch_ticker(pair)
                 try:
-                    self._CACHED_TICKER[pair] = {
+                    self._cached_ticker[pair] = {
                         'bid': float(data['bid']),
                         'ask': float(data['ask']),
                     }
@@ -269,7 +269,7 @@ class Exchange(object):
                 raise OperationalException(e)
         else:
             logger.info("returning cached ticker-data for %s", pair)
-            return self._CACHED_TICKER[pair]
+            return self._cached_ticker[pair]
 
     @retrier
     def get_ticker_history(self, pair: str, tick_interval: str,
@@ -318,7 +318,7 @@ class Exchange(object):
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> None:
-        if self._CONF['dry_run']:
+        if self._conf['dry_run']:
             return
 
         try:
@@ -334,8 +334,8 @@ class Exchange(object):
 
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
-        if self._CONF['dry_run']:
-            order = self._DRY_RUN_OPEN_ORDERS[order_id]
+        if self._conf['dry_run']:
+            order = self._dry_run_open_orders[order_id]
             order.update({
                 'id': order_id
             })
@@ -353,7 +353,7 @@ class Exchange(object):
 
     @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
-        if self._CONF['dry_run']:
+        if self._conf['dry_run']:
             return []
         if not self.exchange_has('fetchMyTrades'):
             return []
