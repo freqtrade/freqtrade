@@ -261,7 +261,7 @@ class FreqtradeBot(object):
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
             orderBook_rate = orderBook_rate+0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
-            logger.info('...book order bid rate %0.8f', orderBook_rate)
+            logger.info('...book order buy rate %0.8f', orderBook_rate)
             if ticker_rate < orderBook_rate:
                 logger.info('...using ticker rate instead %0.8f', ticker_rate)
                 used_rate = ticker_rate
@@ -270,14 +270,10 @@ class FreqtradeBot(object):
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
 
-        logger.info('used rate %0.8f', used_rate)
-
-        logger.info('percent_from_top %0.8f', self.config['bid_strategy']['percent_from_top'])
-        logger.info('percent_from_top %s', self.config['bid_strategy']['percent_from_top'] > 0)
         if self.config['bid_strategy']['percent_from_top'] > 0:
             used_rate = used_rate - (used_rate * self.config['bid_strategy']['percent_from_top'])
             used_rate = self.analyze.trunc_num(used_rate, 8)
-            logger.info('used rate xx %0.8f', used_rate)
+            logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
         
         return used_rate
 
