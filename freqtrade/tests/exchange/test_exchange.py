@@ -520,7 +520,6 @@ def test_get_order(default_conf, mocker):
     order = MagicMock()
     order.myid = 123
     exchange._DRY_RUN_OPEN_ORDERS['X'] = order
-    print(exchange.get_order('X', 'TKN/BTC'))
     assert exchange.get_order('X', 'TKN/BTC').myid == 123
 
     default_conf['dry_run'] = False

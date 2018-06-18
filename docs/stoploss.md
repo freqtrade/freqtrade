@@ -40,7 +40,7 @@ due to demand, it is possible to have a default stop loss, when you are in the r
 the system will utilize a new stop loss, which can be a different value. For example your default stop loss is 5%, but once you are in the
 black, it will be changed to be only a 1% stop loss
 
-this can be configured in the main confiuration file, the following way:
+this can be configured in the main configuration file, the following way:
 
 ```
     "trailing_stop": {

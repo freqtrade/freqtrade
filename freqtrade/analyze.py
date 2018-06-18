@@ -62,10 +62,10 @@ class Analyze(object):
             'close': 'last',
             'volume': 'max',
         })
-        frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
+        frame.drop(frame.tail(1).index, inplace=True)  # eliminate partial candle
         return frame
 
-    def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
 
@@ -73,23 +73,23 @@ class Analyze(object):
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
         """
-        return self.strategy.populate_indicators(dataframe=dataframe)
+        return self.strategy.advise_indicators(dataframe=dataframe, pair=pair)
 
-    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        return self.strategy.populate_buy_trend(dataframe=dataframe)
+        return self.strategy.advise_buy(dataframe=dataframe, pair=pair)
 
-    def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        return self.strategy.populate_sell_trend(dataframe=dataframe)
+        return self.strategy.advise_sell(dataframe=dataframe, pair=pair)
 
     def get_ticker_interval(self) -> str:
         """
@@ -98,16 +98,17 @@ class Analyze(object):
         """
         return self.strategy.ticker_interval
 
-    def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
+    def analyze_ticker(self, ticker_history: List[Dict], pair: str) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
+
         dataframe = self.parse_ticker_dataframe(ticker_history)
-        dataframe = self.populate_indicators(dataframe)
-        dataframe = self.populate_buy_trend(dataframe)
-        dataframe = self.populate_sell_trend(dataframe)
+        dataframe = self.populate_indicators(dataframe, pair)
+        dataframe = self.populate_buy_trend(dataframe, pair)
+        dataframe = self.populate_sell_trend(dataframe, pair)
         return dataframe
 
     def get_signal(self, pair: str, interval: str) -> Tuple[bool, bool]:
@@ -123,7 +124,7 @@ class Analyze(object):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist)
+            dataframe = self.analyze_ticker(ticker_hist, pair)
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',

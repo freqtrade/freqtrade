@@ -222,9 +222,7 @@ class Hyperopt(Backtesting):
                 results['result'],
                 results['loss']
             )
-            print(log_msg)
         else:
-            print('.', end='')
             sys.stdout.flush()
 
     def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:

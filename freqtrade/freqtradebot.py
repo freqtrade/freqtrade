@@ -156,7 +156,7 @@ class FreqtradeBot(object):
                 state_changed |= self.process_maybe_execute_sell(trade)
 
             # Then looking for buy opportunities
-            if (self.config['disable_buy']):
+            if (self.config.get('disable_buy', False)):
                 logger.info('Buy disabled...')
             else:
                 if len(trades) < self.config['max_open_trades']:
@@ -255,7 +255,7 @@ class FreqtradeBot(object):
 
         used_rate = ticker_rate
 
-        if self.config['bid_strategy']['use_book_order']:
+        if self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
             orderBook = exchange.get_order_book(pair, self.config['bid_strategy']['book_order_top'])
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
@@ -467,7 +467,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             sell_rate = self.analyze.get_roi_rate(trade)
             logger.info('trying to selling at roi rate %0.8f', sell_rate)
 
-        if self.config['ask_strategy']['use_book_order'] and not is_set_fullfilled_at_roi:
+        if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
             logger.info('Using order book for selling...')
 
             # logger.debug('Order book %s',orderBook)
@@ -478,6 +478,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
             for i in range(orderBook_min, orderBook_max+1):
                 orderBook_rate = orderBook['asks'][i-1][0]
+
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use bids rate
                 logger.info('  order book asks top %s: %0.8f', i, orderBook_rate)

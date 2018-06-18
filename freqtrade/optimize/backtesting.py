@@ -79,7 +79,7 @@ class Backtesting(object):
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
         for pair in data:
             result = results[results.currency == pair]
-            print(results)
+
             tabular_data.append([
                 pair,
                 len(result.index),
@@ -217,7 +217,6 @@ class Backtesting(object):
         if record and record.find('trades') >= 0:
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
-            file_dump_json('backtest-result.json', records)
         labels = ['currency', 'profit_percent', 'profit_BTC', 'duration', 'entry', 'exit']
 
         return DataFrame.from_records(trades, columns=labels)
@@ -298,7 +297,7 @@ class Backtesting(object):
 
         # return date for data storage
         table = self.aggregate(data, results)
-        return (results, table)
+        return results, table
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
