@@ -43,7 +43,7 @@ def retrier(f):
 class Exchange(object):
 
     # Current selected exchange
-    _API: ccxt.Exchange = None
+    _api: ccxt.Exchange = None
     _CONF: Dict = {}
     _CACHED_TICKER: Dict[str, Any] = {}
 
@@ -55,18 +55,15 @@ class Exchange(object):
         Initializes this module with the given config,
         it does basic validation whether the specified
         exchange and pairs are valid.
-        :param config: config to use
         :return: None
         """
-        self._API
-
         self._CONF.update(config)
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
 
         exchange_config = config['exchange']
-        self._API = self._init_ccxt(exchange_config)
+        self._api = self._init_ccxt(exchange_config)
 
         logger.info('Using Exchange "%s"', self.get_name())
 
@@ -99,10 +96,10 @@ class Exchange(object):
         return api
 
     def get_name(self) -> str:
-        return self._API.name
+        return self._api.name
 
     def get_id(self) -> str:
-        return self._API.id
+        return self._api.id
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
@@ -113,7 +110,7 @@ class Exchange(object):
         """
 
         try:
-            markets = self._API.load_markets()
+            markets = self._api.load_markets()
         except ccxt.BaseError as e:
             logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
             return
@@ -136,7 +133,7 @@ class Exchange(object):
         :param endpoint: Name of endpoint (e.g. 'fetchOHLCV', 'fetchTickers')
         :return: bool
         """
-        return endpoint in self._API.has and self._API.has[endpoint]
+        return endpoint in self._api.has and self._api.has[endpoint]
 
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
         if self._CONF['dry_run']:
@@ -155,7 +152,7 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
-            return self._API.create_limit_buy_order(pair, amount, rate)
+            return self._api.create_limit_buy_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create limit buy order on market {pair}.'
@@ -188,7 +185,7 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
-            return self._API.create_limit_sell_order(pair, amount, rate)
+            return self._api.create_limit_sell_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create limit sell order on market {pair}.'
@@ -224,7 +221,7 @@ class Exchange(object):
             return {}
 
         try:
-            balances = self._API.fetch_balance()
+            balances = self._api.fetch_balance()
             # Remove additional info from ccxt results
             balances.pop("info", None)
             balances.pop("free", None)
@@ -241,10 +238,10 @@ class Exchange(object):
     @retrier
     def get_tickers(self) -> Dict:
         try:
-            return self._API.fetch_tickers()
+            return self._api.fetch_tickers()
         except ccxt.NotSupported as e:
             raise OperationalException(
-                f'Exchange {self._API.name} does not support fetching tickers in batch.'
+                f'Exchange {self._api.name} does not support fetching tickers in batch.'
                 f'Message: {e}')
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
@@ -256,7 +253,7 @@ class Exchange(object):
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._CACHED_TICKER.keys():
             try:
-                data = self._API.fetch_ticker(pair)
+                data = self._api.fetch_ticker(pair)
                 try:
                     self._CACHED_TICKER[pair] = {
                         'bid': float(data['bid']),
@@ -290,7 +287,7 @@ class Exchange(object):
 
             data: List[Dict[Any, Any]] = []
             while not since_ms or since_ms < till_time_ms:
-                data_part = self._API.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
+                data_part = self._api.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
 
                 # Because some exchange sort Tickers ASC and other DESC.
                 # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
@@ -311,7 +308,7 @@ class Exchange(object):
             return data
         except ccxt.NotSupported as e:
             raise OperationalException(
-                f'Exchange {self._API.name} does not support fetching historical candlestick data.'
+                f'Exchange {self._api.name} does not support fetching historical candlestick data.'
                 f'Message: {e}')
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
@@ -325,7 +322,7 @@ class Exchange(object):
             return
 
         try:
-            return self._API.cancel_order(order_id, pair)
+            return self._api.cancel_order(order_id, pair)
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not cancel order. Message: {e}')
@@ -344,7 +341,7 @@ class Exchange(object):
             })
             return order
         try:
-            return self._API.fetch_order(order_id, pair)
+            return self._api.fetch_order(order_id, pair)
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not get order. Message: {e}')
@@ -361,7 +358,7 @@ class Exchange(object):
         if not self.exchange_has('fetchMyTrades'):
             return []
         try:
-            my_trades = self._API.fetch_my_trades(pair, since.timestamp())
+            my_trades = self._api.fetch_my_trades(pair, since.timestamp())
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             return matched_trades
@@ -374,10 +371,10 @@ class Exchange(object):
 
     def get_pair_detail_url(self, pair: str) -> str:
         try:
-            url_base = self._API.urls.get('www')
+            url_base = self._api.urls.get('www')
             base, quote = pair.split('/')
 
-            return url_base + _EXCHANGE_URLS[self._API.id].format(base=base, quote=quote)
+            return url_base + _EXCHANGE_URLS[self._api.id].format(base=base, quote=quote)
         except KeyError:
             logger.warning('Could not get exchange url for %s', self.get_name())
             return ""
@@ -385,7 +382,7 @@ class Exchange(object):
     @retrier
     def get_markets(self) -> List[dict]:
         try:
-            return self._API.fetch_markets()
+            return self._api.fetch_markets()
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not load markets due to {e.__class__.__name__}. Message: {e}')
@@ -397,10 +394,10 @@ class Exchange(object):
                 price=1, taker_or_maker='maker') -> float:
         try:
             # validate that markets are loaded before trying to get fee
-            if self._API.markets is None or len(self._API.markets) == 0:
-                self._API.load_markets()
+            if self._api.markets is None or len(self._api.markets) == 0:
+                self._api.load_markets()
 
-            return self._API.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
+            return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
@@ -413,6 +410,6 @@ class Exchange(object):
         get buyable amount rounding, ..
         """
         # validate that markets are loaded before trying to get fee
-        if not self._API.markets:
-            self._API.load_markets()
-        return self._API.amount_to_lots(pair, amount)
+        if not self._api.markets:
+            self._api.load_markets()
+        return self._api.amount_to_lots(pair, amount)
