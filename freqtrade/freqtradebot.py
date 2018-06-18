@@ -271,7 +271,7 @@ class FreqtradeBot(object):
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
         percent_from_top = self.config.get('bid_strategy',{}).get('percent_from_top',0)
-        if self.config['bid_strategy']['percent_from_top'] > 0:
+        if percent_from_top > 0:
             used_rate = used_rate - (used_rate * percent_from_top)
             used_rate = self.analyze.trunc_num(used_rate, 8)
             logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
