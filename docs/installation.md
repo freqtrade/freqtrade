@@ -184,6 +184,26 @@ docker start freqtrade
 
 You do not need to rebuild the image for configuration changes, it will suffice to edit `config.json` and restart the container.
 
+### 7. Backtest with docker
+
+The following assumes that the above steps (1-4) have been completed successfully.
+Also, backtest-data should be available at `~/.freqtrade/user_data/`.
+
+
+``` bash
+docker run -d \
+  --name freqtrade \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v ~/.freqtrade/config.json:/freqtrade/config.json \
+  -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
+  -v ~/.freqtrade/user_data/:/freqtrade/user_data/ \
+  freqtrade --strategy AwsomelyProfitableStrategy backtesting
+```
+
+Head over to the [Backtesting Documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md) for more details.
+
+*Note*: Additional parameters can be appended after the image name (`freqtrade` in the above example).
+
 ------
 
 ## Custom Installation
