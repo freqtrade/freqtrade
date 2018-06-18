@@ -259,7 +259,8 @@ class FreqtradeBot(object):
             logger.info('Getting price from Order Book')
             orderBook_top = self.config.get('bid_strategy',{}).get('book_order_top',1)
             orderBook = exchange.get_order_book(pair, orderBook_top)
-            orderBook_rate = orderBook['bids'][orderBook_top][0]
+            # top 1 = index 0
+            orderBook_rate = orderBook['bids'][orderBook_top-1][0]
             orderBook_rate = orderBook_rate+0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
             logger.info('...book order buy rate %0.8f', orderBook_rate)
