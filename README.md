@@ -87,6 +87,7 @@ strategy parameters with real exchange data.
 - [x] [using book orders for buy and/or sell](docs/configuration.md) 
 - [x] [separated unfilled orders timeout](docs/configuration.md) 
 - [x] [option to disable buying](docs/configuration.md) 
+- [x] [option to get a buy price based on %](docs/configuration.md) 
 
 ### Drawbacks
 

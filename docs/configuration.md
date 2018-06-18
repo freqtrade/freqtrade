@@ -28,6 +28,7 @@ The table below will list all configuration parameters.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
 | `bid_strategy.use_book_order` | false | No | Use book order to set the bidding price. More information below.
 | `bid_strategy.book_order_top` | 1 | No | Selects the top n bidding price in book order. More information below.
+| `bid_strategy.percent_from_top` | 1 | No | Set the percent to deduct from the buy rate from book order (if enabled) or from ask/last price. More information below.
 | `ask_strategy.use_book_order` | false | No | Use book order to set the asking price. More information below.
 | `ask_strategy.book_order_min` | 1 | No | The minimum index from the top to search for profitable asking price from book order. More information below.
 | `ask_strategy.book_order_max` | 1 | No | The maximum index from the top to search for profitable asking price from book order. More information below.
@@ -82,6 +83,9 @@ Most of the strategy files already include the optimal `stoploss` value. This pa
 
 ### Understanding bid_strategy.use_book_order
 `bid_strategy.use_book_order` loads the exchange book order and sets the bidding price between `book_order_min`  and `book_order_max` value. If the `book_order_top` is set to 3, then the 3rd bidding price from the top of the book order will be selected as the bidding price for the trade.
+
+### Understanding bid_strategy.percent_from_top
+`bid_strategy.percent_from_top` sets the percent to deduct from buy price of the pair. If `bid_strategy.use_book_order` is enabled, the percent value is deducted from the rate of `book_order_top`, otherwise, the percent value is deducted from the value provided by `bid_strategy.ask_last_balance`. Example: If `ask_last_balance` rate is 100 and the `bid_strategy.percent_from_top` is `0.005` or `0.5%`, the bot would buy at the price of `99.5`.
 
 ### Understanding ask_strategy.use_book_order
 `ask_strategy.use_book_order` loads the exchange book order and sets the askng price based on the `book_order_top` value. If the `book_order_min` is set to 3 and `book_order_max` is set to 10, then the bot will search between top 3rd and 10th asking prices from the top of the book order will be selected as the bidding price for the trade.
