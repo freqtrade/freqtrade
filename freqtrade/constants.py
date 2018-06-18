@@ -61,7 +61,7 @@ CONF_SCHEMA = {
                 'buy': {'type': 'number', 'minimum': 1},
                 'sell': {'type': 'number', 'minimum': 1}
             },
-            'required': ['buy','sell']
+            'required': ['buy', 'sell']
         },
         'bid_strategy': {
             'type': 'object',
@@ -74,9 +74,9 @@ CONF_SCHEMA = {
                 },
                 'use_book_order': {'type': 'boolean'},
                 'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
-                'percent_from_top' : {'type': 'number', 'minimum': 0}
+                'percent_from_top': {'type': 'number', 'minimum': 0}
             },
-            'required': ['ask_last_balance','use_book_order']
+            'required': ['ask_last_balance', 'use_book_order']
         },
         'ask_strategy': {
             'type': 'object',

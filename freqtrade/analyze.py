@@ -247,7 +247,7 @@ class Analyze(object):
         return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data))
                 for pair, pair_data in tickerdata.items()}
 
-    def trunc_num(self,f, n):
+    def trunc_num(self, f, n):
         import math
         return math.floor(f * 10 ** n) / 10 ** n
 
@@ -257,5 +257,4 @@ class Analyze(object):
         for duration, threshold in self.strategy.minimal_roi.items():
             if time_diff > duration:
                 roi_rate = (trade.open_rate * (1 + threshold)) * (1+(2.1*get_fee(trade.pair)))
-                return self.trunc_num(roi_rate,8)
-
+                return self.trunc_num(roi_rate, 8)

@@ -244,9 +244,8 @@ class FreqtradeBot(object):
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
-        
         ticker = exchange.get_ticker(pair)
-        logger.info('ticker data %s',ticker)
+        logger.info('ticker data %s', ticker)
 
         if ticker['ask'] < ticker['last']:
             ticker_rate = ticker['ask']
@@ -255,28 +254,32 @@ class FreqtradeBot(object):
             ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
         used_rate = ticker_rate
-        
+
         if self.config['bid_strategy']['use_book_order']:
             logger.info('Getting price from Order Book')
-            orderBook = exchange.get_order_book(pair,self.config['bid_strategy']['book_order_top'])
+            orderBook = exchange.get_order_book(pair, self.config['bid_strategy']['book_order_top'])
             orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
             orderBook_rate = orderBook_rate+0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
-            logger.info('...book order bid rate %0.8f',orderBook_rate)
+            logger.info('...book order bid rate %0.8f', orderBook_rate)
             if ticker_rate < orderBook_rate:
-                logger.info('...using ticker rate instead %0.8f',ticker_rate )
+                logger.info('...using ticker rate instead %0.8f', ticker_rate)
                 used_rate = ticker_rate
             used_rate = orderBook_rate
         else:
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
 
-        logger.info('used rate %0.8f',used_rate)
+        logger.info('used rate %0.8f', used_rate)
 
+        logger.info('percent_from_top %0.8f', self.config['bid_strategy']['percent_from_top'])
+        logger.info('percent_from_top %s', self.config['bid_strategy']['percent_from_top'] > 0)
         if self.config['bid_strategy']['percent_from_top'] > 0:
-            used_rate = self.analyze.trunc_num(used_rate - (used_rate * self.config['bid_strategy']['percent_from_top']),8)
-            logger.info('used rate xx %0.8f',used_rate)
-            return used_rate
+            used_rate = used_rate - (used_rate * self.config['bid_strategy']['percent_from_top'])
+            used_rate = self.analyze.trunc_num(used_rate, 8)
+            logger.info('used rate xx %0.8f', used_rate)
+        
+        return used_rate
 
     def create_trade(self) -> bool:
         """
@@ -285,6 +288,7 @@ class FreqtradeBot(object):
         :return: True if a trade object has been created and persisted, False otherwise
         """
         stake_amount = self.config['stake_amount']
+
         interval = self.analyze.get_ticker_interval()
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
@@ -295,8 +299,10 @@ class FreqtradeBot(object):
             stake_amount
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
+
         # Check if stake_amount is fulfilled
-        if exchange.get_balance(stake_currency) < stake_amount:
+        current_balance = exchange.get_balance(self.config['stake_currency'])
+        if current_balance < stake_amount:
             raise DependencyException(
                 f'stake amount is not fulfilled (currency={stake_currency})')
 
@@ -454,7 +460,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         logger.info('Handling %s ...', trade)
         sell_rate = exchange.get_ticker(trade.pair)['bid']
-        logger.info(' ticker rate %0.8f',sell_rate)
+        logger.info(' ticker rate %0.8f', sell_rate)
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
@@ -463,22 +469,22 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi')
         if is_set_fullfilled_at_roi:
             sell_rate = self.analyze.get_roi_rate(trade)
-            logger.info('trying to selling at roi rate %0.8f',sell_rate)
+            logger.info('trying to selling at roi rate %0.8f', sell_rate)
 
         if self.config['ask_strategy']['use_book_order'] and not is_set_fullfilled_at_roi:
             logger.info('Using order book for selling...')
-            
+
             # logger.debug('Order book %s',orderBook)
             orderBook_min = self.config['ask_strategy']['book_order_min']
             orderBook_max = self.config['ask_strategy']['book_order_max']
 
-            orderBook = exchange.get_order_book(trade.pair,orderBook_max)
-            
+            orderBook = exchange.get_order_book(trade.pair, orderBook_max)
+
             for i in range(orderBook_min, orderBook_max+1):
                 orderBook_rate = orderBook['asks'][i-1][0]
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use bids rate
-                logger.info('  order book asks top %s: %0.8f',i,orderBook_rate)
+                logger.info('  order book asks top %s: %0.8f', i, orderBook_rate)
                 if (sell_rate < orderBook_rate):
                     sell_rate = orderBook_rate
 
@@ -528,7 +534,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if (int(order['filled']) == 0) and (order['status'] == 'open'):
+            if (order['status'] == 'open'):
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
