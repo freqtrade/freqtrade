@@ -10,6 +10,8 @@ import os
 import pickle
 import signal
 import sys
+import multiprocessing
+
 from argparse import Namespace
 from functools import reduce
 from math import exp
@@ -22,6 +24,8 @@ from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from pandas import DataFrame
 
 from skopt.space import Real, Integer, Categorical
+from skopt import Optimizer
+from sklearn.externals.joblib import Parallel, delayed
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
@@ -64,6 +68,21 @@ class Hyperopt(Backtesting):
         # Hyperopt Trials
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
         self.trials = Trials()
+
+    def get_args(self, params):
+        dimensions = self.hyperopt_space()
+        # Ensure the number of dimensions match
+        # the number of parameters in the list x.
+        if len(params) != len(dimensions):
+            msg = "Mismatch in number of search-space dimensions. " \
+                    "len(dimensions)=={} and len(x)=={}"
+            msg = msg.format(len(dimensions), len(params))
+            raise ValueError(msg)
+
+        # Create a dict where the keys are the names of the dimensions
+        # and the values are taken from the list of parameters x.
+        arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
+        return arg_dict
 
     @staticmethod
     def populate_indicators(dataframe: DataFrame) -> DataFrame:
@@ -173,28 +192,17 @@ class Hyperopt(Backtesting):
         """
         Define your Hyperopt space for searching strategy parameters
         """
-        return {
-            'macd_below_zero': hp.choice('macd_below_zero', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'mfi': hp.choice('mfi', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('mfi-value', 10, 25, 5)}
-            ]),
-            'fastd': hp.choice('fastd', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('fastd-value', 15, 45, 5)}
-            ]),
-            'adx': hp.choice('adx', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('adx-value', 20, 50, 5)}
-            ]),
-            'rsi': hp.choice('rsi', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 5)}
-            ]),
-        }
+        return [
+            Integer(10, 25, name='mfi-value'),
+            Integer(15, 45, name='fastd-value'),
+            Integer(20, 50, name='adx-value'),
+            Integer(20, 40, name='rsi-value'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='fastd-enabled'),
+            Categorical([True, False], name='adx-enabled'),
+            Categorical([True, False], name='rsi-enabled'),
+        ]
+
 
     def has_space(self, space: str) -> bool:
         """
@@ -208,14 +216,15 @@ class Hyperopt(Backtesting):
         """
         Return the space to use during Hyperopt
         """
-        spaces: Dict = {}
-        if self.has_space('buy'):
-            spaces = {**spaces, **Hyperopt.indicator_space()}
-        if self.has_space('roi'):
-            spaces = {**spaces, **Hyperopt.roi_space()}
-        if self.has_space('stoploss'):
-            spaces = {**spaces, **Hyperopt.stoploss_space()}
-        return spaces
+        return Hyperopt.indicator_space()
+        # spaces: Dict = {}
+        # if self.has_space('buy'):
+        #     spaces = {**spaces, **Hyperopt.indicator_space()}
+        # if self.has_space('roi'):
+        #     spaces = {**spaces, **Hyperopt.roi_space()}
+        # if self.has_space('stoploss'):
+        #     spaces = {**spaces, **Hyperopt.stoploss_space()}
+        # return spaces
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
@@ -228,16 +237,16 @@ class Hyperopt(Backtesting):
             """
             conditions = []
             # GUARDS AND TRENDS
-            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
-                conditions.append(dataframe['macd'] < 0)
-            if 'mfi' in params and params['mfi']['enabled']:
-                conditions.append(dataframe['mfi'] < params['mfi']['value'])
-            if 'fastd' in params and params['fastd']['enabled']:
-                conditions.append(dataframe['fastd'] < params['fastd']['value'])
-            if 'adx' in params and params['adx']['enabled']:
-                conditions.append(dataframe['adx'] > params['adx']['value'])
-            if 'rsi' in params and params['rsi']['enabled']:
-                conditions.append(dataframe['rsi'] < params['rsi']['value'])
+#            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
+#                conditions.append(dataframe['macd'] < 0)
+            if 'mfi-enabled' in params and params['mfi-enabled']:
+                conditions.append(dataframe['mfi'] < params['mfi-value'])
+            if 'fastd' in params and params['fastd-enabled']:
+                conditions.append(dataframe['fastd'] < params['fastd-value'])
+            if 'adx' in params and params['adx-enabled']:
+                conditions.append(dataframe['adx'] > params['adx-value'])
+            if 'rsi' in params and params['rsi-enabled']:
+                conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
             triggers = {
@@ -254,7 +263,9 @@ class Hyperopt(Backtesting):
 
         return populate_buy_trend
 
-    def generate_optimizer(self, params: Dict) -> Dict:
+    def generate_optimizer(self, _params) -> Dict:
+        params = self.get_args(_params)
+
         if self.has_space('roi'):
             self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
 
@@ -297,12 +308,13 @@ class Hyperopt(Backtesting):
                 'result': result_explanation,
             }
         )
+        return loss
 
-        return {
-            'loss': loss,
-            'status': STATUS_OK,
-            'result': result_explanation,
-        }
+#        return {
+#            'loss': loss,
+#            'status': STATUS_OK,
+#            'result': result_explanation,
+#        }
 
     def format_results(self, results: DataFrame) -> str:
         """
@@ -347,16 +359,29 @@ class Hyperopt(Backtesting):
             )
 
         try:
-            best_parameters = fmin(
-                fn=self.generate_optimizer,
-                space=self.hyperopt_space(),
-                algo=tpe.suggest,
-                max_evals=self.total_tries,
-                trials=self.trials
-            )
+            # best_parameters = fmin(
+            #     fn=self.generate_optimizer,
+            #     space=self.hyperopt_space(),
+            #     algo=tpe.suggest,
+            #     max_evals=self.total_tries,
+            #     trials=self.trials
+            # )
 
-            results = sorted(self.trials.results, key=itemgetter('loss'))
-            best_result = results[0]['result']
+            # results = sorted(self.trials.results, key=itemgetter('loss'))
+            # best_result = results[0]['result']
+            cpus = multiprocessing.cpu_count()
+            print(f'Found {cpus}. Let\'s make them scream!')
+
+            opt = Optimizer(self.hyperopt_space(), "ET", acq_optimizer="sampling")
+
+            for i in range(self.total_tries//cpus):
+                asked = opt.ask(n_points=cpus)
+                #asked = opt.ask()
+                #f_val = self.generate_optimizer(asked)
+                f_val = Parallel(n_jobs=-1)(delayed(self.generate_optimizer)(v) for v in asked)
+                opt.tell(asked, f_val)
+                print(f'got value {f_val}')
+
 
         except ValueError:
             best_parameters = {}
@@ -364,20 +389,20 @@ class Hyperopt(Backtesting):
                           'try with more epochs (param: -e).'
 
         # Improve best parameter logging display
-        if best_parameters:
-            best_parameters = space_eval(
-                self.hyperopt_space(),
-                best_parameters
-            )
+        # if best_parameters:
+        #     best_parameters = space_eval(
+        #         self.hyperopt_space(),
+        #         best_parameters
+        #     )
 
-        logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
-        if 'roi_t1' in best_parameters:
-            logger.info('ROI table:\n%s', self.generate_roi_table(best_parameters))
+        # logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
+        # if 'roi_t1' in best_parameters:
+        #     logger.info('ROI table:\n%s', self.generate_roi_table(best_parameters))
 
-        logger.info('Best Result:\n%s', best_result)
+        # logger.info('Best Result:\n%s', best_result)
 
-        # Store trials result to file to resume next time
-        self.save_trials()
+        # # Store trials result to file to resume next time
+        # self.save_trials()
 
     def signal_handler(self, sig, frame) -> None:
         """
