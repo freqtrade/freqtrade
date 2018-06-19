@@ -3,3 +3,4 @@ omit =
     scripts/*
     freqtrade/tests/*
     freqtrade/vendor/*
+    freqtrade/__main__.py
