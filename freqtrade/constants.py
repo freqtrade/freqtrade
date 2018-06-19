@@ -83,7 +83,7 @@ CONF_SCHEMA = {
             'properties': {
                 'use_book_order': {'type': 'boolean'},
                 'book_order_min': {'type': 'number', 'minimum': 1},
-                'book_order_max': {'type': 'number', 'minimum': 1}
+                'book_order_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
             },
             'required': ['use_book_order']
         },
