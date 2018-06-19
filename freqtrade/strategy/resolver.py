@@ -40,6 +40,7 @@ class StrategyResolver(object):
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        extra_dir=config.get('strategy_path'))
 
+
         # Set attributes
         # Check if we need to override configuration
         if 'minimal_roi' in config:
@@ -125,7 +126,7 @@ class StrategyResolver(object):
 
                     strategy_name = os.path.splitext(name)[0]
 
-                    print("stored downloaded stat at: {}".format(temp))
+                    # print("stored downloaded stat at: {}".format(temp))
                     # register temp path with the bot
                     abs_paths.insert(0, temp.absolute())
 
