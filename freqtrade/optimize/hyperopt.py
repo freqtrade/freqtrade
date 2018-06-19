@@ -308,13 +308,12 @@ class Hyperopt(Backtesting):
                 'result': result_explanation,
             }
         )
-        return loss
 
-#        return {
-#            'loss': loss,
-#            'status': STATUS_OK,
-#            'result': result_explanation,
-#        }
+        return {
+            'loss': loss,
+            'status': STATUS_OK,
+            'result': result_explanation,
+        }
 
     def format_results(self, results: DataFrame) -> str:
         """
@@ -374,13 +373,14 @@ class Hyperopt(Backtesting):
 
             opt = Optimizer(self.hyperopt_space(), "ET", acq_optimizer="sampling")
 
-            for i in range(self.total_tries//cpus):
-                asked = opt.ask(n_points=cpus)
-                #asked = opt.ask()
-                #f_val = self.generate_optimizer(asked)
-                f_val = Parallel(n_jobs=-1)(delayed(self.generate_optimizer)(v) for v in asked)
-                opt.tell(asked, f_val)
-                print(f'got value {f_val}')
+            with Parallel(n_jobs=-1) as parallel:
+                for i in range(self.total_tries//cpus):
+                    asked = opt.ask(n_points=cpus)
+                    #asked = opt.ask()
+                    #f_val = self.generate_optimizer(asked)
+                    f_val = parallel(delayed(self.generate_optimizer)(v) for v in asked)
+                    opt.tell(asked, [i['loss'] for i in f_val])
+                    print(f'got value {f_val}')
 
 
         except ValueError:
