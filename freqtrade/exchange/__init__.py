@@ -45,6 +45,7 @@ def retrier(f):
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
                 raise ex
+
     return wrapper
 
 
@@ -299,8 +300,8 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
     try:
         # last item should be in the time interval [now - tick_interval, now]
         till_time_ms = arrow.utcnow().shift(
-                        minutes=-constants.TICKER_INTERVAL_MINUTES[tick_interval]
-                       ).timestamp * 1000
+            minutes=-constants.TICKER_INTERVAL_MINUTES[tick_interval]
+        ).timestamp * 1000
         # it looks as if some exchanges return cached data
         # and they update it one in several minute, so 10 mins interval
         # is necessary to skeep downloading of an empty array when all

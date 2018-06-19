@@ -35,7 +35,7 @@ SUPPORTED_FIAT = [
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
     "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
-    ]
+]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {

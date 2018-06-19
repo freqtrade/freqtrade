@@ -75,8 +75,7 @@ class Backtesting(object):
             (arrow.get(min(frame.date)), arrow.get(max(frame.date)))
             for frame in data.values()
         ]
-        return min(timeframe, key=operator.itemgetter(0))[0], \
-               max(timeframe, key=operator.itemgetter(1))[1]
+        return min(timeframe, key=operator.itemgetter(0))[0], max(timeframe, key=operator.itemgetter(1))[1]
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
