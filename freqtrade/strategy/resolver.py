@@ -126,7 +126,7 @@ class StrategyResolver(object):
 
                     strategy_name = os.path.splitext(name)[0]
 
-                    print("stored downloaded stat at: {}".format(temp))
+                    # print("stored downloaded stat at: {}".format(temp))
                     # register temp path with the bot
                     abs_paths.insert(0, temp.absolute())
 
