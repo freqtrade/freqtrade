@@ -204,12 +204,6 @@ class Arguments(object):
             metavar='INT',
         )
         parser.add_argument(
-            '--use-mongodb',
-            help='parallelize evaluations with mongodb (requires mongod in PATH)',
-            dest='mongodb',
-            action='store_true',
-        )
-        parser.add_argument(
             '-s', '--spaces',
             help='Specify which parameters to hyperopt. Space separate list. \
                   Default: %(default)s',

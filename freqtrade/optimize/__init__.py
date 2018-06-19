@@ -11,8 +11,6 @@ from freqtrade import misc, constants
 from freqtrade.exchange import get_ticker_history
 from freqtrade.arguments import TimeRange
 
-from user_data.hyperopt_conf import hyperopt_optimize_conf
-
 logger = logging.getLogger(__name__)
 
 
@@ -83,7 +81,7 @@ def load_tickerdata_file(
 
 def load_data(datadir: str,
               ticker_interval: str,
-              pairs: Optional[List[str]] = None,
+              pairs: List[str],
               refresh_pairs: Optional[bool] = False,
               timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, List]:
     """
@@ -92,14 +90,12 @@ def load_data(datadir: str,
     """
     result = {}
 
-    _pairs = pairs or hyperopt_optimize_conf()['exchange']['pair_whitelist']
-
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in %s', datadir)
-        download_pairs(datadir, _pairs, ticker_interval, timerange=timerange)
+        download_pairs(datadir, pairs, ticker_interval, timerange=timerange)
 
-    for pair in _pairs:
+    for pair in pairs:
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         if pairdata:
             result[pair] = pairdata

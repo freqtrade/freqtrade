@@ -356,21 +356,31 @@ def test_generate_text_table(default_conf, mocker):
 
     results = pd.DataFrame(
         {
-            'currency': ['ETH/BTC', 'ETH/BTC'],
+            'pair': ['ETH/BTC', 'ETH/BTC'],
             'profit_percent': [0.1, 0.2],
-            'profit_BTC': [0.2, 0.4],
-            'duration': [10, 30],
+            'profit_abs': [0.2, 0.4],
+            'cum profit %': [30, 30],
+            'total profit BTC': [0.6, 0.6],
+            'trade_duration': [10, 30],
             'profit': [2, 0],
             'loss': [0, 0]
         }
     )
 
     result_str = (
-"""| pair    |   buy count |   avg profit % |   cum profit % |   total profit BTC |   avg duration |   profit |   loss |
+        """| pair    |   buy count |   avg profit % |   cum profit % |   total profit BTC |   avg duration |   profit |   loss |
 |:--------|------------:|---------------:|---------------:|-------------------:|---------------:|---------:|-------:|
 | ETH/BTC |           2 |          15.00 |          30.00 |         0.60000000 |           20.0 |        2 |      0 |
 | TOTAL   |           2 |          15.00 |          30.00 |         0.60000000 |           20.0 |        2 |      0 |"""
     )
+    #
+    # print()
+    # print(backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results))
+    #
+    # print()
+    # print()
+    # print(result_str)
+
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
@@ -469,6 +479,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
         }
     )
     assert not results.empty
+    assert len(results) == 2
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
@@ -491,6 +502,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
         }
     )
     assert not results.empty
+    assert len(results) == 1
 
 
 def test_processed(default_conf, mocker) -> None:
@@ -512,7 +524,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.optimize.backtesting.exchange.get_fee', fee)
-    tests = [['raise', 17], ['lower', 0], ['sine', 16]]
+    tests = [['raise', 18], ['lower', 0], ['sine', 16]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 
@@ -572,7 +584,10 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     backtesting.populate_buy_trend = _trend_alternate  # Override
     backtesting.populate_sell_trend = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
-    assert len(results) == 3
+    backtesting._store_backtest_result("test_.json", results)
+    assert len(results) == 4
+    # One trade was force-closed at the end
+    assert len(results.loc[results.open_at_end]) == 1
 
 
 def test_backtest_record(default_conf, fee, mocker):
@@ -584,22 +599,30 @@ def test_backtest_record(default_conf, fee, mocker):
         'freqtrade.optimize.backtesting.file_dump_json',
         new=lambda n, r: (names.append(n), records.append(r))
     )
-    backtest_conf = _make_backtest_conf(
-        mocker,
-        conf=default_conf,
-        pair='UNITTEST/BTC',
-        record="trades"
-    )
+
     backtesting = Backtesting(default_conf)
-    backtesting.populate_buy_trend = _trend_alternate  # Override
-    backtesting.populate_sell_trend = _trend_alternate  # Override
-    results = backtesting.backtest(backtest_conf)
-    assert len(results) == 3
+    results = pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
+                                     "UNITTEST/BTC", "UNITTEST/BTC"],
+                            "profit_percent": [0.003312, 0.010801, 0.013803, 0.002780],
+                            "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
+                            "open_time": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
+                                          Arrow(2017, 11, 14, 21, 36, 00).datetime,
+                                          Arrow(2017, 11, 14, 22, 12, 00).datetime,
+                                          Arrow(2017, 11, 14, 22, 44, 00).datetime],
+                            "close_time": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
+                                           Arrow(2017, 11, 14, 22, 10, 00).datetime,
+                                           Arrow(2017, 11, 14, 22, 43, 00).datetime,
+                                           Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                            "open_index": [1, 119, 153, 185],
+                            "close_index": [118, 151, 184, 199],
+                            "trade_duration": [123, 34, 31, 14]})
+    backtesting._store_backtest_result("backtest-result.json", results)
+    assert len(results) == 4
     # Assert file_dump_json was only called once
     assert names == ['backtest-result.json']
     records = records[0]
     # Ensure records are of correct type
-    assert len(records) == 3
+    assert len(records) == 4
     # ('UNITTEST/BTC', 0.00331158, '1510684320', '1510691700', 0, 117)
     # Below follows just a typecheck of the schema/type of trade-records
     oix = None

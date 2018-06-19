@@ -326,8 +326,6 @@ def test_load_tickerdata_file() -> None:
 
 
 def test_init(default_conf, mocker) -> None:
-    conf = {'exchange': {'pair_whitelist': []}}
-    mocker.patch('freqtrade.optimize.hyperopt_optimize_conf', return_value=conf)
     assert {} == optimize.load_data(
         '',
         pairs=[],
