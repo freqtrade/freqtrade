@@ -484,12 +484,11 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use bids rate
                 logger.info('  order book asks top %s: %0.8f', i, orderBook_rate)
-                if (sell_rate < orderBook_rate):
+                if sell_rate < orderBook_rate:
                     sell_rate = orderBook_rate
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
-                    break
         else:
             logger.info('checking sell')
             if self.check_sell(trade, sell_rate, buy, sell):
@@ -533,7 +532,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if (order['status'] == 'open'):
+            if order['status'] == 'open':
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
