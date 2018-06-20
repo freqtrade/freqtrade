@@ -255,13 +255,13 @@ class FreqtradeBot(object):
 
         used_rate = ticker_rate
 
-        if self.config['bid_strategy'].get('use_book_order', False):
+        if 'use_book_order' in self.config['bid_strategy'] and self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
-            orderBook_top = self.config.get('bid_strategy',{}).get('book_order_top',1)
+            orderBook_top = self.config.get('bid_strategy', {}).get('book_order_top', 1)
             orderBook = exchange.get_order_book(pair, orderBook_top)
             # top 1 = index 0
-            orderBook_rate = orderBook['bids'][orderBook_top-1][0]
-            orderBook_rate = orderBook_rate+0.00000001
+            orderBook_rate = orderBook['bids'][orderBook_top - 1][0]
+            orderBook_rate = orderBook_rate + 0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
             logger.info('...book order buy rate %0.8f', orderBook_rate)
             if ticker_rate < orderBook_rate:
@@ -271,12 +271,12 @@ class FreqtradeBot(object):
         else:
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
-        percent_from_top = self.config.get('bid_strategy',{}).get('percent_from_top',0)
+        percent_from_top = self.config.get('bid_strategy', {}).get('percent_from_top', 0)
         if percent_from_top > 0:
             used_rate = used_rate - (used_rate * percent_from_top)
             used_rate = self.analyze.trunc_num(used_rate, 8)
             logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
-        
+
         return used_rate
 
     def create_trade(self) -> bool:
@@ -478,8 +478,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
             orderBook = exchange.get_order_book(trade.pair, orderBook_max)
 
-            for i in range(orderBook_min, orderBook_max+1):
-                orderBook_rate = orderBook['asks'][i-1][0]
+            for i in range(orderBook_min, orderBook_max + 1):
+                orderBook_rate = orderBook['asks'][i - 1][0]
 
                 # if orderbook has higher rate (high profit),
                 # use orderbook, otherwise just use bids rate
