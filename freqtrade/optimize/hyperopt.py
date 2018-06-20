@@ -371,7 +371,7 @@ class Hyperopt(Backtesting):
             cpus = multiprocessing.cpu_count()
             print(f'Found {cpus}. Let\'s make them scream!')
 
-            opt = Optimizer(self.hyperopt_space(), "ET", acq_optimizer="sampling")
+            opt = Optimizer(self.hyperopt_space(), base_estimator="ET", acq_optimizer="auto", n_initial_points=30)
 
             with Parallel(n_jobs=-1) as parallel:
                 for i in range(self.total_tries//cpus):
