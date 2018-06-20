@@ -98,6 +98,7 @@ def default_conf():
             "use_book_order": False,
             "book_order_top": 6,
             "ask_last_balance": 0.0,
+            "percent_from_top": 0.0
         },
         "ask_strategy": {
             "use_book_order": False,

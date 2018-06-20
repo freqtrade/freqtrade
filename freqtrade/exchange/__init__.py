@@ -242,8 +242,18 @@ def get_balances() -> dict:
 
 
 @retrier
-def get_order_book(pair: str, limit: Optional[int] = 1000) -> dict:
+def get_order_book(pair: str, limit: Optional[int] = 100) -> dict:
     try:
+        params = {}
+        # 20180619: bittrex doesnt support limits -.-
+        # 20180619: binance limit fix.. binance currently has valid range
+        if _API.name == 'Binance':
+            limit_range = [5, 10, 20, 50, 100, 500, 1000]
+            for limitx in limit_range:
+                if limit < limitx:
+                    limit = limitx
+                    break
+
         return _API.fetch_order_book(pair, limit)
     except ccxt.NotSupported as e:
         raise OperationalException(

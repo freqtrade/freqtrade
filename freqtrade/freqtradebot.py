@@ -164,8 +164,9 @@ class FreqtradeBot(object):
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
-                self.check_handle_timedout()
-                Trade.session.flush()
+                if not self.config['dry_run']:
+                    self.check_handle_timedout()
+                    Trade.session.flush()
 
         except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)
@@ -243,24 +244,40 @@ class FreqtradeBot(object):
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
-
         ticker = exchange.get_ticker(pair)
+        logger.info('ticker data %s', ticker)
+
         if ticker['ask'] < ticker['last']:
-            return ticker['ask']
-        balance = self.config['bid_strategy']['ask_last_balance']
-        ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+            ticker_rate = ticker['ask']
+        else:
+            balance = self.config['bid_strategy']['ask_last_balance']
+            ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
+        used_rate = ticker_rate
 
         if self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
-            orderBook = exchange.get_order_book(pair)
-            orderBook_rate = orderBook['bids'][self.config['bid_strategy']['book_order_top']][0]
+            orderBook_top = self.config.get('bid_strategy',{}).get('book_order_top',1)
+            orderBook = exchange.get_order_book(pair, orderBook_top)
+            # top 1 = index 0
+            orderBook_rate = orderBook['bids'][orderBook_top-1][0]
+            orderBook_rate = orderBook_rate+0.00000001
             # if ticker has lower rate, then use ticker ( usefull if down trending )
+            logger.info('...book order buy rate %0.8f', orderBook_rate)
             if ticker_rate < orderBook_rate:
-                return ticker_rate
-            return orderBook_rate
+                logger.info('...using ticker rate instead %0.8f', ticker_rate)
+                used_rate = ticker_rate
+            used_rate = orderBook_rate
         else:
-            logger.info('Using Ask / Last Price')
-            return ticker_rate
+            logger.info('Using Last Ask / Last Price')
+            used_rate = ticker_rate
+        percent_from_top = self.config.get('bid_strategy',{}).get('percent_from_top',0)
+        if percent_from_top > 0:
+            used_rate = used_rate - (used_rate * percent_from_top)
+            used_rate = self.analyze.trunc_num(used_rate, 8)
+            logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
+        
+        return used_rate
 
     def create_trade(self) -> bool:
         """
@@ -269,6 +286,7 @@ class FreqtradeBot(object):
         :return: True if a trade object has been created and persisted, False otherwise
         """
         stake_amount = self.config['stake_amount']
+
         interval = self.analyze.get_ticker_interval()
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
@@ -279,8 +297,10 @@ class FreqtradeBot(object):
             stake_amount
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
+
         # Check if stake_amount is fulfilled
-        if exchange.get_balance(stake_currency) < stake_amount:
+        current_balance = exchange.get_balance(self.config['stake_currency'])
+        if current_balance < stake_amount:
             raise DependencyException(
                 f'stake amount is not fulfilled (currency={stake_currency})')
 
@@ -436,24 +456,34 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         if not trade.is_open:
             raise ValueError(f'attempt to handle closed trade: {trade}')
 
-        logger.debug('Handling %s ...', trade)
+        logger.info('Handling %s ...', trade)
         sell_rate = exchange.get_ticker(trade.pair)['bid']
-
+        logger.info(' ticker rate %0.8f', sell_rate)
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
+        is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi', False)
+        if is_set_fullfilled_at_roi:
+            sell_rate = self.analyze.get_roi_rate(trade)
+            logger.info('trying to selling at roi rate %0.8f', sell_rate)
+
         if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
             logger.info('Using order book for selling...')
-            orderBook = exchange.get_order_book(trade.pair)
+
             # logger.debug('Order book %s',orderBook)
             orderBook_min = self.config['ask_strategy']['book_order_min']
             orderBook_max = self.config['ask_strategy']['book_order_max']
-            for i in range(orderBook_min, orderBook_max + 1):
-                orderBook_rate = orderBook['asks'][i - 1][0]
+
+            orderBook = exchange.get_order_book(trade.pair, orderBook_max)
+
+            for i in range(orderBook_min, orderBook_max+1):
+                orderBook_rate = orderBook['asks'][i-1][0]
+
                 # if orderbook has higher rate (high profit),
-                # use orderbook, otherwise just use sell rate
+                # use orderbook, otherwise just use bids rate
+                logger.info('  order book asks top %s: %0.8f', i, orderBook_rate)
                 if (sell_rate < orderBook_rate):
                     sell_rate = orderBook_rate
 
@@ -461,6 +491,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                     return True
                     break
         else:
+            logger.info('checking sell')
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
@@ -502,7 +533,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if order['status'] == 'open':
+            if (order['status'] == 'open'):
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:

@@ -18,12 +18,20 @@ The table below will list all configuration parameters.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
-| `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below. 
-| `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. 
-| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. 
+| `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. [More information below](docs/configuration.md#what-are-the-valid-values-for-fiat_display_currency). 
+| `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. [More information below](docs/configuration.md#switch-to-dry-run--paper-trading-mode)
+| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. [More information below](docs/configuration.md#understanding-minimal_roi).
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
-| `unfilledtimeout` | 0 | No | How long (in minutes) the bot will wait for an unfilled order to complete, after which the order will be cancelled.
-| `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
+| `disable_buy` | false | No | Disables buying of crypto-currency. Bot will continue to sell.
+| `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
+| `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
+| `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. [More information below](docs/configuration.md#understanding-bid_strategyask_last_balance).
+| `bid_strategy.use_book_order` | false | No | Use book order to set the bidding price. [More information below](docs/configuration.md#understanding-bid_strategyuse_book_order).
+| `bid_strategy.book_order_top` | 1 | No | Selects the top n bidding price in book order. [More information below](docs/configuration.md#understanding-bid_strategyuse_book_order).
+| `bid_strategy.percent_from_top` | 0 | No | Set the percent to deduct from the buy rate from book order (if enabled) or from ask/last price. [More information below](docs/configuration.md#understanding-bid_strategypercent_from_top).
+| `ask_strategy.use_book_order` | false | No | Use book order to set the asking price. More information below.
+| `ask_strategy.book_order_min` | 1 | No | The minimum index from the top to search for profitable asking price from book order. [More information below](docs/configuration.md#understanding-ask_strategyuse_book_order).
+| `ask_strategy.book_order_max` | 1 | No | The maximum index from the top to search for profitable asking price from book order. [More information below](docs/configuration.md#understanding-ask_strategyuse_book_order).
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
@@ -31,11 +39,12 @@ The table below will list all configuration parameters.
 | `exchange.pair_blacklist` | [] | No | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
+| `experimental.sell_fullfilled_at_roi` | false | No | automatically creates a sell order based on `minimal_roi` once a buy order has been fullfilled.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
 | `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
-| `initial_state` | running | No | Defines the initial application state. More information below.
+| `initial_state` | running | No | Defines the initial application state. [More information below](docs/configuration.md#understanding-initial_state).
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
 | `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
@@ -43,7 +52,7 @@ The table below will list all configuration parameters.
 The definition of each config parameters is in 
 [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L205).
 
-### Understand minimal_roi
+### Understanding minimal_roi
 `minimal_roi` is a JSON object where the key is a duration
 in minutes and the value is the minimum ROI in percent.
 See the example below:
@@ -56,41 +65,34 @@ See the example below:
 },
 ```
 
-Most of the strategy files already include the optimal `minimal_roi`
-value. This parameter is optional. If you use it, it will take over the
-`minimal_roi` value from the strategy file.
+Most of the strategy files already include the optimal `minimal_roi` value. This parameter is optional. If you use it, it will take over the `minimal_roi` value from the strategy file.
 
-### Understand stoploss
-`stoploss` is loss in percentage that should trigger a sale.
-For example value `-0.10` will cause immediate sell if the
+### Understanding stoploss
+`stoploss` is loss in percentage that should trigger a sale. For example value `-0.10` will cause immediate sell if the
 profit dips below -10% for a given trade. This parameter is optional.
 
-Most of the strategy files already include the optimal `stoploss`
-value. This parameter is optional. If you use it, it will take over the
-`stoploss` value from the strategy file.
+Most of the strategy files already include the optimal `stoploss` value. This parameter is optional. If you use it, it will take over the `stoploss` value from the strategy file.
 
-### Understand initial_state
-`initial_state` is an optional field that defines the initial application state.
-Possible values are `running` or `stopped`. (default=`running`)
-If the value is `stopped` the bot has to be started with `/start` first.
+### Understanding initial_state
+`initial_state` is an optional field that defines the initial application state. Possible values are `running` or `stopped`. (default=`running`) If the value is `stopped` the bot has to be started with `/start` first.
 
-### Understand process_throttle_secs
-`process_throttle_secs` is an optional field that defines in seconds how long the bot should wait
-before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
-every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
-the static list of pairs) if we should buy.
+### Understanding process_throttle_secs
+`process_throttle_secs` is an optional field that defines in seconds how long the bot should wait before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or the static list of pairs) if we should buy.
 
-### Understand ask_last_balance
-`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will
-use the `last` price and values between those interpolate between ask and last
-price. Using `ask` price will guarantee quick success in bid, but bot will also
-end up paying more then would probably have been necessary.
+### Understanding bid_strategy.ask_last_balance
+`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will use the `last` price and the values between those interpolate between ask and last price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
 
-### What values for exchange.name?
-Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115 cryptocurrency
-exchange markets and trading APIs. The complete up-to-date list can be found in the
-[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
-with only Bittrex and Binance.
+### Understanding bid_strategy.use_book_order
+`bid_strategy.use_book_order` loads the exchange book order and sets the bidding price between `book_order_min`  and `book_order_max` value. If the `book_order_top` is set to 3, then the 3rd bidding price from the top of the book order will be selected as the bidding price for the trade.
+
+### Understanding bid_strategy.percent_from_top
+`bid_strategy.percent_from_top` sets the percent to deduct from buy price of the pair. If `bid_strategy.use_book_order` is enabled, the percent value is deducted from the rate of `book_order_top`, otherwise, the percent value is deducted from the value provided by `bid_strategy.ask_last_balance`. Example: If `ask_last_balance` rate is 100 and the `bid_strategy.percent_from_top` is `0.005` or `0.5%`, the bot would buy at the price of `99.5`.
+
+### Understanding ask_strategy.use_book_order
+`ask_strategy.use_book_order` loads the exchange book order and sets the askng price based on the `book_order_top` value. If the `book_order_min` is set to 3 and `book_order_max` is set to 10, then the bot will search between top 3rd and 10th asking prices from the top of the book order will be selected as the bidding price for the trade.
+
+### What are the valid values for exchange.name?
+Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115+ cryptocurrency exchange markets and trading APIs. The complete up-to-date list can be found in the [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was thoroughly tested with only Bittrex and Binance.
 
 The bot was tested with the following exchanges:
 - [Bittrex](https://bittrex.com/): "bittrex"
@@ -98,13 +100,13 @@ The bot was tested with the following exchanges:
 
 Feel free to test other exchanges and submit your PR to improve the bot.
 
-### What values for fiat_display_currency?
+### What are the valid values for fiat_display_currency?
 `fiat_display_currency` set the base currency to use for the conversion from coin to fiat in Telegram.
 The valid values are: "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
 In addition to central bank currencies, a range of cryto currencies are supported.
 The valid values are: "BTC", "ETH", "XRP", "LTC", "BCH", "USDT".
 
-## Switch to dry-run mode
+## Switch to dry-run / paper trading mode
 We recommend starting the bot in dry-run mode to see how your bot will
 behave and how is the performance of your strategy. In Dry-run mode the
 bot does not engage your money. It only runs a live simulation without
@@ -131,7 +133,7 @@ creating trades.
 Once you will be happy with your bot performance, you can switch it to 
 production mode.
 
-## Switch to production mode
+## Switch to production / live mode
 In production mode, the bot will engage your money. Be careful a wrong 
 strategy can lose all your money. Be aware of what you are doing when 
 you run it in production mode.

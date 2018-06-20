@@ -180,7 +180,8 @@ class Telegram(RPC):
                              headers=[
                                  'Day',
                                  'Profit {}'.format(self._config['stake_currency']),
-                                 'Profit {}'.format(self._config['fiat_display_currency'])
+                                 'Profit {}'.format(self._config['fiat_display_currency']),
+                                 'Trades'
                              ],
                              tablefmt='simple')
             message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'\

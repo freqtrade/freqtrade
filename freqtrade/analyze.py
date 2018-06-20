@@ -10,7 +10,7 @@ import arrow
 from pandas import DataFrame, to_datetime
 
 from freqtrade import constants
-from freqtrade.exchange import get_ticker_history
+from freqtrade.exchange import get_fee, get_ticker_history
 from freqtrade.persistence import Trade
 from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 
@@ -197,7 +197,6 @@ class Analyze(object):
         :return True if bot should sell at current rate
         """
         current_profit = trade.calc_profit_percent(current_rate)
-
         if trade.stop_loss is None:
             # initially adjust the stop loss to the base value
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss)
@@ -248,3 +247,15 @@ class Analyze(object):
         """
         return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data))
                 for pair, pair_data in tickerdata.items()}
+
+    def trunc_num(self, f, n):
+        import math
+        return math.floor(f * 10 ** n) / 10 ** n
+
+    def get_roi_rate(self, trade: Trade) -> float:
+        current_time = datetime.utcnow()
+        time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
+        for duration, threshold in self.strategy.minimal_roi.items():
+            if time_diff > duration:
+                roi_rate = (trade.open_rate * (1 + threshold)) * (1+(2.1*get_fee(trade.pair)))
+                return self.trunc_num(roi_rate, 8)

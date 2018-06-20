@@ -17,7 +17,8 @@
     "bid_strategy": {
         "ask_last_balance": 0.0,
         "use_book_order": true,
-        "book_order_top": 6
+        "book_order_top": 6,
+        "percent_from_top": 0.005
     },
     "ask_strategy":{
         "use_book_order": true,
@@ -46,7 +47,8 @@
     },
     "experimental": {
         "use_sell_signal": false,
-        "sell_profit_only": false
+        "sell_profit_only": false,
+        "sell_fullfilled_at_roi": false
     },
     "telegram": {
         "enabled": true,

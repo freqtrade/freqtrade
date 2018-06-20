@@ -58,10 +58,10 @@ CONF_SCHEMA = {
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
-                'use_book_order': {'type': 'boolean'},
-                'buy': {'type': 'number', 'minimum': 3},
-                'sell': {'type': 'number', 'minimum': 10}
-            }
+                'buy': {'type': 'number', 'minimum': 1},
+                'sell': {'type': 'number', 'minimum': 1}
+            },
+            'required': ['buy', 'sell']
         },
         'bid_strategy': {
             'type': 'object',
@@ -73,24 +73,27 @@ CONF_SCHEMA = {
                     'exclusiveMaximum': False
                 },
                 'use_book_order': {'type': 'boolean'},
-                'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1}
+                'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
+                'percent_from_top': {'type': 'number', 'minimum': 0}
             },
-            'required': ['ask_last_balance']
+            'required': ['ask_last_balance', 'use_book_order']
         },
         'ask_strategy': {
             'type': 'object',
             'properties': {
                 'use_book_order': {'type': 'boolean'},
                 'book_order_min': {'type': 'number', 'minimum': 1},
-                'book_order_max': {'type': 'number', 'minimum': 1}
-            }
+                'book_order_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
+            },
+            'required': ['use_book_order']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
             'type': 'object',
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'}
+                'sell_profit_only': {'type': 'boolean'},
+                'sell_fullfilled_at_roi' : {'type': 'boolean'}
             }
         },
         'telegram': {
