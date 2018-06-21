@@ -5,7 +5,7 @@
     "fiat_display_currency": "USD",
     "ticker_interval" : "5m",
     "dry_run": false,
-    "disable_buy" : true,
+    "disable_buy" : false,
     "unfilledtimeout": {
         "buy":10,
         "sell":30
@@ -13,15 +13,14 @@
     "trailing_stop": {
         "positive" : 0.005
     },
-    "unfilledtimeout": 600,
     "bid_strategy": {
         "ask_last_balance": 0.0,
-        "use_book_order": true,
+        "use_book_order": false,
         "book_order_top": 6,
-        "percent_from_top": 0.005
+        "percent_from_top": 0
     },
     "ask_strategy":{
-        "use_book_order": true,
+        "use_book_order": false,
         "book_order_min": 1,
         "book_order_max": 30
     },
