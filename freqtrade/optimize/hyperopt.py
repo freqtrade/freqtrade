@@ -50,7 +50,6 @@ class Hyperopt(Backtesting):
         # to the number of days
         self.target_trades = 600
         self.total_tries = config.get('epochs', 0)
-        self.current_tries = 0
         self.current_best_loss = 100
 
         # max average trade duration in minutes
@@ -288,26 +287,7 @@ class Hyperopt(Backtesting):
         trade_count = len(results.index)
         trade_duration = results.trade_duration.mean()
 
-        if trade_count == 0 or trade_duration > self.max_accepted_trade_duration:
-            print('.', end='')
-            sys.stdout.flush()
-            return {
-                'status': STATUS_FAIL,
-                'loss': float('inf')
-            }
-
         loss = self.calculate_loss(total_profit, trade_count, trade_duration)
-
-        self.current_tries += 1
-
-        self.log_results(
-            {
-                'loss': loss,
-                'current_tries': self.current_tries,
-                'total_tries': self.total_tries,
-                'result': result_explanation,
-            }
-        )
 
         return {
             'loss': loss,
@@ -357,36 +337,34 @@ class Hyperopt(Backtesting):
                 self.total_tries
             )
 
-        try:
-            # best_parameters = fmin(
-            #     fn=self.generate_optimizer,
-            #     space=self.hyperopt_space(),
-            #     algo=tpe.suggest,
-            #     max_evals=self.total_tries,
-            #     trials=self.trials
-            # )
+        # results = sorted(self.trials.results, key=itemgetter('loss'))
+        # best_result = results[0]['result']
+        cpus = multiprocessing.cpu_count()
+        print(f'Found {cpus}. Let\'s make them scream!')
 
-            # results = sorted(self.trials.results, key=itemgetter('loss'))
-            # best_result = results[0]['result']
-            cpus = multiprocessing.cpu_count()
-            print(f'Found {cpus}. Let\'s make them scream!')
+        opt = Optimizer(
+            self.hyperopt_space(),
+            base_estimator="ET",
+            acq_optimizer="auto",
+            n_initial_points=30,
+            acq_optimizer_kwargs={'n_jobs': -1}
+        )
 
-            opt = Optimizer(self.hyperopt_space(), base_estimator="ET", acq_optimizer="auto", n_initial_points=30, acq_optimizer_kwargs={'n_jobs': -1})
+        with Parallel(n_jobs=-1) as parallel:
+            for i in range(self.total_tries//cpus):
+                asked = opt.ask(n_points=cpus)
+                f_val = parallel(delayed(self.generate_optimizer)(v) for v in asked)
+                opt.tell(asked, [i['loss'] for i in f_val])
 
-            with Parallel(n_jobs=-1) as parallel:
-                for i in range(self.total_tries//cpus):
-                    asked = opt.ask(n_points=cpus)
-                    #asked = opt.ask()
-                    #f_val = self.generate_optimizer(asked)
-                    f_val = parallel(delayed(self.generate_optimizer)(v) for v in asked)
-                    opt.tell(asked, [i['loss'] for i in f_val])
-                    print(f'got value {f_val}')
-
-
-        except ValueError:
-            best_parameters = {}
-            best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
-                          'try with more epochs (param: -e).'
+                for j in range(cpus):
+                    self.log_results(
+                        {
+                            'loss': f_val[j]['loss'],
+                            'current_tries': i * cpus + j,
+                            'total_tries': self.total_tries,
+                            'result': f_val[j]['result'],
+                        }
+                    )
 
         # Improve best parameter logging display
         # if best_parameters:
