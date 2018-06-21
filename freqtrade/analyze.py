@@ -148,7 +148,7 @@ class Analyze(object):
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-        if signal_date < arrow.utcnow() - timedelta(minutes=(interval_minutes + 5)):
+        if signal_date < (arrow.utcnow() - timedelta(minutes=(interval_minutes + 5))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
