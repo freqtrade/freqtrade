@@ -466,8 +466,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi', False)
         if is_set_fullfilled_at_roi:
-            sell_rate = self.analyze.get_roi_rate(trade)
-            logger.info('trying to selling at roi rate %0.8f', sell_rate)
+            sell_rate = self.analyze.get_roi_rate(trade, sell_rate)
 
         if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
             logger.info('Using order book for selling...')

@@ -146,7 +146,6 @@ class Analyze(object):
 
         latest = dataframe.iloc[-1]
 
-
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
@@ -253,10 +252,16 @@ class Analyze(object):
         import math
         return math.floor(f * 10 ** n) / 10 ** n
 
-    def get_roi_rate(self, trade: Trade) -> float:
+    def get_roi_rate(self, trade: Trade, sell_rate: float) -> float:
+        """
+        Calculates sell rate based on roi
+        """
         current_time = datetime.utcnow()
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
         for duration, threshold in self.strategy.minimal_roi.items():
             if time_diff > duration:
-                roi_rate = (trade.open_rate * (1 + threshold)) * (1+(2.1*get_fee(trade.pair)))
-                return self.trunc_num(roi_rate, 8)
+                roi_rate = self.trunc_num((trade.open_rate * (1 + threshold)) * (1+(2.1*get_fee(trade.pair))), 8)
+                logger.info('trying to selling at roi rate %0.8f', roi_rate)
+                return roi_rate
+                break
+        return sell_rate

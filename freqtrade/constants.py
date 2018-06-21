@@ -93,7 +93,7 @@ CONF_SCHEMA = {
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
-                'sell_fullfilled_at_roi' : {'type': 'boolean'}
+                'sell_fullfilled_at_roi': {'type': 'boolean'}
             }
         },
         'telegram': {
