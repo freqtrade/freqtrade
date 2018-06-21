@@ -1,5 +1,5 @@
 """
-This module contains class to manage RPC communications (Telegram, Slack, ...)
+This module contains class to manage RPC communications (Telegram, Slack, Rest ....)
 """
 import logging
 from typing import List
@@ -22,6 +22,13 @@ class RPCManager(object):
             logger.info('Enabling rpc.telegram ...')
             from freqtrade.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(freqtrade))
+
+        # Enable local rest api server for cmd line control
+        if freqtrade.config['api_server'].get('enabled', False):
+            logger.info('Enabling rpc.api_server')
+            from freqtrade.rpc.api_server import ApiServerSuperWrap
+            self.registered_modules.append(ApiServerSuperWrap(freqtrade))
+
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
