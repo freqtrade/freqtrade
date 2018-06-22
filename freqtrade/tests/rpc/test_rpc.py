@@ -358,11 +358,11 @@ def test_rpc_start(mocker, default_conf) -> None:
     freqtradebot.state = State.STOPPED
 
     result = rpc._rpc_start()
-    assert '`Starting trader ...`' in result
+    assert {'status': 'starting trader ...'} == result
     assert freqtradebot.state == State.RUNNING
 
     result = rpc._rpc_start()
-    assert '*Status:* `already running`' in result
+    assert {'status': 'already running'} == result
     assert freqtradebot.state == State.RUNNING
 
 
@@ -384,11 +384,12 @@ def test_rpc_stop(mocker, default_conf) -> None:
     freqtradebot.state = State.RUNNING
 
     result = rpc._rpc_stop()
-    assert '`Stopping trader ...`' in result
+    assert {'status': 'stopping trader ...'} == result
     assert freqtradebot.state == State.STOPPED
 
     result = rpc._rpc_stop()
-    assert '*Status:* `already stopped`' in result
+
+    assert {'status': 'already stopped'} == result
     assert freqtradebot.state == State.STOPPED
 
 

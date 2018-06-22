@@ -664,7 +664,7 @@ def test_stop_handle(default_conf, update, mocker) -> None:
     telegram._stop(bot=MagicMock(), update=update)
     assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
-    assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
+    assert 'stopping trader' in msg_mock.call_args_list[0][0][0]
 
 
 def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
@@ -708,7 +708,7 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
     telegram._reload_conf(bot=MagicMock(), update=update)
     assert freqtradebot.state == State.RELOAD_CONF
     assert msg_mock.call_count == 1
-    assert 'Reloading config' in msg_mock.call_args_list[0][0][0]
+    assert 'reloading config' in msg_mock.call_args_list[0][0][0]
 
 
 def test_forcesell_handle(default_conf, update, ticker, fee,
