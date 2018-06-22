@@ -266,7 +266,7 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_start()
-        self._send_msg(msg, bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
     def _stop(self, bot: Bot, update: Update) -> None:
@@ -278,7 +278,7 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_stop()
-        self._send_msg(msg, bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
     def _reload_conf(self, bot: Bot, update: Update) -> None:
@@ -290,7 +290,7 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_reload_conf()
-        self._send_msg(msg, bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
     def _forcesell(self, bot: Bot, update: Update) -> None:

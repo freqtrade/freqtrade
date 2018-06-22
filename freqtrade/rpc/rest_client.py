@@ -21,7 +21,7 @@ if len(argv) == 1:
 if len(argv) == 3 and argv[1] == "daily":
     if str.isnumeric(argv[2]):
         get_url = 'http://localhost:5002/daily?timescale=' + argv[2]
-        d=get(get_url).json()
+        d = get(get_url).json()
         print(d)
     else:
         print("\nThe second argument to daily must be an integer, 1,2,3 etc")
