@@ -136,8 +136,22 @@ class Telegram(RPC):
             return
 
         try:
-            for trade_msg in self._rpc_trade_status():
-                self._send_msg(trade_msg, bot=bot)
+            results = self._rpc_trade_status()
+            messages = [
+                "*Trade ID:* `{trade_id}`\n"
+                "*Current Pair:* [{pair}]({market_url})\n"
+                "*Open Since:* `{date}`\n"
+                "*Amount:* `{amount}`\n"
+                "*Open Rate:* `{open_rate:.8f}`\n"
+                "*Close Rate:* `{close_rate}`\n"
+                "*Current Rate:* `{current_rate:.8f}`\n"
+                "*Close Profit:* `{close_profit}`\n"
+                "*Current Profit:* `{current_profit:.2f}%`\n"
+                "*Open Order:* `{open_order}`".format(**result)
+                for result in results
+            ]
+            for msg in messages:
+                self._send_msg(msg, bot=bot)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 

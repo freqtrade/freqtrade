@@ -53,24 +53,21 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         rpc._rpc_trade_status()
 
     freqtradebot.create_trade()
-    trades = rpc._rpc_trade_status()
-    trade = trades[0]
+    results = rpc._rpc_trade_status()
 
-    result_message = [
-        '*Trade ID:* `1`\n'
-        '*Current Pair:* '
-        '[ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n'
-        '*Open Since:* `just now`\n'
-        '*Amount:* `90.99181074`\n'
-        '*Open Rate:* `0.00001099`\n'
-        '*Close Rate:* `None`\n'
-        '*Current Rate:* `0.00001098`\n'
-        '*Close Profit:* `None`\n'
-        '*Current Profit:* `-0.59%`\n'
-        '*Open Order:* `(limit buy rem=0.00000000)`'
-    ]
-    assert trades == result_message
-    assert trade.find('[ETH/BTC]') >= 0
+    assert {
+        'trade_id': 1,
+        'pair': 'ETH/BTC',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'date': 'just now',
+        'open_rate': 1.099e-05,
+        'close_rate': None,
+        'current_rate': 1.098e-05,
+        'amount': 90.99181074,
+        'close_profit': None,
+        'current_profit': -0.59,
+        'open_order': '(limit buy rem=0.00000000)'
+    } == results[0]
 
 
 def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
