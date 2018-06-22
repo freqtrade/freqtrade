@@ -597,7 +597,7 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
     telegram._balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert '`All balances are zero.`' in result
+    assert 'all balances are zero' in result
 
 
 def test_start_handle(default_conf, update, mocker) -> None:
@@ -865,7 +865,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     update.message.text = '/forcesell'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'Invalid argument' in msg_mock.call_args_list[0][0][0]
+    assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
     # Invalid argument
     msg_mock.reset_mock()
@@ -873,7 +873,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     update.message.text = '/forcesell 123456'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'Invalid argument.' in msg_mock.call_args_list[0][0][0]
+    assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
