@@ -21,5 +21,8 @@ networkx==1.11 # pyup: ignore
 tabulate==0.8.2
 coinmarketcap==5.0.3
 
+# Required for hyperopt
+scikit-optimize=0.5.2
+
 # Required for plotting data
 #plotly==2.7.0
