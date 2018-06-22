@@ -6,7 +6,7 @@ import json
 import logging
 from argparse import Namespace
 from typing import Optional, Dict, Any
-from jsonschema import Draft4Validator, validate
+from jsonschema import Draft4Validator, validate, draft4_format_checker
 from jsonschema.exceptions import ValidationError, best_match
 import ccxt
 
@@ -202,7 +202,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, constants.CONF_SCHEMA)
+            validate(conf, constants.CONF_SCHEMA, format_checker=draft4_format_checker)
             return conf
         except ValidationError as exception:
             logger.critical(
@@ -210,7 +210,9 @@ class Configuration(object):
                 exception
             )
             raise ValidationError(
-                best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
+                best_match(Draft4Validator(constants.CONF_SCHEMA,
+                                           format_checker=draft4_format_checker)
+                           .iter_errors(conf)).message
             )
 
     def get_config(self) -> Dict[str, Any]:
