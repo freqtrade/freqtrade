@@ -298,6 +298,7 @@ def test_backtesting_init(mocker, default_conf) -> None:
     Test Backtesting._init() method
     """
     patch_exchange(mocker)
+    get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert isinstance(backtesting.analyze, Analyze)
@@ -305,6 +306,8 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert callable(backtesting.tickerdata_to_dataframe)
     assert callable(backtesting.populate_buy_trend)
     assert callable(backtesting.populate_sell_trend)
+    get_fee.assert_called()
+    assert backtesting.fee == 0.5 
 
 
 def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
