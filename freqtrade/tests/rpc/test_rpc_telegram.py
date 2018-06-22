@@ -210,7 +210,19 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        _rpc_trade_status=MagicMock(return_value=[1, 2, 3]),
+        _rpc_trade_status=MagicMock(return_value=[{
+            'trade_id': 1,
+            'pair': 'ETH/BTC',
+            'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+            'date': 'just now',
+            'open_rate': 1.099e-05,
+            'close_rate': None,
+            'current_rate': 1.098e-05,
+            'amount': 90.99181074,
+            'close_profit': None,
+            'current_profit': -0.59,
+            'open_order': '(limit buy rem=0.00000000)'
+        }]),
         _status_table=status_table,
         _send_msg=msg_mock
     )
@@ -224,7 +236,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
         freqtradebot.create_trade()
 
     telegram._status(bot=MagicMock(), update=update)
-    assert msg_mock.call_count == 3
+    assert msg_mock.call_count == 1
 
     update.message.text = MagicMock()
     update.message.text.replace = MagicMock(return_value='table 2 3')
