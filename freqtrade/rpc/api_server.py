@@ -25,78 +25,23 @@ class ApiServerSuperWrap(RPC):
         """
         super().__init__(freqtrade)
 
-        self.interval = 1
-
-        thread = threading.Thread(target=self.run, args=(freqtrade,)) # extra comma as ref ! Tuple
-        thread.daemon = True                            # Daemonize thread
-        thread.start()     # Start the execution
-
-
-    def run(self, freqtrade):
-        """ Method that runs forever """
         self._config = freqtrade.config
 
-        """
-        Define the application methods here, called by app.add_url_rule
-        each Telegram command should have a like local substitute
-        """
-        # @app.route("/")
-        def hello():
-            # For simple rest server testing via browser
-            # cmds = 'Try uri:/daily?timescale=7 /profit /balance /status
-            #         /status /table /performance /count,
-            #         /start /stop /help'
+        thread = threading.Thread(target=self.run, daemon=True)
+        thread.start()
 
-            rest_cmds ='Commands implemented: <br>' \
-                       '<a href=/daily?timescale=7>/daily?timescale=7</a>' \
-                       '<br>' \
-                       '<a href=/stop>/stop</a>' \
-                       '<br>' \
-                       '<a href=/start>/start</a>'
-            return rest_cmds
+    def run(self):
+        """ Method that runs forever """
 
-        def daily():
-            try:
-                timescale = request.args.get('timescale')
-                logger.info("LocalRPC - Daily Command Called")
-                timescale = int(timescale)
-
-                stats = self._rpc_daily_profit(timescale,
-                                               self._config['stake_currency'],
-                                               self._config['fiat_display_currency']
-                                               )
-
-                stats = dumps(stats, indent=4, sort_keys=True, default=str)
-                return stats
-            except RPCException as e:
-                return e
-
-        def start():
-            """
-            Handler for /start.
-            Starts TradeThread
-            """
-            msg = self._rpc_start()
-            return msg
-
-        def stop():
-            """
-            Handler for /stop.
-            Stops TradeThread
-            """
-            msg = self._rpc_stop()
-            return msg
-
-        ## defines the url rules available on the api server
+        # defines the url rules available on the api server
         '''
         First two arguments passed are /URL and 'Label'
         Label can be used as a shortcut when refactoring
         '''
-        app.add_url_rule('/', 'hello', view_func=hello, methods=['GET'])
-        app.add_url_rule('/stop', 'stop', view_func=stop, methods=['GET'])
-        app.add_url_rule('/start', 'start', view_func=start, methods=['GET'])
-        app.add_url_rule('/daily', 'daily', view_func=daily, methods=['GET'])
-
+        app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
+        app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
+        app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
+        app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
 
         """
         Section to handle configuration and running of the Rest server
@@ -105,7 +50,8 @@ class ApiServerSuperWrap(RPC):
         rest_ip = self._config['api_server']['listen_ip_address']
         rest_port = self._config['api_server']['listen_port']
 
-        if not IPv4Address(rest_ip).is_loopback :
+        logger.info('Starting HTTP Server at {}:{}'.format(rest_ip, rest_port))
+        if not IPv4Address(rest_ip).is_loopback:
             logger.info("SECURITY WARNING - Local Rest Server listening to external connections")
             logger.info("SECURITY WARNING - This is insecure please set to your loopback, e.g 127.0.0.1 in config.json")
 
@@ -113,7 +59,55 @@ class ApiServerSuperWrap(RPC):
         logger.info('Starting Local Rest Server')
         try:
             app.run(host=rest_ip, port=rest_port)
-        except:
+        except Exception:
             logger.exception("Api server failed to start, exception message is:")
 
+    """
+    Define the application methods here, called by app.add_url_rule
+    each Telegram command should have a like local substitute
+    """
+    def hello(self):
+        # For simple rest server testing via browser
+        # cmds = 'Try uri:/daily?timescale=7 /profit /balance /status
+        #         /status /table /performance /count,
+        #         /start /stop /help'
 
+        rest_cmds = 'Commands implemented: <br>' \
+                    '<a href=/daily?timescale=7>/daily?timescale=7</a>' \
+                    '<br>' \
+                    '<a href=/stop>/stop</a>' \
+                    '<br>' \
+                    '<a href=/start>/start</a>'
+        return rest_cmds
+
+    def daily(self):
+        try:
+            timescale = request.args.get('timescale')
+            logger.info("LocalRPC - Daily Command Called")
+            timescale = int(timescale)
+
+            stats = self._rpc_daily_profit(timescale,
+                                           self._config['stake_currency'],
+                                           self._config['fiat_display_currency']
+                                           )
+
+            stats = dumps(stats, indent=4, sort_keys=True, default=str)
+            return stats
+        except RPCException as e:
+            return e
+
+    def start(self):
+        """
+        Handler for /start.
+        Starts TradeThread
+        """
+        msg = self._rpc_start()
+        return msg
+
+    def stop(self):
+        """
+        Handler for /stop.
+        Stops TradeThread
+        """
+        msg = self._rpc_stop()
+        return msg
