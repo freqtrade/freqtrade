@@ -72,9 +72,9 @@ class RPC(object):
         # Fetch open trade
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if self._freqtrade.state != State.RUNNING:
-            raise RPCException('*Status:* `trader is not running`')
+            raise RPCException('trader is not running')
         elif not trades:
-            raise RPCException('*Status:* `no active trade`')
+            raise RPCException('no active trade')
         else:
             result = []
             for trade in trades:
@@ -116,9 +116,9 @@ class RPC(object):
     def _rpc_status_table(self) -> DataFrame:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if self._freqtrade.state != State.RUNNING:
-            raise RPCException('*Status:* `trader is not running`')
+            raise RPCException('trader is not running')
         elif not trades:
-            raise RPCException('*Status:* `no active order`')
+            raise RPCException('no active order')
         else:
             trades_list = []
             for trade in trades:
@@ -144,7 +144,7 @@ class RPC(object):
         profit_days: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
-            raise RPCException('*Daily [n]:* `must be an integer greater than 0`')
+            raise RPCException('timescale must be an integer greater than 0')
 
         fiat = self._freqtrade.fiat_converter
         for day in range(0, timescale):
@@ -224,7 +224,7 @@ class RPC(object):
             .order_by(sql.text('profit_sum DESC')).first()
 
         if not best_pair:
-            raise RPCException('*Status:* `no closed trade`')
+            raise RPCException('no closed trade')
 
         bp_pair, bp_rate = best_pair
 
@@ -289,7 +289,7 @@ class RPC(object):
                 }
             )
         if total == 0.0:
-            raise RPCException('`All balances are zero.`')
+            raise RPCException('all balances are zero')
 
         fiat = self._freqtrade.fiat_converter
         symbol = fiat_display_currency
@@ -350,7 +350,7 @@ class RPC(object):
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
-            raise RPCException('`trader is not running`')
+            raise RPCException('trader is not running')
 
         if trade_id == 'all':
             # Execute sell for all open orders
@@ -367,7 +367,7 @@ class RPC(object):
         ).first()
         if not trade:
             logger.warning('forcesell: Invalid argument received')
-            raise RPCException('Invalid argument.')
+            raise RPCException('invalid argument')
 
         _exec_forcesell(trade)
         Trade.session.flush()
@@ -378,7 +378,7 @@ class RPC(object):
         Shows a performance statistic from finished trades
         """
         if self._freqtrade.state != State.RUNNING:
-            raise RPCException('`trader is not running`')
+            raise RPCException('trader is not running')
 
         pair_rates = Trade.session.query(Trade.pair,
                                          sql.func.sum(Trade.close_profit).label('profit_sum'),
@@ -395,6 +395,6 @@ class RPC(object):
     def _rpc_count(self) -> List[Trade]:
         """ Returns the number of trades running """
         if self._freqtrade.state != State.RUNNING:
-            raise RPCException('`trader is not running`')
+            raise RPCException('trader is not running')
 
         return Trade.query.filter(Trade.is_open.is_(True)).all()

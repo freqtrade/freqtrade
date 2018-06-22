@@ -92,11 +92,11 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.STOPPED
-    with pytest.raises(RPCException, match=r'.*\*Status:\* `trader is not running``*'):
+    with pytest.raises(RPCException, match=r'.*trader is not running*'):
         rpc._rpc_status_table()
 
     freqtradebot.state = State.RUNNING
-    with pytest.raises(RPCException, match=r'.*\*Status:\* `no active order`*'):
+    with pytest.raises(RPCException, match=r'.*no active order*'):
         rpc._rpc_status_table()
 
     freqtradebot.create_trade()
@@ -422,11 +422,11 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.STOPPED
-    with pytest.raises(RPCException, match=r'.*`trader is not running`*'):
+    with pytest.raises(RPCException, match=r'.*trader is not running*'):
         rpc._rpc_forcesell(None)
 
     freqtradebot.state = State.RUNNING
-    with pytest.raises(RPCException, match=r'.*Invalid argument.*'):
+    with pytest.raises(RPCException, match=r'.*invalid argument*'):
         rpc._rpc_forcesell(None)
 
     rpc._rpc_forcesell('all')
@@ -437,10 +437,10 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     rpc._rpc_forcesell('1')
 
     freqtradebot.state = State.STOPPED
-    with pytest.raises(RPCException, match=r'.*`trader is not running`*'):
+    with pytest.raises(RPCException, match=r'.*trader is not running*'):
         rpc._rpc_forcesell(None)
 
-    with pytest.raises(RPCException, match=r'.*`trader is not running`*'):
+    with pytest.raises(RPCException, match=r'.*trader is not running*'):
         rpc._rpc_forcesell('all')
 
     freqtradebot.state = State.RUNNING
