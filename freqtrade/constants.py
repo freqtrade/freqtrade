@@ -89,7 +89,7 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'enabled': {'type': 'boolean'},
-                'listen_ip_address': { "format": "ipv4"},
+                'listen_ip_address': {"format": "ipv4"},
                 'listen_port': {
                     'type': 'integer',
                     "minimum": 1024,

@@ -8,10 +8,8 @@ import time
 from requests import get
 from sys import argv
 
-
-
-#TODO - use argparse to clean this up
-#TODO - use IP and Port from config.json not hardcode
+# TODO - use argparse to clean this up
+# TODO - use IP and Port from config.json not hardcode
 
 if len(argv) == 1:
     print('\nThis script accepts the following arguments')
@@ -47,7 +45,3 @@ if len(argv) == 2 and argv[1] == "stop":
         time.sleep(2)
         d = get(get_url).text
         print(d)
-
-
-
-
