@@ -16,14 +16,14 @@ from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable, Optional
+from typing import Dict, Any, Callable, Optional, List
 
 import numpy
 import talib.abstract as ta
 from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from pandas import DataFrame
 
-from skopt.space import Real, Integer, Categorical
+from skopt.space import Real, Integer, Categorical, Dimension
 from skopt import Optimizer
 from sklearn.externals.joblib import Parallel, delayed
 
@@ -164,27 +164,27 @@ class Hyperopt(Backtesting):
         return roi_table
 
     @staticmethod
-    def roi_space() -> Dict[str, Any]:
+    def roi_space() -> List[Dimension]:
         """
         Values to search for each ROI steps
         """
-        return {
-            'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
-            'roi_t2': hp.quniform('roi_t2', 10, 60, 15),
-            'roi_t3': hp.quniform('roi_t3', 10, 40, 10),
-            'roi_p1': hp.quniform('roi_p1', 0.01, 0.04, 0.01),
-            'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
-            'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
-        }
+        return [
+            Integer(10, 120, name='roi_t1'),
+            Integer(10, 60, name='roi_t2'),
+            Integer(10, 40, name='roi_t3'),
+            Real(0.01, 0.04, name='roi_p1'),
+            Real(0.01, 0.07, name='roi_p2'),
+            Real(0.01, 0.20, name='roi_p3'),
+        ]
 
     @staticmethod
-    def stoploss_space() -> Dict[str, Any]:
+    def stoploss_space() -> List[Dimension]:
         """
-        Stoploss Value to search
+        Stoploss search space
         """
-        return {
-            'stoploss': hp.quniform('stoploss', -0.5, -0.02, 0.02),
-        }
+        return [
+            Real(-0.5, -0.02, name='stoploss'),
+        ]
 
     @staticmethod
     def indicator_space() -> Dict[str, Any]:
@@ -211,19 +211,18 @@ class Hyperopt(Backtesting):
             return True
         return False
 
-    def hyperopt_space(self) -> Dict[str, Any]:
+    def hyperopt_space(self) -> List[Dimension]:
         """
         Return the space to use during Hyperopt
         """
-        return Hyperopt.indicator_space()
-        # spaces: Dict = {}
-        # if self.has_space('buy'):
-        #     spaces = {**spaces, **Hyperopt.indicator_space()}
-        # if self.has_space('roi'):
-        #     spaces = {**spaces, **Hyperopt.roi_space()}
-        # if self.has_space('stoploss'):
-        #     spaces = {**spaces, **Hyperopt.stoploss_space()}
-        # return spaces
+        spaces: List[Dimension] = []
+        if self.has_space('buy'):
+            spaces += Hyperopt.indicator_space()
+        if self.has_space('roi'):
+            spaces += Hyperopt.roi_space()
+        if self.has_space('stoploss'):
+            spaces += Hyperopt.stoploss_space()
+        return spaces
 
     @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
