@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import pickle
-import signal
 import sys
 import multiprocessing
 
@@ -18,9 +17,7 @@ from math import exp
 from operator import itemgetter
 from typing import Dict, Any, Callable, Optional, List
 
-import numpy
 import talib.abstract as ta
-from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from pandas import DataFrame
 
 from skopt.space import Real, Integer, Categorical, Dimension
@@ -64,9 +61,9 @@ class Hyperopt(Backtesting):
         # Configuration and data used by hyperopt
         self.processed: Optional[Dict[str, Any]] = None
 
-        # Hyperopt Trials
+        # Previous evaluations
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
-        self.trials = Trials()
+        self.trials = []
 
     def get_args(self, params):
         dimensions = self.hyperopt_space()
@@ -104,10 +101,11 @@ class Hyperopt(Backtesting):
         """
         Save hyperopt trials to file
         """
-        logger.info('Saving Trials to \'%s\'', self.trials_file)
-        pickle.dump(self.trials, open(self.trials_file, 'wb'))
+        if self.trials:
+            logger.info('Saving %d evaluations to \'%s\'', len(self.trials), self.trials_file)
+            pickle.dump(self.trials, open(self.trials_file, 'wb'))
 
-    def read_trials(self) -> Trials:
+    def read_trials(self) -> List:
         """
         Read hyperopt trials file
         """
@@ -120,9 +118,15 @@ class Hyperopt(Backtesting):
         """
         Display Best hyperopt result
         """
-        vals = json.dumps(self.trials.best_trial['misc']['vals'], indent=4)
-        results = self.trials.best_trial['result']['result']
-        logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
+        results = sorted(self.trials, key=itemgetter('loss'))
+        best_result = results[0]
+        logger.info(
+            'Best result:\n%s\nwith values:\n%s',
+            best_result['result'],
+            best_result['params']
+        )
+        if 'roi_t1' in best_result['params']:
+            logger.info('ROI table:\n%s', self.generate_roi_table(best_result['params']))
 
     def log_results(self, results) -> None:
         """
@@ -202,7 +206,6 @@ class Hyperopt(Backtesting):
             Categorical([True, False], name='rsi-enabled'),
         ]
 
-
     def has_space(self, space: str) -> bool:
         """
         Tell if a space value is contained in the configuration
@@ -251,7 +254,7 @@ class Hyperopt(Backtesting):
             }
             #conditions.append(triggers.get(params['trigger']['type']))
 
-            conditions.append(dataframe['close'] < dataframe['bb_lowerband']) # single trigger
+            conditions.append(dataframe['close'] < dataframe['bb_lowerband'])    # single trigger
 
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
@@ -290,7 +293,7 @@ class Hyperopt(Backtesting):
 
         return {
             'loss': loss,
-            'status': STATUS_OK,
+            'params': params,
             'result': result_explanation,
         }
 
@@ -322,22 +325,15 @@ class Hyperopt(Backtesting):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
 
-        logger.info('Preparing Trials..')
-        signal.signal(signal.SIGINT, self.signal_handler)
+        logger.info('Preparing..')
         # read trials file if we have one
         if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
             self.trials = self.read_trials()
-
-            self.current_tries = len(self.trials.results)
-            self.total_tries += self.current_tries
             logger.info(
-                'Continuing with trials. Current: %d, Total: %d',
-                self.current_tries,
-                self.total_tries
+                'Loaded %d previous evaluations from disk.',
+                len(self.trials)
             )
 
-        # results = sorted(self.trials.results, key=itemgetter('loss'))
-        # best_result = results[0]['result']
         cpus = multiprocessing.cpu_count()
         print(f'Found {cpus}. Let\'s make them scream!')
 
@@ -349,50 +345,28 @@ class Hyperopt(Backtesting):
             acq_optimizer_kwargs={'n_jobs': -1}
         )
 
-        with Parallel(n_jobs=-1) as parallel:
-            for i in range(self.total_tries//cpus):
-                asked = opt.ask(n_points=cpus)
-                f_val = parallel(delayed(self.generate_optimizer)(v) for v in asked)
-                opt.tell(asked, [i['loss'] for i in f_val])
+        try:
+            with Parallel(n_jobs=-1) as parallel:
+                for i in range(self.total_tries//cpus):
+                    asked = opt.ask(n_points=cpus)
+                    f_val = parallel(delayed(self.generate_optimizer)(v) for v in asked)
+                    opt.tell(asked, [i['loss'] for i in f_val])
 
-                for j in range(cpus):
-                    self.log_results(
-                        {
-                            'loss': f_val[j]['loss'],
-                            'current_tries': i * cpus + j,
-                            'total_tries': self.total_tries,
-                            'result': f_val[j]['result'],
-                        }
-                    )
-
-        # Improve best parameter logging display
-        # if best_parameters:
-        #     best_parameters = space_eval(
-        #         self.hyperopt_space(),
-        #         best_parameters
-        #     )
-
-        # logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
-        # if 'roi_t1' in best_parameters:
-        #     logger.info('ROI table:\n%s', self.generate_roi_table(best_parameters))
-
-        # logger.info('Best Result:\n%s', best_result)
-
-        # # Store trials result to file to resume next time
-        # self.save_trials()
-
-    def signal_handler(self, sig, frame) -> None:
-        """
-        Hyperopt SIGINT handler
-        """
-        logger.info(
-            'Hyperopt received %s',
-            signal.Signals(sig).name
-        )
+                    self.trials += f_val
+                    for j in range(cpus):
+                        self.log_results(
+                            {
+                                'loss': f_val[j]['loss'],
+                                'current_tries': i * cpus + j,
+                                'total_tries': self.total_tries,
+                                'result': f_val[j]['result'],
+                            }
+                        )
+        except KeyboardInterrupt:
+            print('User interrupted..')
 
         self.save_trials()
         self.log_trials_result()
-        sys.exit(0)
 
 
 def start(args: Namespace) -> None:
