@@ -14,7 +14,7 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
-from freqtrade import exchange
+from freqtrade.exchange import Exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
@@ -61,7 +61,7 @@ class Backtesting(object):
         self.config['exchange']['password'] = ''
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
-        exchange.init(self.config)
+        self.exchange = Exchange(self.config)
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
@@ -130,7 +130,7 @@ class Backtesting(object):
 
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
-        fee = exchange.get_fee()
+        fee = self.exchange.get_fee()
         trade = Trade(
             open_rate=buy_row.close,
             open_date=buy_row.date,
@@ -256,7 +256,7 @@ class Backtesting(object):
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
             for pair in pairs:
-                data[pair] = exchange.get_ticker_history(pair, self.ticker_interval)
+                data[pair] = self.exchange.get_ticker_history(pair, self.ticker_interval)
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
@@ -267,6 +267,7 @@ class Backtesting(object):
                 pairs=pairs,
                 ticker_interval=self.ticker_interval,
                 refresh_pairs=self.config.get('refresh_pairs', False),
+                exchange=self.exchange,
                 timerange=timerange
             )
 

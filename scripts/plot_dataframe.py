@@ -35,10 +35,10 @@ from plotly import tools
 from plotly.offline import plot
 
 import freqtrade.optimize as optimize
-from freqtrade import exchange
 from freqtrade import persistence
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
+from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
 
@@ -73,7 +73,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     # Load the strategy
     try:
         analyze = Analyze(_CONF)
-        exchange.init(_CONF)
+        exchange = Exchange(_CONF)
     except AttributeError:
         logger.critical(
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
