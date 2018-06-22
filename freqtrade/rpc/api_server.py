@@ -2,7 +2,7 @@ import threading
 import logging
 # import json
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 # from flask_restful import Resource, Api
 from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
@@ -102,7 +102,7 @@ class ApiServerSuperWrap(RPC):
         Starts TradeThread
         """
         msg = self._rpc_start()
-        return msg
+        return jsonify(msg)
 
     def stop(self):
         """
@@ -110,4 +110,4 @@ class ApiServerSuperWrap(RPC):
         Stops TradeThread
         """
         msg = self._rpc_stop()
-        return msg
+        return jsonify(msg)
