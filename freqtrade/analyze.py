@@ -172,13 +172,17 @@ class Analyze(object):
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
+        current_profit = trade.calc_profit_percent(rate)
         experimental = self.config.get('experimental', {})
+        if self.stop_loss_reached(current_profit=current_profit):
+            return True
+
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
             logger.debug('Buy signal still active - not selling.')
             return False
 
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-        if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
+        if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
             logger.debug('Required profit reached. Selling..')
             return True
 
@@ -192,16 +196,20 @@ class Analyze(object):
 
         return False
 
-    def min_roi_reached(self, trade: Trade, current_rate: float, current_time: datetime) -> bool:
+    def stop_loss_reached(self, current_profit: float) -> bool:
+        """Based on current profit of the trade and configured stoploss, decides to sell or not"""
+
+        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
+            logger.debug('Stop loss hit.')
+            return True
+        return False
+
+    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
         sell
         :return True if bot should sell at current rate
         """
-        current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
-            logger.debug('Stop loss hit.')
-            return True
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60

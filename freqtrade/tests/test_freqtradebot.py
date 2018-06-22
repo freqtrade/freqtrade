@@ -1274,7 +1274,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, mocker
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
+    mocker.patch('freqtrade.freqtradebot.Analyze.stop_loss_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
