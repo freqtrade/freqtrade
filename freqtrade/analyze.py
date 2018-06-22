@@ -172,7 +172,8 @@ class Analyze(object):
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
-        if buy and self.config.get('experimental', {}).get('ignore_roi_if_buy_signal', False):
+        experimental = self.config.get('experimental', {})
+        if buy and experimental.get('ignore_roi_if_buy_signal', False):
             logger.debug('Buy signal still active - not selling.')
             return False
 
@@ -181,13 +182,11 @@ class Analyze(object):
             logger.debug('Required profit reached. Selling..')
             return True
 
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if self.config.get('experimental', {}).get('sell_profit_only', False):
+        if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
                 return False
-
-        if sell and not buy and self.config.get('experimental', {}).get('use_sell_signal', False):
+        if sell and not buy and experimental.get('use_sell_signal', False):
             logger.debug('Sell signal received. Selling..')
             return True
 

@@ -1335,7 +1335,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
     assert freqtrade.handle_trade(trade) is True
 
 
-def ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
