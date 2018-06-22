@@ -1312,9 +1312,9 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
-            'bid': 0.00000172,
-            'ask': 0.00000173,
-            'last': 0.00000172
+            'bid': 0.0000172,
+            'ask': 0.0000173,
+            'last': 0.0000172
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -1347,9 +1347,9 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
-            'bid': 0.00000172,
-            'ask': 0.00000173,
-            'last': 0.00000172
+            'bid': 0.0000172,
+            'ask': 0.0000173,
+            'last': 0.0000172
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
