@@ -5,7 +5,7 @@ import logging
 from abc import abstractmethod
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-from typing import Dict, Tuple, Any, List
+from typing import Dict, Any, List
 
 import arrow
 import sqlalchemy as sql
@@ -263,7 +263,7 @@ class RPC(object):
             'best_rate': round(bp_rate * 100, 2),
         }
 
-    def _rpc_balance(self, fiat_display_currency: str) -> Tuple[List[Dict], float, str, float]:
+    def _rpc_balance(self, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
         output = []
         total = 0.0
@@ -280,22 +280,25 @@ class RPC(object):
                     rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
             est_btc: float = rate * balance['total']
             total = total + est_btc
-            output.append(
-                {
-                    'currency': coin,
-                    'available': balance['free'],
-                    'balance': balance['total'],
-                    'pending': balance['used'],
-                    'est_btc': est_btc
-                }
-            )
+            output.append({
+                'currency': coin,
+                'available': balance['free'],
+                'balance': balance['total'],
+                'pending': balance['used'],
+                'est_btc': est_btc,
+            })
         if total == 0.0:
             raise RPCException('all balances are zero')
 
         fiat = self._freqtrade.fiat_converter
         symbol = fiat_display_currency
         value = fiat.convert_amount(total, 'BTC', symbol)
-        return output, total, symbol, value
+        return {
+            'currencies': output,
+            'total': total,
+            'symbol': symbol,
+            'value': value,
+        }
 
     def _rpc_start(self) -> Dict[str, str]:
         """ Handler for start """
