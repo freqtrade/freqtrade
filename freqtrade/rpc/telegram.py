@@ -253,10 +253,9 @@ class Telegram(RPC):
     def _balance(self, bot: Bot, update: Update) -> None:
         """ Handler for /balance """
         try:
-            currencys, total, symbol, value = \
-                self._rpc_balance(self._config['fiat_display_currency'])
+            result = self._rpc_balance(self._config['fiat_display_currency'])
             output = ''
-            for currency in currencys:
+            for currency in result['currencies']:
                 output += "*{currency}:*\n" \
                           "\t`Available: {available: .8f}`\n" \
                           "\t`Balance: {balance: .8f}`\n" \
@@ -264,8 +263,8 @@ class Telegram(RPC):
                           "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
 
             output += "\n*Estimated Value*:\n" \
-                      "\t`BTC: {0: .8f}`\n" \
-                      "\t`{1}: {2: .2f}`\n".format(total, symbol, value)
+                      "\t`BTC: {total: .8f}`\n" \
+                      "\t`{symbol}: {value: .2f}`\n".format(**result)
             self._send_msg(output, bot=bot)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
