@@ -325,16 +325,17 @@ def test_rpc_balance_handle(default_conf, mocker):
     freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
-    output, total, symbol, value = rpc._rpc_balance(default_conf['fiat_display_currency'])
-    assert prec_satoshi(total, 12)
-    assert prec_satoshi(value, 180000)
-    assert 'USD' in symbol
-    assert len(output) == 1
-    assert 'BTC' in output[0]['currency']
-    assert prec_satoshi(output[0]['available'], 10)
-    assert prec_satoshi(output[0]['balance'], 12)
-    assert prec_satoshi(output[0]['pending'], 2)
-    assert prec_satoshi(output[0]['est_btc'], 12)
+    result = rpc._rpc_balance(default_conf['fiat_display_currency'])
+    assert prec_satoshi(result['total'], 12)
+    assert prec_satoshi(result['value'], 180000)
+    assert 'USD' == result['symbol']
+    assert result['currencies'] == [{
+        'currency': 'BTC',
+        'available': 10.0,
+        'balance': 12.0,
+        'pending': 2.0,
+        'est_btc': 12.0,
+    }]
 
 
 def test_rpc_start(mocker, default_conf) -> None:
