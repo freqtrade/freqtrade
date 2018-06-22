@@ -172,6 +172,10 @@ class Analyze(object):
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
+        if buy and self.config.get('experimental', {}).get('ignore_roi_if_buy_signal', False):
+            logger.debug('Buy signal still active - not selling.')
+            return False
+
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
             logger.debug('Required profit reached. Selling..')

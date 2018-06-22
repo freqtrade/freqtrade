@@ -424,7 +424,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         (buy, sell) = (False, False)
 
-        if self.config.get('experimental', {}).get('use_sell_signal'):
+        if (self.config.get('experimental', {}).get('use_sell_signal')
+                or self.config.get('experimental', {}).get('ignore_roi_if_buy_signal')):
             (buy, sell) = self.analyze.get_signal(self.exchange,
                                                   trade.pair, self.analyze.get_ticker_interval())
 
