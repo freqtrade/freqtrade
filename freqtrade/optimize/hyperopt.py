@@ -325,6 +325,8 @@ class Hyperopt(Backtesting):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
 
+        self.exchange = None
+
         logger.info('Preparing..')
         # read trials file if we have one
         if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
