@@ -12,6 +12,7 @@ from ipaddress import IPv4Address
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
+
 class ApiServerSuperWrap(RPC):
     """
     This class is for REST calls across api server
