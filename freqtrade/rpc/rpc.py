@@ -26,7 +26,17 @@ class RPCException(Exception):
 
     raise RPCException('*Status:* `no active trade`')
     """
-    pass
+    def __init__(self, message: str) -> None:
+        super().__init__(self)
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+    def __json__(self):
+        return {
+            'msg': self.message
+        }
 
 
 class RPC(object):
@@ -286,28 +296,27 @@ class RPC(object):
         value = fiat.convert_amount(total, 'BTC', symbol)
         return output, total, symbol, value
 
-    def _rpc_start(self) -> str:
+    def _rpc_start(self) -> Dict[str, str]:
         """ Handler for start """
         if self._freqtrade.state == State.RUNNING:
-            return '*Status:* `already running`'
+            return {'status': 'already running'}
 
         self._freqtrade.state = State.RUNNING
-        return '`Starting trader ...`'
+        return {'status': 'starting trader ...'}
 
-    def _rpc_stop(self) -> str:
+    def _rpc_stop(self) -> Dict[str, str]:
         """ Handler for stop """
         if self._freqtrade.state == State.RUNNING:
             self._freqtrade.state = State.STOPPED
-            return '`Stopping trader ...`'
+            return {'status': 'stopping trader ...'}
 
-        return '*Status:* `already stopped`'
+        return {'status': 'already stopped'}
 
-    def _rpc_reload_conf(self) -> str:
+    def _rpc_reload_conf(self) -> Dict[str, str]:
         """ Handler for reload_conf. """
         self._freqtrade.state = State.RELOAD_CONF
-        return '*Status:* `Reloading config ...`'
+        return {'status': 'reloading config ...'}
 
-    # FIX: no test for this!!!!
     def _rpc_forcesell(self, trade_id) -> None:
         """
         Handler for forcesell <id>.
