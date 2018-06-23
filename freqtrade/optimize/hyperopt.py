@@ -94,6 +94,7 @@ class Hyperopt(Backtesting):
         # Bollinger bands
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
+        dataframe['sar'] = ta.SAR(dataframe)
 
         return dataframe
 
@@ -204,6 +205,7 @@ class Hyperopt(Backtesting):
             Categorical([True, False], name='fastd-enabled'),
             Categorical([True, False], name='adx-enabled'),
             Categorical([True, False], name='rsi-enabled'),
+            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
         ]
 
     def has_space(self, space: str) -> bool:
@@ -238,8 +240,6 @@ class Hyperopt(Backtesting):
             """
             conditions = []
             # GUARDS AND TRENDS
-#            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
-#                conditions.append(dataframe['macd'] < 0)
             if 'mfi-enabled' in params and params['mfi-enabled']:
                 conditions.append(dataframe['mfi'] < params['mfi-value'])
             if 'fastd' in params and params['fastd-enabled']:
@@ -250,11 +250,16 @@ class Hyperopt(Backtesting):
                 conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
-            triggers = {
-            }
-            #conditions.append(triggers.get(params['trigger']['type']))
-
-            conditions.append(dataframe['close'] < dataframe['bb_lowerband'])    # single trigger
+            if params['trigger'] == 'bb_lower':
+                conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+            if params['trigger'] == 'macd_cross_signal':
+                conditions.append(qtpylib.crossed_above(
+                    dataframe['macd'], dataframe['macdsignal']
+                ))
+            if params['trigger'] == 'sar_reversal':
+                conditions.append(qtpylib.crossed_above(
+                    dataframe['close'], dataframe['sar']
+                ))
 
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
