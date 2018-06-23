@@ -11,6 +11,7 @@ from collections import OrderedDict
 from typing import Optional, Dict, Type
 
 from freqtrade import constants
+from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -83,7 +84,7 @@ class StrategyResolver(object):
             strategy = self._search_strategy(path, strategy_name)
             if strategy:
                 logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
-                return strategy
+                return import_strategy(strategy)
 
         raise ImportError(
             "Impossible to load Strategy '{}'. This class does not exist"
@@ -100,7 +101,7 @@ class StrategyResolver(object):
         """
 
         # Generate spec based on absolute path
-        spec = importlib.util.spec_from_file_location('user_data.strategies', module_path)
+        spec = importlib.util.spec_from_file_location('unknown', module_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
 
