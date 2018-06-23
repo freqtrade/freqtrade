@@ -307,7 +307,7 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert callable(backtesting.populate_buy_trend)
     assert callable(backtesting.populate_sell_trend)
     get_fee.assert_called()
-    assert backtesting.fee == 0.5 
+    assert backtesting.fee == 0.5
 
 
 def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
