@@ -16,7 +16,7 @@ The table below will list all configuration parameters.
 |----------|---------|----------|-------------|
 | `max_open_trades` | 3 | Yes | Number of trades open your bot will have.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
-| `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged.
+| `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
 | `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below. 
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. 
@@ -43,6 +43,13 @@ The table below will list all configuration parameters.
 
 The definition of each config parameters is in 
 [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L205).
+
+### Understand stake_amount
+`stake_amount` is an amount of crypto-currency your bot will use for each trade.
+The minimal value is 0.0005. If there is not enough crypto-currency in 
+the account an exception is generated.
+To allow the bot to trade all the avaliable `stake_currency` in your account set `stake_amount` = `unlimited`.
+In this case a trade amount is calclulated as `currency_balanse / (max_open_trades - current_open_trades)`.
 
 ### Understand minimal_roi
 `minimal_roi` is a JSON object where the key is a duration

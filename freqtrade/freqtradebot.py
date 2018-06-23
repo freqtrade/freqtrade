@@ -244,14 +244,66 @@ class FreqtradeBot(object):
         balance = self.config['bid_strategy']['ask_last_balance']
         return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
+    def _get_trade_stake_amount(self) -> Optional[float]:
+        stake_amount = self.config['stake_amount']
+        avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
+
+        if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
+            open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
+            if open_trades >= self.config['max_open_trades']:
+                logger.warning('Can\'t open a new trade: max number of trades is reached')
+                return None
+            return avaliable_amount / (self.config['max_open_trades'] - open_trades)
+
+        # Check if stake_amount is fulfilled
+        if avaliable_amount < stake_amount:
+            raise DependencyException(
+                'Available balance(%f %s) is lower than stake amount(%f %s)' % (
+                    avaliable_amount, self.config['stake_currency'],
+                    stake_amount, self.config['stake_currency'])
+            )
+
+        return stake_amount
+
+    def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
+        markets = self.exchange.get_markets()
+        markets = [m for m in markets if m['symbol'] == pair]
+        if not markets:
+            raise ValueError(f'Can\'t get market information for symbol {pair}')
+
+        market = markets[0]
+
+        if 'limits' not in market:
+            return None
+
+        min_stake_amounts = []
+        if 'cost' in market['limits'] and 'min' in market['limits']['cost']:
+            min_stake_amounts.append(market['limits']['cost']['min'])
+
+        if 'amount' in market['limits'] and 'min' in market['limits']['amount']:
+            min_stake_amounts.append(market['limits']['amount']['min'] * price)
+
+        if not min_stake_amounts:
+            return None
+
+        amount_reserve_percent = 1 - 0.05  # reserve 5% + stoploss
+        if self.analyze.get_stoploss() is not None:
+            amount_reserve_percent += self.analyze.get_stoploss()
+        # it should not be more than 50%
+        amount_reserve_percent = max(amount_reserve_percent, 0.5)
+        return min(min_stake_amounts)/amount_reserve_percent
+
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
         :return: True if a trade object has been created and persisted, False otherwise
         """
-        stake_amount = self.config['stake_amount']
         interval = self.analyze.get_ticker_interval()
+        stake_amount = self._get_trade_stake_amount()
+
+        if not stake_amount:
+            return False
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
         exc_name = self.exchange.name
@@ -261,10 +313,6 @@ class FreqtradeBot(object):
             stake_amount
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
-        # Check if stake_amount is fulfilled
-        if self.exchange.get_balance(stake_currency) < stake_amount:
-            raise DependencyException(
-                f'stake amount is not fulfilled (currency={stake_currency})')
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
@@ -285,8 +333,18 @@ class FreqtradeBot(object):
             return False
         pair_s = pair.replace('_', '/')
         pair_url = self.exchange.get_pair_detail_url(pair)
+
         # Calculate amount
         buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
+
+        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
+        if min_stake_amount is not None and min_stake_amount > stake_amount:
+            logger.warning(
+                f'Can\'t open a new trade for {pair_s}: stake amount'
+                f' is too small ({stake_amount} < {min_stake_amount})'
+            )
+            return False
+
         amount = stake_amount / buy_limit
 
         order_id = self.exchange.buy(pair, buy_limit, amount)['id']

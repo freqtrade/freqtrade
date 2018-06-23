@@ -262,17 +262,15 @@ class Arguments(object):
                 stop: int = 0
                 if stype[0]:
                     starts = rvals[index]
-                    if stype[0] == 'date':
-                        start = int(starts) if len(starts) == 10 \
-                            else arrow.get(starts, 'YYYYMMDD').timestamp
+                    if stype[0] == 'date' and len(starts) == 8:
+                        start = arrow.get(starts, 'YYYYMMDD').timestamp
                     else:
                         start = int(starts)
                     index += 1
                 if stype[1]:
                     stops = rvals[index]
-                    if stype[1] == 'date':
-                        stop = int(stops) if len(stops) == 10 \
-                            else arrow.get(stops, 'YYYYMMDD').timestamp
+                    if stype[1] == 'date' and len(stops) == 8:
+                        stop = arrow.get(stops, 'YYYYMMDD').timestamp
                     else:
                         stop = int(stops)
                 return TimeRange(stype[0], stype[1], start, stop)

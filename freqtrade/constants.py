@@ -11,6 +11,8 @@ RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
+UNLIMITED_STAKE_AMOUNT = 'unlimited'
+
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -44,7 +46,11 @@ CONF_SCHEMA = {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
-        'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'stake_amount': {
+            "type": ["number", "string"],
+            "minimum": 0.0005,
+            "pattern": UNLIMITED_STAKE_AMOUNT
+        },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {

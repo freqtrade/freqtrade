@@ -3,6 +3,7 @@
 import json
 import math
 import random
+import pytest
 from copy import deepcopy
 from typing import List
 from unittest.mock import MagicMock
@@ -11,7 +12,7 @@ import numpy as np
 import pandas as pd
 from arrow import Arrow
 
-from freqtrade import optimize
+from freqtrade import optimize, constants, DependencyException
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
@@ -266,6 +267,28 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'Storing backtest results to {} ...'.format(config['exportfilename']),
         caplog.record_tuples
     )
+
+
+def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
+    """
+    Test setup_configuration() function
+    """
+
+    conf = deepcopy(default_conf)
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    args = [
+        '--config', 'config.json',
+        '--strategy', 'DefaultStrategy',
+        'backtesting'
+    ]
+
+    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
+        setup_configuration(get_args(args))
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:

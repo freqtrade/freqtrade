@@ -14,6 +14,7 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
+from freqtrade import constants, DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
@@ -340,6 +341,10 @@ def setup_configuration(args: Namespace) -> Dict[str, Any]:
     # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
+
+    if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
+        raise DependencyException('stake amount could not be "%s" for backtesting' %
+                                  constants.UNLIMITED_STAKE_AMOUNT)
 
     return config
 
