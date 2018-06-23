@@ -37,14 +37,16 @@ class ApiServerSuperWrap(RPC):
     def register_rest_other(self):
         #Added as a placeholder for app URLs that are not implemented in rpc.rpc
         app.register_error_handler(404, self.page_not_found)
+        app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
 
     def register_rest_rpc_urls(self):
         # register the url rules available on the api server
+        # This is where to register rest urls that make use of
+        # rpc.rpc functions
         '''
         First two arguments passed are /URL and 'Label'
         Label can be used as a shortcut when refactoring
         '''
-        app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
         app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
         app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
