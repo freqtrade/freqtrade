@@ -1,3 +1,4 @@
+import json
 import threading
 import logging
 # import json
@@ -138,7 +139,7 @@ class ApiServer(RPC):
         Starts TradeThread in bot if stopped.
         """
         msg = self._rpc_start()
-        return jsonify(msg)
+        return json.dumps(msg)
 
     def stop(self):
         """
@@ -147,4 +148,4 @@ class ApiServer(RPC):
         Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
-        return jsonify(msg)
+        return json.dumps(msg)
