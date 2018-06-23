@@ -1,3 +1,4 @@
+import json
 import threading
 import logging
 # import json
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
-class ApiServerSuperWrap(RPC):
+class ApiServer(RPC):
     """
     This class is for REST calls across api server
     """
@@ -78,14 +79,8 @@ class ApiServerSuperWrap(RPC):
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
 
-    @property
-    def name(self) -> str:
-        # TODO: implement me
-        raise NotImplementedError
-
     def send_msg(self, msg: str) -> None:
-        # TODO: implement me
-        raise NotImplementedError
+        pass
 
     def shutdown_api_server(self):
         """
@@ -111,14 +106,12 @@ class ApiServerSuperWrap(RPC):
         """
         self.shutdown_api_server()
     # def cleanup(self) -> None:
-    #     # TODO: implement me
-    #     raise NotImplementedError
+    #     pass
 
     """
     Define the application methods here, called by app.add_url_rule
     each Telegram command should have a like local substitute
     """
-
     def stop_api(self):
         """ For calling shutdown_api_server over via api server HTTP"""
         self.shutdown_api_server()
@@ -178,7 +171,7 @@ class ApiServerSuperWrap(RPC):
         Starts TradeThread in bot if stopped.
         """
         msg = self._rpc_start()
-        return jsonify(msg)
+        return json.dumps(msg)
 
     def stop(self):
         """
@@ -187,4 +180,4 @@ class ApiServerSuperWrap(RPC):
         Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
-        return jsonify(msg)
+        return json.dumps(msg)
