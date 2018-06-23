@@ -50,13 +50,16 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
-def test_load_strategy_custom_directory(result):
+def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
     extra_dir = os.path.join('some', 'path')
-    with pytest.raises(
-            FileNotFoundError,
-            match=r".*No such file or directory: '{}'".format(extra_dir)):
-        resolver._load_strategy('TestStrategy', extra_dir)
+    resolver._load_strategy('TestStrategy', extra_dir)
+
+    assert (
+        'freqtrade.strategy.resolver',
+        logging.WARNING,
+        'Path "{}" does not exist'.format(extra_dir),
+    ) in caplog.record_tuples
 
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
