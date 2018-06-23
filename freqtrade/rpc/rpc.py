@@ -5,13 +5,12 @@ import logging
 from abc import abstractmethod
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-from typing import Dict, Any, List
+from typing import Dict, List, Any
 
 import arrow
 import sqlalchemy as sql
 from numpy import mean, nan_to_num
 
-from freqtrade import exchange
 from freqtrade.persistence import Trade
 from freqtrade.state import State
 
@@ -79,9 +78,9 @@ class RPC(object):
             for trade in trades:
                 order = None
                 if trade.open_order_id:
-                    order = exchange.get_order(trade.open_order_id, trade.pair)
+                    order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
-                current_rate = exchange.get_ticker(trade.pair, False)['bid']
+                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = '{:.2f}%'.format(
                     round(trade.close_profit * 100, 2)
@@ -90,7 +89,7 @@ class RPC(object):
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
-                    market_url=exchange.get_pair_detail_url(trade.pair),
+                    market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
                     open_date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
@@ -176,7 +175,7 @@ class RPC(object):
                 profit_closed_percent.append(profit_percent)
             else:
                 # Get current rate
-                current_rate = exchange.get_ticker(trade.pair, False)['bid']
+                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
 
             profit_all_coin.append(
@@ -233,7 +232,7 @@ class RPC(object):
         """ Returns current account balance per crypto """
         output = []
         total = 0.0
-        for coin, balance in exchange.get_balances().items():
+        for coin, balance in self._freqtrade.exchange.get_balances().items():
             if not balance['total']:
                 continue
 
@@ -241,9 +240,9 @@ class RPC(object):
                 rate = 1.0
             else:
                 if coin == 'USDT':
-                    rate = 1.0 / exchange.get_ticker('BTC/USDT', False)['bid']
+                    rate = 1.0 / self._freqtrade.exchange.get_ticker('BTC/USDT', False)['bid']
                 else:
-                    rate = exchange.get_ticker(coin + '/BTC', False)['bid']
+                    rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
             est_btc: float = rate * balance['total']
             total = total + est_btc
             output.append({
@@ -295,13 +294,13 @@ class RPC(object):
         def _exec_forcesell(trade: Trade) -> None:
             # Check if there is there is an open order
             if trade.open_order_id:
-                order = exchange.get_order(trade.open_order_id, trade.pair)
+                order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
 
                 # Cancel open LIMIT_BUY orders and close trade
                 if order and order['status'] == 'open' \
                         and order['type'] == 'limit' \
                         and order['side'] == 'buy':
-                    exchange.cancel_order(trade.open_order_id, trade.pair)
+                    self._freqtrade.exchange.cancel_order(trade.open_order_id, trade.pair)
                     trade.close(order.get('price') or trade.open_rate)
                     # Do the best effort, if we don't know 'filled' amount, don't try selling
                     if order['filled'] is None:
@@ -315,7 +314,7 @@ class RPC(object):
                     return
 
             # Get current rate and execute sell
-            current_rate = exchange.get_ticker(trade.pair, False)['bid']
+            current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
             self._freqtrade.execute_sell(trade, current_rate)
         # ---- EOF def _exec_forcesell ----
 
