@@ -11,7 +11,6 @@ import pickle
 import signal
 import sys
 from argparse import Namespace
-from copy import deepcopy
 from functools import reduce
 from math import exp
 from operator import itemgetter
@@ -27,23 +26,8 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.strategy.interface import IStrategy
 
 logger = logging.getLogger(__name__)
-
-
-HyperoptStrategy = None
-
-
-def wrap_strategy(strategy: IStrategy) -> Optional[HyperoptStrategy]:
-    """Wraps a given Strategy instance to HyperoptStrategy"""
-    global HyperoptStrategy
-
-    attr = deepcopy(dict(strategy.__class__.__dict__))
-    # Patch module name to make it compatible with pickle
-    attr['__module__'] = 'freqtrade.optimize.hyperopt'
-    HyperoptStrategy = type('HyperoptStrategy', (IStrategy,), attr)
-    return HyperoptStrategy()
 
 
 class Hyperopt(Backtesting):
@@ -71,9 +55,6 @@ class Hyperopt(Backtesting):
         # for example 3.5%, 1100 trades, self.expected_max_profit = 3.85
         # check that the reported Σ% values do not exceed this!
         self.expected_max_profit = 3.0
-
-        # Wrap strategy to make it compatible with pickle
-        self.analyze.strategy = wrap_strategy(self.analyze.strategy)
 
         # Configuration and data used by hyperopt
         self.processed: Optional[Dict[str, Any]] = None
