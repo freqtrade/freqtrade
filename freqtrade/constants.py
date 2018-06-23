@@ -79,7 +79,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'}
+                'sell_profit_only': {'type': 'boolean'},
+                "ignore_roi_if_buy_signal_true": {'type': 'boolean'}
             }
         },
         'telegram': {

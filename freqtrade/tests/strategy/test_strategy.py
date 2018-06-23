@@ -1,12 +1,37 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
-
 import logging
 import os
 
 import pytest
 
+from freqtrade.strategy import import_strategy
+from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.resolver import StrategyResolver
+
+
+def test_import_strategy(caplog):
+    caplog.set_level(logging.DEBUG)
+
+    strategy = DefaultStrategy()
+    strategy.some_method = lambda *args, **kwargs: 42
+
+    assert strategy.__module__ == 'freqtrade.strategy.default_strategy'
+    assert strategy.some_method() == 42
+
+    imported_strategy = import_strategy(strategy)
+
+    assert dir(strategy) == dir(imported_strategy)
+
+    assert imported_strategy.__module__ == 'freqtrade.strategy'
+    assert imported_strategy.some_method() == 42
+
+    assert (
+        'freqtrade.strategy',
+        logging.DEBUG,
+        'Imported strategy freqtrade.strategy.default_strategy.DefaultStrategy '
+        'as freqtrade.strategy.DefaultStrategy',
+    ) in caplog.record_tuples
 
 
 def test_search_strategy():
@@ -20,8 +45,7 @@ def test_search_strategy():
 
 
 def test_load_strategy(result):
-    resolver = StrategyResolver()
-    resolver._load_strategy('TestStrategy')
+    resolver = StrategyResolver({'strategy': 'TestStrategy'})
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 

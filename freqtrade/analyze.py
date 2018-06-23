@@ -10,7 +10,7 @@ import arrow
 from pandas import DataFrame, to_datetime
 
 from freqtrade import constants
-from freqtrade.exchange import get_ticker_history
+from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 
@@ -117,14 +117,14 @@ class Analyze(object):
         dataframe = self.populate_sell_trend(dataframe)
         return dataframe
 
-    def get_signal(self, pair: str, interval: str) -> Tuple[bool, bool]:
+    def get_signal(self, exchange: Exchange, pair: str, interval: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        ticker_hist = get_ticker_history(pair, interval)
+        ticker_hist = exchange.get_ticker_history(pair, interval)
         if not ticker_hist:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
@@ -155,7 +155,7 @@ class Analyze(object):
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-        if signal_date < arrow.utcnow() - timedelta(minutes=(interval_minutes + 5)):
+        if signal_date < (arrow.utcnow() - timedelta(minutes=(interval_minutes + 5))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
@@ -179,33 +179,45 @@ class Analyze(object):
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
+        current_profit = trade.calc_profit_percent(rate)
+        if self.stop_loss_reached(current_profit=current_profit):
+            return True
+
+        experimental = self.config.get('experimental', {})
+
+        if buy and experimental.get('ignore_roi_if_buy_signal', False):
+            logger.debug('Buy signal still active - not selling.')
+            return False
+
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-        if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
+        if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
             logger.debug('Required profit reached. Selling..')
             return True
 
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if self.config.get('experimental', {}).get('sell_profit_only', False):
+        if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
                 return False
-
-        if sell and not buy and self.config.get('experimental', {}).get('use_sell_signal', False):
+        if sell and not buy and experimental.get('use_sell_signal', False):
             logger.debug('Sell signal received. Selling..')
             return True
 
         return False
 
-    def min_roi_reached(self, trade: Trade, current_rate: float, current_time: datetime) -> bool:
+    def stop_loss_reached(self, current_profit: float) -> bool:
+        """Based on current profit of the trade and configured stoploss, decides to sell or not"""
+
+        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
+            logger.debug('Stop loss hit.')
+            return True
+        return False
+
+    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
         sell
         :return True if bot should sell at current rate
         """
-        current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
-            logger.debug('Stop loss hit.')
-            return True
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60

@@ -39,7 +39,6 @@ class Hyperopt(Backtesting):
     hyperopt.start()
     """
     def __init__(self, config: Dict[str, Any]) -> None:
-
         super().__init__(config)
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days

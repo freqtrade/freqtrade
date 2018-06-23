@@ -16,15 +16,16 @@ install:
 - pip install --upgrade flake8 coveralls pytest-random-order mypy
 - pip install -r requirements.txt
 - pip install -e .
-- cp config.json.example config.json
 jobs:
   include:
     - script: 
       - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
       - coveralls
     - script:
+      - cp config.json.example config.json
       - python freqtrade/main.py --datadir freqtrade/tests/testdata backtesting
     - script:
+      - cp config.json.example config.json
       - python freqtrade/main.py --datadir freqtrade/tests/testdata hyperopt -e 5
     - script: flake8 freqtrade
     - script: mypy freqtrade

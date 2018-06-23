@@ -31,7 +31,8 @@
     },
     "experimental": {
         "use_sell_signal": false,
-        "sell_profit_only": false
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
     },
     "telegram": {
         "enabled": true,

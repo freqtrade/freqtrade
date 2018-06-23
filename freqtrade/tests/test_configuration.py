@@ -13,6 +13,7 @@ from jsonschema import ValidationError
 
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
+from freqtrade.constants import DEFAULT_DB_PROD_URL, DEFAULT_DB_DRYRUN_URL
 from freqtrade.tests.conftest import log_has
 from freqtrade import OperationalException
 
@@ -151,6 +152,43 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
+
+    conf = default_conf.copy()
+    conf["dry_run"] = False
+    del conf["db_url"]
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    arglist = [
+         '--dynamic-whitelist', '10',
+         '--strategy', 'TestStrategy',
+         '--strategy-path', '/some/path'
+     ]
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    assert validated_conf.get('db_url') == DEFAULT_DB_PROD_URL
+
+    # Test dry=run with ProdURL
+    conf = default_conf.copy()
+    conf["dry_run"] = True
+    conf["db_url"] = DEFAULT_DB_PROD_URL
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    arglist = [
+        '--dynamic-whitelist', '10',
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    assert validated_conf.get('db_url') == DEFAULT_DB_DRYRUN_URL
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:

@@ -32,7 +32,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets):
 
     freqtradebot = tt.get_patched_freqtradebot(mocker, conf)
 
-    mocker.patch('freqtrade.freqtradebot.exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
     refreshedwhitelist = freqtradebot._refresh_whitelist(
         conf['exchange']['pair_whitelist'] + ['XXX/BTC']
     )
@@ -46,7 +46,7 @@ def test_refresh_whitelist(mocker, markets):
     conf = whitelist_conf()
     freqtradebot = tt.get_patched_freqtradebot(mocker, conf)
 
-    mocker.patch('freqtrade.freqtradebot.exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
     refreshedwhitelist = freqtradebot._refresh_whitelist(conf['exchange']['pair_whitelist'])
 
     # List ordered by BaseVolume
@@ -59,7 +59,7 @@ def test_refresh_whitelist_dynamic(mocker, markets, tickers):
     conf = whitelist_conf()
     freqtradebot = tt.get_patched_freqtradebot(mocker, conf)
     mocker.patch.multiple(
-        'freqtrade.freqtradebot.exchange',
+        'freqtrade.exchange.Exchange',
         get_markets=markets,
         get_tickers=tickers,
         exchange_has=MagicMock(return_value=True)
@@ -78,7 +78,7 @@ def test_refresh_whitelist_dynamic(mocker, markets, tickers):
 def test_refresh_whitelist_dynamic_empty(mocker, markets_empty):
     conf = whitelist_conf()
     freqtradebot = tt.get_patched_freqtradebot(mocker, conf)
-    mocker.patch('freqtrade.freqtradebot.exchange.get_markets', markets_empty)
+    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets_empty)
 
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = []

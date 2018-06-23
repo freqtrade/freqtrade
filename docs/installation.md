@@ -8,6 +8,7 @@ To understand how to set up the bot please read the [Bot Configuration](https://
 
 * [Table of Contents](#table-of-contents)
 * [Easy Installation - Linux Script](#easy-installation---linux-script)
+* [Manual installation](#manual-installation)
 * [Automatic Installation - Docker](#automatic-installation---docker)
 * [Custom Linux MacOS Installation](#custom-installation)
 	- [Requirements](#requirements)
@@ -54,6 +55,28 @@ Reset parameter will hard reset your branch (only if you are on `master` or `dev
 ### --config
 
 Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
+
+
+## Manual installation - Linux/MacOS
+The following steps are made for Linux/MacOS environment
+
+**1. Clone the repo**
+```bash
+git clone git@github.com:freqtrade/freqtrade.git
+git checkout develop
+cd freqtrade
+```
+**2. Create the config file**  
+Switch `"dry_run": true,`
+```bash
+cp config.json.example config.json
+vi config.json
+```
+**3. Build your docker image and run it**
+```bash
+docker build -t freqtrade .
+docker run --rm -v /etc/localtime:/etc/localtime:ro -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
+```
 
 ------
 
@@ -183,6 +206,26 @@ docker start freqtrade
 ```
 
 You do not need to rebuild the image for configuration changes, it will suffice to edit `config.json` and restart the container.
+
+### 7. Backtest with docker
+
+The following assumes that the above steps (1-4) have been completed successfully.
+Also, backtest-data should be available at `~/.freqtrade/user_data/`.
+
+
+``` bash
+docker run -d \
+  --name freqtrade \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v ~/.freqtrade/config.json:/freqtrade/config.json \
+  -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
+  -v ~/.freqtrade/user_data/:/freqtrade/user_data/ \
+  freqtrade --strategy AwsomelyProfitableStrategy backtesting
+```
+
+Head over to the [Backtesting Documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md) for more details.
+
+*Note*: Additional parameters can be appended after the image name (`freqtrade` in the above example).
 
 ------
 
