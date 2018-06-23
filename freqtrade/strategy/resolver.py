@@ -72,7 +72,7 @@ class StrategyResolver(object):
         """
         current_path = os.path.dirname(os.path.realpath(__file__))
         abs_paths = [
-            os.path.join(current_path, '..', '..', 'user_data', 'strategies'),
+            os.path.join(os.getcwd(), 'user_data', 'strategies'),
             current_path,
         ]
 
