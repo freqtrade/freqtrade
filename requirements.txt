@@ -22,4 +22,4 @@ tabulate==0.8.2
 coinmarketcap==5.0.3
 
 # Required for plotting data
-#plotly==2.3.0
+#plotly==2.7.0
