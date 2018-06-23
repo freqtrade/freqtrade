@@ -27,13 +27,19 @@ class ApiServerSuperWrap(RPC):
 
         self._config = freqtrade.config
 
+        # Register application handling
+        self.register_rest_other()
+        self.register_rest_rpc_urls()
+
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
 
-    def run(self):
-        """ Method that runs forever """
+    def register_rest_other(self):
+        #Added as a placeholder for app URLs that are not implemented in rpc.rpc
+        app.register_error_handler(404, self.page_not_found)
 
-        # defines the url rules available on the api server
+    def register_rest_rpc_urls(self):
+        # register the url rules available on the api server
         '''
         First two arguments passed are /URL and 'Label'
         Label can be used as a shortcut when refactoring
@@ -42,6 +48,9 @@ class ApiServerSuperWrap(RPC):
         app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
         app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
+
+    def run(self):
+        """ Method that runs forever """
 
         """
         Section to handle configuration and running of the Rest server
@@ -80,6 +89,12 @@ class ApiServerSuperWrap(RPC):
     Define the application methods here, called by app.add_url_rule
     each Telegram command should have a like local substitute
     """
+
+    def page_not_found(self, error):
+        # return "404 not found", 404
+        return jsonify({'status': 'error',
+                        'reason': '''There's no API call for %s''' % request.base_url,
+                        'code': 404}), 404
 
     def hello(self):
         # For simple rest server testing via browser
