@@ -35,7 +35,7 @@ class ApiServerSuperWrap(RPC):
         thread.start()
 
     def register_rest_other(self):
-        #Added as a placeholder for app URLs that are not implemented in rpc.rpc
+        # Added as a placeholder for app URLs that are not implemented in rpc.rpc
         app.register_error_handler(404, self.page_not_found)
         app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
 
