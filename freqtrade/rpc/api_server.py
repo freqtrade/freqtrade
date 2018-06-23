@@ -78,17 +78,10 @@ class ApiServer(RPC):
             logger.exception("Api server failed to start, exception message is:")
 
     def cleanup(self) -> None:
-        # TODO: implement me
-        raise NotImplementedError
-
-    @property
-    def name(self) -> str:
-        # TODO: implement me
-        raise NotImplementedError
+        pass
 
     def send_msg(self, msg: str) -> None:
-        # TODO: implement me
-        raise NotImplementedError
+        pass
 
     """
     Define the application methods here, called by app.add_url_rule
