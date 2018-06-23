@@ -79,6 +79,9 @@ class ApiServer(RPC):
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
 
+    def cleanup(self) -> None:
+        pass
+
     def send_msg(self, msg: str) -> None:
         pass
 
@@ -96,17 +99,6 @@ class ApiServer(RPC):
             logger.info('Stopping the Local Rest Server')
             func()
             return
-
-    def cleanup(self) -> None:
-        """
-        Stops the running application server
-
-        Does not stop the thread,this may not be the desired outcome of cleanup. TBC
-        :return:
-        """
-        self.shutdown_api_server()
-    # def cleanup(self) -> None:
-    #     pass
 
     """
     Define the application methods here, called by app.add_url_rule
