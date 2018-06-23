@@ -51,14 +51,14 @@ class RPC(object):
         """
         self._freqtrade = freqtrade
 
+    @property
+    def name(self) -> str:
+        """ Returns the lowercase name of the implementation """
+        return self.__class__.__name__.lower()
+
     @abstractmethod
     def cleanup(self) -> None:
         """ Cleanup pending module resources """
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """ Returns the lowercase name of this module """
 
     @abstractmethod
     def send_msg(self, msg: str) -> None:
