@@ -1,22 +1,32 @@
 import json
 import threading
 import logging
-# import json
 
-from flask import Flask, request, jsonify
-# from flask_restful import Resource, Api
+from flask import request
 from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
 from ipaddress import IPv4Address
+from freqtrade.rpc.api_server_common import MyApiApp
 
 
 logger = logging.getLogger(__name__)
-app = Flask(__name__)
+"""
+api server routes that do not need access to rpc.rpc
+are held within api_server_common.api_server
+"""
+app = MyApiApp(__name__)
 
 
 class ApiServer(RPC):
     """
-    This class is for REST calls across api server
+    This class runs api server and provides rpc.rpc functionality to it
+
+    This class starts a none blocking thread the api server runs within
+    Any routes that require access to rpc.rpc defs are held within this
+    class.
+
+    Any routes that do not require access to rpc.rcp should be registered
+    in api_server_common.MyApiApp
     """
     def __init__(self, freqtrade) -> None:
         """
@@ -29,20 +39,10 @@ class ApiServer(RPC):
         self._config = freqtrade.config
 
         # Register application handling
-        self.register_rest_other()
         self.register_rest_rpc_urls()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
-
-    def register_rest_other(self):
-        """
-        Registers flask app URLs that are not calls to functionality in rpc.rpc.
-        :return:
-        """
-        app.register_error_handler(404, self.page_not_found)
-        app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
-        app.add_url_rule('/stop_api', 'stop_api', view_func=self.stop_api, methods=['GET'])
 
     def register_rest_rpc_urls(self):
         """
@@ -85,21 +85,6 @@ class ApiServer(RPC):
     def send_msg(self, msg: str) -> None:
         pass
 
-    def shutdown_api_server(self):
-        """
-        Stop the running flask application
-
-        Records the shutdown in logger.info
-        :return:
-        """
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-            raise RuntimeError('Not running the Flask Werkzeug Server')
-        if func is not None:
-            logger.info('Stopping the Local Rest Server')
-            func()
-            return
-
     """
     Define the application methods here, called by app.add_url_rule
     each Telegram command should have a like local substitute
@@ -108,33 +93,6 @@ class ApiServer(RPC):
         """ For calling shutdown_api_server over via api server HTTP"""
         self.shutdown_api_server()
         return 'Api Server shutting down... '
-
-    def page_not_found(self, error):
-        # Return "404 not found", 404.
-        return jsonify({'status': 'error',
-                        'reason': '''There's no API call for %s''' % request.base_url,
-                        'code': 404}), 404
-
-    def hello(self):
-        """
-        None critical but helpful default index page.
-
-        That lists URLs added to the flask server.
-        This may be deprecated at any time.
-        :return: index.html
-        """
-        rest_cmds = 'Commands implemented: <br>' \
-                    '<a href=/daily?timescale=7>Show 7 days of stats</a>' \
-                    '<br>' \
-                    '<a href=/stop>Stop the Trade thread</a>' \
-                    '<br>' \
-                    '<a href=/start>Start the Traded thread</a>' \
-                    '<br>' \
-                    '<a href=/paypal> 404 page does not exist</a>' \
-                    '<br>' \
-                    '<br>' \
-                    '<a href=/stop_api>Shut down the api server -  be sure</a>'
-        return rest_cmds
 
     def daily(self):
         """
