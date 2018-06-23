@@ -186,63 +186,6 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     )
 
 
-def test_status(default_conf, update, mocker, fee, ticker) -> None:
-    """
-    Test _status() method
-    """
-    update.message.chat.id = 123
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    conf['telegram']['chat_id'] = 123
-
-    patch_get_signal(mocker, (True, False))
-    patch_coinmarketcap(mocker)
-    mocker.patch.multiple(
-        'freqtrade.freqtradebot.exchange',
-        validate_pairs=MagicMock(),
-        get_ticker=ticker,
-        get_pair_detail_url=MagicMock(),
-        get_fee=fee,
-    )
-    msg_mock = MagicMock()
-    status_table = MagicMock()
-    mocker.patch.multiple(
-        'freqtrade.rpc.telegram.Telegram',
-        _init=MagicMock(),
-        _rpc_trade_status=MagicMock(return_value=[{
-            'trade_id': 1,
-            'pair': 'ETH/BTC',
-            'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
-            'open_date': datetime.utcnow(),
-            'open_rate': 1.099e-05,
-            'close_rate': None,
-            'current_rate': 1.098e-05,
-            'amount': 90.99181074,
-            'close_profit': None,
-            'current_profit': -0.59,
-            'open_order': '(limit buy rem=0.00000000)'
-        }]),
-        _status_table=status_table,
-        _send_msg=msg_mock
-    )
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-
-    freqtradebot = FreqtradeBot(conf)
-    telegram = Telegram(freqtradebot)
-
-    # Create some test data
-    for _ in range(3):
-        freqtradebot.create_trade()
-
-    telegram._status(bot=MagicMock(), update=update)
-    assert msg_mock.call_count == 1
-
-    update.message.text = MagicMock()
-    update.message.text.replace = MagicMock(return_value='table 2 3')
-    telegram._status(bot=MagicMock(), update=update)
-    assert status_table.call_count == 1
-
-
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     """
     Test _status() method
