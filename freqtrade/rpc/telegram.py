@@ -55,10 +55,6 @@ def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Call
 class Telegram(RPC):
     """  This class handles all telegram communication """
 
-    @property
-    def name(self) -> str:
-        return "telegram"
-
     def __init__(self, freqtrade) -> None:
         """
         Init the Telegram call, and init the super class RPC
