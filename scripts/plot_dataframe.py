@@ -25,7 +25,6 @@ Example of usage:
 --indicators2 fastk,fastd
 """
 import logging
-import os
 import sys
 import json
 from pathlib import Path
@@ -158,7 +157,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         args=args
     )
 
-    plot(fig, filename=os.path.join('user_data', 'freqtrade-plot.html'))
+    plot(fig, filename=str(Path('user_data').joinpath('freqtrade-plot.html')))
 
 
 def generate_graph(pair, trades: pd.DataFrame, data: pd.DataFrame, args) -> tools.make_subplots:
