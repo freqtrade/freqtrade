@@ -173,9 +173,10 @@ class Analyze(object):
         :return: True if trade should be sold, False otherwise
         """
         current_profit = trade.calc_profit_percent(rate)
-        experimental = self.config.get('experimental', {})
         if self.stop_loss_reached(current_profit=current_profit):
             return True
+
+        experimental = self.config.get('experimental', {})
 
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
             logger.debug('Buy signal still active - not selling.')
