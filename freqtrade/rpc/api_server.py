@@ -53,7 +53,8 @@ class ApiServerSuperWrap(RPC):
         logger.info('Starting HTTP Server at {}:{}'.format(rest_ip, rest_port))
         if not IPv4Address(rest_ip).is_loopback:
             logger.info("SECURITY WARNING - Local Rest Server listening to external connections")
-            logger.info("SECURITY WARNING - This is insecure please set to your loopback, e.g 127.0.0.1 in config.json")
+            logger.info("SECURITY WARNING - This is insecure please set to your loopback,"
+                        "e.g 127.0.0.1 in config.json")
 
         # Run the Server
         logger.info('Starting Local Rest Server')
@@ -62,10 +63,24 @@ class ApiServerSuperWrap(RPC):
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
 
+    def cleanup(self) -> None:
+        # TODO: implement me
+        raise NotImplementedError
+
+    @property
+    def name(self) -> str:
+        # TODO: implement me
+        raise NotImplementedError
+
+    def send_msg(self, msg: str) -> None:
+        # TODO: implement me
+        raise NotImplementedError
+
     """
     Define the application methods here, called by app.add_url_rule
     each Telegram command should have a like local substitute
     """
+
     def hello(self):
         # For simple rest server testing via browser
         # cmds = 'Try uri:/daily?timescale=7 /profit /balance /status
