@@ -35,24 +35,27 @@ class ApiServerSuperWrap(RPC):
         thread.start()
 
     def register_rest_other(self):
-        # Added as a placeholder for app URLs that are not implemented in rpc.rpc
+        """
+        Registers flask app URLs that are not calls to functionality in rpc.rpc.
+        :return:
+        """
         app.register_error_handler(404, self.page_not_found)
         app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
 
     def register_rest_rpc_urls(self):
-        # register the url rules available on the api server
-        # This is where to register rest urls that make use of
-        # rpc.rpc functions
-        '''
+        """
+        Registers flask app URLs that are calls to functonality in rpc.rpc.
+
         First two arguments passed are /URL and 'Label'
         Label can be used as a shortcut when refactoring
-        '''
+        :return:
+        """
         app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
         app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
 
     def run(self):
-        """ Method that runs forever """
+        """ Method that runs flask app in its own thread forever """
 
         """
         Section to handle configuration and running of the Rest server
@@ -93,17 +96,19 @@ class ApiServerSuperWrap(RPC):
     """
 
     def page_not_found(self, error):
-        # return "404 not found", 404
+        # Return "404 not found", 404.
         return jsonify({'status': 'error',
                         'reason': '''There's no API call for %s''' % request.base_url,
                         'code': 404}), 404
 
     def hello(self):
-        # For simple rest server testing via browser
-        # cmds = 'Try uri:/daily?timescale=7 /profit /balance /status
-        #         /status /table /performance /count,
-        #         /start /stop /help'
+        """
+        None critical but helpful default index page.
 
+        That lists URLs added to the flask server.
+        This may be deprecated at any time.
+        :return: index.html
+        """
         rest_cmds = 'Commands implemented: <br>' \
                     '<a href=/daily?timescale=7>/daily?timescale=7</a>' \
                     '<br>' \
@@ -113,6 +118,11 @@ class ApiServerSuperWrap(RPC):
         return rest_cmds
 
     def daily(self):
+        """
+        Returns the last X days trading stats summary.
+
+        :return: stats
+        """
         try:
             timescale = request.args.get('timescale')
             logger.info("LocalRPC - Daily Command Called")
@@ -131,7 +141,8 @@ class ApiServerSuperWrap(RPC):
     def start(self):
         """
         Handler for /start.
-        Starts TradeThread
+
+        Starts TradeThread in bot if stopped.
         """
         msg = self._rpc_start()
         return jsonify(msg)
@@ -139,7 +150,8 @@ class ApiServerSuperWrap(RPC):
     def stop(self):
         """
         Handler for /stop.
-        Stops TradeThread
+
+        Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
         return jsonify(msg)
