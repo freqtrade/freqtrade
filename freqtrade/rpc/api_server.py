@@ -41,6 +41,7 @@ class ApiServerSuperWrap(RPC):
         """
         app.register_error_handler(404, self.page_not_found)
         app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
+        app.add_url_rule('/stop_api', 'stop_api', view_func=self.stop_api, methods=['GET'])
 
     def register_rest_rpc_urls(self):
         """
@@ -77,10 +78,6 @@ class ApiServerSuperWrap(RPC):
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
 
-    def cleanup(self) -> None:
-        # TODO: implement me
-        raise NotImplementedError
-
     @property
     def name(self) -> str:
         # TODO: implement me
@@ -90,10 +87,42 @@ class ApiServerSuperWrap(RPC):
         # TODO: implement me
         raise NotImplementedError
 
+    def shutdown_api_server(self):
+        """
+        Stop the running flask application
+
+        Records the shutdown in logger.info
+        :return:
+        """
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running the Flask Werkzeug Server')
+        if func is not None:
+            logger.info('Stopping the Local Rest Server')
+            func()
+            return
+
+    def cleanup(self) -> None:
+        """
+        Stops the running application server
+
+        Does not stop the thread,this may not be the desired outcome of cleanup. TBC
+        :return:
+        """
+        self.shutdown_api_server()
+    # def cleanup(self) -> None:
+    #     # TODO: implement me
+    #     raise NotImplementedError
+
     """
     Define the application methods here, called by app.add_url_rule
     each Telegram command should have a like local substitute
     """
+
+    def stop_api(self):
+        """ For calling shutdown_api_server over via api server HTTP"""
+        self.shutdown_api_server()
+        return 'Api Server shutting down... '
 
     def page_not_found(self, error):
         # Return "404 not found", 404.
@@ -110,11 +139,16 @@ class ApiServerSuperWrap(RPC):
         :return: index.html
         """
         rest_cmds = 'Commands implemented: <br>' \
-                    '<a href=/daily?timescale=7>/daily?timescale=7</a>' \
+                    '<a href=/daily?timescale=7>Show 7 days of stats</a>' \
                     '<br>' \
-                    '<a href=/stop>/stop</a>' \
+                    '<a href=/stop>Stop the Trade thread</a>' \
                     '<br>' \
-                    '<a href=/start>/start</a>'
+                    '<a href=/start>Start the Traded thread</a>' \
+                    '<br>' \
+                    '<a href=/paypal> 404 page does not exist</a>' \
+                    '<br>' \
+                    '<br>' \
+                    '<a href=/stop_api>Shut down the api server -  be sure</a>'
         return rest_cmds
 
     def daily(self):
@@ -125,7 +159,6 @@ class ApiServerSuperWrap(RPC):
         """
         try:
             timescale = request.args.get('timescale')
-            logger.info("LocalRPC - Daily Command Called")
             timescale = int(timescale)
 
             stats = self._rpc_daily_profit(timescale,
