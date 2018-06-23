@@ -14,7 +14,7 @@ import numpy # noqa
 class TestStrategy(IStrategy):
     """
     This is a test strategy to inspire you.
-    More information in https://github.com/gcarq/freqtrade/blob/develop/docs/bot-optimization.md
+    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
 
     You can:
     - Rename the class name (Do not forget to update class_name)
@@ -41,7 +41,7 @@ class TestStrategy(IStrategy):
     stoploss = -0.10
 
     # Optimal ticker interval for the strategy
-    ticker_interval = 5
+    ticker_interval = '5m'
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """

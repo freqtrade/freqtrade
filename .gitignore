@@ -1,13 +1,14 @@
 # Freqtrade rules
 freqtrade/tests/testdata/*.json
 hyperopt_conf.py
-config.json
+config*.json
 *.sqlite
 .hyperopt
 logfile.txt
 hyperopt_trials.pickle
 user_data/
 freqtrade-plot.html
+freqtrade-profit-plot.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -90,3 +91,4 @@ target/
 .vscode
 
 .pytest_cache/
+.mypy_cache/

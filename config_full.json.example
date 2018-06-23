@@ -4,7 +4,7 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
-    "ticker_interval": 5,
+    "ticker_interval": "5m",
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -21,30 +21,32 @@
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "pair_whitelist": [
-            "BTC_ETH",
-            "BTC_LTC",
-            "BTC_ETC",
-            "BTC_DASH",
-            "BTC_ZEC",
-            "BTC_XLM",
-            "BTC_NXT",
-            "BTC_POWR",
-            "BTC_ADA",
-            "BTC_XMR"
+            "ETH/BTC",
+            "LTC/BTC",
+            "ETC/BTC",
+            "DASH/BTC",
+            "ZEC/BTC",
+            "XLM/BTC",
+            "NXT/BTC",
+            "POWR/BTC",
+            "ADA/BTC",
+            "XMR/BTC"
         ],
         "pair_blacklist": [
-            "BTC_DOGE"
+            "DOGE/BTC"
         ]
     },
     "experimental": {
         "use_sell_signal": false,
-        "sell_profit_only": false
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
     },
     "telegram": {
         "enabled": true,
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"
     },
+    "db_url": "sqlite:///tradesv3.sqlite",
     "initial_state": "running",
     "internals": {
         "process_throttle_secs": 5

@@ -9,9 +9,10 @@ from typing import Dict, List, Tuple
 import arrow
 from pandas import DataFrame, to_datetime
 
-from freqtrade.exchange import get_ticker_history
+from freqtrade import constants
+from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class Analyze(object):
         :param config: Bot configuration (use the one from Configuration())
         """
         self.config = config
-        self.strategy = StrategyResolver(self.config).strategy
+        self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:
@@ -45,21 +46,23 @@ class Analyze(object):
         :param ticker: See exchange.get_ticker_history
         :return: DataFrame
         """
-        columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
-        frame = DataFrame(ticker).rename(columns=columns)
-        if 'BV' in frame:
-            frame.drop('BV', axis=1, inplace=True)
+        cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+        frame = DataFrame(ticker, columns=cols)
 
-        frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+        frame['date'] = to_datetime(frame['date'],
+                                    unit='ms',
+                                    utc=True,
+                                    infer_datetime_format=True)
 
         # group by index and aggregate results to eliminate duplicate ticks
         frame = frame.groupby(by='date', as_index=False, sort=True).agg({
-            'close': 'last',
+            'open': 'first',
             'high': 'max',
             'low': 'min',
-            'open': 'first',
+            'close': 'last',
             'volume': 'max',
         })
+        frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
         return frame
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
@@ -88,12 +91,19 @@ class Analyze(object):
         """
         return self.strategy.populate_sell_trend(dataframe=dataframe)
 
-    def get_ticker_interval(self) -> int:
+    def get_ticker_interval(self) -> str:
         """
         Return ticker interval to use
         :return: Ticker interval value to use
         """
         return self.strategy.ticker_interval
+
+    def get_stoploss(self) -> float:
+        """
+        Return stoploss to use
+        :return: Strategy stoploss value to use
+        """
+        return self.strategy.stoploss
 
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
@@ -107,14 +117,14 @@ class Analyze(object):
         dataframe = self.populate_sell_trend(dataframe)
         return dataframe
 
-    def get_signal(self, pair: str, interval: int) -> Tuple[bool, bool]:
+    def get_signal(self, exchange: Exchange, pair: str, interval: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
-        :param pair: pair in format BTC_ANT or BTC-ANT
+        :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        ticker_hist = get_ticker_history(pair, interval)
+        ticker_hist = exchange.get_ticker_history(pair, interval)
         if not ticker_hist:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
@@ -144,7 +154,8 @@ class Analyze(object):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        if signal_date < arrow.utcnow() - timedelta(minutes=(interval + 5)):
+        interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
+        if signal_date < (arrow.utcnow() - timedelta(minutes=(interval_minutes + 5))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,
@@ -168,33 +179,45 @@ class Analyze(object):
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
+        current_profit = trade.calc_profit_percent(rate)
+        if self.stop_loss_reached(current_profit=current_profit):
+            return True
+
+        experimental = self.config.get('experimental', {})
+
+        if buy and experimental.get('ignore_roi_if_buy_signal', False):
+            logger.debug('Buy signal still active - not selling.')
+            return False
+
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-        if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
+        if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
             logger.debug('Required profit reached. Selling..')
             return True
 
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if self.config.get('experimental', {}).get('sell_profit_only', False):
+        if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
                 return False
-
-        if sell and not buy and self.config.get('experimental', {}).get('use_sell_signal', False):
+        if sell and not buy and experimental.get('use_sell_signal', False):
             logger.debug('Sell signal received. Selling..')
             return True
 
         return False
 
-    def min_roi_reached(self, trade: Trade, current_rate: float, current_time: datetime) -> bool:
+    def stop_loss_reached(self, current_profit: float) -> bool:
+        """Based on current profit of the trade and configured stoploss, decides to sell or not"""
+
+        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
+            logger.debug('Stop loss hit.')
+            return True
+        return False
+
+    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
         sell
         :return True if bot should sell at current rate
         """
-        current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
-            logger.debug('Stop loss hit.')
-            return True
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60

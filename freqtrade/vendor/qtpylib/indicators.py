@@ -110,10 +110,13 @@ def heikinashi(bars):
     bars = bars.copy()
     bars['ha_close'] = (bars['open'] + bars['high'] +
                         bars['low'] + bars['close']) / 4
+
     bars['ha_open'] = (bars['open'].shift(1) + bars['close'].shift(1)) / 2
     bars.loc[:1, 'ha_open'] = bars['open'].values[0]
-    bars.loc[1:, 'ha_open'] = (
-        (bars['ha_open'].shift(1) + bars['ha_close'].shift(1)) / 2)[1:]
+    for x in range(2):
+        bars.loc[1:, 'ha_open'] = (
+            (bars['ha_open'].shift(1) + bars['ha_close'].shift(1)) / 2)[1:]
+
     bars['ha_high'] = bars.loc[:, ['high', 'ha_open', 'ha_close']].max(axis=1)
     bars['ha_low'] = bars.loc[:, ['low', 'ha_open', 'ha_close']].min(axis=1)
 
@@ -248,45 +251,36 @@ def crossed_below(series1, series2):
 
 def rolling_std(series, window=200, min_periods=None):
     min_periods = window if min_periods is None else min_periods
-    try:
-        if min_periods == window:
-            return numpy_rolling_std(series, window, True)
-        else:
-            try:
-                return series.rolling(window=window, min_periods=min_periods).std()
-            except BaseException:
-                return pd.Series(series).rolling(window=window, min_periods=min_periods).std()
-    except BaseException:
-        return pd.rolling_std(series, window=window, min_periods=min_periods)
-
+    if min_periods == window and len(series) > window:
+        return numpy_rolling_std(series, window, True)
+    else:
+        try:
+            return series.rolling(window=window, min_periods=min_periods).std()
+        except BaseException:
+            return pd.Series(series).rolling(window=window, min_periods=min_periods).std()
 
 # ---------------------------------------------
+
 
 def rolling_mean(series, window=200, min_periods=None):
     min_periods = window if min_periods is None else min_periods
-    try:
-        if min_periods == window:
-            return numpy_rolling_mean(series, window, True)
-        else:
-            try:
-                return series.rolling(window=window, min_periods=min_periods).mean()
-            except BaseException:
-                return pd.Series(series).rolling(window=window, min_periods=min_periods).mean()
-    except BaseException:
-        return pd.rolling_mean(series, window=window, min_periods=min_periods)
-
+    if min_periods == window and len(series) > window:
+        return numpy_rolling_mean(series, window, True)
+    else:
+        try:
+            return series.rolling(window=window, min_periods=min_periods).mean()
+        except BaseException:
+            return pd.Series(series).rolling(window=window, min_periods=min_periods).mean()
 
 # ---------------------------------------------
+
 
 def rolling_min(series, window=14, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
-        try:
-            return series.rolling(window=window, min_periods=min_periods).min()
-        except BaseException:
-            return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
+        return series.rolling(window=window, min_periods=min_periods).min()
     except BaseException:
-        return pd.rolling_min(series, window=window, min_periods=min_periods)
+        return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
 
 
 # ---------------------------------------------
@@ -294,12 +288,9 @@ def rolling_min(series, window=14, min_periods=None):
 def rolling_max(series, window=14, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
-        try:
-            return series.rolling(window=window, min_periods=min_periods).min()
-        except BaseException:
-            return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
+        return series.rolling(window=window, min_periods=min_periods).min()
     except BaseException:
-        return pd.rolling_min(series, window=window, min_periods=min_periods)
+        return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
 
 
 # ---------------------------------------------
@@ -566,8 +557,8 @@ def stoch(df, window=14, d=3, k=3, fast=False):
 
     return pd.DataFrame(index=df.index, data=data)
 
-
 # ---------------------------------------------
+
 
 def zscore(bars, window=20, stds=1, col='close'):
     """ get zscore of price """
