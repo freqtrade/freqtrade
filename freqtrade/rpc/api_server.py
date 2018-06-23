@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
-class ApiServerSuperWrap(RPC):
+class ApiServer(RPC):
     """
     This class is for REST calls across api server
     """

@@ -26,8 +26,8 @@ class RPCManager(object):
         # Enable local rest api server for cmd line control
         if freqtrade.config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
-            from freqtrade.rpc.api_server import ApiServerSuperWrap
-            self.registered_modules.append(ApiServerSuperWrap(freqtrade))
+            from freqtrade.rpc.api_server import ApiServer
+            self.registered_modules.append(ApiServer(freqtrade))
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
