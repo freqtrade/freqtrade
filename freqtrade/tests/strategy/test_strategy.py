@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
-
 import logging
 import os
 
@@ -21,6 +20,8 @@ def test_import_strategy(caplog):
     assert strategy.some_method() == 42
 
     imported_strategy = import_strategy(strategy)
+
+    assert dir(strategy) == dir(imported_strategy)
 
     assert imported_strategy.__module__ == 'freqtrade.strategy'
     assert imported_strategy.some_method() == 42
