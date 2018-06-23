@@ -4,7 +4,6 @@
 This module contains the hyperopt logic
 """
 
-import json
 import logging
 import os
 import pickle
