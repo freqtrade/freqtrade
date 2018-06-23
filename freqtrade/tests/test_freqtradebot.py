@@ -1274,7 +1274,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, mocker
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
+    mocker.patch('freqtrade.freqtradebot.Analyze.stop_loss_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -1312,9 +1312,9 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
-            'bid': 0.00000172,
-            'ask': 0.00000173,
-            'last': 0.00000172
+            'bid': 0.0000172,
+            'ask': 0.0000173,
+            'last': 0.0000172
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -1331,6 +1331,83 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, mocke
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    patch_get_signal(mocker, value=(False, True))
+    assert freqtrade.handle_trade(trade) is True
+
+
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
+    """
+    Test sell_profit_only feature when enabled and we have a loss
+    """
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=True)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': 0.0000172,
+            'ask': 0.0000173,
+            'last': 0.0000172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['experimental'] = {
+        'ignore_roi_if_buy_signal': True
+    }
+
+    freqtrade = FreqtradeBot(conf)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    patch_get_signal(mocker, value=(True, True))
+    assert freqtrade.handle_trade(trade) is False
+
+    # Test if buy-signal is absent (should sell due to roi = true)
+    patch_get_signal(mocker, value=(False, True))
+    assert freqtrade.handle_trade(trade) is True
+
+
+def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
+    """
+    Test sell_profit_only feature when enabled and we have a loss
+    """
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=True)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00000172,
+            'ask': 0.00000173,
+            'last': 0.00000172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['experimental'] = {
+        'ignore_roi_if_buy_signal': False
+    }
+
+    freqtrade = FreqtradeBot(conf)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    # Sell due to min_roi_reached
+    patch_get_signal(mocker, value=(True, True))
+    assert freqtrade.handle_trade(trade) is True
+
+    # Test if buy-signal is absent
     patch_get_signal(mocker, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
 

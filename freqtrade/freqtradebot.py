@@ -423,8 +423,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
-
-        if self.config.get('experimental', {}).get('use_sell_signal'):
+        experimental = self.config.get('experimental', {})
+        if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
             (buy, sell) = self.analyze.get_signal(self.exchange,
                                                   trade.pair, self.analyze.get_ticker_interval())
 
