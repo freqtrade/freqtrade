@@ -510,7 +510,6 @@ def test_cancel_order_dry_run(default_conf, mocker):
 # Ensure that if not dry_run, we should call API
 def test_cancel_order(default_conf, mocker):
     default_conf['dry_run'] = False
-    # mocker.patch.dict('freqtrade.exchange.._CONF', default_conf)
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(return_value=123)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)

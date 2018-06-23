@@ -21,7 +21,6 @@ from freqtrade import OperationalException
 
 logger = logging.getLogger(__name__)
 
-_CONF = {}
 _DECL_BASE: Any = declarative_base()
 
 
@@ -33,9 +32,7 @@ def init(config: Dict) -> None:
     :param config: config to use
     :return: None
     """
-    _CONF.update(config)
-
-    db_url = _CONF.get('db_url', None)
+    db_url = config.get('db_url', None)
     kwargs = {}
 
     # Take care of thread ownership if in-memory db
@@ -61,7 +58,7 @@ def init(config: Dict) -> None:
     check_migrate(engine)
 
     # Clean dry_run DB if the db is not in-memory
-    if _CONF.get('dry_run', False) and db_url != 'sqlite://':
+    if config.get('dry_run', False) and db_url != 'sqlite://':
         clean_dry_run_db()
 
 
