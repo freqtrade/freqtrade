@@ -153,7 +153,7 @@ class Telegram(RPC):
         try:
             df_statuses = self._rpc_status_table()
             message = tabulate(df_statuses, headers='keys', tablefmt='simple')
-            self._send_msg("<pre>{}</pre>".format(message), parse_mode=ParseMode.HTML)
+            self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
@@ -166,6 +166,8 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
+        stake_cur = self._config['stake_currency']
+        fiat_disp_cur = self._config['fiat_display_currency']
         try:
             timescale = int(update.message.text.replace('/daily', '').strip())
         except (TypeError, ValueError):
@@ -173,18 +175,17 @@ class Telegram(RPC):
         try:
             stats = self._rpc_daily_profit(
                 timescale,
-                self._config['stake_currency'],
-                self._config['fiat_display_currency']
+                stake_cur,
+                fiat_disp_cur
             )
             stats = tabulate(stats,
                              headers=[
                                  'Day',
-                                 'Profit {}'.format(self._config['stake_currency']),
-                                 'Profit {}'.format(self._config['fiat_display_currency'])
+                                 f'Profit {stake_cur}',
+                                 f'Profit {fiat_disp_cur}'
                              ],
                              tablefmt='simple')
-            message = '<b>Daily Profit over the last {} days</b>:\n<pre>{}</pre>'\
-                      .format(timescale, stats)
+            message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats}</pre>'
             self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
@@ -198,39 +199,38 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
+        stake_cur = self._config['stake_currency']
+        fiat_disp_cur = self._config['fiat_display_currency']
+
         try:
             stats = self._rpc_trade_statistics(
-                self._config['stake_currency'],
-                self._config['fiat_display_currency'])
-
+                stake_cur,
+                fiat_disp_cur)
+            profit_closed_coin = stats['profit_closed_coin']
+            profit_closed_percent = stats['profit_closed_percent']
+            profit_closed_fiat = stats['profit_closed_fiat']
+            profit_all_coin = stats['profit_all_coin']
+            profit_all_percent = stats['profit_all_percent']
+            profit_all_fiat = stats['profit_all_fiat']
+            trade_count = stats['trade_count']
+            first_trade_date = stats['first_trade_date']
+            latest_trade_date = stats['latest_trade_date']
+            avg_duration = stats['avg_duration']
+            best_pair = stats['best_pair']
+            best_rate = stats['best_rate']
             # Message to display
             markdown_msg = "*ROI:* Close trades\n" \
-                           "∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`\n" \
-                           "∙ `{profit_closed_fiat:.3f} {fiat}`\n" \
-                           "*ROI:* All trades\n" \
-                           "∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`\n" \
-                           "∙ `{profit_all_fiat:.3f} {fiat}`\n" \
-                           "*Total Trade Count:* `{trade_count}`\n" \
-                           "*First Trade opened:* `{first_trade_date}`\n" \
-                           "*Latest Trade opened:* `{latest_trade_date}`\n" \
-                           "*Avg. Duration:* `{avg_duration}`\n" \
-                           "*Best Performing:* `{best_pair}: {best_rate:.2f}%`"\
-                           .format(
-                               coin=self._config['stake_currency'],
-                               fiat=self._config['fiat_display_currency'],
-                               profit_closed_coin=stats['profit_closed_coin'],
-                               profit_closed_percent=stats['profit_closed_percent'],
-                               profit_closed_fiat=stats['profit_closed_fiat'],
-                               profit_all_coin=stats['profit_all_coin'],
-                               profit_all_percent=stats['profit_all_percent'],
-                               profit_all_fiat=stats['profit_all_fiat'],
-                               trade_count=stats['trade_count'],
-                               first_trade_date=stats['first_trade_date'],
-                               latest_trade_date=stats['latest_trade_date'],
-                               avg_duration=stats['avg_duration'],
-                               best_pair=stats['best_pair'],
-                               best_rate=stats['best_rate']
-                           )
+                           f"∙ `{profit_closed_coin:.8f} {stake_cur} "\
+                           f"({profit_closed_percent:.2f}%)`\n" \
+                           f"∙ `{profit_closed_fiat:.3f} {fiat_disp_cur}`\n" \
+                           f"*ROI:* All trades\n" \
+                           f"∙ `{profit_all_coin:.8f} {stake_cur} ({profit_all_percent:.2f}%)`\n" \
+                           f"∙ `{profit_all_fiat:.3f} {fiat_disp_cur}`\n" \
+                           f"*Total Trade Count:* `{trade_count}`\n" \
+                           f"*First Trade opened:* `{first_trade_date}`\n" \
+                           f"*Latest Trade opened:* `{latest_trade_date}`\n" \
+                           f"*Avg. Duration:* `{avg_duration}`\n" \
+                           f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`"
             self._send_msg(markdown_msg, bot=bot)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
