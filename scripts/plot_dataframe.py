@@ -104,19 +104,20 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         if tickers == {}:
             exit()
 
+    if args.db_url and args.exportfilename:
+        logger.critical("Can only specify --db-url or --export-filename")
     # Get trades already made from the DB
     trades: pd.DataFrame = pd.DataFrame()
     if args.db_url:
         persistence.init(_CONF)
-        trades_ = Trade.query.filter(Trade.pair.is_(pair)).all()
-        # columns = ["pair", "profit", "opents", "closets", "index", "duration"]
         columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
 
         trades = pd.DataFrame([(t.pair, t.calc_profit(),
                                 t.open_date, t.close_date,
                                 t.open_rate, t.close_rate,
                                 t.close_date.timestamp() - t.open_date.timestamp())
-                               for t in trades_], columns=columns)
+                               for t in Trade.query.filter(Trade.pair.is_(pair)).all()],
+                              columns=columns)
 
     if args.exportfilename:
         file = Path(args.exportfilename)
@@ -147,13 +148,15 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     dataframe = analyze.populate_buy_trend(dataframe)
     dataframe = analyze.populate_sell_trend(dataframe)
 
-    if len(dataframe.index) > 750:
-        logger.warning('Ticker contained more than 750 candles, clipping.')
-
+    if len(dataframe.index) > args.plot_limit:
+        logger.warning('Ticker contained more than %s candles as defined '
+                       'with --plot-limit, clipping.', args.plot_limit)
+    dataframe = dataframe.tail(args.plot_limit)
+    trades = trades.loc[trades['opents'] >= dataframe.iloc[0]['date']]
     fig = generate_graph(
         pair=pair,
         trades=trades,
-        data=dataframe.tail(750),
+        data=dataframe,
         args=args
     )
 
@@ -333,11 +336,17 @@ def plot_parse_args(args: List[str]) -> Namespace:
         default='macd',
         dest='indicators2',
     )
-
+    arguments.parser.add_argument(
+        '--plot-limit',
+        help='Specify tick limit for plotting - too high values cause huge files - '
+             'Default: %(default)s',
+        dest='plot_limit',
+        default=750,
+        type=str,
+    )
     arguments.common_args_parser()
     arguments.optimizer_shared_options(arguments.parser)
     arguments.backtesting_options(arguments.parser)
-
     return arguments.parse_args()
 
 
