@@ -39,13 +39,52 @@ from plotly.offline import plot
 import freqtrade.optimize as optimize
 from freqtrade import persistence
 from freqtrade.analyze import Analyze
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
+
+
+def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFrame:
+    trades: pd.DataFrame = pd.DataFrame()
+    if args.db_url:
+        persistence.init(_CONF)
+        columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
+
+        trades = pd.DataFrame([(t.pair, t.calc_profit(),
+                                t.open_date, t.close_date,
+                                t.open_rate, t.close_rate,
+                                t.close_date.timestamp() - t.open_date.timestamp())
+                               for t in Trade.query.filter(Trade.pair.is_(pair)).all()],
+                              columns=columns)
+
+    if args.exportfilename:
+        file = Path(args.exportfilename)
+        # must align with columns in backtest.py
+        columns = ["pair", "profit", "opents", "closets", "index", "duration",
+                   "open_rate", "close_rate", "open_at_end"]
+        with file.open() as f:
+            data = json.load(f)
+            trades = pd.DataFrame(data, columns=columns)
+        trades = trades.loc[trades["pair"] == pair]
+        if timerange:
+            if timerange.starttype == 'date':
+                trades = trades.loc[trades["opents"] >= timerange.startts]
+            if timerange.stoptype == 'date':
+                trades = trades.loc[trades["opents"] <= timerange.stopts]
+
+        trades['opents'] = pd.to_datetime(trades['opents'],
+                                          unit='s',
+                                          utc=True,
+                                          infer_datetime_format=True)
+        trades['closets'] = pd.to_datetime(trades['closets'],
+                                           unit='s',
+                                           utc=True,
+                                           infer_datetime_format=True)
+    return trades
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
@@ -107,41 +146,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     if args.db_url and args.exportfilename:
         logger.critical("Can only specify --db-url or --export-filename")
     # Get trades already made from the DB
-    trades: pd.DataFrame = pd.DataFrame()
-    if args.db_url:
-        persistence.init(_CONF)
-        columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
-
-        trades = pd.DataFrame([(t.pair, t.calc_profit(),
-                                t.open_date, t.close_date,
-                                t.open_rate, t.close_rate,
-                                t.close_date.timestamp() - t.open_date.timestamp())
-                               for t in Trade.query.filter(Trade.pair.is_(pair)).all()],
-                              columns=columns)
-
-    if args.exportfilename:
-        file = Path(args.exportfilename)
-        # must align with columns in backtest.py
-        columns = ["pair", "profit", "opents", "closets", "index", "duration",
-                   "open_rate", "close_rate", "open_at_end"]
-        with file.open() as f:
-            data = json.load(f)
-            trades = pd.DataFrame(data, columns=columns)
-        trades = trades.loc[trades["pair"] == pair]
-        if timerange:
-            if timerange.starttype == 'date':
-                trades = trades.loc[trades["opents"] >= timerange.startts]
-            if timerange.stoptype == 'date':
-                trades = trades.loc[trades["opents"] <= timerange.stopts]
-
-        trades['opents'] = pd.to_datetime(trades['opents'],
-                                          unit='s',
-                                          utc=True,
-                                          infer_datetime_format=True)
-        trades['closets'] = pd.to_datetime(trades['closets'],
-                                           unit='s',
-                                           utc=True,
-                                           infer_datetime_format=True)
+    trades = load_trades(args, pair, timerange)
 
     dataframes = analyze.tickerdata_to_dataframe(tickers)
     dataframe = dataframes[pair]
