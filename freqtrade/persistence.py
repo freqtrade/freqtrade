@@ -5,55 +5,109 @@ This module contains the class to persist trades into SQLite
 import logging
 from datetime import datetime
 from decimal import Decimal, getcontext
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
                         create_engine)
-from sqlalchemy.engine import Engine
+from sqlalchemy import inspect
+from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from freqtrade import OperationalException
+
 logger = logging.getLogger(__name__)
 
-_CONF = {}
-_DECL_BASE = declarative_base()
+_DECL_BASE: Any = declarative_base()
 
 
-def init(config: dict, engine: Optional[Engine] = None) -> None:
+def init(config: Dict) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
     :param config: config to use
-    :param engine: database engine for sqlalchemy (Optional)
     :return: None
     """
-    _CONF.update(config)
-    if not engine:
-        if _CONF.get('dry_run', False):
-            # the user wants dry run to use a DB
-            if _CONF.get('dry_run_db', False):
-                engine = create_engine('sqlite:///tradesv3.dry_run.sqlite')
-            # Otherwise dry run will store in memory
-            else:
-                engine = create_engine('sqlite://',
-                                       connect_args={'check_same_thread': False},
-                                       poolclass=StaticPool,
-                                       echo=False)
-        else:
-            engine = create_engine('sqlite:///tradesv3.sqlite')
+    db_url = config.get('db_url', None)
+    kwargs = {}
+
+    # Take care of thread ownership if in-memory db
+    if db_url == 'sqlite://':
+        kwargs.update({
+            'connect_args': {'check_same_thread': False},
+            'poolclass': StaticPool,
+            'echo': False,
+        })
+
+    try:
+        engine = create_engine(db_url, **kwargs)
+    except NoSuchModuleError:
+        error = 'Given value for db_url: \'{}\' is no valid database URL! (See {}).'.format(
+            db_url, 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
+        )
+        raise OperationalException(error)
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)
+    check_migrate(engine)
 
-    # Clean dry_run DB
-    if _CONF.get('dry_run', False) and _CONF.get('dry_run_db', False):
+    # Clean dry_run DB if the db is not in-memory
+    if config.get('dry_run', False) and db_url != 'sqlite://':
         clean_dry_run_db()
+
+
+def has_column(columns, searchname: str) -> bool:
+    return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
+
+
+def check_migrate(engine) -> None:
+    """
+    Checks if migration is necessary and migrates if necessary
+    """
+    inspector = inspect(engine)
+
+    cols = inspector.get_columns('trades')
+
+    if not has_column(cols, 'fee_open'):
+        # Schema migration necessary
+        engine.execute("alter table trades rename to trades_bak")
+        # let SQLAlchemy create the schema as required
+        _DECL_BASE.metadata.create_all(engine)
+
+        # Copy data back - following the correct schema
+        engine.execute("""insert into trades
+                (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
+                open_rate_requested, close_rate, close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id)
+            select id, lower(exchange),
+                case
+                    when instr(pair, '_') != 0 then
+                    substr(pair,    instr(pair, '_') + 1) || '/' ||
+                    substr(pair, 1, instr(pair, '_') - 1)
+                    else pair
+                    end
+                pair,
+                is_open, fee fee_open, fee fee_close,
+                open_rate, null open_rate_requested, close_rate,
+                null close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id
+                from trades_bak
+             """)
+
+        # Reread columns - the above recreated the table!
+        inspector = inspect(engine)
+        cols = inspector.get_columns('trades')
+
+    if not has_column(cols, 'open_rate_requested'):
+        engine.execute("alter table trades add open_rate_requested float")
+    if not has_column(cols, 'close_rate_requested'):
+        engine.execute("alter table trades add close_rate_requested float")
 
 
 def cleanup() -> None:
@@ -85,9 +139,12 @@ class Trade(_DECL_BASE):
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)
-    fee = Column(Float, nullable=False, default=0.0)
+    fee_open = Column(Float, nullable=False, default=0.0)
+    fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
+    open_rate_requested = Column(Float)
     close_rate = Column(Float)
+    close_rate_requested = Column(Float)
     close_profit = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
@@ -111,20 +168,20 @@ class Trade(_DECL_BASE):
         :return: None
         """
         # Ignore open and cancelled orders
-        if not order['closed'] or order['rate'] is None:
+        if order['status'] == 'open' or order['price'] is None:
             return
 
         logger.info('Updating trade (id=%d) ...', self.id)
 
         getcontext().prec = 8  # Bittrex do not go above 8 decimal
-        if order['type'] == 'LIMIT_BUY':
+        if order['type'] == 'limit' and order['side'] == 'buy':
             # Update open rate and actual amount
-            self.open_rate = Decimal(order['rate'])
+            self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
             logger.info('LIMIT_BUY has been fulfilled for %s.', self)
             self.open_order_id = None
-        elif order['type'] == 'LIMIT_SELL':
-            self.close(order['rate'])
+        elif order['type'] == 'limit' and order['side'] == 'sell':
+            self.close(order['price'])
         else:
             raise ValueError('Unknown order type: {}'.format(order['type']))
         cleanup()
@@ -156,7 +213,7 @@ class Trade(_DECL_BASE):
         getcontext().prec = 8
 
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
-        fees = buy_trade * Decimal(fee or self.fee)
+        fees = buy_trade * Decimal(fee or self.fee_open)
         return float(buy_trade + fees)
 
     def calc_close_trade_price(
@@ -177,7 +234,7 @@ class Trade(_DECL_BASE):
             return 0.0
 
         sell_trade = (Decimal(self.amount) * Decimal(rate or self.close_rate))
-        fees = sell_trade * Decimal(fee or self.fee)
+        fees = sell_trade * Decimal(fee or self.fee_close)
         return float(sell_trade - fees)
 
     def calc_profit(
@@ -195,7 +252,7 @@ class Trade(_DECL_BASE):
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
-            fee=(fee or self.fee)
+            fee=(fee or self.fee_close)
         )
         return float("{0:.8f}".format(close_trade_price - open_trade_price))
 
@@ -215,7 +272,7 @@ class Trade(_DECL_BASE):
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
             rate=(rate or self.close_rate),
-            fee=(fee or self.fee)
+            fee=(fee or self.fee_close)
         )
 
         return float("{0:.8f}".format((close_trade_price / open_trade_price) - 1))

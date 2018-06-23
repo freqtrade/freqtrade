@@ -1,12 +1,37 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
-
 import logging
 import os
 
 import pytest
 
+from freqtrade.strategy import import_strategy
+from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.resolver import StrategyResolver
+
+
+def test_import_strategy(caplog):
+    caplog.set_level(logging.DEBUG)
+
+    strategy = DefaultStrategy()
+    strategy.some_method = lambda *args, **kwargs: 42
+
+    assert strategy.__module__ == 'freqtrade.strategy.default_strategy'
+    assert strategy.some_method() == 42
+
+    imported_strategy = import_strategy(strategy)
+
+    assert dir(strategy) == dir(imported_strategy)
+
+    assert imported_strategy.__module__ == 'freqtrade.strategy'
+    assert imported_strategy.some_method() == 42
+
+    assert (
+        'freqtrade.strategy',
+        logging.DEBUG,
+        'Imported strategy freqtrade.strategy.default_strategy.DefaultStrategy '
+        'as freqtrade.strategy.DefaultStrategy',
+    ) in caplog.record_tuples
 
 
 def test_search_strategy():
@@ -20,19 +45,21 @@ def test_search_strategy():
 
 
 def test_load_strategy(result):
-    resolver = StrategyResolver()
-    resolver._load_strategy('TestStrategy')
+    resolver = StrategyResolver({'strategy': 'TestStrategy'})
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
-def test_load_strategy_custom_directory(result):
+def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
     extra_dir = os.path.join('some', 'path')
-    with pytest.raises(
-            FileNotFoundError,
-            match=r".*No such file or directory: '{}'".format(extra_dir)):
-        resolver._load_strategy('TestStrategy', extra_dir)
+    resolver._load_strategy('TestStrategy', extra_dir)
+
+    assert (
+        'freqtrade.strategy.resolver',
+        logging.WARNING,
+        'Path "{}" does not exist'.format(extra_dir),
+    ) in caplog.record_tuples
 
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)

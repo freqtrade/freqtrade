@@ -11,6 +11,7 @@ from collections import OrderedDict
 from typing import Optional, Dict, Type
 
 from freqtrade import constants
+from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -33,7 +34,8 @@ class StrategyResolver(object):
 
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
-        self.strategy = self._load_strategy(strategy_name, extra_dir=config.get('strategy_path'))
+        self.strategy: IStrategy = self._load_strategy(strategy_name,
+                                                       extra_dir=config.get('strategy_path'))
 
         # Set attributes
         # Check if we need to override configuration
@@ -59,10 +61,9 @@ class StrategyResolver(object):
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
             key=lambda t: t[0]))
         self.strategy.stoploss = float(self.strategy.stoploss)
-        self.strategy.ticker_interval = int(self.strategy.ticker_interval)
 
     def _load_strategy(
-            self, strategy_name: str, extra_dir: Optional[str] = None) -> Optional[IStrategy]:
+            self, strategy_name: str, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
@@ -71,7 +72,7 @@ class StrategyResolver(object):
         """
         current_path = os.path.dirname(os.path.realpath(__file__))
         abs_paths = [
-            os.path.join(current_path, '..', '..', 'user_data', 'strategies'),
+            os.path.join(os.getcwd(), 'user_data', 'strategies'),
             current_path,
         ]
 
@@ -80,10 +81,13 @@ class StrategyResolver(object):
             abs_paths.insert(0, extra_dir)
 
         for path in abs_paths:
-            strategy = self._search_strategy(path, strategy_name)
-            if strategy:
-                logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
-                return strategy
+            try:
+                strategy = self._search_strategy(path, strategy_name)
+                if strategy:
+                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                    return import_strategy(strategy)
+            except FileNotFoundError:
+                logger.warning('Path "%s" does not exist', path)
 
         raise ImportError(
             "Impossible to load Strategy '{}'. This class does not exist"
@@ -100,9 +104,9 @@ class StrategyResolver(object):
         """
 
         # Generate spec based on absolute path
-        spec = importlib.util.spec_from_file_location('user_data.strategies', module_path)
+        spec = importlib.util.spec_from_file_location('unknown', module_path)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
 
         valid_strategies_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)

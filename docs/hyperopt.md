@@ -9,18 +9,17 @@ parameters with Hyperopt.
 - [Advanced Hyperopt notions](#advanced-notions)
     - [Understand the Guards and Triggers](#understand-the-guards-and-triggers)
 - [Execute Hyperopt](#execute-hyperopt)
-    - [Hyperopt with MongoDB](#hyperopt-with-mongoDB)
 - [Understand the hyperopts result](#understand-the-backtesting-result)
 
 ## Prepare Hyperopt
 Before we start digging in Hyperopt, we recommend you to take a look at 
-your strategy file located into [user_data/strategies/](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+your strategy file located into [user_data/strategies/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
  
 ### 1. Configure your Guards and Triggers
 There are two places you need to change in your strategy file to add a 
 new buy strategy for testing:
-- Inside [populate_buy_trend()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L278-L294).
-- Inside [hyperopt_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297) known as `SPACE`.
+- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L278-L294).
+- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297) known as `SPACE`.
 
 There you have two different type of indicators: 1. `guards` and 2. 
 `triggers`.
@@ -110,13 +109,13 @@ cannot use your config file. It is also made on purpose to allow you
 testing your strategy with different configurations.
 
 The Hyperopt configuration is located in 
-[user_data/hyperopt_conf.py](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopt_conf.py).
+[user_data/hyperopt_conf.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopt_conf.py).
 
 
 ## Advanced notions
 ### Understand the Guards and Triggers
 When you need to add the new guards and triggers to be hyperopt 
-parameters, you do this by adding them into the [hyperopt_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297).
+parameters, you do this by adding them into the [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py#L244-L297).
 
 If it's a trigger, you add one line to the 'trigger' choice group and that's it.
 
@@ -193,41 +192,6 @@ Legal values are:
 - `roi`: just optimize the minimal profit table for your strategy
 - `stoploss`: search for the best stoploss value
 - space-separated list of any of the above values for example `--spaces roi stoploss`
-
-### Hyperopt with MongoDB
-Hyperopt with MongoDB, is like Hyperopt under steroids. As you saw by
-executing the previous command is the execution takes a long time. 
-To accelerate it you can use hyperopt with MongoDB.
-
-To run hyperopt with MongoDb you will need 3 terminals.
-
-**Terminal 1: Start MongoDB**
-```bash
-cd <freqtrade> 
-source .env/bin/activate
-python3 scripts/start-mongodb.py
-```
-
-**Terminal 2: Start Hyperopt worker**
-```bash
-cd <freqtrade> 
-source .env/bin/activate
-python3 scripts/start-hyperopt-worker.py
-```
-
-**Terminal 3: Start Hyperopt with MongoDB**
-```bash
-cd <freqtrade> 
-source .env/bin/activate
-python3 ./freqtrade/main.py -c config.json hyperopt --use-mongodb
-```
-
-**Re-run an Hyperopt**
-To re-run Hyperopt you have to delete the existing MongoDB table.
-```bash
-cd <freqtrade> 
-rm -rf .hyperopt/mongodb/
-```
 
 ## Understand the hyperopts result 
 Once Hyperopt is completed you can use the result to adding new buy 
@@ -312,4 +276,4 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
 
 ## Next step
 Now you have a perfect bot and want to control it from Telegram. Your
-next step is to learn the [Telegram usage](https://github.com/gcarq/freqtrade/blob/develop/docs/telegram-usage.md).
+next step is to learn the [Telegram usage](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md).

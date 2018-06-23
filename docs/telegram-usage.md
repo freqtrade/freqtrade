@@ -4,7 +4,7 @@ This page explains how to command your bot with Telegram.
 
 ## Pre-requisite
 To control your bot with Telegram, you need first to 
-[set up a Telegram bot](https://github.com/gcarq/freqtrade/blob/develop/docs/pre-requisite.md) 
+[set up a Telegram bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md) 
 and add your Telegram API keys into your config file.
 
 ## Telegram commands
@@ -16,6 +16,7 @@ official commands. You can ask at any moment for help with `/help`.
 |----------|---------|-------------|
 | `/start` | | Starts the trader
 | `/stop` | | Stops the trader
+| `/reload_conf` | | Reloads the configuration file
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format
 | `/count` | | Displays number of trades used and available
@@ -42,7 +43,7 @@ Below, example of Telegram message you will receive for each command.
 For each open trade, the bot will send you the following message.
 
 > **Trade ID:** `123`  
-> **Current Pair:** BTC_CVC  
+> **Current Pair:** CVC/BTC
 > **Open Since:** `1 days ago`  
 > **Amount:** `26.64180098`  
 > **Open Rate:** `0.00007489`  
@@ -57,8 +58,8 @@ Return the status of all open trades in a table format.
 ```
    ID  Pair      Since    Profit  
 ----  --------  -------  --------  
-  67  BTC_SC    1 d      13.33%  
- 123  BTC_CVC   1 h      12.95%  
+  67  SC/BTC    1 d      13.33%
+ 123  CVC/BTC   1 h      12.95%
 ```
 
 ## /count
@@ -83,7 +84,7 @@ Return a summary of your profit/loss and performance.
 > **First Trade opened:** `3 days ago`  
 > **Latest Trade opened:** `2 minutes ago`  
 > **Avg. Duration:** `2:33:45`  
-> **Best Performing:** `BTC_PAY: 50.23%`
+> **Best Performing:** `PAY/BTC: 50.23%`
 
 ## /forcesell <trade_id>
 
@@ -92,11 +93,11 @@ Return a summary of your profit/loss and performance.
 ## /performance
 Return the performance of each crypto-currency the bot has sold.
 > Performance:  
-> 1. `BTC_RCN 57.77%`  
-> 2. `BTC_PAY 56.91%`  
-> 3. `BTC_VIB 47.07%`  
-> 4. `BTC_SALT 30.24%`  
-> 5. `BTC_STORJ 27.24%`  
+> 1. `RCN/BTC 57.77%`
+> 2. `PAY/BTC 56.91%`
+> 3. `VIB/BTC 47.07%`
+> 4. `SALT/BTC 30.24%`
+> 5. `STORJ/BTC 27.24%`
 > ...
 
 ## /balance
@@ -129,12 +130,8 @@ Day         Profit BTC      Profit USD
 > **Version:** `0.14.3` 
 
 ### using proxy with telegram
-in [freqtrade/freqtrade/rpc/telegram.py](https://github.com/gcarq/freqtrade/blob/develop/freqtrade/rpc/telegram.py) replace
 ```
-self._updater = Updater(token=self._config['telegram']['token'], workers=0)
-```
-
-with
-```
-self._updater = Updater(token=self._config['telegram']['token'], request_kwargs={'proxy_url': 'socks5://127.0.0.1:1080/'}, workers=0)
+$ export HTTP_PROXY="http://addr:port"
+$ export HTTPS_PROXY="http://addr:port"
+$ freqtrade
 ```
