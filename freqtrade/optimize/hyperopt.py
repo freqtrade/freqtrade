@@ -242,11 +242,11 @@ class Hyperopt(Backtesting):
             # GUARDS AND TRENDS
             if 'mfi-enabled' in params and params['mfi-enabled']:
                 conditions.append(dataframe['mfi'] < params['mfi-value'])
-            if 'fastd' in params and params['fastd-enabled']:
+            if 'fastd-enabled' in params and params['fastd-enabled']:
                 conditions.append(dataframe['fastd'] < params['fastd-value'])
-            if 'adx' in params and params['adx-enabled']:
+            if 'adx-enabled' in params and params['adx-enabled']:
                 conditions.append(dataframe['adx'] > params['adx-value'])
-            if 'rsi' in params and params['rsi-enabled']:
+            if 'rsi-enabled' in params and params['rsi-enabled']:
                 conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
