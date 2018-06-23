@@ -213,7 +213,7 @@ def test_status(default_conf, update, mocker, fee, ticker) -> None:
             'trade_id': 1,
             'pair': 'ETH/BTC',
             'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
-            'date': 'just now',
+            'open_date': datetime.utcnow(),
             'open_rate': 1.099e-05,
             'close_rate': None,
             'current_rate': 1.098e-05,
@@ -289,7 +289,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert '[ETH/BTC]' in msg_mock.call_args_list[0][0][0]
 
 
-def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
+def test_status_table_handle(default_conf, limit_buy_order, update, ticker, fee, mocker) -> None:
     """
     Test _status_table() method
     """
@@ -299,7 +299,8 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
         'freqtrade.freqtradebot.exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_order=MagicMock(return_value=limit_buy_order),
         get_fee=fee,
     )
     msg_mock = MagicMock()
@@ -324,7 +325,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     telegram._status_table(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'no active order' in msg_mock.call_args_list[0][0][0]
+    assert 'no active trade' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     # Create some test data

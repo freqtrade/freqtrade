@@ -6,12 +6,15 @@ This module manage Telegram communication
 import logging
 from typing import Any, Callable
 
+import arrow
+from pandas import DataFrame
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
+from freqtrade.misc import shorten_date
 from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
@@ -137,21 +140,25 @@ class Telegram(RPC):
 
         try:
             results = self._rpc_trade_status()
-            messages = [
-                "*Trade ID:* `{trade_id}`\n"
-                "*Current Pair:* [{pair}]({market_url})\n"
-                "*Open Since:* `{date}`\n"
-                "*Amount:* `{amount}`\n"
-                "*Open Rate:* `{open_rate:.8f}`\n"
-                "*Close Rate:* `{close_rate}`\n"
-                "*Current Rate:* `{current_rate:.8f}`\n"
-                "*Close Profit:* `{close_profit}`\n"
-                "*Current Profit:* `{current_profit:.2f}%`\n"
-                "*Open Order:* `{open_order}`".format(**result)
-                for result in results
-            ]
+            messages = []
+            for result in results:
+                result['open_date'] = arrow.get(result['open_date']).humanize()
+                messages.append(
+                    "*Trade ID:* `{trade_id}`\n"
+                    "*Current Pair:* [{pair}]({market_url})\n"
+                    "*Open Since:* `{open_date}`\n"
+                    "*Amount:* `{amount}`\n"
+                    "*Open Rate:* `{open_rate:.8f}`\n"
+                    "*Close Rate:* `{close_rate}`\n"
+                    "*Current Rate:* `{current_rate:.8f}`\n"
+                    "*Close Profit:* `{close_profit}`\n"
+                    "*Current Profit:* `{current_profit:.2f}%`\n"
+                    "*Open Order:* `{open_order}`".format(**result)
+                )
+
             for msg in messages:
                 self._send_msg(msg, bot=bot)
+
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
@@ -165,7 +172,20 @@ class Telegram(RPC):
         :return: None
         """
         try:
-            df_statuses = self._rpc_status_table()
+
+            results = self._rpc_trade_status()
+            data = [
+                [
+                    result['trade_id'],
+                    result['pair'],
+                    shorten_date(arrow.get(result['open_date']).humanize(only_distance=True)),
+                    result['current_profit'],
+                ] for result in results
+            ]
+            columns = ['ID', 'Pair', 'Since', 'Profit']
+            df_statuses = DataFrame.from_records(data, columns=columns)
+            df_statuses = df_statuses.set_index(columns[0])
+
             message = tabulate(df_statuses, headers='keys', tablefmt='simple')
             self._send_msg("<pre>{}</pre>".format(message), parse_mode=ParseMode.HTML)
         except RPCException as e:

@@ -10,10 +10,8 @@ from typing import Dict, Any, List
 import arrow
 import sqlalchemy as sql
 from numpy import mean, nan_to_num
-from pandas import DataFrame
 
 from freqtrade import exchange
-from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
 
@@ -93,7 +91,7 @@ class RPC(object):
                     trade_id=trade.id,
                     pair=trade.pair,
                     market_url=exchange.get_pair_detail_url(trade.pair),
-                    date=arrow.get(trade.open_date).humanize(),
+                    open_date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
                     current_rate=current_rate,
@@ -105,29 +103,6 @@ class RPC(object):
                     ) if order else None,
                 ))
             return results
-
-    def _rpc_status_table(self) -> DataFrame:
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-        elif not trades:
-            raise RPCException('no active order')
-        else:
-            trades_list = []
-            for trade in trades:
-                # calculate profit and send message to user
-                current_rate = exchange.get_ticker(trade.pair, False)['bid']
-                trades_list.append([
-                    trade.id,
-                    trade.pair,
-                    shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
-                ])
-
-            columns = ['ID', 'Pair', 'Since', 'Profit']
-            df_statuses = DataFrame.from_records(trades_list, columns=columns)
-            df_statuses = df_statuses.set_index(columns[0])
-            return df_statuses
 
     def _rpc_daily_profit(
             self, timescale: int,

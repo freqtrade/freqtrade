@@ -7,6 +7,7 @@ Unit test file for rpc/rpc.py
 from datetime import datetime
 from unittest.mock import MagicMock
 
+import arrow
 import pytest
 
 from freqtrade.freqtradebot import FreqtradeBot
@@ -39,6 +40,10 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         get_fee=fee
     )
 
+    now = arrow.utcnow()
+    now_mock = mocker.patch('freqtrade.freqtradebot.datetime', MagicMock())
+    now_mock.utcnow = lambda: now.datetime
+
     freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
 
@@ -57,7 +62,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
-        'date': 'just now',
+        'open_date': now,
         'open_rate': 1.099e-05,
         'close_rate': None,
         'current_rate': 1.098e-05,
@@ -66,38 +71,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'current_profit': -0.59,
         'open_order': '(limit buy rem=0.00000000)'
     } == results[0]
-
-
-def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
-    """
-    Test rpc_status_table() method
-    """
-    patch_get_signal(mocker, (True, False))
-    patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    mocker.patch.multiple(
-        'freqtrade.freqtradebot.exchange',
-        validate_pairs=MagicMock(),
-        get_ticker=ticker,
-        get_fee=fee
-    )
-
-    freqtradebot = FreqtradeBot(default_conf)
-    rpc = RPC(freqtradebot)
-
-    freqtradebot.state = State.STOPPED
-    with pytest.raises(RPCException, match=r'.*trader is not running*'):
-        rpc._rpc_status_table()
-
-    freqtradebot.state = State.RUNNING
-    with pytest.raises(RPCException, match=r'.*no active order*'):
-        rpc._rpc_status_table()
-
-    freqtradebot.create_trade()
-    result = rpc._rpc_status_table()
-    assert 'just now' in result['Since'].all()
-    assert 'ETH/BTC' in result['Pair'].all()
-    assert '-0.59%' in result['Profit'].all()
 
 
 def test_rpc_daily_profit(default_conf, update, ticker, fee,
