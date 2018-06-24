@@ -61,7 +61,7 @@ class RPC(object):
         """ Cleanup pending module resources """
 
     @abstractmethod
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
     def _rpc_trade_status(self) -> List[Dict]:
