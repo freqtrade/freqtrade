@@ -117,9 +117,6 @@ class Backtesting(object):
 
     def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
 
-        # columns = ["pair", "profit", "opents", "closets", "index", "duration",
-        # "open_rate", "close_rate", "open_at_end"]
-
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
                     t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
                     t.open_rate, t.close_rate, t.open_at_end)
