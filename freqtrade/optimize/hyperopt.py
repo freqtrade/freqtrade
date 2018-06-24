@@ -315,6 +315,18 @@ class Hyperopt(Backtesting):
                     results.trade_duration.mean(),
                 )
 
+    def get_optimizer(self) -> Optimizer:
+        return Optimizer(
+            self.hyperopt_space(),
+            base_estimator="ET",
+            acq_optimizer="auto",
+            n_initial_points=30,
+            acq_optimizer_kwargs={'n_jobs': -1}
+        )
+
+    def run_optimizer_parallel(self, parallel, asked) -> List:
+        return parallel(delayed(self.generate_optimizer)(v) for v in asked)
+
     def start(self) -> None:
         timerange = Arguments.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
@@ -341,33 +353,25 @@ class Hyperopt(Backtesting):
             )
 
         cpus = multiprocessing.cpu_count()
-        print(f'Found {cpus}. Let\'s make them scream!')
+        logger.info(f'Found {cpus}. Let\'s make them scream!')
 
-        opt = Optimizer(
-            self.hyperopt_space(),
-            base_estimator="ET",
-            acq_optimizer="auto",
-            n_initial_points=30,
-            acq_optimizer_kwargs={'n_jobs': -1}
-        )
+        opt = self.get_optimizer()
 
         try:
             with Parallel(n_jobs=-1) as parallel:
                 for i in range(self.total_tries//cpus):
                     asked = opt.ask(n_points=cpus)
-                    f_val = parallel(delayed(self.generate_optimizer)(v) for v in asked)
+                    f_val = self.run_optimizer_parallel(parallel, asked)
                     opt.tell(asked, [i['loss'] for i in f_val])
 
                     self.trials += f_val
                     for j in range(cpus):
-                        self.log_results(
-                            {
-                                'loss': f_val[j]['loss'],
-                                'current_tries': i * cpus + j,
-                                'total_tries': self.total_tries,
-                                'result': f_val[j]['result'],
-                            }
-                        )
+                        self.log_results({
+                            'loss': f_val[j]['loss'],
+                            'current_tries': i * cpus + j,
+                            'total_tries': self.total_tries,
+                            'result': f_val[j]['result'],
+                        })
         except KeyboardInterrupt:
             print('User interrupted..')
 
