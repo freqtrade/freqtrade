@@ -3,11 +3,14 @@
 """This script generate json data from bittrex"""
 import json
 import sys
-import os
+from pathlib import Path
 import arrow
 
-from freqtrade import (arguments, misc)
+from freqtrade import arguments
+from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
+from freqtrade.optimize import download_backtesting_testdata
+
 
 DEFAULT_DL_PATH = 'user_data/data'
 
@@ -17,25 +20,27 @@ args = arguments.parse_args()
 
 timeframes = args.timeframes
 
-dl_path = os.path.join(DEFAULT_DL_PATH, args.exchange)
+dl_path = Path(DEFAULT_DL_PATH).joinpath(args.exchange)
 if args.export:
-    dl_path = args.export
+    dl_path = Path(args.export)
 
-if not os.path.isdir(dl_path):
+if not dl_path.is_dir():
     sys.exit(f'Directory {dl_path} does not exist.')
 
-pairs_file = args.pairs_file if args.pairs_file else os.path.join(dl_path, 'pairs.json')
-if not os.path.isfile(pairs_file):
+pairs_file = Path(args.pairs_file) if args.pairs_file else dl_path.joinpath('pairs.json')
+if not pairs_file.exists():
     sys.exit(f'No pairs file found with path {pairs_file}.')
 
-with open(pairs_file) as file:
+with pairs_file.open() as file:
     PAIRS = list(set(json.load(file)))
 
 PAIRS.sort()
 
-since_time = None
+
+timerange = TimeRange()
 if args.days:
-    since_time = arrow.utcnow().shift(days=-args.days).timestamp * 1000
+    time_since = arrow.utcnow().shift(days=-args.days).strftime("%Y%m%d")
+    timerange = arguments.parse_timerange(f'{time_since}-')
 
 
 print(f'About to download pairs: {PAIRS} to {dl_path}')
@@ -59,21 +64,18 @@ for pair in PAIRS:
         print(f"skipping pair {pair}")
         continue
     for tick_interval in timeframes:
-        print(f'downloading pair {pair}, interval {tick_interval}')
-
-        data = exchange.get_ticker_history(pair, tick_interval, since_ms=since_time)
-        if not data:
-            print('\tNo data was downloaded')
-            break
-
-        print('\tData was downloaded for period %s - %s' % (
-            arrow.get(data[0][0] / 1000).format(),
-            arrow.get(data[-1][0] / 1000).format()))
-
-        # save data
         pair_print = pair.replace('/', '_')
         filename = f'{pair_print}-{tick_interval}.json'
-        misc.file_dump_json(os.path.join(dl_path, filename), data)
+        dl_file = dl_path.joinpath(filename)
+        if args.erase and dl_file.exists():
+            print(f'Deleting existing data for pair {pair}, interval {tick_interval}')
+            dl_file.unlink()
+
+        print(f'downloading pair {pair}, interval {tick_interval}')
+        download_backtesting_testdata(str(dl_path), exchange=exchange,
+                                      pair=pair,
+                                      tick_interval=tick_interval,
+                                      timerange=timerange)
 
 
 if pairs_not_available:
