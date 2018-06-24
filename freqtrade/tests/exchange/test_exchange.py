@@ -510,7 +510,6 @@ def test_cancel_order_dry_run(default_conf, mocker):
 # Ensure that if not dry_run, we should call API
 def test_cancel_order(default_conf, mocker):
     default_conf['dry_run'] = False
-    # mocker.patch.dict('freqtrade.exchange.._CONF', default_conf)
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(return_value=123)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
@@ -673,7 +672,7 @@ def test_get_markets(default_conf, mocker, markets):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     ret = exchange.get_markets()
     assert isinstance(ret, list)
-    assert len(ret) == 3
+    assert len(ret) == 6
 
     assert ret[0]["id"] == "ethbtc"
     assert ret[0]["symbol"] == "ETH/BTC"

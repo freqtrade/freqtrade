@@ -185,7 +185,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     )
 
 
-def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
+def test_status_handle(default_conf, markets, update, ticker, fee, mocker) -> None:
     """
     Test _status() method
     """
@@ -196,6 +196,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
         validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_fee=fee,
+        get_markets=markets
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -231,7 +232,8 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert '[ETH/BTC]' in msg_mock.call_args_list[0][0][0]
 
 
-def test_status_table_handle(default_conf, limit_buy_order, update, ticker, fee, mocker) -> None:
+def test_status_table_handle(
+        default_conf, markets, limit_buy_order, update, ticker, fee, mocker) -> None:
     """
     Test _status_table() method
     """
@@ -244,6 +246,7 @@ def test_status_table_handle(default_conf, limit_buy_order, update, ticker, fee,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_order=MagicMock(return_value=limit_buy_order),
         get_fee=fee,
+        get_markets=markets
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -285,7 +288,7 @@ def test_status_table_handle(default_conf, limit_buy_order, update, ticker, fee,
 
 
 def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
-                      limit_sell_order, mocker) -> None:
+                      limit_sell_order, markets, mocker) -> None:
     """
     Test _daily() method
     """
@@ -299,7 +302,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=fee
+        get_fee=fee,
+        get_markets=markets
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -397,7 +401,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
 
 
 def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
-                       limit_buy_order, limit_sell_order, mocker) -> None:
+                       limit_buy_order, limit_sell_order, markets, mocker) -> None:
     """
     Test _profit() method
     """
@@ -408,7 +412,8 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=fee
+        get_fee=fee,
+        get_markets=markets
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -661,7 +666,8 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
     assert 'reloading config' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forcesell_handle(default_conf, update, ticker, fee, ticker_sell_up, mocker) -> None:
+def test_forcesell_handle(default_conf, update, ticker, fee,
+                          ticker_sell_up, markets, mocker) -> None:
     """
     Test _forcesell() method
     """
@@ -674,7 +680,8 @@ def test_forcesell_handle(default_conf, update, ticker, fee, ticker_sell_up, moc
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=fee
+        get_fee=fee,
+        get_markets=markets
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -701,7 +708,8 @@ def test_forcesell_handle(default_conf, update, ticker, fee, ticker_sell_up, moc
     assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_forcesell_down_handle(default_conf, update, ticker, fee, ticker_sell_down, mocker) -> None:
+def test_forcesell_down_handle(default_conf, update, ticker, fee,
+                               ticker_sell_down, markets, mocker) -> None:
     """
     Test _forcesell() method
     """
@@ -714,7 +722,8 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee, ticker_sell_do
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=fee
+        get_fee=fee,
+        get_markets=markets
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -745,7 +754,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee, ticker_sell_do
     assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
 
 
-def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None:
+def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
     """
     Test _forcesell() method
     """
@@ -759,7 +768,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=fee
+        get_fee=fee,
+        get_markets=markets
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -823,7 +833,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
-                            limit_buy_order, limit_sell_order, mocker) -> None:
+                            limit_buy_order, limit_sell_order, markets, mocker) -> None:
     """
     Test _performance() method
     """
@@ -839,7 +849,8 @@ def test_performance_handle(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        get_fee=fee
+        get_fee=fee,
+        get_markets=markets
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     freqtradebot = FreqtradeBot(default_conf)
@@ -887,7 +898,7 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
     assert 'not running' in msg_mock.call_args_list[0][0][0]
 
 
-def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
+def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
     """
     Test _count() method
     """
@@ -903,7 +914,8 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
-        buy=MagicMock(return_value={'id': 'mocked_order_id'})
+        buy=MagicMock(return_value={'id': 'mocked_order_id'}),
+        get_markets=markets
     )
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     freqtradebot = FreqtradeBot(default_conf)
