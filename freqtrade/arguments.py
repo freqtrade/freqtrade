@@ -334,3 +334,10 @@ class Arguments(object):
             nargs='+',
             dest='timeframes',
         )
+
+        self.parser.add_argument(
+            '--erase',
+            help='Clean all existing data for the selected exchange/pairs/timeframes',
+            dest='erase',
+            action='store_true'
+        )
