@@ -2,6 +2,7 @@ import json
 import threading
 import logging
 # import json
+from typing import Dict
 
 from flask import Flask, request, jsonify
 # from flask_restful import Resource, Api
@@ -81,7 +82,7 @@ class ApiServer(RPC):
     def cleanup(self) -> None:
         pass
 
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, str]) -> None:
         pass
 
     """

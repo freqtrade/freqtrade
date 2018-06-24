@@ -4,7 +4,7 @@
 This module manage Telegram communication
 """
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 import arrow
 from pandas import DataFrame
@@ -113,9 +113,9 @@ class Telegram(RPC):
         """
         self._updater.stop()
 
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, str]) -> None:
         """ Send a message to telegram channel """
-        self._send_msg(msg)
+        self._send_msg('*Status:* `{status}`'.format(**msg))
 
     @authorized_only
     def _status(self, bot: Bot, update: Update) -> None:
