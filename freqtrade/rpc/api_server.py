@@ -4,7 +4,7 @@ import logging
 # import json
 from typing import Dict
 
-from flask import Flask, request, jsonify
+from flask import Flask, request
 # from flask_restful import Resource, Api
 from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
@@ -91,10 +91,14 @@ class ApiServer(RPC):
     """
 
     def page_not_found(self, error):
-        # Return "404 not found", 404.
-        return jsonify({'status': 'error',
-                        'reason': '''There's no API call for %s''' % request.base_url,
-                        'code': 404}), 404
+        """
+        Return "404 not found", 404.
+        """
+        return json.dumps({
+            'status': 'error',
+            'reason': '''There's no API call for %s''' % request.base_url,
+            'code': 404
+        }), 404
 
     def hello(self):
         """
