@@ -755,7 +755,7 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
     result = freqtrade._process()
     assert result is False
     assert freqtrade.state == State.STOPPED
-    assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
+    assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
 
 def test_process_trade_handling(
@@ -1375,13 +1375,14 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Profit' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
-    assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
+    last_call = rpc_mock.call_args_list[-1][0][0]['status']
+    assert 'Selling' in last_call
+    assert '[ETH/BTC]' in last_call
+    assert 'Amount' in last_call
+    assert 'Profit' in last_call
+    assert '0.00001172' in last_call
+    assert 'profit: 6.11%, 0.00006126' in last_call
+    assert '0.919 USD' in last_call
 
 
 def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
@@ -1417,12 +1418,13 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
-    assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
-    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
+    last_call = rpc_mock.call_args_list[-1][0][0]['status']
+    assert 'Selling' in last_call
+    assert '[ETH/BTC]' in last_call
+    assert 'Amount' in last_call
+    assert '0.00001044' in last_call
+    assert 'loss: -5.48%, -0.00005492' in last_call
+    assert '-0.824 USD' in last_call
 
 
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
@@ -1459,12 +1461,13 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
-    assert '(profit: 6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
-    assert 'USD' not in rpc_mock.call_args_list[-1][0][0]
+    last_call = rpc_mock.call_args_list[-1][0][0]['status']
+    assert 'Selling' in last_call
+    assert '[ETH/BTC]' in last_call
+    assert 'Amount' in last_call
+    assert '0.00001172' in last_call
+    assert '(profit: 6.11%, 0.00006126)' in last_call
+    assert 'USD' not in last_call
 
 
 def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
@@ -1501,10 +1504,11 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
-    assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
+    last_call = rpc_mock.call_args_list[-1][0][0]['status']
+    assert 'Selling' in last_call
+    assert '[ETH/BTC]' in last_call
+    assert '0.00001044' in last_call
+    assert 'loss: -5.48%, -0.00005492' in last_call
 
 
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
