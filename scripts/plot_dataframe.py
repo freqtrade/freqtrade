@@ -347,7 +347,7 @@ def plot_parse_args(args: List[str]) -> Namespace:
              'Default: %(default)s',
         dest='plot_limit',
         default=750,
-        type=str,
+        type=int,
     )
     arguments.common_args_parser()
     arguments.optimizer_shared_options(arguments.parser)
