@@ -327,6 +327,15 @@ class Hyperopt(Backtesting):
     def run_optimizer_parallel(self, parallel, asked) -> List:
         return parallel(delayed(self.generate_optimizer)(v) for v in asked)
 
+    def load_previous_results(self):
+        """ read trials file if we have one """
+        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+            self.trials = self.read_trials()
+            logger.info(
+                'Loaded %d previous evaluations from disk.',
+                len(self.trials)
+            )
+
     def start(self) -> None:
         timerange = Arguments.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
@@ -340,23 +349,13 @@ class Hyperopt(Backtesting):
         if self.has_space('buy'):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
-
         self.exchange = None
-
-        logger.info('Preparing..')
-        # read trials file if we have one
-        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
-            self.trials = self.read_trials()
-            logger.info(
-                'Loaded %d previous evaluations from disk.',
-                len(self.trials)
-            )
+        self.load_previous_results()
 
         cpus = multiprocessing.cpu_count()
         logger.info(f'Found {cpus}. Let\'s make them scream!')
 
         opt = self.get_optimizer()
-
         try:
             with Parallel(n_jobs=-1) as parallel:
                 for i in range(self.total_tries//cpus):
