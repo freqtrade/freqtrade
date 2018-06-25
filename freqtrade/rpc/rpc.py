@@ -5,14 +5,12 @@ import logging
 from abc import abstractmethod
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-from typing import Dict, Any, List
+from typing import Dict, List, Any
 
 import arrow
 import sqlalchemy as sql
 from numpy import mean, nan_to_num
-from pandas import DataFrame
 
-from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
 
@@ -51,20 +49,20 @@ class RPC(object):
         """
         self._freqtrade = freqtrade
 
+    @property
+    def name(self) -> str:
+        """ Returns the lowercase name of the implementation """
+        return self.__class__.__name__.lower()
+
     @abstractmethod
     def cleanup(self) -> None:
         """ Cleanup pending module resources """
 
-    @property
     @abstractmethod
-    def name(self) -> str:
-        """ Returns the lowercase name of this module """
-
-    @abstractmethod
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
-    def _rpc_trade_status(self) -> List[str]:
+    def _rpc_trade_status(self) -> List[Dict]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
@@ -76,7 +74,7 @@ class RPC(object):
         elif not trades:
             raise RPCException('no active trade')
         else:
-            result = []
+            results = []
             for trade in trades:
                 order = None
                 if trade.open_order_id:
@@ -87,56 +85,23 @@ class RPC(object):
                 fmt_close_profit = '{:.2f}%'.format(
                     round(trade.close_profit * 100, 2)
                 ) if trade.close_profit else None
-                message = "*Trade ID:* `{trade_id}`\n" \
-                          "*Current Pair:* [{pair}]({market_url})\n" \
-                          "*Open Since:* `{date}`\n" \
-                          "*Amount:* `{amount}`\n" \
-                          "*Open Rate:* `{open_rate:.8f}`\n" \
-                          "*Close Rate:* `{close_rate}`\n" \
-                          "*Current Rate:* `{current_rate:.8f}`\n" \
-                          "*Close Profit:* `{close_profit}`\n" \
-                          "*Current Profit:* `{current_profit:.2f}%`\n" \
-                          "*Open Order:* `{open_order}`"\
-                          .format(
-                              trade_id=trade.id,
-                              pair=trade.pair,
-                              market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
-                              date=arrow.get(trade.open_date).humanize(),
-                              open_rate=trade.open_rate,
-                              close_rate=trade.close_rate,
-                              current_rate=current_rate,
-                              amount=round(trade.amount, 8),
-                              close_profit=fmt_close_profit,
-                              current_profit=round(current_profit * 100, 2),
-                              open_order='({} {} rem={:.8f})'.format(
-                                  order['type'], order['side'], order['remaining']
-                              ) if order else None,
-                          )
-                result.append(message)
-            return result
 
-    def _rpc_status_table(self) -> DataFrame:
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-        elif not trades:
-            raise RPCException('no active order')
-        else:
-            trades_list = []
-            for trade in trades:
-                # calculate profit and send message to user
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
-                trades_list.append([
-                    trade.id,
-                    trade.pair,
-                    shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
-                ])
-
-            columns = ['ID', 'Pair', 'Since', 'Profit']
-            df_statuses = DataFrame.from_records(trades_list, columns=columns)
-            df_statuses = df_statuses.set_index(columns[0])
-            return df_statuses
+                results.append(dict(
+                    trade_id=trade.id,
+                    pair=trade.pair,
+                    market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
+                    open_date=arrow.get(trade.open_date),
+                    open_rate=trade.open_rate,
+                    close_rate=trade.close_rate,
+                    current_rate=current_rate,
+                    amount=round(trade.amount, 8),
+                    close_profit=fmt_close_profit,
+                    current_profit=round(current_profit * 100, 2),
+                    open_order='({} {} rem={:.8f})'.format(
+                      order['type'], order['side'], order['remaining']
+                    ) if order else None,
+                ))
+            return results
 
     def _rpc_daily_profit(
             self, timescale: int,
@@ -189,6 +154,9 @@ class RPC(object):
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
         trades = Trade.query.order_by(Trade.id).all()
+
+        if not trades:
+            raise RPCException('No trades found')
 
         profit_all_coin = []
         profit_all_percent = []

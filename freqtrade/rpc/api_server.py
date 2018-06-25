@@ -1,33 +1,27 @@
 import json
 import threading
 import logging
+# import json
+from typing import Dict
 
-from flask import request
+from flask import Flask, request
+# from flask_restful import Resource, Api
 from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
 from ipaddress import IPv4Address
-from freqtrade.rpc.api_server_common import MyApiApp
 
 
 logger = logging.getLogger(__name__)
-"""
-api server routes that do not need access to rpc.rpc
-are held within api_server_common.api_server
-"""
-app = MyApiApp(__name__)
+app = Flask(__name__)
 
 
 class ApiServer(RPC):
     """
+    This class is for REST calls across api server
     This class runs api server and provides rpc.rpc functionality to it
 
-    This class starts a none blocking thread the api server runs within
-    Any routes that require access to rpc.rpc defs are held within this
-    class.
-
-    Any routes that do not require access to rpc.rcp should be registered
-    in api_server_common.MyApiApp
-    """
+    This class starts a none blocking thread the api server runs within\
+     """
     def __init__(self, freqtrade) -> None:
         """
         Init the api server, and init the super class RPC
@@ -39,10 +33,19 @@ class ApiServer(RPC):
         self._config = freqtrade.config
 
         # Register application handling
+        self.register_rest_other()
         self.register_rest_rpc_urls()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
+
+    def register_rest_other(self):
+        """
+        Registers flask app URLs that are not calls to functionality in rpc.rpc.
+        :return:
+        """
+        app.register_error_handler(404, self.page_not_found)
+        app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
 
     def register_rest_rpc_urls(self):
         """
@@ -55,6 +58,9 @@ class ApiServer(RPC):
         app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
         app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
+        app.add_url_rule('/profit', 'profit', view_func=self.profit, methods=['GET'])
+        app.add_url_rule('/status_table', 'status_table',
+                         view_func=self.status_table, methods=['GET'])
 
     def run(self):
         """ Method that runs flask app in its own thread forever """
@@ -82,17 +88,47 @@ class ApiServer(RPC):
     def cleanup(self) -> None:
         pass
 
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, str]) -> None:
         pass
 
     """
     Define the application methods here, called by app.add_url_rule
     each Telegram command should have a like local substitute
     """
-    def stop_api(self):
-        """ For calling shutdown_api_server over via api server HTTP"""
-        self.shutdown_api_server()
-        return 'Api Server shutting down... '
+
+    def page_not_found(self, error):
+        """
+        Return "404 not found", 404.
+        """
+        return json.dumps({
+            'status': 'error',
+            'reason': '''There's no API call for %s''' % request.base_url,
+            'code': 404
+        }), 404
+
+    def hello(self):
+        """
+        None critical but helpful default index page.
+
+        That lists URLs added to the flask server.
+        This may be deprecated at any time.
+        :return: index.html
+        """
+        rest_cmds = 'Commands implemented: <br>' \
+                    '<a href=/daily?timescale=7>Show 7 days of stats</a>' \
+                    '<br>' \
+                    '<a href=/stop>Stop the Trade thread</a>' \
+                    '<br>' \
+                    '<a href=/start>Start the Traded thread</a>' \
+                    '<br>' \
+                    '<a href=/profit>Show profit summary</a>' \
+                    '<br>' \
+                    '<a href=/status_table>Show status table - Open trades</a>' \
+                    '<br>' \
+                    '<a href=/paypal> 404 page does not exist</a>' \
+                    '<br>'
+
+        return rest_cmds
 
     def daily(self):
         """
@@ -102,6 +138,7 @@ class ApiServer(RPC):
         """
         try:
             timescale = request.args.get('timescale')
+            logger.info("LocalRPC - Daily Command Called")
             timescale = int(timescale)
 
             stats = self._rpc_daily_profit(timescale,
@@ -109,10 +146,45 @@ class ApiServer(RPC):
                                            self._config['fiat_display_currency']
                                            )
 
-            stats = dumps(stats, indent=4, sort_keys=True, default=str)
-            return stats
+            return json.dumps(stats, indent=4, sort_keys=True, default=str)
         except RPCException as e:
-            return e
+            logger.exception("API Error querying daily:", e)
+            return "Error querying daily"
+
+    def profit(self):
+        """
+        Handler for /profit.
+
+        Returns a cumulative profit statistics
+        :return: stats
+        """
+        try:
+            logger.info("LocalRPC - Profit Command Called")
+
+            stats = self._rpc_trade_statistics(self._config['stake_currency'],
+                                                self._config['fiat_display_currency']
+                                                )
+
+            return json.dumps(stats, indent=4, sort_keys=True, default=str)
+        except RPCException as e:
+            logger.exception("API Error calling profit", e)
+            return "Error querying closed trades - maybe there are none"
+
+    def status_table(self):
+        """
+        Handler for /status table.
+
+        Returns the current TradeThread status in table format
+        :return: results
+        """
+        try:
+            results = self._rpc_trade_status()
+            return json.dumps(results, indent=4, sort_keys=True, default=str)
+
+        except RPCException as e:
+            logger.exception("API Error calling status table", e)
+            return "Error querying open trades - maybe there are none."
+
 
     def start(self):
         """
