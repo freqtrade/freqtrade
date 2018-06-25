@@ -44,7 +44,6 @@ def create_trials(mocker) -> None:
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
 
 
-# Unit tests
 def test_start(mocker, default_conf, caplog) -> None:
     """
     Test start() function
@@ -136,77 +135,6 @@ def test_no_log_if_loss_does_not_improve(init_hyperopt, caplog) -> None:
         }
     )
     assert caplog.record_tuples == []
-
-
-@pytest.mark.skip(reason="Test not implemented")
-def test_fmin_throw_value_error(mocker, init_hyperopt, default_conf, caplog) -> None:
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.fmin', side_effect=ValueError())
-
-    conf = deepcopy(default_conf)
-    conf.update({'config': 'config.json.example'})
-    conf.update({'epochs': 1})
-    conf.update({'timerange': None})
-    conf.update({'spaces': 'all'})
-    patch_exchange(mocker)
-
-    StrategyResolver({'strategy': 'DefaultStrategy'})
-    hyperopt = Hyperopt(conf)
-    hyperopt.trials = create_trials(mocker)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
-
-    hyperopt.start()
-
-    exists = [
-        'Best Result:',
-        'Sorry, Hyperopt was not able to find good parameters. Please try with more epochs '
-        '(param: -e).',
-    ]
-
-    for line in exists:
-        assert line in caplog.text
-
-
-@pytest.mark.skip(reason="Waits for fixing")
-def test_resuming_previous_hyperopt_results_succeeds(mocker, init_hyperopt, default_conf) -> None:
-    trials = create_trials(mocker)
-
-    conf = deepcopy(default_conf)
-    conf.update({'config': 'config.json.example'})
-    conf.update({'epochs': 1})
-    conf.update({'timerange': None})
-    conf.update({'spaces': 'all'})
-
-    mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=True)
-    mocker.patch('freqtrade.optimize.hyperopt.len', return_value=len(trials.results))
-    mock_read = mocker.patch(
-        'freqtrade.optimize.hyperopt.Hyperopt.read_trials',
-        return_value=trials
-    )
-    mock_save = mocker.patch(
-        'freqtrade.optimize.hyperopt.Hyperopt.save_trials',
-        return_value=None
-    )
-    mocker.patch('freqtrade.optimize.hyperopt.sorted', return_value=trials.results)
-    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.fmin', return_value={})
-    patch_exchange(mocker)
-
-    StrategyResolver({'strategy': 'DefaultStrategy'})
-    hyperopt = Hyperopt(conf)
-    hyperopt.trials = trials
-    hyperopt.tickerdata_to_dataframe = MagicMock()
-
-    hyperopt.start()
-
-    mock_read.assert_called_once()
-    mock_save.assert_called_once()
-
-    current_tries = hyperopt.current_tries
-    total_tries = hyperopt.total_tries
-
-    assert current_tries == len(trials.results)
-    assert total_tries == (current_tries + len(trials.results))
 
 
 def test_save_trials_saves_trials(mocker, init_hyperopt, caplog) -> None:
