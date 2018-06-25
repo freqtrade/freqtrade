@@ -6,7 +6,6 @@ from typing import Dict
 
 from flask import Flask, request
 # from flask_restful import Resource, Api
-from json import dumps
 from freqtrade.rpc.rpc import RPC, RPCException
 from ipaddress import IPv4Address
 
@@ -162,8 +161,8 @@ class ApiServer(RPC):
             logger.info("LocalRPC - Profit Command Called")
 
             stats = self._rpc_trade_statistics(self._config['stake_currency'],
-                                                self._config['fiat_display_currency']
-                                                )
+                                               self._config['fiat_display_currency']
+                                               )
 
             return json.dumps(stats, indent=4, sort_keys=True, default=str)
         except RPCException as e:
@@ -184,7 +183,6 @@ class ApiServer(RPC):
         except RPCException as e:
             logger.exception("API Error calling status table", e)
             return "Error querying open trades - maybe there are none."
-
 
     def start(self):
         """
