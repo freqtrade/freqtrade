@@ -1654,6 +1654,43 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
     assert freqtrade.handle_trade(trade) is True
 
 
+def test_trailing_stop_loss(default_conf, limit_buy_order, fee, caplog, mocker) -> None:
+    """
+    Test sell_profit_only feature when enabled and we have a loss
+    """
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=True)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': 0.0000172,
+            'ask': 0.0000173,
+            'last': 0.0000172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['trailing_stop'] = True
+    print(limit_buy_order)
+    freqtrade = FreqtradeBot(conf)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    trade.stop_loss = 3.2
+    caplog.set_level(logging.DEBUG)
+    assert freqtrade.handle_trade(trade) is True
+    assert log_has(
+        f'HIT STOP: current price at 0.000017, stop loss is {trade.stop_loss:.6f}, '
+        f'initial stop loss was at 0.000000, trade opened at 0.000011', caplog.record_tuples)
+
+
+
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
                                           fee, markets, mocker) -> None:
     """
