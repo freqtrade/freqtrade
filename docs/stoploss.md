@@ -39,12 +39,10 @@ Due to demand, it is possible to have a default stop loss, when you are in the r
 the system will utilize a new stop loss, which can be a different value. For example your default stop loss is 5%, but once you are in the
 black, it will be changed to be only a 1% stop loss
 
-this can be configured in the main configuration file, the following way:
+This can be configured in the main configuration file and requires `"trailing_stop": true` to be set to true.
 
 ``` json
-    "trailing_stop": {
-        "positive" : 0.01
-    },
+    "trailing_stop_positive":  0.01,
 ```
 
 The 0.01 would translate to a 1% stop loss, once you hit profit.
