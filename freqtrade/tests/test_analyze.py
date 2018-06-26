@@ -56,13 +56,15 @@ def test_dataframe_correct_columns(result):
 
 def test_populates_buy_trend(result):
     # Load the default strategy for the unit test, because this logic is done in main.py
-    dataframe = _ANALYZE.populate_buy_trend(_ANALYZE.populate_indicators(result))
+    dataframe = _ANALYZE.populate_buy_trend(
+        _ANALYZE.populate_indicators(result, 'UNITTEST/BTC'), 'UNITTEST/BTC')
     assert 'buy' in dataframe.columns
 
 
 def test_populates_sell_trend(result):
     # Load the default strategy for the unit test, because this logic is done in main.py
-    dataframe = _ANALYZE.populate_sell_trend(_ANALYZE.populate_indicators(result))
+    dataframe = _ANALYZE.populate_sell_trend(
+        _ANALYZE.populate_indicators(result, 'UNITTEST/BTC'), 'UNITTEST/BTC')
     assert 'sell' in dataframe.columns
 
 
