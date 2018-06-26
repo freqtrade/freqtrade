@@ -176,7 +176,7 @@ class Trade(_DECL_BASE):
         :return:
         """
 
-        new_loss = Decimal(current_price * (1 - abs(stoploss)))
+        new_loss = float(current_price * (1 - abs(stoploss)))
 
         # keeping track of the highest observed rate for this trade
         if self.max_rate is None:
@@ -200,15 +200,13 @@ class Trade(_DECL_BASE):
                 logger.debug("keeping current stop loss")
 
         logger.debug(
-            "{} - current price {:.8f}, bought at {:.8f} and calculated "
-            "stop loss is at: {:.8f} initial stop at {:.8f}. trailing stop loss saved us: {:.8f} "
-            "and max observed rate was {:.8f}".format(
-                self.pair, current_price, self.open_rate,
-                self.initial_stop_loss,
-                self.stop_loss, float(self.stop_loss) - float(self.initial_stop_loss),
-                self.max_rate
-
-            ))
+            f"{self.pair} - current price {current_price:.8f}, "
+            f"bought at {self.open_rate:.8f} and calculated "
+            f"stop loss is at: {self.initial_stop_loss:.8f} initial "
+            f"stop at {self.stop_loss:.8f}. "
+            f"trailing stop loss saved us: "
+            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f} "
+            f"and max observed rate was {self.max_rate:.8f}")
 
     def update(self, order: Dict) -> None:
         """
