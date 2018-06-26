@@ -65,7 +65,7 @@ class Analyze(object):
         frame.drop(frame.tail(1).index, inplace=True)  # eliminate partial candle
         return frame
 
-    def populate_indicators(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
 
@@ -75,7 +75,7 @@ class Analyze(object):
         """
         return self.strategy.advise_indicators(dataframe=dataframe, pair=pair)
 
-    def populate_buy_trend(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
@@ -83,7 +83,7 @@ class Analyze(object):
         """
         return self.strategy.advise_buy(dataframe=dataframe, pair=pair)
 
-    def populate_sell_trend(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
@@ -215,5 +215,5 @@ class Analyze(object):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data))
+        return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data), pair)
                 for pair, pair_data in tickerdata.items()}

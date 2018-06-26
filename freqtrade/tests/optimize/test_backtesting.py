@@ -142,7 +142,7 @@ def _trend(signals, buy_value, sell_value):
     return signals
 
 
-def _trend_alternate(dataframe=None):
+def _trend_alternate(dataframe=None, pair=None):
     signals = dataframe
     low = signals['low']
     n = len(low)
@@ -534,7 +534,7 @@ def test_backtest_ticks(default_conf, fee, mocker):
 
 def test_backtest_clash_buy_sell(mocker, default_conf):
     # Override the default buy trend function in our default_strategy
-    def fun(dataframe=None):
+    def fun(dataframe=None, pair=None):
         buy_value = 1
         sell_value = 1
         return _trend(dataframe, buy_value, sell_value)
@@ -550,7 +550,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf):
 
 def test_backtest_only_sell(mocker, default_conf):
     # Override the default buy trend function in our default_strategy
-    def fun(dataframe=None):
+    def fun(dataframe=None, pair=None):
         buy_value = 0
         sell_value = 1
         return _trend(dataframe, buy_value, sell_value)
