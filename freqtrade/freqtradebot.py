@@ -96,6 +96,12 @@ class FreqtradeBot(object):
         if state != old_state:
             self.rpc.send_msg(f'*Status:* `{state.name.lower()}`')
             logger.info('Changing state to: %s', state.name)
+            if (('use_book_order' in self.config['bid_strategy'] and \
+            self.config['bid_strategy'].get('use_book_order', False)) or \
+            ('use_book_order' in self.config['ask_strategy'] and \
+            self.config['ask_strategy'].get('use_book_order', False))) and \
+            self.config['dry_run'] and state == State.RUNNING:
+                self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading`')
 
         if state == State.STOPPED:
             time.sleep(1)
@@ -245,7 +251,7 @@ class FreqtradeBot(object):
         :return: float: Price
         """
         ticker = exchange.get_ticker(pair)
-        logger.info('ticker data %s', ticker)
+        logger.debug('ticker data %s', ticker)
 
         if ticker['ask'] < ticker['last']:
             ticker_rate = ticker['ask']
@@ -488,6 +494,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
+                    break
         else:
             logger.info('checking sell')
             if self.check_sell(trade, sell_rate, buy, sell):
