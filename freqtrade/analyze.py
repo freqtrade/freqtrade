@@ -212,7 +212,7 @@ class Analyze(object):
 
         current_profit = trade.calc_profit_percent(current_rate)
         trailing_stop = self.config.get('trailing_stop', False)
-        if trade.stop_loss is None:
+        if trade.stop_loss is None or trade.stop_loss == 0:
             # initially adjust the stop loss to the base value
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss)
 
