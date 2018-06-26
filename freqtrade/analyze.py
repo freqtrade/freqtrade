@@ -180,7 +180,7 @@ class Analyze(object):
         :return: True if trade should be sold, False otherwise
         """
         current_profit = trade.calc_profit_percent(rate)
-        if self.stop_loss_reached(current_profit=current_profit):
+        if self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date):
             return True
 
         experimental = self.config.get('experimental', {})
@@ -204,12 +204,46 @@ class Analyze(object):
 
         return False
 
-    def stop_loss_reached(self, current_profit: float) -> bool:
-        """Based on current profit of the trade and configured stoploss, decides to sell or not"""
+    def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime) -> bool:
+        """
+        Based on current profit of the trade and configured (trailing) stoploss,
+        decides to sell or not
+        """
 
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
+        current_profit = trade.calc_profit_percent(current_rate)
+        trailing_stop = self.config.get('trailing_stop', False)
+        if trade.stop_loss is None:
+            # initially adjust the stop loss to the base value
+            trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss)
+
+        # evaluate if the stoploss was hit
+        if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
+
+            if trailing_stop:
+                logger.debug(
+                    f"HIT STOP: current price at {current_rate:.6f}, "
+                    f"stop loss is {trade.stop_loss:.6f}, "
+                    f"initial stop loss was at {trade.initial_stop_loss:.6f}, "
+                    f"trade opened at {trade.open_rate:.6f}")
+                logger.debug(f"trailing stop saved {trade.stop_loss - trade.initial_stop_loss:.6f}")
+
             logger.debug('Stop loss hit.')
             return True
+
+        # update the stop loss afterwards, after all by definition it's supposed to be hanging
+        if trailing_stop:
+
+            # check if we have a special stop loss for positive condition
+            # and if profit is positive
+            stop_loss_value = self.strategy.stoploss
+            if 'trailing_stop_positive' in self.config and current_profit > 0:
+
+                stop_loss_value = self.config.get('trailing_stop_positive')
+                logger.debug(f"using positive stop loss mode: {stop_loss_value} "
+                             f"since we have profit {current_profit}")
+
+            trade.adjust_stop_loss(current_rate, stop_loss_value)
+
         return False
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
