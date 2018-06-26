@@ -230,7 +230,7 @@ class Backtesting(object):
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
             ticker_data = self.populate_sell_trend(
-                self.populate_buy_trend(pair_data))[headers].copy()
+                self.populate_buy_trend(pair_data, pair), pair)[headers].copy()
 
             # to avoid using data from future, we buy/sell with signal from previous candle
             ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
