@@ -62,7 +62,7 @@ In this case a trade amount is calclulated as `currency_balanse / (max_open_trad
 in minutes and the value is the minimum ROI in percent.
 See the example below:
 
-``` json
+```
 "minimal_roi": {
     "40": 0.0,    # Sell after 40 minutes if the profit is not negative
     "30": 0.01,   # Sell after 30 minutes if there is at least 1% profit
