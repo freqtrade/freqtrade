@@ -167,14 +167,18 @@ class Trade(_DECL_BASE):
             arrow.get(self.open_date).humanize() if self.is_open else 'closed'
         )
 
-    def adjust_stop_loss(self, current_price, stoploss):
+    def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool =False):
         """
-        this adjusts the stop loss to it's most recently observed
-        setting
+        this adjusts the stop loss to it's most recently observed setting
         :param current_price:
-        :param stoploss:
+        :param stoploss in percent:
+        :param initial:
         :return:
         """
+
+        if initial and not (self.stop_loss is None or self.stop_loss == 0):
+            # Don't modify if called with initial and nothing to do
+            return
 
         new_loss = float(current_price * (1 - abs(stoploss)))
 
