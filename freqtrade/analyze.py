@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Dict, List, Tuple
 
 import arrow
+import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade import constants
@@ -269,3 +270,30 @@ class Analyze(object):
                 return roi_rate
                 break
         return sell_rate
+
+    def order_book_to_dataframe(data: list) -> DataFrame:
+        """
+        Gets order book list, returns dataframe with below format
+        -------------------------------------------------------------------
+         bids       b_size       a_sum       asks       a_size       a_sum
+        -------------------------------------------------------------------
+        """
+        cols = ['bids', 'b_size']
+        bids_frame = DataFrame(data['bids'], columns=cols)
+        # add cumulative sum column
+        bids_frame['b_sum'] = bids_frame['b_size'].cumsum()
+        cols2 = ['asks', 'a_size']
+        asks_frame = DataFrame(data['asks'], columns=cols2)
+        # add cumulative sum column
+        asks_frame['a_sum'] = asks_frame['a_size'].cumsum()
+
+        frame = pd.concat([bids_frame['b_sum'], bids_frame['b_size'], bids_frame['bids'], \
+            asks_frame['asks'], asks_frame['a_size'], asks_frame['a_sum']], axis=1, \
+            keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
+
+        return frame
+
+    def order_book_dom() -> DataFrame:
+        # https://stackoverflow.com/questions/36835793/pandas-group-by-consecutive-ranges
+        return DataFrame
+

@@ -254,7 +254,7 @@ def get_order_book(pair: str, limit: Optional[int] = 100) -> dict:
                     limit = limitx
                     break
 
-        return _API.fetch_order_book(pair, limit)
+        return _API.fetch_l2_order_book(pair, limit)
     except ccxt.NotSupported as e:
         raise OperationalException(
             f'Exchange {_API.name} does not support fetching order book.'

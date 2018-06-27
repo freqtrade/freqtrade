@@ -264,7 +264,7 @@ class FreqtradeBot(object):
         if 'use_book_order' in self.config['bid_strategy'] and self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
             orderBook_top = self.config.get('bid_strategy', {}).get('book_order_top', 1)
-            orderBook = exchange.get_order_book(pair, orderBook_top)
+            orderBook = exchange.get_order_book(pair, orderBook_top)            
             # top 1 = index 0
             orderBook_rate = orderBook['bids'][orderBook_top - 1][0]
             orderBook_rate = orderBook_rate + 0.00000001
@@ -476,10 +476,9 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
             logger.info('Using order book for selling...')
-
             # logger.debug('Order book %s',orderBook)
-            orderBook_min = self.config['ask_strategy']['book_order_min']
-            orderBook_max = self.config['ask_strategy']['book_order_max']
+            orderBook_min = self.config['ask_strategy'].get('book_order_min', 1)
+            orderBook_max = self.config['ask_strategy'].get('book_order_max', 1)
 
             orderBook = exchange.get_order_book(trade.pair, orderBook_max)
 
