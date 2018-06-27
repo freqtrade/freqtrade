@@ -195,7 +195,6 @@ class FreqtradeBot(object):
         :param key: sort key (defaults to 'quoteVolume')
         :return: List of pairs
         """
-
         if not exchange.exchange_has('fetchTickers'):
             raise OperationalException(
                 'Exchange does not support dynamic whitelist.'
@@ -264,7 +263,7 @@ class FreqtradeBot(object):
         if 'use_book_order' in self.config['bid_strategy'] and self.config['bid_strategy'].get('use_book_order', False):
             logger.info('Getting price from Order Book')
             orderBook_top = self.config.get('bid_strategy', {}).get('book_order_top', 1)
-            orderBook = exchange.get_order_book(pair, orderBook_top)            
+            orderBook = exchange.get_order_book(pair, orderBook_top)
             # top 1 = index 0
             orderBook_rate = orderBook['bids'][orderBook_top - 1][0]
             orderBook_rate = orderBook_rate + 0.00000001
@@ -327,6 +326,19 @@ class FreqtradeBot(object):
                 break
         else:
             return False
+
+        # order book depth of market
+        if self.config.get('experimental', {}).get('check_depth_of_market', False) \
+        and (self.config.get('experimental', {}).get('dom_bids_asks_delta', 0) > 0):
+            logger.info('depth of market check for %s', pair)
+            orderBook = exchange.get_order_book(pair, 1000)
+            orderBook_df = self.analyze.order_book_to_dataframe(orderBook)
+            orderBook_bids = orderBook_df['b_size'].sum()
+            orderBook_asks = orderBook_df['a_size'].sum()
+            logger.info('bids: %s, asks: %s, delta: %s', orderBook_bids, orderBook_asks, orderBook_bids / orderBook_asks)
+            if (orderBook_bids / orderBook_asks) < self.config.get('experimental', {}).get('dom_bids_asks_delta', 0):
+                return False
+
         pair_s = pair.replace('_', '/')
         pair_url = exchange.get_pair_detail_url(pair)
         # Calculate amount

@@ -40,6 +40,8 @@ The table below will list all configuration parameters.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `experimental.sell_fullfilled_at_roi` | false | No | automatically creates a sell order based on `minimal_roi` once a buy order has been fullfilled.
+| `experimental.check_depth_of_market` | false | No | checks order book depth by comparing total size of bids and total size of asks. [More information below](docs/configuration.md#understanding-experimentalcheck_depth_of_market).
+| `experimental.dom_bids_asks_delta` | 0 | No | the difference of total size bids vs total size asks to indicate a buy signal. [More information below](docs/configuration.md#understanding-experimentalcheck_depth_of_market).
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
@@ -90,6 +92,9 @@ Most of the strategy files already include the optimal `stoploss` value. This pa
 
 ### Understanding ask_strategy.use_book_order
 `ask_strategy.use_book_order` loads the exchange book order and sets the askng price based on the `book_order_top` value. If the `book_order_min` is set to 3 and `book_order_max` is set to 10, then the bot will search between top 3rd and 10th asking prices from the top of the book order will be selected as the bidding price for the trade.
+
+### Understanding experimental.check_depth_of_market
+`experimental.check_depth_of_market` loads the exchange book order of a pair and calculates the total size of bids and asks. If the difference of the total size of bids and asks reaches the `experimental.dom_bids_asks_delta` then a buy signal is triggered. Do note that `experimental.check_depth_of_market` will only be executed after the strategy triggers a buy signal.
 
 ### What are the valid values for exchange.name?
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115+ cryptocurrency exchange markets and trading APIs. The complete up-to-date list can be found in the [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was thoroughly tested with only Bittrex and Binance.
