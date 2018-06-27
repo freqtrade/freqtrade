@@ -66,6 +66,10 @@ def has_column(columns, searchname: str) -> bool:
     return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
 
 
+def get_column_def(columns, column: str, default: str) -> str:
+    return default if not has_column(columns, column) else column
+
+
 def check_migrate(engine) -> None:
     """
     Checks if migration is necessary and migrates if necessary
@@ -74,17 +78,26 @@ def check_migrate(engine) -> None:
 
     cols = inspector.get_columns('trades')
 
-    if not has_column(cols, 'fee_open'):
+    # Check for latest column
+    if not has_column(cols, 'max_rate'):
+        open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
+        close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
+        stop_loss = get_column_def(cols, 'stop_loss', '0.0')
+        initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
+        max_rate = get_column_def(cols, 'max_rate', '0.0')
+
         # Schema migration necessary
         engine.execute("alter table trades rename to trades_bak")
         # let SQLAlchemy create the schema as required
         _DECL_BASE.metadata.create_all(engine)
 
         # Copy data back - following the correct schema
-        engine.execute("""insert into trades
+        engine.execute(f"""insert into trades
                 (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
-                stake_amount, amount, open_date, close_date, open_order_id)
+                stake_amount, amount, open_date, close_date, open_order_id,
+                stop_loss, initial_stop_loss, max_rate
+                )
             select id, lower(exchange),
                 case
                     when instr(pair, '_') != 0 then
@@ -94,20 +107,18 @@ def check_migrate(engine) -> None:
                     end
                 pair,
                 is_open, fee fee_open, fee fee_close,
-                open_rate, null open_rate_requested, close_rate,
-                null close_rate_requested, close_profit,
-                stake_amount, amount, open_date, close_date, open_order_id
+                open_rate, {open_rate_requested} open_rate_requested, close_rate,
+                {close_rate_requested} close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id,
+                {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
+                {max_rate} max_rate
+
                 from trades_bak
              """)
 
         # Reread columns - the above recreated the table!
         inspector = inspect(engine)
         cols = inspector.get_columns('trades')
-
-    if not has_column(cols, 'open_rate_requested'):
-        engine.execute("alter table trades add open_rate_requested float")
-    if not has_column(cols, 'close_rate_requested'):
-        engine.execute("alter table trades add close_rate_requested float")
 
 
 def cleanup() -> None:
