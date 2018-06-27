@@ -1694,6 +1694,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, caplog,
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
+    buy_price = limit_buy_order['price']
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
@@ -1702,9 +1703,9 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, caplog,
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
-            'bid': 0.0000182,
-            'ask': 0.0000183,
-            'last': 0.0000182
+            'bid': buy_price - 0.000001,
+            'ask': buy_price - 0.000001,
+            'last': buy_price - 0.000001
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -1713,7 +1714,6 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, caplog,
     conf = deepcopy(default_conf)
     conf['trailing_stop'] = True
     conf['trailing_stop_positive'] = 0.01
-    print(limit_buy_order)
     freqtrade = FreqtradeBot(conf)
     freqtrade.create_trade()
 
@@ -1722,21 +1722,34 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, caplog,
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
     assert freqtrade.handle_trade(trade) is False
-    # Adjusted stoploss
-    assert log_has(f'using positive stop loss mode: 0.01 since we have profit 0.64779142',
-                   caplog.record_tuples)
-    assert log_has(f'adjusted stop loss', caplog.record_tuples)
-    assert trade.stop_loss == 0.000018018
+
+    # Raise ticker above buy price
     mocker.patch('freqtrade.exchange.Exchange.get_ticker',
                  MagicMock(return_value={
-                                        'bid': 0.0000172,
-                                        'ask': 0.0000173,
-                                        'last': 0.0000172
-                                        }))
+                     'bid': buy_price + 0.000003,
+                     'ask': buy_price + 0.000003,
+                     'last': buy_price + 0.000003
+                 }))
+    # stop-loss not reached, adjusted stoploss
+    assert freqtrade.handle_trade(trade) is False
+    assert log_has(f'using positive stop loss mode: 0.01 since we have profit 0.26662643',
+                   caplog.record_tuples)
+    assert log_has(f'adjusted stop loss', caplog.record_tuples)
+    assert trade.stop_loss == 0.0000138501
+
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.000002,
+                     'ask': buy_price + 0.000002,
+                     'last': buy_price + 0.000002
+                 }))
+    # Lower price again (but still positive)
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f'HIT STOP: current price at 0.000017, stop loss is {trade.stop_loss:.6f}, '
+        f'HIT STOP: current price at {buy_price + 0.000002:.6f}, '
+        f'stop loss is {trade.stop_loss:.6f}, '
         f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
+
 
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
                                           fee, markets, mocker) -> None:
