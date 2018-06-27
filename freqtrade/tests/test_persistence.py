@@ -453,3 +453,37 @@ def test_migrate_new(mocker, default_conf, fee):
     assert trade.stake_amount == default_conf.get("stake_amount")
     assert trade.pair == "ETC/BTC"
     assert trade.exchange == "binance"
+
+
+def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+    )
+
+    # Get percent of profit with a custom rate (Higher than open rate)
+    trade.adjust_stop_loss(1, 0.05)
+    assert trade.stop_loss == 0.95
+    assert trade.max_rate == 1
+    assert trade.initial_stop_loss == 0.95
+
+    trade.adjust_stop_loss(1.3, -0.1)
+    assert round(trade.stop_loss, 8) == 1.17
+    assert trade.max_rate == 1.3
+    assert trade.initial_stop_loss == 0.95
+
+    # current rate lower ... should not change
+    trade.adjust_stop_loss(1.2, 0.1)
+    assert round(trade.stop_loss, 8) == 1.17
+    assert trade.max_rate == 1.3
+    assert trade.initial_stop_loss == 0.95
+
+    # current rate higher... should raise stoploss
+    trade.adjust_stop_loss(1.4, 0.1)
+    assert round(trade.stop_loss, 8) == 1.26
+    assert trade.max_rate == 1.4
+    assert trade.initial_stop_loss == 0.95
