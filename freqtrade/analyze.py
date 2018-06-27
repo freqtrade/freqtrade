@@ -237,7 +237,8 @@ class Analyze(object):
             stop_loss_value = self.strategy.stoploss
             if 'trailing_stop_positive' in self.config and current_profit > 0:
 
-                stop_loss_value = self.config.get('trailing_stop_positive')
+                # Ignore mypy error check in configuration that this is a float
+                stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
                 logger.debug(f"using positive stop loss mode: {stop_loss_value} "
                              f"since we have profit {current_profit}")
 
