@@ -465,18 +465,24 @@ def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
         open_rate=1,
     )
 
-    # Get percent of profit with a custom rate (Higher than open rate)
-    trade.adjust_stop_loss(1, 0.05)
+    trade.adjust_stop_loss(trade.open_rate, 0.05, True)
     assert trade.stop_loss == 0.95
     assert trade.max_rate == 1
     assert trade.initial_stop_loss == 0.95
 
+    # Get percent of profit with a lowre rate
+    trade.adjust_stop_loss(0.96, 0.05)
+    assert trade.stop_loss == 0.95
+    assert trade.max_rate == 1
+    assert trade.initial_stop_loss == 0.95
+
+    # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(1.3, -0.1)
     assert round(trade.stop_loss, 8) == 1.17
     assert trade.max_rate == 1.3
     assert trade.initial_stop_loss == 0.95
 
-    # current rate lower ... should not change
+    # current rate lower again ... should not change
     trade.adjust_stop_loss(1.2, 0.1)
     assert round(trade.stop_loss, 8) == 1.17
     assert trade.max_rate == 1.3
@@ -484,6 +490,12 @@ def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
 
     # current rate higher... should raise stoploss
     trade.adjust_stop_loss(1.4, 0.1)
+    assert round(trade.stop_loss, 8) == 1.26
+    assert trade.max_rate == 1.4
+    assert trade.initial_stop_loss == 0.95
+
+    #  Initial is true but stop_loss set - so doesn't do anything
+    trade.adjust_stop_loss(1.7, 0.1, True)
     assert round(trade.stop_loss, 8) == 1.26
     assert trade.max_rate == 1.4
     assert trade.initial_stop_loss == 0.95
