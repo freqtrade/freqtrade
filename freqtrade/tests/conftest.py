@@ -15,6 +15,10 @@ from freqtrade.analyze import Analyze
 from freqtrade import constants
 from freqtrade.freqtradebot import FreqtradeBot
 
+import moto
+import boto3
+import os
+
 logging.getLogger('').setLevel(logging.INFO)
 
 
@@ -85,9 +89,21 @@ def default_conf():
             "0": 0.04
         },
         "stoploss": -0.10,
-        "unfilledtimeout": 600,
+        "disable_buy": False,
+        "unfilledtimeout": {
+            "buy": 10,
+            "sell": 30
+        },
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "use_book_order": False,
+            "book_order_top": 6,
+            "ask_last_balance": 0.0,
+            "percent_from_top": 0.0
+        },
+        "ask_strategy": {
+            "use_book_order": False,
+            "book_order_min": 1,
+            "book_order_max": 10
         },
         "exchange": {
             "name": "bittrex",
@@ -241,7 +257,8 @@ def limit_buy_order():
         'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 0.0,
-        'status': 'closed'
+        'status': 'closed',
+        'filled': 0.0
     }
 
 
@@ -256,7 +273,8 @@ def limit_buy_order_old():
         'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
-        'status': 'open'
+        'status': 'open',
+        'filled': 0.0
     }
 
 
@@ -271,7 +289,8 @@ def limit_sell_order_old():
         'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 90.99181073,
-        'status': 'open'
+        'status': 'open',
+        'filled': 0.0
     }
 
 
@@ -286,7 +305,8 @@ def limit_buy_order_old_partial():
         'price': 0.00001099,
         'amount': 90.99181073,
         'remaining': 67.99181073,
-        'status': 'open'
+        'status': 'open',
+        'filled': 0.0
     }
 
 
@@ -515,6 +535,7 @@ def tickers():
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
         return Analyze.parse_ticker_dataframe(json.load(data_file))
+
 
 # FIX:
 # Create an fixture/function

@@ -45,6 +45,7 @@ def retrier(f):
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
                 raise ex
+
     return wrapper
 
 
@@ -239,10 +240,21 @@ def get_balances() -> dict:
     except ccxt.BaseError as e:
         raise OperationalException(e)
 
+
 @retrier
-def get_order_book(pair: str, refresh: Optional[bool] = True) -> dict:
+def get_order_book(pair: str, limit: Optional[int] = 100) -> dict:
     try:
-        return _API.fetch_order_book(pair)
+        params = {}
+        # 20180619: bittrex doesnt support limits -.-
+        # 20180619: binance limit fix.. binance currently has valid range
+        if _API.name == 'Binance':
+            limit_range = [5, 10, 20, 50, 100, 500, 1000]
+            for limitx in limit_range:
+                if limit < limitx:
+                    limit = limitx
+                    break
+
+        return _API.fetch_l2_order_book(pair, limit)
     except ccxt.NotSupported as e:
         raise OperationalException(
             f'Exchange {_API.name} does not support fetching order book.'
@@ -252,6 +264,7 @@ def get_order_book(pair: str, refresh: Optional[bool] = True) -> dict:
             f'Could not load order book due to {e.__class__.__name__}. Message: {e}')
     except ccxt.BaseError as e:
         raise OperationalException(e)
+
 
 @retrier
 def get_tickers() -> Dict:
@@ -297,8 +310,8 @@ def get_ticker_history(pair: str, tick_interval: str, since_ms: Optional[int] = 
     try:
         # last item should be in the time interval [now - tick_interval, now]
         till_time_ms = arrow.utcnow().shift(
-                        minutes=-constants.TICKER_INTERVAL_MINUTES[tick_interval]
-                       ).timestamp * 1000
+            minutes=-constants.TICKER_INTERVAL_MINUTES[tick_interval]
+        ).timestamp * 1000
         # it looks as if some exchanges return cached data
         # and they update it one in several minute, so 10 mins interval
         # is necessary to skeep downloading of an empty array when all

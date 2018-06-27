@@ -1,9 +1,19 @@
 # freqtrade
 
-[![Build Status](https://travis-ci.org/freqtrade/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
-[![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
-[![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
+[![Build Status](https://travis-ci.org/berlinguyinca/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
+[![Coverage Status](https://coveralls.io/repos/github/berlinguyinca/freqtrade/badge.svg?branch=wohlgemuth)](https://coveralls.io/github/berlinguyinca/freqtrade?branch=wohlgemuth)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/berlinguyinca/freqtrade/maintainability)
 
+
+## First of all, this is a fork!
+
+Basically I required a lot more features than the awesome default freqtrade version has to offer and since pull requests always take longer than exspected or the standard disagreements. I decided to maintain on main branch for my changes, called wohlgemuth, which is incidentally my last name and have a ton of little branches, with added features.
+
+This basically allows people to use my version, or to easily merge changes into their forks or make PR's against the main repo, which is the best of both works.
+
+This reminds of the Torvalds kernel vs the Cox kernel...
+
+## Back to what this is actually about
 
 Simple High frequency trading bot for crypto currencies designed to 
 support multi exchanges and be controlled via Telegram.
@@ -25,12 +35,12 @@ hesitate to read the source code and understand the mechanism of this bot.
 ## Table of Contents
 - [Features](#features)
 - [Quick start](#quick-start)
-- [Documentations](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md)
-   - [Installation](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md)
-   - [Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md)
-   - [Strategy Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
-   - [Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
-   - [Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
+- [Documentations](docs/index.md)
+   - [Installation](docs/installation.md)
+   - [Configuration](docs/configuration.md)
+   - [Strategy Optimization](docs/bot-optimization.md)
+   - [Backtesting](docs/backtesting.md)
+   - [Hyperopt](docs/hyperopt.md)
 - [Support](#support)
    - [Help](#help--slack)
    - [Bugs](#bugs--issues)
@@ -44,11 +54,8 @@ hesitate to read the source code and understand the mechanism of this bot.
     - [Software requirements](#software-requirements)
 
 ## Branches
-The project is currently setup in two main branches:
-- `develop` - This branch has often new features, but might also cause 
-breaking changes.
-- `master` - This branch contains the latest stable release. The bot 
-'should' be stable on this branch, and is generally well tested. 
+
+if you like to use this fork, I highly recommend to utilize the 'wohlgemuth' branch, since this is the most stable. It will be synced against the original development branch and be enriched with all my changes.
 
 ## Features
 - [x] **Based on Python 3.6+**: For botting on any operating system - 
@@ -65,6 +72,30 @@ strategy parameters with real exchange data.
 - [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
 - [x] **Performance status report**: Provide a performance status of your current trades.
 
+### Additional features in this branch
+
+#### Strategy:
+
+- [x] loading strategies from Base64 encoded data in the config file
+- [x] loading strategies from urls
+- [x] trailing stop loss
+
+#### Others:
+
+- [x] more indicators
+- [x] more telegram features
+- [x] advanced plotting
+- [x] [using book orders for buy and/or sell](docs/configuration.md) 
+- [x] [separated unfilled orders timeout](docs/configuration.md) 
+- [x] [option to disable buying](docs/configuration.md) 
+- [x] [option to get a buy price based on %](docs/configuration.md) 
+
+### Drawbacks
+
+- [x] not as good documentation
+- [x] maybe a bug here or there I haven't fixed yet
+
+
 ### Exchange marketplaces supported
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [Binance](https://www.binance.com/)
@@ -73,7 +104,7 @@ strategy parameters with real exchange data.
 ## Quick start
 This quick start section is a very short explanation on how to test the 
 bot in dry-run. We invite you to read the 
-[bot documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md) 
+[bot documentation](docs/index.md) 
 to ensure you understand how the bot is working.
 
 ### Easy installation
@@ -109,26 +140,26 @@ For any questions not covered by the documentation or for further
 information about the bot, we encourage you to join our slack channel.
 - [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE).
 
-### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
+### [Bugs / Issues](issues?q=is%3Aissue)
 If you discover a bug in the bot, please 
-[search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue) 
+[search our issue tracker](issues?q=is%3Aissue) 
 first. If it hasn't been reported, please 
-[create a new issue](https://github.com/freqtrade/freqtrade/issues/new) and 
+[create a new issue](issues/new) and 
 ensure you follow the template guide so that our team can assist you as 
 quickly as possible.
 
-### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
+### [Feature Requests](labels/enhancement)
 Have you a great idea to improve the bot you want to share? Please,
-first search if this feature was not [already discussed](https://github.com/freqtrade/freqtrade/labels/enhancement).
+first search if this feature was not [already discussed](labels/enhancement).
 If it hasn't been requested, please 
-[create a new request](https://github.com/freqtrade/freqtrade/issues/new) 
+[create a new request](issues/new) 
 and ensure you follow the template guide so that it does not get lost 
 in the bug reports.
 
-### [Pull Requests](https://github.com/freqtrade/freqtrade/pulls)
+### [Pull Requests](pulls)
 Feel like our bot is missing a feature? We welcome your pull requests! 
 Please read our 
-[Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
+[Contributing document](develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests. 
 
 **Important:** Always create your PR against the `develop` branch, not 
@@ -171,14 +202,14 @@ optional arguments:
                         only if dry_run is enabled.
 ```
 More details on:
-- [How to run the bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
-- [How to use Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
-- [How to use Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands)
+- [How to run the bot](docs/bot-usage.md#bot-commands)
+- [How to use Backtesting](docs/bot-usage.md#backtesting-commands)
+- [How to use Hyperopt](docs/bot-usage.md#hyperopt-commands)
    
 ### Telegram RPC commands
 Telegram is not mandatory. However, this is a great way to control your
 bot. More details on our 
-[documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md)
+[documentation](develop/docs/index.md)
 
 - `/start`: Starts the trader
 - `/stop`: Stops the trader

@@ -16,10 +16,10 @@ class DefaultStrategy(IStrategy):
 
     # Minimal ROI designed for the strategy
     minimal_roi = {
-        "40":  0.0,
-        "30":  0.01,
-        "20":  0.02,
-        "0":  0.04
+        "40": 0.0,
+        "30": 0.01,
+        "20": 0.02,
+        "0": 0.04
     }
 
     # Optimal stoploss designed for the strategy
@@ -204,14 +204,14 @@ class DefaultStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['rsi'] < 35) &
-                (dataframe['fastd'] < 35) &
-                (dataframe['adx'] > 30) &
-                (dataframe['plus_di'] > 0.5)
+                    (dataframe['rsi'] < 35) &
+                    (dataframe['fastd'] < 35) &
+                    (dataframe['adx'] > 30) &
+                    (dataframe['plus_di'] > 0.5)
             ) |
             (
-                (dataframe['adx'] > 65) &
-                (dataframe['plus_di'] > 0.5)
+                    (dataframe['adx'] > 65) &
+                    (dataframe['plus_di'] > 0.5)
             ),
             'buy'] = 1
 
@@ -225,16 +225,16 @@ class DefaultStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (
-                    (qtpylib.crossed_above(dataframe['rsi'], 70)) |
-                    (qtpylib.crossed_above(dataframe['fastd'], 70))
-                ) &
-                (dataframe['adx'] > 10) &
-                (dataframe['minus_di'] > 0)
+                    (
+                            (qtpylib.crossed_above(dataframe['rsi'], 70)) |
+                            (qtpylib.crossed_above(dataframe['fastd'], 70))
+                    ) &
+                    (dataframe['adx'] > 10) &
+                    (dataframe['minus_di'] > 0)
             ) |
             (
-                (dataframe['adx'] > 70) &
-                (dataframe['minus_di'] > 0.5)
+                    (dataframe['adx'] > 70) &
+                    (dataframe['minus_di'] > 0.5)
             ),
             'sell'] = 1
         return dataframe

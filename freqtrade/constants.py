@@ -35,7 +35,7 @@ SUPPORTED_FIAT = [
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
     "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
-    ]
+]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
@@ -55,7 +55,14 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'unfilledtimeout': {'type': 'integer', 'minimum': 0},
+        'unfilledtimeout': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'number', 'minimum': 1},
+                'sell': {'type': 'number', 'minimum': 1}
+            },
+            'required': ['buy', 'sell']
+        },
         'bid_strategy': {
             'type': 'object',
             'properties': {
@@ -66,16 +73,27 @@ CONF_SCHEMA = {
                     'exclusiveMaximum': False
                 },
                 'use_book_order': {'type': 'boolean'},
-                'book_order_top': {'type': 'number', 'maximum':20,'minimum':1}
+                'book_order_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
+                'percent_from_top': {'type': 'number', 'minimum': 0}
             },
-            'required': ['ask_last_balance']
+            'required': ['ask_last_balance', 'use_book_order']
+        },
+        'ask_strategy': {
+            'type': 'object',
+            'properties': {
+                'use_book_order': {'type': 'boolean'},
+                'book_order_min': {'type': 'number', 'minimum': 1},
+                'book_order_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
+            },
+            'required': ['use_book_order']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
             'type': 'object',
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'}
+                'sell_profit_only': {'type': 'boolean'},
+                'sell_fullfilled_at_roi': {'type': 'boolean'}
             }
         },
         'telegram': {

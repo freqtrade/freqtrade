@@ -4,7 +4,9 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
+    "disable_buy" : false,
     "ticker_interval": "5m",
+    "trailing_stop": true,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -12,11 +14,20 @@
         "0":  0.04
     },
     "stoploss": -0.10,
-    "unfilledtimeout": 600,
+    "unfilledtimeout": {
+        "buy":10,
+        "sell":30
+    }
     "bid_strategy": {
         "ask_last_balance": 0.0,
-        "use_book_order": true,
-        "book_order_top": 6
+        "use_book_order": false,
+        "book_order_top": 6,
+        "percent_from_top": 0
+    },
+    "ask_strategy":{
+        "use_book_order": false,
+        "book_order_min": 1,
+        "book_order_max": 30
     },
     "exchange": {
         "name": "bittrex",
@@ -40,7 +51,8 @@
     },
     "experimental": {
         "use_sell_signal": false,
-        "sell_profit_only": false
+        "sell_profit_only": false,
+        "sell_fullfilled_at_roi": false
     },
     "telegram": {
         "enabled": true,

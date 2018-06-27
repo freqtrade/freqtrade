@@ -33,7 +33,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any])-> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Init all variables and object the bot need to work
         :param config: configuration dict, you can use the Configuration.get_config()
@@ -76,17 +76,14 @@ class FreqtradeBot(object):
         else:
             self.state = State.STOPPED
 
-    def clean(self) -> bool:
+    def cleanup(self) -> None:
         """
-        Cleanup the application state und finish all pending tasks
+        Cleanup pending resources on an already stopped bot
         :return: None
         """
-        self.rpc.send_msg('*Status:* `Stopping trader...`')
-        logger.info('Stopping trader and cleaning up modules...')
-        self.state = State.STOPPED
+        logger.info('Cleaning up modules ...')
         self.rpc.cleanup()
         persistence.cleanup()
-        return True
 
     def worker(self, old_state: State = None) -> State:
         """
@@ -99,6 +96,12 @@ class FreqtradeBot(object):
         if state != old_state:
             self.rpc.send_msg(f'*Status:* `{state.name.lower()}`')
             logger.info('Changing state to: %s', state.name)
+            if (('use_book_order' in self.config['bid_strategy'] and \
+            self.config['bid_strategy'].get('use_book_order', False)) or \
+            ('use_book_order' in self.config['ask_strategy'] and \
+            self.config['ask_strategy'].get('use_book_order', False))) and \
+            self.config['dry_run'] and state == State.RUNNING:
+                self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading`')
 
         if state == State.STOPPED:
             time.sleep(1)
@@ -159,13 +162,17 @@ class FreqtradeBot(object):
                 state_changed |= self.process_maybe_execute_sell(trade)
 
             # Then looking for buy opportunities
-            if len(trades) < self.config['max_open_trades']:
-                state_changed = self.process_maybe_execute_buy()
+            if (self.config.get('disable_buy', False)):
+                logger.info('Buy disabled...')
+            else:
+                if len(trades) < self.config['max_open_trades']:
+                    state_changed = self.process_maybe_execute_buy()
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
-                self.check_handle_timedout(self.config['unfilledtimeout'])
-                Trade.session.flush()
+                if not self.config['dry_run']:
+                    self.check_handle_timedout()
+                    Trade.session.flush()
 
         except TemporaryError as error:
             logger.warning('%s, retrying in 30 seconds...', error)
@@ -243,19 +250,40 @@ class FreqtradeBot(object):
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
+        ticker = exchange.get_ticker(pair)
+        logger.debug('ticker data %s', ticker)
 
-        if self.config['bid_strategy']['use_book_order']:
-            logger.info('Using order book ')
-            orderBook = exchange.get_order_book(pair)
-            return orderBook['bids'][self.config['bid_strategy']['use_book_order']][0]
+        if ticker['ask'] < ticker['last']:
+            ticker_rate = ticker['ask']
         else:
-            logger.info('Using Ask / Last Price')
-            ticker = exchange.get_ticker(pair);
-            if ticker['ask'] < ticker['last']:
-                return ticker['ask']
             balance = self.config['bid_strategy']['ask_last_balance']
-            return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+            ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
+        used_rate = ticker_rate
+
+        if 'use_book_order' in self.config['bid_strategy'] and self.config['bid_strategy'].get('use_book_order', False):
+            logger.info('Getting price from Order Book')
+            orderBook_top = self.config.get('bid_strategy', {}).get('book_order_top', 1)
+            orderBook = exchange.get_order_book(pair, orderBook_top)            
+            # top 1 = index 0
+            orderBook_rate = orderBook['bids'][orderBook_top - 1][0]
+            orderBook_rate = orderBook_rate + 0.00000001
+            # if ticker has lower rate, then use ticker ( usefull if down trending )
+            logger.info('...book order buy rate %0.8f', orderBook_rate)
+            if ticker_rate < orderBook_rate:
+                logger.info('...using ticker rate instead %0.8f', ticker_rate)
+                used_rate = ticker_rate
+            used_rate = orderBook_rate
+        else:
+            logger.info('Using Last Ask / Last Price')
+            used_rate = ticker_rate
+        percent_from_top = self.config.get('bid_strategy', {}).get('percent_from_top', 0)
+        if percent_from_top > 0:
+            used_rate = used_rate - (used_rate * percent_from_top)
+            used_rate = self.analyze.trunc_num(used_rate, 8)
+            logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
+
+        return used_rate
 
     def create_trade(self) -> bool:
         """
@@ -264,6 +292,7 @@ class FreqtradeBot(object):
         :return: True if a trade object has been created and persisted, False otherwise
         """
         stake_amount = self.config['stake_amount']
+
         interval = self.analyze.get_ticker_interval()
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
@@ -274,8 +303,10 @@ class FreqtradeBot(object):
             stake_amount
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
+
         # Check if stake_amount is fulfilled
-        if exchange.get_balance(stake_currency) < stake_amount:
+        current_balance = exchange.get_balance(self.config['stake_currency'])
+        if current_balance < stake_amount:
             raise DependencyException(
                 f'stake amount is not fulfilled (currency={stake_currency})')
 
@@ -431,33 +462,68 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         if not trade.is_open:
             raise ValueError(f'attempt to handle closed trade: {trade}')
 
-        logger.debug('Handling %s ...', trade)
-        current_rate = exchange.get_ticker(trade.pair)['bid']
-
+        logger.info('Handling %s ...', trade)
+        sell_rate = exchange.get_ticker(trade.pair)['bid']
+        logger.info(' ticker rate %0.8f', sell_rate)
         (buy, sell) = (False, False)
 
         if self.config.get('experimental', {}).get('use_sell_signal'):
             (buy, sell) = self.analyze.get_signal(trade.pair, self.analyze.get_ticker_interval())
 
-        if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
-            self.execute_sell(trade, current_rate)
-            return True
+        is_set_fullfilled_at_roi = self.config.get('experimental', {}).get('sell_fullfilled_at_roi', False)
+        if is_set_fullfilled_at_roi:
+            sell_rate = self.analyze.get_roi_rate(trade, sell_rate)
+
+        if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
+            logger.info('Using order book for selling...')
+            # logger.debug('Order book %s',orderBook)
+            orderBook_min = self.config['ask_strategy'].get('book_order_min', 1)
+            orderBook_max = self.config['ask_strategy'].get('book_order_max', 1)
+
+            orderBook = exchange.get_order_book(trade.pair, orderBook_max)
+
+            for i in range(orderBook_min, orderBook_max + 1):
+                orderBook_rate = orderBook['asks'][i - 1][0]
+
+                # if orderbook has higher rate (high profit),
+                # use orderbook, otherwise just use bids rate
+                logger.info('  order book asks top %s: %0.8f', i, orderBook_rate)
+                if sell_rate < orderBook_rate:
+                    sell_rate = orderBook_rate
+
+                if self.check_sell(trade, sell_rate, buy, sell):
+                    return True
+                    break
+        else:
+            logger.info('checking sell')
+            if self.check_sell(trade, sell_rate, buy, sell):
+                return True
+
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
 
-    def check_handle_timedout(self, timeoutvalue: int) -> None:
+    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
+        if self.analyze.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell):
+            self.execute_sell(trade, sell_rate)
+            return True
+        return False
+
+    def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if neccessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
-        timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
+        buy_timeout = self.config['unfilledtimeout']['buy']
+        sell_timeout = self.config['unfilledtimeout']['sell']
+        buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
+        sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.
-                # This is probably because the record got
+                # This is probably because the record get_trades_for_order
                 # updated via /forcesell in a different thread.
                 if not trade.open_order_id:
                     continue
@@ -471,13 +537,11 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if int(order['remaining']) == 0:
-                continue
-
-            if order['side'] == 'buy' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_buy(trade, order)
-            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_sell(trade, order)
+            if order['status'] == 'open':
+                if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
+                    self.handle_timedout_limit_buy(trade, order)
+                elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
+                    self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the
@@ -568,7 +632,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 fiat
             )
             message += f'` ({gain}: {fmt_exp_profit:.2f}%, {profit_trade:.8f} {stake}`' \
-                       f'` / {profit_fiat:.3f} {fiat})`'\
+                       f'` / {profit_fiat:.3f} {fiat})`' \
                        ''
         # Because telegram._forcesell does not have the configuration
         # Ignore the FIAT value and does not show the stake_currency as well

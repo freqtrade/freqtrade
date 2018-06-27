@@ -1,4 +1,3 @@
-
 # --- Do not remove these libs ---
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
@@ -7,7 +6,7 @@ from pandas import DataFrame
 # Add your lib to import here
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-import numpy # noqa
+import numpy  # noqa
 
 
 # This class is a sample. Feel free to customize it.
@@ -218,9 +217,9 @@ class TestStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['adx'] > 30) &
-                (dataframe['tema'] <= dataframe['bb_middleband']) &
-                (dataframe['tema'] > dataframe['tema'].shift(1))
+                    (dataframe['adx'] > 30) &
+                    (dataframe['tema'] <= dataframe['bb_middleband']) &
+                    (dataframe['tema'] > dataframe['tema'].shift(1))
             ),
             'buy'] = 1
 
@@ -234,9 +233,9 @@ class TestStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['adx'] > 70) &
-                (dataframe['tema'] > dataframe['bb_middleband']) &
-                (dataframe['tema'] < dataframe['tema'].shift(1))
+                    (dataframe['adx'] > 70) &
+                    (dataframe['tema'] > dataframe['bb_middleband']) &
+                    (dataframe['tema'] < dataframe['tema'].shift(1))
             ),
             'sell'] = 1
         return dataframe

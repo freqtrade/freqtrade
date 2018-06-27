@@ -57,7 +57,7 @@ def patch_RPCManager(mocker) -> MagicMock:
     :param mocker: mocker to patch RPCManager class
     :return: RPCManager.send_msg MagicMock to track if this method is called
     """
-    mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     rpc_mock = mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     return rpc_mock
 
@@ -68,7 +68,7 @@ def test_freqtradebot_object() -> None:
     Test the FreqtradeBot object has the mandatory public methods
     """
     assert hasattr(FreqtradeBot, 'worker')
-    assert hasattr(FreqtradeBot, 'clean')
+    assert hasattr(FreqtradeBot, 'cleanup')
     assert hasattr(FreqtradeBot, 'create_trade')
     assert hasattr(FreqtradeBot, 'get_target_bid')
     assert hasattr(FreqtradeBot, 'process_maybe_execute_buy')
@@ -93,7 +93,7 @@ def test_freqtradebot(mocker, default_conf) -> None:
     assert freqtrade.state is State.STOPPED
 
 
-def test_clean(mocker, default_conf, caplog) -> None:
+def test_cleanup(mocker, default_conf, caplog) -> None:
     """
     Test clean() method
     """
@@ -101,11 +101,8 @@ def test_clean(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.persistence.cleanup', mock_cleanup)
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    assert freqtrade.state == State.RUNNING
-
-    assert freqtrade.clean()
-    assert freqtrade.state == State.STOPPED
-    assert log_has('Stopping trader and cleaning up modules...', caplog.record_tuples)
+    freqtrade.cleanup()
+    assert log_has('Cleaning up modules ...', caplog.record_tuples)
     assert mock_cleanup.call_count == 1
 
 
@@ -502,27 +499,45 @@ def test_balance_fully_ask_side(mocker) -> None:
     """
     Test get_target_bid() method
     """
-    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': {'ask_last_balance': 0.0}})
+    param = {
+        'use_book_order': False,
+        'book_order_top': 6,
+        'ask_last_balance': 0.0,
+        'percent_from_top': 0
+    }
+    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
-    assert freqtrade.get_target_bid({'ask': 20, 'last': 10}) == 20
+    assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
 
 
 def test_balance_fully_last_side(mocker) -> None:
     """
     Test get_target_bid() method
     """
-    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': {'ask_last_balance': 1.0}})
+    param = {
+        'use_book_order': False,
+        'book_order_top': 6,
+        'ask_last_balance': 0.0,
+        'percent_from_top': 0
+    }
+    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
-    assert freqtrade.get_target_bid({'ask': 20, 'last': 10}) == 10
+    assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
 
 
 def test_balance_bigger_last_ask(mocker) -> None:
     """
     Test get_target_bid() method
     """
-    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': {'ask_last_balance': 1.0}})
+    param = {
+        'use_book_order': False,
+        'book_order_top': 6,
+        'ask_last_balance': 0.0,
+        'percent_from_top': 0.00
+    }
+    freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
-    assert freqtrade.get_target_bid({'ask': 5, 'last': 10}) == 5
+    assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
@@ -852,7 +867,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
     Trade.session.add(trade_buy)
 
     # check it does cancel buy orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -893,7 +908,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     Trade.session.add(trade_sell)
 
     # check it does cancel sell orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
@@ -933,7 +948,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -984,7 +999,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
         'recent call last):\n.*'
     )
 
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert filter(regexp.match, caplog.record_tuples)
 
 

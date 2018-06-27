@@ -26,13 +26,30 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
+def test_load_strategy_from_url(result):
+    resolver = StrategyResolver()
+    resolver._load_strategy('https://freq.isaac.international/'
+                            'dev/strategies/GBPAQEFGGWCMWVFU34P'
+                            'MVGS4P2NJR4IDFNVI4LTCZAKJAD3JCXUMBI4J/AverageStrategy/code')
+    assert hasattr(resolver.strategy, 'minimal_roi')
+    assert 'adx' in resolver.strategy.populate_indicators(result)
+
+
 def test_load_strategy_custom_directory(result):
     resolver = StrategyResolver()
     extra_dir = os.path.join('some', 'path')
-    with pytest.raises(
-            FileNotFoundError,
-            match=r".*No such file or directory: '{}'".format(extra_dir)):
-        resolver._load_strategy('TestStrategy', extra_dir)
+
+    if os.name == 'nt':
+        with pytest.raises(
+                FileNotFoundError,
+                match="FileNotFoundError: [WinError 3] The system cannot find the "
+                      "path specified: '{}'".format(extra_dir)):
+            resolver._load_strategy('TestStrategy', extra_dir)
+    else:
+        with pytest.raises(
+                FileNotFoundError,
+                match=r".*No such file or directory: '{}'".format(extra_dir)):
+            resolver._load_strategy('TestStrategy', extra_dir)
 
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)

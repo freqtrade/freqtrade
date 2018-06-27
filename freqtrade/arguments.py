@@ -204,12 +204,6 @@ class Arguments(object):
             metavar='INT',
         )
         parser.add_argument(
-            '--use-mongodb',
-            help='parallelize evaluations with mongodb (requires mongod in PATH)',
-            dest='mongodb',
-            action='store_true',
-        )
-        parser.add_argument(
             '-s', '--spaces',
             help='Specify which parameters to hyperopt. Space separate list. \
                   Default: %(default)s',
@@ -224,7 +218,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import backtesting, hyperopt
+        from freqtrade.optimize import backtesting
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -235,10 +229,14 @@ class Arguments(object):
         self.backtesting_options(backtesting_cmd)
 
         # Add hyperopt subcommand
-        hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
-        hyperopt_cmd.set_defaults(func=hyperopt.start)
-        self.optimizer_shared_options(hyperopt_cmd)
-        self.hyperopt_options(hyperopt_cmd)
+        try:
+            from freqtrade.optimize import hyperopt
+            hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+            hyperopt_cmd.set_defaults(func=hyperopt.start)
+            self.optimizer_shared_options(hyperopt_cmd)
+            self.hyperopt_options(hyperopt_cmd)
+        except ImportError as e:
+            logging.warn("no hyper opt found - skipping support for it")
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
@@ -293,6 +291,93 @@ class Arguments(object):
             help='Show profits for only this pairs. Pairs are comma-separated.',
             dest='pair',
             default=None
+        )
+
+        self.parser.add_argument(
+            '--stop-loss',
+            help='Renders stop/loss information in the main chart',
+            dest='stoplossdisplay',
+            action='store_true',
+            default=False
+
+        )
+
+        self.parser.add_argument(
+            '--plot-rsi',
+            help='Renders a rsi chart of the given RSI dataframe name, for example --plot-rsi rsi',
+            dest='plotrsi',
+            nargs='+',
+            default=None
+
+        )
+
+        self.parser.add_argument(
+            '--plot-cci',
+            help='Renders a cci chart of the given CCI dataframe name, for example --plot-cci cci',
+            dest='plotcci',
+            nargs='+',
+
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-osc',
+            help='Renders a osc chart of the given osc dataframe name, for example --plot-osc osc',
+            dest='plotosc',
+            nargs='+',
+
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-cmf',
+            help='Renders a cmf chart of the given cmf dataframe name, for example --plot-cmf cmf',
+            dest='plotcmf',
+            nargs='+',
+
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-macd',
+            help='Renders a macd chart of the given '
+                 'dataframe name, for example --plot-macd macd',
+            dest='plotmacd',
+            default=None
+        )
+
+        self.parser.add_argument(
+            '--plot-dataframe',
+            help='Renders the specified dataframes',
+            dest='plotdataframe',
+            default=None,
+            nargs='+',
+            type=str
+        )
+
+        self.parser.add_argument(
+            '--plot-dataframe-marker',
+            help='Renders the specified dataframes as markers. '
+                 'Accepted values for a marker are either 100 or -100',
+            dest='plotdataframemarker',
+            default=None,
+            nargs='+',
+            type=str
+        )
+
+        self.parser.add_argument(
+            '--plot-volume',
+            help='plots the volume as a sub plot',
+            dest='plotvolume',
+            action='store_true'
+        )
+
+        self.parser.add_argument(
+            '--plot-max-ticks',
+            help='specify an upper limit of how many ticks we can display',
+            dest='plotticks',
+            default=750,
+            type=int
         )
 
     def testdata_dl_options(self) -> None:
