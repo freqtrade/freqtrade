@@ -77,6 +77,13 @@ def check_migrate(engine) -> None:
     inspector = inspect(engine)
 
     cols = inspector.get_columns('trades')
+    tabs = inspector.get_table_names()
+    table_back_name = 'trades_bak'
+    i = 0
+    while table_back_name in tabs:
+        i += 1
+        table_back_name = f'trades_bak{i}'
+        logger.info(f'trying {table_back_name}')
 
     # Check for latest column
     if not has_column(cols, 'max_rate'):
@@ -87,7 +94,7 @@ def check_migrate(engine) -> None:
         max_rate = get_column_def(cols, 'max_rate', '0.0')
 
         # Schema migration necessary
-        engine.execute("alter table trades rename to trades_bak")
+        engine.execute(f"alter table trades rename to {table_back_name}")
         # let SQLAlchemy create the schema as required
         _DECL_BASE.metadata.create_all(engine)
 
@@ -112,8 +119,7 @@ def check_migrate(engine) -> None:
                 stake_amount, amount, open_date, close_date, open_order_id,
                 {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
                 {max_rate} max_rate
-
-                from trades_bak
+                from {table_back_name}
              """)
 
         # Reread columns - the above recreated the table!

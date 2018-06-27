@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 
 from freqtrade import constants, OperationalException
 from freqtrade.persistence import Trade, init, clean_dry_run_db
+from freqtrade.tests.conftest import log_has
 
 
 @pytest.fixture(scope='function')
@@ -405,7 +406,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.initial_stop_loss == 0.0
 
 
-def test_migrate_new(mocker, default_conf, fee):
+def test_migrate_new(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
@@ -442,6 +443,9 @@ def test_migrate_new(mocker, default_conf, fee):
     # Create table using the old format
     engine.execute(create_table_old)
     engine.execute(insert_table_old)
+
+    # fake previous backup
+    engine.execute("create table trades_bak as select * from trades")
     # Run init to test migration
     init(default_conf)
 
@@ -456,6 +460,10 @@ def test_migrate_new(mocker, default_conf, fee):
     assert trade.stake_amount == default_conf.get("stake_amount")
     assert trade.pair == "ETC/BTC"
     assert trade.exchange == "binance"
+    assert trade.max_rate == 0.0
+    assert trade.stop_loss == 0.0
+    assert trade.initial_stop_loss == 0.0
+    assert log_has("trying trades_bak1", caplog.record_tuples)
 
 
 def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
