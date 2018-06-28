@@ -232,8 +232,7 @@ def test_get_balance_prod(default_conf, mocker):
 
         exchange.get_balance(currency='BTC')
 
-    with pytest.raises(TemporaryError):
-        # api_mock.fetch_balance = MagicMock(return_value={})
+    with pytest.raises(TemporaryError, match=r'.*balance due to malformed exchange response:.*'):
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
         exchange.get_balance(currency='BTC')
@@ -419,6 +418,11 @@ def test_get_ticker_history(default_conf, mocker):
     validate_exceptionhandlers(mocker, default_conf, api_mock,
                                "get_ticker_history", "fetch_ohlcv",
                                pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
+
+    with pytest.raises(OperationalException, match=r'Exchange .* does not support.*'):
+        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_ticker_history(pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
 
 
 def test_get_ticker_history_sort(default_conf, mocker):
