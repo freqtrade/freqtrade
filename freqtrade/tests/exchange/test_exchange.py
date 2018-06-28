@@ -36,12 +36,19 @@ def test_init(default_conf, mocker, caplog):
     assert log_has('Instance is running with dry_run enabled', caplog.record_tuples)
 
 
-def test_init_exception(default_conf):
+def test_init_exception(default_conf, mocker):
     default_conf['exchange']['name'] = 'wrong_exchange_name'
 
     with pytest.raises(
             OperationalException,
             match='Exchange {} is not supported'.format(default_conf['exchange']['name'])):
+        Exchange(default_conf)
+
+    default_conf['exchange']['name'] = 'binance'
+    with pytest.raises(
+            OperationalException,
+            match='Exchange {} is not supported'.format(default_conf['exchange']['name'])):
+        mocker.patch("ccxt.binance", MagicMock(side_effect=AttributeError))
         Exchange(default_conf)
 
 
