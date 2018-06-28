@@ -322,22 +322,30 @@ class FreqtradeBot(object):
         for _pair in whitelist:
             (buy, sell) = self.analyze.get_signal(_pair, interval)
             if buy and not sell:
-                pair = _pair
-                break
+                # order book depth of market
+                if self.config.get('experimental', {}).get('check_depth_of_market', False) \
+                and (self.config.get('experimental', {}).get('dom_bids_asks_delta', 0) > 0):
+                    logger.info('depth of market check for %s', _pair)
+                    orderBook = exchange.get_order_book(_pair, 1000)
+                    orderBook_df = self.analyze.order_book_to_dataframe(orderBook)
+                    orderBook_bids = orderBook_df['b_size'].sum()
+                    orderBook_asks = orderBook_df['a_size'].sum()
+                    logger.info('bids: %s, asks: %s, delta: %s', orderBook_bids, orderBook_asks, orderBook_bids / orderBook_asks)
+                    if (orderBook_bids / orderBook_asks) >= self.config.get('experimental', {}).get('dom_bids_asks_delta', 0):
+                        # check if price is below average of 24h high low
+                        if self.config.get('experimental', {}).get('buy_price_below_24h_h_l', False):
+                            pair_ticker = exchange.get_ticker(_pair)
+                            logger.info('checking ask price if below 24h high %s and low %s average...', pair_ticker['high'], pair_ticker['low'])
+                            if pair_ticker['ask'] > ((pair_ticker['high']+pair_ticker['low'])/2):
+                                pair = _pair
+                                break
+                        pair = _pair
+                        break
+                else:
+                    pair = _pair
+                    break
         else:
             return False
-
-        # order book depth of market
-        if self.config.get('experimental', {}).get('check_depth_of_market', False) \
-        and (self.config.get('experimental', {}).get('dom_bids_asks_delta', 0) > 0):
-            logger.info('depth of market check for %s', pair)
-            orderBook = exchange.get_order_book(pair, 1000)
-            orderBook_df = self.analyze.order_book_to_dataframe(orderBook)
-            orderBook_bids = orderBook_df['b_size'].sum()
-            orderBook_asks = orderBook_df['a_size'].sum()
-            logger.info('bids: %s, asks: %s, delta: %s', orderBook_bids, orderBook_asks, orderBook_bids / orderBook_asks)
-            if (orderBook_bids / orderBook_asks) < self.config.get('experimental', {}).get('dom_bids_asks_delta', 0):
-                return False
 
         pair_s = pair.replace('_', '/')
         pair_url = exchange.get_pair_detail_url(pair)

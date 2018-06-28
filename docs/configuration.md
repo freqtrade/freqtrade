@@ -18,20 +18,20 @@ The table below will list all configuration parameters.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
-| `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. [More information below](docs/configuration.md#what-are-the-valid-values-for-fiat_display_currency). 
-| `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. [More information below](docs/configuration.md#switch-to-dry-run--paper-trading-mode)
-| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. [More information below](docs/configuration.md#understanding-minimal_roi).
+| `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. [More information below](#what-are-the-valid-values-for-fiat_display_currency). 
+| `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. [More information below](#switch-to-dry-run--paper-trading-mode)
+| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. [More information below](#understanding-minimal_roi).
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `disable_buy` | false | No | Disables buying of crypto-currency. Bot will continue to sell.
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
-| `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. [More information below](docs/configuration.md#understanding-bid_strategyask_last_balance).
-| `bid_strategy.use_book_order` | false | No | Use book order to set the bidding price. [More information below](docs/configuration.md#understanding-bid_strategyuse_book_order).
-| `bid_strategy.book_order_top` | 1 | No | Selects the top n bidding price in book order. [More information below](docs/configuration.md#understanding-bid_strategyuse_book_order).
-| `bid_strategy.percent_from_top` | 0 | No | Set the percent to deduct from the buy rate from book order (if enabled) or from ask/last price. [More information below](docs/configuration.md#understanding-bid_strategypercent_from_top).
+| `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. [More information below](#understanding-bid_strategyask_last_balance).
+| `bid_strategy.use_book_order` | false | No | Use book order to set the bidding price. [More information below](#understanding-bid_strategyuse_book_order).
+| `bid_strategy.book_order_top` | 1 | No | Selects the top n bidding price in book order. [More information below](#understanding-bid_strategyuse_book_order).
+| `bid_strategy.percent_from_top` | 0 | No | Set the percent to deduct from the buy rate from book order (if enabled) or from ask/last price. [More information below](#understanding-bid_strategypercent_from_top).
 | `ask_strategy.use_book_order` | false | No | Use book order to set the asking price. More information below.
-| `ask_strategy.book_order_min` | 1 | No | The minimum index from the top to search for profitable asking price from book order. [More information below](docs/configuration.md#understanding-ask_strategyuse_book_order).
-| `ask_strategy.book_order_max` | 1 | No | The maximum index from the top to search for profitable asking price from book order. [More information below](docs/configuration.md#understanding-ask_strategyuse_book_order).
+| `ask_strategy.book_order_min` | 1 | No | The minimum index from the top to search for profitable asking price from book order. [More information below](#understanding-ask_strategyuse_book_order).
+| `ask_strategy.book_order_max` | 1 | No | The maximum index from the top to search for profitable asking price from book order. [More information below](#understanding-ask_strategyuse_book_order).
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
@@ -40,13 +40,14 @@ The table below will list all configuration parameters.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `experimental.sell_fullfilled_at_roi` | false | No | automatically creates a sell order based on `minimal_roi` once a buy order has been fullfilled.
-| `experimental.check_depth_of_market` | false | No | checks order book depth by comparing total size of bids and total size of asks. [More information below](docs/configuration.md#understanding-experimentalcheck_depth_of_market).
-| `experimental.dom_bids_asks_delta` | 0 | No | the difference of total size bids vs total size asks to indicate a buy signal. [More information below](docs/configuration.md#understanding-experimentalcheck_depth_of_market).
+| `experimental.check_depth_of_market` | false | No | checks order book depth by comparing total size of bids and total size of asks. [More information below](#understanding-experimentalcheck_depth_of_market).
+| `experimental.dom_bids_asks_delta` | 0 | No | the difference of total size bids vs total size asks to indicate a buy signal. [More information below](#understanding-experimentalcheck_depth_of_market).
+| `experimental.buy_price_below_24h_h_l` | false | No | allows buy if the buying price is below average of 24 hour high and low.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
 | `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
-| `initial_state` | running | No | Defines the initial application state. [More information below](docs/configuration.md#understanding-initial_state).
+| `initial_state` | running | No | Defines the initial application state. [More information below](#understanding-initial_state).
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
 | `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.

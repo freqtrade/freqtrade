@@ -95,7 +95,8 @@ CONF_SCHEMA = {
                 'sell_profit_only': {'type': 'boolean'},
                 'sell_fullfilled_at_roi': {'type': 'boolean'},
                 'check_depth_of_market': {'type': 'boolean'},
-                'dom_bids_asks_delta': {'type': 'number', 'minimum': 0}
+                'dom_bids_asks_delta': {'type': 'number', 'minimum': 0},
+                'buy_price_below_24h_h_l': {'type': 'boolean'},
             }
         },
         'telegram': {
