@@ -232,6 +232,12 @@ def test_get_balance_prod(default_conf, mocker):
 
         exchange.get_balance(currency='BTC')
 
+    with pytest.raises(TemporaryError):
+        # api_mock.fetch_balance = MagicMock(return_value={})
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
+        exchange.get_balance(currency='BTC')
+
 
 def test_get_balances_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
@@ -623,6 +629,9 @@ def test_get_trades_for_order(default_conf, mocker):
     validate_exceptionhandlers(mocker, default_conf, api_mock,
                                'get_trades_for_order', 'fetch_my_trades',
                                order_id=order_id, pair='LTC/BTC', since=since)
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=False))
+    assert exchange.get_trades_for_order(order_id, 'LTC/BTC', since) == []
 
 
 def test_get_markets(default_conf, mocker, markets):
