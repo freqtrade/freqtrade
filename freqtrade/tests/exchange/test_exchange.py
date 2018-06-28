@@ -113,6 +113,20 @@ def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
         Exchange(conf)
 
 
+def test_exchangehas(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf)
+    assert not exchange.exchange_has('ASDFASDF')
+    api_mock = MagicMock()
+
+    type(api_mock).has = PropertyMock(return_value={'deadbeef': True})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange.exchange_has("deadbeef")
+
+    type(api_mock).has = PropertyMock(return_value={'deadbeef': False})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert not exchange.exchange_has("deadbeef")
+
+
 def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf)
