@@ -348,6 +348,34 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
     assert result is None
 
+    # no cost Min
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_markets',
+        MagicMock(return_value=[{
+            'symbol': 'ETH/BTC',
+            'limits': {
+                'cost': {"min": None},
+                'amount': {}
+            }
+        }])
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
+    assert result is None
+
+    # no amount Min
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_markets',
+        MagicMock(return_value=[{
+            'symbol': 'ETH/BTC',
+            'limits': {
+                'cost': {},
+                'amount': {"min": None}
+            }
+        }])
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
+    assert result is None
+
     # empty 'cost'/'amount' section
     mocker.patch(
         'freqtrade.exchange.Exchange.get_markets',
