@@ -277,11 +277,14 @@ class FreqtradeBot(object):
             return None
 
         min_stake_amounts = []
-        if 'cost' in market['limits'] and 'min' in market['limits']['cost']:
-            min_stake_amounts.append(market['limits']['cost']['min'])
+        limits = market['limits']
+        if ('cost' in limits and 'min' in limits['cost']
+                and limits['cost']['min'] is not None):
+            min_stake_amounts.append(limits['cost']['min'])
 
-        if 'amount' in market['limits'] and 'min' in market['limits']['amount']:
-            min_stake_amounts.append(market['limits']['amount']['min'] * price)
+        if ('amount' in limits and 'min' in limits['amount']
+                and limits['amount']['min'] is not None):
+            min_stake_amounts.append(limits['amount']['min'] * price)
 
         if not min_stake_amounts:
             return None
