@@ -11,7 +11,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade import constants
-from freqtrade.exchange import get_fee, get_ticker_history
+from freqtrade.exchange import get_fee, get_ticker_history, get_order_book
 from freqtrade.persistence import Trade
 from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 
@@ -108,7 +108,7 @@ class Analyze(object):
         dataframe = self.parse_ticker_dataframe(ticker_history)
         # eliminate partials for known exchanges that sends partial candles
         if self.config['exchange']['name'] in ['binance']:
-            logger.info('eliminating partial candle')
+            logger.debug('eliminating partial candle')
             dataframe.drop(dataframe.tail(1).index, inplace=True)  # eliminate partial candle
         dataframe = self.populate_indicators(dataframe, pair)
         dataframe = self.populate_buy_trend(dataframe, pair)
@@ -122,6 +122,7 @@ class Analyze(object):
         :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
+        logger.info('Checking signal for %s', pair)
         ticker_hist = get_ticker_history(pair, interval)
         if not ticker_hist:
             logger.warning('Empty ticker history for pair %s', pair)
@@ -271,7 +272,7 @@ class Analyze(object):
                 break
         return sell_rate
 
-    def order_book_to_dataframe(data: list) -> DataFrame:
+    def order_book_to_dataframe(self, data: list) -> DataFrame:
         """
         Gets order book list, returns dataframe with below format
         -------------------------------------------------------------------
@@ -292,8 +293,3 @@ class Analyze(object):
             keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
 
         return frame
-
-    def order_book_dom() -> DataFrame:
-        # https://stackoverflow.com/questions/36835793/pandas-group-by-consecutive-ranges
-        return DataFrame
-

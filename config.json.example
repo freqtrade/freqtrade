@@ -47,7 +47,10 @@
     "experimental": {
         "use_sell_signal": false,
         "sell_profit_only": false,
-        "sell_fullfilled_at_roi": false
+        "sell_fullfilled_at_roi": false,
+        "check_depth_of_market": false,
+        "dom_bids_asks_delta": 1.5,
+        "buy_price_below_24h_h_l": false
     },
     "telegram": {
         "enabled": true,
