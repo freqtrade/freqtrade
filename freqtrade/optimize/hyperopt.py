@@ -62,7 +62,7 @@ class Hyperopt(Backtesting):
 
         # Previous evaluations
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
-        self.trials = []
+        self.trials: List = []
 
     def get_args(self, params):
         dimensions = self.hyperopt_space()
@@ -191,7 +191,7 @@ class Hyperopt(Backtesting):
         ]
 
     @staticmethod
-    def indicator_space() -> Dict[str, Any]:
+    def indicator_space() -> List[Dimension]:
         """
         Define your Hyperopt space for searching strategy parameters
         """
@@ -349,7 +349,7 @@ class Hyperopt(Backtesting):
         if self.has_space('buy'):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         self.processed = self.tickerdata_to_dataframe(data)
-        self.exchange = None
+        self.exchange = None  # type: ignore
         self.load_previous_results()
 
         cpus = multiprocessing.cpu_count()
