@@ -1627,6 +1627,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets
     )
 
     conf = deepcopy(default_conf)
@@ -1644,7 +1645,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
@@ -1662,6 +1663,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets
     )
 
     conf = deepcopy(default_conf)
