@@ -14,20 +14,20 @@ from freqtrade.exchange import Exchange, API_RETRY_COUNT
 from freqtrade.tests.conftest import log_has, get_patched_exchange
 
 
-def ccxt_exceptionhandlers(mocker, default_conf, api_mock, fun, innerfun, **kwargs):
+def ccxt_exceptionhandlers(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
     """Function to test ccxt exception handling """
 
     with pytest.raises(TemporaryError):
-        api_mock.__dict__[innerfun] = MagicMock(side_effect=ccxt.NetworkError)
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[innerfun].call_count == API_RETRY_COUNT + 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
-        api_mock.__dict__[innerfun] = MagicMock(side_effect=ccxt.BaseError)
+        api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[innerfun].call_count == 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
 
 
 def test_init(default_conf, mocker, caplog):
