@@ -100,7 +100,10 @@ def default_conf():
             "0": 0.04
         },
         "stoploss": -0.10,
-        "unfilledtimeout": 600,
+        "unfilledtimeout": {
+            "buy": 10,
+            "sell": 30
+        },
         "bid_strategy": {
             "ask_last_balance": 0.0
         },

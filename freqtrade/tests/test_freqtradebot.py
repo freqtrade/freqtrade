@@ -348,6 +348,34 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
     assert result is None
 
+    # no cost Min
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_markets',
+        MagicMock(return_value=[{
+            'symbol': 'ETH/BTC',
+            'limits': {
+                'cost': {"min": None},
+                'amount': {}
+            }
+        }])
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
+    assert result is None
+
+    # no amount Min
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_markets',
+        MagicMock(return_value=[{
+            'symbol': 'ETH/BTC',
+            'limits': {
+                'cost': {},
+                'amount': {"min": None}
+            }
+        }])
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
+    assert result is None
+
     # empty 'cost'/'amount' section
     mocker.patch(
         'freqtrade.exchange.Exchange.get_markets',
@@ -1124,7 +1152,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
     Trade.session.add(trade_buy)
 
     # check it does cancel buy orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -1165,7 +1193,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     Trade.session.add(trade_sell)
 
     # check it does cancel sell orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
@@ -1205,7 +1233,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -1256,7 +1284,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
         'recent call last):\n.*'
     )
 
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert filter(regexp.match, caplog.record_tuples)
 
 
@@ -1599,6 +1627,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets
     )
 
     conf = deepcopy(default_conf)
@@ -1616,7 +1645,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
@@ -1634,6 +1663,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets
     )
 
     conf = deepcopy(default_conf)

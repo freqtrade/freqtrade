@@ -38,6 +38,8 @@ class BacktestResult(NamedTuple):
     close_index: int
     trade_duration: float
     open_at_end: bool
+    open_rate: float
+    close_rate: float
 
 
 class Backtesting(object):
@@ -116,11 +118,10 @@ class Backtesting(object):
 
     def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
 
-        records = [(trade_entry.pair, trade_entry.profit_percent,
-                    trade_entry.open_time.timestamp(),
-                    trade_entry.close_time.timestamp(),
-                    trade_entry.open_index - 1, trade_entry.trade_duration)
-                   for index, trade_entry in results.iterrows()]
+        records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
+                    t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
+                    t.open_rate, t.close_rate, t.open_at_end)
+                   for index, t in results.iterrows()]
 
         if records:
             logger.info('Dumping backtest results to %s', recordfilename)
@@ -159,7 +160,9 @@ class Backtesting(object):
                                       trade_duration=(sell_row.date - buy_row.date).seconds // 60,
                                       open_index=buy_row.Index,
                                       close_index=sell_row.Index,
-                                      open_at_end=False
+                                      open_at_end=False,
+                                      open_rate=buy_row.close,
+                                      close_rate=sell_row.close
                                       )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
@@ -172,7 +175,9 @@ class Backtesting(object):
                                  trade_duration=(sell_row.date - buy_row.date).seconds // 60,
                                  open_index=buy_row.Index,
                                  close_index=sell_row.Index,
-                                 open_at_end=True
+                                 open_at_end=True,
+                                 open_rate=buy_row.close,
+                                 close_rate=sell_row.close
                                  )
             logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
                          btr.profit_percent, btr.profit_abs)
