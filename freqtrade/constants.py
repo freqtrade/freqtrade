@@ -64,7 +64,6 @@ CONF_SCHEMA = {
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
-                'use_book_order': {'type': 'boolean'},
                 'buy': {'type': 'number', 'minimum': 3},
                 'sell': {'type': 'number', 'minimum': 10}
             }

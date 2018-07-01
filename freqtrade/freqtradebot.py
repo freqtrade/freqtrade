@@ -525,7 +525,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                 continue
 
             # Check if trade is still actually open
-            if (order['status'] == 'open'):
+            if order['status'] == 'open':
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
