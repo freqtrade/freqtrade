@@ -80,7 +80,7 @@ def check_migrate(engine) -> None:
     tabs = inspector.get_table_names()
     table_back_name = 'trades_bak'
     i = 0
-    while table_back_name in tabs:
+    for i, table_back_name in enumerate(tabs):
         i += 1
         table_back_name = f'trades_bak{i}'
         logger.info(f'trying {table_back_name}')
