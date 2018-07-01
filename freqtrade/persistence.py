@@ -66,6 +66,10 @@ def has_column(columns, searchname: str) -> bool:
     return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
 
 
+def get_column_def(columns, column: str, default: str) -> str:
+    return default if not has_column(columns, column) else column
+
+
 def check_migrate(engine) -> None:
     """
     Checks if migration is necessary and migrates if necessary
@@ -73,18 +77,32 @@ def check_migrate(engine) -> None:
     inspector = inspect(engine)
 
     cols = inspector.get_columns('trades')
+    tabs = inspector.get_table_names()
+    table_back_name = 'trades_bak'
+    for i, table_back_name in enumerate(tabs):
+        table_back_name = f'trades_bak{i}'
+        logger.info(f'trying {table_back_name}')
 
-    if not has_column(cols, 'fee_open'):
+    # Check for latest column
+    if not has_column(cols, 'max_rate'):
+        open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
+        close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
+        stop_loss = get_column_def(cols, 'stop_loss', '0.0')
+        initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
+        max_rate = get_column_def(cols, 'max_rate', '0.0')
+
         # Schema migration necessary
-        engine.execute("alter table trades rename to trades_bak")
+        engine.execute(f"alter table trades rename to {table_back_name}")
         # let SQLAlchemy create the schema as required
         _DECL_BASE.metadata.create_all(engine)
 
         # Copy data back - following the correct schema
-        engine.execute("""insert into trades
+        engine.execute(f"""insert into trades
                 (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
-                stake_amount, amount, open_date, close_date, open_order_id)
+                stake_amount, amount, open_date, close_date, open_order_id,
+                stop_loss, initial_stop_loss, max_rate
+                )
             select id, lower(exchange),
                 case
                     when instr(pair, '_') != 0 then
@@ -94,20 +112,17 @@ def check_migrate(engine) -> None:
                     end
                 pair,
                 is_open, fee fee_open, fee fee_close,
-                open_rate, null open_rate_requested, close_rate,
-                null close_rate_requested, close_profit,
-                stake_amount, amount, open_date, close_date, open_order_id
-                from trades_bak
+                open_rate, {open_rate_requested} open_rate_requested, close_rate,
+                {close_rate_requested} close_rate_requested, close_profit,
+                stake_amount, amount, open_date, close_date, open_order_id,
+                {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
+                {max_rate} max_rate
+                from {table_back_name}
              """)
 
         # Reread columns - the above recreated the table!
         inspector = inspect(engine)
         cols = inspector.get_columns('trades')
-
-    if not has_column(cols, 'open_rate_requested'):
-        engine.execute("alter table trades add open_rate_requested float")
-    if not has_column(cols, 'close_rate_requested'):
-        engine.execute("alter table trades add close_rate_requested float")
 
 
 def cleanup() -> None:
@@ -151,6 +166,12 @@ class Trade(_DECL_BASE):
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
     open_order_id = Column(String)
+    # absolute value of the stop loss
+    stop_loss = Column(Float, nullable=True, default=0.0)
+    # absolute value of the initial stop loss
+    initial_stop_loss = Column(Float, nullable=True, default=0.0)
+    # absolute value of the highest reached price
+    max_rate = Column(Float, nullable=True, default=0.0)
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
@@ -160,6 +181,45 @@ class Trade(_DECL_BASE):
             self.open_rate,
             arrow.get(self.open_date).humanize() if self.is_open else 'closed'
         )
+
+    def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
+        """this adjusts the stop loss to it's most recently observed setting"""
+
+        if initial and not (self.stop_loss is None or self.stop_loss == 0):
+            # Don't modify if called with initial and nothing to do
+            return
+
+        new_loss = float(current_price * (1 - abs(stoploss)))
+
+        # keeping track of the highest observed rate for this trade
+        if self.max_rate is None:
+            self.max_rate = current_price
+        else:
+            if current_price > self.max_rate:
+                self.max_rate = current_price
+
+        # no stop loss assigned yet
+        if not self.stop_loss:
+            logger.debug("assigning new stop loss")
+            self.stop_loss = new_loss
+            self.initial_stop_loss = new_loss
+
+        # evaluate if the stop loss needs to be updated
+        else:
+            if new_loss > self.stop_loss:  # stop losses only walk up, never down!
+                self.stop_loss = new_loss
+                logger.debug("adjusted stop loss")
+            else:
+                logger.debug("keeping current stop loss")
+
+        logger.debug(
+            f"{self.pair} - current price {current_price:.8f}, "
+            f"bought at {self.open_rate:.8f} and calculated "
+            f"stop loss is at: {self.initial_stop_loss:.8f} initial "
+            f"stop at {self.stop_loss:.8f}. "
+            f"trailing stop loss saved us: "
+            f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f} "
+            f"and max observed rate was {self.max_rate:.8f}")
 
     def update(self, order: Dict) -> None:
         """

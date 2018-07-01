@@ -61,6 +61,8 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
+        'trailing_stop': {'type': 'boolean'},
+        'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'unfilledtimeout': {
             'type': 'object',
             'properties': {

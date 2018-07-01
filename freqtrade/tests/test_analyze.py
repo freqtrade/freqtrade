@@ -42,6 +42,7 @@ def test_analyze_object() -> None:
     assert hasattr(Analyze, 'get_signal')
     assert hasattr(Analyze, 'should_sell')
     assert hasattr(Analyze, 'min_roi_reached')
+    assert hasattr(Analyze, 'stop_loss_reached')
 
 
 def test_dataframe_correct_length(result):
