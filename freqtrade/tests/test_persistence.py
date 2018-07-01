@@ -446,6 +446,8 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     # fake previous backup
     engine.execute("create table trades_bak as select * from trades")
+
+    engine.execute("create table trades_bak1 as select * from trades")
     # Run init to test migration
     init(default_conf)
 
@@ -464,6 +466,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
     assert log_has("trying trades_bak1", caplog.record_tuples)
+    assert log_has("trying trades_bak2", caplog.record_tuples)
 
 
 def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
