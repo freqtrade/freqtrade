@@ -62,7 +62,7 @@ CONF_SCHEMA = {
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'trailing_stop': {'type': 'boolean'},
-        'trailing_stop_positive': {'type': 'number', 'minimum': 0},
+        'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'unfilledtimeout': {'type': 'integer', 'minimum': 0},
         'bid_strategy': {
             'type': 'object',

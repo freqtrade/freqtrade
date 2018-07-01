@@ -184,14 +184,8 @@ class Trade(_DECL_BASE):
             arrow.get(self.open_date).humanize() if self.is_open else 'closed'
         )
 
-    def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool =False):
-        """
-        this adjusts the stop loss to it's most recently observed setting
-        :param current_price:
-        :param stoploss in percent:
-        :param initial:
-        :return:
-        """
+    def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
+        """this adjusts the stop loss to it's most recently observed setting"""
 
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
@@ -207,7 +201,7 @@ class Trade(_DECL_BASE):
                 self.max_rate = current_price
 
         # no stop loss assigned yet
-        if self.stop_loss is None or self.stop_loss == 0:
+        if not self.stop_loss:
             logger.debug("assigning new stop loss")
             self.stop_loss = new_loss
             self.initial_stop_loss = new_loss
