@@ -31,6 +31,8 @@ from freqtrade.optimize.backtesting import Backtesting
 
 logger = logging.getLogger(__name__)
 
+MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
+
 
 class Hyperopt(Backtesting):
     """
@@ -152,7 +154,8 @@ class Hyperopt(Backtesting):
         trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
         profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
         duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
-        return trade_loss + profit_loss + duration_loss
+        result = trade_loss + profit_loss + duration_loss
+        return result
 
     @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
@@ -292,6 +295,13 @@ class Hyperopt(Backtesting):
         total_profit = results.profit_percent.sum()
         trade_count = len(results.index)
         trade_duration = results.trade_duration.mean()
+
+        if trade_count == 0:
+            return {
+                'loss': MAX_LOSS,
+                'params': params,
+                'result': result_explanation,
+            }
 
         loss = self.calculate_loss(total_profit, trade_count, trade_duration)
 
