@@ -55,6 +55,18 @@ def test_load_config_missing_attributes(default_conf) -> None:
         configuration._validate_config(conf)
 
 
+def test_load_config_incorrect_stake_amount(default_conf) -> None:
+    """
+    Test the configuration validator with a missing attribute
+    """
+    conf = deepcopy(default_conf)
+    conf['stake_amount'] = 'fake'
+
+    with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config(conf)
+
+
 def test_load_config_file(default_conf, mocker, caplog) -> None:
     """
     Test Configuration._load_config_file() method

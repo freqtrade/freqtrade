@@ -98,6 +98,13 @@ class Analyze(object):
         """
         return self.strategy.ticker_interval
 
+    def get_stoploss(self) -> float:
+        """
+        Return stoploss to use
+        :return: Strategy stoploss value to use
+        """
+        return self.strategy.stoploss
+
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
@@ -172,33 +179,79 @@ class Analyze(object):
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
+        current_profit = trade.calc_profit_percent(rate)
+        if self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date):
+            return True
+
+        experimental = self.config.get('experimental', {})
+
+        if buy and experimental.get('ignore_roi_if_buy_signal', False):
+            logger.debug('Buy signal still active - not selling.')
+            return False
+
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-        if self.min_roi_reached(trade=trade, current_rate=rate, current_time=date):
+        if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
             logger.debug('Required profit reached. Selling..')
             return True
 
-        # Experimental: Check if the trade is profitable before selling it (avoid selling at loss)
-        if self.config.get('experimental', {}).get('sell_profit_only', False):
+        if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
                 return False
-
-        if sell and not buy and self.config.get('experimental', {}).get('use_sell_signal', False):
+        if sell and not buy and experimental.get('use_sell_signal', False):
             logger.debug('Sell signal received. Selling..')
             return True
 
         return False
 
-    def min_roi_reached(self, trade: Trade, current_rate: float, current_time: datetime) -> bool:
+    def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime) -> bool:
+        """
+        Based on current profit of the trade and configured (trailing) stoploss,
+        decides to sell or not
+        """
+
+        current_profit = trade.calc_profit_percent(current_rate)
+        trailing_stop = self.config.get('trailing_stop', False)
+
+        trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
+
+        # evaluate if the stoploss was hit
+        if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
+
+            if trailing_stop:
+                logger.debug(
+                    f"HIT STOP: current price at {current_rate:.6f}, "
+                    f"stop loss is {trade.stop_loss:.6f}, "
+                    f"initial stop loss was at {trade.initial_stop_loss:.6f}, "
+                    f"trade opened at {trade.open_rate:.6f}")
+                logger.debug(f"trailing stop saved {trade.stop_loss - trade.initial_stop_loss:.6f}")
+
+            logger.debug('Stop loss hit.')
+            return True
+
+        # update the stop loss afterwards, after all by definition it's supposed to be hanging
+        if trailing_stop:
+
+            # check if we have a special stop loss for positive condition
+            # and if profit is positive
+            stop_loss_value = self.strategy.stoploss
+            if 'trailing_stop_positive' in self.config and current_profit > 0:
+
+                # Ignore mypy error check in configuration that this is a float
+                stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
+                logger.debug(f"using positive stop loss mode: {stop_loss_value} "
+                             f"since we have profit {current_profit}")
+
+            trade.adjust_stop_loss(current_rate, stop_loss_value)
+
+        return False
+
+    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
         sell
         :return True if bot should sell at current rate
         """
-        current_profit = trade.calc_profit_percent(current_rate)
-        if self.strategy.stoploss is not None and current_profit < self.strategy.stoploss:
-            logger.debug('Stop loss hit.')
-            return True
 
         # Check if time matches and current rate is above threshold
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60

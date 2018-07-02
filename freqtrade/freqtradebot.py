@@ -160,7 +160,7 @@ class FreqtradeBot(object):
 
             if 'unfilledtimeout' in self.config:
                 # Check and handle any timed out open orders
-                self.check_handle_timedout(self.config['unfilledtimeout'])
+                self.check_handle_timedout()
                 Trade.session.flush()
 
         except TemporaryError as error:
@@ -244,14 +244,69 @@ class FreqtradeBot(object):
         balance = self.config['bid_strategy']['ask_last_balance']
         return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
+    def _get_trade_stake_amount(self) -> Optional[float]:
+        stake_amount = self.config['stake_amount']
+        avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
+
+        if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
+            open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
+            if open_trades >= self.config['max_open_trades']:
+                logger.warning('Can\'t open a new trade: max number of trades is reached')
+                return None
+            return avaliable_amount / (self.config['max_open_trades'] - open_trades)
+
+        # Check if stake_amount is fulfilled
+        if avaliable_amount < stake_amount:
+            raise DependencyException(
+                'Available balance(%f %s) is lower than stake amount(%f %s)' % (
+                    avaliable_amount, self.config['stake_currency'],
+                    stake_amount, self.config['stake_currency'])
+            )
+
+        return stake_amount
+
+    def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
+        markets = self.exchange.get_markets()
+        markets = [m for m in markets if m['symbol'] == pair]
+        if not markets:
+            raise ValueError(f'Can\'t get market information for symbol {pair}')
+
+        market = markets[0]
+
+        if 'limits' not in market:
+            return None
+
+        min_stake_amounts = []
+        limits = market['limits']
+        if ('cost' in limits and 'min' in limits['cost']
+                and limits['cost']['min'] is not None):
+            min_stake_amounts.append(limits['cost']['min'])
+
+        if ('amount' in limits and 'min' in limits['amount']
+                and limits['amount']['min'] is not None):
+            min_stake_amounts.append(limits['amount']['min'] * price)
+
+        if not min_stake_amounts:
+            return None
+
+        amount_reserve_percent = 1 - 0.05  # reserve 5% + stoploss
+        if self.analyze.get_stoploss() is not None:
+            amount_reserve_percent += self.analyze.get_stoploss()
+        # it should not be more than 50%
+        amount_reserve_percent = max(amount_reserve_percent, 0.5)
+        return min(min_stake_amounts)/amount_reserve_percent
+
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
         if one pair triggers the buy_signal a new trade record gets created
         :return: True if a trade object has been created and persisted, False otherwise
         """
-        stake_amount = self.config['stake_amount']
         interval = self.analyze.get_ticker_interval()
+        stake_amount = self._get_trade_stake_amount()
+
+        if not stake_amount:
+            return False
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
         exc_name = self.exchange.name
@@ -261,10 +316,6 @@ class FreqtradeBot(object):
             stake_amount
         )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
-        # Check if stake_amount is fulfilled
-        if self.exchange.get_balance(stake_currency) < stake_amount:
-            raise DependencyException(
-                f'stake amount is not fulfilled (currency={stake_currency})')
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
@@ -285,8 +336,18 @@ class FreqtradeBot(object):
             return False
         pair_s = pair.replace('_', '/')
         pair_url = self.exchange.get_pair_detail_url(pair)
+
         # Calculate amount
         buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
+
+        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
+        if min_stake_amount is not None and min_stake_amount > stake_amount:
+            logger.warning(
+                f'Can\'t open a new trade for {pair_s}: stake amount'
+                f' is too small ({stake_amount} < {min_stake_amount})'
+            )
+            return False
+
         amount = stake_amount / buy_limit
 
         order_id = self.exchange.buy(pair, buy_limit, amount)['id']
@@ -423,8 +484,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
-
-        if self.config.get('experimental', {}).get('use_sell_signal'):
+        experimental = self.config.get('experimental', {})
+        if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
             (buy, sell) = self.analyze.get_signal(self.exchange,
                                                   trade.pair, self.analyze.get_ticker_interval())
 
@@ -434,13 +495,16 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
 
-    def check_handle_timedout(self, timeoutvalue: int) -> None:
+    def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if neccessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
-        timeoutthreashold = arrow.utcnow().shift(minutes=-timeoutvalue).datetime
+        buy_timeout = self.config['unfilledtimeout']['buy']
+        sell_timeout = self.config['unfilledtimeout']['sell']
+        buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
+        sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
         for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
             try:
@@ -463,10 +527,12 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             if int(order['remaining']) == 0:
                 continue
 
-            if order['side'] == 'buy' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_buy(trade, order)
-            elif order['side'] == 'sell' and ordertime < timeoutthreashold:
-                self.handle_timedout_limit_sell(trade, order)
+            # Check if trade is still actually open
+            if order['status'] == 'open':
+                if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
+                    self.handle_timedout_limit_buy(trade, order)
+                elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
+                    self.handle_timedout_limit_sell(trade, order)
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the

@@ -72,7 +72,7 @@ class StrategyResolver(object):
         """
         current_path = os.path.dirname(os.path.realpath(__file__))
         abs_paths = [
-            os.path.join(current_path, '..', '..', 'user_data', 'strategies'),
+            os.path.join(os.getcwd(), 'user_data', 'strategies'),
             current_path,
         ]
 
@@ -81,10 +81,13 @@ class StrategyResolver(object):
             abs_paths.insert(0, extra_dir)
 
         for path in abs_paths:
-            strategy = self._search_strategy(path, strategy_name)
-            if strategy:
-                logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
-                return import_strategy(strategy)
+            try:
+                strategy = self._search_strategy(path, strategy_name)
+                if strategy:
+                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                    return import_strategy(strategy)
+            except FileNotFoundError:
+                logger.warning('Path "%s" does not exist', path)
 
         raise ImportError(
             "Impossible to load Strategy '{}'. This class does not exist"

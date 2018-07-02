@@ -11,6 +11,8 @@ RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
+UNLIMITED_STAKE_AMOUNT = 'unlimited'
+
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -44,7 +46,11 @@ CONF_SCHEMA = {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
-        'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'stake_amount': {
+            "type": ["number", "string"],
+            "minimum": 0.0005,
+            "pattern": UNLIMITED_STAKE_AMOUNT
+        },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
@@ -55,7 +61,15 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'unfilledtimeout': {'type': 'integer', 'minimum': 0},
+        'trailing_stop': {'type': 'boolean'},
+        'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'unfilledtimeout': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'number', 'minimum': 3},
+                'sell': {'type': 'number', 'minimum': 10}
+            }
+        },
         'bid_strategy': {
             'type': 'object',
             'properties': {
@@ -73,7 +87,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'}
+                'sell_profit_only': {'type': 'boolean'},
+                "ignore_roi_if_buy_signal_true": {'type': 'boolean'}
             }
         },
         'telegram': {
