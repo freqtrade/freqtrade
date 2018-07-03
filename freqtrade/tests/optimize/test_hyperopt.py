@@ -187,6 +187,7 @@ def test_roi_table_generation(init_hyperopt) -> None:
 
 
 def test_start_calls_optimizer(mocker, init_hyperopt, default_conf, caplog) -> None:
+    dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.multiprocessing.cpu_count', MagicMock(return_value=1))
     parallel = mocker.patch(
@@ -208,6 +209,7 @@ def test_start_calls_optimizer(mocker, init_hyperopt, default_conf, caplog) -> N
     parallel.assert_called_once()
 
     assert 'Best result:\nfoo result\nwith values:\n{}' in caplog.text
+    assert dumper.called
 
 
 def test_format_results(init_hyperopt):
@@ -316,6 +318,7 @@ def test_generate_optimizer(mocker, init_hyperopt, default_conf) -> None:
         MagicMock(return_value=backtest_result)
     )
     patch_exchange(mocker)
+    mocker.patch('freqtrade.optimize.hyperopt.load', MagicMock())
 
     optimizer_param = {
         'adx-value': 0,
