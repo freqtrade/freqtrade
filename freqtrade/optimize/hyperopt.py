@@ -5,23 +5,21 @@ This module contains the hyperopt logic
 """
 
 import logging
+import multiprocessing
 import os
 import pickle
 import sys
-import multiprocessing
-
 from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable, List
+from typing import Any, Callable, Dict, List
 
 import talib.abstract as ta
 from pandas import DataFrame
-
-from skopt.space import Real, Integer, Categorical, Dimension
+from sklearn.externals.joblib import Parallel, delayed, dump, load
 from skopt import Optimizer
-from sklearn.externals.joblib import Parallel, delayed, load, dump
+from skopt.space import Categorical, Dimension, Integer, Real
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
