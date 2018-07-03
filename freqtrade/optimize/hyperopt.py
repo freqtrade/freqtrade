@@ -14,14 +14,14 @@ from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable, Optional, List
+from typing import Dict, Any, Callable, List
 
 import talib.abstract as ta
 from pandas import DataFrame
 
 from skopt.space import Real, Integer, Categorical, Dimension
 from skopt import Optimizer
-from sklearn.externals.joblib import Parallel, delayed
+from sklearn.externals.joblib import Parallel, delayed, load, dump
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
@@ -32,6 +32,7 @@ from freqtrade.optimize.backtesting import Backtesting
 logger = logging.getLogger(__name__)
 
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
+TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
 
 
 class Hyperopt(Backtesting):
@@ -60,7 +61,7 @@ class Hyperopt(Backtesting):
         self.expected_max_profit = 3.0
 
         # Configuration and data used by hyperopt
-        self.processed: Optional[Dict[str, Any]] = None
+#        self.processed: Optional[Dict[str, Any]] = None
 
         # Previous evaluations
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
@@ -281,10 +282,11 @@ class Hyperopt(Backtesting):
         if self.has_space('stoploss'):
             self.analyze.strategy.stoploss = params['stoploss']
 
+        processed = load(TICKERDATA_PICKLE)
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
-                'processed': self.processed,
+                'processed': processed,
                 'realistic': self.config.get('realistic_simulation', False),
             }
         )
@@ -356,7 +358,7 @@ class Hyperopt(Backtesting):
 
         if self.has_space('buy'):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
-        self.processed = self.tickerdata_to_dataframe(data)
+        dump(self.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
         self.exchange = None  # type: ignore
         self.load_previous_results()
 
