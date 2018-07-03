@@ -7,7 +7,6 @@ This module contains the hyperopt logic
 import logging
 import multiprocessing
 import os
-import pickle
 import sys
 from argparse import Namespace
 from functools import reduce
@@ -99,14 +98,14 @@ class Hyperopt(Backtesting):
         """
         if self.trials:
             logger.info('Saving %d evaluations to \'%s\'', len(self.trials), self.trials_file)
-            pickle.dump(self.trials, open(self.trials_file, 'wb'))
+            dump(self.trials, self.trials_file)
 
     def read_trials(self) -> List:
         """
         Read hyperopt trials file
         """
         logger.info('Reading Trials from \'%s\'', self.trials_file)
-        trials = pickle.load(open(self.trials_file, 'rb'))
+        trials = load(self.trials_file)
         os.remove(self.trials_file)
         return trials
 
