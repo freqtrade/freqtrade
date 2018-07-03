@@ -5,6 +5,7 @@ import logging
 from abc import abstractmethod
 from datetime import timedelta, datetime, date
 from decimal import Decimal
+from enum import Enum
 from typing import Dict, Any, List
 
 import arrow
@@ -17,6 +18,15 @@ from freqtrade.persistence import Trade
 from freqtrade.state import State
 
 logger = logging.getLogger(__name__)
+
+
+class RPCMessageType(Enum):
+    STATUS_NOTIFICATION = 'status'
+    BUY_NOTIFICATION = 'buy'
+    SELL_NOTIFICATION = 'sell'
+
+    def __repr__(self):
+        return self.value
 
 
 class RPCException(Exception):
@@ -32,11 +42,6 @@ class RPCException(Exception):
 
     def __str__(self):
         return self.message
-
-    def __json__(self):
-        return {
-            'msg': self.message
-        }
 
 
 class RPC(object):
