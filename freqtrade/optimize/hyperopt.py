@@ -71,10 +71,8 @@ class Hyperopt(Backtesting):
         # Ensure the number of dimensions match
         # the number of parameters in the list x.
         if len(params) != len(dimensions):
-            msg = "Mismatch in number of search-space dimensions. " \
-                    "len(dimensions)=={} and len(x)=={}"
-            msg = msg.format(len(dimensions), len(params))
-            raise ValueError(msg)
+            raise ValueError('Mismatch in number of search-space dimensions. '
+                             f'len(dimensions)=={len(dimensions)} and len(x)=={len(params)}')
 
         # Create a dict where the keys are the names of the dimensions
         # and the values are taken from the list of parameters x.
