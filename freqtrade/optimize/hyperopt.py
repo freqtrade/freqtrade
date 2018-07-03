@@ -361,9 +361,10 @@ class Hyperopt(Backtesting):
         logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
 
         opt = self.get_optimizer(cpus)
+        EVALS = max(self.total_tries//cpus, 1)
         try:
             with Parallel(n_jobs=cpus) as parallel:
-                for i in range(self.total_tries//cpus):
+                for i in range(EVALS):
                     asked = opt.ask(n_points=cpus)
                     f_val = self.run_optimizer_parallel(parallel, asked)
                     opt.tell(asked, [i['loss'] for i in f_val])
