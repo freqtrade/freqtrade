@@ -1,7 +1,7 @@
 # Hyperopt
-This page explains how to tune your strategy by finding the optimal
-parameters, process called hyperparameter optimization. The bot uses several 
-algorithms included in `scikit-optimize` package to accomplish this. The
+This page explains how to tune your strategy by finding the optimal 
+parameters, a process called hyperparameter optimization. The bot uses several 
+algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
@@ -17,18 +17,17 @@ and still take a long time.
 We recommend you start by taking a look at `hyperopt.py` file located in [freqtrade/optimize](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py)
  
 ### Configure your Guards and Triggers
-There are two places you need to change in your strategy file to add a 
-new buy strategy for testing:
+There are two places you need to change to add a new buy strategy for testing:
 - Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L278-L294).
 - Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L218-L229) 
 and the associated methods `indicator_space`, `roi_space`, `stoploss_space`.
 
 There you have two different type of indicators: 1. `guards` and 2. `triggers`.
-1. Guards are conditions like "never buy if ADX < 10", or never buy if 
-current price is over EMA10.
+1. Guards are conditions like "never buy if ADX < 10", or "never buy if 
+current price is over EMA10".
 2. Triggers are ones that actually trigger buy in specific moment, like 
-"buy when EMA5 crosses over EMA10" or buy when close price touches lower 
-bollinger band.
+"buy when EMA5 crosses over EMA10" or "buy when close price touches lower 
+bollinger band".
 
 Hyperoptimization will, for each eval round, pick one trigger and possibly 
 multiple guards. The constructed strategy will be something like 
@@ -103,9 +102,13 @@ with different value combinations. It will then use the given historical data an
 buys based on the buy signals generated with the above function and based on the results
 it will end with telling you which paramter combination produced the best profits.
 
-### Adding New Indicators
-If you want to test an indicator that isn't used by the bot currently, 
-you need to add it to the `populate_indicators()` method in `hyperopt.py`.
+The search for best parameters starts with a few random combinations and then uses a 
+regressor algorithm (currently ExtraTreesRegressor) to quickly find a parameter combination
+that minimizes the value of the objective function `calculate_loss` in `hyperopt.py`.
+
+The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
+When you want to test an indicator that isn't used by the bot currently, remember to 
+add it to the `populate_indicators()` method in `hyperopt.py`.
 
 ## Execute Hyperopt
 Once you have updated your hyperopt configuration you can run it. 
@@ -150,8 +153,8 @@ Legal values are:
 - space-separated list of any of the above values for example `--spaces roi stoploss`
 
 ## Understand the Hyperopts Result 
-Once Hyperopt is completed you can use the result to creating a new strategy. 
-Given following result from hyperopt:
+Once Hyperopt is completed you can use the result to create a new strategy.
+Given the following result from hyperopt:
 
 ```
 Best result:
