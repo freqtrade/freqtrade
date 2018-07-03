@@ -11,7 +11,7 @@ import pytest
 
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
-from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.rpc import RPC, RPCException
 from freqtrade.state import State
 from freqtrade.tests.test_freqtradebot import (patch_coinmarketcap,
                                                patch_get_signal)
