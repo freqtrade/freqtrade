@@ -59,7 +59,7 @@ class Hyperopt(Backtesting):
         self.expected_max_profit = 3.0
 
         # Previous evaluations
-        self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
+        self.trials_file = os.path.join('user_data', 'hyperopt_results.pickle')
         self.trials: List = []
 
     def get_args(self, params):
