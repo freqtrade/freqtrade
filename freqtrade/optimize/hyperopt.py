@@ -58,9 +58,6 @@ class Hyperopt(Backtesting):
         # check that the reported Σ% values do not exceed this!
         self.expected_max_profit = 3.0
 
-        # Configuration and data used by hyperopt
-#        self.processed: Optional[Dict[str, Any]] = None
-
         # Previous evaluations
         self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
         self.trials: List = []
