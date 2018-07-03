@@ -323,13 +323,13 @@ class Hyperopt(Backtesting):
                     results.trade_duration.mean(),
                 )
 
-    def get_optimizer(self) -> Optimizer:
+    def get_optimizer(self, cpu_count) -> Optimizer:
         return Optimizer(
             self.hyperopt_space(),
             base_estimator="ET",
             acq_optimizer="auto",
             n_initial_points=30,
-            acq_optimizer_kwargs={'n_jobs': -1}
+            acq_optimizer_kwargs={'n_jobs': cpu_count}
         )
 
     def run_optimizer_parallel(self, parallel, asked) -> List:
@@ -361,11 +361,11 @@ class Hyperopt(Backtesting):
         self.load_previous_results()
 
         cpus = multiprocessing.cpu_count()
-        logger.info(f'Found {cpus}. Let\'s make them scream!')
+        logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
 
-        opt = self.get_optimizer()
+        opt = self.get_optimizer(cpus)
         try:
-            with Parallel(n_jobs=-1) as parallel:
+            with Parallel(n_jobs=cpus) as parallel:
                 for i in range(self.total_tries//cpus):
                     asked = opt.ask(n_points=cpus)
                     f_val = self.run_optimizer_parallel(parallel, asked)
