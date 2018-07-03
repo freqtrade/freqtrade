@@ -39,7 +39,7 @@ def create_trials(mocker) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.os.path.exists', return_value=False)
     mocker.patch('freqtrade.optimize.hyperopt.os.path.getsize', return_value=1)
     mocker.patch('freqtrade.optimize.hyperopt.os.remove', return_value=True)
-    mocker.patch('freqtrade.optimize.hyperopt.pickle.dump', return_value=None)
+    mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
 
@@ -139,10 +139,9 @@ def test_no_log_if_loss_does_not_improve(init_hyperopt, caplog) -> None:
 
 def test_save_trials_saves_trials(mocker, init_hyperopt, caplog) -> None:
     trials = create_trials(mocker)
-    mock_dump = mocker.patch('freqtrade.optimize.hyperopt.pickle.dump', return_value=None)
+    mock_dump = mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     hyperopt = _HYPEROPT
-    mocker.patch('freqtrade.optimize.hyperopt.open', return_value=hyperopt.trials_file)
     _HYPEROPT.trials = trials
 
     hyperopt.save_trials()
@@ -157,8 +156,7 @@ def test_save_trials_saves_trials(mocker, init_hyperopt, caplog) -> None:
 
 def test_read_trials_returns_trials_file(mocker, init_hyperopt, caplog) -> None:
     trials = create_trials(mocker)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.pickle.load', return_value=trials)
-    mock_open = mocker.patch('freqtrade.optimize.hyperopt.open', return_value=mock_load)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=trials)
 
     hyperopt = _HYPEROPT
     hyperopt_trial = hyperopt.read_trials()
@@ -168,7 +166,6 @@ def test_read_trials_returns_trials_file(mocker, init_hyperopt, caplog) -> None:
         caplog.record_tuples
     )
     assert hyperopt_trial == trials
-    mock_open.assert_called_once()
     mock_load.assert_called_once()
 
 
