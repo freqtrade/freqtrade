@@ -74,34 +74,33 @@ class RPC(object):
                 # calculate profit and send message to user
                 current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
                 current_profit = trade.calc_profit_percent(current_rate)
-                fmt_close_profit = '{:.2f}%'.format(
-                    round(trade.close_profit * 100, 2)
-                ) if trade.close_profit else None
-                message = "*Trade ID:* `{trade_id}`\n" \
-                          "*Current Pair:* [{pair}]({market_url})\n" \
-                          "*Open Since:* `{date}`\n" \
-                          "*Amount:* `{amount}`\n" \
-                          "*Open Rate:* `{open_rate:.8f}`\n" \
-                          "*Close Rate:* `{close_rate}`\n" \
-                          "*Current Rate:* `{current_rate:.8f}`\n" \
-                          "*Close Profit:* `{close_profit}`\n" \
-                          "*Current Profit:* `{current_profit:.2f}%`\n" \
-                          "*Open Order:* `{open_order}`"\
-                          .format(
-                              trade_id=trade.id,
-                              pair=trade.pair,
-                              market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
-                              date=arrow.get(trade.open_date).humanize(),
-                              open_rate=trade.open_rate,
-                              close_rate=trade.close_rate,
-                              current_rate=current_rate,
-                              amount=round(trade.amount, 8),
-                              close_profit=fmt_close_profit,
-                              current_profit=round(current_profit * 100, 2),
-                              open_order='({} {} rem={:.8f})'.format(
-                                  order['type'], order['side'], order['remaining']
-                              ) if order else None,
-                          )
+                fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
+                                    if trade.close_profit else None)
+                market_url = self._freqtrade.exchange.get_pair_detail_url(trade.pair)
+                trade_date = arrow.get(trade.open_date).humanize()
+                open_rate = trade.open_rate
+                close_rate = trade.close_rate
+                amount = round(trade.amount, 8)
+                current_profit = round(current_profit * 100, 2)
+                if order:
+                    order_type = order['type']
+                    order_side = order['side']
+                    order_rem = order['remaining']
+                    open_order = f'({order_type} {order_side} rem={order_rem:.8f})'
+                else:
+                    open_order = None
+
+                message = f"*Trade ID:* `{trade.id}`\n" \
+                          f"*Current Pair:* [{trade.pair}]({market_url})\n" \
+                          f"*Open Since:* `{trade_date}`\n" \
+                          f"*Amount:* `{amount}`\n" \
+                          f"*Open Rate:* `{open_rate:.8f}`\n" \
+                          f"*Close Rate:* `{close_rate}`\n" \
+                          f"*Current Rate:* `{current_rate:.8f}`\n" \
+                          f"*Close Profit:* `{fmt_close_profit}`\n" \
+                          f"*Current Profit:* `{current_profit:.2f}%`\n" \
+                          f"*Open Order:* `{open_order}`"\
+
                 result.append(message)
             return result
 
@@ -116,11 +115,12 @@ class RPC(object):
             for trade in trades:
                 # calculate profit and send message to user
                 current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                trade_perc = (100 * trade.calc_profit_percent(current_rate))
                 trades_list.append([
                     trade.id,
                     trade.pair,
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
+                    f'{trade_perc:.2f}%'
                 ])
 
             columns = ['ID', 'Pair', 'Since', 'Profit']
@@ -148,7 +148,7 @@ class RPC(object):
                 .all()
             curdayprofit = sum(trade.calc_profit() for trade in trades)
             profit_days[profitday] = {
-                'amount': format(curdayprofit, '.8f'),
+                'amount': f'{curdayprofit:.8f}',
                 'trades': len(trades)
             }
 
