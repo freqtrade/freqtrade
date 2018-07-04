@@ -4,22 +4,21 @@
 This module contains the hyperopt logic
 """
 
-import json
 import logging
+import multiprocessing
 import os
-import pickle
-import signal
 import sys
 from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Dict, Any, Callable, Optional
+from typing import Any, Callable, Dict, List
 
-import numpy
 import talib.abstract as ta
-from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
 from pandas import DataFrame
+from sklearn.externals.joblib import Parallel, delayed, dump, load
+from skopt import Optimizer
+from skopt.space import Categorical, Dimension, Integer, Real
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
@@ -28,6 +27,9 @@ from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
 
 logger = logging.getLogger(__name__)
+
+MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
+TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
 
 
 class Hyperopt(Backtesting):
@@ -44,7 +46,6 @@ class Hyperopt(Backtesting):
         # to the number of days
         self.target_trades = 600
         self.total_tries = config.get('epochs', 0)
-        self.current_tries = 0
         self.current_best_loss = 100
 
         # max average trade duration in minutes
@@ -56,130 +57,38 @@ class Hyperopt(Backtesting):
         # check that the reported Σ% values do not exceed this!
         self.expected_max_profit = 3.0
 
-        # Configuration and data used by hyperopt
-        self.processed: Optional[Dict[str, Any]] = None
+        # Previous evaluations
+        self.trials_file = os.path.join('user_data', 'hyperopt_results.pickle')
+        self.trials: List = []
 
-        # Hyperopt Trials
-        self.trials_file = os.path.join('user_data', 'hyperopt_trials.pickle')
-        self.trials = Trials()
+    def get_args(self, params):
+        dimensions = self.hyperopt_space()
+        # Ensure the number of dimensions match
+        # the number of parameters in the list x.
+        if len(params) != len(dimensions):
+            raise ValueError('Mismatch in number of search-space dimensions. '
+                             f'len(dimensions)=={len(dimensions)} and len(x)=={len(params)}')
+
+        # Create a dict where the keys are the names of the dimensions
+        # and the values are taken from the list of parameters x.
+        arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
+        return arg_dict
 
     @staticmethod
     def populate_indicators(dataframe: DataFrame) -> DataFrame:
-        """
-        Adds several different TA indicators to the given DataFrame
-        """
         dataframe['adx'] = ta.ADX(dataframe)
-        dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
-        dataframe['cci'] = ta.CCI(dataframe)
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
         dataframe['macdsignal'] = macd['macdsignal']
-        dataframe['macdhist'] = macd['macdhist']
         dataframe['mfi'] = ta.MFI(dataframe)
-        dataframe['minus_dm'] = ta.MINUS_DM(dataframe)
-        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
-        dataframe['plus_dm'] = ta.PLUS_DM(dataframe)
-        dataframe['plus_di'] = ta.PLUS_DI(dataframe)
-        dataframe['roc'] = ta.ROC(dataframe)
         dataframe['rsi'] = ta.RSI(dataframe)
-        # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
-        rsi = 0.1 * (dataframe['rsi'] - 50)
-        dataframe['fisher_rsi'] = (numpy.exp(2 * rsi) - 1) / (numpy.exp(2 * rsi) + 1)
-        # Inverse Fisher transform on RSI normalized, value [0.0, 100.0] (https://goo.gl/2JGGoy)
-        dataframe['fisher_rsi_norma'] = 50 * (dataframe['fisher_rsi'] + 1)
-        # Stoch
-        stoch = ta.STOCH(dataframe)
-        dataframe['slowd'] = stoch['slowd']
-        dataframe['slowk'] = stoch['slowk']
-        # Stoch fast
         stoch_fast = ta.STOCHF(dataframe)
         dataframe['fastd'] = stoch_fast['fastd']
-        dataframe['fastk'] = stoch_fast['fastk']
-        # Stoch RSI
-        stoch_rsi = ta.STOCHRSI(dataframe)
-        dataframe['fastd_rsi'] = stoch_rsi['fastd']
-        dataframe['fastk_rsi'] = stoch_rsi['fastk']
+        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
         # Bollinger bands
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_middleband'] = bollinger['mid']
-        dataframe['bb_upperband'] = bollinger['upper']
-        # EMA - Exponential Moving Average
-        dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
-        dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
-        dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
-        dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
-        dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
-        # SAR Parabolic
         dataframe['sar'] = ta.SAR(dataframe)
-        # SMA - Simple Moving Average
-        dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
-        # TEMA - Triple Exponential Moving Average
-        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
-        # Hilbert Transform Indicator - SineWave
-        hilbert = ta.HT_SINE(dataframe)
-        dataframe['htsine'] = hilbert['sine']
-        dataframe['htleadsine'] = hilbert['leadsine']
-
-        # Pattern Recognition - Bullish candlestick patterns
-        # ------------------------------------
-        """
-        # Hammer: values [0, 100]
-        dataframe['CDLHAMMER'] = ta.CDLHAMMER(dataframe)
-        # Inverted Hammer: values [0, 100]
-        dataframe['CDLINVERTEDHAMMER'] = ta.CDLINVERTEDHAMMER(dataframe)
-        # Dragonfly Doji: values [0, 100]
-        dataframe['CDLDRAGONFLYDOJI'] = ta.CDLDRAGONFLYDOJI(dataframe)
-        # Piercing Line: values [0, 100]
-        dataframe['CDLPIERCING'] = ta.CDLPIERCING(dataframe) # values [0, 100]
-        # Morningstar: values [0, 100]
-        dataframe['CDLMORNINGSTAR'] = ta.CDLMORNINGSTAR(dataframe) # values [0, 100]
-        # Three White Soldiers: values [0, 100]
-        dataframe['CDL3WHITESOLDIERS'] = ta.CDL3WHITESOLDIERS(dataframe) # values [0, 100]
-        """
-
-        # Pattern Recognition - Bearish candlestick patterns
-        # ------------------------------------
-        """
-        # Hanging Man: values [0, 100]
-        dataframe['CDLHANGINGMAN'] = ta.CDLHANGINGMAN(dataframe)
-        # Shooting Star: values [0, 100]
-        dataframe['CDLSHOOTINGSTAR'] = ta.CDLSHOOTINGSTAR(dataframe)
-        # Gravestone Doji: values [0, 100]
-        dataframe['CDLGRAVESTONEDOJI'] = ta.CDLGRAVESTONEDOJI(dataframe)
-        # Dark Cloud Cover: values [0, 100]
-        dataframe['CDLDARKCLOUDCOVER'] = ta.CDLDARKCLOUDCOVER(dataframe)
-        # Evening Doji Star: values [0, 100]
-        dataframe['CDLEVENINGDOJISTAR'] = ta.CDLEVENINGDOJISTAR(dataframe)
-        # Evening Star: values [0, 100]
-        dataframe['CDLEVENINGSTAR'] = ta.CDLEVENINGSTAR(dataframe)
-        """
-
-        # Pattern Recognition - Bullish/Bearish candlestick patterns
-        # ------------------------------------
-        """
-        # Three Line Strike: values [0, -100, 100]
-        dataframe['CDL3LINESTRIKE'] = ta.CDL3LINESTRIKE(dataframe)
-        # Spinning Top: values [0, -100, 100]
-        dataframe['CDLSPINNINGTOP'] = ta.CDLSPINNINGTOP(dataframe) # values [0, -100, 100]
-        # Engulfing: values [0, -100, 100]
-        dataframe['CDLENGULFING'] = ta.CDLENGULFING(dataframe) # values [0, -100, 100]
-        # Harami: values [0, -100, 100]
-        dataframe['CDLHARAMI'] = ta.CDLHARAMI(dataframe) # values [0, -100, 100]
-        # Three Outside Up/Down: values [0, -100, 100]
-        dataframe['CDL3OUTSIDE'] = ta.CDL3OUTSIDE(dataframe) # values [0, -100, 100]
-        # Three Inside Up/Down: values [0, -100, 100]
-        dataframe['CDL3INSIDE'] = ta.CDL3INSIDE(dataframe) # values [0, -100, 100]
-        """
-
-        # Chart type
-        # ------------------------------------
-        # Heikinashi stategy
-        heikinashi = qtpylib.heikinashi(dataframe)
-        dataframe['ha_open'] = heikinashi['open']
-        dataframe['ha_close'] = heikinashi['close']
-        dataframe['ha_high'] = heikinashi['high']
-        dataframe['ha_low'] = heikinashi['low']
 
         return dataframe
 
@@ -187,15 +96,16 @@ class Hyperopt(Backtesting):
         """
         Save hyperopt trials to file
         """
-        logger.info('Saving Trials to \'%s\'', self.trials_file)
-        pickle.dump(self.trials, open(self.trials_file, 'wb'))
+        if self.trials:
+            logger.info('Saving %d evaluations to \'%s\'', len(self.trials), self.trials_file)
+            dump(self.trials, self.trials_file)
 
-    def read_trials(self) -> Trials:
+    def read_trials(self) -> List:
         """
         Read hyperopt trials file
         """
         logger.info('Reading Trials from \'%s\'', self.trials_file)
-        trials = pickle.load(open(self.trials_file, 'rb'))
+        trials = load(self.trials_file)
         os.remove(self.trials_file)
         return trials
 
@@ -203,9 +113,15 @@ class Hyperopt(Backtesting):
         """
         Display Best hyperopt result
         """
-        vals = json.dumps(self.trials.best_trial['misc']['vals'], indent=4)
-        results = self.trials.best_trial['result']['result']
-        logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
+        results = sorted(self.trials, key=itemgetter('loss'))
+        best_result = results[0]
+        logger.info(
+            'Best result:\n%s\nwith values:\n%s',
+            best_result['result'],
+            best_result['params']
+        )
+        if 'roi_t1' in best_result['params']:
+            logger.info('ROI table:\n%s', self.generate_roi_table(best_result['params']))
 
     def log_results(self, results) -> None:
         """
@@ -231,7 +147,8 @@ class Hyperopt(Backtesting):
         trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
         profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
         duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
-        return trade_loss + profit_loss + duration_loss
+        result = trade_loss + profit_loss + duration_loss
+        return result
 
     @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
@@ -247,87 +164,44 @@ class Hyperopt(Backtesting):
         return roi_table
 
     @staticmethod
-    def roi_space() -> Dict[str, Any]:
+    def roi_space() -> List[Dimension]:
         """
         Values to search for each ROI steps
         """
-        return {
-            'roi_t1': hp.quniform('roi_t1', 10, 120, 20),
-            'roi_t2': hp.quniform('roi_t2', 10, 60, 15),
-            'roi_t3': hp.quniform('roi_t3', 10, 40, 10),
-            'roi_p1': hp.quniform('roi_p1', 0.01, 0.04, 0.01),
-            'roi_p2': hp.quniform('roi_p2', 0.01, 0.07, 0.01),
-            'roi_p3': hp.quniform('roi_p3', 0.01, 0.20, 0.01),
-        }
+        return [
+            Integer(10, 120, name='roi_t1'),
+            Integer(10, 60, name='roi_t2'),
+            Integer(10, 40, name='roi_t3'),
+            Real(0.01, 0.04, name='roi_p1'),
+            Real(0.01, 0.07, name='roi_p2'),
+            Real(0.01, 0.20, name='roi_p3'),
+        ]
 
     @staticmethod
-    def stoploss_space() -> Dict[str, Any]:
+    def stoploss_space() -> List[Dimension]:
         """
-        Stoploss Value to search
+        Stoploss search space
         """
-        return {
-            'stoploss': hp.quniform('stoploss', -0.5, -0.02, 0.02),
-        }
+        return [
+            Real(-0.5, -0.02, name='stoploss'),
+        ]
 
     @staticmethod
-    def indicator_space() -> Dict[str, Any]:
+    def indicator_space() -> List[Dimension]:
         """
         Define your Hyperopt space for searching strategy parameters
         """
-        return {
-            'macd_below_zero': hp.choice('macd_below_zero', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'mfi': hp.choice('mfi', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('mfi-value', 10, 25, 5)}
-            ]),
-            'fastd': hp.choice('fastd', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('fastd-value', 15, 45, 5)}
-            ]),
-            'adx': hp.choice('adx', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('adx-value', 20, 50, 5)}
-            ]),
-            'rsi': hp.choice('rsi', [
-                {'enabled': False},
-                {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 5)}
-            ]),
-            'uptrend_long_ema': hp.choice('uptrend_long_ema', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'uptrend_short_ema': hp.choice('uptrend_short_ema', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'over_sar': hp.choice('over_sar', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'green_candle': hp.choice('green_candle', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'uptrend_sma': hp.choice('uptrend_sma', [
-                {'enabled': False},
-                {'enabled': True}
-            ]),
-            'trigger': hp.choice('trigger', [
-                {'type': 'lower_bb'},
-                {'type': 'lower_bb_tema'},
-                {'type': 'faststoch10'},
-                {'type': 'ao_cross_zero'},
-                {'type': 'ema3_cross_ema10'},
-                {'type': 'macd_cross_signal'},
-                {'type': 'sar_reversal'},
-                {'type': 'ht_sine'},
-                {'type': 'heiken_reversal_bull'},
-                {'type': 'di_cross'},
-            ]),
-        }
+        return [
+            Integer(10, 25, name='mfi-value'),
+            Integer(15, 45, name='fastd-value'),
+            Integer(20, 50, name='adx-value'),
+            Integer(20, 40, name='rsi-value'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='fastd-enabled'),
+            Categorical([True, False], name='adx-enabled'),
+            Categorical([True, False], name='rsi-enabled'),
+            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+        ]
 
     def has_space(self, space: str) -> bool:
         """
@@ -337,17 +211,17 @@ class Hyperopt(Backtesting):
             return True
         return False
 
-    def hyperopt_space(self) -> Dict[str, Any]:
+    def hyperopt_space(self) -> List[Dimension]:
         """
         Return the space to use during Hyperopt
         """
-        spaces: Dict = {}
+        spaces: List[Dimension] = []
         if self.has_space('buy'):
-            spaces = {**spaces, **Hyperopt.indicator_space()}
+            spaces += Hyperopt.indicator_space()
         if self.has_space('roi'):
-            spaces = {**spaces, **Hyperopt.roi_space()}
+            spaces += Hyperopt.roi_space()
         if self.has_space('stoploss'):
-            spaces = {**spaces, **Hyperopt.stoploss_space()}
+            spaces += Hyperopt.stoploss_space()
         return spaces
 
     @staticmethod
@@ -361,63 +235,26 @@ class Hyperopt(Backtesting):
             """
             conditions = []
             # GUARDS AND TRENDS
-            if 'uptrend_long_ema' in params and params['uptrend_long_ema']['enabled']:
-                conditions.append(dataframe['ema50'] > dataframe['ema100'])
-            if 'macd_below_zero' in params and params['macd_below_zero']['enabled']:
-                conditions.append(dataframe['macd'] < 0)
-            if 'uptrend_short_ema' in params and params['uptrend_short_ema']['enabled']:
-                conditions.append(dataframe['ema5'] > dataframe['ema10'])
-            if 'mfi' in params and params['mfi']['enabled']:
-                conditions.append(dataframe['mfi'] < params['mfi']['value'])
-            if 'fastd' in params and params['fastd']['enabled']:
-                conditions.append(dataframe['fastd'] < params['fastd']['value'])
-            if 'adx' in params and params['adx']['enabled']:
-                conditions.append(dataframe['adx'] > params['adx']['value'])
-            if 'rsi' in params and params['rsi']['enabled']:
-                conditions.append(dataframe['rsi'] < params['rsi']['value'])
-            if 'over_sar' in params and params['over_sar']['enabled']:
-                conditions.append(dataframe['close'] > dataframe['sar'])
-            if 'green_candle' in params and params['green_candle']['enabled']:
-                conditions.append(dataframe['close'] > dataframe['open'])
-            if 'uptrend_sma' in params and params['uptrend_sma']['enabled']:
-                prevsma = dataframe['sma'].shift(1)
-                conditions.append(dataframe['sma'] > prevsma)
+            if 'mfi-enabled' in params and params['mfi-enabled']:
+                conditions.append(dataframe['mfi'] < params['mfi-value'])
+            if 'fastd-enabled' in params and params['fastd-enabled']:
+                conditions.append(dataframe['fastd'] < params['fastd-value'])
+            if 'adx-enabled' in params and params['adx-enabled']:
+                conditions.append(dataframe['adx'] > params['adx-value'])
+            if 'rsi-enabled' in params and params['rsi-enabled']:
+                conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
-            triggers = {
-                'lower_bb': (
-                    dataframe['close'] < dataframe['bb_lowerband']
-                ),
-                'lower_bb_tema': (
-                    dataframe['tema'] < dataframe['bb_lowerband']
-                ),
-                'faststoch10': (qtpylib.crossed_above(
-                    dataframe['fastd'], 10.0
-                )),
-                'ao_cross_zero': (qtpylib.crossed_above(
-                    dataframe['ao'], 0.0
-                )),
-                'ema3_cross_ema10': (qtpylib.crossed_above(
-                    dataframe['ema3'], dataframe['ema10']
-                )),
-                'macd_cross_signal': (qtpylib.crossed_above(
+            if params['trigger'] == 'bb_lower':
+                conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+            if params['trigger'] == 'macd_cross_signal':
+                conditions.append(qtpylib.crossed_above(
                     dataframe['macd'], dataframe['macdsignal']
-                )),
-                'sar_reversal': (qtpylib.crossed_above(
+                ))
+            if params['trigger'] == 'sar_reversal':
+                conditions.append(qtpylib.crossed_above(
                     dataframe['close'], dataframe['sar']
-                )),
-                'ht_sine': (qtpylib.crossed_above(
-                    dataframe['htleadsine'], dataframe['htsine']
-                )),
-                'heiken_reversal_bull': (
-                    (qtpylib.crossed_above(dataframe['ha_close'], dataframe['ha_open'])) &
-                    (dataframe['ha_low'] == dataframe['ha_open'])
-                ),
-                'di_cross': (qtpylib.crossed_above(
-                    dataframe['plus_di'], dataframe['minus_di']
-                )),
-            }
-            conditions.append(triggers.get(params['trigger']['type']))
+                ))
 
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
@@ -427,7 +264,9 @@ class Hyperopt(Backtesting):
 
         return populate_buy_trend
 
-    def generate_optimizer(self, params: Dict) -> Dict:
+    def generate_optimizer(self, _params) -> Dict:
+        params = self.get_args(_params)
+
         if self.has_space('roi'):
             self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
 
@@ -437,10 +276,11 @@ class Hyperopt(Backtesting):
         if self.has_space('stoploss'):
             self.analyze.strategy.stoploss = params['stoploss']
 
+        processed = load(TICKERDATA_PICKLE)
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
-                'processed': self.processed,
+                'processed': processed,
                 'realistic': self.config.get('realistic_simulation', False),
             }
         )
@@ -450,30 +290,18 @@ class Hyperopt(Backtesting):
         trade_count = len(results.index)
         trade_duration = results.trade_duration.mean()
 
-        if trade_count == 0 or trade_duration > self.max_accepted_trade_duration:
-            print('.', end='')
-            sys.stdout.flush()
+        if trade_count == 0:
             return {
-                'status': STATUS_FAIL,
-                'loss': float('inf')
+                'loss': MAX_LOSS,
+                'params': params,
+                'result': result_explanation,
             }
 
         loss = self.calculate_loss(total_profit, trade_count, trade_duration)
 
-        self.current_tries += 1
-
-        self.log_results(
-            {
-                'loss': loss,
-                'current_tries': self.current_tries,
-                'total_tries': self.total_tries,
-                'result': result_explanation,
-            }
-        )
-
         return {
             'loss': loss,
-            'status': STATUS_OK,
+            'params': params,
             'result': result_explanation,
         }
 
@@ -491,6 +319,27 @@ class Hyperopt(Backtesting):
                     results.trade_duration.mean(),
                 )
 
+    def get_optimizer(self, cpu_count) -> Optimizer:
+        return Optimizer(
+            self.hyperopt_space(),
+            base_estimator="ET",
+            acq_optimizer="auto",
+            n_initial_points=30,
+            acq_optimizer_kwargs={'n_jobs': cpu_count}
+        )
+
+    def run_optimizer_parallel(self, parallel, asked) -> List:
+        return parallel(delayed(self.generate_optimizer)(v) for v in asked)
+
+    def load_previous_results(self):
+        """ read trials file if we have one """
+        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+            self.trials = self.read_trials()
+            logger.info(
+                'Loaded %d previous evaluations from disk.',
+                len(self.trials)
+            )
+
     def start(self) -> None:
         timerange = Arguments.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
@@ -503,67 +352,35 @@ class Hyperopt(Backtesting):
 
         if self.has_space('buy'):
             self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
-        self.processed = self.tickerdata_to_dataframe(data)
+        dump(self.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
+        self.exchange = None  # type: ignore
+        self.load_previous_results()
 
-        logger.info('Preparing Trials..')
-        signal.signal(signal.SIGINT, self.signal_handler)
-        # read trials file if we have one
-        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
-            self.trials = self.read_trials()
+        cpus = multiprocessing.cpu_count()
+        logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
 
-            self.current_tries = len(self.trials.results)
-            self.total_tries += self.current_tries
-            logger.info(
-                'Continuing with trials. Current: %d, Total: %d',
-                self.current_tries,
-                self.total_tries
-            )
-
+        opt = self.get_optimizer(cpus)
+        EVALS = max(self.total_tries//cpus, 1)
         try:
-            best_parameters = fmin(
-                fn=self.generate_optimizer,
-                space=self.hyperopt_space(),
-                algo=tpe.suggest,
-                max_evals=self.total_tries,
-                trials=self.trials
-            )
+            with Parallel(n_jobs=cpus) as parallel:
+                for i in range(EVALS):
+                    asked = opt.ask(n_points=cpus)
+                    f_val = self.run_optimizer_parallel(parallel, asked)
+                    opt.tell(asked, [i['loss'] for i in f_val])
 
-            results = sorted(self.trials.results, key=itemgetter('loss'))
-            best_result = results[0]['result']
-
-        except ValueError:
-            best_parameters = {}
-            best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
-                          'try with more epochs (param: -e).'
-
-        # Improve best parameter logging display
-        if best_parameters:
-            best_parameters = space_eval(
-                self.hyperopt_space(),
-                best_parameters
-            )
-
-        logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
-        if 'roi_t1' in best_parameters:
-            logger.info('ROI table:\n%s', self.generate_roi_table(best_parameters))
-
-        logger.info('Best Result:\n%s', best_result)
-
-        # Store trials result to file to resume next time
-        self.save_trials()
-
-    def signal_handler(self, sig, frame) -> None:
-        """
-        Hyperopt SIGINT handler
-        """
-        logger.info(
-            'Hyperopt received %s',
-            signal.Signals(sig).name
-        )
+                    self.trials += f_val
+                    for j in range(cpus):
+                        self.log_results({
+                            'loss': f_val[j]['loss'],
+                            'current_tries': i * cpus + j,
+                            'total_tries': self.total_tries,
+                            'result': f_val[j]['result'],
+                        })
+        except KeyboardInterrupt:
+            print('User interrupted..')
 
         self.save_trials()
         self.log_trials_result()
-        sys.exit(0)
 
 
 def start(args: Namespace) -> None:
