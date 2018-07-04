@@ -7,7 +7,7 @@ from copy import deepcopy
 from unittest.mock import MagicMock
 
 from freqtrade.rpc.rpc_manager import RPCManager
-from freqtrade.tests.conftest import log_has, get_patched_freqtradebot
+from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
 
 
 def test_rpc_manager_object() -> None:

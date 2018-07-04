@@ -11,17 +11,18 @@ from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock
 
-from telegram import Update, Message, Chat
+from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
-from freqtrade.rpc.telegram import Telegram
-from freqtrade.rpc.telegram import authorized_only
+from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
-from freqtrade.tests.conftest import get_patched_freqtradebot, patch_exchange, log_has
-from freqtrade.tests.test_freqtradebot import patch_get_signal, patch_coinmarketcap
+from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
+                                      patch_exchange)
+from freqtrade.tests.test_freqtradebot import (patch_coinmarketcap,
+                                               patch_get_signal)
 
 
 class DummyCls(Telegram):

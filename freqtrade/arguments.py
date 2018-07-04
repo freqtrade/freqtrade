@@ -2,12 +2,13 @@
 This module contains the argument manager class
 """
 
-import os
 import argparse
 import logging
+import os
 import re
+from typing import List, NamedTuple, Optional
+
 import arrow
-from typing import List, Optional, NamedTuple
 
 from freqtrade import __version__, constants
 

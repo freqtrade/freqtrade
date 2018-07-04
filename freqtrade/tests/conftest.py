@@ -2,8 +2,8 @@
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Optional
 from functools import reduce
+from typing import Dict, Optional
 from unittest.mock import MagicMock
 
 import arrow
@@ -11,8 +11,8 @@ import pytest
 from jsonschema import validate
 from telegram import Chat, Message, Update
 
-from freqtrade.analyze import Analyze
 from freqtrade import constants
+from freqtrade.analyze import Analyze
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 

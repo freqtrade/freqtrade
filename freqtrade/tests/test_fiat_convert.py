@@ -5,7 +5,6 @@ import time
 from unittest.mock import MagicMock
 
 import pytest
-
 from requests.exceptions import RequestException
 
 from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter

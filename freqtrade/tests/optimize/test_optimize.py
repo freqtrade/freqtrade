@@ -3,16 +3,19 @@
 import json
 import os
 import uuid
-import arrow
 from shutil import copyfile
 
+import arrow
+
 from freqtrade import optimize
-from freqtrade.misc import file_dump_json
-from freqtrade.optimize.__init__ import make_testdata_path, download_pairs, \
-    download_backtesting_testdata, load_tickerdata_file, trim_tickerlist, \
-    load_cached_data_for_updating
 from freqtrade.arguments import TimeRange
-from freqtrade.tests.conftest import log_has, get_patched_exchange
+from freqtrade.misc import file_dump_json
+from freqtrade.optimize.__init__ import (download_backtesting_testdata,
+                                         download_pairs,
+                                         load_cached_data_for_updating,
+                                         load_tickerdata_file,
+                                         make_testdata_path, trim_tickerlist)
+from freqtrade.tests.conftest import get_patched_exchange, log_has
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681

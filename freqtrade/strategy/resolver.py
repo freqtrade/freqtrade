@@ -8,12 +8,11 @@ import inspect
 import logging
 import os
 from collections import OrderedDict
-from typing import Optional, Dict, Type
+from typing import Dict, Optional, Type
 
 from freqtrade import constants
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
-
 
 logger = logging.getLogger(__name__)
 

@@ -3,19 +3,20 @@
 import json
 import math
 import random
-import pytest
 from copy import deepcopy
 from typing import List
 from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
+import pytest
 from arrow import Arrow
 
-from freqtrade import optimize, constants, DependencyException
+from freqtrade import DependencyException, constants, optimize
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
-from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
+from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
+                                            start)
 from freqtrade.tests.conftest import log_has, patch_exchange
 
 
