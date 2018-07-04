@@ -7,16 +7,14 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 import arrow
 import requests
 from cachetools import TTLCache, cached
 
-from freqtrade import (
-    DependencyException, OperationalException, TemporaryError, persistence, __version__,
-)
-from freqtrade import constants
+from freqtrade import (DependencyException, OperationalException,
+                       TemporaryError, __version__, constants, persistence)
 from freqtrade.analyze import Analyze
 from freqtrade.exchange import Exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter

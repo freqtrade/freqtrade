@@ -7,18 +7,18 @@ import logging
 import operator
 from argparse import Namespace
 from datetime import datetime
-from typing import Dict, Tuple, Any, List, Optional, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
 from tabulate import tabulate
 
 import freqtrade.optimize as optimize
-from freqtrade import constants, DependencyException
-from freqtrade.exchange import Exchange
+from freqtrade import DependencyException, constants
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
+from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 

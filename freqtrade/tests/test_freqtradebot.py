@@ -14,11 +14,13 @@ import arrow
 import pytest
 import requests
 
-from freqtrade import constants, DependencyException, OperationalException, TemporaryError
+from freqtrade import (DependencyException, OperationalException,
+                       TemporaryError, constants)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
-from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
+from freqtrade.tests.conftest import (log_has, patch_coinmarketcap,
+                                      patch_exchange)
 
 
 # Functions for recurrent object patching

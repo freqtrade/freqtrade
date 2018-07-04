@@ -1,17 +1,17 @@
 """
 This module contains the configuration class
 """
-import os
 import json
 import logging
+import os
 from argparse import Namespace
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import ccxt
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
-import ccxt
 
 from freqtrade import OperationalException, constants
-
 
 logger = logging.getLogger(__name__)
 

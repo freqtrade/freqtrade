@@ -12,9 +12,9 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.analyze import Analyze, SignalType
-from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.arguments import TimeRange
-from freqtrade.tests.conftest import log_has, get_patched_exchange
+from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.tests.conftest import get_patched_exchange, log_has
 
 # Avoid to reinit the same object again and again
 _ANALYZE = Analyze({'strategy': 'DefaultStrategy'})

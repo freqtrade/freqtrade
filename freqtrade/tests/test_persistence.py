@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy import create_engine
 
-from freqtrade import constants, OperationalException
-from freqtrade.persistence import Trade, init, clean_dry_run_db
+from freqtrade import OperationalException, constants
+from freqtrade.persistence import Trade, clean_dry_run_db, init
 from freqtrade.tests.conftest import log_has
 
 

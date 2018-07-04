@@ -8,8 +8,8 @@ import datetime
 from unittest.mock import MagicMock
 
 from freqtrade.analyze import Analyze
-from freqtrade.misc import (shorten_date, datesarray_to_datetimearray,
-                            common_datearray, file_dump_json, format_ms_time)
+from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
+                            file_dump_json, format_ms_time, shorten_date)
 from freqtrade.optimize.__init__ import load_tickerdata_file
 
 

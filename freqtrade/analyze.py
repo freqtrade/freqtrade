@@ -12,8 +12,7 @@ from pandas import DataFrame, to_datetime
 from freqtrade import constants
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
-from freqtrade.strategy.resolver import StrategyResolver, IStrategy
-
+from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@
 IStrategy interface
 This module defines the interface to apply for strategies
 """
-from typing import Dict
 from abc import ABC, abstractmethod
+from typing import Dict
 
 from pandas import DataFrame
 
