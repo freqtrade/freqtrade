@@ -11,7 +11,7 @@ import pytest
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.main import main, set_loggers, reconfigure
+from freqtrade.main import main, reconfigure, set_loggers
 from freqtrade.state import State
 from freqtrade.tests.conftest import log_has, patch_exchange
 

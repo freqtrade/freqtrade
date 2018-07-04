@@ -2,16 +2,16 @@
 # pragma pylint: disable=protected-access
 import logging
 from copy import deepcopy
-from random import randint
 from datetime import datetime
+from random import randint
 from unittest.mock import MagicMock, PropertyMock
 
 import ccxt
 import pytest
 
-from freqtrade import OperationalException, DependencyException, TemporaryError
-from freqtrade.exchange import Exchange, API_RETRY_COUNT
-from freqtrade.tests.conftest import log_has, get_patched_exchange
+from freqtrade import DependencyException, OperationalException, TemporaryError
+from freqtrade.exchange import API_RETRY_COUNT, Exchange
+from freqtrade.tests.conftest import get_patched_exchange, log_has
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):

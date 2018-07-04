@@ -3,9 +3,9 @@ This module contains class to define a RPC communications
 """
 import logging
 from abc import abstractmethod
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from typing import Dict, Tuple, Any, List
+from typing import Any, Dict, List, Tuple
 
 import arrow
 import sqlalchemy as sql
