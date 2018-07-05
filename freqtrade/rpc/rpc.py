@@ -82,13 +82,12 @@ class RPC(object):
                 close_rate = trade.close_rate
                 amount = round(trade.amount, 8)
                 current_profit = round(current_profit * 100, 2)
+                open_order = ''
                 if order:
                     order_type = order['type']
                     order_side = order['side']
                     order_rem = order['remaining']
                     open_order = f'({order_type} {order_side} rem={order_rem:.8f})'
-                else:
-                    open_order = None
 
                 message = f"*Trade ID:* `{trade.id}`\n" \
                           f"*Current Pair:* [{trade.pair}]({market_url})\n" \
