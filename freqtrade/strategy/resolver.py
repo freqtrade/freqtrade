@@ -84,7 +84,7 @@ class StrategyResolver(object):
             abs_paths.insert(0, extra_dir)
 
         if ":" in strategy_name:
-            logger.debug(("loading base64 endocded strategy")
+            logger.debug("loading base64 endocded strategy")
             strat = strategy_name.split(":")
 
             if len(strat) == 2:
