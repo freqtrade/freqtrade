@@ -499,6 +499,22 @@ def test_backtest(default_conf, fee, mocker) -> None:
     assert not results.empty
     assert len(results) == 2
 
+    expected = pd.DataFrame(
+        {'pair': ['UNITTEST/BTC', 'UNITTEST/BTC'],
+         'profit_percent': [0.00148826, 0.00075313],
+         'profit_abs': [1.49e-06, 7.6e-07],
+         'open_time': [Arrow(2018, 1, 29, 18, 40, 0).datetime,
+                       Arrow(2018, 1, 30, 3, 30, 0).datetime],
+         'close_time': [Arrow(2018, 1, 29, 23, 15, 0).datetime,
+                        Arrow(2018, 1, 30, 4, 20, 0).datetime],
+         'open_index': [77, 183],
+         'close_index': [132, 193],
+         'trade_duration': [275, 50],
+         'open_at_end': [False, False],
+         'open_rate': [0.10432, 0.103364],
+         'close_rate': [0.104999, 0.10396]})
+    pd.testing.assert_frame_equal(results, expected)
+
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     """
