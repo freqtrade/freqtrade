@@ -70,6 +70,9 @@ class Exchange(object):
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
 
+        # Check if timeframe is available
+        self.validate_timeframes(config['ticker_interval'])
+
     def _init_ccxt(self, exchange_config: dict) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
@@ -127,6 +130,14 @@ class Exchange(object):
             if pair not in markets:
                 raise OperationalException(
                     f'Pair {pair} is not available at {self.name}')
+
+    def validate_timeframes(self, timeframe: List[str]) -> None:
+        """
+        Checks if ticker interval from config is a supported timeframe on the exchange
+        """
+        timeframes=self._api.timeframes
+        if timeframe not in timeframes:
+            raise OperationalException(f'Invalid ticker {timeframe}, this Exchange supports {timeframes}')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
