@@ -21,6 +21,7 @@ from freqtrade import OperationalException
 logger = logging.getLogger(__name__)
 
 _DECL_BASE: Any = declarative_base()
+_SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
 def init(config: Dict) -> None:
@@ -45,10 +46,8 @@ def init(config: Dict) -> None:
     try:
         engine = create_engine(db_url, **kwargs)
     except NoSuchModuleError:
-        error = 'Given value for db_url: \'{}\' is no valid database URL! (See {}).'.format(
-            db_url, 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
-        )
-        raise OperationalException(error)
+        raise OperationalException(f'Given value for db_url: \'{db_url}\' '
+                                   f'is no valid database URL! (See {_SQL_DOCS_URL})')
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
@@ -173,13 +172,10 @@ class Trade(_DECL_BASE):
     max_rate = Column(Float, nullable=True, default=0.0)
 
     def __repr__(self):
-        return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
-            self.id,
-            self.pair,
-            self.amount,
-            self.open_rate,
-            arrow.get(self.open_date).humanize() if self.is_open else 'closed'
-        )
+        open_since = arrow.get(self.open_date).humanize() if self.is_open else 'closed'
+
+        return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
+                f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
     def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
         """this adjusts the stop loss to it's most recently observed setting"""
@@ -226,6 +222,7 @@ class Trade(_DECL_BASE):
         :param order: order retrieved by exchange.get_order()
         :return: None
         """
+        order_type = order['type']
         # Ignore open and cancelled orders
         if order['status'] == 'open' or order['price'] is None:
             return
@@ -233,16 +230,16 @@ class Trade(_DECL_BASE):
         logger.info('Updating trade (id=%d) ...', self.id)
 
         getcontext().prec = 8  # Bittrex do not go above 8 decimal
-        if order['type'] == 'limit' and order['side'] == 'buy':
+        if order_type == 'limit' and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
             logger.info('LIMIT_BUY has been fulfilled for %s.', self)
             self.open_order_id = None
-        elif order['type'] == 'limit' and order['side'] == 'sell':
+        elif order_type == 'limit' and order['side'] == 'sell':
             self.close(order['price'])
         else:
-            raise ValueError('Unknown order type: {}'.format(order['type']))
+            raise ValueError(f'Unknown order type: {order_type}')
         cleanup()
 
     def close(self, rate: float) -> None:
@@ -313,7 +310,8 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        return float("{0:.8f}".format(close_trade_price - open_trade_price))
+        profit = close_trade_price - open_trade_price
+        return float(f"{profit:.8f}")
 
     def calc_profit_percent(
             self,
@@ -333,5 +331,5 @@ class Trade(_DECL_BASE):
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-
-        return float("{0:.8f}".format((close_trade_price / open_trade_price) - 1))
+        profit_percent = (close_trade_price / open_trade_price) - 1
+        return float(f"{profit_percent:.8f}")
