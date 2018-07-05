@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
 import os
+from base64 import urlsafe_b64encode
 
 import pytest
 
@@ -48,6 +49,14 @@ def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
+
+
+def test_load_strategy_byte64(result):
+    with open("freqtrade/tests/strategy/test_strategy.py", "r") as file:
+        encoded_string = urlsafe_b64encode(file.read().encode("utf-8")).decode("utf-8")
+        resolver = StrategyResolver({'strategy': 'TestStrategy:{}'.format(encoded_string)})
+        assert hasattr(resolver.strategy, 'populate_indicators')
+        assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
