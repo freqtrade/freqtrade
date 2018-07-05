@@ -61,7 +61,15 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'unfilledtimeout': {'type': 'integer', 'minimum': 0},
+        'trailing_stop': {'type': 'boolean'},
+        'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'unfilledtimeout': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'number', 'minimum': 3},
+                'sell': {'type': 'number', 'minimum': 10}
+            }
+        },
         'bid_strategy': {
             'type': 'object',
             'properties': {

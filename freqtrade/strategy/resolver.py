@@ -8,7 +8,7 @@ import inspect
 import logging
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
-from typing import Optional, Dict, Type
+from typing import Dict, Optional, Type
 
 from freqtrade import constants
 from freqtrade.strategy import import_strategy
@@ -16,6 +16,7 @@ from freqtrade.strategy.interface import IStrategy
 import tempfile
 import os
 from pathlib import Path
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +83,8 @@ class StrategyResolver(object):
             # Add extra strategy directory on top of search paths
             abs_paths.insert(0, extra_dir)
 
-        if ":" in strategy_name and "http" not in strategy_name:
-            print("loading none http based strategy: {}".format(strategy_name))
+        if ":" in strategy_name:
+            logger.debug(("loading base64 endocded strategy".)
             strat = strategy_name.split(":")
 
             if len(strat) == 2:

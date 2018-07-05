@@ -4,18 +4,18 @@
 Unit test file for configuration.py
 """
 import json
+from argparse import Namespace
 from copy import deepcopy
 from unittest.mock import MagicMock
-from argparse import Namespace
 
 import pytest
 from jsonschema import ValidationError
 
+from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.constants import DEFAULT_DB_PROD_URL, DEFAULT_DB_DRYRUN_URL
+from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.tests.conftest import log_has
-from freqtrade import OperationalException
 
 
 def test_configuration_object() -> None:

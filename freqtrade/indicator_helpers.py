@@ -1,4 +1,4 @@
-from math import exp, pi, sqrt, cos
+from math import cos, exp, pi, sqrt
 
 import numpy as np
 import talib as ta

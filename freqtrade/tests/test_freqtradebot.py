@@ -14,11 +14,13 @@ import arrow
 import pytest
 import requests
 
-from freqtrade import constants, DependencyException, OperationalException, TemporaryError
+from freqtrade import (DependencyException, OperationalException,
+                       TemporaryError, constants)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.state import State
-from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
+from freqtrade.tests.conftest import (log_has, patch_coinmarketcap,
+                                      patch_exchange)
 
 
 # Functions for recurrent object patching
@@ -343,6 +345,34 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         MagicMock(return_value=[{
             'symbol': 'ETH/BTC',
             'limits': {}
+        }])
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
+    assert result is None
+
+    # no cost Min
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_markets',
+        MagicMock(return_value=[{
+            'symbol': 'ETH/BTC',
+            'limits': {
+                'cost': {"min": None},
+                'amount': {}
+            }
+        }])
+    )
+    result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
+    assert result is None
+
+    # no amount Min
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_markets',
+        MagicMock(return_value=[{
+            'symbol': 'ETH/BTC',
+            'limits': {
+                'cost': {},
+                'amount': {"min": None}
+            }
         }])
     )
     result = freqtrade._get_min_pair_stake_amount('ETH/BTC', 1)
@@ -1124,7 +1154,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
     Trade.session.add(trade_buy)
 
     # check it does cancel buy orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -1165,7 +1195,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     Trade.session.add(trade_sell)
 
     # check it does cancel sell orders over the time limit
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
@@ -1205,7 +1235,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
@@ -1256,7 +1286,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
         'recent call last):\n.*'
     )
 
-    freqtrade.check_handle_timedout(600)
+    freqtrade.check_handle_timedout()
     assert filter(regexp.match, caplog.record_tuples)
 
 
@@ -1599,6 +1629,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets
     )
 
     conf = deepcopy(default_conf)
@@ -1616,7 +1647,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) -> None:
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     """
     Test sell_profit_only feature when enabled and we have a loss
     """
@@ -1634,6 +1665,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets
     )
 
     conf = deepcopy(default_conf)
@@ -1652,6 +1684,103 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, mocker) ->
     # Test if buy-signal is absent (should sell due to roi = true)
     patch_get_signal(mocker, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+
+
+def test_trailing_stop_loss(default_conf, limit_buy_order, fee, caplog, mocker) -> None:
+    """
+    Test sell_profit_only feature when enabled and we have a loss
+    """
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00000102,
+            'ask': 0.00000103,
+            'last': 0.00000102
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['trailing_stop'] = True
+    print(limit_buy_order)
+    freqtrade = FreqtradeBot(conf)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    caplog.set_level(logging.DEBUG)
+    # Sell as trailing-stop is reached
+    assert freqtrade.handle_trade(trade) is True
+    assert log_has(
+        f'HIT STOP: current price at 0.000001, stop loss is {trade.stop_loss:.6f}, '
+        f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
+
+
+def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, caplog, mocker) -> None:
+    """
+    Test sell_profit_only feature when enabled and we have a loss
+    """
+    buy_price = limit_buy_order['price']
+    patch_get_signal(mocker)
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price - 0.000001,
+            'ask': buy_price - 0.000001,
+            'last': buy_price - 0.000001
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['trailing_stop'] = True
+    conf['trailing_stop_positive'] = 0.01
+    freqtrade = FreqtradeBot(conf)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    caplog.set_level(logging.DEBUG)
+    # stop-loss not reached
+    assert freqtrade.handle_trade(trade) is False
+
+    # Raise ticker above buy price
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.000003,
+                     'ask': buy_price + 0.000003,
+                     'last': buy_price + 0.000003
+                 }))
+    # stop-loss not reached, adjusted stoploss
+    assert freqtrade.handle_trade(trade) is False
+    assert log_has(f'using positive stop loss mode: 0.01 since we have profit 0.26662643',
+                   caplog.record_tuples)
+    assert log_has(f'adjusted stop loss', caplog.record_tuples)
+    assert trade.stop_loss == 0.0000138501
+
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.000002,
+                     'ask': buy_price + 0.000002,
+                     'last': buy_price + 0.000002
+                 }))
+    # Lower price again (but still positive)
+    assert freqtrade.handle_trade(trade) is True
+    assert log_has(
+        f'HIT STOP: current price at {buy_price + 0.000002:.6f}, '
+        f'stop loss is {trade.stop_loss:.6f}, '
+        f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
 
 
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,

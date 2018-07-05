@@ -2,12 +2,13 @@
 This module contains the argument manager class
 """
 
-import os
 import argparse
 import logging
+import os
 import re
+from typing import List, NamedTuple, Optional
+
 import arrow
-from typing import List, Optional, NamedTuple
 
 from freqtrade import __version__, constants
 
@@ -333,4 +334,11 @@ class Arguments(object):
             default=['1m', '5m'],
             nargs='+',
             dest='timeframes',
+        )
+
+        self.parser.add_argument(
+            '--erase',
+            help='Clean all existing data for the selected exchange/pairs/timeframes',
+            dest='erase',
+            action='store_true'
         )

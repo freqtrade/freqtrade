@@ -7,8 +7,8 @@ To launch Freqtrade as a module
 """
 
 import sys
-from freqtrade import main
 
+from freqtrade import main
 
 if __name__ == '__main__':
     main.set_loggers()

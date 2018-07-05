@@ -3,19 +3,20 @@
 import json
 import math
 import random
-import pytest
 from copy import deepcopy
 from typing import List
 from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
+import pytest
 from arrow import Arrow
 
-from freqtrade import optimize, constants, DependencyException
+from freqtrade import DependencyException, constants, optimize
 from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
-from freqtrade.optimize.backtesting import Backtesting, start, setup_configuration
+from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
+                                            start)
 from freqtrade.tests.conftest import log_has, patch_exchange
 
 
@@ -627,9 +628,13 @@ def test_backtest_record(default_conf, fee, mocker):
                                            Arrow(2017, 11, 14, 22, 10, 00).datetime,
                                            Arrow(2017, 11, 14, 22, 43, 00).datetime,
                                            Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                            "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
+                            "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                             "open_index": [1, 119, 153, 185],
                             "close_index": [118, 151, 184, 199],
-                            "trade_duration": [123, 34, 31, 14]})
+                            "trade_duration": [123, 34, 31, 14],
+                            "open_at_end": [False, False, False, True]
+                            })
     backtesting._store_backtest_result("backtest-result.json", results)
     assert len(results) == 4
     # Assert file_dump_json was only called once
@@ -640,12 +645,16 @@ def test_backtest_record(default_conf, fee, mocker):
     # ('UNITTEST/BTC', 0.00331158, '1510684320', '1510691700', 0, 117)
     # Below follows just a typecheck of the schema/type of trade-records
     oix = None
-    for (pair, profit, date_buy, date_sell, buy_index, dur) in records:
+    for (pair, profit, date_buy, date_sell, buy_index, dur,
+         openr, closer, open_at_end) in records:
         assert pair == 'UNITTEST/BTC'
-        isinstance(profit, float)
+        assert isinstance(profit, float)
         # FIX: buy/sell should be converted to ints
-        isinstance(date_buy, str)
-        isinstance(date_sell, str)
+        assert isinstance(date_buy, float)
+        assert isinstance(date_sell, float)
+        assert isinstance(openr, float)
+        assert isinstance(closer, float)
+        assert isinstance(open_at_end, bool)
         isinstance(buy_index, pd._libs.tslib.Timestamp)
         if oix:
             assert buy_index > oix

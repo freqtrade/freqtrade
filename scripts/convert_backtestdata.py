@@ -143,15 +143,14 @@ def convert_main(args: Namespace) -> None:
                         interval = str_interval
                         break
                 # change order on pairs if old ticker interval found
+
                 filename_new = path.join(path.dirname(filename),
-                                         "{}_{}-{}.json".format(currencies[1],
-                                                                currencies[0], interval))
+                                         f"{currencies[1]}_{currencies[0]}-{interval}.json")
 
             elif ret_string:
                 interval = ret_string.group(0)
                 filename_new = path.join(path.dirname(filename),
-                                         "{}_{}-{}.json".format(currencies[0],
-                                                                currencies[1], interval))
+                                         f"{currencies[0]}_{currencies[1]}-{interval}.json")
 
             else:
                 logger.warning("file %s could not be converted, interval not found", filename)

@@ -2,10 +2,10 @@
 Various tool function for Freqtrade and scripts
 """
 
+import gzip
 import json
 import logging
 import re
-import gzip
 from datetime import datetime
 from typing import Dict
 
