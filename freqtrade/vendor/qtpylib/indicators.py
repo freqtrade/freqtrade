@@ -557,8 +557,71 @@ def stoch(df, window=14, d=3, k=3, fast=False):
 
     return pd.DataFrame(index=df.index, data=data)
 
+
 # ---------------------------------------------
 
+def super_trend(df, period=14, multiplier=3):
+    """
+    compute the super trend indicator
+    adds following to dataframe:
+    'st': calculated super trend
+    'stx': super trend direction: up or down
+    """
+    ohlc = ['open', 'high', 'low', 'close']
+
+    df['atr'] = atr(df)
+
+    # Compute basic upper and lower bands
+    df['basic_ub'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 + multiplier * df["atr"]
+    df['basic_lb'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 - multiplier * df["atr"]
+
+    # Compute final upper and lower bands
+    df['final_ub'] = 0.00
+    df['final_lb'] = 0.00
+    for i in range(period, len(df)):
+        df['final_ub'].iat[i] = df['basic_ub'].iat[i] \
+            if df['basic_ub'].iat[i] < df['final_ub'].iat[i - 1] \
+            or df['close'].iat[i - 1] > df['final_ub'].iat[i - 1] \
+            else df['final_ub'].iat[i - 1]
+        df['final_lb'].iat[i] = df['basic_lb'].iat[i] \
+            if df['basic_lb'].iat[i] > df['final_lb'].iat[i - 1] \
+            or df['close'].iat[i - 1] < df['final_lb'].iat[i - 1] \
+            else df['final_lb'].iat[i - 1]
+
+    # Set the Supertrend value
+    df['st'] = 0.00
+
+    for i in range(period, len(df)):
+        df['st'].iat[i] = df['final_ub'].iat[i] \
+            if df['st'].iat[i - 1] == df['final_ub'].iat[i - 1] \
+            and df['close'].iat[i] <= df['final_ub'].iat[i] \
+            else \
+            df['final_lb'].iat[i] \
+            if df['st'].iat[i - 1] == df['final_ub'].iat[i - 1] \
+            and df['close'].iat[i] > df['final_ub'].iat[i] \
+            else \
+            df['final_lb'].iat[i] \
+            if df['st'].iat[i - 1] == df['final_lb'].iat[i - 1] \
+            and df['close'].iat[i] >= df['final_lb'].iat[i] \
+            else \
+            df['final_ub'].iat[i] \
+            if df['st'].iat[i - 1] == df['final_lb'].iat[i - 1] \
+            and df['close'].iat[i] < df['final_lb'].iat[i] \
+            else 0.00
+
+    # Mark the trend direction up/down
+    df['stx'] = \
+        np.where((df['st'] > 0.00), np.where((df[ohlc[3]] < df['st']), 'red',  'green'), np.NaN)
+
+    # Remove basic and final bands from the columns
+    df.drop(['basic_ub', 'basic_lb', 'final_ub', 'final_lb'], inplace=True, axis=1)
+
+    df.fillna(0, inplace=True)
+
+    return df
+
+
+# ---------------------------------------------
 
 def zscore(bars, window=20, stds=1, col='close'):
     """ get zscore of price """
@@ -580,6 +643,7 @@ def pvt(bars):
 
 PandasObject.session = session
 PandasObject.atr = atr
+PandasObject.super_trend = super_trend
 PandasObject.bollinger_bands = bollinger_bands
 PandasObject.cci = cci
 PandasObject.crossed = crossed
