@@ -17,7 +17,6 @@ import tempfile
 import os
 from pathlib import Path
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +96,7 @@ class StrategyResolver(object):
                 strategy_name = os.path.splitext(name)[0]
 
                 # register temp path with the bot
-                abs_paths.insert(0, temp.absolute())
+                abs_paths.insert(0, str(temp.resolve()))
 
         for path in abs_paths:
             try:
