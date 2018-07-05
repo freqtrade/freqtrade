@@ -3,6 +3,7 @@ IStrategy interface
 This module defines the interface to apply for strategies
 """
 import warnings
+from abc import ABC, abstractmethod
 from typing import Dict
 
 from abc import ABC

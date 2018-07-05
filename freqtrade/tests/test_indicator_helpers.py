@@ -1,6 +1,6 @@
 import pandas as pd
 
-from freqtrade.indicator_helpers import went_up, went_down
+from freqtrade.indicator_helpers import went_down, went_up
 
 
 def test_went_up():

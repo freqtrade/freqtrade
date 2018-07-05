@@ -2,8 +2,8 @@
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Optional
 from functools import reduce
+from typing import Dict, Optional
 from unittest.mock import MagicMock
 
 import arrow
@@ -11,8 +11,9 @@ import pytest
 from jsonschema import validate
 from telegram import Chat, Message, Update
 
-from freqtrade.analyze import Analyze
 from freqtrade import constants
+from freqtrade.analyze import Analyze
+from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -24,6 +25,20 @@ def log_has(line, logs):
     return reduce(lambda a, b: a or b,
                   filter(lambda x: x[2] == line, logs),
                   False)
+
+
+def patch_exchange(mocker, api_mock=None) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    if api_mock:
+        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    else:
+        mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
+
+
+def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
+    patch_exchange(mocker, api_mock)
+    exchange = Exchange(config)
+    return exchange
 
 
 # Functions for recurrent object patching
@@ -39,7 +54,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.exchange.init', MagicMock())
+    patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
@@ -85,7 +100,10 @@ def default_conf():
             "0": 0.04
         },
         "stoploss": -0.10,
-        "unfilledtimeout": 600,
+        "unfilledtimeout": {
+            "buy": 10,
+            "sell": 30
+        },
         "bid_strategy": {
             "ask_last_balance": 0.0
         },
@@ -174,7 +192,10 @@ def markets():
                     'max': 1000,
                 },
                 'price': 500000,
-                'cost': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
             },
             'info': '',
         },
@@ -196,7 +217,10 @@ def markets():
                     'max': 1000,
                 },
                 'price': 500000,
-                'cost': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
             },
             'info': '',
         },
@@ -218,7 +242,85 @@ def markets():
                     'max': 1000,
                 },
                 'price': 500000,
-                'cost': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
+            },
+            'info': '',
+        },
+        {
+            'id': 'ltcbtc',
+            'symbol': 'LTC/BTC',
+            'base': 'LTC',
+            'quote': 'BTC',
+            'active': False,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
+            },
+            'info': '',
+        },
+        {
+            'id': 'xrpbtc',
+            'symbol': 'XRP/BTC',
+            'base': 'XRP',
+            'quote': 'BTC',
+            'active': False,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
+            },
+            'info': '',
+        },
+        {
+            'id': 'neobtc',
+            'symbol': 'NEO/BTC',
+            'base': 'NEO',
+            'quote': 'BTC',
+            'active': False,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 1,
+                    'max': 500000,
+                },
             },
             'info': '',
         }

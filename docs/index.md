@@ -1,4 +1,5 @@
 # freqtrade documentation
+
 Welcome to freqtrade documentation. Please feel free to contribute to
 this documentation if you see it became outdated by sending us a 
 Pull-request. Do not hesitate to reach us on 
@@ -6,6 +7,7 @@ Pull-request. Do not hesitate to reach us on
  if you do not find the answer to your questions.
 
 ## Table of Contents
+
 - [Pre-requisite](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md)
 	- [Setup your Bittrex account](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md#setup-your-bittrex-account)
 	- [Setup your Telegram bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md#setup-your-telegram-bot)

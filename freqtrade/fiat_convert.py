@@ -7,9 +7,11 @@ import logging
 import time
 from typing import Dict, List
 
-from coinmarketcap import Market
 from requests.exceptions import RequestException
+from coinmarketcap import Market
+
 from freqtrade.constants import SUPPORTED_FIAT
+
 
 logger = logging.getLogger(__name__)
 

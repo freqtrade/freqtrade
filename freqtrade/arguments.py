@@ -2,12 +2,13 @@
 This module contains the argument manager class
 """
 
-import os
 import argparse
 import logging
+import os
 import re
+from typing import List, NamedTuple, Optional
+
 import arrow
-from typing import List, Optional, NamedTuple
 
 from freqtrade import __version__, constants
 
@@ -204,12 +205,6 @@ class Arguments(object):
             metavar='INT',
         )
         parser.add_argument(
-            '--use-mongodb',
-            help='parallelize evaluations with mongodb (requires mongod in PATH)',
-            dest='mongodb',
-            action='store_true',
-        )
-        parser.add_argument(
             '-s', '--spaces',
             help='Specify which parameters to hyperopt. Space separate list. \
                   Default: %(default)s',
@@ -268,17 +263,15 @@ class Arguments(object):
                 stop: int = 0
                 if stype[0]:
                     starts = rvals[index]
-                    if stype[0] == 'date':
-                        start = int(starts) if len(starts) == 10 \
-                            else arrow.get(starts, 'YYYYMMDD').timestamp
+                    if stype[0] == 'date' and len(starts) == 8:
+                        start = arrow.get(starts, 'YYYYMMDD').timestamp
                     else:
                         start = int(starts)
                     index += 1
                 if stype[1]:
                     stops = rvals[index]
-                    if stype[1] == 'date':
-                        stop = int(stops) if len(stops) == 10 \
-                            else arrow.get(stops, 'YYYYMMDD').timestamp
+                    if stype[1] == 'date' and len(stops) == 8:
+                        stop = arrow.get(stops, 'YYYYMMDD').timestamp
                     else:
                         stop = int(stops)
                 return TimeRange(stype[0], stype[1], start, stop)
@@ -341,4 +334,11 @@ class Arguments(object):
             default=['1m', '5m'],
             nargs='+',
             dest='timeframes',
+        )
+
+        self.parser.add_argument(
+            '--erase',
+            help='Clean all existing data for the selected exchange/pairs/timeframes',
+            dest='erase',
+            action='store_true'
         )

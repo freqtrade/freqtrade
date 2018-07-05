@@ -1,17 +1,17 @@
 """
 This module contains the configuration class
 """
-import os
 import json
 import logging
+import os
 from argparse import Namespace
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import ccxt
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
-import ccxt
 
 from freqtrade import OperationalException, constants
-
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +62,8 @@ class Configuration(object):
                 conf = json.load(file)
         except FileNotFoundError:
             raise OperationalException(
-                'Config file "{}" not found!'
-                ' Please create a config file or check whether it exists.'.format(path))
+                f'Config file "{path}" not found!'
+                ' Please create a config file or check whether it exists.')
 
         if 'internals' not in conf:
             conf['internals'] = {}
@@ -109,7 +109,7 @@ class Configuration(object):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
-        logger.info('Using DB: "{}"'.format(config['db_url']))
+        logger.info(f'Using DB: "{config["db_url"]}"')
 
         # Check if the exchange set by the user is supported
         self.check_exchange(config)
@@ -187,11 +187,6 @@ class Configuration(object):
             config.update({'epochs': self.args.epochs})
             logger.info('Parameter --epochs detected ...')
             logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
-
-        # If --mongodb is used we add it to the configuration
-        if 'mongodb' in self.args and self.args.mongodb:
-            config.update({'mongodb': self.args.mongodb})
-            logger.info('Parameter --use-mongodb detected ...')
 
         # If --spaces is used we add it to the configuration
         if 'spaces' in self.args and self.args.spaces:

@@ -7,11 +7,9 @@ import os
 from typing import Optional, List, Dict, Tuple, Any
 import arrow
 
-from freqtrade import misc, constants
-from freqtrade.exchange import get_ticker_history
+from freqtrade import misc, constants, OperationalException
+from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
-
-from user_data.hyperopt_conf import hyperopt_optimize_conf
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +54,8 @@ def load_tickerdata_file(
     :return dict OR empty if unsuccesful
     """
     path = make_testdata_path(datadir)
-    pair_file_string = pair.replace('/', '_')
-    file = os.path.join(path, '{pair}-{ticker_interval}.json'.format(
-        pair=pair_file_string,
-        ticker_interval=ticker_interval,
-    ))
+    pair_s = pair.replace('/', '_')
+    file = os.path.join(path, f'{pair_s}-{ticker_interval}.json')
     gzipfile = file + '.gz'
 
     # If the file does not exist we download it when None is returned.
@@ -83,8 +78,9 @@ def load_tickerdata_file(
 
 def load_data(datadir: str,
               ticker_interval: str,
-              pairs: Optional[List[str]] = None,
+              pairs: List[str],
               refresh_pairs: Optional[bool] = False,
+              exchange: Optional[Exchange] = None,
               timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
@@ -92,14 +88,15 @@ def load_data(datadir: str,
     """
     result = {}
 
-    _pairs = pairs or hyperopt_optimize_conf()['exchange']['pair_whitelist']
-
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in %s', datadir)
-        download_pairs(datadir, _pairs, ticker_interval, timerange=timerange)
+        if not exchange:
+            raise OperationalException("Exchange needs to be initialized when "
+                                       "calling load_data with refresh_pairs=True")
+        download_pairs(datadir, exchange, pairs, ticker_interval, timerange=timerange)
 
-    for pair in _pairs:
+    for pair in pairs:
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         if pairdata:
             result[pair] = pairdata
@@ -123,13 +120,14 @@ def make_testdata_path(datadir: str) -> str:
     )
 
 
-def download_pairs(datadir, pairs: List[str],
+def download_pairs(datadir, exchange: Exchange, pairs: List[str],
                    ticker_interval: str,
                    timerange: TimeRange = TimeRange(None, None, 0, 0)) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
             download_backtesting_testdata(datadir,
+                                          exchange=exchange,
                                           pair=pair,
                                           tick_interval=ticker_interval,
                                           timerange=timerange)
@@ -187,6 +185,7 @@ def load_cached_data_for_updating(filename: str,
 
 
 def download_backtesting_testdata(datadir: str,
+                                  exchange: Exchange,
                                   pair: str,
                                   tick_interval: str = '5m',
                                   timerange: Optional[TimeRange] = None) -> None:
@@ -220,7 +219,8 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    new_data = get_ticker_history(pair=pair, tick_interval=tick_interval, since_ms=since_ms)
+    new_data = exchange.get_ticker_history(pair=pair, tick_interval=tick_interval,
+                                           since_ms=since_ms)
     data.extend(new_data)
 
     logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
