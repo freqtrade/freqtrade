@@ -516,9 +516,9 @@ def test_backtest(default_conf, fee, mocker) -> None:
          'close_rate': [0.104999, 0.10396]})
     pd.testing.assert_frame_equal(results, expected)
     data_pair = data_processed[pair]
-    # Check open trade
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_time"]]
+        # Check open trade
         assert ln is not None
         assert round(ln.iloc[0]["close"], 6) == round(t["open_rate"], 6)
         # check close trade
