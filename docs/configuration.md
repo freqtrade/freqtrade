@@ -41,6 +41,11 @@ The table below will list all configuration parameters.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
+| `webhook.enabled` | false | No | Enable useage of Webhook notifications
+| `webhook.url` | false | No | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details.
+| `webhook.webhookbuy` | false | No | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
+| `webhook.webhooksell` | false | No | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
+| `webhook.webhookstatus` | false | No | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
 | `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
