@@ -124,6 +124,39 @@ def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
         Exchange(conf)
 
 
+def test_validate_timeframes(default_conf, mocker):
+    default_conf["ticker_interval"] = "5m"
+    api_mock = MagicMock()
+    id_mock = PropertyMock(return_value='test_exchange')
+    type(api_mock).id = id_mock
+    timeframes = PropertyMock(return_value={'1m': '1m',
+                                            '5m': '5m',
+                                            '15m': '15m',
+                                            '1h': '1h'})
+    type(api_mock).timeframes = timeframes
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    Exchange(default_conf)
+
+
+def test_validate_timeframes_failed(default_conf, mocker):
+    default_conf["ticker_interval"] = "3m"
+    api_mock = MagicMock()
+    id_mock = PropertyMock(return_value='test_exchange')
+    type(api_mock).id = id_mock
+    timeframes = PropertyMock(return_value={'1m': '1m',
+                                            '5m': '5m',
+                                            '15m': '15m',
+                                            '1h': '1h'})
+    type(api_mock).timeframes = timeframes
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    with pytest.raises(OperationalException, match=r'Invalid ticker 3m, this Exchange supports.*'):
+        Exchange(default_conf)
+
+
 def test_exchangehas(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
     assert not exchange.exchange_has('ASDFASDF')
