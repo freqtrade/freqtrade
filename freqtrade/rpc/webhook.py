@@ -49,11 +49,9 @@ class Webhook(RPC):
             if not valuedict:
                 logger.info("Message type %s not configured for webhooks", msg['type'])
                 return
-
-            payload = {"value1": valuedict.get('value1', '').format(**msg),
-                       "value2": valuedict.get('value2', '').format(**msg),
-                       "value3": valuedict.get('value3', '').format(**msg)
-                       }
+            payload = {}
+            for k in valuedict:
+                payload[k] = valuedict[k].format(**msg)
 
             self._send_msg(payload)
         except KeyError as exc:
