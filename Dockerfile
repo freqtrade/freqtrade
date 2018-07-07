@@ -1,4 +1,4 @@
-FROM python:3.6.5-slim-stretch
+FROM python:3.6.6-slim-stretch
 
 # Install TA-lib
 RUN apt-get update && apt-get -y install curl build-essential && apt-get clean
