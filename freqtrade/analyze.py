@@ -179,7 +179,8 @@ class Analyze(object):
         :return: True if trade should be sold, False otherwise
         """
         current_profit = trade.calc_profit_percent(rate)
-        if self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date):
+        if self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date,
+                                  current_profit=current_profit):
             return True
 
         experimental = self.config.get('experimental', {})
@@ -203,13 +204,13 @@ class Analyze(object):
 
         return False
 
-    def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime) -> bool:
+    def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
+                          current_profit: float) -> bool:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
         """
 
-        current_profit = trade.calc_profit_percent(current_rate)
         trailing_stop = self.config.get('trailing_stop', False)
 
         trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
