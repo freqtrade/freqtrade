@@ -4,7 +4,6 @@
 Unit test file for analyse.py
 """
 
-import datetime
 import logging
 from unittest.mock import MagicMock
 
@@ -148,8 +147,9 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history', return_value=1)
     exchange = get_patched_exchange(mocker, default_conf)
-    # FIX: The get_signal function has hardcoded 10, which we must inturn hardcode
-    oldtime = arrow.utcnow() - datetime.timedelta(minutes=11)
+    # default_conf defines a 5m interval. we check interval * 2 + 5m
+    # this is necessary as the last candle is removed (partial candles) by default
+    oldtime = arrow.utcnow().shift(minutes=-16)
     ticks = DataFrame([{'buy': 1, 'date': oldtime}])
     mocker.patch.multiple(
         'freqtrade.analyze.Analyze',
@@ -159,7 +159,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
     )
     assert (False, False) == _ANALYZE.get_signal(exchange, 'xyz', default_conf['ticker_interval'])
     assert log_has(
-        'Outdated history for pair xyz. Last tick is 11 minutes old',
+        'Outdated history for pair xyz. Last tick is 16 minutes old',
         caplog.record_tuples
     )
 
