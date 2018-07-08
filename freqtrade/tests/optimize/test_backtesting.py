@@ -391,15 +391,16 @@ def test_generate_text_table(default_conf, mocker):
     )
 
     result_str = (
-        '| pair    |   buy count |   avg profit % |   '
+        '| pair    |   buy count |   avg profit % |   cum profit % |   '
         'total profit BTC |   avg duration |   profit |   loss |\n'
-        '|:--------|------------:|---------------:|'
+        '|:--------|------------:|---------------:|---------------:|'
         '-------------------:|---------------:|---------:|-------:|\n'
-        '| ETH/BTC |           2 |          15.00 |         '
+        '| ETH/BTC |           2 |          15.00 |          30.00 |         '
         '0.60000000 |           20.0 |        2 |      0 |\n'
-        '| TOTAL   |           2 |          15.00 |         '
+        '| TOTAL   |           2 |          15.00 |          30.00 |         '
         '0.60000000 |           20.0 |        2 |      0 |'
     )
+    print(result_str)
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
