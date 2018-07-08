@@ -485,19 +485,45 @@ def test_backtest(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
-
+    pair = 'UNITTEST/BTC'
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
+    data_processed = backtesting.tickerdata_to_dataframe(data)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.tickerdata_to_dataframe(data),
+            'processed': data_processed,
             'max_open_trades': 10,
             'realistic': True
         }
     )
     assert not results.empty
     assert len(results) == 2
+
+    expected = pd.DataFrame(
+        {'pair': [pair, pair],
+         'profit_percent': [0.00148826, 0.00075313],
+         'profit_abs': [1.49e-06, 7.6e-07],
+         'open_time': [Arrow(2018, 1, 29, 18, 40, 0).datetime,
+                       Arrow(2018, 1, 30, 3, 30, 0).datetime],
+         'close_time': [Arrow(2018, 1, 29, 23, 15, 0).datetime,
+                        Arrow(2018, 1, 30, 4, 20, 0).datetime],
+         'open_index': [77, 183],
+         'close_index': [132, 193],
+         'trade_duration': [275, 50],
+         'open_at_end': [False, False],
+         'open_rate': [0.10432, 0.103364],
+         'close_rate': [0.104999, 0.10396]})
+    pd.testing.assert_frame_equal(results, expected)
+    data_pair = data_processed[pair]
+    for _, t in results.iterrows():
+        ln = data_pair.loc[data_pair["date"] == t["open_time"]]
+        # Check open trade
+        assert ln is not None
+        assert round(ln.iloc[0]["close"], 6) == round(t["open_rate"], 6)
+        # check close trade
+        ln = data_pair.loc[data_pair["date"] == t["close_time"]]
+        assert round(ln.iloc[0]["close"], 6) == round(t["close_rate"], 6)
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
