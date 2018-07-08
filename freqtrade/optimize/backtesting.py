@@ -314,9 +314,9 @@ class Backtesting(object):
             self._store_backtest_result(self.config.get('exportfilename'), results)
 
         logger.info(
-            '\n======================================== '
+            '\n================================================= '
             'BACKTESTING REPORT'
-            ' =========================================\n'
+            ' ==================================================\n'
             '%s',
             self._generate_text_table(
                 data,
@@ -325,9 +325,9 @@ class Backtesting(object):
         )
 
         logger.info(
-            '\n====================================== '
+            '\n=============================================== '
             'LEFT OPEN TRADES REPORT'
-            ' ======================================\n'
+            ' ===============================================\n'
             '%s',
             self._generate_text_table(
                 data,
