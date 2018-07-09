@@ -316,9 +316,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     patch_RPCManager(mocker)
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.Analyze.get_stoploss', MagicMock(return_value=-0.05))
     freqtrade = FreqtradeBot(default_conf)
-
+    freqtrade.strategy.stoploss = -0.05
     # no pair found
     mocker.patch(
         'freqtrade.exchange.Exchange.get_markets',

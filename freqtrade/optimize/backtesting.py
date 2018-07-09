@@ -21,6 +21,7 @@ from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
+from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,8 @@ class Backtesting(object):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.analyze = Analyze(self.config)
+        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.analyze = Analyze(self.config, self.strategy)
         self.ticker_interval = self.analyze.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
         self.populate_buy_trend = self.analyze.populate_buy_trend

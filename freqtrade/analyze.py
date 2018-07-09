@@ -12,7 +12,7 @@ from pandas import DataFrame, to_datetime
 from freqtrade import constants
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from freqtrade.strategy.resolver import IStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -30,13 +30,13 @@ class Analyze(object):
     Analyze class contains everything the bot need to determine if the situation is good for
     buying or selling.
     """
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, strategy: IStrategy) -> None:
         """
         Init Analyze
         :param config: Bot configuration (use the one from Configuration())
         """
         self.config = config
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.strategy = strategy
 
     @staticmethod
     def parse_ticker_dataframe(ticker: list) -> DataFrame:

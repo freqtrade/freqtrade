@@ -14,9 +14,10 @@ from freqtrade.analyze import Analyze, SignalType
 from freqtrade.arguments import TimeRange
 from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.strategy.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again
-_ANALYZE = Analyze({'strategy': 'DefaultStrategy'})
+_ANALYZE = Analyze({}, DefaultStrategy())
 
 
 def test_signaltype_object() -> None:
@@ -189,7 +190,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     """
     Test Analyze.tickerdata_to_dataframe() method
     """
-    analyze = Analyze(default_conf)
+    analyze = Analyze(default_conf, DefaultStrategy())
 
     timerange = TimeRange(None, 'line', 0, -100)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)

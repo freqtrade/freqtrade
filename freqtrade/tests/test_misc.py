@@ -11,6 +11,7 @@ from freqtrade.analyze import Analyze
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
                             file_dump_json, format_ms_time, shorten_date)
 from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
 def test_shorten_date() -> None:
@@ -47,7 +48,7 @@ def test_common_datearray(default_conf) -> None:
     Test common_datearray()
     :return: None
     """
-    analyze = Analyze(default_conf)
+    analyze = Analyze(default_conf, DefaultStrategy())
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = analyze.tickerdata_to_dataframe(tickerlist)

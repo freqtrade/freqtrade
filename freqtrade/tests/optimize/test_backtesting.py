@@ -18,6 +18,7 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
 def get_args(args) -> List[str]:
@@ -348,7 +349,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     assert len(data['UNITTEST/BTC']) == 99
 
     # Load Analyze to compare the result between Backtesting function and Analyze are the same
-    analyze = Analyze(default_conf)
+    analyze = Analyze(default_conf, DefaultStrategy())
     data2 = analyze.tickerdata_to_dataframe(tickerlist)
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
