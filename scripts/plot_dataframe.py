@@ -24,15 +24,17 @@ Example of usage:
 > python3 scripts/plot_dataframe.py --pair BTC/EUR -d user_data/data/ --indicators1 sma,ema3
 --indicators2 fastk,fastd
 """
+import json
 import logging
 import sys
-import json
-from pathlib import Path
 from argparse import Namespace
+from pathlib import Path
 from typing import Dict, List, Any
 
 import pandas as pd
 import plotly.graph_objs as go
+import pytz
+
 from plotly import tools
 from plotly.offline import plot
 
@@ -47,6 +49,8 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
 
+timeZone = pytz.UTC
+
 
 def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame()
@@ -54,14 +58,18 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
         persistence.init(_CONF)
         columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
 
+        for x in Trade.query.all():
+            print("date: {}".format(x.open_date))
+
         trades = pd.DataFrame([(t.pair, t.calc_profit(),
-                                t.open_date, t.close_date,
+                                t.open_date.replace(tzinfo=timeZone),
+                                t.close_date.replace(tzinfo=timeZone) if t.close_date else None,
                                 t.open_rate, t.close_rate,
-                                t.close_date.timestamp() - t.open_date.timestamp())
+                                t.close_date.timestamp() - t.open_date.timestamp() if t.close_date else None)
                                for t in Trade.query.filter(Trade.pair.is_(pair)).all()],
                               columns=columns)
 
-    if args.exportfilename:
+    elif args.exportfilename:
         file = Path(args.exportfilename)
         # must align with columns in backtest.py
         columns = ["pair", "profit", "opents", "closets", "index", "duration",
@@ -97,6 +105,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     # Load the configuration
     _CONF.update(setup_configuration(args))
 
+    print(_CONF)
     # Set the pair to audit
     pair = args.pair
 
@@ -136,19 +145,19 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             pairs=[pair],
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
-            timerange=timerange
+            timerange=timerange,
+            exchange=Exchange(_CONF)
         )
 
         # No ticker found, or impossible to download
         if tickers == {}:
             exit()
 
-    if args.db_url and args.exportfilename:
-        logger.critical("Can only specify --db-url or --export-filename")
     # Get trades already made from the DB
     trades = load_trades(args, pair, timerange)
 
     dataframes = analyze.tickerdata_to_dataframe(tickers)
+
     dataframe = dataframes[pair]
     dataframe = analyze.populate_buy_trend(dataframe)
     dataframe = analyze.populate_sell_trend(dataframe)
@@ -157,6 +166,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         logger.warning('Ticker contained more than %s candles as defined '
                        'with --plot-limit, clipping.', args.plot_limit)
     dataframe = dataframe.tail(args.plot_limit)
+
     trades = trades.loc[trades['opents'] >= dataframe.iloc[0]['date']]
     fig = generate_graph(
         pair=pair,
