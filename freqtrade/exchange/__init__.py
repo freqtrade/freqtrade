@@ -70,8 +70,9 @@ class Exchange(object):
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
 
-        # Check if timeframe is available
-        self.validate_timeframes(config['ticker_interval'])
+        if config.get('ticker_interval'):
+            # Check if timeframe is available
+            self.validate_timeframes(config['ticker_interval'])
 
     def _init_ccxt(self, exchange_config: dict) -> ccxt.Exchange:
         """
