@@ -32,9 +32,12 @@ CREATE TABLE trades (
 	exchange VARCHAR NOT NULL,
 	pair VARCHAR NOT NULL,
 	is_open BOOLEAN NOT NULL,
-	fee FLOAT NOT NULL,
+	fee_open FLOAT NOT NULL,
+	fee_close FLOAT NOT NULL,
 	open_rate FLOAT,
+	open_rate_requested FLOAT,
 	close_rate FLOAT,
+	close_rate_requested FLOAT,
 	close_profit FLOAT,
 	stake_amount FLOAT NOT NULL,
 	amount FLOAT,
@@ -56,7 +59,7 @@ SELECT * FROM trades;
 
 ```sql
 UPDATE trades
-SET is_open=0, close_date=<close_date>, close_rate=<close_rate>, close_profit=close_rate/open_rate  
+SET is_open=0, close_date=<close_date>, close_rate=<close_rate>, close_profit=close_rate/open_rate-1  
 WHERE id=<trade_ID_to_update>;
 ```
 
@@ -67,10 +70,22 @@ SET is_open=0, close_date='2017-12-20 03:08:45.103418', close_rate=0.19638016, c
 WHERE id=31;
 ```
 
+## Insert manually a new trade
+
+```sql
+INSERT 
+INTO trades (exchange, pair, is_open, fee_open, fee_close, open_rate, stake_amount, amount, open_date) 
+VALUES ('BITTREX', 'BTC_<COIN>', 1, 0.0025, 0.0025, <open_rate>, <stake_amount>, <amount>, '<datetime>')
+```
+
+**Example:**
+```sql
+INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close, open_rate, stake_amount, amount, open_date) VALUES ('BITTREX', 'BTC_ETC', 1, 0.0025, 0.0025, 0.00258580, 0.002, 0.7715262081, '2017-11-28 12:44:24.000000')
+```
 
 ## Fix wrong fees in the table
 If your DB was created before 
-[PR#200](https://github.com/gcarq/freqtrade/pull/200) was merged
+[PR#200](https://github.com/freqtrade/freqtrade/pull/200) was merged
 (before 12/23/17).
 
 ```sql

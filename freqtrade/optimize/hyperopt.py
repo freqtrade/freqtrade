@@ -1,318 +1,407 @@
-# pragma pylint: disable=missing-docstring,W0212,W0603
+# pragma pylint: disable=too-many-instance-attributes, pointless-string-statement
 
+"""
+This module contains the hyperopt logic
+"""
 
-import json
 import logging
-import sys
-import pickle
-import signal
+import multiprocessing
 import os
+import sys
+from argparse import Namespace
 from functools import reduce
 from math import exp
 from operator import itemgetter
+from typing import Any, Callable, Dict, List
 
-from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, space_eval, tpe
-from hyperopt.mongoexp import MongoTrials
+import talib.abstract as ta
 from pandas import DataFrame
+from sklearn.externals.joblib import Parallel, delayed, dump, load
+from skopt import Optimizer
+from skopt.space import Categorical, Dimension, Integer, Real
 
-from freqtrade import main  # noqa
-from freqtrade import exchange, optimize
-from freqtrade.exchange import Bittrex
-from freqtrade.misc import load_config
-from freqtrade.optimize.backtesting import backtest
-from freqtrade.optimize.hyperopt_conf import hyperopt_optimize_conf
-from freqtrade.vendor.qtpylib.indicators import crossed_above
-
-# Remove noisy log messages
-logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
-logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.arguments import Arguments
+from freqtrade.configuration import Configuration
+from freqtrade.optimize import load_data
+from freqtrade.optimize.backtesting import Backtesting
 
 logger = logging.getLogger(__name__)
 
-# set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
-TARGET_TRADES = 1100
-TOTAL_TRIES = 0
-_CURRENT_TRIES = 0
-CURRENT_BEST_LOSS = 100
-
-# max average trade duration in minutes
-# if eval ends with higher value, we consider it a failed eval
-MAX_ACCEPTED_TRADE_DURATION = 240
-
-# this is expexted avg profit * expected trade count
-# for example 3.5%, 1100 trades, EXPECTED_MAX_PROFIT = 3.85
-EXPECTED_MAX_PROFIT = 3.85
-
-# Configuration and data used by hyperopt
-PROCESSED = None  # optimize.preprocess(optimize.load_data())
-OPTIMIZE_CONFIG = hyperopt_optimize_conf()
-
-# Hyperopt Trials
-TRIALS_FILE = os.path.join('freqtrade', 'optimize', 'hyperopt_trials.pickle')
-TRIALS = Trials()
-
-# Monkey patch config
-from freqtrade import main  # noqa
-main._CONF = OPTIMIZE_CONFIG
+MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
+TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
 
 
-SPACE = {
-    'mfi': hp.choice('mfi', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
-    ]),
-    'fastd': hp.choice('fastd', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
-    ]),
-    'adx': hp.choice('adx', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
-    ]),
-    'rsi': hp.choice('rsi', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
-    ]),
-    'uptrend_long_ema': hp.choice('uptrend_long_ema', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'uptrend_short_ema': hp.choice('uptrend_short_ema', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'over_sar': hp.choice('over_sar', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'green_candle': hp.choice('green_candle', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'uptrend_sma': hp.choice('uptrend_sma', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'trigger': hp.choice('trigger', [
-        {'type': 'lower_bb'},
-        {'type': 'faststoch10'},
-        {'type': 'ao_cross_zero'},
-        {'type': 'ema5_cross_ema10'},
-        {'type': 'macd_cross_signal'},
-        {'type': 'sar_reversal'},
-        {'type': 'stochf_cross'},
-        {'type': 'ht_sine'},
-    ]),
-    'stoploss': hp.uniform('stoploss', -0.5, -0.02),
-}
+class Hyperopt(Backtesting):
+    """
+    Hyperopt class, this class contains all the logic to run a hyperopt simulation
 
+    To run a backtest:
+    hyperopt = Hyperopt(config)
+    hyperopt.start()
+    """
+    def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__(config)
+        # set TARGET_TRADES to suit your number concurrent trades so its realistic
+        # to the number of days
+        self.target_trades = 600
+        self.total_tries = config.get('epochs', 0)
+        self.current_best_loss = 100
 
-def save_trials(trials, trials_path=TRIALS_FILE):
-    """Save hyperopt trials to file"""
-    logger.info('Saving Trials to \'{}\''.format(trials_path))
-    pickle.dump(trials, open(trials_path, 'wb'))
+        # max average trade duration in minutes
+        # if eval ends with higher value, we consider it a failed eval
+        self.max_accepted_trade_duration = 300
 
+        # this is expexted avg profit * expected trade count
+        # for example 3.5%, 1100 trades, self.expected_max_profit = 3.85
+        # check that the reported Σ% values do not exceed this!
+        self.expected_max_profit = 3.0
 
-def read_trials(trials_path=TRIALS_FILE):
-    """Read hyperopt trials file"""
-    logger.info('Reading Trials from \'{}\''.format(trials_path))
-    trials = pickle.load(open(trials_path, 'rb'))
-    os.remove(trials_path)
-    return trials
+        # Previous evaluations
+        self.trials_file = os.path.join('user_data', 'hyperopt_results.pickle')
+        self.trials: List = []
 
+    def get_args(self, params):
+        dimensions = self.hyperopt_space()
+        # Ensure the number of dimensions match
+        # the number of parameters in the list x.
+        if len(params) != len(dimensions):
+            raise ValueError('Mismatch in number of search-space dimensions. '
+                             f'len(dimensions)=={len(dimensions)} and len(x)=={len(params)}')
 
-def log_trials_result(trials):
-    vals = json.dumps(trials.best_trial['misc']['vals'], indent=4)
-    results = trials.best_trial['result']['result']
-    logger.info('Best result:\n%s\nwith values:\n%s', results, vals)
+        # Create a dict where the keys are the names of the dimensions
+        # and the values are taken from the list of parameters x.
+        arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
+        return arg_dict
 
-
-def log_results(results):
-    """ log results if it is better than any previous evaluation """
-    global CURRENT_BEST_LOSS
-
-    if results['loss'] < CURRENT_BEST_LOSS:
-        CURRENT_BEST_LOSS = results['loss']
-        logger.info('{:5d}/{}: {}'.format(
-            results['current_tries'],
-            results['total_tries'],
-            results['result']))
-    else:
-        print('.', end='')
-        sys.stdout.flush()
-
-
-def calculate_loss(total_profit: float, trade_count: int, trade_duration: float):
-    """ objective function, returns smaller number for more optimal results """
-    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
-    profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
-    duration_loss = min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
-    return trade_loss + profit_loss + duration_loss
-
-
-def optimizer(params):
-    global _CURRENT_TRIES
-
-    from freqtrade.optimize import backtesting
-    backtesting.populate_buy_trend = buy_strategy_generator(params)
-
-    results = backtest(OPTIMIZE_CONFIG['stake_amount'], PROCESSED, stoploss=params['stoploss'])
-    result_explanation = format_results(results)
-
-    total_profit = results.profit_percent.sum()
-    trade_count = len(results.index)
-    trade_duration = results.duration.mean() * 5
-
-    if trade_count == 0 or trade_duration > MAX_ACCEPTED_TRADE_DURATION:
-        print('.', end='')
-        return {
-            'status': STATUS_FAIL,
-            'loss': float('inf')
-        }
-
-    loss = calculate_loss(total_profit, trade_count, trade_duration)
-
-    _CURRENT_TRIES += 1
-
-    log_results({
-        'loss': loss,
-        'current_tries': _CURRENT_TRIES,
-        'total_tries': TOTAL_TRIES,
-        'result': result_explanation,
-    })
-
-    return {
-        'loss': loss,
-        'status': STATUS_OK,
-        'result': result_explanation,
-    }
-
-
-def format_results(results: DataFrame):
-    return ('{:6d} trades. Avg profit {: 5.2f}%. '
-            'Total profit {: 11.8f} BTC. Avg duration {:5.1f} mins.').format(
-                len(results.index),
-                results.profit_percent.mean() * 100.0,
-                results.profit_BTC.sum(),
-                results.duration.mean() * 5,
-    )
-
-
-def buy_strategy_generator(params):
-    def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
-        conditions = []
-        # GUARDS AND TRENDS
-        if params['uptrend_long_ema']['enabled']:
-            conditions.append(dataframe['ema50'] > dataframe['ema100'])
-        if params['uptrend_short_ema']['enabled']:
-            conditions.append(dataframe['ema5'] > dataframe['ema10'])
-        if params['mfi']['enabled']:
-            conditions.append(dataframe['mfi'] < params['mfi']['value'])
-        if params['fastd']['enabled']:
-            conditions.append(dataframe['fastd'] < params['fastd']['value'])
-        if params['adx']['enabled']:
-            conditions.append(dataframe['adx'] > params['adx']['value'])
-        if params['rsi']['enabled']:
-            conditions.append(dataframe['rsi'] < params['rsi']['value'])
-        if params['over_sar']['enabled']:
-            conditions.append(dataframe['close'] > dataframe['sar'])
-        if params['green_candle']['enabled']:
-            conditions.append(dataframe['close'] > dataframe['open'])
-        if params['uptrend_sma']['enabled']:
-            prevsma = dataframe['sma'].shift(1)
-            conditions.append(dataframe['sma'] > prevsma)
-
-        # TRIGGERS
-        triggers = {
-            'lower_bb': dataframe['tema'] <= dataframe['blower'],
-            'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
-            'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
-            'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
-            'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
-            'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
-            'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
-            'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
-        }
-        conditions.append(triggers.get(params['trigger']['type']))
-
-        dataframe.loc[
-            reduce(lambda x, y: x & y, conditions),
-            'buy'] = 1
+    @staticmethod
+    def populate_indicators(dataframe: DataFrame) -> DataFrame:
+        dataframe['adx'] = ta.ADX(dataframe)
+        macd = ta.MACD(dataframe)
+        dataframe['macd'] = macd['macd']
+        dataframe['macdsignal'] = macd['macdsignal']
+        dataframe['mfi'] = ta.MFI(dataframe)
+        dataframe['rsi'] = ta.RSI(dataframe)
+        stoch_fast = ta.STOCHF(dataframe)
+        dataframe['fastd'] = stoch_fast['fastd']
+        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
+        # Bollinger bands
+        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+        dataframe['bb_lowerband'] = bollinger['lower']
+        dataframe['sar'] = ta.SAR(dataframe)
 
         return dataframe
-    return populate_buy_trend
 
+    def save_trials(self) -> None:
+        """
+        Save hyperopt trials to file
+        """
+        if self.trials:
+            logger.info('Saving %d evaluations to \'%s\'', len(self.trials), self.trials_file)
+            dump(self.trials, self.trials_file)
 
-def start(args):
-    global TOTAL_TRIES, PROCESSED, SPACE, TRIALS, _CURRENT_TRIES
+    def read_trials(self) -> List:
+        """
+        Read hyperopt trials file
+        """
+        logger.info('Reading Trials from \'%s\'', self.trials_file)
+        trials = load(self.trials_file)
+        os.remove(self.trials_file)
+        return trials
 
-    TOTAL_TRIES = args.epochs
+    def log_trials_result(self) -> None:
+        """
+        Display Best hyperopt result
+        """
+        results = sorted(self.trials, key=itemgetter('loss'))
+        best_result = results[0]
+        logger.info(
+            'Best result:\n%s\nwith values:\n%s',
+            best_result['result'],
+            best_result['params']
+        )
+        if 'roi_t1' in best_result['params']:
+            logger.info('ROI table:\n%s', self.generate_roi_table(best_result['params']))
 
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    def log_results(self, results) -> None:
+        """
+        Log results if it is better than any previous evaluation
+        """
+        if results['loss'] < self.current_best_loss:
+            current = results['current_tries']
+            total = results['total_tries']
+            res = results['result']
+            loss = results['loss']
+            self.current_best_loss = results['loss']
+            log_msg = f'\n{current:5d}/{total}: {res}. Loss {loss:.5f}'
+            print(log_msg)
+        else:
+            print('.', end='')
+            sys.stdout.flush()
 
-    # Initialize logger
-    logging.basicConfig(
-        level=args.loglevel,
-        format='\n%(message)s',
-    )
+    def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
+        """
+        Objective function, returns smaller number for more optimal results
+        """
+        trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
+        profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
+        duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
+        result = trade_loss + profit_loss + duration_loss
+        return result
 
-    logger.info('Using config: %s ...', args.config)
-    config = load_config(args.config)
-    pairs = config['exchange']['pair_whitelist']
-    PROCESSED = optimize.preprocess(optimize.load_data(
-        args.datadir, pairs=pairs, ticker_interval=args.ticker_interval))
+    @staticmethod
+    def generate_roi_table(params: Dict) -> Dict[int, float]:
+        """
+        Generate the ROI table thqt will be used by Hyperopt
+        """
+        roi_table = {}
+        roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
+        roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
+        roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
+        roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
 
-    if args.mongodb:
-        logger.info('Using mongodb ...')
-        logger.info('Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!')
+        return roi_table
 
-        db_name = 'freqtrade_hyperopt'
-        TRIALS = MongoTrials('mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
-    else:
-        logger.info('Preparing Trials..')
-        signal.signal(signal.SIGINT, signal_handler)
-        # read trials file if we have one
-        if os.path.exists(TRIALS_FILE):
-            TRIALS = read_trials()
+    @staticmethod
+    def roi_space() -> List[Dimension]:
+        """
+        Values to search for each ROI steps
+        """
+        return [
+            Integer(10, 120, name='roi_t1'),
+            Integer(10, 60, name='roi_t2'),
+            Integer(10, 40, name='roi_t3'),
+            Real(0.01, 0.04, name='roi_p1'),
+            Real(0.01, 0.07, name='roi_p2'),
+            Real(0.01, 0.20, name='roi_p3'),
+        ]
 
-            _CURRENT_TRIES = len(TRIALS.results)
-            TOTAL_TRIES = TOTAL_TRIES + _CURRENT_TRIES
-            logger.info(
-                'Continuing with trials. Current: {}, Total: {}'
-                .format(_CURRENT_TRIES, TOTAL_TRIES))
+    @staticmethod
+    def stoploss_space() -> List[Dimension]:
+        """
+        Stoploss search space
+        """
+        return [
+            Real(-0.5, -0.02, name='stoploss'),
+        ]
 
-    try:
-        best_parameters = fmin(
-            fn=optimizer,
-            space=SPACE,
-            algo=tpe.suggest,
-            max_evals=TOTAL_TRIES,
-            trials=TRIALS
+    @staticmethod
+    def indicator_space() -> List[Dimension]:
+        """
+        Define your Hyperopt space for searching strategy parameters
+        """
+        return [
+            Integer(10, 25, name='mfi-value'),
+            Integer(15, 45, name='fastd-value'),
+            Integer(20, 50, name='adx-value'),
+            Integer(20, 40, name='rsi-value'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='fastd-enabled'),
+            Categorical([True, False], name='adx-enabled'),
+            Categorical([True, False], name='rsi-enabled'),
+            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+        ]
+
+    def has_space(self, space: str) -> bool:
+        """
+        Tell if a space value is contained in the configuration
+        """
+        if space in self.config['spaces'] or 'all' in self.config['spaces']:
+            return True
+        return False
+
+    def hyperopt_space(self) -> List[Dimension]:
+        """
+        Return the space to use during Hyperopt
+        """
+        spaces: List[Dimension] = []
+        if self.has_space('buy'):
+            spaces += Hyperopt.indicator_space()
+        if self.has_space('roi'):
+            spaces += Hyperopt.roi_space()
+        if self.has_space('stoploss'):
+            spaces += Hyperopt.stoploss_space()
+        return spaces
+
+    @staticmethod
+    def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Define the buy strategy parameters to be used by hyperopt
+        """
+        def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+            """
+            Buy strategy Hyperopt will build and use
+            """
+            conditions = []
+            # GUARDS AND TRENDS
+            if 'mfi-enabled' in params and params['mfi-enabled']:
+                conditions.append(dataframe['mfi'] < params['mfi-value'])
+            if 'fastd-enabled' in params and params['fastd-enabled']:
+                conditions.append(dataframe['fastd'] < params['fastd-value'])
+            if 'adx-enabled' in params and params['adx-enabled']:
+                conditions.append(dataframe['adx'] > params['adx-value'])
+            if 'rsi-enabled' in params and params['rsi-enabled']:
+                conditions.append(dataframe['rsi'] < params['rsi-value'])
+
+            # TRIGGERS
+            if params['trigger'] == 'bb_lower':
+                conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+            if params['trigger'] == 'macd_cross_signal':
+                conditions.append(qtpylib.crossed_above(
+                    dataframe['macd'], dataframe['macdsignal']
+                ))
+            if params['trigger'] == 'sar_reversal':
+                conditions.append(qtpylib.crossed_above(
+                    dataframe['close'], dataframe['sar']
+                ))
+
+            dataframe.loc[
+                reduce(lambda x, y: x & y, conditions),
+                'buy'] = 1
+
+            return dataframe
+
+        return populate_buy_trend
+
+    def generate_optimizer(self, _params) -> Dict:
+        params = self.get_args(_params)
+
+        if self.has_space('roi'):
+            self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
+
+        if self.has_space('buy'):
+            self.populate_buy_trend = self.buy_strategy_generator(params)
+
+        if self.has_space('stoploss'):
+            self.analyze.strategy.stoploss = params['stoploss']
+
+        processed = load(TICKERDATA_PICKLE)
+        results = self.backtest(
+            {
+                'stake_amount': self.config['stake_amount'],
+                'processed': processed,
+                'realistic': self.config.get('realistic_simulation', False),
+            }
+        )
+        result_explanation = self.format_results(results)
+
+        total_profit = results.profit_percent.sum()
+        trade_count = len(results.index)
+        trade_duration = results.trade_duration.mean()
+
+        if trade_count == 0:
+            return {
+                'loss': MAX_LOSS,
+                'params': params,
+                'result': result_explanation,
+            }
+
+        loss = self.calculate_loss(total_profit, trade_count, trade_duration)
+
+        return {
+            'loss': loss,
+            'params': params,
+            'result': result_explanation,
+        }
+
+    def format_results(self, results: DataFrame) -> str:
+        """
+        Return the format result in a string
+        """
+        trades = len(results.index)
+        avg_profit = results.profit_percent.mean() * 100.0
+        total_profit = results.profit_abs.sum()
+        stake_cur = self.config['stake_currency']
+        profit = results.profit_percent.sum()
+        duration = results.trade_duration.mean()
+
+        return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
+                f'Total profit {total_profit: 11.8f} {stake_cur} '
+                f'({profit:.4f}Σ%). Avg duration {duration:5.1f} mins.')
+
+    def get_optimizer(self, cpu_count) -> Optimizer:
+        return Optimizer(
+            self.hyperopt_space(),
+            base_estimator="ET",
+            acq_optimizer="auto",
+            n_initial_points=30,
+            acq_optimizer_kwargs={'n_jobs': cpu_count}
         )
 
-        results = sorted(TRIALS.results, key=itemgetter('loss'))
-        best_result = results[0]['result']
+    def run_optimizer_parallel(self, parallel, asked) -> List:
+        return parallel(delayed(self.generate_optimizer)(v) for v in asked)
 
-    except ValueError:
-        best_parameters = {}
-        best_result = 'Sorry, Hyperopt was not able to find good parameters. Please ' \
-                      'try with more epochs (param: -e).'
+    def load_previous_results(self):
+        """ read trials file if we have one """
+        if os.path.exists(self.trials_file) and os.path.getsize(self.trials_file) > 0:
+            self.trials = self.read_trials()
+            logger.info(
+                'Loaded %d previous evaluations from disk.',
+                len(self.trials)
+            )
 
-    # Improve best parameter logging display
-    if best_parameters:
-        best_parameters = space_eval(SPACE, best_parameters)
+    def start(self) -> None:
+        timerange = Arguments.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+        data = load_data(
+            datadir=str(self.config.get('datadir')),
+            pairs=self.config['exchange']['pair_whitelist'],
+            ticker_interval=self.ticker_interval,
+            timerange=timerange
+        )
 
-    logger.info('Best parameters:\n%s', json.dumps(best_parameters, indent=4))
-    logger.info('Best Result:\n%s', best_result)
+        if self.has_space('buy'):
+            self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
+        dump(self.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
+        self.exchange = None  # type: ignore
+        self.load_previous_results()
 
-    # Store trials result to file to resume next time
-    save_trials(TRIALS)
+        cpus = multiprocessing.cpu_count()
+        logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
+
+        opt = self.get_optimizer(cpus)
+        EVALS = max(self.total_tries//cpus, 1)
+        try:
+            with Parallel(n_jobs=cpus) as parallel:
+                for i in range(EVALS):
+                    asked = opt.ask(n_points=cpus)
+                    f_val = self.run_optimizer_parallel(parallel, asked)
+                    opt.tell(asked, [i['loss'] for i in f_val])
+
+                    self.trials += f_val
+                    for j in range(cpus):
+                        self.log_results({
+                            'loss': f_val[j]['loss'],
+                            'current_tries': i * cpus + j,
+                            'total_tries': self.total_tries,
+                            'result': f_val[j]['result'],
+                        })
+        except KeyboardInterrupt:
+            print('User interrupted..')
+
+        self.save_trials()
+        self.log_trials_result()
 
 
-def signal_handler(sig, frame):
-    """Hyperopt SIGINT handler"""
-    logger.info('Hyperopt received {}'.format(signal.Signals(sig).name))
+def start(args: Namespace) -> None:
+    """
+    Start Backtesting script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
 
-    save_trials(TRIALS)
-    log_trials_result(TRIALS)
-    sys.exit(0)
+    # Remove noisy log messages
+    logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+
+    # Initialize configuration
+    # Monkey patch the configuration with hyperopt_conf.py
+    configuration = Configuration(args)
+    logger.info('Starting freqtrade in Hyperopt mode')
+    config = configuration.load_config()
+
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
+
+    # Initialize backtesting object
+    hyperopt = Hyperopt(config)
+    hyperopt.start()

@@ -15,7 +15,7 @@ The only things you need is a working Telegram bot and its API token.
 Below we explain how to create your Telegram Bot, and how to get your
 Telegram user id.
 
-### 1. Create your instagram bot
+### 1. Create your Telegram bot
 **1.1. Start a chat with https://telegram.me/BotFather**  
 **1.2. Send the message** `/newbot`  
 *BotFather response:*
@@ -39,8 +39,10 @@ Use this token to access the HTTP API:
 
 For a description of the Bot API, see this page: https://core.telegram.org/bots/api
 ```
+**1.6. Don't forget to start the conversation with your bot, by clicking /START button**  
 
 ### 2. Get your user id
 **2.1. Talk to https://telegram.me/userinfobot**  
 **2.2. Get your "Id", you will use it for the config parameter 
 `chat_id`.**
+

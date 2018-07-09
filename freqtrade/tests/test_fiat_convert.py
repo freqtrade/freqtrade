@@ -1,11 +1,14 @@
-# pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors, C0103
+# pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors,
+# pragma pylint: disable=protected-access, C0103
 
 import time
 from unittest.mock import MagicMock
 
 import pytest
+from requests.exceptions import RequestException
 
 from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter
+from freqtrade.tests.conftest import log_has, patch_coinmarketcap
 
 
 def test_pair_convertion_object():
@@ -36,7 +39,8 @@ def test_pair_convertion_object():
     assert pair_convertion.price == 30000.123
 
 
-def test_fiat_convert_is_supported():
+def test_fiat_convert_is_supported(mocker):
+    patch_coinmarketcap(mocker)
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._is_supported_fiat(fiat='USD') is True
     assert fiat_convert._is_supported_fiat(fiat='usd') is True
@@ -44,34 +48,38 @@ def test_fiat_convert_is_supported():
     assert fiat_convert._is_supported_fiat(fiat='ABC') is False
 
 
-def test_fiat_convert_add_pair():
+def test_fiat_convert_add_pair(mocker):
+    patch_coinmarketcap(mocker)
+
     fiat_convert = CryptoToFiatConverter()
 
-    assert len(fiat_convert._pairs) == 0
+    pair_len = len(fiat_convert._pairs)
+    assert pair_len == 0
 
     fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='usd', price=12345.0)
-    assert len(fiat_convert._pairs) == 1
+    pair_len = len(fiat_convert._pairs)
+    assert pair_len == 1
     assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
     assert fiat_convert._pairs[0].fiat_symbol == 'USD'
     assert fiat_convert._pairs[0].price == 12345.0
 
     fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='Eur', price=13000.2)
-    assert len(fiat_convert._pairs) == 2
+    pair_len = len(fiat_convert._pairs)
+    assert pair_len == 2
     assert fiat_convert._pairs[1].crypto_symbol == 'BTC'
     assert fiat_convert._pairs[1].fiat_symbol == 'EUR'
     assert fiat_convert._pairs[1].price == 13000.2
 
 
 def test_fiat_convert_find_price(mocker):
-    api_mock = MagicMock(return_value={
-        'price_usd': 12345.0,
-        'price_eur': 13000.2
-    })
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    patch_coinmarketcap(mocker)
+
     fiat_convert = CryptoToFiatConverter()
 
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
         fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
+
+    assert fiat_convert.get_price(crypto_symbol='XRP', fiat_symbol='USD') == 0.0
 
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=12345.0)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 12345.0
@@ -81,12 +89,17 @@ def test_fiat_convert_find_price(mocker):
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
 
 
+def test_fiat_convert_unsupported_crypto(mocker, caplog):
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+    assert fiat_convert._find_price(crypto_symbol='CRYPTO_123', fiat_symbol='EUR') == 0.0
+    assert log_has('unsupported crypto-symbol CRYPTO_123 - returning 0.0', caplog.record_tuples)
+
+
 def test_fiat_convert_get_price(mocker):
-    api_mock = MagicMock(return_value={
-        'price_usd': 28000.0,
-        'price_eur': 15000.0
-    })
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
+    patch_coinmarketcap(mocker)
+
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
 
     fiat_convert = CryptoToFiatConverter()
@@ -95,7 +108,8 @@ def test_fiat_convert_get_price(mocker):
         fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='US Dollar')
 
     # Check the value return by the method
-    assert len(fiat_convert._pairs) == 0
+    pair_len = len(fiat_convert._pairs)
+    assert pair_len == 0
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
     assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
     assert fiat_convert._pairs[0].fiat_symbol == 'USD'
@@ -116,10 +130,74 @@ def test_fiat_convert_get_price(mocker):
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
-def test_fiat_convert_without_network(mocker):
-    pymarketcap = MagicMock(side_effect=ImportError('Oh boy, you have no network!'))
-    mocker.patch('freqtrade.fiat_convert.Pymarketcap', pymarketcap)
+def test_fiat_convert_same_currencies(mocker):
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+
+    assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='USD') == 1.0
+
+
+def test_fiat_convert_two_FIAT(mocker):
+    patch_coinmarketcap(mocker)
+    fiat_convert = CryptoToFiatConverter()
+
+    assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='EUR') == 0.0
+
+
+def test_loadcryptomap(mocker):
+    patch_coinmarketcap(mocker)
 
     fiat_convert = CryptoToFiatConverter()
+    assert len(fiat_convert._cryptomap) == 2
+
+    assert fiat_convert._cryptomap["BTC"] == "1"
+
+
+def test_fiat_init_network_exception(mocker):
+    # Because CryptoToFiatConverter is a Singleton we reset the listings
+    listmock = MagicMock(side_effect=RequestException)
+    mocker.patch.multiple(
+        'freqtrade.fiat_convert.Market',
+        listings=listmock,
+    )
+    # with pytest.raises(RequestEsxception):
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert._cryptomap = {}
+    fiat_convert._load_cryptomap()
+
+    length_cryptomap = len(fiat_convert._cryptomap)
+    assert length_cryptomap == 0
+
+
+def test_fiat_convert_without_network(mocker):
+    # Because CryptoToFiatConverter is a Singleton we reset the value of _coinmarketcap
+    patch_coinmarketcap(mocker)
+
+    fiat_convert = CryptoToFiatConverter()
+
+    cmc_temp = CryptoToFiatConverter._coinmarketcap
+    CryptoToFiatConverter._coinmarketcap = None
+
     assert fiat_convert._coinmarketcap is None
     assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
+    CryptoToFiatConverter._coinmarketcap = cmc_temp
+
+
+def test_convert_amount(mocker):
+    patch_coinmarketcap(mocker)
+    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
+
+    fiat_convert = CryptoToFiatConverter()
+    result = fiat_convert.convert_amount(
+        crypto_amount=1.23,
+        crypto_symbol="BTC",
+        fiat_symbol="USD"
+    )
+    assert result == 15184.35
+
+    result = fiat_convert.convert_amount(
+        crypto_amount=1.23,
+        crypto_symbol="BTC",
+        fiat_symbol="BTC"
+    )
+    assert result == 1.23
