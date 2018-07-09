@@ -271,7 +271,7 @@ def generate_graph(pair, trades: pd.DataFrame, data: pd.DataFrame, args) -> tool
             x=data.date,
             y=data.bb_lowerband,
             name='BB lower',
-            line={'color': "transparent"},
+            line={'color': 'rgba(255,255,255,0)'},
         )
         bb_upper = go.Scatter(
             x=data.date,
@@ -279,7 +279,7 @@ def generate_graph(pair, trades: pd.DataFrame, data: pd.DataFrame, args) -> tool
             name='BB upper',
             fill="tonexty",
             fillcolor="rgba(0,176,246,0.2)",
-            line={'color': "transparent"},
+            line={'color': 'rgba(255,255,255,0)'},
         )
         fig.append_trace(bb_lower, 1, 1)
         fig.append_trace(bb_upper, 1, 1)
