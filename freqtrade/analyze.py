@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Dict, List, Tuple
 
 import arrow
+import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade import constants
@@ -269,3 +270,28 @@ class Analyze(object):
         """
         return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data))
                 for pair, pair_data in tickerdata.items()}
+
+    def order_book_to_dataframe(self, data: list) -> DataFrame:
+        """
+        Gets order book list, returns dataframe with below format per suggested by creslin
+        -------------------------------------------------------------------
+         b_sum       b_size       bids       asks       a_size       a_sum
+        -------------------------------------------------------------------
+        uses:
+            order_book = exchange.get_order_book(pair, 1000)
+            order_book_df = self.analyze.order_book_to_dataframe(order_book)
+        """
+        cols = ['bids', 'b_size']
+        bids_frame = DataFrame(data['bids'], columns=cols)
+        # add cumulative sum column for bids
+        bids_frame['b_sum'] = bids_frame['b_size'].cumsum()
+        cols2 = ['asks', 'a_size']
+        asks_frame = DataFrame(data['asks'], columns=cols2)
+        # add cumulative sum column for asks
+        asks_frame['a_sum'] = asks_frame['a_size'].cumsum()
+        # There might be a better way to do this... a refactor would be welcome :)
+        frame = pd.concat([bids_frame['b_sum'], bids_frame['b_size'], bids_frame['bids'], \
+            asks_frame['asks'], asks_frame['a_size'], asks_frame['a_sum']], axis=1, \
+            keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
+
+        return frame
