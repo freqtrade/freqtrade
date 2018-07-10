@@ -502,28 +502,28 @@ def test_backtest(default_conf, fee, mocker) -> None:
 
     expected = pd.DataFrame(
         {'pair': [pair, pair],
-         'profit_percent': [0.00148826, 0.00075313],
+         'profit_percent': [0.00029975, 0.00056708],
          'profit_abs': [1.49e-06, 7.6e-07],
          'open_time': [Arrow(2018, 1, 29, 18, 40, 0).datetime,
                        Arrow(2018, 1, 30, 3, 30, 0).datetime],
-         'close_time': [Arrow(2018, 1, 29, 23, 15, 0).datetime,
+         'close_time': [Arrow(2018, 1, 29, 22, 40, 0).datetime,
                         Arrow(2018, 1, 30, 4, 20, 0).datetime],
          'open_index': [77, 183],
-         'close_index': [132, 193],
-         'trade_duration': [275, 50],
+         'close_index': [125, 193],
+         'trade_duration': [240, 50],
          'open_at_end': [False, False],
-         'open_rate': [0.10432, 0.103364],
-         'close_rate': [0.104999, 0.10396]})
+         'open_rate': [0.104445, 0.10302485],
+         'close_rate': [0.105, 0.10359999]})
     pd.testing.assert_frame_equal(results, expected)
     data_pair = data_processed[pair]
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_time"]]
-        # Check open trade
+        # Check open trade rate alignes to open rate
         assert ln is not None
-        assert round(ln.iloc[0]["close"], 6) == round(t["open_rate"], 6)
-        # check close trade
+        assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
+        # check close trade rate alignes to close rate
         ln = data_pair.loc[data_pair["date"] == t["close_time"]]
-        assert round(ln.iloc[0]["close"], 6) == round(t["close_rate"], 6)
+        assert round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6)
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:

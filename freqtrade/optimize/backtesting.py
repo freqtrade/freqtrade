@@ -134,7 +134,7 @@ class Backtesting(object):
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
-            open_rate=buy_row.close,
+            open_rate=buy_row.open,
             open_date=buy_row.date,
             stake_amount=stake_amount,
             amount=stake_amount / buy_row.open,
@@ -149,35 +149,35 @@ class Backtesting(object):
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
             buy_signal = sell_row.buy
-            if self.analyze.should_sell(trade, sell_row.close, sell_row.date, buy_signal,
+            if self.analyze.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
                                         sell_row.sell):
 
                 return BacktestResult(pair=pair,
-                                      profit_percent=trade.calc_profit_percent(rate=sell_row.close),
-                                      profit_abs=trade.calc_profit(rate=sell_row.close),
+                                      profit_percent=trade.calc_profit_percent(rate=sell_row.open),
+                                      profit_abs=trade.calc_profit(rate=sell_row.open),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
                                       trade_duration=(sell_row.date - buy_row.date).seconds // 60,
                                       open_index=buy_row.Index,
                                       close_index=sell_row.Index,
                                       open_at_end=False,
-                                      open_rate=buy_row.close,
-                                      close_rate=sell_row.close
+                                      open_rate=buy_row.open,
+                                      close_rate=sell_row.open
                                       )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
             sell_row = partial_ticker[-1]
             btr = BacktestResult(pair=pair,
-                                 profit_percent=trade.calc_profit_percent(rate=sell_row.close),
-                                 profit_abs=trade.calc_profit(rate=sell_row.close),
+                                 profit_percent=trade.calc_profit_percent(rate=sell_row.open),
+                                 profit_abs=trade.calc_profit(rate=sell_row.open),
                                  open_time=buy_row.date,
                                  close_time=sell_row.date,
                                  trade_duration=(sell_row.date - buy_row.date).seconds // 60,
                                  open_index=buy_row.Index,
                                  close_index=sell_row.Index,
                                  open_at_end=True,
-                                 open_rate=buy_row.close,
-                                 close_rate=sell_row.close
+                                 open_rate=buy_row.open,
+                                 close_rate=sell_row.open
                                  )
             logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
                          btr.profit_percent, btr.profit_abs)
