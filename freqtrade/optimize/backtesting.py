@@ -57,8 +57,8 @@ class Backtesting(object):
         self.analyze = Analyze(self.config, self.strategy)
         self.ticker_interval = self.analyze.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
-        self.populate_buy_trend = self.analyze.populate_buy_trend
-        self.populate_sell_trend = self.analyze.populate_sell_trend
+        self.populate_buy_trend = self.strategy.populate_buy_trend
+        self.populate_sell_trend = self.strategy.populate_sell_trend
 
         # Reset keys for backtesting
         self.config['exchange']['key'] = ''

@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import arrow
 from pandas import DataFrame
 
-from freqtrade.analyze import Analyze, SignalType
+from freqtrade.analyze import Analyze
 from freqtrade.arguments import TimeRange
 from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.tests.conftest import get_patched_exchange, log_has
@@ -18,31 +18,6 @@ from freqtrade.strategy.default_strategy import DefaultStrategy
 
 # Avoid to reinit the same object again and again
 _ANALYZE = Analyze({}, DefaultStrategy())
-
-
-def test_signaltype_object() -> None:
-    """
-    Test the SignalType object has the mandatory Constants
-    :return: None
-    """
-    assert hasattr(SignalType, 'BUY')
-    assert hasattr(SignalType, 'SELL')
-
-
-def test_analyze_object() -> None:
-    """
-    Test the Analyze object has the mandatory methods
-    :return: None
-    """
-    assert hasattr(Analyze, 'parse_ticker_dataframe')
-    assert hasattr(Analyze, 'populate_indicators')
-    assert hasattr(Analyze, 'populate_buy_trend')
-    assert hasattr(Analyze, 'populate_sell_trend')
-    assert hasattr(Analyze, 'analyze_ticker')
-    assert hasattr(Analyze, 'get_signal')
-    assert hasattr(Analyze, 'should_sell')
-    assert hasattr(Analyze, 'min_roi_reached')
-    assert hasattr(Analyze, 'stop_loss_reached')
 
 
 def test_dataframe_correct_length(result):
@@ -53,18 +28,6 @@ def test_dataframe_correct_length(result):
 def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == \
         ['date', 'open', 'high', 'low', 'close', 'volume']
-
-
-def test_populates_buy_trend(result):
-    # Load the default strategy for the unit test, because this logic is done in main.py
-    dataframe = _ANALYZE.populate_buy_trend(_ANALYZE.populate_indicators(result))
-    assert 'buy' in dataframe.columns
-
-
-def test_populates_sell_trend(result):
-    # Load the default strategy for the unit test, because this logic is done in main.py
-    dataframe = _ANALYZE.populate_sell_trend(_ANALYZE.populate_indicators(result))
-    assert 'sell' in dataframe.columns
 
 
 def test_returns_latest_buy_signal(mocker, default_conf):

@@ -64,46 +64,6 @@ class Analyze(object):
         frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
         return frame
 
-    def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
-        """
-        Adds several different TA indicators to the given DataFrame
-
-        Performance Note: For the best performance be frugal on the number of indicators
-        you are using. Let uncomment only the indicator you are using in your strategies
-        or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
-        """
-        return self.strategy.populate_indicators(dataframe=dataframe)
-
-    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
-        """
-        Based on TA indicators, populates the buy signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
-        return self.strategy.populate_buy_trend(dataframe=dataframe)
-
-    def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
-        """
-        Based on TA indicators, populates the sell signal for the given dataframe
-        :param dataframe: DataFrame
-        :return: DataFrame with buy column
-        """
-        return self.strategy.populate_sell_trend(dataframe=dataframe)
-
-    def get_ticker_interval(self) -> str:
-        """
-        Return ticker interval to use
-        :return: Ticker interval value to use
-        """
-        return self.strategy.ticker_interval
-
-    def get_stoploss(self) -> float:
-        """
-        Return stoploss to use
-        :return: Strategy stoploss value to use
-        """
-        return self.strategy.stoploss
-
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
@@ -111,9 +71,9 @@ class Analyze(object):
         :return DataFrame with ticker data and indicator data
         """
         dataframe = self.parse_ticker_dataframe(ticker_history)
-        dataframe = self.populate_indicators(dataframe)
-        dataframe = self.populate_buy_trend(dataframe)
-        dataframe = self.populate_sell_trend(dataframe)
+        dataframe = self.strategy.populate_indicators(dataframe)
+        dataframe = self.strategy.populate_buy_trend(dataframe)
+        dataframe = self.strategy.populate_sell_trend(dataframe)
         return dataframe
 
     def get_signal(self, exchange: Exchange, pair: str, interval: str) -> Tuple[bool, bool]:
@@ -267,5 +227,5 @@ class Analyze(object):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.populate_indicators(self.parse_ticker_dataframe(pair_data))
+        return {pair: self.strategy.populate_indicators(self.parse_ticker_dataframe(pair_data))
                 for pair, pair_data in tickerdata.items()}
