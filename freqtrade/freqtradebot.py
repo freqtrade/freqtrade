@@ -305,9 +305,6 @@ class FreqtradeBot(object):
 
         if not stake_amount:
             return False
-        stake_currency = self.config['stake_currency']
-        fiat_currency = self.config['fiat_display_currency']
-        exc_name = self.exchange.name
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -328,12 +325,20 @@ class FreqtradeBot(object):
         for _pair in whitelist:
             (buy, sell) = self.analyze.get_signal(self.exchange, _pair, interval)
             if buy and not sell:
-                pair = _pair
-                break
-        else:
-            return False
+                return self.execute_buy(_pair, stake_amount)
+        return False
+
+    def execute_buy(self, pair: str, stake_amount: float) -> bool:
+        """
+        Executes a limit buy for the given pair
+        :param pair: pair for which we want to create a LIMIT_BUY
+        :return: None
+        """
         pair_s = pair.replace('_', '/')
         pair_url = self.exchange.get_pair_detail_url(pair)
+        stake_currency = self.config['stake_currency']
+        fiat_currency = self.config['fiat_display_currency']
+        exc_name = self.exchange.name
 
         # Calculate amount
         buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
