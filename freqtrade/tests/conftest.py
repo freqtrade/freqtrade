@@ -12,7 +12,7 @@ from jsonschema import validate
 from telegram import Chat, Message, Update
 
 from freqtrade import constants
-from freqtrade.analyze import Analyze
+from freqtrade.analyze import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 
@@ -616,7 +616,7 @@ def tickers():
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
-        return Analyze.parse_ticker_dataframe(json.load(data_file))
+        return parse_ticker_dataframe(json.load(data_file))
 
 # FIX:
 # Create an fixture/function

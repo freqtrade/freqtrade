@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import arrow
 from pandas import DataFrame
 
-from freqtrade.analyze import Analyze
+from freqtrade.analyze import Analyze, parse_ticker_dataframe
 from freqtrade.arguments import TimeRange
 from freqtrade.optimize.__init__ import load_tickerdata_file
 from freqtrade.tests.conftest import get_patched_exchange, log_has
@@ -21,7 +21,7 @@ _ANALYZE = Analyze({}, DefaultStrategy())
 
 
 def test_dataframe_correct_length(result):
-    dataframe = Analyze.parse_ticker_dataframe(result)
+    dataframe = parse_ticker_dataframe(result)
     assert len(result.index) - 1 == len(dataframe.index)    # last partial candle removed
 
 
@@ -145,7 +145,7 @@ def test_parse_ticker_dataframe(ticker_history):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     # Test file with BV data
-    dataframe = Analyze.parse_ticker_dataframe(ticker_history)
+    dataframe = parse_ticker_dataframe(ticker_history)
     assert dataframe.columns.tolist() == columns
 
 

@@ -17,6 +17,32 @@ from freqtrade.strategy.resolver import IStrategy
 logger = logging.getLogger(__name__)
 
 
+def parse_ticker_dataframe(ticker: list) -> DataFrame:
+    """
+    Analyses the trend for the given ticker history
+    :param ticker: See exchange.get_ticker_history
+    :return: DataFrame
+    """
+    cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+    frame = DataFrame(ticker, columns=cols)
+
+    frame['date'] = to_datetime(frame['date'],
+                                unit='ms',
+                                utc=True,
+                                infer_datetime_format=True)
+
+    # group by index and aggregate results to eliminate duplicate ticks
+    frame = frame.groupby(by='date', as_index=False, sort=True).agg({
+        'open': 'first',
+        'high': 'max',
+        'low': 'min',
+        'close': 'last',
+        'volume': 'max',
+    })
+    frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
+    return frame
+
+
 class SignalType(Enum):
     """
     Enum to distinguish between buy and sell signals
@@ -38,39 +64,13 @@ class Analyze(object):
         self.config = config
         self.strategy = strategy
 
-    @staticmethod
-    def parse_ticker_dataframe(ticker: list) -> DataFrame:
-        """
-        Analyses the trend for the given ticker history
-        :param ticker: See exchange.get_ticker_history
-        :return: DataFrame
-        """
-        cols = ['date', 'open', 'high', 'low', 'close', 'volume']
-        frame = DataFrame(ticker, columns=cols)
-
-        frame['date'] = to_datetime(frame['date'],
-                                    unit='ms',
-                                    utc=True,
-                                    infer_datetime_format=True)
-
-        # group by index and aggregate results to eliminate duplicate ticks
-        frame = frame.groupby(by='date', as_index=False, sort=True).agg({
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'max',
-        })
-        frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
-        return frame
-
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
-        dataframe = self.parse_ticker_dataframe(ticker_history)
+        dataframe = parse_ticker_dataframe(ticker_history)
         dataframe = self.strategy.populate_indicators(dataframe)
         dataframe = self.strategy.populate_buy_trend(dataframe)
         dataframe = self.strategy.populate_sell_trend(dataframe)
@@ -227,5 +227,5 @@ class Analyze(object):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.strategy.populate_indicators(self.parse_ticker_dataframe(pair_data))
+        return {pair: self.strategy.populate_indicators(parse_ticker_dataframe(pair_data))
                 for pair, pair_data in tickerdata.items()}

@@ -7,7 +7,7 @@ Unit test file for misc.py
 import datetime
 from unittest.mock import MagicMock
 
-from freqtrade.analyze import Analyze
+from freqtrade.analyze import Analyze, parse_ticker_dataframe
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
                             file_dump_json, format_ms_time, shorten_date)
 from freqtrade.optimize.__init__ import load_tickerdata_file
@@ -29,7 +29,7 @@ def test_datesarray_to_datetimearray(ticker_history):
     Test datesarray_to_datetimearray() function
     :return: None
     """
-    dataframes = Analyze.parse_ticker_dataframe(ticker_history)
+    dataframes = parse_ticker_dataframe(ticker_history)
     dates = datesarray_to_datetimearray(dataframes['date'])
 
     assert isinstance(dates[0], datetime.datetime)

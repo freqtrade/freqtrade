@@ -3,14 +3,14 @@ import json
 import pytest
 from pandas import DataFrame
 
-from freqtrade.analyze import Analyze
+from freqtrade.analyze import parse_ticker_dataframe
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/ETH_BTC-1m.json') as data_file:
-        return Analyze.parse_ticker_dataframe(json.load(data_file))
+        return parse_ticker_dataframe(json.load(data_file))
 
 
 def test_default_strategy_structure():
