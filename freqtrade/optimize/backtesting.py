@@ -20,6 +20,7 @@ from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
+from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ class BacktestResult(NamedTuple):
     open_at_end: bool
     open_rate: float
     close_rate: float
+    sell_reason: SellType
 
 
 class Backtesting(object):
@@ -151,8 +153,9 @@ class Backtesting(object):
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
             buy_signal = sell_row.buy
-            if self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                         sell_row.sell):
+            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
+                                             sell_row.sell)
+            if sell[0]:
 
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_percent(rate=sell_row.open),
@@ -164,7 +167,8 @@ class Backtesting(object):
                                       close_index=sell_row.Index,
                                       open_at_end=False,
                                       open_rate=buy_row.open,
-                                      close_rate=sell_row.open
+                                      close_rate=sell_row.open,
+                                      sell_reason=sell[1]
                                       )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
@@ -179,7 +183,8 @@ class Backtesting(object):
                                  close_index=sell_row.Index,
                                  open_at_end=True,
                                  open_rate=buy_row.open,
-                                 close_rate=sell_row.open
+                                 close_rate=sell_row.open,
+                                 sell_reason=SellType.FORCE_SELL
                                  )
             logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
                          btr.profit_percent, btr.profit_abs)

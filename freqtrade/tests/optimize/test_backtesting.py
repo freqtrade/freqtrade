@@ -17,6 +17,7 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
@@ -511,7 +512,9 @@ def test_backtest(default_conf, fee, mocker) -> None:
          'trade_duration': [240, 50],
          'open_at_end': [False, False],
          'open_rate': [0.104445, 0.10302485],
-         'close_rate': [0.105, 0.10359999]})
+         'close_rate': [0.105, 0.10359999],
+         'sell_reason': [SellType.ROI, SellType.ROI]
+         })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = data_processed[pair]
     for _, t in results.iterrows():
