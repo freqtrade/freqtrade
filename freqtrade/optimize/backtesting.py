@@ -221,7 +221,21 @@ class Backtesting(object):
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            ticker = [x for x in ticker_data.itertuples()]
+
+            #ticker = [x for x in ticker_data.itertuples()]
+            """
+            Use faster numpy to mask out rows we will not use in slower itertuples loop
+
+            Filter rows that are buy or sell to be processed
+            Also keep the last row from in any state for open trades
+            """
+            mask = (ticker_data['buy'].values != 0) | (ticker_data['sell'].values != 0)
+            ticker_loop_data=ticker_data[mask]
+
+            end_row = DataFrame(ticker_data[-1:].values, columns=ticker_data.columns)
+            ticker_loop_data = ticker_loop_data.append(end_row)
+
+            ticker = [x for x in ticker_loop_data.itertuples()]
 
             lock_pair_until = None
             for index, row in enumerate(ticker):
