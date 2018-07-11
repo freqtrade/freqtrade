@@ -88,9 +88,9 @@ class Backtesting(object):
         """
         stake_currency = str(self.config.get('stake_currency'))
 
-        floatfmt = ('s', 'd', '.2f', '.8f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f')
         tabular_data = []
-        headers = ['pair', 'buy count', 'avg profit %',
+        headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
         for pair in data:
             result = results[results.pair == pair]
@@ -98,6 +98,7 @@ class Backtesting(object):
                 pair,
                 len(result.index),
                 result.profit_percent.mean() * 100.0,
+                result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
                 result.trade_duration.mean(),
                 len(result[result.profit_abs > 0]),
@@ -109,6 +110,7 @@ class Backtesting(object):
             'TOTAL',
             len(results.index),
             results.profit_percent.mean() * 100.0,
+            result.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
             results.trade_duration.mean(),
             len(results[results.profit_abs > 0]),
@@ -312,9 +314,9 @@ class Backtesting(object):
             self._store_backtest_result(self.config.get('exportfilename'), results)
 
         logger.info(
-            '\n======================================== '
+            '\n================================================= '
             'BACKTESTING REPORT'
-            ' =========================================\n'
+            ' ==================================================\n'
             '%s',
             self._generate_text_table(
                 data,
@@ -323,9 +325,9 @@ class Backtesting(object):
         )
 
         logger.info(
-            '\n====================================== '
+            '\n=============================================== '
             'LEFT OPEN TRADES REPORT'
-            ' ======================================\n'
+            ' ===============================================\n'
             '%s',
             self._generate_text_table(
                 data,
