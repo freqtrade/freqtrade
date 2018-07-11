@@ -110,7 +110,7 @@ class Backtesting(object):
             'TOTAL',
             len(results.index),
             results.profit_percent.mean() * 100.0,
-            result.profit_percent.sum() * 100.0,
+            results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
             results.trade_duration.mean(),
             len(results[results.profit_abs > 0]),
