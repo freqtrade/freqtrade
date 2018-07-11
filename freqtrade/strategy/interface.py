@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import arrow
 from pandas import DataFrame
@@ -35,6 +35,7 @@ class SellType(Enum):
     STOP_LOSS = "stop_loss"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
+    FORCE_SELL = "force_sell"
 
 
 class IStrategy(ABC):
@@ -147,40 +148,42 @@ class IStrategy(ABC):
         )
         return buy, sell
 
-    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool, sell: bool) -> bool:
+    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
+                    sell: bool) -> Tuple[bool, Optional[SellType]]:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
         current_profit = trade.calc_profit_percent(rate)
-        if self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date,
-                                  current_profit=current_profit):
-            return True
+        stoplossflag = self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date,
+                                              current_profit=current_profit)
+        if stoplossflag[0]:
+            return (True, stoplossflag[1])
 
         experimental = self.config.get('experimental', {})
 
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
             logger.debug('Buy signal still active - not selling.')
-            return False
+            return (False, None)
 
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
             logger.debug('Required profit reached. Selling..')
-            return True
+            return (True, SellType.ROI)
 
         if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
-                return False
+                return (False, None)
         if sell and not buy and experimental.get('use_sell_signal', False):
             logger.debug('Sell signal received. Selling..')
-            return True
+            return (True, SellType.SELL_SIGNAL)
 
-        return False
+        return (False, None)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float) -> bool:
+                          current_profit: float) -> Tuple[bool, Optional[SellType]]:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -192,8 +195,9 @@ class IStrategy(ABC):
 
         # evaluate if the stoploss was hit
         if self.stoploss is not None and trade.stop_loss >= current_rate:
-
+            selltype = SellType.STOP_LOSS
             if trailing_stop:
+                selltype = SellType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"HIT STOP: current price at {current_rate:.6f}, "
                     f"stop loss is {trade.stop_loss:.6f}, "
@@ -202,7 +206,7 @@ class IStrategy(ABC):
                 logger.debug(f"trailing stop saved {trade.stop_loss - trade.initial_stop_loss:.6f}")
 
             logger.debug('Stop loss hit.')
-            return True
+            return (True, selltype)
 
         # update the stop loss afterwards, after all by definition it's supposed to be hanging
         if trailing_stop:
@@ -219,7 +223,7 @@ class IStrategy(ABC):
 
             trade.adjust_stop_loss(current_rate, stop_loss_value)
 
-        return False
+        return (False, None)
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """

@@ -13,6 +13,7 @@ import sqlalchemy as sql
 from numpy import mean, nan_to_num
 from pandas import DataFrame
 
+from freqtrade.analyze import SellType
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
@@ -344,7 +345,7 @@ class RPC(object):
 
             # Get current rate and execute sell
             current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
-            self._freqtrade.execute_sell(trade, current_rate)
+            self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
