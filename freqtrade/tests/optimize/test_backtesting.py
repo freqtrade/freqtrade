@@ -660,7 +660,9 @@ def test_backtest_record(default_conf, fee, mocker):
                             "open_index": [1, 119, 153, 185],
                             "close_index": [118, 151, 184, 199],
                             "trade_duration": [123, 34, 31, 14],
-                            "open_at_end": [False, False, False, True]
+                            "open_at_end": [False, False, False, True],
+                            "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                            SellType.ROI, SellType.FORCE_SELL]
                             })
     backtesting._store_backtest_result("backtest-result.json", results)
     assert len(results) == 4
@@ -673,7 +675,7 @@ def test_backtest_record(default_conf, fee, mocker):
     # Below follows just a typecheck of the schema/type of trade-records
     oix = None
     for (pair, profit, date_buy, date_sell, buy_index, dur,
-         openr, closer, open_at_end) in records:
+         openr, closer, open_at_end, sell_reason) in records:
         assert pair == 'UNITTEST/BTC'
         assert isinstance(profit, float)
         # FIX: buy/sell should be converted to ints
@@ -682,6 +684,7 @@ def test_backtest_record(default_conf, fee, mocker):
         assert isinstance(openr, float)
         assert isinstance(closer, float)
         assert isinstance(open_at_end, bool)
+        assert isinstance(sell_reason, str)
         isinstance(buy_index, pd._libs.tslib.Timestamp)
         if oix:
             assert buy_index > oix

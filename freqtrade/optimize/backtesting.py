@@ -124,7 +124,7 @@ class Backtesting(object):
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
                     t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                    t.open_rate, t.close_rate, t.open_at_end)
+                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
                    for index, t in results.iterrows()]
 
         if records:
