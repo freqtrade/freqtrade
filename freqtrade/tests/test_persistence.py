@@ -465,6 +465,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
+    assert trade.sell_reason is None
     assert log_has("trying trades_bak1", caplog.record_tuples)
     assert log_has("trying trades_bak2", caplog.record_tuples)
 
