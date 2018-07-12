@@ -107,7 +107,6 @@ CONF_SCHEMA = {
                 'webhookbuy': {'type': 'object'},
                 'webhooksell': {'type': 'object'},
                 'webhookstatus': {'type': 'object'},
-                'chat_id': {'type': 'string'},
             },
         },
         'db_url': {'type': 'string'},
