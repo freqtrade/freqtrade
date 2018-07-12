@@ -5,7 +5,7 @@ Unit test file for rpc/rpc.py
 """
 
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 
 import pytest
 
@@ -59,7 +59,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
-        'date': 'just now',
+        'date': ANY,
         'open_rate': 1.099e-05,
         'close_rate': None,
         'current_rate': 1.098e-05,
