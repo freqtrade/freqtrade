@@ -138,7 +138,6 @@ class Telegram(RPC):
                 message += '` ({gain}: {profit_amount:.8f} {stake_currency}`' \
                            '` / {profit_fiat:.3f} {fiat_currency})`'.format(**msg)
 
-            self._send_msg(message)
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
 
