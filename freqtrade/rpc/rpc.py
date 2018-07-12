@@ -69,7 +69,7 @@ class RPC(object):
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
 
-    def _rpc_trade_status(self) -> List[Dict]:
+    def _rpc_trade_status(self) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
@@ -95,7 +95,7 @@ class RPC(object):
                     trade_id=trade.id,
                     pair=trade.pair,
                     market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
-                    date=arrow.get(trade.open_date).humanize(),
+                    date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
                     current_rate=current_rate,

@@ -11,6 +11,7 @@ from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock, ANY
 
+import arrow
 from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
@@ -198,6 +199,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
 
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
+
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -215,7 +217,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
             'trade_id': 1,
             'pair': 'ETH/BTC',
             'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
-            'date': 'just now',
+            'date': arrow.utcnow(),
             'open_rate': 1.099e-05,
             'close_rate': None,
             'current_rate': 1.098e-05,
