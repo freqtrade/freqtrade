@@ -508,8 +508,8 @@ class FreqtradeBot(object):
                                                    trade.pair, self.strategy.ticker_interval)
 
         should_sell = self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell)
-        if should_sell[0]:
-            self.execute_sell(trade, current_rate, should_sell[1])
+        if should_sell.sell_flag:
+            self.execute_sell(trade, current_rate, should_sell.sell_type)
             return True
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False

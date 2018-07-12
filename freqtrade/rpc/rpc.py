@@ -13,10 +13,10 @@ import sqlalchemy as sql
 from numpy import mean, nan_to_num
 from pandas import DataFrame
 
-from freqtrade.analyze import SellType
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
 from freqtrade.state import State
+from freqtrade.strategy.interface import SellType
 
 logger = logging.getLogger(__name__)
 

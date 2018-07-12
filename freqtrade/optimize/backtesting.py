@@ -164,8 +164,8 @@ class Backtesting(object):
 
             buy_signal = sell_row.buy
             sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                             sell_row.sell)
-            if sell[0]:
+                                            sell_row.sell)
+            if sell.sell_flag:
 
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_percent(rate=sell_row.open),
@@ -178,7 +178,7 @@ class Backtesting(object):
                                       open_at_end=False,
                                       open_rate=buy_row.open,
                                       close_rate=sell_row.open,
-                                      sell_reason=sell[1]
+                                      sell_reason=sell.sell_type
                                       )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period

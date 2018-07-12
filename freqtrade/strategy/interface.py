@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 
 import arrow
 from pandas import DataFrame
@@ -37,6 +37,14 @@ class SellType(Enum):
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
     NONE = ""
+
+
+class SellCheckTuple(NamedTuple):
+    """
+    NamedTuple for Sell type + reason
+    """
+    sell_flag: bool
+    sell_type: SellType
 
 
 class IStrategy(ABC):
@@ -157,7 +165,7 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool) -> Tuple[bool, SellType]:
+                    sell: bool) -> SellCheckTuple:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
@@ -166,32 +174,32 @@ class IStrategy(ABC):
         current_profit = trade.calc_profit_percent(rate)
         stoplossflag = self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date,
                                               current_profit=current_profit)
-        if stoplossflag[0]:
-            return (True, stoplossflag[1])
+        if stoplossflag.sell_flag:
+            return stoplossflag
 
         experimental = self.config.get('experimental', {})
 
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
             logger.debug('Buy signal still active - not selling.')
-            return (False, SellType.NONE)
+            return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
         # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
         if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
             logger.debug('Required profit reached. Selling..')
-            return (True, SellType.ROI)
+            return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
         if experimental.get('sell_profit_only', False):
             logger.debug('Checking if trade is profitable..')
             if trade.calc_profit(rate=rate) <= 0:
-                return (False, SellType.NONE)
+                return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
         if sell and not buy and experimental.get('use_sell_signal', False):
             logger.debug('Sell signal received. Selling..')
-            return (True, SellType.SELL_SIGNAL)
+            return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
 
-        return (False, SellType.NONE)
+        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float) -> Tuple[bool, SellType]:
+                          current_profit: float) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -214,7 +222,7 @@ class IStrategy(ABC):
                 logger.debug(f"trailing stop saved {trade.stop_loss - trade.initial_stop_loss:.6f}")
 
             logger.debug('Stop loss hit.')
-            return (True, selltype)
+            return SellCheckTuple(sell_flag=True, sell_type=selltype)
 
         # update the stop loss afterwards, after all by definition it's supposed to be hanging
         if trailing_stop:
@@ -231,7 +239,7 @@ class IStrategy(ABC):
 
             trade.adjust_stop_loss(current_rate, stop_loss_value)
 
-        return (False, SellType.NONE)
+        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
