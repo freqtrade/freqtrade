@@ -6,8 +6,8 @@ import logging
 from copy import deepcopy
 from unittest.mock import MagicMock
 
-from freqtrade.rpc.rpc_manager import RPCManager
-from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
+from freqtrade.rpc import RPCMessageType, RPCManager
+from freqtrade.tests.conftest import log_has, get_patched_freqtradebot
 
 
 def test_rpc_manager_object() -> None:
@@ -102,9 +102,12 @@ def test_send_msg_telegram_disabled(mocker, default_conf, caplog) -> None:
 
     freqtradebot = get_patched_freqtradebot(mocker, conf)
     rpc_manager = RPCManager(freqtradebot)
-    rpc_manager.send_msg('test')
+    rpc_manager.send_msg({
+        'type': RPCMessageType.STATUS_NOTIFICATION,
+        'status': 'test'
+    })
 
-    assert log_has('Sending rpc message: test', caplog.record_tuples)
+    assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog.record_tuples)
     assert telegram_mock.call_count == 0
 
 
@@ -117,7 +120,10 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
-    rpc_manager.send_msg('test')
+    rpc_manager.send_msg({
+        'type': RPCMessageType.STATUS_NOTIFICATION,
+        'status': 'test'
+    })
 
-    assert log_has('Sending rpc message: test', caplog.record_tuples)
+    assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog.record_tuples)
     assert telegram_mock.call_count == 1

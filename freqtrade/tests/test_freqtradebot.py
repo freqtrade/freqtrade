@@ -18,9 +18,9 @@ from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, constants)
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
+from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
-from freqtrade.tests.conftest import (log_has, patch_coinmarketcap,
-                                      patch_exchange)
+from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
 
 
 # Functions for recurrent object patching
@@ -755,7 +755,7 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
     result = freqtrade._process()
     assert result is False
     assert freqtrade.state == State.STOPPED
-    assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]
+    assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
 
 def test_process_trade_handling(
@@ -1375,13 +1375,23 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Profit' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
-    assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'profit',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.172e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.172e-05,
+        'profit_amount': 6.126e-05,
+        'profit_percent': 0.06110514,
+        'profit_fiat': 0.9189,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+    } == last_msg
 
 
 def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
@@ -1417,12 +1427,23 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
-    assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
-    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'loss',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.044e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.044e-05,
+        'profit_amount': -5.492e-05,
+        'profit_percent': -0.05478343,
+        'profit_fiat': -0.8238000000000001,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+    } == last_msg
 
 
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
@@ -1459,12 +1480,20 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
-    assert '(profit: 6.11%, 0.00006126)' in rpc_mock.call_args_list[-1][0][0]
-    assert 'USD' not in rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'profit',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.172e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.172e-05,
+        'profit_amount': 6.126e-05,
+        'profit_percent': 0.06110514,
+    } == last_msg
 
 
 def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
@@ -1501,10 +1530,20 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
-    assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'loss',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.044e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.044e-05,
+        'profit_amount': -5.492e-05,
+        'profit_percent': -0.05478343,
+    } == last_msg
 
 
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
