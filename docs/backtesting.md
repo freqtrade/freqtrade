@@ -83,7 +83,7 @@ with filename.open() as file:
         data = json.load(file)
 
 columns = ["pair", "profit", "opents", "closets", "index", "duration",
-           "open_rate", "close_rate", "open_at_end"]
+           "open_rate", "close_rate", "open_at_end", "sell_reason"]
 df = pd.DataFrame(data, columns=columns)
 
 df['opents'] = pd.to_datetime(df['opents'],
@@ -97,6 +97,8 @@ df['closets'] = pd.to_datetime(df['closets'],
                                infer_datetime_format=True
                               )
 ```
+
+If you have some ideas for interresting / helpfull backtest data analysis, feel free to submit a PR so the community can benefit from it.
 
 #### Exporting trades to file specifying a custom filename
 
