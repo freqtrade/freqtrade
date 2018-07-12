@@ -2,6 +2,7 @@
 
 import gzip
 import json
+import ujson
 import logging
 import os
 from typing import Optional, List, Dict, Tuple, Any
@@ -67,7 +68,7 @@ def load_tickerdata_file(
     elif os.path.isfile(file):
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            pairdata = json.load(tickerdata)
+            pairdata = ujson.load(tickerdata)
     else:
         return None
 
@@ -163,7 +164,7 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            data = json.load(file)
+            data = ujson.load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:
