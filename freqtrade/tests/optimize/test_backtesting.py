@@ -404,6 +404,35 @@ def test_generate_text_table(default_conf, mocker):
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
+def test_generate_text_table_sell_reason(default_conf, mocker):
+    """
+    Test Backtesting.generate_text_table_sell_reason() method
+    """
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+
+    results = pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.2, 0.3],
+            'profit_abs': [0.2, 0.4, 0.5],
+            'trade_duration': [10, 30, 10],
+            'profit': [2, 0, 0],
+            'loss': [0, 0, 1],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+        }
+    )
+
+    result_str = (
+        '| Sell Reason   |   Count |\n'
+        '|:--------------|--------:|\n'
+        '| roi           |       2 |\n'
+        '| stop_loss     |       1 |'
+    )
+    assert backtesting._generate_text_table_sell_reason(
+        data={'ETH/BTC': {}}, results=results) == result_str
+
+
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
     """
     Test Backtesting.start() method

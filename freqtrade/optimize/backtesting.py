@@ -120,6 +120,16 @@ class Backtesting(object):
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
+    def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
+        """
+        Generate small table outlining Backtest results
+        """
+        tabular_data = []
+        headers = ['Sell Reason', 'Count']
+        for reason, count in results['sell_reason'].value_counts().iteritems():
+            tabular_data.append([reason.value,  count])
+        return tabulate(tabular_data, headers=headers, tablefmt="pipe")
+
     def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
@@ -319,20 +329,32 @@ class Backtesting(object):
             self._store_backtest_result(self.config.get('exportfilename'), results)
 
         logger.info(
-            '\n================================================= '
-            'BACKTESTING REPORT'
-            ' ==================================================\n'
+            '\n' + '=' * 49 +
+            ' BACKTESTING REPORT ' +
+            '=' * 50 + '\n'
             '%s',
             self._generate_text_table(
                 data,
                 results
             )
         )
+        # logger.info(
+        #     results[['sell_reason']].groupby('sell_reason').count()
+        # )
 
         logger.info(
-            '\n=============================================== '
-            'LEFT OPEN TRADES REPORT'
-            ' ===============================================\n'
+            '\n' + '=' * 4 +
+            ' SELL READON STATS ' +
+            '=' * 4 + '\n'
+            '%s \n',
+            self._generate_text_table_sell_reason(data, results)
+
+        )
+
+        logger.info(
+            '\n' + '=' * 47 +
+            ' LEFT OPEN TRADES REPORT ' +
+            '=' * 47 + '\n'
             '%s',
             self._generate_text_table(
                 data,
