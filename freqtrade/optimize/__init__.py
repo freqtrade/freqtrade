@@ -2,7 +2,6 @@
 
 import gzip
 import json
-import ujson
 import logging
 import os
 from typing import Optional, List, Dict, Tuple, Any
@@ -11,6 +10,11 @@ import arrow
 from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
+
+import importlib
+ujson_found = importlib.util.find_spec("ujson")
+if ujson_found is not None:
+    import ujson
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +72,10 @@ def load_tickerdata_file(
     elif os.path.isfile(file):
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            pairdata = ujson.load(tickerdata)
+            if ujson_found is not None:
+                pairdata = ujson.load(tickerdata)
+            else:
+                pairdata = json.load(tickerdata)
     else:
         return None
 
