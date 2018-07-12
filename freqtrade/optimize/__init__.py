@@ -10,14 +10,16 @@ import arrow
 from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
-
-logger = logging.getLogger(__name__)
-
 import importlib
 ujson_found = importlib.util.find_spec("ujson")
 if ujson_found is not None:
     import ujson
+
+logger = logging.getLogger(__name__)
+
+if ujson_found is not None:
     logger.debug('Loaded UltraJson ujson in optimize.py')
+
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
     if not tickerlist:
