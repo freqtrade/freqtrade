@@ -25,7 +25,7 @@ class RPCManager(object):
 
         # Enable Webhook
         if freqtrade.config.get('webhook', {}).get('enabled', False):
-            logger.info('Enabling rpc.webhook...')
+            logger.info('Enabling rpc.webhook ...')
             from freqtrade.rpc.webhook import Webhook
             self.registered_modules.append(Webhook(freqtrade))
 
