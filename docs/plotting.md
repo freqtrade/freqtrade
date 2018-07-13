@@ -24,7 +24,7 @@ script/plot_dataframe.py [-h] [-p pair] [--live]
 
 Example
 ```
-python scripts/plot_dataframe.py -p BTC_ETH
+python scripts/plot_dataframe.py -p BTC/ETH
 ```
 
 The `-p` pair argument, can be used to specify what
@@ -34,18 +34,18 @@ pair you would like to plot.
 
 To plot the current live price use the `--live` flag:
 ```
-python scripts/plot_dataframe.py -p BTC_ETH --live
+python scripts/plot_dataframe.py -p BTC/ETH --live
 ```
 
 To plot a timerange (to zoom in):
 ```
-python scripts/plot_dataframe.py -p BTC_ETH --timerange=100-200
+python scripts/plot_dataframe.py -p BTC/ETH --timerange=100-200
 ```
 Timerange doesn't work with live data.
 
 To plot trades stored in a database use `--db-url` argument:
 ```
-python scripts/plot_dataframe.py --db-url tradesv3.dry_run.sqlite -p BTC_ETH
+python scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH
 ```
 
 To plot a test strategy the strategy should have first be backtested. 
