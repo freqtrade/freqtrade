@@ -22,7 +22,7 @@ from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from profilehooks import profile
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +190,7 @@ class Backtesting(object):
             return btr
         return None
 
-    @profile
+
     def backtest(self, args: Dict) -> DataFrame:
         """
         Implements backtesting functionality
@@ -218,15 +218,18 @@ class Backtesting(object):
         for pair, pair_data in processed.items():
             ticker_data = self.populate_sell_trend(
                     self.populate_buy_trend(pair_data))[headers].copy()
+            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
 
             bslap_pair_results = self.backslap_pair(ticker_data, pair)
 
             last_bslap_results = bslap_results
             bslap_results = last_bslap_results + bslap_pair_results
-        bslap_results_df = DataFrame(bslap_results)
-        print(bslap_results_df.dtypes())
+        #bslap_results_df = DataFrame(bslap_results)
 
-        return bslap_results_df
+        res = DataFrame.from_records(bslap_results, columns=BacktestResult._fields)
+        print(res)
+        return res
         ########################### Original BT loop
         # for pair, pair_data in processed.items():
         #     pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
@@ -297,14 +300,15 @@ class Backtesting(object):
         import numpy as np
         import timeit
         import utils_find_1st as utf1st
+        from datetime import datetime
 
         stop = self.stop_loss_value
         p_stop = (-stop + 1)  # What stop really means, e.g 0.01 is 0.99 of price
 
         ### backslap debug wrap
-        debug_2loops = False  # only loop twice, for faster debug
+        debug_2loops = True  # only loop twice, for faster debug
         debug_timing = False  # print timing for each step
-        debug = False  # print values, to check accuracy
+        debug = True  # print values, to check accuracy
         if debug:
             from pandas import set_option
             set_option('display.max_rows', 5000)
@@ -638,24 +642,25 @@ class Backtesting(object):
                 else:
                     close_index: int = t_exit_ind + 1
                 # Munge the date / delta
-                start_date: str = bslap.iloc[t_open_ind + 1]['date']
-                end_date: str = bslap.iloc[close_index]['date']
+                start_date = bslap.iloc[t_open_ind + 1]['date']
+                end_date = bslap.iloc[close_index]['date']
 
-                def __datetime(date_str):
-                    return datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S+00:00')
+                # def __datetime(date_str):
+                #     return datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S+00:00')
 
-                # trade_start = __datetime(start_date)
-                # trade_end = __datetime(end_date)
-                # trade_mins = (trade_end - trade_start).total_seconds() / 60
+                trade_start = start_date
+                trade_end = end_date
+                trade_mins = (trade_end - trade_start).total_seconds() / 60
+
                 # build trade dictionary
                 bslap_result["pair"] = pair
-                bslap_result["profit_percent"] = ( np_trade_exit_price - np_trade_enter_price) // np_trade_enter_price * 100
+                bslap_result["profit_percent"] = ( np_trade_exit_price - np_trade_enter_price)/np_trade_enter_price
                 bslap_result["profit_abs"] = ""
                 bslap_result["open_time"] = start_date
                 bslap_result["close_time"] = end_date
                 bslap_result["open_index"] = t_open_ind + 1
                 bslap_result["close_index"] = close_index
-               # bslap_result["trade_duration"] = trade_mins
+                bslap_result["trade_duration"] = trade_mins
                 bslap_result["open_at_end"] = False
                 bslap_result["open_rate"] = str.format('{0:.10f}', np_trade_enter_price)
                 bslap_result["close_rate"] = str.format('{0:.10f}', np_trade_exit_price)
