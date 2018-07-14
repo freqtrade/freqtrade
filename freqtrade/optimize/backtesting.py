@@ -21,6 +21,8 @@ from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
+from profilehooks import profile
+from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,8 @@ class Backtesting(object):
         self.config['dry_run'] = True
         self.exchange = Exchange(self.config)
         self.fee = self.exchange.get_fee()
+
+        self.stop_loss_value = self.analyze.strategy.stoploss
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
@@ -186,6 +190,7 @@ class Backtesting(object):
             return btr
         return None
 
+    @profile
     def backtest(self, args: Dict) -> DataFrame:
         """
         Implements backtesting functionality
@@ -201,55 +206,481 @@ class Backtesting(object):
             realistic: do we try to simulate realistic trades? (default: True)
         :return: DataFrame
         """
-        headers = ['date', 'buy', 'open', 'close', 'sell']
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', False)
         trades = []
         trade_count_lock: Dict = {}
+        ########################### Call out BSlap instead of using FT
+        bslap_results: list = []
+        last_bslap_resultslist = []
         for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
-
             ticker_data = self.populate_sell_trend(
-                self.populate_buy_trend(pair_data))[headers].copy()
+                    self.populate_buy_trend(pair_data))[headers].copy()
 
-            # to avoid using data from future, we buy/sell with signal from previous candle
-            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+            bslap_pair_results = self.backslap_pair(ticker_data, pair)
 
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+            last_bslap_results = bslap_results
+            bslap_results = last_bslap_results + bslap_pair_results
+        bslap_results_df = DataFrame(bslap_results)
+        print(bslap_results_df.dtypes())
 
-            # Convert from Pandas to list for performance reasons
-            # (Looping Pandas is slow.)
-            ticker = [x for x in ticker_data.itertuples()]
+        return bslap_results_df
+        ########################### Original BT loop
+        # for pair, pair_data in processed.items():
+        #     pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+        #
+        #     ticker_data = self.populate_sell_trend(
+        #         self.populate_buy_trend(pair_data))[headers].copy()
+        #
+        #     # to avoid using data from future, we buy/sell with signal from previous candle
+        #     ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+        #     ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+        #
+        #     ticker_data.drop(ticker_data.head(1).index, inplace=True)
+        #
+        #     # Convert from Pandas to list for performance reasons
+        #     # (Looping Pandas is slow.)
+        #     ticker = [x for x in ticker_data.itertuples()]
+        #
+        #     lock_pair_until = None
+        #     for index, row in enumerate(ticker):
+        #         if row.buy == 0 or row.sell == 1:
+        #             continue  # skip rows where no buy signal or that would immediately sell off
+        #
+        #         if realistic:
+        #             if lock_pair_until is not None and row.date <= lock_pair_until:
+        #                 continue
+        #         if max_open_trades > 0:
+        #             # Check if max_open_trades has already been reached for the given date
+        #             if not trade_count_lock.get(row.date, 0) < max_open_trades:
+        #                 continue
+        #
+        #             trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
+        #
+        #         trade_entry = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
+        #                                                  trade_count_lock, args)
+        #
+        #
+        #         if trade_entry:
+        #             lock_pair_until = trade_entry.close_time
+        #             trades.append(trade_entry)
+        #         else:
+        #             # Set lock_pair_until to end of testing period if trade could not be closed
+        #             # This happens only if the buy-signal was with the last candle
+        #             lock_pair_until = ticker_data.iloc[-1].date
+        #
+        # return DataFrame.from_records(trades, columns=BacktestResult._fields)
+        ######################## Original BT loop end
 
-            lock_pair_until = None
-            for index, row in enumerate(ticker):
-                if row.buy == 0 or row.sell == 1:
-                    continue  # skip rows where no buy signal or that would immediately sell off
+    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int):
+        import utils_find_1st as utf1st
+        """
+        The purpose of this def is to return the next "buy" = 1
+        after t_exit_ind.
 
-                if realistic:
-                    if lock_pair_until is not None and row.date <= lock_pair_until:
-                        continue
-                if max_open_trades > 0:
-                    # Check if max_open_trades has already been reached for the given date
-                    if not trade_count_lock.get(row.date, 0) < max_open_trades:
-                        continue
+        t_exit_ind is the index the last trade exited on
+        or 0 if first time around this loop.
+        """
+        t_open_ind: int
 
-                    trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
+        # Create a view on our buy index starting after last trade exit
+        # Search for next buy
+        np_buy_arr_v = np_buy_arr[t_exit_ind:]
+        t_open_ind = utf1st.find_1st(np_buy_arr_v, 1, utf1st.cmp_equal)
+        t_open_ind = t_open_ind + t_exit_ind  # Align numpy index
+        return t_open_ind
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
-                                                         trade_count_lock, args)
+    def backslap_pair(self, ticker_data, pair):
+        import pandas as pd
+        import numpy as np
+        import timeit
+        import utils_find_1st as utf1st
 
-                if trade_entry:
-                    lock_pair_until = trade_entry.close_time
-                    trades.append(trade_entry)
+        stop = self.stop_loss_value
+        p_stop = (-stop + 1)  # What stop really means, e.g 0.01 is 0.99 of price
+
+        ### backslap debug wrap
+        debug_2loops = False  # only loop twice, for faster debug
+        debug_timing = False  # print timing for each step
+        debug = False  # print values, to check accuracy
+        if debug:
+            from pandas import set_option
+            set_option('display.max_rows', 5000)
+            set_option('display.max_columns', 8)
+            pd.set_option('display.width', 1000)
+            pd.set_option('max_colwidth', 40)
+            pd.set_option('precision', 12)
+
+        def s():
+            st = timeit.default_timer()
+            return st
+
+        def f(st):
+            return (timeit.default_timer() - st)
+        #### backslap config
+        """
+        A couple legacy Pandas vars still used for pretty debug output.
+        If have debug enabled the code uses these fields for dataframe output
+
+        Ensure bto, sto, sco are aligned with Numpy values next
+        to align debug and actual. Options are:
+        buy - open  - close  - sell  - high  - low  - np_stop_pri
+        """
+        bto = buys_triggered_on = "close"
+        sto = stops_triggered_on = "low"  ## Should be low, FT uses close
+        sco = stops_calculated_on = "np_stop_pri"  ## should use np_stop_pri, FT uses close
+        '''
+        Numpy arrays are used for 100x speed up
+        We requires setting Int values for
+        buy stop triggers and stop calculated on
+        # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5 - stop 6
+        '''
+        np_buy: int = 0
+        np_open: int = 1
+        np_close: int = 2
+        np_sell: int = 3
+        np_high: int = 4
+        np_low: int = 5
+        np_stop: int = 6
+        np_bto: int = np_close  # buys_triggered_on - should be close
+        np_bco: int = np_open  # buys calculated on - open of the next candle.
+        np_sto: int = np_low  # stops_triggered_on - Should be low, FT uses close
+        np_sco: int = np_stop  # stops_calculated_on - Should be stop, FT uses close
+        #
+        ### End Config
+
+        pair: str = pair
+        loop: int = 1
+
+        #ticker_data: DataFrame = ticker_dfs[t_file]
+        bslap: DataFrame = ticker_data
+
+        # Build a single dimension numpy array from "buy" index for faster search
+        # (500x faster than pandas)
+        np_buy_arr = bslap['buy'].values
+        np_buy_arr_len: int = len(np_buy_arr)
+
+        # use numpy array for faster searches in loop, 20x faster than pandas
+        # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5
+        np_bslap = np.array(bslap[['buy', 'open', 'close', 'sell', 'high', 'low']])
+
+        loop: int = 0  # how many time around the loop
+        t_exit_ind = 0  # Start loop from first index
+        t_exit_last = 0  # To test for exit
+
+        st = s()  # Start timer for processing dataframe
+        if debug:
+            print('Processing:', pair)
+
+        # Results will be stored in a list of dicts
+        bslap_pair_results: list = []
+        bslap_result: dict = {}
+
+        while t_exit_ind < np_buy_arr_len:
+            loop = loop + 1
+            if debug or debug_timing:
+                print("----------------------------------------------------------- Loop", loop, pair)
+            if debug_2loops:
+                if loop == 4:
+                    break
+            '''
+            Dev phases
+            Phase 1
+             1) Manage buy, sell, stop enter/exit
+              a) Find first buy index
+              b) Discover first stop and sell hit after buy index
+              c) Chose first intance as trade exit
+
+            Phase 2
+             2) Manage dynamic Stop and ROI Exit
+              a) Create trade slice from 1
+              b) search within trade slice for dynamice stop hit
+              c) search within trade slice for ROI hit
+            '''
+
+            '''
+            Finds index for first buy = 1 flag, use .values numpy array for speed
+
+            Create a slice, from first buy index onwards.
+            Slice will be used to find exit conditions after trade open
+            '''
+            if debug_timing:
+                st = s()
+
+            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind)
+
+            if debug_timing:
+                t_t = f(st)
+                print("0-numpy", str.format('{0:.17f}', t_t))
+                st = s()
+
+            '''
+            Calculate np_t_stop_pri (Trade Stop Price) based on the buy price
+
+            As stop in based on buy price we are interested in buy
+            - Buys are Triggered On np_bto, typically the CLOSE of candle
+            - Buys are Calculated On np_bco, default is OPEN of the next candle.
+            as we only see the CLOSE after it has happened.
+            The assumption is we have bought at first available price, the OPEN
+            '''
+            np_t_stop_pri = (np_bslap[t_open_ind + 1, np_bco] * p_stop)
+
+            if debug_timing:
+                t_t = f(st)
+                print("1-numpy", str.format('{0:.17f}', t_t))
+                st = s()
+
+            """
+            1)Create a View from our open trade  forward
+
+            The view is our search space for the next Stop or Sell
+            We use a numpy view:
+            Using a numpy for speed on views, 1,000 faster than pandas
+            Pandas cannot assure it will always return a view, copies are
+            3 orders of magnitude slower
+
+            The view contains columns:
+            buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5
+            """
+            np_t_open_v = np_bslap[t_open_ind:]
+
+            if debug_timing:
+                t_t = f(st)
+                print("2-numpy", str.format('{0:.17f}', t_t))
+                st = s()
+
+            '''
+            Find first stop index after Trade Open:
+
+            First index in np_t_open_v (numpy view of bslap dataframe)
+            Using a numpy view a orders of magnitude faster
+
+            where [np_sto] (stop tiggered on variable: "close", "low" etc) < np_t_stop_pri
+            '''
+            np_t_stop_ind = utf1st.find_1st(np_t_open_v[:, np_sto],
+                                            np_t_stop_pri,
+                                            utf1st.cmp_smaller) \
+                            + t_open_ind
+
+            if debug_timing:
+                t_t = f(st)
+                print("3-numpy", str.format('{0:.17f}', t_t))
+                st = s()
+
+            '''
+            Find first sell index after trade open
+
+            First index in t_open_slice where ['sell'] = 1
+            '''
+            # Use numpy array for faster search for sell
+            # Sell uses column 3.
+            # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5
+            # Numpy searches 25-35x quicker than pandas on this data
+
+            np_t_sell_ind = utf1st.find_1st(np_t_open_v[:, np_sell],
+                                            1, utf1st.cmp_equal) \
+                            + t_open_ind
+
+            if debug_timing:
+                t_t = f(st)
+                print("4-numpy", str.format('{0:.17f}', t_t))
+                st = s()
+
+            '''
+            Determine which was hit first stop or sell, use as exit
+
+            STOP takes priority over SELL as would be 'in candle' from tick data
+            Sell would use Open from Next candle.
+            So in a draw Stop would be hit first on ticker data in live
+            '''
+            if np_t_stop_ind <= np_t_sell_ind:
+                t_exit_ind = np_t_stop_ind  # Set Exit row index
+                t_exit_type = 'stop'  # Set Exit type (sell|stop)
+                np_t_exit_pri = np_sco  # The price field our STOP exit will use
+            else:
+                # move sell onto next candle, we only look back on sell
+                # will use the open price later.
+                t_exit_ind = np_t_sell_ind  # Set Exit row index
+                t_exit_type = 'sell'  # Set Exit type (sell|stop)
+                np_t_exit_pri = np_open  # The price field our SELL exit will use
+
+            if debug_timing:
+                t_t = f(st)
+                print("5-logic", str.format('{0:.17f}', t_t))
+                st = s()
+
+            if debug:
+                '''
+                Print out the buys, stops, sells
+                Include Line before and after to for easy
+                Human verification
+                '''
+                # Combine the np_t_stop_pri value to bslap dataframe to make debug
+                # life easy. This is the currenct stop price based on buy price_
+                # Don't care about performance in debug
+                # (add an extra column if printing as df has date in col1 not in npy)
+                bslap['np_stop_pri'] = np_t_stop_pri
+
+                # Buy
+                print("=================== BUY ", pair)
+                print("Numpy Array BUY Index is:", t_open_ind)
+                print("DataFrame BUY Index is:", t_open_ind + 1, "displaying DF \n")
+                print("HINT, BUY trade should use OPEN price from next candle, i.e ", t_open_ind + 2, "\n")
+                op_is = t_open_ind - 1  # Print open index start, line before
+                op_if = t_open_ind + 3  # Print open index finish, line after
+                print(bslap.iloc[op_is:op_if], "\n")
+                print(bslap.iloc[t_open_ind + 1]['date'])
+
+                # Stop - Stops trigger price sto, and price received sco. (Stop Trigger|Calculated On)
+                print("=================== STOP  ", pair)
+                print("Numpy Array STOP Index is:", np_t_stop_ind)
+                print("DataFrame STOP Index is:", np_t_stop_ind + 1, "displaying DF \n")
+                print("First Stop Index after Trade open in candle", np_t_stop_ind + 1, ": \n",
+                      str.format('{0:.17f}', bslap.iloc[np_t_stop_ind][sto]),
+                      "is less than", str.format('{0:.17f}', np_t_stop_pri))
+                print("Tokens will be sold at rate:", str.format('{0:.17f}', bslap.iloc[np_t_stop_ind][sco]))
+                print("HINT, STOPs should close in-candle, i.e", np_t_stop_ind + 1,
+                      ": As live STOPs are not linked to O-C times")
+
+                st_is = np_t_stop_ind - 1  # Print stop index start, line before
+                st_if = np_t_stop_ind + 2  # Print stop index finish, line after
+                print(bslap.iloc[st_is:st_if], "\n")
+
+                # Sell
+                print("=================== SELL ", pair)
+                print("Numpy Array SELL Index is:", np_t_sell_ind)
+                print("DataFrame SELL Index is:", np_t_sell_ind + 1, "displaying DF \n")
+                print("First Sell Index after Trade open in in candle", np_t_sell_ind + 1)
+                print("HINT, if exit is SELL (not stop) trade should use OPEN price from next candle",
+                      np_t_sell_ind + 2, "\n")
+                sl_is = np_t_sell_ind - 1  # Print sell index start, line before
+                sl_if = np_t_sell_ind + 3  # Print sell index finish, line after
+                print(bslap.iloc[sl_is:sl_if], "\n")
+
+                # Chosen Exit (stop or sell)
+                print("=================== EXIT ", pair)
+                print("Exit type is :", t_exit_type)
+                # print((bslap.iloc[t_exit_ind], "\n"))
+                print("trade exit price field is", np_t_exit_pri, "\n")
+
+            '''
+            Trade entry is always the next candles "open" price
+            We trigger on close, so cannot see that till after
+            its closed.
+
+            The exception to this is a STOP which is calculated in candle
+            '''
+            if debug_timing:
+                t_t = f(st)
+                print("6-depra", str.format('{0:.17f}', t_t))
+                st = s()
+
+            ## use numpy view "np_t_open_v" for speed. Columns are
+            # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5
+            # exception is 6 which is use the stop value.
+
+            np_trade_enter_price = np_bslap[t_open_ind + 1, np_open]
+            if t_exit_type == 'stop':
+                if np_t_exit_pri == 6:
+                    np_trade_exit_price = np_t_stop_pri
                 else:
-                    # Set lock_pair_until to end of testing period if trade could not be closed
-                    # This happens only if the buy-signal was with the last candle
-                    lock_pair_until = ticker_data.iloc[-1].date
+                    np_trade_exit_price = np_bslap[t_exit_ind, np_t_exit_pri]
+            if t_exit_type == 'sell':
+                np_trade_exit_price = np_bslap[t_exit_ind + 1, np_t_exit_pri]
 
-        return DataFrame.from_records(trades, columns=BacktestResult._fields)
+            if debug_timing:
+                t_t = f(st)
+                print("7-numpy", str.format('{0:.17f}', t_t))
+                st = s()
+
+            if debug:
+                print("//////////////////////////////////////////////")
+                print("+++++++++++++++++++++++++++++++++ Trade Enter ")
+                print("np_trade Enterprice is ", str.format('{0:.17f}', np_trade_enter_price))
+                print("--------------------------------- Trade Exit ")
+                print("Trade Exit Type is ", t_exit_type)
+                print("np_trade Exit Price is", str.format('{0:.17f}', np_trade_exit_price))
+                print("//////////////////////////////////////////////")
+
+            # Loop control - catch no closed trades.
+            if debug:
+                print("---------------------------------------- end of loop", loop - 1,
+                      " Dataframe Exit Index is: ", t_exit_ind)
+                print("Exit Index Last, Exit Index Now Are: ", t_exit_last, t_exit_ind)
+
+            if t_exit_last >= t_exit_ind:
+                """
+                When last trade exit equals index of last exit, there is no
+                opportunity to close any more trades.
+
+                Break loop and go on to next pair.
+
+                TODO
+                add handing here to record none closed open trades
+                """
+
+                if debug:
+                    print(bslap_pair_results)
+
+                break
+            else:
+                """
+                Add trade to backtest looking results list of dicts
+                Loop back to look for more trades.
+                """
+                # Index will change if incandle stop or look back as close Open and Sell
+                if t_exit_type == 'stop':
+                    close_index: int = t_exit_ind + 1
+                elif t_exit_type == 'sell':
+                    close_index: int = t_exit_ind + 2
+                else:
+                    close_index: int = t_exit_ind + 1
+                # Munge the date / delta
+                start_date: str = bslap.iloc[t_open_ind + 1]['date']
+                end_date: str = bslap.iloc[close_index]['date']
+
+                def __datetime(date_str):
+                    return datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S+00:00')
+
+                # trade_start = __datetime(start_date)
+                # trade_end = __datetime(end_date)
+                # trade_mins = (trade_end - trade_start).total_seconds() / 60
+                # build trade dictionary
+                bslap_result["pair"] = pair
+                bslap_result["profit_percent"] = ( np_trade_exit_price - np_trade_enter_price) // np_trade_enter_price * 100
+                bslap_result["profit_abs"] = ""
+                bslap_result["open_time"] = start_date
+                bslap_result["close_time"] = end_date
+                bslap_result["open_index"] = t_open_ind + 1
+                bslap_result["close_index"] = close_index
+               # bslap_result["trade_duration"] = trade_mins
+                bslap_result["open_at_end"] = False
+                bslap_result["open_rate"] = str.format('{0:.10f}', np_trade_enter_price)
+                bslap_result["close_rate"] = str.format('{0:.10f}', np_trade_exit_price)
+                bslap_result["exit_type"] = t_exit_type
+                # Add trade dictionary to list
+                bslap_pair_results.append(bslap_result)
+                if debug:
+                    print(bslap_pair_results)
+
+                """
+                Loop back to start. t_exit_last becomes where loop
+                will seek to open new trades from.
+                Push index on 1 to not open on close
+                """
+                t_exit_last = t_exit_ind + 1
+
+            if debug_timing:
+                t_t = f(st)
+                print("8", str.format('{0:.17f}', t_t))
+
+        # Send back List of trade dicts
+        return bslap_pair_results
+
+
+
 
     def start(self) -> None:
         """
