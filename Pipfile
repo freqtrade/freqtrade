@@ -1,0 +1,32 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+ccxt = "==1.14.256"
+python-telegram-bot = "==10.1.0"
+arrow = "==0.12.1"
+cachetools = "==2.1.0"
+requests = "==2.19.1"
+"urllib3" = "==1.22"
+wrapt = "==1.10.11"
+pandas = "==0.23.1"
+scipy = "==1.1.0"
+jsonschema = "==2.6.0"
+numpy = "==1.14.5"
+pytest = "==3.6.2"
+pytest-mock = "==1.10.0"
+pytest-cov = "==2.5.1"
+hyperopt = "==0.1"
+networkx = "==1.11"
+tabulate = "==0.8.2"
+coinmarketcap = "==5.0.3"
+SQLAlchemy = "==1.2.8"
+TA-Lib = "==0.4.17"
+"e1839a8" = {editable = true, path = "."}
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"
