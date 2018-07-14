@@ -35,6 +35,7 @@ def test__init__(mocker, default_conf):
     """
     Test __init__() method
     """
+    default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     assert webhook._config == default_conf
 

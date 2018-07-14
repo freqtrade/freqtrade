@@ -149,7 +149,7 @@ def test_init_webhook_enabled(mocker, default_conf, caplog) -> None:
     """
     caplog.set_level(logging.DEBUG)
     default_conf['telegram']['enabled'] = False
-    default_conf['webhook'] = {'enabled': True}
+    default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
 
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
