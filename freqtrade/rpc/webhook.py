@@ -26,6 +26,7 @@ class Webhook(RPC):
         super().__init__(freqtrade)
 
         self._config = freqtrade.config
+        self._url = self._config['webhook']['url']
 
     def cleanup(self) -> None:
         """
@@ -57,10 +58,9 @@ class Webhook(RPC):
                              "Exception: %s", exc)
 
     def _send_msg(self, payload: dict) -> None:
-        """does the actual call to the webhook"""
+        """do the actual call to the webhook"""
 
         try:
-            url = self._config['webhook']['url']
-            post(url, data=payload)
+            post(self._url, data=payload)
         except RequestException as exc:
             logger.warning("Could not call webhook url. Exception: %s", exc)
