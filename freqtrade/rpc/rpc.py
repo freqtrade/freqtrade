@@ -227,26 +227,26 @@ class RPC(object):
         #      doing this will utilize its caching functionallity, instead we reinitialize it here
         fiat = self._freqtrade.fiat_converter
         # Prepare data to display
-        profit_closed_coin = round(sum(profit_closed_coin), 8)
+        profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
         profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
         profit_closed_fiat = fiat.convert_amount(
-            profit_closed_coin,
+            profit_closed_coin_sum,
             stake_currency,
             fiat_display_currency
         )
-        profit_all_coin = round(sum(profit_all_coin), 8)
+        profit_all_coin_sum = round(sum(profit_all_coin), 8)
         profit_all_percent = round(nan_to_num(mean(profit_all_percent)) * 100, 2)
         profit_all_fiat = fiat.convert_amount(
-            profit_all_coin,
+            profit_all_coin_sum,
             stake_currency,
             fiat_display_currency
         )
         num = float(len(durations) or 1)
         return {
-            'profit_closed_coin': profit_closed_coin,
+            'profit_closed_coin': profit_closed_coin_sum,
             'profit_closed_percent': profit_closed_percent,
             'profit_closed_fiat': profit_closed_fiat,
-            'profit_all_coin': profit_all_coin,
+            'profit_all_coin': profit_all_coin_sum,
             'profit_all_percent': profit_all_percent,
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
