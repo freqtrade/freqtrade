@@ -80,7 +80,7 @@ def test_strategy(result):
 
     assert hasattr(resolver.strategy, 'minimal_roi')
     assert resolver.strategy.minimal_roi[0] == 0.04
-    assert config.get("minimal_roi")['0'] == 0.04
+    assert config["minimal_roi"]['0'] == 0.04
 
     assert hasattr(resolver.strategy, 'stoploss')
     assert resolver.strategy.stoploss == -0.10
