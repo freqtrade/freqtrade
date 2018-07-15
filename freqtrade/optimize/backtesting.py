@@ -190,7 +190,6 @@ class Backtesting(object):
             return btr
         return None
 
-    @profile
     def backtest(self, args: Dict) -> DataFrame:
         """
         Implements backtesting functionality
@@ -233,7 +232,13 @@ class Backtesting(object):
             last_bslap_results = bslap_results
             bslap_results = last_bslap_results + bslap_pair_results
 
+        # Switch List of Trade Dicts (bslap_results) to Dataframe
+        # Fill missing, calculable columns, profit, duration , abs etc.
         bslap_results_df = DataFrame(bslap_results, columns=BacktestResult._fields)
+        bslap_results_df = self.vector_fill_results_table(bslap_results_df)
+
+        print(bslap_results_df.dtypes)
+
         return bslap_results_df
 
         ########################### Original BT loop
@@ -283,6 +288,69 @@ class Backtesting(object):
         # return DataFrame.from_records(trades, columns=BacktestResult._fields)
         ######################## Original BT loop end
 
+    def vector_fill_results_table(self, bslap_results_df: DataFrame):
+        """
+        The Results frame contains a number of columns that are calculable
+        from othe columns. These are left blank till all rows are added,
+        to be populated in single vector calls.
+
+        Columns to be populated are:
+        - Profit
+        - trade duration
+        - profit abs
+
+        :param bslap_results Dataframe
+        :return: bslap_results Dataframe
+        """
+        import pandas as pd
+        debug = True
+
+        #  stake and fees
+        stake = self.config.get('stake_amount')
+        # TODO grab these from the environment, do not hard set
+        open_fee = 0.05
+        close_fee = 0.05
+
+        if debug:
+            print("Stake is,", stake, "the sum of currency to spend per trade")
+            print("The open fee is", open_fee, "The close fee is", close_fee)
+        if debug:
+            from pandas import set_option
+            set_option('display.max_rows', 5000)
+            set_option('display.max_columns', 8)
+            pd.set_option('display.width', 1000)
+            pd.set_option('max_colwidth', 40)
+            pd.set_option('precision', 12)
+
+        # Align with BT
+        bslap_results_df['open_time'] = pd.to_datetime(bslap_results_df['open_time'])
+        bslap_results_df['close_time'] = pd.to_datetime(bslap_results_df['close_time'])
+
+        # Populate duration
+        bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
+        if debug:
+            print(bslap_results_df[['open_time', 'close_time', 'trade_duration']])
+
+        ## Spends, Takes, Profit, Absolute Profit
+        # Buy Price
+        bslap_results_df['buy_sum'] = stake * bslap_results_df['open_rate']
+        bslap_results_df['buy_fee'] = bslap_results_df['buy_sum'] * open_fee
+        bslap_results_df['buy_spend'] = bslap_results_df['buy_sum'] + bslap_results_df['buy_fee']
+        # Sell price
+        bslap_results_df['sell_sum'] = stake * bslap_results_df['close_rate']
+        bslap_results_df['sell_fee'] = bslap_results_df['sell_sum'] * close_fee
+        bslap_results_df['sell_take'] = bslap_results_df['sell_sum'] - bslap_results_df['sell_fee']
+        # profit_percent
+        bslap_results_df['profit_percent'] = bslap_results_df['sell_take'] / bslap_results_df['buy_spend'] - 1
+        # Absolute profit
+        bslap_results_df['profit_abs'] = bslap_results_df['sell_take'] - bslap_results_df['buy_spend']
+
+        if debug:
+            print("\n")
+            print(bslap_results_df[['buy_spend', 'sell_take', 'profit_percent', 'profit_abs']])
+
+        return bslap_results_df
+
     def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int):
         import utils_find_1st as utf1st
         """
@@ -301,6 +369,7 @@ class Backtesting(object):
         t_open_ind = t_open_ind + t_exit_ind  # Align numpy index
         return t_open_ind
 
+    @profile
     def backslap_pair(self, ticker_data, pair):
         import pandas as pd
         import numpy as np
@@ -316,19 +385,10 @@ class Backtesting(object):
         # Read Stop Loss Values and Stake
         stop = self.stop_loss_value
         p_stop = (stop + 1)  # What stop really means, e.g 0.01 is 0.99 of price
-        stake = self.config.get('stake_amount')
-
-        # Set fees
-        # TODO grab these from the environment, do not hard set
-        # Fees
-        open_fee = 0.05
-        close_fee = 0.05
 
         if debug:
             print("Stop is ", stop, "value from stragey file")
             print("p_stop is", p_stop, "value used to multiply to entry price")
-            print("Stake is,", stake, "the sum of currency to spend per trade")
-            print("The open fee is", open_fee, "The close fee is", close_fee)
 
         if debug:
             from pandas import set_option
@@ -394,6 +454,12 @@ class Backtesting(object):
         # use numpy array for faster searches in loop, 20x faster than pandas
         # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5
         np_bslap = np.array(bslap[['buy', 'open', 'close', 'sell', 'high', 'low']])
+
+        # Build a numpy list of date-times.
+        # We use these when building the trade
+        # The rationale is to address a value from a pandas cell is thousands of
+        # times more expensive. Processing time went X25 when trying to use any data from pandas
+        np_bslap_dates = bslap['date'].values
 
         loop: int = 0  # how many time around the loop
         t_exit_ind = 0  # Start loop from first index
@@ -657,9 +723,13 @@ class Backtesting(object):
                 break
             else:
                 """
-                Add trade to backtest looking results list of dicts
-                Loop back to look for more trades.
-                """
+                  Add trade to backtest looking results list of dicts
+                  Loop back to look for more trades.
+                  """
+                if debug_timing:
+                    t_t = f(st)
+                    print("8a-IfEls", str.format('{0:.17f}', t_t))
+                    st = s()
                 # Index will change if incandle stop or look back as close Open and Sell
                 if t_exit_type == 'stop':
                     close_index: int = t_exit_ind + 1
@@ -668,38 +738,55 @@ class Backtesting(object):
                 else:
                     close_index: int = t_exit_ind + 1
 
-                # Munge the date / delta (bt already date formats...just subract)
-                trade_start = bslap.iloc[t_open_ind + 1]['date']
-                trade_end = bslap.iloc[close_index]['date']
-                # def __datetime(date_str):
-                #     return datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S+00:00')
-                trade_mins = (trade_end - trade_start).total_seconds() / 60
+                if debug_timing:
+                    t_t = f(st)
+                    print("8b-Index", str.format('{0:.17f}', t_t))
+                    st = s()
 
-                # Profit ABS.
-                # sumrecieved((rate * numTokens) * fee) - sumpaid ((rate * numTokens) * fee)
-                sumpaid: float = (np_trade_enter_price * stake)
-                sumpaid_fee: float = sumpaid * open_fee
-                sumrecieved: float = (np_trade_exit_price * stake)
-                sumrecieved_fee: float = sumrecieved * close_fee
-                profit_abs: float = sumrecieved - sumpaid - sumpaid_fee - sumrecieved_fee
+                # # Profit ABS.
+                # # sumrecieved((rate * numTokens) * fee) - sumpaid ((rate * numTokens) * fee)
+                # sumpaid: float = (np_trade_enter_price * stake)
+                # sumpaid_fee: float = sumpaid * open_fee
+                # sumrecieved: float = (np_trade_exit_price * stake)
+                # sumrecieved_fee: float = sumrecieved * close_fee
+                # profit_abs: float = sumrecieved - sumpaid - sumpaid_fee - sumrecieved_fee
 
-                # build trade dictionary
+                if debug_timing:
+                    t_t = f(st)
+                    print("8d---ABS", str.format('{0:.17f}', t_t))
+                    st = s()
+
+                # Build trade dictionary
+                ## In general if a field can be calculated later from other fields leave blank here
+                ## Its X(numer of trades faster) to calc all in a single vector than 1 trade at a time
+
                 bslap_result["pair"] = pair
-                bslap_result["profit_percent"] = (np_trade_exit_price - np_trade_enter_price) / np_trade_enter_price
-                bslap_result["profit_abs"] = round(profit_abs, 15)
-                bslap_result["open_time"] = trade_start
-                bslap_result["close_time"] = trade_end
+                bslap_result["profit_percent"] = "1"  # To be 1 vector calc across trades when loop complete
+                bslap_result["profit_abs"] = "1"      # To be 1 vector calc across trades when loop complete
+                bslap_result["open_time"] = np_bslap_dates[t_open_ind + 1]  # use numpy array, pandas 20x slower
+                bslap_result["close_time"] = np_bslap_dates[close_index]  # use numpy array, pandas 20x slower
                 bslap_result["open_index"] = t_open_ind + 2 # +1 between np and df, +1 as we buy on next.
                 bslap_result["close_index"] = close_index
-                bslap_result["trade_duration"] = trade_mins
+                bslap_result["trade_duration"] = "1"  # To be 1 vector calc across trades when loop complete
                 bslap_result["open_at_end"] = False
                 bslap_result["open_rate"] = round(np_trade_enter_price, 15)
                 bslap_result["close_rate"] = round(np_trade_exit_price, 15)
-                #bslap_result["exit_type"] = t_exit_type
+                bslap_result["exit_type"] = t_exit_type
+
+                if debug_timing:
+                    t_t = f(st)
+                    print("8e-trade", str.format('{0:.17f}', t_t))
+                    st = s()
                 # Add trade dictionary to list
                 bslap_pair_results.append(bslap_result)
+
                 if debug:
                     print(bslap_pair_results)
+
+                if debug_timing:
+                    t_t = f(st)
+                    print("8f--list", str.format('{0:.17f}', t_t))
+                    st = s()
 
                 """
                 Loop back to start. t_exit_last becomes where loop
