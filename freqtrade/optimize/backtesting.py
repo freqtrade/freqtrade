@@ -190,7 +190,7 @@ class Backtesting(object):
             return btr
         return None
 
-
+    @profile
     def backtest(self, args: Dict) -> DataFrame:
         """
         Implements backtesting functionality
@@ -309,9 +309,9 @@ class Backtesting(object):
         from datetime import datetime
 
         ### backslap debug wrap
-        debug_2loops = True  # only loop twice, for faster debug
+        debug_2loops = False  # only loop twice, for faster debug
         debug_timing = False  # print timing for each step
-        debug = True  # print values, to check accuracy
+        debug = False  # print values, to check accuracy
 
         # Read Stop Loss Values and Stake
         stop = self.stop_loss_value
@@ -354,8 +354,10 @@ class Backtesting(object):
         buy - open  - close  - sell  - high  - low  - np_stop_pri
         """
         bto = buys_triggered_on = "close"
-        sto = stops_triggered_on = "low"  ## Should be low, FT uses close
-        sco = stops_calculated_on = "np_stop_pri"  ## should use np_stop_pri, FT uses close
+        # sto = stops_triggered_on = "low"  ## Should be low, FT uses close
+        # sco = stops_calculated_on = "np_stop_pri"  ## should use np_stop_pri, FT uses close
+        sto = stops_triggered_on = "close"  ## Should be low, FT uses close
+        sco = stops_calculated_on = "close"  ## should use np_stop_pri, FT uses close
         '''
         Numpy arrays are used for 100x speed up
         We requires setting Int values for
@@ -371,8 +373,10 @@ class Backtesting(object):
         np_stop: int = 6
         np_bto: int = np_close  # buys_triggered_on - should be close
         np_bco: int = np_open  # buys calculated on - open of the next candle.
-        np_sto: int = np_low  # stops_triggered_on - Should be low, FT uses close
-        np_sco: int = np_stop  # stops_calculated_on - Should be stop, FT uses close
+        #np_sto: int = np_low  # stops_triggered_on - Should be low, FT uses close
+        #np_sco: int = np_stop  # stops_calculated_on - Should be stop, FT uses close
+        np_sto: int = np_close  # stops_triggered_on - Should be low, FT uses close
+        np_sco: int = np_close  # stops_calculated_on - Should be stop, FT uses close
         #
         ### End Config
 
@@ -408,7 +412,7 @@ class Backtesting(object):
             if debug or debug_timing:
                 print("-- T_exit_Ind - Numpy Index is", t_exit_ind, " ----------------------- Loop", loop, pair)
             if debug_2loops:
-                if loop == 2:
+                if loop == 3:
                     print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++Loop debug max met - breaking")
                     break
             '''
@@ -673,23 +677,25 @@ class Backtesting(object):
 
                 # Profit ABS.
                 # sumrecieved((rate * numTokens) * fee) - sumpaid ((rate * numTokens) * fee)
-                sumpaid: float = (np_trade_enter_price * stake) * open_fee
-                sumrecieved: float = (np_trade_exit_price * stake) * close_fee
-                profit_abs: float = sumrecieved - sumpaid
+                sumpaid: float = (np_trade_enter_price * stake)
+                sumpaid_fee: float = sumpaid * open_fee
+                sumrecieved: float = (np_trade_exit_price * stake)
+                sumrecieved_fee: float = sumrecieved * close_fee
+                profit_abs: float = sumrecieved - sumpaid - sumpaid_fee - sumrecieved_fee
 
                 # build trade dictionary
                 bslap_result["pair"] = pair
                 bslap_result["profit_percent"] = (np_trade_exit_price - np_trade_enter_price) / np_trade_enter_price
-                bslap_result["profit_abs"] = str.format('{0:.10f}', profit_abs)
+                bslap_result["profit_abs"] = round(profit_abs, 15)
                 bslap_result["open_time"] = trade_start
                 bslap_result["close_time"] = trade_end
-                bslap_result["open_index"] = t_open_ind + 1
+                bslap_result["open_index"] = t_open_ind + 2 # +1 between np and df, +1 as we buy on next.
                 bslap_result["close_index"] = close_index
                 bslap_result["trade_duration"] = trade_mins
                 bslap_result["open_at_end"] = False
-                bslap_result["open_rate"] = str.format('{0:.10f}', np_trade_enter_price)
-                bslap_result["close_rate"] = str.format('{0:.10f}', np_trade_exit_price)
-                bslap_result["exit_type"] = t_exit_type
+                bslap_result["open_rate"] = round(np_trade_enter_price, 15)
+                bslap_result["close_rate"] = round(np_trade_exit_price, 15)
+                #bslap_result["exit_type"] = t_exit_type
                 # Add trade dictionary to list
                 bslap_pair_results.append(bslap_result)
                 if debug:
@@ -704,7 +710,7 @@ class Backtesting(object):
 
             if debug_timing:
                 t_t = f(st)
-                print("8", str.format('{0:.17f}', t_t))
+                print("8+trade", str.format('{0:.17f}', t_t))
 
         # Send back List of trade dicts
         return bslap_pair_results
@@ -785,16 +791,17 @@ class Backtesting(object):
             )
         )
 
-        logger.info(
-            '\n=============================================== '
-            'LEFT OPEN TRADES REPORT'
-            ' ===============================================\n'
-            '%s',
-            self._generate_text_table(
-                data,
-                results.loc[results.open_at_end]
-            )
-        )
+        ## TODO. Catch open trades for this report.
+        # logger.info(
+        #     '\n=============================================== '
+        #     'LEFT OPEN TRADES REPORT'
+        #     ' ===============================================\n'
+        #     '%s',
+        #     self._generate_text_table(
+        #         data,
+        #         results.loc[results.open_at_end]
+        #     )
+        # )
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
