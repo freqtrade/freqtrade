@@ -89,10 +89,10 @@ class Backtesting(object):
         self.np_stop: int = 6
         self.np_bto: int = self.np_close  # buys_triggered_on - should be close
         self.np_bco: int = self.np_open  # buys calculated on - open of the next candle.
-        self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
-        self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
-        #self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
-        #self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
+        #self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
+        #self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
+        self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
+        self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
         self.use_backslap = True             # Enable backslap - if false Orginal code is executed.
         self.debug = False                   # Main debug enable, very print heavy, enable 2 loops recommended
@@ -437,7 +437,7 @@ class Backtesting(object):
 
         return bslap_results_df
 
-    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int):
+    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int, np_buy_arr_len: int):
         import utils_find_1st as utf1st
         """
          The purpose of this def is to return the next "buy" = 1
@@ -468,6 +468,9 @@ class Backtesting(object):
         '''
         if t_open_ind != -1:  # send back the -1 if no buys found. otherwise update index
             t_open_ind = t_open_ind + t_exit_ind  # Align numpy index
+
+        if t_open_ind == np_buy_arr_len -1 : # If buy found on last candle ignore, there is no OPEN in next to use
+            t_open_ind = -1 # -1 ends the loop
 
         return t_open_ind
 
@@ -606,11 +609,12 @@ class Backtesting(object):
     
             Requires: np_buy_arr - a 1D array of the 'buy' column. To find next "1"
             Required: t_exit_ind - Either 0, first loop. Or The index we last exited on
+            Requires: np_buy_arr_len - length of pair array. 
             Provides: The next "buy" index after t_exit_ind
     
             If -1 is returned no buy has been found in remainder of array, skip to exit loop
             '''
-            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind)
+            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind, np_buy_arr_len)
 
             if debug:
                 print("\n(0) numpy debug \nnp_get_t_open, has returned the next valid buy index as", t_open_ind)
