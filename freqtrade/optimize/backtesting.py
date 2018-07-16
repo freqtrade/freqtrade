@@ -343,19 +343,17 @@ class Backtesting(object):
         # )
 
         logger.info(
-            '\n' + '=' * 4 +
-            ' SELL READON STATS ' +
-            '=' * 4 + '\n'
-            '%s \n',
+            '\n' +
+            ' SELL READON STATS '.center(119, '=') +
+            '\n%s \n',
             self._generate_text_table_sell_reason(data, results)
 
         )
 
         logger.info(
-            '\n' + '=' * 47 +
-            ' LEFT OPEN TRADES REPORT ' +
-            '=' * 47 + '\n'
-            '%s',
+            '\n' +
+            ' LEFT OPEN TRADES REPORT '.center(119, '=') +
+            '\n%s',
             self._generate_text_table(
                 data,
                 results.loc[results.open_at_end]
