@@ -98,7 +98,7 @@ class Backtesting(object):
         self.debug = False                       # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False                # Stages within Backslap
         self.debug_2loops = False               # Limit each pair to two loops, useful when debugging
-        self.debug_vector = False               # Debug vector calcs
+        self.debug_vector = True               # Debug vector calcs
         self.debug_timing_main_loop = True     # print overall timing per pair - works in Backtest and Backslap
 
 
