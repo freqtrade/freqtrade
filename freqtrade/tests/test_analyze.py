@@ -141,12 +141,12 @@ def test_dataframe_correct_columns(result):
 #     assert _ANALYZE.get_signal(exchange, 'ETH/BTC', '5m') == (False, False)
 
 
-# def test_parse_ticker_dataframe(ticker_history):
-#     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
+def test_parse_ticker_dataframe(ticker_history):
+    columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
-#     # Test file with BV data
-#     dataframe = parse_ticker_dataframe(ticker_history)
-#     assert dataframe.columns.tolist() == columns
+    # Test file with BV data
+    dataframe = parse_ticker_dataframe(ticker_history)
+    assert dataframe.columns.tolist() == columns
 
 
 # def test_tickerdata_to_dataframe(default_conf) -> None:
