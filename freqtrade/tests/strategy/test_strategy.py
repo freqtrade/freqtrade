@@ -74,13 +74,21 @@ def test_load_not_found_strategy():
 
 
 def test_strategy(result):
-    resolver = StrategyResolver({'strategy': 'DefaultStrategy'})
+    config = {'strategy': 'DefaultStrategy'}
+
+    resolver = StrategyResolver(config)
 
     assert hasattr(resolver.strategy, 'minimal_roi')
     assert resolver.strategy.minimal_roi[0] == 0.04
+    assert config["minimal_roi"]['0'] == 0.04
 
     assert hasattr(resolver.strategy, 'stoploss')
     assert resolver.strategy.stoploss == -0.10
+    assert config['stoploss'] == -0.10
+
+    assert hasattr(resolver.strategy, 'ticker_interval')
+    assert resolver.strategy.ticker_interval == '5m'
+    assert config['ticker_interval'] == '5m'
 
     assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
