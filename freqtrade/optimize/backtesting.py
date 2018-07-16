@@ -101,7 +101,8 @@ class Backtesting(object):
         self.debug_vector = False            # Debug vector calcs
         self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
 
-        self.backslap_show_trades = True     #prints trades in addition to summary report, also saves to backslap.txt
+        self.backslap_show_trades = False     # prints trades in addition to summary report
+        self.backslap_save_trades = True      # saves trades as a pretty table to backslap.txt
 
 
     @staticmethod
@@ -1055,15 +1056,23 @@ class Backtesting(object):
                     results
                 )
             )
+            #optional print trades
             if self.backslap_show_trades:
                 TradesFrame = results.filter(['open_time', 'pair', 'exit_type', 'profit_percent', 'profit_abs',
                                               'buy_spend', 'sell_take', 'trade_duration', 'close_time'], axis=1)
-
                 def to_fwf(df, fname):
                     content = tabulate(df.values.tolist(), list(df.columns), floatfmt=".8f", tablefmt='psql')
                     print(content)
-                    open(fname, "w").write(content)
 
+                DataFrame.to_fwf = to_fwf(TradesFrame, "backslap.txt")
+
+            #optional save trades
+            if self.backslap_save_trades:
+                TradesFrame = results.filter(['open_time', 'pair', 'exit_type', 'profit_percent', 'profit_abs',
+                                              'buy_spend', 'sell_take', 'trade_duration', 'close_time'], axis=1)
+                def to_fwf(df, fname):
+                    content = tabulate(df.values.tolist(), list(df.columns), floatfmt=".8f", tablefmt='psql')
+                    open(fname, "w").write(content)
                 DataFrame.to_fwf = to_fwf(TradesFrame, "backslap.txt")
 
         else:
