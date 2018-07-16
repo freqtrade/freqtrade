@@ -89,10 +89,10 @@ class Backtesting(object):
         self.np_stop: int = 6
         self.np_bto: int = self.np_close  # buys_triggered_on - should be close
         self.np_bco: int = self.np_open  # buys calculated on - open of the next candle.
-        self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
-        self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
-        #self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
-        #self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
+        #self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
+        #self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
+        self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
+        self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
         self.use_backslap = True                # Enable backslap - if false Orginal code is executed.
         self.debug = False                       # Main debug enable, very print heavy, enable 2 loops recommended
@@ -410,8 +410,8 @@ class Backtesting(object):
 
         # Populate duration
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
-        if debug:
-            print(bslap_results_df[['open_time', 'close_time', 'trade_duration']])
+        # if debug:
+        #     print(bslap_results_df[['open_time', 'close_time', 'trade_duration']])
 
         ## Spends, Takes, Profit, Absolute Profit
         # Buy Price
