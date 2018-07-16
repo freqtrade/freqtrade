@@ -94,12 +94,12 @@ class Backtesting(object):
         self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
         self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
-        self.use_backslap = True                # Enable backslap
+        self.use_backslap = True                # Enable backslap - if false Orginal code is executed.
         self.debug = True                       # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False                # Stages within Backslap
         self.debug_2loops = False               # Limit each pair to two loops, useful when debugging
         self.debug_vector = True               # Debug vector calcs
-        self.debug_timing_main_loop = False     # print overall timing per pair
+        self.debug_timing_main_loop = False     # print overall timing per pair - works in Backtest and Backslap
 
 
     @staticmethod
@@ -245,18 +245,18 @@ class Backtesting(object):
         :return: DataFrame
         """
 
-
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
-        processed = args['processed']
-        max_open_trades = args.get('max_open_trades', 0)
-        realistic = args.get('realistic', False)
-        trades = []
-        trade_count_lock: Dict = {}
-
         use_backslap = self.use_backslap
         debug_timing = self.debug_timing_main_loop
 
         if use_backslap: # Use Back Slap code
+
+            headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
+            processed = args['processed']
+            max_open_trades = args.get('max_open_trades', 0)
+            realistic = args.get('realistic', False)
+            trades = []
+            trade_count_lock: Dict = {}
+
             ########################### Call out BSlap Loop instead of Original BT code
             bslap_results: list = []
             for pair, pair_data in processed.items():
@@ -303,6 +303,13 @@ class Backtesting(object):
 
         else: # use Original Back test code
             ########################## Original BT loop
+
+            headers = ['date', 'buy', 'open', 'close', 'sell']
+            processed = args['processed']
+            max_open_trades = args.get('max_open_trades', 0)
+            realistic = args.get('realistic', False)
+            trades = []
+            trade_count_lock: Dict = {}
 
             for pair, pair_data in processed.items():
                 if debug_timing: # Start timer
@@ -1035,16 +1042,28 @@ class Backtesting(object):
         if self.config.get('export', False):
             self._store_backtest_result(self.config.get('exportfilename'), results)
 
-        logger.info(
-            '\n====================================================== '
-            'BackSLAP REPORT'
-            ' =======================================================\n'
-            '%s',
-            self._generate_text_table(
-                data,
-                results
+        if self.use_backslap:
+            logger.info(
+                '\n====================================================== '
+                'BackSLAP REPORT'
+                ' =======================================================\n'
+                '%s',
+                self._generate_text_table(
+                    data,
+                    results
+                )
             )
-        )
+        else:
+            logger.info(
+                '\n================================================= '
+                'BACKTEST REPORT'
+                ' ==================================================\n'
+                '%s',
+                self._generate_text_table(
+                    data,
+                    results
+                )
+            )
 
         ## TODO. Catch open trades for this report.
         # logger.info(
