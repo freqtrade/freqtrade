@@ -24,6 +24,7 @@ from freqtrade.persistence import Trade
 from profilehooks import profile
 from collections import OrderedDict
 import timeit
+from time import sleep
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +192,14 @@ class Backtesting(object):
             return btr
         return None
 
-    @profile
+    def s(self):
+        st = timeit.default_timer()
+        return st
+
+    def f(self, st):
+        return (timeit.default_timer() - st)
+
+
     def backtest(self, args: Dict) -> DataFrame:
         """
         Implements backtesting functionality
@@ -207,21 +215,31 @@ class Backtesting(object):
             realistic: do we try to simulate realistic trades? (default: True)
         :return: DataFrame
         """
+        debug_timing = False
+
         headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         realistic = args.get('realistic', False)
         trades = []
         trade_count_lock: Dict = {}
+
         ########################### Call out BSlap instead of using FT
         bslap_results: list = []
-        last_bslap_results: list = []
+
 
         for pair, pair_data in processed.items():
+            if debug_timing: # Start timer
+                fl = self.s()
+
             ticker_data = self.populate_sell_trend(
                     self.populate_buy_trend(pair_data))[headers].copy()
 
             ticker_data.drop(ticker_data.head(1).index, inplace=True)
+            if debug_timing: # print time taken
+                flt = self.f(fl)
+                print("populate_buy_trend:", pair, round(flt, 10))
+                st = self.st()
 
             # #dump same DFs to disk for offline testing in scratch
             # f_pair:str = pair
@@ -234,11 +252,18 @@ class Backtesting(object):
             last_bslap_results = bslap_results
             bslap_results = last_bslap_results + bslap_pair_results
 
+            if debug_timing:  # print time taken
+                tt = self.f(st)
+                print("Time to Back Slap :", pair, round(tt,10))
+                print("-----------------------")
+
+
         # Switch List of Trade Dicts (bslap_results) to Dataframe
         # Fill missing, calculable columns, profit, duration , abs etc.
         bslap_results_df = DataFrame(bslap_results)
         bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
         bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
+
         ### don't use this, itll drop exit type field
         # bslap_results_df = DataFrame(bslap_results, columns=BacktestResult._fields)
 
