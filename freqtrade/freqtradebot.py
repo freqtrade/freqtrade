@@ -15,7 +15,6 @@ from cachetools import TTLCache, cached
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
-from freqtrade.analyze import Analyze
 from freqtrade.exchange import Exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
@@ -51,7 +50,7 @@ class FreqtradeBot(object):
         # Init objects
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
-        self.analyze = Analyze(self.config, self.strategy)
+#        self.analyze = Analyze(self.config, self.strategy)
         self.fiat_converter = CryptoToFiatConverter()
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
@@ -330,7 +329,7 @@ class FreqtradeBot(object):
 
         # Pick pair based on buy signals
         for _pair in whitelist:
-            (buy, sell) = self.analyze.get_signal(self.exchange, _pair, interval)
+            (buy, sell) = self.strategy.get_signal(self.exchange, _pair, interval)
             if buy and not sell:
                 return self.execute_buy(_pair, stake_amount)
         return False
@@ -500,10 +499,10 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            (buy, sell) = self.analyze.get_signal(self.exchange,
-                                                  trade.pair, self.strategy.ticker_interval)
+            (buy, sell) = self.strategy.get_signal(self.exchange,
+                                                   trade.pair, self.strategy.ticker_interval)
 
-        if self.analyze.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
+        if self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
             self.execute_sell(trade, current_rate)
             return True
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')

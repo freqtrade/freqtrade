@@ -2,7 +2,6 @@
 
 import pandas
 
-from freqtrade.analyze import Analyze
 from freqtrade.optimize import load_data
 from freqtrade.strategy.resolver import StrategyResolver
 
@@ -15,8 +14,7 @@ def load_dataframe_pair(pairs, strategy):
     assert isinstance(pairs[0], str)
     dataframe = ld[pairs[0]]
 
-    analyze = Analyze({}, strategy)
-    dataframe = analyze.analyze_ticker(dataframe)
+    dataframe = strategy.analyze_ticker(dataframe)
     return dataframe
 
 

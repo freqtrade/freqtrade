@@ -15,7 +15,6 @@ from tabulate import tabulate
 
 import freqtrade.optimize as optimize
 from freqtrade import DependencyException, constants
-from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
@@ -54,9 +53,8 @@ class Backtesting(object):
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
-        self.analyze = Analyze(self.config, self.strategy)
-        self.ticker_interval = self.analyze.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
+        self.ticker_interval = self.strategy.ticker_interval
+        self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
         self.populate_buy_trend = self.strategy.populate_buy_trend
         self.populate_sell_trend = self.strategy.populate_sell_trend
 
@@ -153,8 +151,8 @@ class Backtesting(object):
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
             buy_signal = sell_row.buy
-            if self.analyze.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                        sell_row.sell):
+            if self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
+                                         sell_row.sell):
 
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_percent(rate=sell_row.open),

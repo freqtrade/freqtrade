@@ -13,7 +13,6 @@ import pytest
 from arrow import Arrow
 
 from freqtrade import DependencyException, constants, optimize
-from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
@@ -326,7 +325,6 @@ def test_backtesting_init(mocker, default_conf) -> None:
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
-    assert isinstance(backtesting.analyze, Analyze)
     assert backtesting.ticker_interval == '5m'
     assert callable(backtesting.tickerdata_to_dataframe)
     assert callable(backtesting.populate_buy_trend)
@@ -348,9 +346,9 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     data = backtesting.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 99
 
-    # Load Analyze to compare the result between Backtesting function and Analyze are the same
-    analyze = Analyze(default_conf, DefaultStrategy())
-    data2 = analyze.tickerdata_to_dataframe(tickerlist)
+    # Load strategy to compare the result between Backtesting function and strategy are the same
+    strategy = DefaultStrategy(default_conf)
+    data2 = strategy.tickerdata_to_dataframe(tickerlist)
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
 
@@ -413,7 +411,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history')
     patch_exchange(mocker)
@@ -454,7 +451,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history')
     patch_exchange(mocker)

@@ -34,6 +34,7 @@ class StrategyResolver(object):
         # Verify the strategy is in the configuration, otherwise fallback to the default strategy
         strategy_name = config.get('strategy') or constants.DEFAULT_STRATEGY
         self.strategy: IStrategy = self._load_strategy(strategy_name,
+                                                       config=config,
                                                        extra_dir=config.get('strategy_path'))
 
         # Set attributes
@@ -62,10 +63,11 @@ class StrategyResolver(object):
         self.strategy.stoploss = float(self.strategy.stoploss)
 
     def _load_strategy(
-            self, strategy_name: str, extra_dir: Optional[str] = None) -> IStrategy:
+            self, strategy_name: str, config: dict, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import
+        :param config: configuration for the strategy
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
@@ -81,10 +83,10 @@ class StrategyResolver(object):
 
         for path in abs_paths:
             try:
-                strategy = self._search_strategy(path, strategy_name)
+                strategy = self._search_strategy(path, strategy_name=strategy_name, config=config)
                 if strategy:
                     logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
-                    return import_strategy(strategy)
+                    return import_strategy(strategy, config=config)
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', path)
 
@@ -114,7 +116,7 @@ class StrategyResolver(object):
         return next(valid_strategies_gen, None)
 
     @staticmethod
-    def _search_strategy(directory: str, strategy_name: str) -> Optional[IStrategy]:
+    def _search_strategy(directory: str, strategy_name: str, config: dict) -> Optional[IStrategy]:
         """
         Search for the strategy_name in the given directory
         :param directory: relative or absolute directory path
@@ -130,5 +132,5 @@ class StrategyResolver(object):
                 os.path.abspath(os.path.join(directory, entry)), strategy_name
             )
             if strategy:
-                return strategy()
+                return strategy(config)
         return None

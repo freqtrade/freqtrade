@@ -23,7 +23,7 @@ def test_default_strategy_structure():
 
 
 def test_default_strategy(result):
-    strategy = DefaultStrategy()
+    strategy = DefaultStrategy({})
 
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float

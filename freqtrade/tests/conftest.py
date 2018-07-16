@@ -51,13 +51,13 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     """
     # mocker.patch('freqtrade.fiat_convert.Market', {'price_usd': 12345.0})
     patch_coinmarketcap(mocker, {'price_usd': 12345.0})
-    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
+#    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
+#    mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
 
     return FreqtradeBot(config)
 
