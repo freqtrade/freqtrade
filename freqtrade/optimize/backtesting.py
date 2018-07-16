@@ -95,10 +95,10 @@ class Backtesting(object):
         self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
         self.use_backslap = True                # Enable backslap
-        self.debug = False                       # Main debug enable, very print heavy, enable 2 loops recommended
+        self.debug = True                       # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False                # Stages within Backslap
         self.debug_2loops = False               # Limit each pair to two loops, useful when debugging
-        self.debug_vector = False               # Debug vector calcs
+        self.debug_vector = True               # Debug vector calcs
         self.debug_timing_main_loop = False     # print overall timing per pair
 
 
@@ -255,6 +255,7 @@ class Backtesting(object):
 
         use_backslap = self.use_backslap
         debug_timing = self.debug_timing_main_loop
+
         if use_backslap: # Use Back Slap code
             ########################### Call out BSlap Loop instead of Original BT code
             bslap_results: list = []
@@ -395,7 +396,7 @@ class Backtesting(object):
         if debug:
             from pandas import set_option
             set_option('display.max_rows', 5000)
-            set_option('display.max_columns', 8)
+            set_option('display.max_columns', 10)
             pd.set_option('display.width', 1000)
             pd.set_option('max_colwidth', 40)
             pd.set_option('precision', 12)
@@ -422,8 +423,7 @@ class Backtesting(object):
         if debug:
             print("\n")
             print(bslap_results_df[
-                      ['buy_sum', 'buy_fee', 'buy_spend', 'sell_sum', 'sell_take', 'profit_percent', 'profit_abs',
-                       'exit_type']])
+                      ['buy_sum', 'buy_fee', 'buy_spend', 'sell_sum','sell_fee', 'sell_take', 'profit_percent', 'profit_abs', 'exit_type']])
 
         return bslap_results_df
 
@@ -708,8 +708,8 @@ class Backtesting(object):
                 if debug:
                     print("\n(4) numpy debug\nNext view index with sell = 1 is ", np_t_sell_ind)
                     print("If 0 or less is returned there is no sell found to end of view, then next lines garbage")
-                    print("Row", np_t_sell_ind, np_t_open_v[np_t_stop_ind])
-                    print("Row", np_t_sell_ind + 1, np_t_open_v[np_t_stop_ind + 1])
+                    print("Row", np_t_sell_ind, np_t_open_v[np_t_sell_ind])
+                    print("Row", np_t_sell_ind + 1, np_t_open_v[np_t_sell_ind + 1])
                 if debug_timing:
                     t_t = f(st)
                     print("4-numpy", str.format('{0:.17f}', t_t))
