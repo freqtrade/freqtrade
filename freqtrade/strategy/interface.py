@@ -174,6 +174,7 @@ class IStrategy(ABC):
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
+        :param current_profit: current profit in percent
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
@@ -199,13 +200,16 @@ class IStrategy(ABC):
 
             # check if we have a special stop loss for positive condition
             # and if profit is positive
-            stop_loss_value = self.stoploss
-            if 'trailing_stop_positive' in self.config and current_profit > 0:
+            stop_loss_value = self.strategy.stoploss
+            sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
+
+            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
 
                 # Ignore mypy error check in configuration that this is a float
                 stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
                 logger.debug(f"using positive stop loss mode: {stop_loss_value} "
-                             f"since we have profit {current_profit}")
+                             f"with offset {sl_offset:.4g} "
+                             f"since we have profit {current_profit:.4f}%")
 
             trade.adjust_stop_loss(current_rate, stop_loss_value)
 
