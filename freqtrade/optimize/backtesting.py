@@ -94,12 +94,14 @@ class Backtesting(object):
         self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
         self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
-        self.use_backslap = True                # Enable backslap - if false Orginal code is executed.
-        self.debug = False                       # Main debug enable, very print heavy, enable 2 loops recommended
-        self.debug_timing = False                # Stages within Backslap
-        self.debug_2loops = False               # Limit each pair to two loops, useful when debugging
-        self.debug_vector = True               # Debug vector calcs
-        self.debug_timing_main_loop = True     # print overall timing per pair - works in Backtest and Backslap
+        self.use_backslap = True             # Enable backslap - if false Orginal code is executed.
+        self.debug = False                   # Main debug enable, very print heavy, enable 2 loops recommended
+        self.debug_timing = False            # Stages within Backslap
+        self.debug_2loops = False            # Limit each pair to two loops, useful when debugging
+        self.debug_vector = False            # Debug vector calcs
+        self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
+
+        self.backslap_show_trades = True     #prints trades in addition to summary report, also saves to backslap.txt
 
 
     @staticmethod
@@ -1053,6 +1055,17 @@ class Backtesting(object):
                     results
                 )
             )
+            if self.backslap_show_trades:
+                TradesFrame = results.filter(['open_time', 'pair', 'exit_type', 'profit_percent', 'profit_abs',
+                                              'buy_spend', 'sell_take', 'trade_duration', 'close_time'], axis=1)
+
+                def to_fwf(df, fname):
+                    content = tabulate(df.values.tolist(), list(df.columns), floatfmt=".8f", tablefmt='psql')
+                    print(content)
+                    open(fname, "w").write(content)
+
+                DataFrame.to_fwf = to_fwf(TradesFrame, "backslap.txt")
+
         else:
             logger.info(
                 '\n================================================= '
