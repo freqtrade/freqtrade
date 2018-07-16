@@ -73,6 +73,35 @@ class Backtesting(object):
 
         self.stop_loss_value = self.analyze.strategy.stoploss
 
+        #### backslap config
+        '''
+        Numpy arrays are used for 100x speed up
+        We requires setting Int values for
+        buy stop triggers and stop calculated on
+        # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5 - stop 6
+        '''
+        self.np_buy: int = 0
+        self.np_open: int = 1
+        self.np_close: int = 2
+        self.np_sell: int = 3
+        self.np_high: int = 4
+        self.np_low: int = 5
+        self.np_stop: int = 6
+        self.np_bto: int = self.np_close  # buys_triggered_on - should be close
+        self.np_bco: int = self.np_open  # buys calculated on - open of the next candle.
+        # self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
+        # self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
+        self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
+        self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
+
+        self.use_backslap = True                # Enable backslap
+        self.debug = False                       # Main debug enable, very print heavy, enable 2 loops recommended
+        self.debug_timing = False                # Stages within Backslap
+        self.debug_2loops = False               # Limit each pair to two loops, useful when debugging
+        self.debug_vector = False               # Debug vector calcs
+        self.debug_timing_main_loop = False     # print overall timing per pair
+
+
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
         """
@@ -215,7 +244,7 @@ class Backtesting(object):
             realistic: do we try to simulate realistic trades? (default: True)
         :return: DataFrame
         """
-        debug_timing = False
+
 
         headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
         processed = args['processed']
@@ -224,99 +253,114 @@ class Backtesting(object):
         trades = []
         trade_count_lock: Dict = {}
 
-        ########################### Call out BSlap instead of using FT
-        bslap_results: list = []
+        use_backslap = self.use_backslap
+        debug_timing = self.debug_timing_main_loop
+        if use_backslap: # Use Back Slap code
+            ########################### Call out BSlap Loop instead of Original BT code
+            bslap_results: list = []
+            for pair, pair_data in processed.items():
+                if debug_timing: # Start timer
+                    fl = self.s()
+
+                ticker_data = self.populate_sell_trend(
+                        self.populate_buy_trend(pair_data))[headers].copy()
+
+                if debug_timing: # print time taken
+                    flt = self.f(fl)
+                    #print("populate_buy_trend:", pair, round(flt, 10))
+                    st = self.s()
+
+                # #dump same DFs to disk for offline testing in scratch
+                # f_pair:str = pair
+                # csv = f_pair.replace("/", "_")
+                # csv="/Users/creslin/PycharmProjects/freqtrade_new/frames/" + csv
+                # ticker_data.to_csv(csv, sep='\t', encoding='utf-8')
+
+                #call bslap - results are a list of dicts
+                bslap_pair_results = self.backslap_pair(ticker_data, pair)
+                last_bslap_results = bslap_results
+                bslap_results = last_bslap_results + bslap_pair_results
+
+                if debug_timing:  # print time taken
+                    tt = self.f(st)
+                    print("Time to  BackSlap :", pair, round(tt,10))
+                    print("-----------------------")
 
 
-        for pair, pair_data in processed.items():
-            if debug_timing: # Start timer
-                fl = self.s()
+            # Switch List of Trade Dicts (bslap_results) to Dataframe
+            # Fill missing, calculable columns, profit, duration , abs etc.
+            bslap_results_df = DataFrame(bslap_results)
+            bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
+            bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
 
-            ticker_data = self.populate_sell_trend(
+            ### don't use this, itll drop exit type field
+            # bslap_results_df = DataFrame(bslap_results, columns=BacktestResult._fields)
+
+            bslap_results_df = self.vector_fill_results_table(bslap_results_df)
+
+            return bslap_results_df
+
+        else: # use Original Back test code
+            ########################## Original BT loop
+
+            for pair, pair_data in processed.items():
+                if debug_timing: # Start timer
+                    fl = self.s()
+
+                pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+
+                ticker_data = self.populate_sell_trend(
                     self.populate_buy_trend(pair_data))[headers].copy()
 
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
-            if debug_timing: # print time taken
-                flt = self.f(fl)
-                print("populate_buy_trend:", pair, round(flt, 10))
-                st = self.st()
+                # to avoid using data from future, we buy/sell with signal from previous candle
+                ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+                ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
 
-            # #dump same DFs to disk for offline testing in scratch
-            # f_pair:str = pair
-            # csv = f_pair.replace("/", "_")
-            # csv="/Users/creslin/PycharmProjects/freqtrade_new/frames/" + csv
-            # ticker_data.to_csv(csv, sep='\t', encoding='utf-8')
+                ticker_data.drop(ticker_data.head(1).index, inplace=True)
 
-            #call bslap - results are a list of dicts
-            bslap_pair_results = self.backslap_pair(ticker_data, pair)
-            last_bslap_results = bslap_results
-            bslap_results = last_bslap_results + bslap_pair_results
+                if debug_timing: # print time taken
+                    flt = self.f(fl)
+                    #print("populate_buy_trend:", pair, round(flt, 10))
+                    st = self.s()
 
-            if debug_timing:  # print time taken
-                tt = self.f(st)
-                print("Time to Back Slap :", pair, round(tt,10))
-                print("-----------------------")
+                # Convert from Pandas to list for performance reasons
+                # (Looping Pandas is slow.)
+                ticker = [x for x in ticker_data.itertuples()]
+
+                lock_pair_until = None
+                for index, row in enumerate(ticker):
+                    if row.buy == 0 or row.sell == 1:
+                        continue  # skip rows where no buy signal or that would immediately sell off
+
+                    if realistic:
+                        if lock_pair_until is not None and row.date <= lock_pair_until:
+                            continue
+                    if max_open_trades > 0:
+                        # Check if max_open_trades has already been reached for the given date
+                        if not trade_count_lock.get(row.date, 0) < max_open_trades:
+                            continue
+
+                        trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
+
+                    trade_entry = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
+                                                             trade_count_lock, args)
 
 
-        # Switch List of Trade Dicts (bslap_results) to Dataframe
-        # Fill missing, calculable columns, profit, duration , abs etc.
-        bslap_results_df = DataFrame(bslap_results)
-        bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
-        bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
+                    if trade_entry:
+                        lock_pair_until = trade_entry.close_time
+                        trades.append(trade_entry)
+                    else:
+                        # Set lock_pair_until to end of testing period if trade could not be closed
+                        # This happens only if the buy-signal was with the last candle
+                        lock_pair_until = ticker_data.iloc[-1].date
 
-        ### don't use this, itll drop exit type field
-        # bslap_results_df = DataFrame(bslap_results, columns=BacktestResult._fields)
+                if debug_timing:  # print time taken
+                    tt = self.f(st)
+                    print("Time to BackTest :", pair, round(tt, 10))
+                    print("-----------------------")
 
-        bslap_results_df = self.vector_fill_results_table(bslap_results_df)
-
-        return bslap_results_df
-
-        ########################### Original BT loop
-        # for pair, pair_data in processed.items():
-        #     pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
-        #
-        #     ticker_data = self.populate_sell_trend(
-        #         self.populate_buy_trend(pair_data))[headers].copy()
-        #
-        #     # to avoid using data from future, we buy/sell with signal from previous candle
-        #     ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-        #     ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
-        #
-        #     ticker_data.drop(ticker_data.head(1).index, inplace=True)
-        #
-        #     # Convert from Pandas to list for performance reasons
-        #     # (Looping Pandas is slow.)
-        #     ticker = [x for x in ticker_data.itertuples()]
-        #
-        #     lock_pair_until = None
-        #     for index, row in enumerate(ticker):
-        #         if row.buy == 0 or row.sell == 1:
-        #             continue  # skip rows where no buy signal or that would immediately sell off
-        #
-        #         if realistic:
-        #             if lock_pair_until is not None and row.date <= lock_pair_until:
-        #                 continue
-        #         if max_open_trades > 0:
-        #             # Check if max_open_trades has already been reached for the given date
-        #             if not trade_count_lock.get(row.date, 0) < max_open_trades:
-        #                 continue
-        #
-        #             trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
-        #
-        #         trade_entry = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
-        #                                                  trade_count_lock, args)
-        #
-        #
-        #         if trade_entry:
-        #             lock_pair_until = trade_entry.close_time
-        #             trades.append(trade_entry)
-        #         else:
-        #             # Set lock_pair_until to end of testing period if trade could not be closed
-        #             # This happens only if the buy-signal was with the last candle
-        #             lock_pair_until = ticker_data.iloc[-1].date
-        #
-        # return DataFrame.from_records(trades, columns=BacktestResult._fields)
-        ######################## Original BT loop end
+            return DataFrame.from_records(trades, columns=BacktestResult._fields)
+            ####################### Original BT loop end
 
     def vector_fill_results_table(self, bslap_results_df: DataFrame):
         """
@@ -333,13 +377,18 @@ class Backtesting(object):
         :return: bslap_results Dataframe
         """
         import pandas as pd
-        debug = False
+        debug = self.debug_vector
 
-        #  stake and fees
-        stake = 0.015
-        # 0.05% is 0.00,05
-        open_fee = 0.0000
-        close_fee = 0.0000
+        # stake and fees
+        # stake = 0.015
+        # 0.05% is 0.0005
+        #fee = 0.001
+
+        stake = self.config.get('stake_amount')
+        fee = self.fee
+        open_fee = fee / 2
+        close_fee = fee / 2
+
         if debug:
             print("Stake is,", stake, "the sum of currency to spend per trade")
             print("The open fee is", open_fee, "The close fee is", close_fee)
@@ -420,9 +469,12 @@ class Backtesting(object):
         from datetime import datetime
 
         ### backslap debug wrap
-        debug_2loops = False  # only loop twice, for faster debug
-        debug_timing = False  # print timing for each step
-        debug = False  # print values, to check accuracy
+        # debug_2loops = False  # only loop twice, for faster debug
+        # debug_timing = False  # print timing for each step
+        # debug = False  # print values, to check accuracy
+        debug_2loops = self.debug_2loops  # only loop twice, for faster debug
+        debug_timing = self.debug_timing  # print timing for each step
+        debug = self.debug  # print values, to check accuracy
 
         # Read Stop Loss Values and Stake
         stop = self.stop_loss_value
@@ -451,20 +503,34 @@ class Backtesting(object):
         buy stop triggers and stop calculated on
         # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5 - stop 6
         '''
-        np_buy: int = 0
-        np_open: int = 1
-        np_close: int = 2
-        np_sell: int = 3
-        np_high: int = 4
-        np_low: int = 5
-        np_stop: int = 6
-        np_bto: int = np_close  # buys_triggered_on - should be close
-        np_bco: int = np_open  # buys calculated on - open of the next candle.
-        #np_sto: int = np_low  # stops_triggered_on - Should be low, FT uses close
-        #np_sco: int = np_stop  # stops_calculated_on - Should be stop, FT uses close
-        np_sto: int = np_close  # stops_triggered_on - Should be low, FT uses close
-        np_sco: int = np_close  # stops_calculated_on - Should be stop, FT uses close
-        #
+        # np_buy: int = 0
+        # np_open: int = 1
+        # np_close: int = 2
+        # np_sell: int = 3
+        # np_high: int = 4
+        # np_low: int = 5
+        # np_stop: int = 6
+        # np_bto: int = np_close  # buys_triggered_on - should be close
+        # np_bco: int = np_open  # buys calculated on - open of the next candle.
+        # #np_sto: int = np_low  # stops_triggered_on - Should be low, FT uses close
+        # #np_sco: int = np_stop  # stops_calculated_on - Should be stop, FT uses close
+        # np_sto: int = np_close  # stops_triggered_on - Should be low, FT uses close
+        # np_sco: int = np_close  # stops_calculated_on - Should be stop, FT uses close
+
+        #######
+        #  Use vars set at top of backtest
+        np_buy: int = self.np_buy
+        np_open: int = self.np_open
+        np_close: int = self.np_close
+        np_sell: int = self.np_sell
+        np_high: int = self.np_high
+        np_low: int = self.np_low
+        np_stop: int = self.np_stop
+        np_bto: int = self.np_bto  # buys_triggered_on - should be close
+        np_bco: int = self.np_bco  # buys calculated on - open of the next candle.
+        np_sto: int = self.np_sto  # stops_triggered_on - Should be low, FT uses close
+        np_sco: int = self.np_sco  # stops_calculated_on - Should be stop, FT uses close
+
         ### End Config
 
         pair: str = pair
