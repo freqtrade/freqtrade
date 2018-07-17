@@ -230,7 +230,7 @@ class Hyperopt(Backtesting):
         Define the buy strategy parameters to be used by hyperopt
         """
 
-        def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+        def populate_buy_trend(dataframe: DataFrame, pair: str) -> DataFrame:
             """
             Buy strategy Hyperopt will build and use
             """
