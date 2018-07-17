@@ -95,10 +95,10 @@ class Backtesting(object):
         #self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
         self.use_backslap = True		# Enable backslap - if false Orginal code is executed.
-        self.debug = False                   # Main debug enable, very print heavy, enable 2 loops recommended
+        self.debug = True                   # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False            # Stages within Backslap
         self.debug_2loops = False            # Limit each pair to two loops, useful when debugging
-        self.debug_vector = False            # Debug vector calcs
+        self.debug_vector = True            # Debug vector calcs
         self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
 
         self.backslap_show_trades = False     # prints trades in addition to summary report
@@ -296,8 +296,10 @@ class Backtesting(object):
             bslap_results_df = DataFrame(bslap_results)
 
             if len(bslap_results_df) > 0: # Only post process a frame if it has a record
-                bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
-                bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
+                # bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
+                # bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
+                # if debug:
+                #     print("open_time and close_time converted to datetime columns")
 
                 bslap_results_df = self.vector_fill_results_table(bslap_results_df, pair)
             else:
@@ -373,7 +375,6 @@ class Backtesting(object):
                     print("Time to BackTest :", pair, round(tt, 10))
                     print("-----------------------")
 
-                print("trades")
 
             return DataFrame.from_records(trades, columns=BacktestResult._fields)
             ####################### Original BT loop end
@@ -393,6 +394,7 @@ class Backtesting(object):
         :return: bslap_results Dataframe
         """
         import pandas as pd
+        import numpy as np
         debug = self.debug_vector
 
         # stake and fees
@@ -416,8 +418,6 @@ class Backtesting(object):
             pd.set_option('max_colwidth', 40)
             pd.set_option('precision', 12)
 
-        #Ony do Math on a dataframe that has an open; No result pairs contain the pair string only
-        # Populate duration
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
         # if debug:
         #     print(bslap_results_df[['open_time', 'close_time', 'trade_duration']])
@@ -621,9 +621,9 @@ class Backtesting(object):
             if t_open_ind != -1:
 
                 """
-                1 - Create view to search within for our open trade
+                1 - Create views to search within for our open trade
     
-                The view is our search space for the next Stop or Sell
+                The views are our search space for the next Stop or Sell
                 Numpy view is employed as:
                 1,000 faster than pandas searches
                 Pandas cannot assure it will always return a view, it may make a slow copy.
@@ -633,9 +633,12 @@ class Backtesting(object):
     
                 Requires: np_bslap is our numpy array of the ticker DataFrame
                 Requires: t_open_ind is the index row with the  buy.
-                Provided: np_t_open_v View of array after trade.
+                Provides: np_t_open_v View of array after buy.
+                Provides: np_t_open_v_stop View of array after buy +1  
+                          (Stop will search in here to prevent stopping in the past)
                 """
                 np_t_open_v = np_bslap[t_open_ind:]
+                np_t_open_v_stop = np_bslap[t_open_ind +1:]
 
                 if debug:
                     print("\n(1) numpy debug \nNumpy view row 0 is now Ticker_Data Index", t_open_ind)
@@ -675,23 +678,27 @@ class Backtesting(object):
     
                 where [np_sto] (stop tiggered on variable: "close", "low" etc) < np_t_stop_pri
     
-                Requires: np_t_open_v   Numpy view of ticker_data after trade open
+                Requires: np_t_open_v_stop   Numpy view of ticker_data after buy row +1 (when trade was opened)
                 Requires: np_sto        User Var(STO)StopTriggeredOn. Typically set to "low" or "close"
                 Requires: np_t_stop_pri The stop-loss price STO must fall under to trigger stop
                 Provides: np_t_stop_ind The first candle after trade open where STO is under stop-loss
                 '''
-                np_t_stop_ind = utf1st.find_1st(np_t_open_v[:, np_sto],
+                np_t_stop_ind = utf1st.find_1st(np_t_open_v_stop[:, np_sto],
                                                 np_t_stop_pri,
                                                 utf1st.cmp_smaller)
 
+                # plus 1 as np_t_open_v_stop is 1 ahead of view np_t_open_v, used from here on out.
+                np_t_stop_ind = np_t_stop_ind +1
+
+
                 if debug:
-                    print("\n(3) numpy debug\nNext view index with STO (stop trigger on) under Stop-Loss is", np_t_stop_ind,
+                    print("\n(3) numpy debug\nNext view index with STO (stop trigger on) under Stop-Loss is", np_t_stop_ind -1,
                           ". STO is using field", np_sto,
                           "\nFrom key: buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5\n")
 
-                    print("If -1 returned there is no stop found to end of view, then next two array lines are garbage")
-                    print("Row", np_t_stop_ind, np_t_open_v[np_t_stop_ind])
-                    print("Row", np_t_stop_ind + 1, np_t_open_v[np_t_stop_ind + 1])
+                    print("If -1 or 0 returned there is no stop found to end of view, then next two array lines are garbage")
+                    print("Row", np_t_stop_ind -1 , np_t_open_v[np_t_stop_ind])
+                    print("Row", np_t_stop_ind , np_t_open_v[np_t_stop_ind + 1])
                 if debug_timing:
                     t_t = f(st)
                     print("3-numpy", str.format('{0:.17f}', t_t))
@@ -765,7 +772,7 @@ class Backtesting(object):
 
                 # cludge for logic test (-1) means it was not found, set crazy high to lose < test
                 np_t_sell_ind = 99999999 if np_t_sell_ind <= 0 else np_t_sell_ind
-                np_t_stop_ind = 99999999 if np_t_stop_ind == -1 else np_t_stop_ind
+                np_t_stop_ind = 99999999 if np_t_stop_ind <= 0 else np_t_stop_ind
 
                 # Stoploss trigger found before a sell =1
                 if np_t_stop_ind < 99999999 and np_t_stop_ind <= np_t_sell_ind:
