@@ -64,7 +64,7 @@ def test_load_strategy(result):
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
     extra_dir = os.path.join('some', 'path')
-    resolver._load_strategy('TestStrategy', extra_dir)
+    resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
     assert (
         'freqtrade.strategy.resolver',
