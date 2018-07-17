@@ -95,14 +95,16 @@ class Backtesting(object):
         #self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
         self.use_backslap = True		# Enable backslap - if false Orginal code is executed.
-        self.debug = True                   # Main debug enable, very print heavy, enable 2 loops recommended
+        self.debug = False                   # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False            # Stages within Backslap
         self.debug_2loops = False            # Limit each pair to two loops, useful when debugging
-        self.debug_vector = True            # Debug vector calcs
+        self.debug_vector = False             # Debug vector calcs
         self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
 
-        self.backslap_show_trades = False     # prints trades in addition to summary report
-        self.backslap_save_trades = True      # saves trades as a pretty table to backslap.txt
+        self.backslap_show_trades = True     # prints trades in addition to summary report
+        self.backslap_save_trades = True     # saves trades as a pretty table to backslap.txt
+
+        self.stop_stops: int = 9999          # stop back testing any pair with this many stops, set to 999999 to not hit
 
 
     @staticmethod
@@ -389,7 +391,6 @@ class Backtesting(object):
         - Profit
         - trade duration
         - profit abs
-
         :param bslap_results Dataframe
         :return: bslap_results Dataframe
         """
@@ -443,14 +444,19 @@ class Backtesting(object):
 
         return bslap_results_df
 
-    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int, np_buy_arr_len: int):
+    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int, np_buy_arr_len: int, stop_stops: int, stop_stops_count: int):
         import utils_find_1st as utf1st
         """
          The purpose of this def is to return the next "buy" = 1
          after t_exit_ind.
+         
+         This function will also check is the stop limit for the pair has been reached. 
+         if stop_stops is the limit and stop_stops_count it the number of times the stop has been hit.
 
          t_exit_ind is the index the last trade exited on
          or 0 if first time around this loop.
+         
+         stop_stops i
          """
         # Timers, to be called if in debug
         def s():
@@ -477,6 +483,10 @@ class Backtesting(object):
 
         if t_open_ind == np_buy_arr_len -1 : # If buy found on last candle ignore, there is no OPEN in next to use
             t_open_ind = -1 # -1 ends the loop
+
+        if stop_stops_count >= stop_stops: # if maximum number of stops allowed in a pair is hit, exit loop
+            t_open_ind = -1  # -1 ends the loop
+            print("Max stop limit ", stop_stops, "reached. Moving to next pair")
 
         return t_open_ind
 
@@ -564,6 +574,9 @@ class Backtesting(object):
         t_exit_ind = 0  # Start loop from first index
         t_exit_last = 0  # To test for exit
 
+        stop_stops = self.stop_stops  # Int of stops within a pair to stop trading a pair at
+        stop_stops_count = 0          # stop counter per pair
+
         st = s()  # Start timer for processing dataframe
         if debug:
             print('Processing:', pair)
@@ -604,11 +617,13 @@ class Backtesting(object):
             Requires: np_buy_arr - a 1D array of the 'buy' column. To find next "1"
             Required: t_exit_ind - Either 0, first loop. Or The index we last exited on
             Requires: np_buy_arr_len - length of pair array. 
+            Requires: stops_stops - number of stops allowed before stop trading a pair 
+            Requires: stop_stop_counts - count of stops hit in the pair
             Provides: The next "buy" index after t_exit_ind
     
             If -1 is returned no buy has been found in remainder of array, skip to exit loop
             '''
-            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind, np_buy_arr_len)
+            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind, np_buy_arr_len, stop_stops, stop_stops_count)
 
             if debug:
                 print("\n(0) numpy debug \nnp_get_t_open, has returned the next valid buy index as", t_open_ind)
@@ -970,6 +985,9 @@ class Backtesting(object):
                 bslap_result["exit_type"] = t_exit_type
                 # append the dict to the list and print list
                 bslap_pair_results.append(bslap_result)
+
+                if t_exit_type is "stop":
+                    stop_stops_count = stop_stops_count + 1
 
                 if debug:
                     print("The trade dict is: \n", bslap_result)
