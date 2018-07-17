@@ -42,7 +42,7 @@ class IStrategy(ABC):
     stoploss: float
     ticker_interval: str
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict) -> None:
         self.config = config
 
     @abstractmethod
