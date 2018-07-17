@@ -101,7 +101,7 @@ class Backtesting(object):
         self.debug_vector = False             # Debug vector calcs
         self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
 
-        self.backslap_show_trades = True     # prints trades in addition to summary report
+        self.backslap_show_trades = False     # prints trades in addition to summary report
         self.backslap_save_trades = True     # saves trades as a pretty table to backslap.txt
 
         self.stop_stops: int = 9999          # stop back testing any pair with this many stops, set to 999999 to not hit
@@ -414,33 +414,35 @@ class Backtesting(object):
         if debug:
             from pandas import set_option
             set_option('display.max_rows', 5000)
-            set_option('display.max_columns', 10)
+            set_option('display.max_columns', 20)
             pd.set_option('display.width', 1000)
             pd.set_option('max_colwidth', 40)
             pd.set_option('precision', 12)
 
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
-        # if debug:
-        #     print(bslap_results_df[['open_time', 'close_time', 'trade_duration']])
 
         ## Spends, Takes, Profit, Absolute Profit
+        print(bslap_results_df)
         # Buy Price
-        bslap_results_df['buy_sum'] = stake * bslap_results_df['open_rate']
-        bslap_results_df['buy_fee'] = bslap_results_df['buy_sum'] * open_fee
-        bslap_results_df['buy_spend'] = bslap_results_df['buy_sum'] + bslap_results_df['buy_fee']
+        bslap_results_df['buy_vol']   = stake / bslap_results_df['open_rate'] # How many target are we buying
+        bslap_results_df['buy_fee']   = stake * open_fee
+        bslap_results_df['buy_spend'] = stake + bslap_results_df['buy_fee'] # How much we're spending
+
         # Sell price
-        bslap_results_df['sell_sum'] = stake * bslap_results_df['close_rate']
-        bslap_results_df['sell_fee'] = bslap_results_df['sell_sum'] * close_fee
+        bslap_results_df['sell_sum']  = bslap_results_df['buy_vol'] * bslap_results_df['close_rate']
+        bslap_results_df['sell_fee']  = bslap_results_df['sell_sum'] * close_fee
         bslap_results_df['sell_take'] = bslap_results_df['sell_sum'] - bslap_results_df['sell_fee']
         # profit_percent
-        bslap_results_df['profit_percent'] = bslap_results_df['sell_take'] / bslap_results_df['buy_spend'] - 1
+        bslap_results_df['profit_percent'] = (bslap_results_df['sell_take'] - bslap_results_df['buy_spend']) \
+                                             / bslap_results_df['buy_spend']
         # Absolute profit
         bslap_results_df['profit_abs'] = bslap_results_df['sell_take'] - bslap_results_df['buy_spend']
+
 
         if debug:
             print("\n")
             print(bslap_results_df[
-                      ['buy_sum', 'buy_fee', 'buy_spend', 'sell_sum','sell_fee', 'sell_take', 'profit_percent', 'profit_abs', 'exit_type']])
+                      ['buy_vol', 'buy_fee', 'buy_spend', 'sell_sum','sell_fee', 'sell_take', 'profit_percent', 'profit_abs', 'exit_type']])
 
         return bslap_results_df
 
@@ -458,6 +460,8 @@ class Backtesting(object):
          
          stop_stops i
          """
+        debug = self.debug
+
         # Timers, to be called if in debug
         def s():
             st = timeit.default_timer()
@@ -486,7 +490,8 @@ class Backtesting(object):
 
         if stop_stops_count >= stop_stops: # if maximum number of stops allowed in a pair is hit, exit loop
             t_open_ind = -1  # -1 ends the loop
-            print("Max stop limit ", stop_stops, "reached. Moving to next pair")
+            if debug:
+                print("Max stop limit ", stop_stops, "reached. Moving to next pair")
 
         return t_open_ind
 
@@ -1026,6 +1031,8 @@ class Backtesting(object):
 
             timerange = Arguments.parse_timerange(None if self.config.get(
                 'timerange') is None else str(self.config.get('timerange')))
+
+            ld_files = self.s()
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
@@ -1046,6 +1053,8 @@ class Backtesting(object):
             max_open_trades = 0
 
         preprocessed = self.tickerdata_to_dataframe(data)
+        t_t = self.f(ld_files)
+        print("Load from json to file to df in mem took", t_t)
 
         # Print timeframe
         min_date, max_date = self.get_timeframe(preprocessed)
@@ -1110,18 +1119,16 @@ class Backtesting(object):
                     results
                 )
             )
-
-        ## TODO. Catch open trades for this report.
-        # logger.info(
-        #     '\n=============================================== '
-        #     'LEFT OPEN TRADES REPORT'
-        #     ' ===============================================\n'
-        #     '%s',
-        #     self._generate_text_table(
-        #         data,
-        #         results.loc[results.open_at_end]
-        #     )
-        # )
+        logger.info(
+            '\n=============================================== '
+            'LEFT OPEN TRADES REPORT'
+            ' ===============================================\n'
+            '%s',
+            self._generate_text_table(
+                data,
+                results.loc[results.open_at_end]
+            )
+        )
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
