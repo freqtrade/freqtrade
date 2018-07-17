@@ -184,6 +184,16 @@ class Arguments(object):
             dest='position_stacking',
             default=False
         )
+
+        parser.add_argument(
+            '--disable-max-market-positions',
+            help='Disable applying `max_open_trades` during backtest '
+                  '(same as setting `max_open_trades` to a very high number)',
+            action='store_false',
+            dest='use_max_market_positions',
+            default=True
+        )
+
         parser.add_argument(
             '--timerange',
             help='specify what timerange of data to use.',

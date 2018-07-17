@@ -282,12 +282,11 @@ class Backtesting(object):
         if not data:
             logger.critical("No data found. Terminating.")
             return
-        # Ignore max_open_trades in backtesting, except realistic flag was passed
-        # TODO: this is not position stacking!!
-        if self.config.get('position_stacking', False):
+        # Use max_open_trades in backtesting, except --disable-max-market-positions is set
+        if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
         else:
-            logger.info('Ignoring max_open_trades (position_stacking not set) ...')
+            logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
 
         preprocessed = self.tickerdata_to_dataframe(data)

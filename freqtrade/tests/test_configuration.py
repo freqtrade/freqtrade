@@ -301,6 +301,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--live',
         '--enable-position-stacking',
+        '--disable-max-market-positions',
         '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo'
@@ -332,7 +333,10 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     assert 'position_stacking'in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
-    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
 
     assert 'refresh_pairs'in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)

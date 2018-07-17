@@ -147,7 +147,13 @@ class Configuration(object):
             config.update({'position_stacking': True})
             logger.info('Parameter --enable-position-stacking detected ...')
 
-        logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+        # If --disable-max-market-positions is used we add it to the configuration
+        if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
+            config.update({'use_max_market_positions': False})
+            logger.info('Parameter --disable-max-market-positions detected ...')
+            logger.info('max_open_trades set to unlimited ...')
+        else:
+            logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:

@@ -219,6 +219,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--live',
         '--enable-position-stacking',
+        '--disable-max-market-positions',
         '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo',
@@ -248,7 +249,10 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     assert 'position_stacking' in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
-    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
 
     assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -718,7 +722,8 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--ticker-interval', '1m',
         '--live',
         '--timerange', '-100',
-        '--enable-position-stacking'
+        '--enable-position-stacking',
+        '--disable-max-market-positions'
     ]
     args = get_args(args)
     start(args)
@@ -727,7 +732,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Parameter -i/--ticker-interval detected ...',
         'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
-        'Using max_open_trades: 1 ...',
+        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
