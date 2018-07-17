@@ -40,6 +40,7 @@ class Hyperopt(Backtesting):
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
@@ -75,7 +76,7 @@ class Hyperopt(Backtesting):
         return arg_dict
 
     @staticmethod
-    def populate_indicators(dataframe: DataFrame, pair:str) -> DataFrame:
+    def populate_indicators(dataframe: DataFrame, pair: str) -> DataFrame:
         dataframe['adx'] = ta.ADX(dataframe)
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
@@ -228,6 +229,7 @@ class Hyperopt(Backtesting):
         """
         Define the buy strategy parameters to be used by hyperopt
         """
+
         def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
             """
             Buy strategy Hyperopt will build and use
@@ -360,7 +362,7 @@ class Hyperopt(Backtesting):
         logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
 
         opt = self.get_optimizer(cpus)
-        EVALS = max(self.total_tries//cpus, 1)
+        EVALS = max(self.total_tries // cpus, 1)
         try:
             with Parallel(n_jobs=cpus) as parallel:
                 for i in range(EVALS):
