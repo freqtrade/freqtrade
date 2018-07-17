@@ -126,7 +126,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
-  --realistic-simulation
+  --enable-position-tracking
                         Disables buying the same pair multiple times to 
                         simulate real world limitations
   --timerange TIMERANGE
@@ -164,7 +164,7 @@ To optimize your strategy, you can use hyperopt parameter hyperoptimization
 to find optimal parameter values for your stategy.
 
 ```
-usage: main.py hyperopt [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
+usage: main.py hyperopt [-h] [-i TICKER_INTERVAL] [--enable-position-tracking]
                         [--timerange TIMERANGE] [-e INT]
                         [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
 
@@ -172,7 +172,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
-  --realistic-simulation
+  --enable-position-tracking
                         Disables buying the same pair multiple times to 
                         simulate real world limitations
   --timerange TIMERANGE specify what timerange of data to use.
