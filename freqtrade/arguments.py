@@ -188,7 +188,7 @@ class Arguments(object):
         parser.add_argument(
             '--disable-max-market-positions',
             help='Disable applying `max_open_trades` during backtest '
-                  '(same as setting `max_open_trades` to a very high number)',
+                 '(same as setting `max_open_trades` to a very high number)',
             action='store_false',
             dest='use_max_market_positions',
             default=True
