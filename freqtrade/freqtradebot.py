@@ -50,7 +50,6 @@ class FreqtradeBot(object):
         # Init objects
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
-#        self.analyze = Analyze(self.config, self.strategy)
         self.fiat_converter = CryptoToFiatConverter()
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
