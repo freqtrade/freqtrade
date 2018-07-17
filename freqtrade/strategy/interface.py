@@ -12,7 +12,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
-from freqtrade.analyze import parse_ticker_dataframe
+from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 

@@ -3,7 +3,7 @@ import json
 import pytest
 from pandas import DataFrame
 
-from freqtrade.analyze import parse_ticker_dataframe
+from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 

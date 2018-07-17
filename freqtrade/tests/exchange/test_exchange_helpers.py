@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring, C0103
 
 """
-Unit test file for analyse.py
+Unit test file for exchange_helpers.py
 """
 
-from freqtrade.analyze import parse_ticker_dataframe
+from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 
 
 def test_dataframe_correct_length(result):

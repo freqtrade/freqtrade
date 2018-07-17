@@ -12,7 +12,7 @@ from jsonschema import validate
 from telegram import Chat, Message, Update
 
 from freqtrade import constants
-from freqtrade.analyze import parse_ticker_dataframe
+from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 
@@ -20,7 +20,7 @@ logging.getLogger('').setLevel(logging.INFO)
 
 
 def log_has(line, logs):
-    # caplog mocker returns log as a tuple: ('freqtrade.analyze', logging.WARNING, 'foobar')
+    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
     # and we want to match line against foobar in the tuple
     return reduce(lambda a, b: a or b,
                   filter(lambda x: x[2] == line, logs),
@@ -51,13 +51,11 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     """
     # mocker.patch('freqtrade.fiat_convert.Market', {'price_usd': 12345.0})
     patch_coinmarketcap(mocker, {'price_usd': 12345.0})
-#    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
-#    mocker.patch('freqtrade.freqtradebot.Analyze.get_signal', MagicMock())
 
     return FreqtradeBot(config)
 
