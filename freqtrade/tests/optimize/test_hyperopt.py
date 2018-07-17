@@ -274,7 +274,7 @@ def test_buy_strategy_generator(init_hyperopt) -> None:
             'trigger': 'bb_lower'
         }
     )
-    result = populate_buy_trend(dataframe)
+    result = populate_buy_trend(dataframe, 'UNITTEST/BTC')
     # Check if some indicators are generated. We will not test all of them
     assert 'buy' in result
     assert 1 in result['buy']
