@@ -280,7 +280,7 @@ class Hyperopt(Backtesting):
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
-                'realistic': self.config.get('realistic_simulation', False),
+                'position_stacking': self.config.get('position_stacking', False),
             }
         )
         result_explanation = self.format_results(results)

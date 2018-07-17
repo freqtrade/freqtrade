@@ -178,10 +178,11 @@ class Arguments(object):
             type=str,
         )
         parser.add_argument(
-            '--realistic-simulation',
-            help='uses max_open_trades from config to simulate real world limitations',
+            '--enable-position-stacking',
+            help='Allow buying the same pair twice (position stacking)',
             action='store_true',
-            dest='realistic_simulation',
+            dest='position_stacking',
+            default=False
         )
         parser.add_argument(
             '--timerange',

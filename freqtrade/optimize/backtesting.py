@@ -198,13 +198,13 @@ class Backtesting(object):
             stake_amount: btc amount to use for each trade
             processed: a processed dictionary with format {pair, data}
             max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-            realistic: do we try to simulate realistic trades? (default: True)
+            position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
-        realistic = args.get('realistic', False)
+        position_stacking = args.get('position_stacking', False)
         trades = []
         trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
@@ -228,7 +228,7 @@ class Backtesting(object):
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
 
-                if realistic:
+                if not position_stacking:
                     if lock_pair_until is not None and row.date <= lock_pair_until:
                         continue
                 if max_open_trades > 0:
@@ -283,10 +283,11 @@ class Backtesting(object):
             logger.critical("No data found. Terminating.")
             return
         # Ignore max_open_trades in backtesting, except realistic flag was passed
-        if self.config.get('realistic_simulation', False):
+        # TODO: this is not position stacking!!
+        if self.config.get('position_stacking', False):
             max_open_trades = self.config['max_open_trades']
         else:
-            logger.info('Ignoring max_open_trades (realistic_simulation not set) ...')
+            logger.info('Ignoring max_open_trades (position_stacking not set) ...')
             max_open_trades = 0
 
         preprocessed = self.tickerdata_to_dataframe(data)
@@ -306,7 +307,7 @@ class Backtesting(object):
                 'stake_amount': self.config.get('stake_amount'),
                 'processed': preprocessed,
                 'max_open_trades': max_open_trades,
-                'realistic': self.config.get('realistic_simulation', False),
+                'position_stacking': self.config.get('position_stacking', False),
             }
         )
 

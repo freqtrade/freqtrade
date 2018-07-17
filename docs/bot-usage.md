@@ -127,8 +127,8 @@ optional arguments:
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
   --realistic-simulation
-                        uses max_open_trades from config to simulate real
-                        world limitations
+                        Disables buying the same pair multiple times to 
+                        simulate real world limitations
   --timerange TIMERANGE
                         specify what timerange of data to use.
   -l, --live            using live data
@@ -173,8 +173,8 @@ optional arguments:
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
   --realistic-simulation
-                        uses max_open_trades from config to simulate real
-                        world limitations
+                        Disables buying the same pair multiple times to 
+                        simulate real world limitations
   --timerange TIMERANGE specify what timerange of data to use.
   -e INT, --epochs INT  specify number of epochs (default: 100)
   -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]

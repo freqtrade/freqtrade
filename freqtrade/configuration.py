@@ -142,10 +142,11 @@ class Configuration(object):
             config.update({'live': True})
             logger.info('Parameter -l/--live detected ...')
 
-        # If --realistic-simulation is used we add it to the configuration
-        if 'realistic_simulation' in self.args and self.args.realistic_simulation:
-            config.update({'realistic_simulation': True})
-            logger.info('Parameter --realistic-simulation detected ...')
+        # If --enable-position-stacking is used we add it to the configuration
+        if 'position_stacking' in self.args and self.args.position_stacking:
+            config.update({'position_stacking': True})
+            logger.info('Parameter --enable-position-stacking detected ...')
+
         logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         # If --timerange is used we add it to the configuration
@@ -182,7 +183,7 @@ class Configuration(object):
         Extract information for sys.argv and load Hyperopt configuration
         :return: configuration as dictionary
         """
-        # If --realistic-simulation is used we add it to the configuration
+        # If --epochs is used we add it to the configuration
         if 'epochs' in self.args and self.args.epochs:
             config.update({'epochs': self.args.epochs})
             logger.info('Parameter --epochs detected ...')
