@@ -89,14 +89,14 @@ class Backtesting(object):
         self.np_stop: int = 6
         self.np_bto: int = self.np_close  # buys_triggered_on - should be close
         self.np_bco: int = self.np_open  # buys calculated on - open of the next candle.
-        #self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
-        #self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
-        self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
-        self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
+        self.np_sto: int = self.np_low  # stops_triggered_on - Should be low, FT uses close
+        self.np_sco: int = self.np_stop  # stops_calculated_on - Should be stop, FT uses close
+        #self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
+        #self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
-        self.use_backslap = True             # Enable backslap - if false Orginal code is executed.
+        self.use_backslap = True		# Enable backslap - if false Orginal code is executed.
         self.debug = False                   # Main debug enable, very print heavy, enable 2 loops recommended
-        self.debug_timing = True            # Stages within Backslap
+        self.debug_timing = False            # Stages within Backslap
         self.debug_2loops = False            # Limit each pair to two loops, useful when debugging
         self.debug_vector = False            # Debug vector calcs
         self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
@@ -294,13 +294,16 @@ class Backtesting(object):
             # Switch List of Trade Dicts (bslap_results) to Dataframe
             # Fill missing, calculable columns, profit, duration , abs etc.
             bslap_results_df = DataFrame(bslap_results)
-            bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
-            bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
 
-            ### don't use this, itll drop exit type field
-            # bslap_results_df = DataFrame(bslap_results, columns=BacktestResult._fields)
+            if len(bslap_results_df) > 0: # Only post process a frame if it has a record
+                bslap_results_df['open_time'] = to_datetime(bslap_results_df['open_time'])
+                bslap_results_df['close_time'] = to_datetime(bslap_results_df['close_time'])
 
-            bslap_results_df = self.vector_fill_results_table(bslap_results_df)
+                bslap_results_df = self.vector_fill_results_table(bslap_results_df, pair)
+            else:
+                bslap_results_df = []
+                bslap_results_df= DataFrame.from_records(bslap_results_df, columns=BacktestResult._fields)
+
 
             return bslap_results_df
 
@@ -370,10 +373,12 @@ class Backtesting(object):
                     print("Time to BackTest :", pair, round(tt, 10))
                     print("-----------------------")
 
+                print("trades")
+
             return DataFrame.from_records(trades, columns=BacktestResult._fields)
             ####################### Original BT loop end
 
-    def vector_fill_results_table(self, bslap_results_df: DataFrame):
+    def vector_fill_results_table(self, bslap_results_df: DataFrame, pair: str):
         """
         The Results frame contains a number of columns that are calculable
         from othe columns. These are left blank till all rows are added,
@@ -411,6 +416,7 @@ class Backtesting(object):
             pd.set_option('max_colwidth', 40)
             pd.set_option('precision', 12)
 
+        #Ony do Math on a dataframe that has an open; No result pairs contain the pair string only
         # Populate duration
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
         # if debug:
@@ -516,19 +522,7 @@ class Backtesting(object):
         buy stop triggers and stop calculated on
         # buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5 - stop 6
         '''
-        # np_buy: int = 0
-        # np_open: int = 1
-        # np_close: int = 2
-        # np_sell: int = 3
-        # np_high: int = 4
-        # np_low: int = 5
-        # np_stop: int = 6
-        # np_bto: int = np_close  # buys_triggered_on - should be close
-        # np_bco: int = np_open  # buys calculated on - open of the next candle.
-        # #np_sto: int = np_low  # stops_triggered_on - Should be low, FT uses close
-        # #np_sco: int = np_stop  # stops_calculated_on - Should be stop, FT uses close
-        # np_sto: int = np_close  # stops_triggered_on - Should be low, FT uses close
-        # np_sco: int = np_close  # stops_calculated_on - Should be stop, FT uses close
+
 
         #######
         #  Use vars set at top of backtest
@@ -748,10 +742,10 @@ class Backtesting(object):
                 open 6am	98	        3	0	 0	----- 	------	 ------- -----   -----
     
                 -1 means not found till end of view i.e no valid Stop found. Exclude from match.
-                Stop tiggering in 1, candle we bought at OPEN is valid.
+                Stop tiggering and closing in 96-1, the candle we bought at OPEN in, is valid.
     
                 Buys and sells are triggered at candle close
-                Both with action their postions at the open of the next candle Index + 1
+                Both will open their postions at the open of the next candle. i/e  + 1 index
     
                 Stop and buy Indexes are on the view. To map to the ticker dataframe
                 the t_open_ind index should be summed.
@@ -760,10 +754,10 @@ class Backtesting(object):
                 t_exit_ind   : Sell found in view
                 t_open_ind   : Where view was started on ticker_data
     
-                TODO: fix this frig for logig test,, case/switch/dictionary would be better...
+                TODO: fix this frig for logic test,, case/switch/dictionary would be better...
                       more so when later testing many options, dynamic stop / roi etc
-                cludge - Im setting np_t_sell_ind as 9999999999 when -1 (not found)
-                cludge - Im setting np_t_stop_ind as 9999999999 when -1 (not found)
+                cludge - Setting np_t_sell_ind as 9999999999 when -1 (not found)
+                cludge - Setting np_t_stop_ind as 9999999999 when -1 (not found)
     
                 '''
                 if debug:
@@ -939,6 +933,7 @@ class Backtesting(object):
                 opportunity to close any more trades.
                 """
                 # TODO :add handing here to record none closed open trades
+
                 if debug:
                     print(bslap_pair_results)
                 break
