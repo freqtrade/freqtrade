@@ -75,7 +75,7 @@ class Hyperopt(Backtesting):
         return arg_dict
 
     @staticmethod
-    def populate_indicators(dataframe: DataFrame) -> DataFrame:
+    def populate_indicators(dataframe: DataFrame, pair:str) -> DataFrame:
         dataframe['adx'] = ta.ADX(dataframe)
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
