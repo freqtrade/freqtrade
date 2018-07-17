@@ -117,7 +117,7 @@ def test_log_results_if_loss_improves(init_hyperopt, capsys) -> None:
         }
     )
     out, err = capsys.readouterr()
-    assert '    1/2: foo. Loss 1.00000'in out
+    assert '    1/2: foo. Loss 1.00000' in out
 
 
 def test_no_log_if_loss_does_not_improve(init_hyperopt, caplog) -> None:
@@ -247,7 +247,7 @@ def test_populate_indicators(init_hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
-    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'])
+    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'], 'UNITTEST/BTC')
 
     # Check if some indicators are generated. We will not test all of them
     assert 'adx' in dataframe
@@ -259,7 +259,7 @@ def test_buy_strategy_generator(init_hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
-    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'])
+    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'], 'UNITTEST/BTC')
 
     populate_buy_trend = _HYPEROPT.buy_strategy_generator(
         {
