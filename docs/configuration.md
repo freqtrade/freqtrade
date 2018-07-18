@@ -27,7 +27,8 @@ The table below will list all configuration parameters.
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `trailing_stoploss` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
 | `trailing_stoploss_positve` | 0 | No | Changes stop-loss once profit has been reached.
-| `unfilledtimeout` | 0 | No | How long (in minutes) the bot will wait for an unfilled order to complete, after which the order will be cancelled.
+| `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
+| `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.

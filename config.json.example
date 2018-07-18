@@ -6,7 +6,10 @@
     "ticker_interval" : "5m",
     "dry_run": false,
     "trailing_stop": false,
-    "unfilledtimeout": 600,
+    "unfilledtimeout": {
+        "buy": 10,
+        "sell": 30
+    },
     "bid_strategy": {
         "ask_last_balance": 0.0
     },

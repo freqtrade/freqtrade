@@ -13,7 +13,6 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
-from freqtrade.rpc import RPCMessageType
 
 logger = logging.getLogger('freqtrade')
 
@@ -60,10 +59,7 @@ def main(sysargv: List[str]) -> None:
         logger.exception('Fatal exception!')
     finally:
         if freqtrade:
-            freqtrade.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': 'process died'
-            })
+            freqtrade.rpc.send_msg('*Status:* `Process died ...`')
             freqtrade.cleanup()
         sys.exit(return_code)
 
@@ -77,10 +73,8 @@ def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
 
     # Create new instance
     freqtrade = FreqtradeBot(Configuration(args).get_config())
-    freqtrade.rpc.send_msg({
-        'type': RPCMessageType.STATUS_NOTIFICATION,
-        'status': 'config reloaded'
-    })
+    freqtrade.rpc.send_msg(
+        '*Status:* `Config reloaded {freqtrade.state.name.lower()}...`')
     return freqtrade
 
 
