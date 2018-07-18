@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
 import os
+import warnings
 
 import pytest
 
@@ -8,6 +9,7 @@ from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.tests.conftest import log_has
 
 
 def test_import_strategy(caplog):
@@ -57,7 +59,8 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    assert 'adx' in resolver.strategy.populate_indicators(result)
+    pair = 'ETH/BTC'
+    assert 'adx' in resolver.strategy.advise_indicators(result, pair=pair)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
@@ -150,3 +153,39 @@ def test_strategy_override_ticker_interval(caplog):
             logging.INFO,
             'Override strategy \'ticker_interval\' with value in config file: 60.'
             ) in caplog.record_tuples
+
+
+def test_deprecate_populate_indicators(result):
+    resolver = StrategyResolver({'strategy': 'TestStrategy'})
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        resolver.strategy.populate_indicators(result)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - please replace this method with advise_indicators!" in str(
+            w[-1].message)
+
+
+def test_deprecate_populate_buy_trend(result):
+    resolver = StrategyResolver({'strategy': 'TestStrategy'})
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        resolver.strategy.populate_buy_trend(result)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - please replace this method with advise_buy!" in str(
+            w[-1].message)
+
+
+def test_deprecate_populate_sell_trend(result):
+    resolver = StrategyResolver({'strategy': 'TestStrategy'})
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        resolver.strategy.populate_sell_trend(result)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - please replace this method with advise_sell!" in str(
+            w[-1].message)
