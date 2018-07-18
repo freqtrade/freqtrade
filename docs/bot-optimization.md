@@ -61,22 +61,23 @@ file as reference.**
 
 ### Buy strategy
 
-Edit the method `populate_buy_trend()` into your strategy file to
+Edit the method `advise_buy()` into your strategy file to
 update your buy strategy.
 
 Sample from `user_data/strategies/test_strategy.py`:
 
 ```python
-def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+def advise_buy(self, dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Based on TA indicators, populates the buy signal for the given dataframe
-    :param dataframe: DataFrame
+    :param dataframe: DataFrame populated with indicators
+    :param pair: Pair currently analyzed
     :return: DataFrame with buy column
     """
     dataframe.loc[
         (
             (dataframe['adx'] > 30) &
-            (dataframe['tema'] <= dataframe['blower']) &
+            (dataframe['tema'] <= dataframe['bb_middleband']) &
             (dataframe['tema'] > dataframe['tema'].shift(1))
         ),
         'buy'] = 1
@@ -86,21 +87,23 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
 
 ### Sell strategy
 
-Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
+Edit the method `advise_sell()` into your strategy file to update your sell strategy.
+Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
 
 Sample from `user_data/strategies/test_strategy.py`:
 
 ```python
-def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
+def advise_sell(self, dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Based on TA indicators, populates the sell signal for the given dataframe
-    :param dataframe: DataFrame
+    :param dataframe: DataFrame populated with indicators
+    :param pair: Pair currently analyzed
     :return: DataFrame with buy column
     """
     dataframe.loc[
         (
             (dataframe['adx'] > 70) &
-            (dataframe['tema'] > dataframe['blower']) &
+            (dataframe['tema'] > dataframe['bb_middleband']) &
             (dataframe['tema'] < dataframe['tema'].shift(1))
         ),
         'sell'] = 1
@@ -109,14 +112,14 @@ def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
 
 ## Add more Indicator
 
-As you have seen, buy and sell strategies need indicators. You can add
-more indicators by extending the list contained in
-the method `populate_indicators()` from your strategy file.
+As you have seen, buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `advise_indicators()` from your strategy file.
+
+You should only add the indicators used in either `advise_buy()`, `advise_sell()`, or to populate another indicator, otherwise performance may suffer.
 
 Sample:
 
 ```python
-def populate_indicators(dataframe: DataFrame) -> DataFrame:
+def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
