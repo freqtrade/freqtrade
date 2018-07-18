@@ -19,8 +19,7 @@ from freqtrade.analyze import Analyze
 from freqtrade.exchange import Exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
-from freqtrade.rpc import RPCMessageType
-from freqtrade.rpc import RPCManager
+from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 
 logger = logging.getLogger(__name__)

@@ -23,6 +23,12 @@ class RPCManager(object):
             from freqtrade.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(freqtrade))
 
+        # Enable Webhook
+        if freqtrade.config.get('webhook', {}).get('enabled', False):
+            logger.info('Enabling rpc.webhook ...')
+            from freqtrade.rpc.webhook import Webhook
+            self.registered_modules.append(Webhook(freqtrade))
+
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')

@@ -127,3 +127,33 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
 
     assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog.record_tuples)
     assert telegram_mock.call_count == 1
+
+
+def test_init_webhook_disabled(mocker, default_conf, caplog) -> None:
+    """ Test _init() method with Webhook disabled """
+    caplog.set_level(logging.DEBUG)
+
+    conf = deepcopy(default_conf)
+    conf['telegram']['enabled'] = False
+    conf['webhook'] = {'enabled': False}
+
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, conf))
+
+    assert not log_has('Enabling rpc.webhook ...', caplog.record_tuples)
+    assert rpc_manager.registered_modules == []
+
+
+def test_init_webhook_enabled(mocker, default_conf, caplog) -> None:
+    """
+    Test _init() method with Webhook enabled
+    """
+    caplog.set_level(logging.DEBUG)
+    default_conf['telegram']['enabled'] = False
+    default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
+
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
+
+    assert log_has('Enabling rpc.webhook ...', caplog.record_tuples)
+    len_modules = len(rpc_manager.registered_modules)
+    assert len_modules == 1
+    assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
