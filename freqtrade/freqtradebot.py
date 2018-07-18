@@ -248,6 +248,11 @@ class FreqtradeBot(object):
         return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
     def _get_trade_stake_amount(self) -> Optional[float]:
+        """
+        Check if stake amount can be fulfilled with the available balance
+        for the stake currency
+        :return: float: Stake Amount
+        """
         stake_amount = self.config['stake_amount']
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
 
