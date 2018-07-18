@@ -405,6 +405,25 @@ def test_check_exchange(default_conf) -> None:
         configuration.check_exchange(conf)
 
 
+def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
+    """
+    Test Configuration.load_config() with cli params used
+    """
+
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)))
+    # Prevent setting loggers
+    mocker.patch('freqtrade.configuration.set_loggers', MagicMock)
+    arglist = ['-vvv']
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('loglevel') == 3
+    assert log_has('Log level set to Level 3', caplog.record_tuples)
+
+
 def test_set_loggers() -> None:
     """
     Test set_loggers() update the logger level for third-party libraries
