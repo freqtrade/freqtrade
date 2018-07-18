@@ -2,7 +2,6 @@
 Unit test file for main.py
 """
 
-import logging
 from copy import deepcopy
 from unittest.mock import MagicMock
 
@@ -11,7 +10,7 @@ import pytest
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.main import main, reconfigure, set_loggers
+from freqtrade.main import main, reconfigure
 from freqtrade.state import State
 from freqtrade.tests.conftest import log_has, patch_exchange
 
@@ -27,7 +26,7 @@ def test_parse_args_backtesting(mocker) -> None:
     call_args = backtesting_mock.call_args[0][0]
     assert call_args.config == 'config.json'
     assert call_args.live is False
-    assert call_args.loglevel == 20
+    assert call_args.loglevel == 0
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
     assert call_args.ticker_interval is None
@@ -42,27 +41,9 @@ def test_main_start_hyperopt(mocker) -> None:
     assert hyperopt_mock.call_count == 1
     call_args = hyperopt_mock.call_args[0][0]
     assert call_args.config == 'config.json'
-    assert call_args.loglevel == 20
+    assert call_args.loglevel == 0
     assert call_args.subparser == 'hyperopt'
     assert call_args.func is not None
-
-
-def test_set_loggers() -> None:
-    """
-    Test set_loggers() update the logger level for third-party libraries
-    """
-    previous_value1 = logging.getLogger('requests.packages.urllib3').level
-    previous_value2 = logging.getLogger('telegram').level
-
-    set_loggers()
-
-    value1 = logging.getLogger('requests.packages.urllib3').level
-    assert previous_value1 is not value1
-    assert value1 is logging.INFO
-
-    value2 = logging.getLogger('telegram').level
-    assert previous_value2 is not value2
-    assert value2 is logging.INFO
 
 
 def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
