@@ -29,6 +29,7 @@ def log_has(line, logs):
 
 def patch_exchange(mocker, api_mock=None) -> None:
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:

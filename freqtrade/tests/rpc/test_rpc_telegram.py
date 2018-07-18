@@ -9,14 +9,17 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from random import randint
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 
+import arrow
+import pytest
 from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
+from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
@@ -197,6 +200,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
 
     patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
+
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -210,7 +214,19 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
         _init=MagicMock(),
-        _rpc_trade_status=MagicMock(return_value=[1, 2, 3]),
+        _rpc_trade_status=MagicMock(return_value=[{
+            'trade_id': 1,
+            'pair': 'ETH/BTC',
+            'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+            'date': arrow.utcnow(),
+            'open_rate': 1.099e-05,
+            'close_rate': None,
+            'current_rate': 1.098e-05,
+            'amount': 90.99181074,
+            'close_profit': None,
+            'current_profit': -0.59,
+            'open_order': '(limit buy rem=0.00000000)'
+        }]),
         _status_table=status_table,
         _send_msg=msg_mock
     )
@@ -224,7 +240,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
         freqtradebot.create_trade()
 
     telegram._status(bot=MagicMock(), update=update)
-    assert msg_mock.call_count == 3
+    assert msg_mock.call_count == 1
 
     update.message.text = MagicMock()
     update.message.text.replace = MagicMock(return_value='table 2 3')
@@ -598,7 +614,7 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
     telegram._balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert '`All balances are zero.`' in result
+    assert 'all balances are zero' in result
 
 
 def test_start_handle(default_conf, update, mocker) -> None:
@@ -664,7 +680,7 @@ def test_stop_handle(default_conf, update, mocker) -> None:
     telegram._stop(bot=MagicMock(), update=update)
     assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
-    assert 'Stopping trader' in msg_mock.call_args_list[0][0][0]
+    assert 'stopping trader' in msg_mock.call_args_list[0][0][0]
 
 
 def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
@@ -708,7 +724,7 @@ def test_reload_conf_handle(default_conf, update, mocker) -> None:
     telegram._reload_conf(bot=MagicMock(), update=update)
     assert freqtradebot.state == State.RELOAD_CONF
     assert msg_mock.call_count == 1
-    assert 'Reloading config' in msg_mock.call_args_list[0][0][0]
+    assert 'reloading config' in msg_mock.call_args_list[0][0][0]
 
 
 def test_forcesell_handle(default_conf, update, ticker, fee,
@@ -745,12 +761,23 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     telegram._forcesell(bot=MagicMock(), update=update)
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001172' in rpc_mock.call_args_list[-1][0][0]
-    assert 'profit: 6.11%, 0.00006126' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.919 USD' in rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'profit',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.172e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.172e-05,
+        'profit_amount': 6.126e-05,
+        'profit_percent': 0.06110514,
+        'profit_fiat': 0.9189,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+    } == last_msg
 
 
 def test_forcesell_down_handle(default_conf, update, ticker, fee,
@@ -791,12 +818,24 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     telegram._forcesell(bot=MagicMock(), update=update)
 
     assert rpc_mock.call_count == 2
-    assert 'Selling' in rpc_mock.call_args_list[-1][0][0]
-    assert '[ETH/BTC]' in rpc_mock.call_args_list[-1][0][0]
-    assert 'Amount' in rpc_mock.call_args_list[-1][0][0]
-    assert '0.00001044' in rpc_mock.call_args_list[-1][0][0]
-    assert 'loss: -5.48%, -0.00005492' in rpc_mock.call_args_list[-1][0][0]
-    assert '-0.824 USD' in rpc_mock.call_args_list[-1][0][0]
+
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'loss',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.044e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.044e-05,
+        'profit_amount': -5.492e-05,
+        'profit_percent': -0.05478343,
+        'profit_fiat': -0.8238000000000001,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+    } == last_msg
 
 
 def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
@@ -829,10 +868,23 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
     telegram._forcesell(bot=MagicMock(), update=update)
 
     assert rpc_mock.call_count == 4
-    for args in rpc_mock.call_args_list:
-        assert '0.00001098' in args[0][0]
-        assert 'loss: -0.59%, -0.00000591 BTC' in args[0][0]
-        assert '-0.089 USD' in args[0][0]
+    msg = rpc_mock.call_args_list[0][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'loss',
+        'market_url': ANY,
+        'limit': 1.098e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.098e-05,
+        'profit_amount': -5.91e-06,
+        'profit_percent': -0.00589292,
+        'profit_fiat': -0.08865,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+    } == msg
 
 
 def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
@@ -866,7 +918,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     update.message.text = '/forcesell'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'Invalid argument' in msg_mock.call_args_list[0][0][0]
+    assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
     # Invalid argument
     msg_mock.reset_mock()
@@ -874,7 +926,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     update.message.text = '/forcesell 123456'
     telegram._forcesell(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'Invalid argument.' in msg_mock.call_args_list[0][0][0]
+    assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
@@ -1026,7 +1078,123 @@ def test_version_handle(default_conf, update, mocker) -> None:
     assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
 
 
-def test_send_msg(default_conf, mocker) -> None:
+def test_send_msg_buy_notification(default_conf, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.BUY_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.099e-05,
+        'stake_amount': 0.001,
+        'stake_amount_fiat': 0.0,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD'
+    })
+    assert msg_mock.call_args[0][0] \
+        == '*Bittrex:* Buying [ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n' \
+           'with limit `0.00001099\n' \
+           '(0.001000 BTC,0.000 USD)`'
+
+
+def test_send_msg_sell_notification(default_conf, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Binance',
+        'pair': 'KEY/ETH',
+        'gain': 'loss',
+        'market_url': 'https://www.binance.com/tradeDetail.html?symbol=KEY_ETH',
+        'limit': 3.201e-05,
+        'amount': 1333.3333333333335,
+        'open_rate': 7.5e-05,
+        'current_rate': 3.201e-05,
+        'profit_amount': -0.05746268,
+        'profit_percent': -0.57405275,
+        'profit_fiat': -24.81204044792,
+        'stake_currency': 'ETH',
+        'fiat_currency': 'USD'
+    })
+    assert msg_mock.call_args[0][0] \
+        == '*Binance:* Selling [KEY/ETH]' \
+           '(https://www.binance.com/tradeDetail.html?symbol=KEY_ETH)\n' \
+           '*Limit:* `0.00003201`\n' \
+           '*Amount:* `1333.33333333`\n' \
+           '*Open Rate:* `0.00007500`\n' \
+           '*Current Rate:* `0.00003201`\n' \
+           '*Profit:* `-57.41%`` (loss: -0.05746268 ETH`` / -24.812 USD)`'
+
+    msg_mock.reset_mock()
+    telegram.send_msg({
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Binance',
+        'pair': 'KEY/ETH',
+        'gain': 'loss',
+        'market_url': 'https://www.binance.com/tradeDetail.html?symbol=KEY_ETH',
+        'limit': 3.201e-05,
+        'amount': 1333.3333333333335,
+        'open_rate': 7.5e-05,
+        'current_rate': 3.201e-05,
+        'profit_amount': -0.05746268,
+        'profit_percent': -0.57405275,
+        'stake_currency': 'ETH',
+    })
+    assert msg_mock.call_args[0][0] \
+        == '*Binance:* Selling [KEY/ETH]' \
+           '(https://www.binance.com/tradeDetail.html?symbol=KEY_ETH)\n' \
+           '*Limit:* `0.00003201`\n' \
+           '*Amount:* `1333.33333333`\n' \
+           '*Open Rate:* `0.00007500`\n' \
+           '*Current Rate:* `0.00003201`\n' \
+           '*Profit:* `-57.41%`'
+
+
+def test_send_msg_status_notification(default_conf, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.STATUS_NOTIFICATION,
+        'status': 'running'
+    })
+    assert msg_mock.call_args[0][0] == '*Status:* `running`'
+
+
+def test_send_msg_unknown_type(default_conf, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    with pytest.raises(NotImplementedError, match=r'Unknown message type: None'):
+        telegram.send_msg({
+            'type': None,
+        })
+
+
+def test__send_msg(default_conf, mocker) -> None:
     """
     Test send_msg() method
     """
@@ -1042,7 +1210,7 @@ def test_send_msg(default_conf, mocker) -> None:
     assert len(bot.method_calls) == 1
 
 
-def test_send_msg_network_error(default_conf, mocker, caplog) -> None:
+def test__send_msg_network_error(default_conf, mocker, caplog) -> None:
     """
     Test send_msg() method
     """

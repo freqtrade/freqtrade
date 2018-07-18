@@ -41,12 +41,16 @@ class StrategyResolver(object):
         if 'minimal_roi' in config:
             self.strategy.minimal_roi = config['minimal_roi']
             logger.info("Override strategy \'minimal_roi\' with value in config file.")
+        else:
+            config['minimal_roi'] = self.strategy.minimal_roi
 
         if 'stoploss' in config:
             self.strategy.stoploss = config['stoploss']
             logger.info(
                 "Override strategy \'stoploss\' with value in config file: %s.", config['stoploss']
             )
+        else:
+            config['stoploss'] = self.strategy.stoploss
 
         if 'ticker_interval' in config:
             self.strategy.ticker_interval = config['ticker_interval']
@@ -54,6 +58,8 @@ class StrategyResolver(object):
                 "Override strategy \'ticker_interval\' with value in config file: %s.",
                 config['ticker_interval']
             )
+        else:
+            config['ticker_interval'] = self.strategy.ticker_interval
 
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(

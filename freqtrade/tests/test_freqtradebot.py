@@ -20,8 +20,7 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
-from freqtrade.tests.conftest import (log_has, patch_coinmarketcap,
-                                      patch_exchange)
+from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
 
 
 # Functions for recurrent object patching
