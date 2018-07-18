@@ -174,7 +174,7 @@ class Backtesting(object):
                                  profit_abs=trade.calc_profit(rate=sell_row.open),
                                  open_time=buy_row.date,
                                  close_time=sell_row.date,
-                                 trade_duration=(sell_row.date - buy_row.date)..total_seconds() // 60,
+                                 trade_duration=(sell_row.date - buy_row.date).total_seconds() // 60,
                                  open_index=buy_row.Index,
                                  close_index=sell_row.Index,
                                  open_at_end=True,
