@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
-import os
+from os import path
+from unittest.mock import MagicMock
 import warnings
 
 import pytest
@@ -37,9 +38,8 @@ def test_import_strategy(caplog):
 
 
 def test_search_strategy():
-    default_config = {}
-    default_location = os.path.join(os.path.dirname(
-        os.path.realpath(__file__)), '..', '..', 'strategy'
+    default_location = path.join(path.dirname(
+        path.realpath(__file__)), '..', '..', 'strategy'
     )
     assert isinstance(
         StrategyResolver._search_strategy(
@@ -64,8 +64,8 @@ def test_load_strategy(result):
 
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
-    extra_dir = os.path.join('some', 'path')
-    resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
+    extra_dir = path.join('some', 'path')
+    resolver._load_strategy('TestStrategy', extra_dir)
 
     assert (
         'freqtrade.strategy.resolver',
@@ -190,3 +190,25 @@ def test_deprecate_populate_sell_trend(result):
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - please replace this method with advise_sell!" in str(
             w[-1].message)
+
+
+def test_call_deprecated_function(result, monkeypatch):
+    default_location = path.join(path.dirname(path.realpath(__file__)))
+    resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
+                                 'strategy_path': default_location})
+    pair = 'ETH/BTC'
+    indicators_mock = MagicMock()
+    buy_trend_mock = MagicMock()
+    sell_trend_mock = MagicMock()
+
+    monkeypatch.setattr(resolver.strategy, 'populate_indicators', indicators_mock)
+    resolver.strategy.advise_indicators(result, pair=pair)
+    assert indicators_mock.call_count == 1
+
+    monkeypatch.setattr(resolver.strategy, 'populate_buy_trend', buy_trend_mock)
+    resolver.strategy.advise_buy(result, pair=pair)
+    assert buy_trend_mock.call_count == 1
+
+    monkeypatch.setattr(resolver.strategy, 'populate_sell_trend', sell_trend_mock)
+    resolver.strategy.advise_sell(result, pair=pair)
+    assert sell_trend_mock.call_count == 1
