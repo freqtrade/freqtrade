@@ -6,7 +6,7 @@ This module contains the backtesting logic
 import logging
 import operator
 from argparse import Namespace
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
@@ -88,7 +88,7 @@ class Backtesting(object):
         """
         stake_currency = str(self.config.get('stake_currency'))
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f', '.1f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
@@ -100,7 +100,8 @@ class Backtesting(object):
                 result.profit_percent.mean() * 100.0,
                 result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
-                result.trade_duration.mean(),
+                str(timedelta(
+                    minutes=round(result.trade_duration.mean()))) if len(result) else 'nan',
                 len(result[result.profit_abs > 0]),
                 len(result[result.profit_abs < 0])
             ])
@@ -112,7 +113,8 @@ class Backtesting(object):
             results.profit_percent.mean() * 100.0,
             results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
-            results.trade_duration.mean(),
+            str(timedelta(
+                minutes=round(results.trade_duration.mean()))) if len(results) else 'nan',
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
