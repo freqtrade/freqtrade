@@ -70,7 +70,6 @@ class IStrategy(ABC):
     def __init__(self, config: dict) -> None:
         self.config = config
 
-    @abstractmethod
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
@@ -81,7 +80,6 @@ class IStrategy(ABC):
                       DeprecationWarning)
         return dataframe
 
-    @abstractmethod
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
@@ -93,7 +91,6 @@ class IStrategy(ABC):
         dataframe.loc[(), 'buy'] = 0
         return dataframe
 
-    @abstractmethod
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
