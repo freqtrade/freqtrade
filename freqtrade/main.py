@@ -10,7 +10,7 @@ from typing import List
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
+from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
 from freqtrade.rpc import RPCMessageType
@@ -82,16 +82,6 @@ def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
         'status': 'config reloaded'
     })
     return freqtrade
-
-
-def set_loggers() -> None:
-    """
-    Set the logger level for Third party libs
-    :return: None
-    """
-    logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
-    logging.getLogger('ccxt.base.exchange').setLevel(logging.INFO)
-    logging.getLogger('telegram').setLevel(logging.INFO)
 
 
 if __name__ == '__main__':
