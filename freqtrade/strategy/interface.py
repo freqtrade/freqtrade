@@ -3,7 +3,7 @@ IStrategy interface
 This module defines the interface to apply for strategies
 """
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, NamedTuple, Tuple
