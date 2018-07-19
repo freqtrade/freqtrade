@@ -12,8 +12,20 @@ from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
-
 logger = logging.getLogger(__name__)
+
+
+def set_loggers(log_level: int = 0) -> None:
+    """
+    Set the logger level for Third party libs
+    :return: None
+    """
+
+    logging.getLogger('requests').setLevel(logging.INFO if log_level <= 1 else logging.DEBUG)
+    logging.getLogger("urllib3").setLevel(logging.INFO if log_level <= 1 else logging.DEBUG)
+    logging.getLogger('ccxt.base.exchange').setLevel(
+        logging.INFO if log_level <= 2 else logging.DEBUG)
+    logging.getLogger('telegram').setLevel(logging.INFO)
 
 
 class Configuration(object):
@@ -79,12 +91,15 @@ class Configuration(object):
 
         # Log level
         if 'loglevel' in self.args and self.args.loglevel:
-            config.update({'loglevel': self.args.loglevel})
-            logging.basicConfig(
-                level=config['loglevel'],
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            )
-            logger.info('Log level set to %s', logging.getLevelName(config['loglevel']))
+            config.update({'verbosity': self.args.loglevel})
+        else:
+            config.update({'verbosity': 0})
+        logging.basicConfig(
+            level=logging.INFO if config['verbosity'] < 1 else logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        )
+        set_loggers(config['verbosity'])
+        logger.info('Verbosity set to %s', config['verbosity'])
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
