@@ -3,6 +3,7 @@ This module contains the argument manager class
 """
 
 import argparse
+import logging
 import os
 import re
 from typing import List, NamedTuple, Optional
@@ -63,10 +64,11 @@ class Arguments(object):
         """
         self.parser.add_argument(
             '-v', '--verbose',
-            help='verbose mode (-vv for more, -vvv to get all messages)',
-            action='count',
+            help='be verbose',
+            action='store_const',
             dest='loglevel',
-            default=0,
+            const=logging.DEBUG,
+            default=logging.INFO,
         )
         self.parser.add_argument(
             '--version',
