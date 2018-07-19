@@ -88,7 +88,7 @@ class Backtesting(object):
         """
         stake_currency = str(self.config.get('stake_currency'))
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f', '.1f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
@@ -101,7 +101,7 @@ class Backtesting(object):
                 result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
                 str(timedelta(
-                    minutes=round(result.trade_duration.mean()))) if len(result) else 'nan',
+                    minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
                 len(result[result.profit_abs > 0]),
                 len(result[result.profit_abs < 0])
             ])
@@ -114,7 +114,7 @@ class Backtesting(object):
             results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
             str(timedelta(
-                minutes=round(results.trade_duration.mean()))) if len(results) else 'nan',
+                minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
