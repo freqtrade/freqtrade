@@ -117,9 +117,7 @@ python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.s
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: main.py backtesting [-h] [-i TICKER_INTERVAL]
-                             [--enable-position-stacking]
-                             [--disable-max-market-positions]
+usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
                              [--timerange TIMERANGE] [-l] [-r]
                              [--export EXPORT] [--export-filename PATH]
 
@@ -127,9 +125,10 @@ optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
-  --enable-position-stacking
-                        Allow buying the same pair twice (position stacking)
-  --disable-max-market-positions
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking)
+  --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number)
@@ -170,9 +169,7 @@ To optimize your strategy, you can use hyperopt parameter hyperoptimization
 to find optimal parameter values for your stategy.
 
 ```
-usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL]
-                          [--enable-position-stacking]
-                          [--disable-max-market-positions]
+usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
                           [--timerange TIMERANGE] [-e INT]
                           [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
 
@@ -180,9 +177,10 @@ optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
-  --enable-position-stacking
-                        Allow buying the same pair twice (position stacking)
-  --disable-max-market-positions
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking)
+  --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number)
