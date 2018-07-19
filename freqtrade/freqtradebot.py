@@ -362,7 +362,6 @@ class FreqtradeBot(object):
         for _pair, (buy, sell) in get_sig_results:
             if buy and not sell:
                 self.execute_buy(_pair, stake_amount)
-
         return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
@@ -467,11 +466,10 @@ class FreqtradeBot(object):
                 trade.update(order)
 
             if trade.is_open and trade.open_order_id is None:
-                # Check if we can sell our current pai
+                # Check if we can sell our current pair
                 return self.handle_trade(trade)
         except DependencyException as exception:
             logger.warning('Unable to sell trade: %s', exception)
-
         return False
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
