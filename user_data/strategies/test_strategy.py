@@ -12,6 +12,7 @@ import numpy # noqa
 
 # This class is a sample. Feel free to customize it.
 class TestStrategy(IStrategy):
+    __test__ = False  # pytest expects to find tests here because of the name
     """
     This is a test strategy to inspire you.
     More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md

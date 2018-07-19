@@ -12,14 +12,15 @@ from freqtrade.strategy.resolver import StrategyResolver
 
 def test_import_strategy(caplog):
     caplog.set_level(logging.DEBUG)
+    default_config = {}
 
-    strategy = DefaultStrategy()
+    strategy = DefaultStrategy(default_config)
     strategy.some_method = lambda *args, **kwargs: 42
 
     assert strategy.__module__ == 'freqtrade.strategy.default_strategy'
     assert strategy.some_method() == 42
 
-    imported_strategy = import_strategy(strategy)
+    imported_strategy = import_strategy(strategy, default_config)
 
     assert dir(strategy) == dir(imported_strategy)
 
@@ -35,13 +36,23 @@ def test_import_strategy(caplog):
 
 
 def test_search_strategy():
+    default_config = {}
     default_location = os.path.join(os.path.dirname(
         os.path.realpath(__file__)), '..', '..', 'strategy'
     )
     assert isinstance(
-        StrategyResolver._search_strategy(default_location, 'DefaultStrategy'), IStrategy
+        StrategyResolver._search_strategy(
+            default_location,
+            config=default_config,
+            strategy_name='DefaultStrategy'
+        ),
+        IStrategy
     )
-    assert StrategyResolver._search_strategy(default_location, 'NotFoundStrategy') is None
+    assert StrategyResolver._search_strategy(
+        default_location,
+        config=default_config,
+        strategy_name='NotFoundStrategy'
+    ) is None
 
 
 def test_load_strategy(result):
@@ -53,7 +64,7 @@ def test_load_strategy(result):
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
     extra_dir = os.path.join('some', 'path')
-    resolver._load_strategy('TestStrategy', extra_dir)
+    resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
     assert (
         'freqtrade.strategy.resolver',
@@ -70,7 +81,7 @@ def test_load_not_found_strategy():
     with pytest.raises(ImportError,
                        match=r'Impossible to load Strategy \'NotFoundStrategy\'.'
                              r' This class does not exist or contains Python code errors'):
-        strategy._load_strategy('NotFoundStrategy')
+        strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
 
 
 def test_strategy(result):

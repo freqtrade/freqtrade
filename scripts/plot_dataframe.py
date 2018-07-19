@@ -40,11 +40,11 @@ from plotly.offline import plot
 
 import freqtrade.optimize as optimize
 from freqtrade import persistence
-from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
+from freqtrade.strategy.resolver import StrategyResolver
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
@@ -122,7 +122,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     # Load the strategy
     try:
-        analyze = Analyze(_CONF)
+        strategy = StrategyResolver(_CONF).strategy
         exchange = Exchange(_CONF)
     except AttributeError:
         logger.critical(
@@ -132,7 +132,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         exit()
 
     # Set the ticker to use
-    tick_interval = analyze.get_ticker_interval()
+    tick_interval = strategy.ticker_interval
 
     # Load pair tickers
     tickers = {}
@@ -156,11 +156,11 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     # Get trades already made from the DB
     trades = load_trades(args, pair, timerange)
 
-    dataframes = analyze.tickerdata_to_dataframe(tickers)
+    dataframes = strategy.tickerdata_to_dataframe(tickers)
 
     dataframe = dataframes[pair]
-    dataframe = analyze.populate_buy_trend(dataframe)
-    dataframe = analyze.populate_sell_trend(dataframe)
+    dataframe = strategy.populate_buy_trend(dataframe)
+    dataframe = strategy.populate_sell_trend(dataframe)
 
     if len(dataframe.index) > args.plot_limit:
         logger.warning('Ticker contained more than %s candles as defined '

@@ -267,13 +267,13 @@ class Hyperopt(Backtesting):
         params = self.get_args(_params)
 
         if self.has_space('roi'):
-            self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
+            self.strategy.minimal_roi = self.generate_roi_table(params)
 
         if self.has_space('buy'):
             self.populate_buy_trend = self.buy_strategy_generator(params)
 
         if self.has_space('stoploss'):
-            self.analyze.strategy.stoploss = params['stoploss']
+            self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
         results = self.backtest(
@@ -351,7 +351,7 @@ class Hyperopt(Backtesting):
         )
 
         if self.has_space('buy'):
-            self.analyze.populate_indicators = Hyperopt.populate_indicators  # type: ignore
+            self.strategy.populate_indicators = Hyperopt.populate_indicators  # type: ignore
         dump(self.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
         self.exchange = None  # type: ignore
         self.load_previous_results()
