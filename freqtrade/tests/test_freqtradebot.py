@@ -45,7 +45,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :param value: which value IStrategy.get_signal() must return
     :return: None
     """
-    freqtrade.get_signal = lambda e, s, t: value
+    freqtrade.strategy.get_signal = lambda e, s, t: value
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -1830,7 +1830,6 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, m
     Test sell_profit_only feature when enabled and we have a loss
     """
     buy_price = limit_buy_order['price']
-    patch_get_signal(mocker)
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1850,8 +1849,8 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, m
     conf['trailing_stop_positive'] = 0.01
     conf['trailing_stop_positive_offset'] = 0.011
     freqtrade = FreqtradeBot(conf)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
-
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
 
     trade = Trade.query.first()
