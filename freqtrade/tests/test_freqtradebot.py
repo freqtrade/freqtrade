@@ -45,7 +45,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :param value: which value IStrategy.get_signal() must return
     :return: None
     """
-    freqtrade.strategy.get_signal = lambda e, s, t: value
+    freqtrade.get_signal = lambda e, s, t: value
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -1833,7 +1833,6 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, m
     patch_get_signal(mocker)
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.freqtradebot.Analyze.min_roi_reached', return_value=False)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -1851,6 +1850,8 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, m
     conf['trailing_stop_positive'] = 0.01
     conf['trailing_stop_positive_offset'] = 0.011
     freqtrade = FreqtradeBot(conf)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
+
     freqtrade.create_trade()
 
     trade = Trade.query.first()
