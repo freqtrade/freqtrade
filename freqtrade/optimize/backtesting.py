@@ -164,7 +164,7 @@ class Backtesting(object):
 
             buy_signal = sell_row.buy
             sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                            sell_row.sell)
+                                             sell_row.sell)
             if sell.sell_flag:
 
                 return BacktestResult(pair=pair,

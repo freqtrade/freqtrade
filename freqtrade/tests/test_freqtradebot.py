@@ -16,11 +16,11 @@ import requests
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, constants)
-from freqtrade.strategy.interface.IStrategy import SellType, SellCheckTuple
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
+from freqtrade.strategy.interface import SellType, SellCheckTuple
 from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
 
 
@@ -1625,8 +1625,6 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
     """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.freqtradebot.strategy.interface.stop_loss_reached',
-                 return_value=SellCheckTuple(sell_flag=False, sell_type=SellType.NONE))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -1647,7 +1645,8 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
     freqtrade = FreqtradeBot(conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.stop_loss_reached = \
-        lambda current_rate, trade, current_time, current_profit: False
+        lambda current_rate, trade, current_time, current_profit: SellCheckTuple(
+            sell_flag=False, sell_type=SellType.NONE)
     freqtrade.create_trade()
 
     trade = Trade.query.first()

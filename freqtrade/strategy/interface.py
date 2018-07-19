@@ -88,13 +88,12 @@ class IStrategy(ABC):
         :param dataframe: DataFrame
         :return: DataFrame with sell column
         """
-        return self.strategy.populate_sell_trend(dataframe=dataframe)
 
     def get_strategy_name(self) -> str:
         """
         Returns strategy class name
         """
-        return self.strategy.__class__.__name__
+        return self.__class__.__name__
 
     def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
         """

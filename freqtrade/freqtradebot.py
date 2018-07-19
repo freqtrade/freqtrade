@@ -393,8 +393,8 @@ class FreqtradeBot(object):
             open_date=datetime.utcnow(),
             exchange=self.exchange.id,
             open_order_id=order_id,
-            strategy=self.analyze.get_strategy_name(),
-            ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.analyze.get_ticker_interval()]
+            strategy=self.strategy.get_strategy_name(),
+            ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
         Trade.session.add(trade)
         Trade.session.flush()
