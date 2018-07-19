@@ -29,25 +29,25 @@ The backtesting is very easy with freqtrade.
 #### With 5 min tickers (Per default)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation
+python3 ./freqtrade/main.py backtesting
 ```
 
 #### With 1 min tickers
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
+python3 ./freqtrade/main.py backtesting --ticker-interval 1m
 ```
 
 #### Update cached pairs with the latest data
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
+python3 ./freqtrade/main.py backtesting --refresh-pairs-cached
 ```
 
 #### With live data (do not alter your testdata files)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --live
+python3 ./freqtrade/main.py backtesting --live
 ```
 
 #### Using a different on-disk ticker-data source

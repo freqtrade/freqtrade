@@ -96,7 +96,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
             'stake_amount': config['stake_amount'],
             'processed': processed,
             'max_open_trades': 1,
-            'realistic': True
+            'position_stacking': False
         }
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
@@ -127,7 +127,7 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
         'stake_amount': conf['stake_amount'],
         'processed': backtesting.tickerdata_to_dataframe(data),
         'max_open_trades': 10,
-        'realistic': True,
+        'position_stacking': False,
         'record': record
     }
 
@@ -193,8 +193,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation' not in config
-    assert not log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
+    assert 'position_stacking' not in config
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
 
     assert 'refresh_pairs' not in config
     assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -218,7 +218,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--realistic-simulation',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
         '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo',
@@ -246,9 +247,12 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation' in config
-    assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
-    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+    assert 'position_stacking' in config
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
 
     assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -491,7 +495,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
             'stake_amount': default_conf['stake_amount'],
             'processed': data_processed,
             'max_open_trades': 10,
-            'realistic': True
+            'position_stacking': False
         }
     )
     assert not results.empty
@@ -539,7 +543,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
             'stake_amount': default_conf['stake_amount'],
             'processed': backtesting.tickerdata_to_dataframe(data),
             'max_open_trades': 1,
-            'realistic': True
+            'position_stacking': False
         }
     )
     assert not results.empty
@@ -714,7 +718,8 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--ticker-interval', '1m',
         '--live',
         '--timerange', '-100',
-        '--realistic-simulation'
+        '--enable-position-stacking',
+        '--disable-max-market-positions'
     ]
     args = get_args(args)
     start(args)
@@ -723,14 +728,14 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Parameter -i/--ticker-interval detected ...',
         'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
-        'Using max_open_trades: 1 ...',
+        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
         'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Parameter --realistic-simulation detected ...'
+        'Parameter --enable-position-stacking detected ...'
     ]
 
     for line in exists:
