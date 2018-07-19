@@ -6,7 +6,7 @@ This module contains the backtesting logic
 import logging
 import operator
 from argparse import Namespace
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
@@ -88,7 +88,7 @@ class Backtesting(object):
         """
         stake_currency = str(self.config.get('stake_currency'))
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
@@ -100,7 +100,8 @@ class Backtesting(object):
                 result.profit_percent.mean() * 100.0,
                 result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
-                result.trade_duration.mean(),
+                str(timedelta(
+                    minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
                 len(result[result.profit_abs > 0]),
                 len(result[result.profit_abs < 0])
             ])
@@ -112,7 +113,8 @@ class Backtesting(object):
             results.profit_percent.mean() * 100.0,
             results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
-            results.trade_duration.mean(),
+            str(timedelta(
+                minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
@@ -159,7 +161,8 @@ class Backtesting(object):
                                       profit_abs=trade.calc_profit(rate=sell_row.open),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
-                                      trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                      trade_duration=int((
+                                          sell_row.date - buy_row.date).total_seconds() // 60),
                                       open_index=buy_row.Index,
                                       close_index=sell_row.Index,
                                       open_at_end=False,
@@ -174,7 +177,8 @@ class Backtesting(object):
                                  profit_abs=trade.calc_profit(rate=sell_row.open),
                                  open_time=buy_row.date,
                                  close_time=sell_row.date,
-                                 trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                 trade_duration=int((
+                                     sell_row.date - buy_row.date).total_seconds() // 60),
                                  open_index=buy_row.Index,
                                  close_index=sell_row.Index,
                                  open_at_end=True,
