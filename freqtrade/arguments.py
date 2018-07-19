@@ -178,15 +178,15 @@ class Arguments(object):
             type=str,
         )
         parser.add_argument(
-            '--enable-position-stacking',
-            help='Allow buying the same pair twice (position stacking)',
+            '--eps', '--enable-position-stacking',
+            help='Allow buying the same pair multiple times (position stacking)',
             action='store_true',
             dest='position_stacking',
             default=False
         )
 
         parser.add_argument(
-            '--disable-max-market-positions',
+            '--dmmp', '--disable-max-market-positions',
             help='Disable applying `max_open_trades` during backtest '
                  '(same as setting `max_open_trades` to a very high number)',
             action='store_false',
