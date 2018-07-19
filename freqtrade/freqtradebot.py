@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import arrow
 import requests
+import multiprocessing as mp
 from cachetools import TTLCache, cached
 
 from freqtrade import (DependencyException, OperationalException,
@@ -124,7 +125,9 @@ class FreqtradeBot(object):
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
-        duration = max(min_secs - (end - start), 0.0)
+        #duration = max(min_secs - (end - start), 0.0)
+        #todo - look into making this quick from conf
+        duration = 0.01
         logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
         time.sleep(duration)
         return result
@@ -155,6 +158,19 @@ class FreqtradeBot(object):
             # First process current opened trades
             for trade in trades:
                 state_changed |= self.process_maybe_execute_sell(trade)
+
+            # # todo Danny - add MP for sell process.
+            # # Added Parallel processing for process open trades.
+            # sell_output = mp.Queue()
+            # sell_processes = [mp.Process(target=self.process_maybe_execute_sell,
+            #                              args=(trade, sell_output)) for trade in trades]
+            #
+            # for p in sell_processes:
+            #     time.sleep(0.2)
+            #     p.start()
+            #
+            # for p in sell_processes:
+            #     p.join()
 
             # Then looking for buy opportunities
             if len(trades) < self.config['max_open_trades']:
@@ -304,6 +320,19 @@ class FreqtradeBot(object):
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
         return min(min_stake_amounts)/amount_reserve_percent
 
+    def mp_pair(self, _pair, interval, stake_amount, output):
+        '''
+        Looks up anlayze.get_signal in parallel
+        :param _pair:
+        :param interval:
+        :param stake_amount:
+        :param output:
+        :return: on output queue (pair, (buy, sell))  Str (tuple)
+        '''
+        gs = self.analyze.get_signal(self.exchange, _pair, interval)
+        p_gs=(_pair, gs)
+        output.put(p_gs)
+
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
@@ -331,11 +360,25 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on buy signals
-        for _pair in whitelist:
-            (buy, sell) = self.analyze.get_signal(self.exchange, _pair, interval)
+        # Added Parallel processing for testing analyze.get_signal
+        output = mp.Queue()
+        processes = [mp.Process(target=self.mp_pair, args=(_pair, interval,
+                                                           stake_amount, output)) for _pair in whitelist]
+        for p in processes:
+            #time.sleep(0.3)
+            p.start()
+
+        for p in processes:
+            p.join()
+
+        # Add trade for pairs where buy and not sell
+        get_sig_results = [output.get() for p in processes]
+        for _pair, (buy, sell) in get_sig_results:
+            #print("buy, sell is", (buy, sell))
             if buy and not sell:
-                return self.execute_buy(_pair, stake_amount)
+                #print(_pair, "buy and not sell")
+                self.execute_buy(_pair, stake_amount)
+
         return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
@@ -415,6 +458,8 @@ class FreqtradeBot(object):
             logger.warning('Unable to create trade: %s', exception)
             return False
 
+    #todo Danny - add sell to MP
+    #def process_maybe_execute_sell(self, trade: Trade, sell_output ) -> bool:
     def process_maybe_execute_sell(self, trade: Trade) -> bool:
         """
         Tries to execute a sell trade
@@ -441,9 +486,14 @@ class FreqtradeBot(object):
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
+                # todo Danny Add result to MP queue sel_output
                 return self.handle_trade(trade)
+                #sell_output.put(self.handle_trade(trade))
         except DependencyException as exception:
             logger.warning('Unable to sell trade: %s', exception)
+
+        # todo danny - Add to output sell queue and MP sells
+        #sell_output.put(False)
         return False
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
