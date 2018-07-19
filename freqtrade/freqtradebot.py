@@ -159,19 +159,6 @@ class FreqtradeBot(object):
             for trade in trades:
                 state_changed |= self.process_maybe_execute_sell(trade)
 
-            # # todo Danny - add MP for sell process.
-            # # Added Parallel processing for process open trades.
-            # sell_output = mp.Queue()
-            # sell_processes = [mp.Process(target=self.process_maybe_execute_sell,
-            #                              args=(trade, sell_output)) for trade in trades]
-            #
-            # for p in sell_processes:
-            #     time.sleep(0.2)
-            #     p.start()
-            #
-            # for p in sell_processes:
-            #     p.join()
-
             # Then looking for buy opportunities
             if len(trades) < self.config['max_open_trades']:
                 state_changed = self.process_maybe_execute_buy()
@@ -365,7 +352,6 @@ class FreqtradeBot(object):
         processes = [mp.Process(target=self.mp_pair, args=(_pair, interval,
                                                            stake_amount, output)) for _pair in whitelist]
         for p in processes:
-            #time.sleep(0.3)
             p.start()
 
         for p in processes:
@@ -374,9 +360,7 @@ class FreqtradeBot(object):
         # Add trade for pairs where buy and not sell
         get_sig_results = [output.get() for p in processes]
         for _pair, (buy, sell) in get_sig_results:
-            #print("buy, sell is", (buy, sell))
             if buy and not sell:
-                #print(_pair, "buy and not sell")
                 self.execute_buy(_pair, stake_amount)
 
         return False
@@ -458,8 +442,6 @@ class FreqtradeBot(object):
             logger.warning('Unable to create trade: %s', exception)
             return False
 
-    #todo Danny - add sell to MP
-    #def process_maybe_execute_sell(self, trade: Trade, sell_output ) -> bool:
     def process_maybe_execute_sell(self, trade: Trade) -> bool:
         """
         Tries to execute a sell trade
@@ -485,15 +467,11 @@ class FreqtradeBot(object):
                 trade.update(order)
 
             if trade.is_open and trade.open_order_id is None:
-                # Check if we can sell our current pair
-                # todo Danny Add result to MP queue sel_output
+                # Check if we can sell our current pai
                 return self.handle_trade(trade)
-                #sell_output.put(self.handle_trade(trade))
         except DependencyException as exception:
             logger.warning('Unable to sell trade: %s', exception)
 
-        # todo danny - Add to output sell queue and MP sells
-        #sell_output.put(False)
         return False
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
