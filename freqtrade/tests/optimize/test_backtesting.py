@@ -332,8 +332,8 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert backtesting.config == default_conf
     assert backtesting.ticker_interval == '5m'
     assert callable(backtesting.tickerdata_to_dataframe)
-    assert callable(backtesting.populate_buy_trend)
-    assert callable(backtesting.populate_sell_trend)
+    assert callable(backtesting.advise_buy)
+    assert callable(backtesting.advise_sell)
     get_fee.assert_called()
     assert backtesting.fee == 0.5
 
@@ -611,12 +611,12 @@ def test_backtest_ticks(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     ticks = [1, 5]
-    fun = Backtesting(default_conf).populate_buy_trend
+    fun = Backtesting(default_conf).advise_buy
     for _ in ticks:
         backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
         backtesting = Backtesting(default_conf)
-        backtesting.populate_buy_trend = fun  # Override
-        backtesting.populate_sell_trend = fun  # Override
+        backtesting.advise_buy = fun  # Override
+        backtesting.advise_sell = fun  # Override
         results = backtesting.backtest(backtest_conf)
         assert not results.empty
 
@@ -630,8 +630,8 @@ def test_backtest_clash_buy_sell(mocker, default_conf):
 
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
     backtesting = Backtesting(default_conf)
-    backtesting.populate_buy_trend = fun  # Override
-    backtesting.populate_sell_trend = fun  # Override
+    backtesting.advise_buy = fun  # Override
+    backtesting.advise_sell = fun  # Override
     results = backtesting.backtest(backtest_conf)
     assert results.empty
 
@@ -645,8 +645,8 @@ def test_backtest_only_sell(mocker, default_conf):
 
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
     backtesting = Backtesting(default_conf)
-    backtesting.populate_buy_trend = fun  # Override
-    backtesting.populate_sell_trend = fun  # Override
+    backtesting.advise_buy = fun  # Override
+    backtesting.advise_sell = fun  # Override
     results = backtesting.backtest(backtest_conf)
     assert results.empty
 
@@ -655,8 +655,8 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, pair='UNITTEST/BTC')
     backtesting = Backtesting(default_conf)
-    backtesting.populate_buy_trend = _trend_alternate  # Override
-    backtesting.populate_sell_trend = _trend_alternate  # Override
+    backtesting.advise_buy = _trend_alternate  # Override
+    backtesting.advise_sell = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
     backtesting._store_backtest_result("test_.json", results)
     assert len(results) == 4
