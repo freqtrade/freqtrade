@@ -38,6 +38,7 @@ def test_import_strategy(caplog):
 
 
 def test_search_strategy():
+    default_config = {}
     default_location = path.join(path.dirname(
         path.realpath(__file__)), '..', '..', 'strategy'
     )
@@ -65,7 +66,7 @@ def test_load_strategy(result):
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
     extra_dir = path.join('some', 'path')
-    resolver._load_strategy('TestStrategy', extra_dir)
+    resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
     assert (
         'freqtrade.strategy.resolver',
