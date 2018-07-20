@@ -108,16 +108,16 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
+    def analyze_ticker(self, ticker_history: List[Dict], pair: str) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
         dataframe = parse_ticker_dataframe(ticker_history)
-        dataframe = self.populate_indicators(dataframe)
-        dataframe = self.populate_buy_trend(dataframe)
-        dataframe = self.populate_sell_trend(dataframe)
+        dataframe = self.advise_indicators(dataframe, pair)
+        dataframe = self.advise_buy(dataframe, pair)
+        dataframe = self.advise_sell(dataframe, pair)
         return dataframe
 
     def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
@@ -132,7 +132,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist)
+            dataframe = self.analyze_ticker(ticker_hist, pair)
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
