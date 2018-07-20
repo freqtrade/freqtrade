@@ -40,7 +40,6 @@ class Hyperopt(Backtesting):
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
-
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
@@ -229,7 +228,6 @@ class Hyperopt(Backtesting):
         """
         Define the buy strategy parameters to be used by hyperopt
         """
-
         def populate_buy_trend(dataframe: DataFrame, pair: str) -> DataFrame:
             """
             Buy strategy Hyperopt will build and use
