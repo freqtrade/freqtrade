@@ -5,7 +5,6 @@ Unit test file for arguments.py
 """
 
 import argparse
-import logging
 
 import pytest
 
@@ -35,7 +34,7 @@ def test_parse_args_defaults() -> None:
     args = Arguments([], '').get_parsed_arg()
     assert args.config == 'config.json'
     assert args.dynamic_whitelist is None
-    assert args.loglevel == logging.INFO
+    assert args.loglevel == 0
 
 
 def test_parse_args_config() -> None:
@@ -53,10 +52,10 @@ def test_parse_args_db_url() -> None:
 
 def test_parse_args_verbose() -> None:
     args = Arguments(['-v'], '').get_parsed_arg()
-    assert args.loglevel == logging.DEBUG
+    assert args.loglevel == 1
 
     args = Arguments(['--verbose'], '').get_parsed_arg()
-    assert args.loglevel == logging.DEBUG
+    assert args.loglevel == 1
 
 
 def test_scripts_options() -> None:
@@ -153,7 +152,7 @@ def test_parse_args_backtesting_custom() -> None:
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == 'test_conf.json'
     assert call_args.live is True
-    assert call_args.loglevel == logging.INFO
+    assert call_args.loglevel == 0
     assert call_args.subparser == 'backtesting'
     assert call_args.func is not None
     assert call_args.ticker_interval == '1m'
@@ -170,7 +169,7 @@ def test_parse_args_hyperopt_custom() -> None:
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == 'test_conf.json'
     assert call_args.epochs == 20
-    assert call_args.loglevel == logging.INFO
+    assert call_args.loglevel == 0
     assert call_args.subparser == 'hyperopt'
     assert call_args.spaces == ['buy']
     assert call_args.func is not None
