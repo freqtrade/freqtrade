@@ -277,7 +277,7 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.populate_indicators(parse_ticker_dataframe(pair_data))
+        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), pair)
                 for pair, pair_data in tickerdata.items()}
 
     def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
