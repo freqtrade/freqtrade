@@ -619,6 +619,24 @@ class FreqtradeBot(object):
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
 
+        # Check trade and Sync Trades table as open_order_id: is set.
+        if trade.open_order_id:
+            # Update trade with order values
+            logger.info('Found open order for %s', trade)
+            order = self.exchange.get_order(trade.open_order_id, trade.pair)
+            # Try update amount (binance-fix)
+            try:
+                new_amount = self.get_real_amount(trade, order)
+                if order['amount'] != new_amount:
+                    order['amount'] = new_amount
+                    # Fee was applied, so set to 0
+                    trade.fee_open = 0
+
+            except OperationalException as exception:
+                logger.warning("could not update trade amount: %s", exception)
+
+            trade.update(order)
+
         profit_trade = trade.calc_profit(rate=limit)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
         profit_percent = trade.calc_profit_percent(limit)
