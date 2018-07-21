@@ -62,7 +62,6 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
     )
-    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     args = ['-c', 'config.json.example']
@@ -90,7 +89,6 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
     )
-    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     args = ['-c', 'config.json.example']
@@ -118,7 +116,6 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
     )
-    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     args = ['-c', 'config.json.example']
@@ -146,7 +143,6 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
     )
-    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     # Raise exception as side effect to avoid endless loop
@@ -174,7 +170,6 @@ def test_reconfigure(mocker, default_conf) -> None:
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
     )
-    mocker.patch('freqtrade.freqtradebot.CryptoToFiatConverter', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     freqtrade = FreqtradeBot(default_conf)

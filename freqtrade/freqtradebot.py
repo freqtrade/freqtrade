@@ -16,7 +16,6 @@ from cachetools import TTLCache, cached
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
-from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -49,7 +48,6 @@ class FreqtradeBot(object):
         # Init objects
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
-        self.fiat_converter = CryptoToFiatConverter()
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
@@ -363,12 +361,6 @@ class FreqtradeBot(object):
 
         order_id = self.exchange.buy(pair, buy_limit, amount)['id']
 
-        stake_amount_fiat = self.fiat_converter.convert_amount(
-            stake_amount,
-            stake_currency,
-            fiat_currency
-        )
-
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
@@ -376,7 +368,6 @@ class FreqtradeBot(object):
             'market_url': pair_url,
             'limit': buy_limit,
             'stake_amount': stake_amount,
-            'stake_amount_fiat': stake_amount_fiat,
             'stake_currency': stake_currency,
             'fiat_currency': fiat_currency
         })
@@ -643,14 +634,7 @@ class FreqtradeBot(object):
         if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
             stake_currency = self.config['stake_currency']
             fiat_currency = self.config['fiat_display_currency']
-            fiat_converter = CryptoToFiatConverter()
-            profit_fiat = fiat_converter.convert_amount(
-                profit_trade,
-                stake_currency,
-                fiat_currency,
-            )
             msg.update({
-                'profit_fiat': profit_fiat,
                 'stake_currency': stake_currency,
                 'fiat_currency': fiat_currency,
             })

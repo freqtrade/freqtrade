@@ -12,6 +12,7 @@ from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
+from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ class Telegram(RPC):
         self._updater: Updater = None
         self._config = freqtrade.config
         self._init()
+        self._fiat_converter = CryptoToFiatConverter()
 
     def _init(self) -> None:
         """
@@ -114,6 +116,9 @@ class Telegram(RPC):
         """ Send a message to telegram channel """
 
         if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
+            msg['stake_amount_fiat'] = self._fiat_converter.convert_amount(
+                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+
             message = "*{exchange}:* Buying [{pair}]({market_url})\n" \
                       "with limit `{limit:.8f}\n" \
                       "({stake_amount:.6f} {stake_currency}," \
@@ -135,6 +140,8 @@ class Telegram(RPC):
             # This might not be the case if the message origin is triggered by /forcesell
             if all(prop in msg for prop in ['gain', 'profit_fiat',
                                             'fiat_currency', 'stake_currency']):
+                msg['profit_fiat'] = self._fiat_converter.convert_amount(
+                    msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
                 message += '` ({gain}: {profit_amount:.8f} {stake_currency}`' \
                            '` / {profit_fiat:.3f} {fiat_currency})`'.format(**msg)
 
