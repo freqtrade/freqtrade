@@ -13,8 +13,10 @@ import sqlalchemy as sql
 from numpy import mean, nan_to_num
 from pandas import DataFrame
 
+from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
+
 from freqtrade.state import State
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,9 @@ class RPC(object):
     """
     RPC class can be used to have extra feature, like bot data, and access to DB data
     """
+    # Initialize _fiat_converter if needed in each RPC handler
+    _fiat_converter: CryptoToFiatConverter = None
+
     def __init__(self, freqtrade) -> None:
         """
         Initializes all enabled rpc modules
@@ -141,7 +146,7 @@ class RPC(object):
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('timescale must be an integer greater than 0')
 
-        fiat = self._freqtrade.fiat_converter
+        fiat = self._fiat_converter
         for day in range(0, timescale):
             profitday = today - timedelta(days=day)
             trades = Trade.query \
@@ -168,7 +173,7 @@ class RPC(object):
                         value['amount'],
                         stake_currency,
                         fiat_display_currency
-                    ),
+                    ) if self._fiat_converter else 0,
                     symbol=fiat_display_currency
                 ),
                 '{value} trade{s}'.format(
@@ -225,22 +230,23 @@ class RPC(object):
 
         # FIX: we want to keep fiatconverter in a state/environment,
         #      doing this will utilize its caching functionallity, instead we reinitialize it here
-        fiat = self._freqtrade.fiat_converter
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
         profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
-        profit_closed_fiat = fiat.convert_amount(
+        profit_closed_fiat = self._fiat_converter.convert_amount(
             profit_closed_coin_sum,
             stake_currency,
             fiat_display_currency
-        )
+        ) if self._fiat_converter else 0
+
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
         profit_all_percent = round(nan_to_num(mean(profit_all_percent)) * 100, 2)
-        profit_all_fiat = fiat.convert_amount(
+        profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
             fiat_display_currency
-        )
+        ) if self._fiat_converter else 0
+
         num = float(len(durations) or 1)
         return {
             'profit_closed_coin': profit_closed_coin_sum,
@@ -284,9 +290,9 @@ class RPC(object):
         if total == 0.0:
             raise RPCException('all balances are zero')
 
-        fiat = self._freqtrade.fiat_converter
         symbol = fiat_display_currency
-        value = fiat.convert_amount(total, 'BTC', symbol)
+        value = self._fiat_converter.convert_amount(total, 'BTC',
+                                                    symbol) if self._fiat_converter else 0
         return {
             'currencies': output,
             'total': total,
