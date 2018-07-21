@@ -17,6 +17,7 @@ from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
+from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
@@ -362,7 +363,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     """
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch(
-        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price',
+        'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
         return_value=15000.0
     )
     mocker.patch.multiple(
@@ -474,7 +475,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     Test _profit() method
     """
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -742,7 +743,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     Test _forcesell() method
     """
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     mocker.patch.multiple(
@@ -783,7 +784,6 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
         'profit_percent': 0.06110514,
-        'profit_fiat': 0.9189,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -1134,7 +1134,6 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'current_rate': 3.201e-05,
         'profit_amount': -0.05746268,
         'profit_percent': -0.57405275,
-        'profit_fiat': -24.81204044792,
         'stake_currency': 'ETH',
         'fiat_currency': 'USD'
     })
