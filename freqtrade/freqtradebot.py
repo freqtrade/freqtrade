@@ -619,6 +619,9 @@ class FreqtradeBot(object):
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
 
+        # Update Trade DB to show the trade as sold.
+        self.process_maybe_execute_sell(trade)
+
         profit_trade = trade.calc_profit(rate=limit)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
         profit_percent = trade.calc_profit_percent(limit)
