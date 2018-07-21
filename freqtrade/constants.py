@@ -100,6 +100,15 @@ CONF_SCHEMA = {
             },
             'required': ['enabled', 'token', 'chat_id']
         },
+        'webhook': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'webhookbuy': {'type': 'object'},
+                'webhooksell': {'type': 'object'},
+                'webhookstatus': {'type': 'object'},
+            },
+        },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'internals': {

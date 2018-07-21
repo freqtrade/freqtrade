@@ -13,11 +13,11 @@ import pytest
 from arrow import Arrow
 
 from freqtrade import DependencyException, constants, optimize
-from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
 def get_args(args) -> List[str]:
@@ -96,7 +96,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
             'stake_amount': config['stake_amount'],
             'processed': processed,
             'max_open_trades': 1,
-            'realistic': True
+            'position_stacking': False
         }
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
@@ -127,7 +127,7 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
         'stake_amount': conf['stake_amount'],
         'processed': backtesting.tickerdata_to_dataframe(data),
         'max_open_trades': 10,
-        'realistic': True,
+        'position_stacking': False,
         'record': record
     }
 
@@ -193,8 +193,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation' not in config
-    assert not log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
+    assert 'position_stacking' not in config
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
 
     assert 'refresh_pairs' not in config
     assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -218,7 +218,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--realistic-simulation',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
         '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo',
@@ -246,9 +247,12 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation' in config
-    assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
-    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+    assert 'position_stacking' in config
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
 
     assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -325,7 +329,6 @@ def test_backtesting_init(mocker, default_conf) -> None:
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
-    assert isinstance(backtesting.analyze, Analyze)
     assert backtesting.ticker_interval == '5m'
     assert callable(backtesting.tickerdata_to_dataframe)
     assert callable(backtesting.populate_buy_trend)
@@ -347,9 +350,9 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     data = backtesting.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 99
 
-    # Load Analyze to compare the result between Backtesting function and Analyze are the same
-    analyze = Analyze(default_conf)
-    data2 = analyze.tickerdata_to_dataframe(tickerlist)
+    # Load strategy to compare the result between Backtesting function and strategy are the same
+    strategy = DefaultStrategy(default_conf)
+    data2 = strategy.tickerdata_to_dataframe(tickerlist)
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
 
@@ -392,15 +395,14 @@ def test_generate_text_table(default_conf, mocker):
 
     result_str = (
         '| pair    |   buy count |   avg profit % |   cum profit % |   '
-        'total profit BTC |   avg duration |   profit |   loss |\n'
+        'total profit BTC | avg duration   |   profit |   loss |\n'
         '|:--------|------------:|---------------:|---------------:|'
-        '-------------------:|---------------:|---------:|-------:|\n'
+        '-------------------:|:---------------|---------:|-------:|\n'
         '| ETH/BTC |           2 |          15.00 |          30.00 |         '
-        '0.60000000 |           20.0 |        2 |      0 |\n'
+        '0.60000000 | 0:20:00        |        2 |      0 |\n'
         '| TOTAL   |           2 |          15.00 |          30.00 |         '
-        '0.60000000 |           20.0 |        2 |      0 |'
+        '0.60000000 | 0:20:00        |        2 |      0 |'
     )
-    print(result_str)
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
@@ -412,7 +414,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history')
     patch_exchange(mocker)
@@ -453,7 +454,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
-    mocker.patch('freqtrade.freqtradebot.Analyze', MagicMock())
     mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history')
     patch_exchange(mocker)
@@ -495,7 +495,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
             'stake_amount': default_conf['stake_amount'],
             'processed': data_processed,
             'max_open_trades': 10,
-            'realistic': True
+            'position_stacking': False
         }
     )
     assert not results.empty
@@ -543,7 +543,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
             'stake_amount': default_conf['stake_amount'],
             'processed': backtesting.tickerdata_to_dataframe(data),
             'max_open_trades': 1,
-            'realistic': True
+            'position_stacking': False
         }
     )
     assert not results.empty
@@ -718,7 +718,8 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--ticker-interval', '1m',
         '--live',
         '--timerange', '-100',
-        '--realistic-simulation'
+        '--enable-position-stacking',
+        '--disable-max-market-positions'
     ]
     args = get_args(args)
     start(args)
@@ -727,14 +728,14 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Parameter -i/--ticker-interval detected ...',
         'Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
-        'Using max_open_trades: 1 ...',
+        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
         'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
-        'Parameter --realistic-simulation detected ...'
+        'Parameter --enable-position-stacking detected ...'
     ]
 
     for line in exists:

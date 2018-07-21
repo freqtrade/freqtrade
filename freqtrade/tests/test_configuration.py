@@ -6,6 +6,7 @@ Unit test file for configuration.py
 import json
 from argparse import Namespace
 from copy import deepcopy
+import logging
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,7 +14,7 @@ from jsonschema import ValidationError
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
+from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.tests.conftest import log_has
 
@@ -275,8 +276,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation' not in config
-    assert not log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
+    assert 'position_stacking' not in config
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
 
     assert 'refresh_pairs' not in config
     assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -300,7 +301,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--realistic-simulation',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
         '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo'
@@ -330,9 +332,12 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation'in config
-    assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
-    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+    assert 'position_stacking'in config
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
 
     assert 'refresh_pairs'in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -402,3 +407,63 @@ def test_check_exchange(default_conf) -> None:
         match=r'.*Exchange "unknown_exchange" not supported.*'
     ):
         configuration.check_exchange(conf)
+
+
+def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
+    """
+    Test Configuration.load_config() with cli params used
+    """
+
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)))
+    # Prevent setting loggers
+    mocker.patch('freqtrade.configuration.set_loggers', MagicMock)
+    arglist = ['-vvv']
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('verbosity') == 3
+    assert log_has('Verbosity set to 3', caplog.record_tuples)
+
+
+def test_set_loggers() -> None:
+    """
+    Test set_loggers() update the logger level for third-party libraries
+    """
+    # Reset Logging to Debug, otherwise this fails randomly as it's set globally
+    logging.getLogger('requests').setLevel(logging.DEBUG)
+    logging.getLogger("urllib3").setLevel(logging.DEBUG)
+    logging.getLogger('ccxt.base.exchange').setLevel(logging.DEBUG)
+    logging.getLogger('telegram').setLevel(logging.DEBUG)
+
+    previous_value1 = logging.getLogger('requests').level
+    previous_value2 = logging.getLogger('ccxt.base.exchange').level
+    previous_value3 = logging.getLogger('telegram').level
+
+    set_loggers()
+
+    value1 = logging.getLogger('requests').level
+    assert previous_value1 is not value1
+    assert value1 is logging.INFO
+
+    value2 = logging.getLogger('ccxt.base.exchange').level
+    assert previous_value2 is not value2
+    assert value2 is logging.INFO
+
+    value3 = logging.getLogger('telegram').level
+    assert previous_value3 is not value3
+    assert value3 is logging.INFO
+
+    set_loggers(log_level=2)
+
+    assert logging.getLogger('requests').level is logging.DEBUG
+    assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
+    assert logging.getLogger('telegram').level is logging.INFO
+
+    set_loggers(log_level=3)
+
+    assert logging.getLogger('requests').level is logging.DEBUG
+    assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
+    assert logging.getLogger('telegram').level is logging.INFO

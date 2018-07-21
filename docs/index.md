@@ -27,6 +27,7 @@ Pull-request. Do not hesitate to reach us on
     - [Test your strategy with Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
     - [Find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
 - [Control the bot with telegram](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md)
+- [Receive notifications via webhook](https://github.com/freqtrade/freqtrade/blob/develop/docs/webhook-config.md)
 - [Contribute to the project](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 	- [How to contribute](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 	- [Run tests & Check PEP8 compliance](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)

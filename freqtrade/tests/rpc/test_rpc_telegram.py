@@ -102,7 +102,6 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
     """
     Test authorized_only() method when we are authorized
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     patch_exchange(mocker, None)
 
@@ -112,7 +111,9 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['telegram']['enabled'] = False
-    dummy = DummyCls(FreqtradeBot(conf))
+    bot = FreqtradeBot(conf)
+    patch_get_signal(bot, (True, False))
+    dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is True
     assert log_has(
@@ -133,7 +134,6 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     """
     Test authorized_only() method when we are unauthorized
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     patch_exchange(mocker, None)
     chat = Chat(0xdeadbeef, 0)
@@ -142,7 +142,9 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['telegram']['enabled'] = False
-    dummy = DummyCls(FreqtradeBot(conf))
+    bot = FreqtradeBot(conf)
+    patch_get_signal(bot, (True, False))
+    dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
     assert not log_has(
@@ -163,7 +165,6 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     """
     Test authorized_only() method when an exception is thrown
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     patch_exchange(mocker)
 
@@ -172,7 +173,11 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
     conf = deepcopy(default_conf)
     conf['telegram']['enabled'] = False
-    dummy = DummyCls(FreqtradeBot(conf))
+
+    bot = FreqtradeBot(conf)
+    patch_get_signal(bot, (True, False))
+    dummy = DummyCls(bot)
+
     dummy.dummy_exception(bot=MagicMock(), update=update)
     assert dummy.state['called'] is False
     assert not log_has(
@@ -198,7 +203,6 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     conf['telegram']['enabled'] = False
     conf['telegram']['chat_id'] = 123
 
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
 
     mocker.patch.multiple(
@@ -233,6 +237,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     freqtradebot = FreqtradeBot(conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -252,7 +257,6 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     """
     Test _status() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -272,6 +276,8 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -299,7 +305,6 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     """
     Test _status_table() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -320,6 +325,8 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     conf = deepcopy(default_conf)
     conf['stake_amount'] = 15.0
     freqtradebot = FreqtradeBot(conf)
+    patch_get_signal(freqtradebot, (True, False))
+
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -353,7 +360,6 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     """
     Test _daily() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch(
         'freqtrade.fiat_convert.CryptoToFiatConverter._find_price',
@@ -375,6 +381,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -427,7 +434,6 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     """
     Test _daily() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -443,6 +449,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Try invalid data
@@ -466,7 +473,6 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     """
     Test _profit() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
@@ -485,6 +491,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     telegram._profit(bot=MagicMock(), update=update)
@@ -568,7 +575,6 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
             'last': 0.1,
         }
 
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=mock_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
@@ -581,6 +587,8 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
     telegram = Telegram(freqtradebot)
 
     telegram._balance(bot=MagicMock(), update=update)
@@ -598,7 +606,6 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
     """
     Test _balance() method when the Exchange platform returns nothing
     """
-    patch_get_signal(mocker, (True, False))
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value={})
 
     msg_mock = MagicMock()
@@ -609,6 +616,8 @@ def test_zero_balance_handle(default_conf, update, mocker) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
     telegram = Telegram(freqtradebot)
 
     telegram._balance(bot=MagicMock(), update=update)
@@ -732,7 +741,6 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     """
     Test _forcesell() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -746,6 +754,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
     )
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -785,7 +794,6 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     """
     Test _forcesell() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -799,6 +807,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
     )
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -842,7 +851,6 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
     """
     Test _forcesell() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -857,6 +865,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
     )
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -891,7 +900,6 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     """
     Test _forcesell() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     msg_mock = MagicMock()
@@ -903,6 +911,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
 
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Trader is not running
@@ -934,7 +943,6 @@ def test_performance_handle(default_conf, update, ticker, fee,
     """
     Test _performance() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -951,6 +959,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Create some test data
@@ -976,7 +985,6 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
     """
     Test _performance() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -986,6 +994,7 @@ def test_performance_handle_invalid(default_conf, update, mocker) -> None:
     )
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     # Trader is not running
@@ -999,7 +1008,6 @@ def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> Non
     """
     Test _count() method
     """
-    patch_get_signal(mocker, (True, False))
     patch_coinmarketcap(mocker)
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -1016,6 +1024,7 @@ def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> Non
     )
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED

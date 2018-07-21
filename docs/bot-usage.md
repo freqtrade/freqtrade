@@ -117,18 +117,21 @@ python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.s
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
-                           [--timerange TIMERANGE] [-l] [-r] [--export EXPORT]
-                           [--export-filename EXPORTFILENAME]
-
+usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
+                             [--timerange TIMERANGE] [-l] [-r]
+                             [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
-  --realistic-simulation
-                        uses max_open_trades from config to simulate real
-                        world limitations
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking)
+  --dmmp, --disable-max-market-positions
+                        Disable applying `max_open_trades` during backtest
+                        (same as setting `max_open_trades` to a very high
+                        number)
   --timerange TIMERANGE
                         specify what timerange of data to use.
   -l, --live            using live data
@@ -138,11 +141,13 @@ optional arguments:
                         run your backtesting with up-to-date data.
   --export EXPORT       export backtest results, argument are: trades Example
                         --export=trades
-  --export-filename EXPORTFILENAME
+  --export-filename PATH
                         Save backtest results to this filename requires
                         --export to be set as well Example --export-
-                        filename=backtest_today.json (default: backtest-
-                        result.json
+                        filename=user_data/backtest_data/backtest_today.json
+                        (default: user_data/backtest_data/backtest-
+                        result.json)
+
 ```
 
 ### How to use --refresh-pairs-cached parameter?
@@ -164,22 +169,28 @@ To optimize your strategy, you can use hyperopt parameter hyperoptimization
 to find optimal parameter values for your stategy.
 
 ```
-usage: main.py hyperopt [-h] [-i TICKER_INTERVAL] [--realistic-simulation]
-                        [--timerange TIMERANGE] [-e INT]
-                        [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
+usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
+                          [--timerange TIMERANGE] [-e INT]
+                          [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
-  --realistic-simulation
-                        uses max_open_trades from config to simulate real
-                        world limitations
-  --timerange TIMERANGE specify what timerange of data to use.
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking)
+  --dmmp, --disable-max-market-positions
+                        Disable applying `max_open_trades` during backtest
+                        (same as setting `max_open_trades` to a very high
+                        number)
+  --timerange TIMERANGE
+                        specify what timerange of data to use.
   -e INT, --epochs INT  specify number of epochs (default: 100)
   -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space separate
                         list. Default: all
+
 ```
 
 ## A parameter missing in the configuration?

@@ -6,7 +6,7 @@ This module contains the backtesting logic
 import logging
 import operator
 from argparse import Namespace
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
@@ -15,12 +15,12 @@ from tabulate import tabulate
 
 import freqtrade.optimize as optimize
 from freqtrade import DependencyException, constants
-from freqtrade.analyze import Analyze
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
+from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +52,11 @@ class Backtesting(object):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.analyze = Analyze(self.config)
-        self.ticker_interval = self.analyze.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
-        self.populate_buy_trend = self.analyze.populate_buy_trend
-        self.populate_sell_trend = self.analyze.populate_sell_trend
+        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.ticker_interval = self.strategy.ticker_interval
+        self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
+        self.populate_buy_trend = self.strategy.populate_buy_trend
+        self.populate_sell_trend = self.strategy.populate_sell_trend
 
         # Reset keys for backtesting
         self.config['exchange']['key'] = ''
@@ -88,7 +88,7 @@ class Backtesting(object):
         """
         stake_currency = str(self.config.get('stake_currency'))
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
@@ -100,7 +100,8 @@ class Backtesting(object):
                 result.profit_percent.mean() * 100.0,
                 result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
-                result.trade_duration.mean(),
+                str(timedelta(
+                    minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
                 len(result[result.profit_abs > 0]),
                 len(result[result.profit_abs < 0])
             ])
@@ -112,7 +113,8 @@ class Backtesting(object):
             results.profit_percent.mean() * 100.0,
             results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
-            results.trade_duration.mean(),
+            str(timedelta(
+                minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
@@ -151,15 +153,16 @@ class Backtesting(object):
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
             buy_signal = sell_row.buy
-            if self.analyze.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                        sell_row.sell):
+            if self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
+                                         sell_row.sell):
 
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_percent(rate=sell_row.open),
                                       profit_abs=trade.calc_profit(rate=sell_row.open),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
-                                      trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                      trade_duration=int((
+                                          sell_row.date - buy_row.date).total_seconds() // 60),
                                       open_index=buy_row.Index,
                                       close_index=sell_row.Index,
                                       open_at_end=False,
@@ -174,7 +177,8 @@ class Backtesting(object):
                                  profit_abs=trade.calc_profit(rate=sell_row.open),
                                  open_time=buy_row.date,
                                  close_time=sell_row.date,
-                                 trade_duration=(sell_row.date - buy_row.date).seconds // 60,
+                                 trade_duration=int((
+                                     sell_row.date - buy_row.date).total_seconds() // 60),
                                  open_index=buy_row.Index,
                                  close_index=sell_row.Index,
                                  open_at_end=True,
@@ -198,13 +202,13 @@ class Backtesting(object):
             stake_amount: btc amount to use for each trade
             processed: a processed dictionary with format {pair, data}
             max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-            realistic: do we try to simulate realistic trades? (default: True)
+            position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
-        realistic = args.get('realistic', False)
+        position_stacking = args.get('position_stacking', False)
         trades = []
         trade_count_lock: Dict = {}
         for pair, pair_data in processed.items():
@@ -228,7 +232,7 @@ class Backtesting(object):
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
 
-                if realistic:
+                if not position_stacking:
                     if lock_pair_until is not None and row.date <= lock_pair_until:
                         continue
                 if max_open_trades > 0:
@@ -282,11 +286,11 @@ class Backtesting(object):
         if not data:
             logger.critical("No data found. Terminating.")
             return
-        # Ignore max_open_trades in backtesting, except realistic flag was passed
-        if self.config.get('realistic_simulation', False):
+        # Use max_open_trades in backtesting, except --disable-max-market-positions is set
+        if self.config.get('use_max_market_positions', True):
             max_open_trades = self.config['max_open_trades']
         else:
-            logger.info('Ignoring max_open_trades (realistic_simulation not set) ...')
+            logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
 
         preprocessed = self.tickerdata_to_dataframe(data)
@@ -306,7 +310,7 @@ class Backtesting(object):
                 'stake_amount': self.config.get('stake_amount'),
                 'processed': preprocessed,
                 'max_open_trades': max_open_trades,
-                'realistic': self.config.get('realistic_simulation', False),
+                'position_stacking': self.config.get('position_stacking', False),
             }
         )
 
