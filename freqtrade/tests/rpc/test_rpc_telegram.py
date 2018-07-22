@@ -17,7 +17,6 @@ from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
-from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
@@ -841,7 +840,6 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
         'profit_percent': -0.05478343,
-        'profit_fiat': -0.8238000000000001,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -890,7 +888,6 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         'current_rate': 1.098e-05,
         'profit_amount': -5.91e-06,
         'profit_percent': -0.00589292,
-        'profit_fiat': -0.08865,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == msg
@@ -1122,6 +1119,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     )
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
+    telegram._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_NOTIFICATION,
         'exchange': 'Binance',
