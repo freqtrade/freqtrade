@@ -67,7 +67,8 @@ class Telegram(RPC):
         self._updater: Updater = None
         self._config = freqtrade.config
         self._init()
-        self._fiat_converter = CryptoToFiatConverter()
+        if self._config.get('stake_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
     def _init(self) -> None:
         """
