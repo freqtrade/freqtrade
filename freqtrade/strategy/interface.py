@@ -3,7 +3,7 @@ IStrategy interface
 This module defines the interface to apply for strategies
 """
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, NamedTuple, Tuple
@@ -70,37 +70,32 @@ class IStrategy(ABC):
     def __init__(self, config: dict) -> None:
         self.config = config
 
-    def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
+    @abstractmethod
+    def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param pair: Pair currently analyzed
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        warnings.warn("deprecated - please replace this method with advise_indicators!",
-                      DeprecationWarning)
-        return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+    @abstractmethod
+    def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
+        :param pair: Pair currently analyzed
         :return: DataFrame with buy column
         """
-        warnings.warn("deprecated - please replace this method with advise_buy!",
-                      DeprecationWarning)
-        dataframe.loc[(), 'buy'] = 0
-        return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
+    @abstractmethod
+    def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
+        :param pair: Pair currently analyzed
         :return: DataFrame with sell column
         """
-        warnings.warn("deprecated - please replace this method with advise_sell!",
-                      DeprecationWarning)
-        dataframe.loc[(), 'sell'] = 0
-        return dataframe
 
     def get_strategy_name(self) -> str:
         """
@@ -283,30 +278,44 @@ class IStrategy(ABC):
     def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
-        If not overridden, calls the legacy method `populate_indicators to keep strategies working
+        This method should not be overridden.
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
         :param pair: The currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        return self.populate_indicators(dataframe)
+        if len(self.populate_indicators.__annotations__) == 2:
+            warnings.warn("deprecated - check out the Sample strategy to see "
+                          "the current function headers!", DeprecationWarning)
+            return self.populate_indicators(dataframe)  # type: ignore
+        else:
+            return self.populate_indicators(dataframe, pair)
 
     def advise_buy(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
-        If not overridden, calls the legacy method `populate_buy_trend to keep strategies working
+        This method should not be overridden.
         :param dataframe: DataFrame
         :param pair: The currently traded pair
         :return: DataFrame with buy column
         """
-
-        return self.populate_buy_trend(dataframe)
+        if len(self.populate_buy_trend.__annotations__) == 2:
+            warnings.warn("deprecated - check out the Sample strategy to see "
+                          "the current function headers!", DeprecationWarning)
+            return self.populate_buy_trend(dataframe)  # type: ignore
+        else:
+            return self.populate_buy_trend(dataframe, pair)
 
     def advise_sell(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
-        If not overridden, calls the legacy method `populate_sell_trend to keep strategies working
+        This method should not be overridden.
         :param dataframe: DataFrame
         :param pair: The currently traded pair
         :return: DataFrame with sell column
         """
-        return self.populate_sell_trend(dataframe)
+        if len(self.populate_sell_trend.__annotations__) == 2:
+            warnings.warn("deprecated - check out the Sample strategy to see "
+                          "the current function headers!", DeprecationWarning)
+            return self.populate_sell_trend(dataframe)  # type: ignore
+        else:
+            return self.populate_sell_trend(dataframe, pair)

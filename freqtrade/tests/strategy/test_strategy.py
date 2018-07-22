@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
 from os import path
-from unittest.mock import MagicMock
 import warnings
 
 import pytest
+from pandas import DataFrame
 
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -60,6 +60,9 @@ def test_search_strategy():
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
     pair = 'ETH/BTC'
+    assert len(resolver.strategy.populate_indicators.__annotations__) == 3
+    assert 'dataframe' in resolver.strategy.populate_indicators.__annotations__
+    assert 'pair' in resolver.strategy.populate_indicators.__annotations__
     assert 'adx' in resolver.strategy.advise_indicators(result, pair=pair)
 
 
@@ -158,39 +161,35 @@ def test_strategy_override_ticker_interval(caplog):
 
 
 def test_deprecate_populate_indicators(result):
-    resolver = StrategyResolver({'strategy': 'TestStrategy'})
+    default_location = path.join(path.dirname(path.realpath(__file__)))
+    resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
+                                 'strategy_path': default_location})
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.populate_indicators(result)
+        indicators = resolver.strategy.advise_indicators(result, 'ETH/BTC')
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
-        assert "deprecated - please replace this method with advise_indicators!" in str(
-            w[-1].message)
+        assert "deprecated - check out the Sample strategy to see the current function headers!" \
+            in str(w[-1].message)
 
+    with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        resolver.strategy.advise_buy(indicators, 'ETH/BTC')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - check out the Sample strategy to see the current function headers!" \
+            in str(w[-1].message)
 
-def test_deprecate_populate_buy_trend(result):
-    resolver = StrategyResolver({'strategy': 'TestStrategy'})
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.populate_buy_trend(result)
+        resolver.strategy.advise_sell(indicators, 'ETH_BTC')
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
-        assert "deprecated - please replace this method with advise_buy!" in str(
-            w[-1].message)
-
-
-def test_deprecate_populate_sell_trend(result):
-    resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        resolver.strategy.populate_sell_trend(result)
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        assert "deprecated - please replace this method with advise_sell!" in str(
-            w[-1].message)
+        assert "deprecated - check out the Sample strategy to see the current function headers!" \
+            in str(w[-1].message)
 
 
 def test_call_deprecated_function(result, monkeypatch):
@@ -198,18 +197,26 @@ def test_call_deprecated_function(result, monkeypatch):
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
                                  'strategy_path': default_location})
     pair = 'ETH/BTC'
-    indicators_mock = MagicMock()
-    buy_trend_mock = MagicMock()
-    sell_trend_mock = MagicMock()
 
-    monkeypatch.setattr(resolver.strategy, 'populate_indicators', indicators_mock)
-    resolver.strategy.advise_indicators(result, pair=pair)
-    assert indicators_mock.call_count == 1
+    # Make sure we are using a legacy function
+    assert len(resolver.strategy.populate_indicators.__annotations__) == 2
+    assert 'dataframe' in resolver.strategy.populate_indicators.__annotations__
+    assert 'pair' not in resolver.strategy.populate_indicators.__annotations__
+    assert len(resolver.strategy.populate_buy_trend.__annotations__) == 2
+    assert 'dataframe' in resolver.strategy.populate_buy_trend.__annotations__
+    assert 'pair' not in resolver.strategy.populate_buy_trend.__annotations__
+    assert len(resolver.strategy.populate_sell_trend.__annotations__) == 2
+    assert 'dataframe' in resolver.strategy.populate_sell_trend.__annotations__
+    assert 'pair' not in resolver.strategy.populate_sell_trend.__annotations__
 
-    monkeypatch.setattr(resolver.strategy, 'populate_buy_trend', buy_trend_mock)
-    resolver.strategy.advise_buy(result, pair=pair)
-    assert buy_trend_mock.call_count == 1
+    indicator_df = resolver.strategy.advise_indicators(result, pair=pair)
+    assert type(indicator_df) is DataFrame
+    assert 'adx' in indicator_df.columns
 
-    monkeypatch.setattr(resolver.strategy, 'populate_sell_trend', sell_trend_mock)
-    resolver.strategy.advise_sell(result, pair=pair)
-    assert sell_trend_mock.call_count == 1
+    buydf = resolver.strategy.advise_buy(result, pair=pair)
+    assert type(buydf) is DataFrame
+    assert 'buy' in buydf.columns
+
+    selldf = resolver.strategy.advise_sell(result, pair=pair)
+    assert type(selldf) is DataFrame
+    assert 'sell' in selldf
