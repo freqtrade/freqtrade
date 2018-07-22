@@ -1201,7 +1201,7 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
 
 
 def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
-    del default_conf['stake_currency']
+    del default_conf['fiat_display_currency']
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
@@ -1228,7 +1228,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
-    del default_conf['stake_currency']
+    del default_conf['fiat_display_currency']
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',
