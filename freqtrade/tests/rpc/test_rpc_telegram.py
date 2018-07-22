@@ -1200,6 +1200,68 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
         })
 
 
+def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
+    del default_conf['stake_currency']
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.BUY_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.099e-05,
+        'stake_amount': 0.001,
+        'stake_amount_fiat': 0.0,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD'
+    })
+    assert msg_mock.call_args[0][0] \
+        == '*Bittrex:* Buying [ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n' \
+           'with limit `0.00001099\n' \
+           '(0.001000 BTC,0.000 USD)`'
+
+
+def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
+    del default_conf['stake_currency']
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Binance',
+        'pair': 'KEY/ETH',
+        'gain': 'loss',
+        'market_url': 'https://www.binance.com/tradeDetail.html?symbol=KEY_ETH',
+        'limit': 3.201e-05,
+        'amount': 1333.3333333333335,
+        'open_rate': 7.5e-05,
+        'current_rate': 3.201e-05,
+        'profit_amount': -0.05746268,
+        'profit_percent': -0.57405275,
+        'stake_currency': 'ETH',
+        'fiat_currency': 'USD'
+    })
+    assert msg_mock.call_args[0][0] \
+        == '*Binance:* Selling [KEY/ETH]' \
+           '(https://www.binance.com/tradeDetail.html?symbol=KEY_ETH)\n' \
+           '*Limit:* `0.00003201`\n' \
+           '*Amount:* `1333.33333333`\n' \
+           '*Open Rate:* `0.00007500`\n' \
+           '*Current Rate:* `0.00003201`\n' \
+           '*Profit:* `-57.41%`'
+
+
 def test__send_msg(default_conf, mocker) -> None:
     """
     Test send_msg() method
