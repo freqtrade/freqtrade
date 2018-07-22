@@ -98,7 +98,7 @@ df['closets'] = pd.to_datetime(df['closets'],
                               )
 ```
 
-If you have some ideas for interresting / helpfull backtest data analysis, feel free to submit a PR so the community can benefit from it.
+If you have some ideas for interesting / helpful backtest data analysis, feel free to submit a PR so the community can benefit from it.
 
 #### Exporting trades to file specifying a custom filename
 

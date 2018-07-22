@@ -610,19 +610,19 @@ class FreqtradeBot(object):
         # TODO: figure out how to handle partially complete sell orders
         return False
 
-    def execute_sell(self, trade: Trade, limit: float, sellreason: SellType) -> None:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
-        :param sellrason: Reaseon the sell was triggered
+        :param sellreason: Reason the sell was triggered
         :return: None
         """
         # Execute sell and update trade record
         order_id = self.exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
-        trade.sell_reason = sellreason.value
+        trade.sell_reason = sell_reason.value
 
         profit_trade = trade.calc_profit(rate=limit)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']

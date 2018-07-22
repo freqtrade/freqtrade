@@ -1370,7 +1370,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         get_ticker=ticker_sell_up
     )
 
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sellreason=SellType.ROI)
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1423,7 +1423,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     )
 
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
-                           sellreason=SellType.STOP_LOSS)
+                           sell_reason=SellType.STOP_LOSS)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1476,7 +1476,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
     )
     freqtrade.config = {}
 
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sellreason=SellType.ROI)
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1527,7 +1527,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
 
     freqtrade.config = {}
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
-                           sellreason=SellType.STOP_LOSS)
+                           sell_reason=SellType.STOP_LOSS)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
