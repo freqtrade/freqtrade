@@ -6,7 +6,7 @@ from abc import abstractmethod
 from datetime import timedelta, datetime, date
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import arrow
 import sqlalchemy as sql
@@ -51,7 +51,7 @@ class RPC(object):
     RPC class can be used to have extra feature, like bot data, and access to DB data
     """
     # Initialize _fiat_converter if needed in each RPC handler
-    _fiat_converter: CryptoToFiatConverter = None
+    _fiat_converter: Optional[CryptoToFiatConverter] = None
 
     def __init__(self, freqtrade) -> None:
         """
@@ -146,7 +146,6 @@ class RPC(object):
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('timescale must be an integer greater than 0')
 
-        fiat = self._fiat_converter
         for day in range(0, timescale):
             profitday = today - timedelta(days=day)
             trades = Trade.query \
@@ -169,7 +168,7 @@ class RPC(object):
                     symbol=stake_currency
                 ),
                 '{value:.3f} {symbol}'.format(
-                    value=fiat.convert_amount(
+                    value=self._fiat_converter.convert_amount(
                         value['amount'],
                         stake_currency,
                         fiat_display_currency

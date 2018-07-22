@@ -116,8 +116,11 @@ class Telegram(RPC):
         """ Send a message to telegram channel """
 
         if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
-            msg['stake_amount_fiat'] = self._fiat_converter.convert_amount(
-                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            if self._fiat_converter:
+                msg['stake_amount_fiat'] = self._fiat_converter.convert_amount(
+                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            else:
+                msg['stake_amount_fiat'] = 0
 
             message = "*{exchange}:* Buying [{pair}]({market_url})\n" \
                       "with limit `{limit:.8f}\n" \
@@ -138,8 +141,8 @@ class Telegram(RPC):
 
             # Check if all sell properties are available.
             # This might not be the case if the message origin is triggered by /forcesell
-            if all(prop in msg for prop in ['gain', 'profit_fiat',
-                                            'fiat_currency', 'stake_currency']):
+            if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
+               and self._fiat_converter):
                 msg['profit_fiat'] = self._fiat_converter.convert_amount(
                     msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
                 message += '` ({gain}: {profit_amount:.8f} {stake_currency}`' \
