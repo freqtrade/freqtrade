@@ -58,6 +58,9 @@ class IStrategy(ABC):
         ticker_interval -> str: value of the ticker interval to use for the strategy
     """
 
+    _populate_fun_len: int = 0
+    _buy_fun_len: int = 0
+    _sell_fun_len: int = 0
     # associated minimal roi
     minimal_roi: Dict
 
@@ -283,7 +286,7 @@ class IStrategy(ABC):
         :param pair: The currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        if len(self.populate_indicators.__annotations__) == 2:
+        if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
             return self.populate_indicators(dataframe)  # type: ignore
@@ -298,7 +301,7 @@ class IStrategy(ABC):
         :param pair: The currently traded pair
         :return: DataFrame with buy column
         """
-        if len(self.populate_buy_trend.__annotations__) == 2:
+        if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
             return self.populate_buy_trend(dataframe)  # type: ignore
@@ -313,7 +316,7 @@ class IStrategy(ABC):
         :param pair: The currently traded pair
         :return: DataFrame with sell column
         """
-        if len(self.populate_sell_trend.__annotations__) == 2:
+        if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
             return self.populate_sell_trend(dataframe)  # type: ignore

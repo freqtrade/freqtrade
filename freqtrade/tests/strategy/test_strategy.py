@@ -199,15 +199,9 @@ def test_call_deprecated_function(result, monkeypatch):
     pair = 'ETH/BTC'
 
     # Make sure we are using a legacy function
-    assert len(resolver.strategy.populate_indicators.__annotations__) == 2
-    assert 'dataframe' in resolver.strategy.populate_indicators.__annotations__
-    assert 'pair' not in resolver.strategy.populate_indicators.__annotations__
-    assert len(resolver.strategy.populate_buy_trend.__annotations__) == 2
-    assert 'dataframe' in resolver.strategy.populate_buy_trend.__annotations__
-    assert 'pair' not in resolver.strategy.populate_buy_trend.__annotations__
-    assert len(resolver.strategy.populate_sell_trend.__annotations__) == 2
-    assert 'dataframe' in resolver.strategy.populate_sell_trend.__annotations__
-    assert 'pair' not in resolver.strategy.populate_sell_trend.__annotations__
+    assert resolver.strategy._populate_fun_len == 2
+    assert resolver.strategy._buy_fun_len == 2
+    assert resolver.strategy._sell_fun_len == 2
 
     indicator_df = resolver.strategy.advise_indicators(result, pair=pair)
     assert type(indicator_df) is DataFrame
