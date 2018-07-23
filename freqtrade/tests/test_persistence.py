@@ -469,6 +469,65 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog.record_tuples)
 
 
+def test_migrate_mid_state(mocker, default_conf, fee, caplog):
+    """
+    Test Database migration (starting with new pairformat)
+    """
+    amount = 103.223
+    create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
+                                id INTEGER NOT NULL,
+                                exchange VARCHAR NOT NULL,
+                                pair VARCHAR NOT NULL,
+                                is_open BOOLEAN NOT NULL,
+                                fee_open FLOAT NOT NULL,
+                                fee_close FLOAT NOT NULL,
+                                open_rate FLOAT,
+                                close_rate FLOAT,
+                                close_profit FLOAT,
+                                stake_amount FLOAT NOT NULL,
+                                amount FLOAT,
+                                open_date DATETIME NOT NULL,
+                                close_date DATETIME,
+                                open_order_id VARCHAR,
+                                PRIMARY KEY (id),
+                                CHECK (is_open IN (0, 1))
+                                );"""
+    insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close,
+                          open_rate, stake_amount, amount, open_date)
+                          VALUES ('binance', 'ETC/BTC', 1, {fee}, {fee},
+                          0.00258580, {stake}, {amount},
+                          '2019-11-28 12:44:24.000000')
+                          """.format(fee=fee.return_value,
+                                     stake=default_conf.get("stake_amount"),
+                                     amount=amount
+                                     )
+    engine = create_engine('sqlite://')
+    mocker.patch('freqtrade.persistence.create_engine', lambda *args, **kwargs: engine)
+
+    # Create table using the old format
+    engine.execute(create_table_old)
+    engine.execute(insert_table_old)
+
+    # Run init to test migration
+    init(default_conf)
+
+    assert len(Trade.query.filter(Trade.id == 1).all()) == 1
+    trade = Trade.query.filter(Trade.id == 1).first()
+    assert trade.fee_open == fee.return_value
+    assert trade.fee_close == fee.return_value
+    assert trade.open_rate_requested is None
+    assert trade.close_rate_requested is None
+    assert trade.is_open == 1
+    assert trade.amount == amount
+    assert trade.stake_amount == default_conf.get("stake_amount")
+    assert trade.pair == "ETC/BTC"
+    assert trade.exchange == "binance"
+    assert trade.max_rate == 0.0
+    assert trade.stop_loss == 0.0
+    assert trade.initial_stop_loss == 0.0
+    assert log_has("trying trades_bak0", caplog.record_tuples)
+
+
 def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
