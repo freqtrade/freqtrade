@@ -224,7 +224,7 @@ class Telegram(RPC):
         :return: None
         """
         stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config['fiat_display_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', None)
         try:
             timescale = int(update.message.text.replace('/daily', '').strip())
         except (TypeError, ValueError):
@@ -257,7 +257,7 @@ class Telegram(RPC):
         :return: None
         """
         stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config['fiat_display_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', None)
 
         try:
             stats = self._rpc_trade_statistics(
@@ -296,7 +296,7 @@ class Telegram(RPC):
     def _balance(self, bot: Bot, update: Update) -> None:
         """ Handler for /balance """
         try:
-            result = self._rpc_balance(self._config['fiat_display_currency'])
+            result = self._rpc_balance(self._config.get('fiat_display_currency', None))
             output = ''
             for currency in result['currencies']:
                 output += "*{currency}:*\n" \
