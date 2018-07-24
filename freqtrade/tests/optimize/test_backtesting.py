@@ -17,6 +17,7 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
@@ -406,6 +407,35 @@ def test_generate_text_table(default_conf, mocker):
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
 
+def test_generate_text_table_sell_reason(default_conf, mocker):
+    """
+    Test Backtesting.generate_text_table_sell_reason() method
+    """
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+
+    results = pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.2, 0.3],
+            'profit_abs': [0.2, 0.4, 0.5],
+            'trade_duration': [10, 30, 10],
+            'profit': [2, 0, 0],
+            'loss': [0, 0, 1],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+        }
+    )
+
+    result_str = (
+        '| Sell Reason   |   Count |\n'
+        '|:--------------|--------:|\n'
+        '| roi           |       2 |\n'
+        '| stop_loss     |       1 |'
+    )
+    assert backtesting._generate_text_table_sell_reason(
+        data={'ETH/BTC': {}}, results=results) == result_str
+
+
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
     """
     Test Backtesting.start() method
@@ -514,7 +544,9 @@ def test_backtest(default_conf, fee, mocker) -> None:
          'trade_duration': [240, 50],
          'open_at_end': [False, False],
          'open_rate': [0.104445, 0.10302485],
-         'close_rate': [0.105, 0.10359999]})
+         'close_rate': [0.105, 0.10359999],
+         'sell_reason': [SellType.ROI, SellType.ROI]
+         })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = data_processed[pair]
     for _, t in results.iterrows():
@@ -660,7 +692,9 @@ def test_backtest_record(default_conf, fee, mocker):
                             "open_index": [1, 119, 153, 185],
                             "close_index": [118, 151, 184, 199],
                             "trade_duration": [123, 34, 31, 14],
-                            "open_at_end": [False, False, False, True]
+                            "open_at_end": [False, False, False, True],
+                            "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                            SellType.ROI, SellType.FORCE_SELL]
                             })
     backtesting._store_backtest_result("backtest-result.json", results)
     assert len(results) == 4
@@ -673,7 +707,7 @@ def test_backtest_record(default_conf, fee, mocker):
     # Below follows just a typecheck of the schema/type of trade-records
     oix = None
     for (pair, profit, date_buy, date_sell, buy_index, dur,
-         openr, closer, open_at_end) in records:
+         openr, closer, open_at_end, sell_reason) in records:
         assert pair == 'UNITTEST/BTC'
         assert isinstance(profit, float)
         # FIX: buy/sell should be converted to ints
@@ -682,6 +716,7 @@ def test_backtest_record(default_conf, fee, mocker):
         assert isinstance(openr, float)
         assert isinstance(closer, float)
         assert isinstance(open_at_end, bool)
+        assert isinstance(sell_reason, str)
         isinstance(buy_index, pd._libs.tslib.Timestamp)
         if oix:
             assert buy_index > oix

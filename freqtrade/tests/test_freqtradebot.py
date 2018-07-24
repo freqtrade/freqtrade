@@ -20,6 +20,7 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
+from freqtrade.strategy.interface import SellType, SellCheckTuple
 from freqtrade.tests.conftest import log_has, patch_coinmarketcap, patch_exchange
 
 
@@ -1369,7 +1370,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         get_ticker=ticker_sell_up
     )
 
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1421,7 +1422,8 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         get_ticker=ticker_sell_down
     )
 
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
+                           sell_reason=SellType.STOP_LOSS)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1474,7 +1476,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
     )
     freqtrade.config = {}
 
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'])
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1524,7 +1526,8 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
     )
 
     freqtrade.config = {}
-    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'])
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
+                           sell_reason=SellType.STOP_LOSS)
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -1577,6 +1580,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
     trade.update(limit_buy_order)
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
@@ -1612,6 +1616,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
     trade.update(limit_buy_order)
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, markets, mocker) -> None:
@@ -1640,7 +1645,8 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
     freqtrade = FreqtradeBot(conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.stop_loss_reached = \
-        lambda current_rate, trade, current_time, current_profit: False
+        lambda current_rate, trade, current_time, current_profit: SellCheckTuple(
+            sell_flag=False, sell_type=SellType.NONE)
     freqtrade.create_trade()
 
     trade = Trade.query.first()
@@ -1684,6 +1690,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
     trade.update(limit_buy_order)
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
@@ -1724,6 +1731,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
     # Test if buy-signal is absent (should sell due to roi = true)
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.sell_reason == SellType.ROI.value
 
 
 def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog, mocker) -> None:
@@ -1762,6 +1770,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
     assert log_has(
         f'HIT STOP: current price at 0.000001, stop loss is {trade.stop_loss:.6f}, '
         f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
+    assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
 def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets,
@@ -1825,6 +1834,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
         f'HIT STOP: current price at {buy_price + 0.000002:.6f}, '
         f'stop loss is {trade.stop_loss:.6f}, '
         f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
+    assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
@@ -1867,6 +1877,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
     # Test if buy-signal is absent
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+    assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
 def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, caplog, mocker):

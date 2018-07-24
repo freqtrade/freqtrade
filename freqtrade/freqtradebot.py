@@ -20,6 +20,7 @@ from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
+from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,6 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
-
         self._init_modules()
 
     def _init_modules(self) -> None:
@@ -392,7 +392,9 @@ class FreqtradeBot(object):
             open_rate_requested=buy_limit,
             open_date=datetime.utcnow(),
             exchange=self.exchange.id,
-            open_order_id=order_id
+            open_order_id=order_id,
+            strategy=self.strategy.get_strategy_name(),
+            ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
         Trade.session.add(trade)
         Trade.session.flush()
@@ -505,8 +507,9 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(self.exchange,
                                                    trade.pair, self.strategy.ticker_interval)
 
-        if self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell):
-            self.execute_sell(trade, current_rate)
+        should_sell = self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell)
+        if should_sell.sell_flag:
+            self.execute_sell(trade, current_rate, should_sell.sell_type)
             return True
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
@@ -607,17 +610,19 @@ class FreqtradeBot(object):
         # TODO: figure out how to handle partially complete sell orders
         return False
 
-    def execute_sell(self, trade: Trade, limit: float) -> None:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> None:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
+        :param sellreason: Reason the sell was triggered
         :return: None
         """
         # Execute sell and update trade record
         order_id = self.exchange.sell(str(trade.pair), limit, trade.amount)['id']
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
+        trade.sell_reason = sell_reason.value
 
         profit_trade = trade.calc_profit(rate=limit)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']

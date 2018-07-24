@@ -20,6 +20,7 @@ from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
+from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ class BacktestResult(NamedTuple):
     open_at_end: bool
     open_rate: float
     close_rate: float
+    sell_reason: SellType
 
 
 class Backtesting(object):
@@ -120,11 +122,21 @@ class Backtesting(object):
         ])
         return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
 
+    def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
+        """
+        Generate small table outlining Backtest results
+        """
+        tabular_data = []
+        headers = ['Sell Reason', 'Count']
+        for reason, count in results['sell_reason'].value_counts().iteritems():
+            tabular_data.append([reason.value,  count])
+        return tabulate(tabular_data, headers=headers, tablefmt="pipe")
+
     def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
                     t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
-                    t.open_rate, t.close_rate, t.open_at_end)
+                    t.open_rate, t.close_rate, t.open_at_end, t.sell_reason.value)
                    for index, t in results.iterrows()]
 
         if records:
@@ -153,8 +165,9 @@ class Backtesting(object):
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
             buy_signal = sell_row.buy
-            if self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                         sell_row.sell):
+            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
+                                             sell_row.sell)
+            if sell.sell_flag:
 
                 return BacktestResult(pair=pair,
                                       profit_percent=trade.calc_profit_percent(rate=sell_row.open),
@@ -167,7 +180,8 @@ class Backtesting(object):
                                       close_index=sell_row.Index,
                                       open_at_end=False,
                                       open_rate=buy_row.open,
-                                      close_rate=sell_row.open
+                                      close_rate=sell_row.open,
+                                      sell_reason=sell.sell_type
                                       )
         if partial_ticker:
             # no sell condition found - trade stil open at end of backtest period
@@ -183,7 +197,8 @@ class Backtesting(object):
                                  close_index=sell_row.Index,
                                  open_at_end=True,
                                  open_rate=buy_row.open,
-                                 close_rate=sell_row.open
+                                 close_rate=sell_row.open,
+                                 sell_reason=SellType.FORCE_SELL
                                  )
             logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
                          btr.profit_percent, btr.profit_abs)
@@ -318,21 +333,31 @@ class Backtesting(object):
             self._store_backtest_result(self.config.get('exportfilename'), results)
 
         logger.info(
-            '\n================================================= '
-            'BACKTESTING REPORT'
-            ' ==================================================\n'
+            '\n' + '=' * 49 +
+            ' BACKTESTING REPORT ' +
+            '=' * 50 + '\n'
             '%s',
             self._generate_text_table(
                 data,
                 results
             )
         )
+        # logger.info(
+        #     results[['sell_reason']].groupby('sell_reason').count()
+        # )
 
         logger.info(
-            '\n=============================================== '
-            'LEFT OPEN TRADES REPORT'
-            ' ===============================================\n'
-            '%s',
+            '\n' +
+            ' SELL READON STATS '.center(119, '=') +
+            '\n%s \n',
+            self._generate_text_table_sell_reason(data, results)
+
+        )
+
+        logger.info(
+            '\n' +
+            ' LEFT OPEN TRADES REPORT '.center(119, '=') +
+            '\n%s',
             self._generate_text_table(
                 data,
                 results.loc[results.open_at_end]
