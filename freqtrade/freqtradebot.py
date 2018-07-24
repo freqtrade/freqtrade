@@ -344,7 +344,7 @@ class FreqtradeBot(object):
         pair_s = pair.replace('_', '/')
         pair_url = self.exchange.get_pair_detail_url(pair)
         stake_currency = self.config['stake_currency']
-        fiat_currency = self.config['fiat_display_currency']
+        fiat_currency = self.config.get('fiat_display_currency', None)
 
         # Calculate amount
         buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
