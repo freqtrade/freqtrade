@@ -1171,6 +1171,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     # Reset singleton function to avoid random breaks
     telegram._fiat_converter.convert_amount = old_convamount
 
+
 def test_send_msg_status_notification(default_conf, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
