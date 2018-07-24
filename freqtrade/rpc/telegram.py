@@ -241,7 +241,7 @@ class Telegram(RPC):
                              headers=[
                                  'Day',
                                  f'Profit {stake_cur}',
-                                 f'Profit {fiat_disp_cur}'
+                                 f'Profit {fiat_disp_cur if fiat_disp_cur else ""}'
                              ],
                              tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats}</pre>'

@@ -173,7 +173,7 @@ class RPC(object):
                         stake_currency,
                         fiat_display_currency
                     ) if self._fiat_converter else 0,
-                    symbol=fiat_display_currency
+                    symbol=fiat_display_currency if fiat_display_currency else ''
                 ),
                 '{value} trade{s}'.format(
                     value=value['trades'],
