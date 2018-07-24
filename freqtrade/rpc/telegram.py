@@ -125,9 +125,11 @@ class Telegram(RPC):
 
             message = "*{exchange}:* Buying [{pair}]({market_url})\n" \
                       "with limit `{limit:.8f}\n" \
-                      "({stake_amount:.6f} {stake_currency}," \
-                      "{stake_amount_fiat:.3f} {fiat_currency})`" \
-                .format(**msg)
+                      "({stake_amount:.6f} {stake_currency}".format(**msg)
+
+            if msg.get('fiat_currency', None):
+                message += ",{stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
+            message += ")`"
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)

@@ -1219,12 +1219,12 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
-        'fiat_currency': 'USD'
+        'fiat_currency': None
     })
     assert msg_mock.call_args[0][0] \
         == '*Bittrex:* Buying [ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n' \
            'with limit `0.00001099\n' \
-           '(0.001000 BTC,0.000 USD)`'
+           '(0.001000 BTC)`'
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
