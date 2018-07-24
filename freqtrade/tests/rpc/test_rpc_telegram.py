@@ -1119,6 +1119,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     )
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
+    old_convamount = telegram._fiat_converter.convert_amount
     telegram._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_NOTIFICATION,
@@ -1167,7 +1168,8 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
            '*Open Rate:* `0.00007500`\n' \
            '*Current Rate:* `0.00003201`\n' \
            '*Profit:* `-57.41%`'
-
+    # Reset singleton function to avoid random breaks
+    telegram._fiat_converter.convert_amount = old_convamount
 
 def test_send_msg_status_notification(default_conf, mocker) -> None:
     msg_mock = MagicMock()
