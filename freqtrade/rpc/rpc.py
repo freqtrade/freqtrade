@@ -226,8 +226,6 @@ class RPC(object):
 
         bp_pair, bp_rate = best_pair
 
-        # FIX: we want to keep fiatconverter in a state/environment,
-        #      doing this will utilize its caching functionallity, instead we reinitialize it here
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
         profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
