@@ -18,6 +18,7 @@ class TestStrategy(IStrategy):
     More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
 
     You can:
+        :return: a Dataframe with all mandatory indicators for the strategies
     - Rename the class name (Do not forget to update class_name)
     - Add any methods you want to build your strategy
     - Add any lib you need to build your strategy
@@ -51,6 +52,9 @@ class TestStrategy(IStrategy):
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
+        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param pair: Pair currently analyzed
+        :return: a Dataframe with all mandatory indicators for the strategies
         """
 
         # Momentum Indicator

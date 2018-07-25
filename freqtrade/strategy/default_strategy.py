@@ -35,6 +35,9 @@ class DefaultStrategy(IStrategy):
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
+        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param pair: Pair currently analyzed
+        :return: a Dataframe with all mandatory indicators for the strategies
         """
 
         # Momentum Indicator
