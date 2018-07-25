@@ -77,7 +77,7 @@ class Backtesting(object):
         :return: tuple containing min_date, max_date
         """
         timeframe = [
-            (arrow.get(min(frame.date)), arrow.get(max(frame.date)))
+            (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
             for frame in data.values()
         ]
         return min(timeframe, key=operator.itemgetter(0))[0], \
