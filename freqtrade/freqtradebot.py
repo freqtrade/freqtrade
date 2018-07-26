@@ -337,8 +337,8 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(_pair, interval, th[_pair])
 
             if buy and not sell:
-                bought_at_least_one |= self.execute_buy(_pair, stake_amount)
-        return bought_at_least_one
+                return self.execute_buy(_pair, stake_amount)
+        return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
         """
