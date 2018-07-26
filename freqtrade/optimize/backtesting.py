@@ -98,11 +98,13 @@ class Backtesting(object):
         self.debug = False                   # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False            # Stages within Backslap
         self.debug_2loops = False            # Limit each pair to two loops, useful when debugging
-        self.debug_vector = False            # Debug vector calcs
+        self.debug_vector = False             # Debug vector calcs
         self.debug_timing_main_loop = False  # print overall timing per pair - works in Backtest and Backslap
 
         self.backslap_show_trades = False     # prints trades in addition to summary report
-        self.backslap_save_trades = True      # saves trades as a pretty table to backslap.txt
+        self.backslap_save_trades = True     # saves trades as a pretty table to backslap.txt
+
+        self.stop_stops: int = 9999          # stop back testing any pair with this many stops, set to 999999 to not hit
 
 
     @staticmethod
@@ -389,7 +391,6 @@ class Backtesting(object):
         - Profit
         - trade duration
         - profit abs
-
         :param bslap_results Dataframe
         :return: bslap_results Dataframe
         """
@@ -413,45 +414,64 @@ class Backtesting(object):
         if debug:
             from pandas import set_option
             set_option('display.max_rows', 5000)
-            set_option('display.max_columns', 10)
+            set_option('display.max_columns', 20)
             pd.set_option('display.width', 1000)
             pd.set_option('max_colwidth', 40)
             pd.set_option('precision', 12)
 
+        # # Get before
+        # csv = "cryptosher_before_debug"
+        # bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
+
+        bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
+
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
-        # if debug:
-        #     print(bslap_results_df[['open_time', 'close_time', 'trade_duration']])
 
         ## Spends, Takes, Profit, Absolute Profit
+        print(bslap_results_df)
         # Buy Price
-        bslap_results_df['buy_sum'] = stake * bslap_results_df['open_rate']
-        bslap_results_df['buy_fee'] = bslap_results_df['buy_sum'] * open_fee
-        bslap_results_df['buy_spend'] = bslap_results_df['buy_sum'] + bslap_results_df['buy_fee']
+        bslap_results_df['buy_vol']   = stake / bslap_results_df['open_rate'] # How many target are we buying
+        bslap_results_df['buy_fee']   = stake * open_fee
+        bslap_results_df['buy_spend'] = stake + bslap_results_df['buy_fee'] # How much we're spending
+
         # Sell price
-        bslap_results_df['sell_sum'] = stake * bslap_results_df['close_rate']
-        bslap_results_df['sell_fee'] = bslap_results_df['sell_sum'] * close_fee
+        bslap_results_df['sell_sum']  = bslap_results_df['buy_vol'] * bslap_results_df['close_rate']
+        bslap_results_df['sell_fee']  = bslap_results_df['sell_sum'] * close_fee
         bslap_results_df['sell_take'] = bslap_results_df['sell_sum'] - bslap_results_df['sell_fee']
         # profit_percent
-        bslap_results_df['profit_percent'] = bslap_results_df['sell_take'] / bslap_results_df['buy_spend'] - 1
+        bslap_results_df['profit_percent'] = (bslap_results_df['sell_take'] - bslap_results_df['buy_spend']) \
+                                             / bslap_results_df['buy_spend']
         # Absolute profit
         bslap_results_df['profit_abs'] = bslap_results_df['sell_take'] - bslap_results_df['buy_spend']
+
+        # # Get After
+        # csv="cryptosher_after_debug"
+        # bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
+
 
         if debug:
             print("\n")
             print(bslap_results_df[
-                      ['buy_sum', 'buy_fee', 'buy_spend', 'sell_sum','sell_fee', 'sell_take', 'profit_percent', 'profit_abs', 'exit_type']])
+                      ['buy_vol', 'buy_fee', 'buy_spend', 'sell_sum','sell_fee', 'sell_take', 'profit_percent', 'profit_abs', 'exit_type']])
 
         return bslap_results_df
 
-    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int, np_buy_arr_len: int):
+    def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int, np_buy_arr_len: int, stop_stops: int, stop_stops_count: int):
         import utils_find_1st as utf1st
         """
          The purpose of this def is to return the next "buy" = 1
          after t_exit_ind.
+         
+         This function will also check is the stop limit for the pair has been reached. 
+         if stop_stops is the limit and stop_stops_count it the number of times the stop has been hit.
 
          t_exit_ind is the index the last trade exited on
          or 0 if first time around this loop.
+         
+         stop_stops i
          """
+        debug = self.debug
+
         # Timers, to be called if in debug
         def s():
             st = timeit.default_timer()
@@ -477,6 +497,11 @@ class Backtesting(object):
 
         if t_open_ind == np_buy_arr_len -1 : # If buy found on last candle ignore, there is no OPEN in next to use
             t_open_ind = -1 # -1 ends the loop
+
+        if stop_stops_count >= stop_stops: # if maximum number of stops allowed in a pair is hit, exit loop
+            t_open_ind = -1  # -1 ends the loop
+            if debug:
+                print("Max stop limit ", stop_stops, "reached. Moving to next pair")
 
         return t_open_ind
 
@@ -564,6 +589,9 @@ class Backtesting(object):
         t_exit_ind = 0  # Start loop from first index
         t_exit_last = 0  # To test for exit
 
+        stop_stops = self.stop_stops  # Int of stops within a pair to stop trading a pair at
+        stop_stops_count = 0          # stop counter per pair
+
         st = s()  # Start timer for processing dataframe
         if debug:
             print('Processing:', pair)
@@ -604,11 +632,13 @@ class Backtesting(object):
             Requires: np_buy_arr - a 1D array of the 'buy' column. To find next "1"
             Required: t_exit_ind - Either 0, first loop. Or The index we last exited on
             Requires: np_buy_arr_len - length of pair array. 
+            Requires: stops_stops - number of stops allowed before stop trading a pair 
+            Requires: stop_stop_counts - count of stops hit in the pair
             Provides: The next "buy" index after t_exit_ind
     
             If -1 is returned no buy has been found in remainder of array, skip to exit loop
             '''
-            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind, np_buy_arr_len)
+            t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind, np_buy_arr_len, stop_stops, stop_stops_count)
 
             if debug:
                 print("\n(0) numpy debug \nnp_get_t_open, has returned the next valid buy index as", t_open_ind)
@@ -971,6 +1001,9 @@ class Backtesting(object):
                 # append the dict to the list and print list
                 bslap_pair_results.append(bslap_result)
 
+                if t_exit_type is "stop":
+                    stop_stops_count = stop_stops_count + 1
+
                 if debug:
                     print("The trade dict is: \n", bslap_result)
                     print("Trades dicts in list after append are: \n ", bslap_pair_results)
@@ -1008,6 +1041,8 @@ class Backtesting(object):
 
             timerange = Arguments.parse_timerange(None if self.config.get(
                 'timerange') is None else str(self.config.get('timerange')))
+
+            ld_files = self.s()
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
@@ -1028,6 +1063,8 @@ class Backtesting(object):
             max_open_trades = 0
 
         preprocessed = self.tickerdata_to_dataframe(data)
+        t_t = self.f(ld_files)
+        print("Load from json to file to df in mem took", t_t)
 
         # Print timeframe
         min_date, max_date = self.get_timeframe(preprocessed)
@@ -1092,18 +1129,16 @@ class Backtesting(object):
                     results
                 )
             )
-
-        ## TODO. Catch open trades for this report.
-        # logger.info(
-        #     '\n=============================================== '
-        #     'LEFT OPEN TRADES REPORT'
-        #     ' ===============================================\n'
-        #     '%s',
-        #     self._generate_text_table(
-        #         data,
-        #         results.loc[results.open_at_end]
-        #     )
-        # )
+        logger.info(
+            '\n=============================================== '
+            'LEFT OPEN TRADES REPORT'
+            ' ===============================================\n'
+            '%s',
+            self._generate_text_table(
+                data,
+                results.loc[results.open_at_end]
+            )
+        )
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
