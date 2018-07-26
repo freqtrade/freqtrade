@@ -419,6 +419,12 @@ class Backtesting(object):
             pd.set_option('max_colwidth', 40)
             pd.set_option('precision', 12)
 
+        # # Get before
+        # csv = "cryptosher_before_debug"
+        # bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
+
+        bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
+
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
 
         ## Spends, Takes, Profit, Absolute Profit
@@ -437,6 +443,10 @@ class Backtesting(object):
                                              / bslap_results_df['buy_spend']
         # Absolute profit
         bslap_results_df['profit_abs'] = bslap_results_df['sell_take'] - bslap_results_df['buy_spend']
+
+        # # Get After
+        # csv="cryptosher_after_debug"
+        # bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
 
 
         if debug:
