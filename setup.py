@@ -37,7 +37,7 @@ setup(name='freqtrade',
           'cachetools',
           'coinmarketcap',
           'scikit-optimize',
-          'ujson'
+          'ujson',
           'py_find_1st'
       ],
       include_package_data=True,
