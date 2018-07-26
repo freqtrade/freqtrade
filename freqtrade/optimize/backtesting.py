@@ -423,12 +423,12 @@ class Backtesting(object):
         # csv = "cryptosher_before_debug"
         # bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
 
-        bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
+        # bslap_results_df.to_csv(csv, sep='\t', encoding='utf-8')
 
         bslap_results_df['trade_duration'] = bslap_results_df['close_time'] - bslap_results_df['open_time']
 
         ## Spends, Takes, Profit, Absolute Profit
-        print(bslap_results_df)
+        # print(bslap_results_df)
         # Buy Price
         bslap_results_df['buy_vol']   = stake / bslap_results_df['open_rate'] # How many target are we buying
         bslap_results_df['buy_fee']   = stake * open_fee
