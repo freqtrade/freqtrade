@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, ANY
 
 import pytest
 
+from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
@@ -124,7 +125,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     fiat_display_currency = default_conf['fiat_display_currency']
 
     rpc = RPC(freqtradebot)
-
+    rpc._fiat_converter = CryptoToFiatConverter()
     # Create some test data
     freqtradebot.create_trade()
     trade = Trade.query.first()
@@ -164,7 +165,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         'freqtrade.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -180,6 +181,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     fiat_display_currency = default_conf['fiat_display_currency']
 
     rpc = RPC(freqtradebot)
+    rpc._fiat_converter = CryptoToFiatConverter()
 
     with pytest.raises(RPCException, match=r'.*no closed trade*'):
         rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
@@ -313,7 +315,7 @@ def test_rpc_balance_handle(default_conf, mocker):
         'freqtrade.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -324,6 +326,7 @@ def test_rpc_balance_handle(default_conf, mocker):
     freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
+    rpc._fiat_converter = CryptoToFiatConverter()
 
     result = rpc._rpc_balance(default_conf['fiat_display_currency'])
     assert prec_satoshi(result['total'], 12)

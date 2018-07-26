@@ -1353,7 +1353,6 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         get_fee=fee,
         get_markets=markets
     )
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -1386,7 +1385,6 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
         'profit_percent': 0.06110514,
-        'profit_fiat': 0.9189,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -1398,7 +1396,6 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -1439,7 +1436,6 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
         'profit_percent': -0.05478343,
-        'profit_fiat': -0.8238000000000001,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
