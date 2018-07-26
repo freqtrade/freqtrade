@@ -332,7 +332,6 @@ class FreqtradeBot(object):
             th[_pair] = self.exchange.get_ticker_history(_pair, interval)
 
         # Pick pair based on buy signals
-        bought_at_least_one = False
         for _pair in whitelist:
             (buy, sell) = self.strategy.get_signal(_pair, interval, th[_pair])
 
