@@ -327,13 +327,18 @@ class FreqtradeBot(object):
 
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
+        th = {}
+        for _pair in whitelist:
+            th[_pair] = self.exchange.get_ticker_history(_pair, interval)
 
         # Pick pair based on buy signals
+        bought_at_least_one = False
         for _pair in whitelist:
-            (buy, sell) = self.strategy.get_signal(self.exchange, _pair, interval)
+            (buy, sell) = self.strategy.get_signal(_pair, interval, th[_pair])
+
             if buy and not sell:
-                return self.execute_buy(_pair, stake_amount)
-        return False
+                bought_at_least_one |= self.execute_buy(_pair, stake_amount)
+        return bought_at_least_one
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
         """
