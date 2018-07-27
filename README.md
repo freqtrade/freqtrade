@@ -68,8 +68,8 @@ Freqtrade provides a Linux/macOS script to install all dependencies and help you
 
 ```bash
 git clone git@github.com:freqtrade/freqtrade.git
-git checkout develop
 cd freqtrade
+git checkout develop
 ./setup.sh --install
 ```
 
