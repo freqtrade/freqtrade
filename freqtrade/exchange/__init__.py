@@ -95,6 +95,10 @@ class Exchange(object):
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
 
+        # check if config requests sandbox, if so use ['test'] from url
+        if (exchange_config.get('sandbox')):
+            api.urls['api'] = api.urls['test']
+
         return api
 
     @property
@@ -150,6 +154,18 @@ class Exchange(object):
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
+    def symbol_prec(self, pair, amount: float):
+        '''
+        Returns the amount to but or sell to the precision the Exchange accepts
+        :param amount: amount
+        :return: amount
+        '''
+        if self._api.markets[pair]['precision']['amount']:
+            symbol_prec = self._api.markets[pair]['precision']['amount']
+            amount = round(amount, symbol_prec)
+
+        return amount
+
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
@@ -167,6 +183,9 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
+            # Set the precision accepted by the exchange
+            amount = self.symbol_prec(pair, amount)
+
             return self._api.create_limit_buy_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -200,6 +219,9 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
+            # Set the precision accepted by the exchange
+            amount = self.symbol_prec(pair, amount)
+
             return self._api.create_limit_sell_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
