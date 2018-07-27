@@ -95,7 +95,7 @@ class Exchange(object):
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
 
-        # check if config requests sandbox, if so use ['test'] from url
+        # check if config has sandbox = True, if so use ['test'] sandbox API from CCXT
         if (exchange_config.get('sandbox')):
             api.urls['api'] = api.urls['test']
 
@@ -156,7 +156,7 @@ class Exchange(object):
 
     def symbol_prec(self, pair, amount: float):
         '''
-        Returns the amount to but or sell to the precision the Exchange accepts
+        Returns the amount to buy or sell to the precision the Exchange accepts
         :param amount: amount
         :return: amount
         '''
