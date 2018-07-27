@@ -97,8 +97,7 @@ class Exchange(object):
 
         # check if config requests sanbox, if so use ['test'] from url
         if (exchange_config.get('sandbox')):
-            api.urls['api'] = api.urls['test'];
-            # exchange.urls['api'] = exchange.urls['test'];
+            api.urls['api'] = api.urls['test']
 
         return api
 
