@@ -70,10 +70,6 @@ class Exchange(object):
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
 
-        if config.get('ticker_interval'):
-            # Check if timeframe is available
-            self.validate_timeframes(config['ticker_interval'])
-
     def _init_ccxt(self, exchange_config: dict) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
@@ -94,6 +90,11 @@ class Exchange(object):
             })
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
+
+        # check if config requests sanbox, if so use ['test'] from url
+        if (exchange_config.get('sandbox')):
+            api.urls['api'] = api.urls['test'];
+            #exchange.urls['api'] = exchange.urls['test'];
 
         return api
 
