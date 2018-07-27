@@ -126,6 +126,7 @@ CONF_SCHEMA = {
                 'name': {'type': 'string'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
+                'password': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
                     'items': {
