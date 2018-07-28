@@ -4,7 +4,8 @@ import gzip
 try:
     import ujson as json
 except ImportError:
-    import json
+    # see mypy/issues/1153
+    import json  # type: ignore
 import inspect
 import logging
 import os
