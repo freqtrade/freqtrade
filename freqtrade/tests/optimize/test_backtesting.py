@@ -686,15 +686,6 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         read_data=json.dumps(default_conf)
     ))
 
-    args = MagicMock()
-    args.ticker_interval = 1
-    args.level = 10
-    args.live = True
-    args.datadir = None
-    args.export = None
-    args.strategy = 'DefaultStrategy'
-    args.timerange = '-100'  # needed due to MagicMock malleability
-
     args = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
@@ -721,6 +712,60 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Downloading data for all pairs in whitelist ...',
         'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
+    ]
+
+    for line in exists:
+        assert log_has(line, caplog.record_tuples)
+
+
+def test_backtest_start_multi_strat(default_conf, mocker, caplog):
+    conf = deepcopy(default_conf)
+    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker_history',
+                 new=lambda s, n, i: _load_pair_as_ticks(n, i))
+    patch_exchange(mocker)
+    backtestmock = MagicMock()
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+    gen_table_mock = MagicMock()
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', gen_table_mock)
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    args = [
+        '--config', 'config.json',
+        '--datadir', 'freqtrade/tests/testdata',
+        'backtesting',
+        '--ticker-interval', '1m',
+        '--live',
+        '--timerange', '-100',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
+        '--strategy-list',
+        'DefaultStrategy',
+        'TestStrategy',
+    ]
+    args = get_args(args)
+    start(args)
+    # 2 backtests, 4 tables
+    assert backtestmock.call_count == 2
+    assert gen_table_mock.call_count == 4
+
+    # check the logs, that will contain the backtest result
+    exists = [
+        'Parameter -i/--ticker-interval detected ...',
+        'Using ticker_interval: 1m ...',
+        'Parameter -l/--live detected ...',
+        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
+        'Parameter --timerange detected: -100 ...',
+        'Using data folder: freqtrade/tests/testdata ...',
+        'Using stake_currency: BTC ...',
+        'Using stake_amount: 0.001 ...',
+        'Downloading data for all pairs in whitelist ...',
+        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
+        'Parameter --enable-position-stacking detected ...',
+        'Running backtesting for Strategy DefaultStrategy',
+        'Running backtesting for Strategy TestStrategy',
     ]
 
     for line in exists:

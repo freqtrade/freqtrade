@@ -66,8 +66,8 @@ class Backtesting(object):
         self.strategylist: List[IStrategy] = []
         if self.config.get('strategy_list', None):
             # Force one interval
-            self.ticker_interval = self.config.get('ticker_interval')
-            for strat in self.config.get('strategy_list'):
+            self.ticker_interval = str(self.config.get('ticker_interval'))
+            for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
                 self.strategylist.append(StrategyResolver(stratconf).strategy)
