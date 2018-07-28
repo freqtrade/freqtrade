@@ -189,7 +189,7 @@ class Configuration(object):
 
         if 'strategy_list' in self.args and self.args.strategy_list:
             config.update({'strategy_list': self.args.strategy_list})
-            logger.info('using strategy list of %s Strategies', len(self.args.strategy_list))
+            logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
 
         if 'ticker_interval' in self.args and self.args.ticker_interval:
             config.update({'ticker_interval': self.args.ticker_interval})
