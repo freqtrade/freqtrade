@@ -95,9 +95,7 @@ class Exchange(object):
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
 
-        # check if config requests sanbox, if so use ['test'] from url
-        if (exchange_config.get('sandbox')):
-            api.urls['api'] = api.urls['test']
+        self.set_sandbox(api, exchange_config, name)
 
         return api
 
@@ -110,6 +108,14 @@ class Exchange(object):
     def id(self) -> str:
         """exchange ccxt id"""
         return self._api.id
+
+    def set_sandbox(self, api, exchange_config: dict, name: str):
+        if exchange_config.get('sandbox'):
+            if api.urls.get('test'):
+                api.urls['api'] = api.urls['test']
+            else:
+                logger.warning(self, "No Sandbox URL in CCXT, exiting. Please check your config.json")
+                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """

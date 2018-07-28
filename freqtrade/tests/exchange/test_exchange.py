@@ -51,6 +51,36 @@ def test_init_exception(default_conf, mocker):
         mocker.patch("ccxt.binance", MagicMock(side_effect=AttributeError))
         Exchange(default_conf)
 
+def test_set_sandbox(default_conf, mocker):
+    """
+    Test working scenario
+    """
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value={
+        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
+    })
+    url_mock = PropertyMock(return_value={'test': "api-public.sandbox.gdax.com", 'api': 'https://api.gdax.com'})
+    type(api_mock).urls = url_mock
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    Exchange(default_conf)
+
+# def test_set_sandbox_exception(default_conf, mocker):
+#     """
+#     Test Fail scenario
+#     """
+#     api_mock = MagicMock()
+#     api_mock.load_markets = MagicMock(return_value={
+#         'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
+#     })
+#     url_mock = PropertyMock(return_value={'api': 'https://api.gdax.com'})
+#     type(api_mock).urls = url_mock
+#
+#     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+#     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+#
+#     with pytest.raises(OperationalException, match=r'does not provide a sandbox api'):
+#         Exchange(default_conf)
 
 def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
