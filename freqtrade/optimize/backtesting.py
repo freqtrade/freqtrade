@@ -53,6 +53,7 @@ class Backtesting(object):
     backtesting = Backtesting(config)
     backtesting.start()
     """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
 
@@ -62,10 +63,14 @@ class Backtesting(object):
         self.config['exchange']['password'] = ''
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
+        if not self.config.get('strategy_list'):
+            # In Single strategy mode, load strategy here to avoid problems with hyperopt
+            self._set_strategy(StrategyResolver(self.config).strategy)
+
         self.exchange = Exchange(self.config)
         self.fee = self.exchange.get_fee()
 
-    def set_strategy(self, strategy):
+    def _set_strategy(self, strategy):
         """
         Load strategy into backtesting
         """
@@ -297,8 +302,7 @@ class Backtesting(object):
 
         else:
             # only one strategy
-            strategylist.append(StrategyResolver(self.config).strategy)
-            self.set_strategy(strategylist[0])
+            strategylist.append(self.strategy)
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
@@ -331,7 +335,7 @@ class Backtesting(object):
 
         for strat in strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
-            self.set_strategy(strat)
+            self._set_strategy(strat)
 
             # need to reprocess data every time to populate signals
             preprocessed = self.tickerdata_to_dataframe(data)
