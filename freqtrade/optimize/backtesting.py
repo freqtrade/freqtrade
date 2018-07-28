@@ -63,9 +63,22 @@ class Backtesting(object):
         self.config['exchange']['password'] = ''
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
-        if not self.config.get('strategy_list'):
-            # In Single strategy mode, load strategy here to avoid problems with hyperopt
-            self._set_strategy(StrategyResolver(self.config).strategy)
+        self.strategylist: List[IStrategy] = []
+        if self.config.get('strategy_list', None):
+            # Force one interval
+            self.ticker_interval = self.config.get('ticker_interval')
+            for strat in self.config.get('strategy_list'):
+                stratconf = deepcopy(self.config)
+                stratconf['strategy'] = strat
+                self.strategylist.append(StrategyResolver(stratconf).strategy)
+
+        else:
+            # only one strategy
+            strat = StrategyResolver(self.config).strategy
+
+            self.strategylist.append(StrategyResolver(self.config).strategy)
+        # Load one strategy
+        self._set_strategy(self.strategylist[0])
 
         self.exchange = Exchange(self.config)
         self.fee = self.exchange.get_fee()
@@ -290,19 +303,6 @@ class Backtesting(object):
         pairs = self.config['exchange']['pair_whitelist']
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
-        strategylist: List[IStrategy] = []
-        if self.config.get('strategy_list', None):
-            # Force one interval
-            self.ticker_interval = self.config.get('ticker_interval')
-            for strat in self.config.get('strategy_list'):
-                stratconf = deepcopy(self.config)
-                stratconf['strategy'] = strat
-                s = StrategyResolver(stratconf).strategy
-                strategylist.append(s)
-
-        else:
-            # only one strategy
-            strategylist.append(self.strategy)
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
@@ -333,7 +333,7 @@ class Backtesting(object):
             max_open_trades = 0
         all_results = {}
 
-        for strat in strategylist:
+        for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
