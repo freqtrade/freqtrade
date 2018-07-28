@@ -65,6 +65,16 @@ class Backtesting(object):
         self.exchange = Exchange(self.config)
         self.fee = self.exchange.get_fee()
 
+    def set_strategy(self, strategy):
+        """
+        Load strategy into backtesting
+        """
+        self.strategy = strategy
+        self.ticker_interval = self.config.get('ticker_interval')
+        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
+        self.populate_buy_trend = strategy.populate_buy_trend
+        self.populate_sell_trend = strategy.populate_sell_trend
+
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
         """
@@ -288,6 +298,7 @@ class Backtesting(object):
         else:
             # only one strategy
             strategylist.append(StrategyResolver(self.config).strategy)
+            self.set_strategy(strategylist[0])
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
@@ -316,12 +327,11 @@ class Backtesting(object):
         else:
             logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
+        all_results = {}
 
         for strat in strategylist:
-            self.strategy = strat
-            self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-            self.populate_buy_trend = self.strategy.populate_buy_trend
-            self.populate_sell_trend = self.strategy.populate_sell_trend
+            logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
+            self.set_strategy(strat)
 
             # need to reprocess data every time to populate signals
             preprocessed = self.tickerdata_to_dataframe(data)
@@ -336,7 +346,7 @@ class Backtesting(object):
             )
 
             # Execute backtest and print results
-            results = self.backtest(
+            all_results[self.strategy.get_strategy_name()] = self.backtest(
                 {
                     'stake_amount': self.config.get('stake_amount'),
                     'processed': preprocessed,
@@ -345,14 +355,16 @@ class Backtesting(object):
                 }
             )
 
+        for strategy, results in all_results.items():
+
             if self.config.get('export', False):
                 self._store_backtest_result(self.config.get('exportfilename'), results)
 
+            logger.info("\nResult for strategy %s", strategy)
             logger.info(
-                '\n' + '=' * 49 +
-                ' BACKTESTING REPORT ' +
-                '=' * 50 + '\n'
-                '%s',
+                '\n' +
+                ' BACKTESTING REPORT '.center(119, '=') +
+                '\n%s',
                 self._generate_text_table(
                     data,
                     results
