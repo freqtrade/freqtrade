@@ -26,7 +26,7 @@ Aim of this document section
 This link will redirect to the sandbox main page to login / create account dialogues:
 https://public.sandbox.pro.coinbase.com/orders/
 
-After registration and Email confimation you wil be redirected into your sanbox account.  It is easy to verify youre in sandbox by checking the URL bar.
+After registration and Email confimation you wil be redirected into your sanbox account.  It is easy to verify you're in sandbox by checking the URL bar.
 > https://public.sandbox.pro.coinbase.com/
 
 ## Enable 2Fa (a prerequisite to creating sandbox API Keys)
@@ -46,9 +46,9 @@ From within sandbox select profile>api>create api-keys
 >or as a direct link: https://public.sandbox.pro.coinbase.com/profile/api
 
 Ensure **view** and **trade**  are "checked" and sumbit your 2Fa
-- COPY AND PASTE THE PASSPHRASE into a notepade this will be needed later
-- COPY AND PASTE THE API SECRET popup into a notepad this will needed later
-- COPY AND PASTE THE API KEY into a notepad this will needed later
+- **Copy and paste the Passphase** into a notepade this will be needed later
+- **Copy and paste the API Secret** popup into a notepad this will needed later
+- **Copy and paste the API Key** into a notepad this will needed later
 
 ## Add 50 BTC test funds
 To add funds, use the web interface deposit and withdraw buttons.
@@ -58,7 +58,7 @@ Select Wallets.
 - Deposits (bottom left of screen)
 - - Deposit Funds Bitcoin 
 - - - Coinbase BTC Wallet 
-- - - - MAx (50 BTC) 
+- - - - Max (50 BTC) 
 - - - - - Deposit
 
 ---
@@ -130,13 +130,4 @@ And Hash out as follows:
         #     )
         #     return False, False
  ```
-
-
-
-
-
-
-
-
-
-
+ 
