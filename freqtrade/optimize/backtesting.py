@@ -8,6 +8,7 @@ import operator
 from argparse import Namespace
 from copy import deepcopy
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
@@ -156,7 +157,8 @@ class Backtesting(object):
             tabular_data.append([reason.value,  count])
         return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
-    def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
+    def _store_backtest_result(self, recordfilename: str, results: DataFrame,
+                               strategyname: Optional[str] = None) -> None:
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
                     t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
@@ -164,6 +166,11 @@ class Backtesting(object):
                    for index, t in results.iterrows()]
 
         if records:
+            if strategyname:
+                # Inject strategyname to filename
+                recname = Path(recordfilename)
+                recordfilename = str(Path.joinpath(
+                    recname.parent, f'{recname.stem}-{strategyname}').with_suffix(recname.suffix))
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
 
@@ -362,7 +369,8 @@ class Backtesting(object):
         for strategy, results in all_results.items():
 
             if self.config.get('export', False):
-                self._store_backtest_result(self.config.get('exportfilename'), results)
+                self._store_backtest_result(self.config['exportfilename'], results,
+                                            strategy if len(self.strategylist) > 1 else None)
 
             logger.info("\nResult for strategy %s", strategy)
             logger.info(

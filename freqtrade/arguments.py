@@ -146,7 +146,9 @@ class Arguments(object):
             '--strategy-list',
             help='Provide a commaseparated list of strategies to backtest '
                  'Please note that ticker-interval needs to be set either in config '
-                 'or via command line',
+                 'or via command line. When using this together with --export trades, '
+                 'the strategy-name is injected into the filename '
+                 '(so backtest-data.json becomes backtest-data-DefaultStrategy.json',
             nargs='+',
             dest='strategy_list',
         )
