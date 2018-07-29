@@ -247,7 +247,7 @@ def test_populate_indicators(init_hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
-    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'], 'UNITTEST/BTC')
+    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
 
     # Check if some indicators are generated. We will not test all of them
     assert 'adx' in dataframe
@@ -259,7 +259,7 @@ def test_buy_strategy_generator(init_hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
-    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'], 'UNITTEST/BTC')
+    dataframe = _HYPEROPT.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
 
     populate_buy_trend = _HYPEROPT.buy_strategy_generator(
         {
@@ -274,7 +274,7 @@ def test_buy_strategy_generator(init_hyperopt) -> None:
             'trigger': 'bb_lower'
         }
     )
-    result = populate_buy_trend(dataframe, 'UNITTEST/BTC')
+    result = populate_buy_trend(dataframe, {'pair': 'UNITTEST/BTC'})
     # Check if some indicators are generated. We will not test all of them
     assert 'buy' in result
     assert 1 in result['buy']

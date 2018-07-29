@@ -25,11 +25,11 @@ def test_default_strategy_structure():
 def test_default_strategy(result):
     strategy = DefaultStrategy({})
 
-    pair = 'ETH/BTC'
+    metadata = {'pair': 'ETH/BTC'}
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float
     assert type(strategy.ticker_interval) is str
-    indicators = strategy.populate_indicators(result, pair)
+    indicators = strategy.populate_indicators(result, metadata)
     assert type(indicators) is DataFrame
-    assert type(strategy.populate_buy_trend(indicators, pair)) is DataFrame
-    assert type(strategy.populate_sell_trend(indicators, pair)) is DataFrame
+    assert type(strategy.populate_buy_trend(indicators, metadata)) is DataFrame
+    assert type(strategy.populate_sell_trend(indicators, metadata)) is DataFrame

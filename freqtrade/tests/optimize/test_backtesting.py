@@ -146,7 +146,7 @@ def _trend(signals, buy_value, sell_value):
     return signals
 
 
-def _trend_alternate(dataframe=None, pair=None):
+def _trend_alternate(dataframe=None, metadata=None):
     signals = dataframe
     low = signals['low']
     n = len(low)

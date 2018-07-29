@@ -59,8 +59,8 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    pair = 'ETH/BTC'
-    assert 'adx' in resolver.strategy.advise_indicators(result, metadata=pair)
+    metadata = {'pair': 'ETH/BTC'}
+    assert 'adx' in resolver.strategy.advise_indicators(result, metadata=metadata)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
@@ -74,7 +74,7 @@ def test_load_strategy_invalid_directory(result, caplog):
         'Path "{}" does not exist'.format(extra_dir),
     ) in caplog.record_tuples
 
-    assert 'adx' in resolver.strategy.advise_indicators(result, 'ETH/BTC')
+    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_not_found_strategy():
