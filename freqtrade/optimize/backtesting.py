@@ -157,6 +157,30 @@ class Backtesting(object):
             tabular_data.append([reason.value,  count])
         return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
+    def _generate_text_table_strategy(self, all_results: dict) -> str:
+        """
+        Generate summary table per strategy
+        """
+        stake_currency = str(self.config.get('stake_currency'))
+
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
+        tabular_data = []
+        headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
+                   'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
+        for strategy, results in all_results.items():
+            tabular_data.append([
+                strategy,
+                len(results.index),
+                results.profit_percent.mean() * 100.0,
+                results.profit_percent.sum() * 100.0,
+                results.profit_abs.sum(),
+                str(timedelta(
+                    minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
+                len(results[results.profit_abs > 0]),
+                len(results[results.profit_abs < 0])
+            ])
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+
     def _store_backtest_result(self, recordfilename: str, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
 
@@ -402,6 +426,15 @@ class Backtesting(object):
                     data,
                     results.loc[results.open_at_end]
                 )
+            )
+
+        if len(all_results) > 1:
+            # Print Strategy summary table
+            logger.info(
+                '\n' +
+                ' Strategy Summary'.center(119, '=') +
+                '\n%s\n\nFor more details, please look at the detail tables above',
+                self._generate_text_table_strategy(all_results)
             )
 
 
