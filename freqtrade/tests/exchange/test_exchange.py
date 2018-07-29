@@ -51,6 +51,7 @@ def test_init_exception(default_conf, mocker):
         mocker.patch("ccxt.binance", MagicMock(side_effect=AttributeError))
         Exchange(default_conf)
 
+
 def test_set_sandbox(default_conf, mocker):
     """
     Test working scenario
@@ -59,7 +60,8 @@ def test_set_sandbox(default_conf, mocker):
     api_mock.load_markets = MagicMock(return_value={
         'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
     })
-    url_mock = PropertyMock(return_value={'test': "api-public.sandbox.gdax.com", 'api': 'https://api.gdax.com'})
+    url_mock = PropertyMock(return_value={'test': "api-public.sandbox.gdax.com",
+                                          'api': 'https://api.gdax.com'})
     type(api_mock).urls = url_mock
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -69,6 +71,7 @@ def test_set_sandbox(default_conf, mocker):
     default_conf['exchange']['sandbox'] = True
     exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
     assert exchange._api.urls['api'] != liveurl
+
 
 def test_set_sandbox_exception(default_conf, mocker):
     """
@@ -88,7 +91,6 @@ def test_set_sandbox_exception(default_conf, mocker):
         exchange = Exchange(default_conf)
         default_conf['exchange']['sandbox'] = True
         exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
-        assert exchange._api.urls.get('test') == False
 
 
 def test_validate_pairs(default_conf, mocker):
