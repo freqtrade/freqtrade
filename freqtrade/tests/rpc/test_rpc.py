@@ -165,6 +165,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         'freqtrade.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -315,6 +316,7 @@ def test_rpc_balance_handle(default_conf, mocker):
         'freqtrade.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
+    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
