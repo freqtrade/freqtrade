@@ -252,8 +252,16 @@ freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strat
 ```
 
 This will save the results to `user_data/backtest_data/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
-It will also output all results one after the other, so make sure to scroll up.
+There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
+Detailed output for all strategies one after the other will be available, so make sure to scroll up.
 
+```
+=================================================== Strategy Summary ====================================================
+| Strategy   |   buy count |   avg profit % |   cum profit % |   total profit ETH | avg duration    |   profit |   loss |
+|:-----------|------------:|---------------:|---------------:|-------------------:|:----------------|---------:|-------:|
+| Strategy1  |          19 |          -0.76 |         -14.39 |        -0.01440287 | 15:48:00        |       15 |      4 |
+| Strategy2  |           6 |          -2.73 |         -16.40 |        -0.01641299 | 1 day, 14:12:00 |        3 |      3 |
+```
 
 ## Next step
 

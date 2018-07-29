@@ -432,7 +432,7 @@ class Backtesting(object):
             # Print Strategy summary table
             logger.info(
                 '\n' +
-                ' Strategy Summary'.center(119, '=') +
+                ' Strategy Summary '.center(119, '=') +
                 '\n%s\n\nFor more details, please look at the detail tables above',
                 self._generate_text_table_strategy(all_results)
             )
