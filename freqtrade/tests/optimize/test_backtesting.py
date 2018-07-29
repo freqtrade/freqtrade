@@ -406,6 +406,50 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
         data={'ETH/BTC': {}}, results=results) == result_str
 
 
+def test_generate_text_table_strategyn(default_conf, mocker):
+    """
+    Test Backtesting.generate_text_table_sell_reason() method
+    """
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    results = {}
+    results['ETH/BTC'] = pd.DataFrame(
+        {
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_percent': [0.1, 0.2, 0.3],
+            'profit_abs': [0.2, 0.4, 0.5],
+            'trade_duration': [10, 30, 10],
+            'profit': [2, 0, 0],
+            'loss': [0, 0, 1],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+        }
+    )
+    results['LTC/BTC'] = pd.DataFrame(
+        {
+            'pair': ['LTC/BTC', 'LTC/BTC', 'LTC/BTC'],
+            'profit_percent': [0.4, 0.2, 0.3],
+            'profit_abs': [0.4, 0.4, 0.5],
+            'trade_duration': [15, 30, 15],
+            'profit': [4, 1, 0],
+            'loss': [0, 0, 1],
+            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+        }
+    )
+
+    result_str = (
+        '| Strategy   |   buy count |   avg profit % |   cum profit % '
+        '|   total profit BTC | avg duration   |   profit |   loss |\n'
+        '|:-----------|------------:|---------------:|---------------:'
+        '|-------------------:|:---------------|---------:|-------:|\n'
+        '| ETH/BTC    |           3 |          20.00 |          60.00 '
+        '|         1.10000000 | 0:17:00        |        3 |      0 |\n'
+        '| LTC/BTC    |           3 |          30.00 |          90.00 '
+        '|         1.30000000 | 0:20:00        |        3 |      0 |'
+    )
+    print(backtesting._generate_text_table_strategy(all_results=results))
+    assert backtesting._generate_text_table_strategy(all_results=results) == result_str
+
+
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
@@ -740,6 +784,9 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', gen_table_mock)
+    gen_strattable_mock = MagicMock()
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table_strategy',
+                 gen_strattable_mock)
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(conf)
     ))
@@ -762,6 +809,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     # 2 backtests, 4 tables
     assert backtestmock.call_count == 2
     assert gen_table_mock.call_count == 4
+    assert gen_strattable_mock.call_count == 1
 
     # check the logs, that will contain the backtest result
     exists = [
