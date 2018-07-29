@@ -113,6 +113,7 @@ class Exchange(object):
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
                 api.urls['api'] = api.urls['test']
+                logger.info("Enabled Sandbox API on %s", name)
             else:
                 logger.warning(self, "No Sandbox URL in CCXT, exiting. "
                                      "Please check your config.json")
