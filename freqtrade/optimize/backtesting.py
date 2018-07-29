@@ -396,46 +396,21 @@ class Backtesting(object):
                 self._store_backtest_result(self.config['exportfilename'], results,
                                             strategy if len(self.strategylist) > 1 else None)
 
-            logger.info("\nResult for strategy %s", strategy)
-            logger.info(
-                '\n' +
-                ' BACKTESTING REPORT '.center(119, '=') +
-                '\n%s',
-                self._generate_text_table(
-                    data,
-                    results
-                )
-            )
-            # logger.info(
-            #     results[['sell_reason']].groupby('sell_reason').count()
-            # )
+            print(f"Result for strategy {strategy}")
+            print(' BACKTESTING REPORT '.center(119, '='))
+            print(self._generate_text_table(data, results))
 
-            logger.info(
-                '\n' +
-                ' SELL REASON STATS '.center(119, '=') +
-                '\n%s \n',
-                self._generate_text_table_sell_reason(data, results)
+            print(' SELL REASON STATS '.center(119, '='))
+            print(self._generate_text_table_sell_reason(data, results))
 
-            )
-
-            logger.info(
-                '\n' +
-                ' LEFT OPEN TRADES REPORT '.center(119, '=') +
-                '\n%s',
-                self._generate_text_table(
-                    data,
-                    results.loc[results.open_at_end]
-                )
-            )
-
+            print(' LEFT OPEN TRADES REPORT '.center(119, '='))
+            print(self._generate_text_table(data, results.loc[results.open_at_end]))
+            print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            logger.info(
-                '\n' +
-                ' Strategy Summary '.center(119, '=') +
-                '\n%s\n\nFor more details, please look at the detail tables above',
-                self._generate_text_table_strategy(all_results)
-            )
+            print(' Strategy Summary '.center(119, '='))
+            print(self._generate_text_table_strategy(all_results))
+            print('\nFor more details, please look at the detail tables above')
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
