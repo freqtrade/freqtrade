@@ -388,7 +388,7 @@ class Backtesting(object):
 
             logger.info(
                 '\n' +
-                ' SELL READON STATS '.center(119, '=') +
+                ' SELL REASON STATS '.center(119, '=') +
                 '\n%s \n',
                 self._generate_text_table_sell_reason(data, results)
 
