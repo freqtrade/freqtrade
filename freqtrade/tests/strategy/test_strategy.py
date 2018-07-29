@@ -57,7 +57,6 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
@@ -71,8 +70,6 @@ def test_load_strategy_invalid_directory(result, caplog):
         logging.WARNING,
         'Path "{}" does not exist'.format(extra_dir),
     ) in caplog.record_tuples
-
-    assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
 
@@ -89,26 +86,20 @@ def test_strategy(result):
 
     resolver = StrategyResolver(config)
 
-    assert hasattr(resolver.strategy, 'minimal_roi')
     assert resolver.strategy.minimal_roi[0] == 0.04
     assert config["minimal_roi"]['0'] == 0.04
 
-    assert hasattr(resolver.strategy, 'stoploss')
     assert resolver.strategy.stoploss == -0.10
     assert config['stoploss'] == -0.10
 
-    assert hasattr(resolver.strategy, 'ticker_interval')
     assert resolver.strategy.ticker_interval == '5m'
     assert config['ticker_interval'] == '5m'
 
-    assert hasattr(resolver.strategy, 'populate_indicators')
     assert 'adx' in resolver.strategy.populate_indicators(result)
 
-    assert hasattr(resolver.strategy, 'populate_buy_trend')
     dataframe = resolver.strategy.populate_buy_trend(resolver.strategy.populate_indicators(result))
     assert 'buy' in dataframe.columns
 
-    assert hasattr(resolver.strategy, 'populate_sell_trend')
     dataframe = resolver.strategy.populate_sell_trend(resolver.strategy.populate_indicators(result))
     assert 'sell' in dataframe.columns
 
@@ -123,7 +114,6 @@ def test_strategy_override_minimal_roi(caplog):
     }
     resolver = StrategyResolver(config)
 
-    assert hasattr(resolver.strategy, 'minimal_roi')
     assert resolver.strategy.minimal_roi[0] == 0.5
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
@@ -139,7 +129,6 @@ def test_strategy_override_stoploss(caplog):
     }
     resolver = StrategyResolver(config)
 
-    assert hasattr(resolver.strategy, 'stoploss')
     assert resolver.strategy.stoploss == -0.5
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
@@ -156,7 +145,6 @@ def test_strategy_override_ticker_interval(caplog):
     }
     resolver = StrategyResolver(config)
 
-    assert hasattr(resolver.strategy, 'ticker_interval')
     assert resolver.strategy.ticker_interval == 60
     assert ('freqtrade.strategy.resolver',
             logging.INFO,

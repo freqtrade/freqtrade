@@ -19,19 +19,6 @@ from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.tests.conftest import log_has
 
 
-def test_configuration_object() -> None:
-    """
-    Test the Constants object has the mandatory Constants
-    """
-    assert hasattr(Configuration, 'load_config')
-    assert hasattr(Configuration, '_load_config_file')
-    assert hasattr(Configuration, '_validate_config')
-    assert hasattr(Configuration, '_load_common_config')
-    assert hasattr(Configuration, '_load_backtesting_config')
-    assert hasattr(Configuration, '_load_hyperopt_config')
-    assert hasattr(Configuration, 'get_config')
-
-
 def test_load_config_invalid_pair(default_conf) -> None:
     """
     Test the configuration validator with an invalid PAIR format

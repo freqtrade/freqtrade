@@ -62,22 +62,6 @@ def patch_RPCManager(mocker) -> MagicMock:
 
 
 # Unit tests
-def test_freqtradebot_object() -> None:
-    """
-    Test the FreqtradeBot object has the mandatory public methods
-    """
-    assert hasattr(FreqtradeBot, 'worker')
-    assert hasattr(FreqtradeBot, 'cleanup')
-    assert hasattr(FreqtradeBot, 'create_trade')
-    assert hasattr(FreqtradeBot, 'get_target_bid')
-    assert hasattr(FreqtradeBot, 'process_maybe_execute_buy')
-    assert hasattr(FreqtradeBot, 'process_maybe_execute_sell')
-    assert hasattr(FreqtradeBot, 'handle_trade')
-    assert hasattr(FreqtradeBot, 'check_handle_timedout')
-    assert hasattr(FreqtradeBot, 'handle_timedout_limit_buy')
-    assert hasattr(FreqtradeBot, 'handle_timedout_limit_sell')
-    assert hasattr(FreqtradeBot, 'execute_sell')
-
 
 def test_freqtradebot(mocker, default_conf) -> None:
     """

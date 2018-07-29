@@ -10,12 +10,6 @@ from freqtrade.rpc import RPCMessageType, RPCManager
 from freqtrade.tests.conftest import log_has, get_patched_freqtradebot
 
 
-def test_rpc_manager_object() -> None:
-    """ Test the Arguments object has the mandatory methods """
-    assert hasattr(RPCManager, 'send_msg')
-    assert hasattr(RPCManager, 'cleanup')
-
-
 def test__init__(mocker, default_conf) -> None:
     """ Test __init__() method """
     conf = deepcopy(default_conf)
