@@ -4,6 +4,7 @@ import logging
 from random import randint
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from math import floor, ceil
 
 import ccxt
 import arrow
@@ -162,17 +163,37 @@ class Exchange(object):
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
-    def symbol_prec(self, pair, amount: float):
+    def symbol_amount_prec(self, pair, amount: float):
         '''
-        Returns the amount to but or sell to the precision the Exchange accepts
+        Returns the amount to buy or sell to a precision the Exchange accepts
+        Rounded down
+        :param pair: the symbol
         :param amount: amount
         :return: amount
         '''
-        if self._api.markets[pair]['precision']['amount']:
+        if self._api.markets[pair]['precision']['amount'] > 0:
             symbol_prec = self._api.markets[pair]['precision']['amount']
-            amount = round(amount, symbol_prec)
-
+            multiplier = int('1' + ('0' * symbol_prec))
+            big_amount = amount * multiplier
+            round_down = floor(big_amount)
+            amount = round_down / multiplier
         return amount
+
+    def symbol_price_prec(self, pair, price: float):
+        '''
+        Returns the price buying or selling with to the precision the Exchange accepts
+        Rounds up
+        :param pair: the symbol
+        :param price: amount
+        :return: price
+        '''
+        if self._api.markets[pair]['precision']['price'] > 0:
+            symbol_prec = self._api.markets[pair]['precision']['price']
+            multiplier = int('1' + ('0' * symbol_prec))
+            big_price = price * multiplier
+            round_up = ceil(big_price)
+            price = round_up / multiplier
+        return price
 
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
         if self._conf['dry_run']:
@@ -191,8 +212,9 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
-            # Set the precision accepted by the exchange
-            amount = self.symbol_prec(pair, amount)
+            # Set the precision for amount and price(rate) as accepted by the exchange
+            amount = self.symbol_amount_prec(pair, amount)
+            rate = self.symbol_price_prec(pair, rate)
 
             return self._api.create_limit_buy_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
@@ -227,8 +249,9 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
-            # Set the precision accepted by the exchange
-            amount = self.symbol_prec(pair, amount)
+            # Set the precision for amount and price(rate) as accepted by the exchange
+            amount = self.symbol_amount_prec(pair, amount)
+            rate = self.symbol_price_prec(pair, rate)
 
             return self._api.create_limit_sell_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
