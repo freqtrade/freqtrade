@@ -39,7 +39,6 @@ A strategy file contains all the information needed to build a good strategy:
 - Sell strategy rules
 - Minimal ROI recommended
 - Stoploss recommended
-- Hyperopt parameter
 
 The bot also include a sample strategy called `TestStrategy` you can update: `user_data/strategies/test_strategy.py`.
 You can test it with the parameter: `--strategy TestStrategy`
@@ -61,17 +60,16 @@ file as reference.**
 
 ### Buy strategy
 
-Edit the method `populate_buy_trend()` into your strategy file to
-update your buy strategy.
+Edit the method `populate_buy_trend()` into your strategy file to update your buy strategy.
 
 Sample from `user_data/strategies/test_strategy.py`:
 
 ```python
-def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
-    :param pair: Pair currently analyzed
+    :param metadata: Additional information, like the currently traded pair
     :return: DataFrame with buy column
     """
     dataframe.loc[
@@ -93,11 +91,11 @@ Please note that the sell-signal is only used if `use_sell_signal` is set to tru
 Sample from `user_data/strategies/test_strategy.py`:
 
 ```python
-def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
+def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     Based on TA indicators, populates the sell signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
-    :param pair: Pair currently analyzed
+    :param metadata: Additional information, like the currently traded pair
     :return: DataFrame with buy column
     """
     dataframe.loc[
@@ -110,7 +108,7 @@ def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
     return dataframe
 ```
 
-## Add more Indicator
+## Add more Indicators
 
 As you have seen, buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
 
@@ -119,9 +117,16 @@ You should only add the indicators used in either `populate_buy_trend()`, `popul
 Sample:
 
 ```python
-def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
+def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
+
+    Performance Note: For the best performance be frugal on the number of indicators
+    you are using. Let uncomment only the indicator you are using in your strategies
+    or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
+    :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+    :param metadata: Additional information, like the currently traded pair
+    :return: a Dataframe with all mandatory indicators for the strategies
     """
     dataframe['sar'] = ta.SAR(dataframe)
     dataframe['adx'] = ta.ADX(dataframe)
@@ -151,6 +156,11 @@ def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
     dataframe['minus_di'] = ta.MINUS_DI(dataframe)
     return dataframe
 ```
+
+### Metadata dict
+
+The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
+Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 ### Want more indicator examples
 

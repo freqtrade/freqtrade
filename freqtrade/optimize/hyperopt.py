@@ -75,7 +75,7 @@ class Hyperopt(Backtesting):
         return arg_dict
 
     @staticmethod
-    def populate_indicators(dataframe: DataFrame, pair: str) -> DataFrame:
+    def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['adx'] = ta.ADX(dataframe)
         macd = ta.MACD(dataframe)
         dataframe['macd'] = macd['macd']
@@ -228,7 +228,7 @@ class Hyperopt(Backtesting):
         """
         Define the buy strategy parameters to be used by hyperopt
         """
-        def populate_buy_trend(dataframe: DataFrame, pair: str) -> DataFrame:
+        def populate_buy_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
             """
             Buy strategy Hyperopt will build and use
             """

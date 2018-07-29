@@ -74,29 +74,29 @@ class IStrategy(ABC):
         self.config = config
 
     @abstractmethod
-    def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
-        :param pair: Pair currently analyzed
+        :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
     @abstractmethod
-    def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
-        :param pair: Pair currently analyzed
+        :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
 
     @abstractmethod
-    def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
-        :param pair: Pair currently analyzed
+        :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
 
@@ -106,16 +106,16 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def analyze_ticker(self, ticker_history: List[Dict], pair: str) -> DataFrame:
+    def analyze_ticker(self, ticker_history: List[Dict], metadata: dict) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
         dataframe = parse_ticker_dataframe(ticker_history)
-        dataframe = self.advise_indicators(dataframe, pair)
-        dataframe = self.advise_buy(dataframe, pair)
-        dataframe = self.advise_sell(dataframe, pair)
+        dataframe = self.advise_indicators(dataframe, metadata)
+        dataframe = self.advise_buy(dataframe, metadata)
+        dataframe = self.advise_sell(dataframe, metadata)
         return dataframe
 
     def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
@@ -130,7 +130,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist, pair)
+            dataframe = self.analyze_ticker(ticker_hist, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -275,15 +275,15 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), pair)
+        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), {'pair': pair})
                 for pair, pair_data in tickerdata.items()}
 
-    def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
+    def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         This method should not be overridden.
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
-        :param pair: The currently traded pair
+        :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
         if self._populate_fun_len == 2:
@@ -291,14 +291,14 @@ class IStrategy(ABC):
                           "the current function headers!", DeprecationWarning)
             return self.populate_indicators(dataframe)  # type: ignore
         else:
-            return self.populate_indicators(dataframe, pair)
+            return self.populate_indicators(dataframe, metadata)
 
-    def advise_buy(self, dataframe: DataFrame, pair: str) -> DataFrame:
+    def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: The currently traded pair
+        :param pair: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
         if self._buy_fun_len == 2:
@@ -306,14 +306,14 @@ class IStrategy(ABC):
                           "the current function headers!", DeprecationWarning)
             return self.populate_buy_trend(dataframe)  # type: ignore
         else:
-            return self.populate_buy_trend(dataframe, pair)
+            return self.populate_buy_trend(dataframe, metadata)
 
-    def advise_sell(self, dataframe: DataFrame, pair: str) -> DataFrame:
+    def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: The currently traded pair
+        :param pair: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
         if self._sell_fun_len == 2:
@@ -321,4 +321,4 @@ class IStrategy(ABC):
                           "the current function headers!", DeprecationWarning)
             return self.populate_sell_trend(dataframe)  # type: ignore
         else:
-            return self.populate_sell_trend(dataframe, pair)
+            return self.populate_sell_trend(dataframe, metadata)

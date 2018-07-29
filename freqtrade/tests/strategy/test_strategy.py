@@ -60,10 +60,7 @@ def test_search_strategy():
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
     pair = 'ETH/BTC'
-    assert len(resolver.strategy.populate_indicators.__annotations__) == 3
-    assert 'dataframe' in resolver.strategy.populate_indicators.__annotations__
-    assert 'pair' in resolver.strategy.populate_indicators.__annotations__
-    assert 'adx' in resolver.strategy.advise_indicators(result, pair=pair)
+    assert 'adx' in resolver.strategy.advise_indicators(result, metadata=pair)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
@@ -92,7 +89,7 @@ def test_strategy(result):
     config = {'strategy': 'DefaultStrategy'}
 
     resolver = StrategyResolver(config)
-    pair = 'ETH/BTC'
+    metadata = {'pair': 'ETH/BTC'}
     assert resolver.strategy.minimal_roi[0] == 0.04
     assert config["minimal_roi"]['0'] == 0.04
 
@@ -102,13 +99,13 @@ def test_strategy(result):
     assert resolver.strategy.ticker_interval == '5m'
     assert config['ticker_interval'] == '5m'
 
-    df_indicators = resolver.strategy.advise_indicators(result, pair=pair)
+    df_indicators = resolver.strategy.advise_indicators(result, metadata=metadata)
     assert 'adx' in df_indicators
 
-    dataframe = resolver.strategy.advise_buy(df_indicators, pair=pair)
+    dataframe = resolver.strategy.advise_buy(df_indicators, metadata=metadata)
     assert 'buy' in dataframe.columns
 
-    dataframe = resolver.strategy.advise_sell(df_indicators, pair='ETH/BTC')
+    dataframe = resolver.strategy.advise_sell(df_indicators, metadata=metadata)
     assert 'sell' in dataframe.columns
 
 
@@ -196,21 +193,21 @@ def test_call_deprecated_function(result, monkeypatch):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
                                  'strategy_path': default_location})
-    pair = 'ETH/BTC'
+    metadata = {'pair': 'ETH/BTC'}
 
     # Make sure we are using a legacy function
     assert resolver.strategy._populate_fun_len == 2
     assert resolver.strategy._buy_fun_len == 2
     assert resolver.strategy._sell_fun_len == 2
 
-    indicator_df = resolver.strategy.advise_indicators(result, pair=pair)
+    indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
     assert type(indicator_df) is DataFrame
     assert 'adx' in indicator_df.columns
 
-    buydf = resolver.strategy.advise_buy(result, pair=pair)
+    buydf = resolver.strategy.advise_buy(result, metadata=metadata)
     assert type(buydf) is DataFrame
     assert 'buy' in buydf.columns
 
-    selldf = resolver.strategy.advise_sell(result, pair=pair)
+    selldf = resolver.strategy.advise_sell(result, metadata=metadata)
     assert type(selldf) is DataFrame
     assert 'sell' in selldf
