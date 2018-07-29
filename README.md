@@ -50,6 +50,7 @@ hesitate to read the source code and understand the mechanism of this bot.
   - [Strategy Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
   - [Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
   - [Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
+  - [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md)
 - [Basic Usage](#basic-usage)
   - [Bot commands](#bot-commands)
   - [Telegram RPC commands](#telegram-rpc-commands)
@@ -61,6 +62,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [Requirements](#requirements)
   - [Min hardware required](#min-hardware-required)
   - [Software requirements](#software-requirements)
+ 
 
 ## Quick start
 
