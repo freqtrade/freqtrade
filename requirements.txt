@@ -18,6 +18,10 @@ pytest-cov==2.5.1
 tabulate==0.8.2
 coinmarketcap==5.0.3
 
+# Optional, speeds up ticker load
+# Requires visual studio if on windows.
+#ujson==1.35
+
 # Required for hyperopt
 scikit-optimize==0.5.2
 
