@@ -1,9 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 
-"""
-Unit test file for exchange_helpers.py
-"""
-
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 
 

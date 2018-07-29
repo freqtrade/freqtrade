@@ -77,9 +77,6 @@ def test_start(mocker, default_conf, caplog) -> None:
 
 
 def test_loss_calculation_prefer_correct_trade_count(init_hyperopt) -> None:
-    """
-    Test Hyperopt.calculate_loss()
-    """
     hyperopt = _HYPEROPT
     StrategyResolver({'strategy': 'DefaultStrategy'})
 
@@ -91,9 +88,6 @@ def test_loss_calculation_prefer_correct_trade_count(init_hyperopt) -> None:
 
 
 def test_loss_calculation_prefer_shorter_trades(init_hyperopt) -> None:
-    """
-    Test Hyperopt.calculate_loss()
-    """
     hyperopt = _HYPEROPT
 
     shorter = hyperopt.calculate_loss(1, 100, 20)
@@ -240,9 +234,6 @@ def test_format_results(init_hyperopt):
 
 
 def test_has_space(init_hyperopt):
-    """
-    Test Hyperopt.has_space() method
-    """
     _HYPEROPT.config.update({'spaces': ['buy', 'roi']})
     assert _HYPEROPT.has_space('roi')
     assert _HYPEROPT.has_space('buy')
@@ -253,9 +244,6 @@ def test_has_space(init_hyperopt):
 
 
 def test_populate_indicators(init_hyperopt) -> None:
-    """
-    Test Hyperopt.populate_indicators()
-    """
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
@@ -268,9 +256,6 @@ def test_populate_indicators(init_hyperopt) -> None:
 
 
 def test_buy_strategy_generator(init_hyperopt) -> None:
-    """
-    Test Hyperopt.buy_strategy_generator()
-    """
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
@@ -296,9 +281,6 @@ def test_buy_strategy_generator(init_hyperopt) -> None:
 
 
 def test_generate_optimizer(mocker, init_hyperopt, default_conf) -> None:
-    """
-    Test Hyperopt.generate_optimizer() function
-    """
     conf = deepcopy(default_conf)
     conf.update({'config': 'config.json.example'})
     conf.update({'timerange': None})
@@ -335,7 +317,6 @@ def test_generate_optimizer(mocker, init_hyperopt, default_conf) -> None:
         'roi_p3': 0.1,
         'stoploss': -0.4,
     }
-
     response_expected = {
         'loss': 1.9840569076926293,
         'result': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '

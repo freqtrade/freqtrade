@@ -1,8 +1,5 @@
-# pragma pylint: disable=protected-access, invalid-name
+# pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
-"""
-Unit test file for configuration.py
-"""
 import json
 from argparse import Namespace
 from copy import deepcopy
@@ -20,9 +17,6 @@ from freqtrade.tests.conftest import log_has
 
 
 def test_load_config_invalid_pair(default_conf) -> None:
-    """
-    Test the configuration validator with an invalid PAIR format
-    """
     conf = deepcopy(default_conf)
     conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
@@ -32,9 +26,6 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    """
-    Test the configuration validator with a missing attribute
-    """
     conf = deepcopy(default_conf)
     conf.pop('exchange')
 
@@ -44,9 +35,6 @@ def test_load_config_missing_attributes(default_conf) -> None:
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
-    """
-    Test the configuration validator with a missing attribute
-    """
     conf = deepcopy(default_conf)
     conf['stake_amount'] = 'fake'
 
@@ -56,9 +44,6 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration._load_config_file() method
-    """
     file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -72,9 +57,6 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration._load_config_file() method
-    """
     conf = deepcopy(default_conf)
     conf['max_open_trades'] = 0
     file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
@@ -87,9 +69,6 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 
 
 def test_load_config_file_exception(mocker) -> None:
-    """
-    Test Configuration._load_config_file() method
-    """
     mocker.patch(
         'freqtrade.configuration.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
@@ -101,9 +80,6 @@ def test_load_config_file_exception(mocker) -> None:
 
 
 def test_load_config(default_conf, mocker) -> None:
-    """
-    Test Configuration.load_config() without any cli params
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -118,13 +94,9 @@ def test_load_config(default_conf, mocker) -> None:
 
 
 def test_load_config_with_params(default_conf, mocker) -> None:
-    """
-    Test Configuration.load_config() with cli params used
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
@@ -132,7 +104,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--db-url', 'sqlite:///someurl',
     ]
     args = Arguments(arglist, '').get_parsed_arg()
-
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -149,10 +120,10 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     ))
 
     arglist = [
-         '--dynamic-whitelist', '10',
-         '--strategy', 'TestStrategy',
-         '--strategy-path', '/some/path'
-     ]
+        '--dynamic-whitelist', '10',
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
     args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
@@ -180,9 +151,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
-    """
-    Test Configuration.load_config() without any cli params
-    """
     custom_conf = deepcopy(default_conf)
     custom_conf.update({
         'strategy': 'CustomStrategy',
@@ -201,13 +169,9 @@ def test_load_custom_strategy(default_conf, mocker) -> None:
 
 
 def test_show_info(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration.show_info()
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
@@ -224,19 +188,14 @@ def test_show_info(default_conf, mocker, caplog) -> None:
         '(not applicable with Backtesting and Hyperopt)',
         caplog.record_tuples
     )
-
     assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog.record_tuples)
     assert log_has('Dry run is enabled', caplog.record_tuples)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
@@ -274,9 +233,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -342,19 +298,14 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
 
 def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         'hyperopt',
         '--epochs', '10',
         '--spaces', 'all',
     ]
-
     args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
@@ -397,10 +348,6 @@ def test_check_exchange(default_conf) -> None:
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration.load_config() with cli params used
-    """
-
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)))
     # Prevent setting loggers
@@ -416,9 +363,6 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
 
 
 def test_set_loggers() -> None:
-    """
-    Test set_loggers() update the logger level for third-party libraries
-    """
     # Reset Logging to Debug, otherwise this fails randomly as it's set globally
     logging.getLogger('requests').setLevel(logging.DEBUG)
     logging.getLogger("urllib3").setLevel(logging.DEBUG)

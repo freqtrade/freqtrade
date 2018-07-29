@@ -173,7 +173,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     Exchange(default_conf)
 
 
-def test_exchangehas(default_conf, mocker):
+def test_exchange_has(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
     assert not exchange.exchange_has('ASDFASDF')
     api_mock = MagicMock()

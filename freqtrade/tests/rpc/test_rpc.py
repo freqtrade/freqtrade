@@ -1,8 +1,5 @@
+# pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
-
-"""
-Unit test file for rpc/rpc.py
-"""
 
 from datetime import datetime
 from unittest.mock import MagicMock, ANY
@@ -28,9 +25,6 @@ def prec_satoshi(a, b) -> float:
 
 # Unit tests
 def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
-    """
-    Test rpc_trade_status() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -72,9 +66,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
 
 
 def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
-    """
-    Test rpc_status_table() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -106,9 +97,6 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
 
 def test_rpc_daily_profit(default_conf, update, ticker, fee,
                           limit_buy_order, limit_sell_order, markets, mocker) -> None:
-    """
-    Test rpc_daily_profit() method
-    """
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -158,9 +146,6 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
 
 def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
                               limit_buy_order, limit_sell_order, markets, mocker) -> None:
-    """
-    Test rpc_trade_statistics() method
-    """
     mocker.patch.multiple(
         'freqtrade.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
@@ -237,9 +222,6 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
 # trade.open_rate (it is set to None)
 def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
                                      ticker_sell_up, limit_buy_order, limit_sell_order):
-    """
-    Test rpc_trade_statistics() method
-    """
     mocker.patch.multiple(
         'freqtrade.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
@@ -344,9 +326,6 @@ def test_rpc_balance_handle(default_conf, mocker):
 
 
 def test_rpc_start(mocker, default_conf) -> None:
-    """
-    Test rpc_start() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -370,9 +349,6 @@ def test_rpc_start(mocker, default_conf) -> None:
 
 
 def test_rpc_stop(mocker, default_conf) -> None:
-    """
-    Test rpc_stop() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -397,9 +373,6 @@ def test_rpc_stop(mocker, default_conf) -> None:
 
 
 def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
-    """
-    Test rpc_forcesell() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
@@ -501,9 +474,6 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
 
 def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
                             limit_sell_order, markets, mocker) -> None:
-    """
-    Test rpc_performance() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -540,9 +510,6 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
 
 
 def test_rpc_count(mocker, default_conf, ticker, fee, markets) -> None:
-    """
-    Test rpc_count() method
-    """
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
