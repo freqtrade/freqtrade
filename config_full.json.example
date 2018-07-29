@@ -7,6 +7,7 @@
     "ticker_interval": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
+    "trailing_stop_positive_offset": 0.0051,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
