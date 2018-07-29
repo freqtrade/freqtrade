@@ -455,7 +455,7 @@ class Backtesting(object):
                 )
             )
 
-        if 'Sell Reason' in results.columns:
+        if 'sell_reason' in results.columns:
             logger.info(
                 '\n' +
                 ' SELL READON STATS '.center(119, '=') +

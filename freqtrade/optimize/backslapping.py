@@ -5,6 +5,7 @@ from pandas import DataFrame
 
 from freqtrade.exchange import Exchange
 from freqtrade.strategy import IStrategy
+from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import StrategyResolver
 
 
@@ -571,7 +572,7 @@ class Backslapping:
                 # Stoploss trigger found before a sell =1
                 if np_t_stop_ind < 99999999 and np_t_stop_ind <= np_t_sell_ind:
                     t_exit_ind = t_open_ind + np_t_stop_ind  # Set Exit row index
-                    t_exit_type = 'stop'  # Set Exit type (stop)
+                    t_exit_type = SellType.STOP_LOSS  # Set Exit type (stop)
                     np_t_exit_pri = np_sco  # The price field our STOP exit will use
                     if debug:
                         print("Type STOP is first exit condition. "
@@ -582,7 +583,7 @@ class Backslapping:
                     # move sell onto next candle, we only look back on sell
                     # will use the open price later.
                     t_exit_ind = t_open_ind + np_t_sell_ind + 1  # Set Exit row index
-                    t_exit_type = 'sell'  # Set Exit type (sell)
+                    t_exit_type = SellType.SELL_SIGNAL  # Set Exit type (sell)
                     np_t_exit_pri = np_open  # The price field our SELL exit will use
                     if debug:
                         print("Type SELL is first exit condition. "
@@ -591,7 +592,7 @@ class Backslapping:
                 # No stop or buy left in view - set t_exit_last -1 to handle gracefully
                 else:
                     t_exit_last: int = -1  # Signal loop to exit, no buys or sells found.
-                    t_exit_type = "No Exit"
+                    t_exit_type = SellType.NONE
                     np_t_exit_pri = 999  # field price should be calculated on. 999 a non-existent column
                     if debug:
                         print("No valid STOP or SELL found. Signalling t_exit_last to gracefully exit")
@@ -688,16 +689,16 @@ class Backslapping:
 
                 # TODO no! this is hard coded bleh fix this open
                 np_trade_enter_price = np_bslap[t_open_ind + 1, np_open]
-                if t_exit_type == 'stop':
+                if t_exit_type == SellType.STOP_LOSS:
                     if np_t_exit_pri == 6:
                         np_trade_exit_price = np_t_stop_pri
                     else:
                         np_trade_exit_price = np_bslap[t_exit_ind, np_t_exit_pri]
-                if t_exit_type == 'sell':
+                if t_exit_type == SellType.SELL_SIGNAL:
                     np_trade_exit_price = np_bslap[t_exit_ind, np_t_exit_pri]
 
                 # Catch no exit found
-                if t_exit_type == "No Exit":
+                if t_exit_type == SellType.NONE:
                     np_trade_exit_price = 0
 
                 if debug_timing:
@@ -762,10 +763,11 @@ class Backslapping:
                 bslap_result["open_rate"] = round(np_trade_enter_price, 15)
                 bslap_result["close_rate"] = round(np_trade_exit_price, 15)
                 bslap_result["exit_type"] = t_exit_type
+                bslap_result["sell_reason"] = t_exit_type #duplicated, but I don't care
                 # append the dict to the list and print list
                 bslap_pair_results.append(bslap_result)
 
-                if t_exit_type is "stop":
+                if t_exit_type is SellType.STOP_LOSS:
                     stop_stops_count = stop_stops_count + 1
 
                 if debug:
