@@ -159,7 +159,7 @@ class Exchange(object):
         :param amount: amount
         :return: amount
         '''
-        if self._api.markets[pair]['precision']['amount'] > 0:
+        if self._api.markets[pair]['precision']['amount']:
             symbol_prec = self._api.markets[pair]['precision']['amount']
             multiplier = int('1' + ('0' * symbol_prec))
             big_amount = amount * multiplier
@@ -175,7 +175,7 @@ class Exchange(object):
         :param price: amount
         :return: price
         '''
-        if self._api.markets[pair]['precision']['price'] > 0:
+        if self._api.markets[pair]['precision']['price']:
             symbol_prec = self._api.markets[pair]['precision']['price']
             multiplier = int('1' + ('0' * symbol_prec))
             big_price = price * multiplier
