@@ -36,7 +36,7 @@ From within sand box site select your profile, top right.
 From the menu panel to the left of the screen select 
 > Security: "*View or Update*"
 
-In the new site select "enable authenticator" as typical google auth. 
+In the new site select "enable authenticator" as typical google Authenticator. 
 - open Google Authenticator on your phone
 - scan barcode 
 - enter your generated 2fa 
@@ -45,14 +45,16 @@ In the new site select "enable authenticator" as typical google auth.
 From within sandbox select profile>api>create api-keys
 >or as a direct link: https://public.sandbox.pro.coinbase.com/profile/api
 
-Ensure **view** and **trade**  are "checked" and sumbit your 2Fa
+Click on "create one" and ensure  **view** and **trade**  are "checked" and sumbit your 2Fa
 - **Copy and paste the Passphase** into a notepade this will be needed later
 - **Copy and paste the API Secret** popup into a notepad this will needed later
 - **Copy and paste the API Key** into a notepad this will needed later
 
 ## Add 50 BTC test funds
 To add funds, use the web interface deposit and withdraw buttons.
-Select Wallets.
+
+
+To begin select 'Wallets' from the top menu.
 > Or as a direct link: https://public.sandbox.pro.coinbase.com/wallets
 
 - Deposits (bottom left of screen)
@@ -61,11 +63,12 @@ Select Wallets.
 - - - - Max (50 BTC) 
 - - - - - Deposit
 
+*This process may be repeated for other currencies, ETH as example*
 ---
 # Configure Freqtrade to use Gax Sandbox 
 
 The aim of this document section
- - enable sandbox URLs in Freqtrade
+ - Enable sandbox URLs in Freqtrade
  - Configure API 
  - - secret
  - - key
@@ -73,9 +76,9 @@ The aim of this document section
  
 ## Sandbox URLs
 Freqtrade makes use of CCXT which in turn provides a list of URLs to Freqtrade. 
-These incldue ['test'] and ['api']. 
-- [Test] if available will point to an Exchanges sandbox. 
-- [Api] normally used, and resolves to live API target on the exchange 
+These include `['test']` and `['api']`. 
+- `[Test]` if available will point to an Exchanges sandbox. 
+- `[Api]` normally used, and resolves to live API target on the exchange 
 
 To make use of sandbox / test add "sandbox": true, to your config.json
 ```
@@ -117,7 +120,7 @@ Look for the following section:
             return False, False
 ```
 
-And Hash out as follows:
+You could Hash out the entire check as follows:
 ```
        # # Check if dataframe is out of date
         # signal_date = arrow.get(latest['date'])
@@ -131,3 +134,18 @@ And Hash out as follows:
         #     return False, False
  ```
  
+ Or inrease the timeout to offer a level of protection/alignment of this test to freqtrade in live.
+ 
+ As example, to allow an additional 30 minutes. "(interval_minutes * 2 + 5 + 30)"
+ ```
+      # Check if dataframe is out of date
+        signal_date = arrow.get(latest['date'])
+        interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
+        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + 5 + 30))):
+            logger.warning(
+                'Outdated history for pair %s. Last tick is %s minutes old',
+                pair,
+                (arrow.utcnow() - signal_date).seconds // 60
+            )
+            return False, False
+```
