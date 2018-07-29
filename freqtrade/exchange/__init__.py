@@ -96,10 +96,6 @@ class Exchange(object):
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
 
-        # check if config requests sandbox, if so use ['test'] from url
-        if (exchange_config.get('sandbox')):
-            api.urls['api'] = api.urls['test']
-
         return api
 
     @property
