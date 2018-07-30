@@ -63,8 +63,8 @@ class Backtesting(object):
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.populate_buy_trend = self.strategy.populate_buy_trend
-        self.populate_sell_trend = self.strategy.populate_sell_trend
+        self.advise_buy = self.strategy.advise_buy
+        self.advise_sell = self.strategy.advise_sell
 
         # Reset keys for backtesting
         self.config['exchange']['key'] = ''
@@ -292,8 +292,8 @@ class Backtesting(object):
 
                 pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-                ticker_data = self.populate_sell_trend(
-                    self.populate_buy_trend(pair_data))[headers].copy()
+                ticker_data = self.advise_sell(
+                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
                 # to avoid using data from future, we buy/sell with signal from previous candle
                 ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)

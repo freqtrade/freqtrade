@@ -1,9 +1,5 @@
 # pragma pylint: disable=missing-docstring,C0103
 
-"""
-Unit test file for misc.py
-"""
-
 import datetime
 from unittest.mock import MagicMock
 
@@ -15,20 +11,12 @@ from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
 def test_shorten_date() -> None:
-    """
-    Test shorten_date() function
-    :return: None
-    """
     str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
     str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
     assert shorten_date(str_data) == str_shorten_data
 
 
 def test_datesarray_to_datetimearray(ticker_history):
-    """
-    Test datesarray_to_datetimearray() function
-    :return: None
-    """
     dataframes = parse_ticker_dataframe(ticker_history)
     dates = datesarray_to_datetimearray(dataframes['date'])
 
@@ -44,10 +32,6 @@ def test_datesarray_to_datetimearray(ticker_history):
 
 
 def test_common_datearray(default_conf) -> None:
-    """
-    Test common_datearray()
-    :return: None
-    """
     strategy = DefaultStrategy(default_conf)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
@@ -61,10 +45,6 @@ def test_common_datearray(default_conf) -> None:
 
 
 def test_file_dump_json(mocker) -> None:
-    """
-    Test file_dump_json()
-    :return: None
-    """
     file_open = mocker.patch('freqtrade.misc.open', MagicMock())
     json_dump = mocker.patch('json.dump', MagicMock())
     file_dump_json('somefile', [1, 2, 3])
@@ -78,10 +58,6 @@ def test_file_dump_json(mocker) -> None:
 
 
 def test_format_ms_time() -> None:
-    """
-    test format_ms_time()
-    :return: None
-    """
     # Date 2018-04-10 18:02:01
     date_in_epoch_ms = 1523383321000
     date = format_ms_time(date_in_epoch_ms)

@@ -1,6 +1,4 @@
-"""
-Unit test file for main.py
-"""
+# pragma pylint: disable=missing-docstring
 
 from copy import deepcopy
 from unittest.mock import MagicMock
@@ -33,9 +31,6 @@ def test_parse_args_backtesting(mocker) -> None:
 
 
 def test_main_start_hyperopt(mocker) -> None:
-    """
-    Test that main() can start hyperopt
-    """
     hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
     main(['hyperopt'])
     assert hyperopt_mock.call_count == 1
@@ -47,10 +42,6 @@ def test_main_start_hyperopt(mocker) -> None:
 
 
 def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
-    """
-    Test main() function
-    In this test we are skipping the while True loop by throwing an exception.
-    """
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
@@ -74,10 +65,6 @@ def test_main_fatal_exception(mocker, default_conf, caplog) -> None:
 
 
 def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
-    """
-    Test main() function
-    In this test we are skipping the while True loop by throwing an exception.
-    """
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
@@ -101,10 +88,6 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
 
 
 def test_main_operational_exception(mocker, default_conf, caplog) -> None:
-    """
-    Test main() function
-    In this test we are skipping the while True loop by throwing an exception.
-    """
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
@@ -128,10 +111,6 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
 
 
 def test_main_reload_conf(mocker, default_conf, caplog) -> None:
-    """
-    Test main() function
-    In this test we are skipping the while True loop by throwing an exception.
-    """
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
@@ -158,7 +137,6 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
 
 
 def test_reconfigure(mocker, default_conf) -> None:
-    """ Test recreate() function """
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',

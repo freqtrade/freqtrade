@@ -1,8 +1,9 @@
+# pragma pylint: disable=missing-docstring, C0103, protected-access
+
 from unittest.mock import MagicMock
 
 import pytest
 from requests import RequestException
-
 
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.webhook import Webhook
@@ -32,23 +33,12 @@ def get_webhook_dict() -> dict:
 
 
 def test__init__(mocker, default_conf):
-    """
-    Test __init__() method
-    """
     default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     assert webhook._config == default_conf
 
 
-def test_cleanup(default_conf, mocker) -> None:
-    """
-    Test cleanup() method - not needed for webhook
-    """
-    pass
-
-
 def test_send_msg(default_conf, mocker):
-    """ Test send_msg for Webhook rpc class"""
     default_conf["webhook"] = get_webhook_dict()
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
@@ -118,7 +108,6 @@ def test_send_msg(default_conf, mocker):
 
 
 def test_exception_send_msg(default_conf, mocker, caplog):
-    """Test misconfigured notification"""
     default_conf["webhook"] = get_webhook_dict()
     default_conf["webhook"]["webhookbuy"] = None
 
@@ -158,8 +147,6 @@ def test_exception_send_msg(default_conf, mocker, caplog):
 
 
 def test__send_msg(default_conf, mocker, caplog):
-    """Test internal method - calling the actual api"""
-
     default_conf["webhook"] = get_webhook_dict()
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     msg = {'value1': 'DEADBEEF',

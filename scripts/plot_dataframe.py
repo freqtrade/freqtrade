@@ -159,8 +159,8 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     dataframes = strategy.tickerdata_to_dataframe(tickers)
 
     dataframe = dataframes[pair]
-    dataframe = strategy.populate_buy_trend(dataframe)
-    dataframe = strategy.populate_sell_trend(dataframe)
+    dataframe = strategy.advise_buy(dataframe, {'pair': pair})
+    dataframe = strategy.advise_sell(dataframe, {'pair': pair})
 
     if len(dataframe.index) > args.plot_limit:
         logger.warning('Ticker contained more than %s candles as defined '

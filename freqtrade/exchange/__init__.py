@@ -4,6 +4,7 @@ import logging
 from random import randint
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from math import floor, ceil
 
 import ccxt
 import arrow
@@ -95,6 +96,8 @@ class Exchange(object):
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
 
+        self.set_sandbox(api, exchange_config, name)
+
         return api
 
     @property
@@ -106,6 +109,16 @@ class Exchange(object):
     def id(self) -> str:
         """exchange ccxt id"""
         return self._api.id
+
+    def set_sandbox(self, api, exchange_config: dict, name: str):
+        if exchange_config.get('sandbox'):
+            if api.urls.get('test'):
+                api.urls['api'] = api.urls['test']
+                logger.info("Enabled Sandbox API on %s", name)
+            else:
+                logger.warning(self, "No Sandbox URL in CCXT, exiting. "
+                                     "Please check your config.json")
+                raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
@@ -150,6 +163,28 @@ class Exchange(object):
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
+    def symbol_amount_prec(self, pair, amount: float):
+        '''
+        Returns the amount to buy or sell to a precision the Exchange accepts
+        Rounded down
+        '''
+        if self._api.markets[pair]['precision']['amount']:
+            symbol_prec = self._api.markets[pair]['precision']['amount']
+            big_amount = amount * pow(10, symbol_prec)
+            amount = floor(big_amount) / pow(10, symbol_prec)
+        return amount
+
+    def symbol_price_prec(self, pair, price: float):
+        '''
+        Returns the price buying or selling with to the precision the Exchange accepts
+        Rounds up
+        '''
+        if self._api.markets[pair]['precision']['price']:
+            symbol_prec = self._api.markets[pair]['precision']['price']
+            big_price = price * pow(10, symbol_prec)
+            price = ceil(big_price) / pow(10, symbol_prec)
+        return price
+
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
@@ -167,6 +202,10 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
+            # Set the precision for amount and price(rate) as accepted by the exchange
+            amount = self.symbol_amount_prec(pair, amount)
+            rate = self.symbol_price_prec(pair, rate)
+
             return self._api.create_limit_buy_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -200,6 +239,10 @@ class Exchange(object):
             return {'id': order_id}
 
         try:
+            # Set the precision for amount and price(rate) as accepted by the exchange
+            amount = self.symbol_amount_prec(pair, amount)
+            rate = self.symbol_price_prec(pair, rate)
+
             return self._api.create_limit_sell_order(pair, amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(

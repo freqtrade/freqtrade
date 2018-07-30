@@ -1,3 +1,5 @@
+# pragma pylint: disable=missing-docstring
+
 import pandas as pd
 
 from freqtrade.indicator_helpers import went_down, went_up
