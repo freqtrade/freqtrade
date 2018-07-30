@@ -6,16 +6,16 @@ This module load custom strategies
 import importlib.util
 import inspect
 import logging
+import os
+import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
+from pathlib import Path
 from typing import Dict, Optional, Type
 
 from freqtrade import constants
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
-import tempfile
-import os
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class StrategyResolver(object):
             abs_paths.insert(0, extra_dir)
 
         if ":" in strategy_name:
-            logger.debug("loading base64 endocded strategy")
+            logger.info("loading base64 endocded strategy")
             strat = strategy_name.split(":")
 
             if len(strat) == 2:
