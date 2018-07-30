@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 import os
-from copy import deepcopy
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -164,13 +163,12 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     )
     patch_exchange(mocker)
 
-    conf = deepcopy(default_conf)
-    conf.update({'config': 'config.json.example'})
-    conf.update({'epochs': 1})
-    conf.update({'timerange': None})
-    conf.update({'spaces': 'all'})
+    default_conf.update({'config': 'config.json.example'})
+    default_conf.update({'epochs': 1})
+    default_conf.update({'timerange': None})
+    default_conf.update({'spaces': 'all'})
 
-    hyperopt = Hyperopt(conf)
+    hyperopt = Hyperopt(default_conf)
     hyperopt.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
@@ -254,10 +252,9 @@ def test_buy_strategy_generator(hyperopt) -> None:
 
 
 def test_generate_optimizer(mocker, default_conf) -> None:
-    conf = deepcopy(default_conf)
-    conf.update({'config': 'config.json.example'})
-    conf.update({'timerange': None})
-    conf.update({'spaces': 'all'})
+    default_conf.update({'config': 'config.json.example'})
+    default_conf.update({'timerange': None})
+    default_conf.update({'spaces': 'all'})
 
     trades = [
         ('POWR/BTC', 0.023117, 0.000233, 100)
@@ -297,6 +294,6 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'params': optimizer_param
     }
 
-    hyperopt = Hyperopt(conf)
+    hyperopt = Hyperopt(default_conf)
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected

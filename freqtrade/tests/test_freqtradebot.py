@@ -63,9 +63,8 @@ def test_freqtradebot(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING
 
-    conf = deepcopy(default_conf)
-    conf.pop('initial_state')
-    freqtrade = FreqtradeBot(conf)
+    default_conf.pop('initial_state')
+    freqtrade = FreqtradeBot(default_conf)
     assert freqtrade.state is State.STOPPED
 
 
@@ -442,14 +441,13 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
         get_fee=fee,
         get_markets=markets
     )
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = 0.0005
-    freqtrade = FreqtradeBot(conf)
+    default_conf['stake_amount'] = 0.0005
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
     rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
-    assert rate * amount >= conf['stake_amount']
+    assert rate * amount >= default_conf['stake_amount']
 
 
 def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order,
@@ -465,9 +463,8 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
         get_markets=markets
     )
 
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = 0.000000005
-    freqtrade = FreqtradeBot(conf)
+    default_conf['stake_amount'] = 0.000000005
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
     result = freqtrade.create_trade()
@@ -486,11 +483,10 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
         get_fee=fee,
         get_markets=markets
     )
-    conf = deepcopy(default_conf)
-    conf['max_open_trades'] = 0
-    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    default_conf['max_open_trades'] = 0
+    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
 
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
     assert freqtrade.create_trade() is False
@@ -508,10 +504,9 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, marke
         get_markets=markets
     )
 
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
-    conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
-    freqtrade = FreqtradeBot(conf)
+    default_conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
+    default_conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
@@ -531,11 +526,9 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
         get_fee=fee,
         get_markets=markets
     )
-
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
-    conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
-    freqtrade = FreqtradeBot(conf)
+    default_conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
+    default_conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
@@ -545,8 +538,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
-    conf = deepcopy(default_conf)
-    conf['dry_run'] = True
+    default_conf['dry_run'] = True
 
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -556,10 +548,8 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
         get_balance=MagicMock(return_value=20),
         get_fee=fee,
     )
-
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = 10
-    freqtrade = FreqtradeBot(conf)
+    default_conf['stake_amount'] = 10
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade, value=(False, False))
 
     Trade.query = MagicMock()
@@ -813,8 +803,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
 
 def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
                                      fee, markets, mocker) -> None:
-    conf = deepcopy(default_conf)
-    conf.update({'experimental': {'use_sell_signal': True}})
+    default_conf.update({'experimental': {'use_sell_signal': True}})
 
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -826,7 +815,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
         get_markets=markets
     )
 
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade, value=(True, True))
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
 
@@ -870,8 +859,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
 def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
                           fee, mocker, markets, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    conf = deepcopy(default_conf)
-    conf.update({'experimental': {'use_sell_signal': True}})
+    default_conf.update({'experimental': {'use_sell_signal': True}})
 
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -883,7 +871,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
         get_markets=markets
     )
 
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade, value=(True, False))
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
 
@@ -905,9 +893,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
 def test_handle_trade_experimental(
         default_conf, ticker, limit_buy_order, fee, mocker, markets, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    conf = deepcopy(default_conf)
-    conf.update({'experimental': {'use_sell_signal': True}})
-
+    default_conf.update({'experimental': {'use_sell_signal': True}})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -918,7 +904,7 @@ def test_handle_trade_experimental(
         get_markets=markets
     )
 
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
@@ -1360,12 +1346,11 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
         get_fee=fee,
         get_markets=markets
     )
-    conf = deepcopy(default_conf)
-    conf['experimental'] = {
+    default_conf['experimental'] = {
         'use_sell_signal': True,
         'sell_profit_only': True,
     }
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
 
@@ -1393,12 +1378,11 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
         get_fee=fee,
         get_markets=markets
     )
-    conf = deepcopy(default_conf)
-    conf['experimental'] = {
+    default_conf['experimental'] = {
         'use_sell_signal': True,
         'sell_profit_only': False,
     }
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
@@ -1424,12 +1408,11 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
         get_fee=fee,
         get_markets=markets
     )
-    conf = deepcopy(default_conf)
-    conf['experimental'] = {
+    default_conf['experimental'] = {
         'use_sell_signal': True,
         'sell_profit_only': True,
     }
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.stop_loss_reached = \
         lambda current_rate, trade, current_time, current_profit: SellCheckTuple(
@@ -1456,14 +1439,12 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
         get_fee=fee,
         get_markets=markets
     )
-
-    conf = deepcopy(default_conf)
-    conf['experimental'] = {
+    default_conf['experimental'] = {
         'use_sell_signal': True,
         'sell_profit_only': False,
     }
 
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
 
@@ -1490,13 +1471,10 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
         get_fee=fee,
         get_markets=markets
     )
-
-    conf = deepcopy(default_conf)
-    conf['experimental'] = {
+    default_conf['experimental'] = {
         'ignore_roi_if_buy_signal': True
     }
-
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
 
@@ -1527,11 +1505,8 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
         get_fee=fee,
         get_markets=markets,
     )
-
-    conf = deepcopy(default_conf)
-    conf['trailing_stop'] = True
-    print(limit_buy_order)
-    freqtrade = FreqtradeBot(conf)
+    default_conf['trailing_stop'] = True
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
 
@@ -1564,11 +1539,9 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
         get_fee=fee,
         get_markets=markets,
     )
-
-    conf = deepcopy(default_conf)
-    conf['trailing_stop'] = True
-    conf['trailing_stop_positive'] = 0.01
-    freqtrade = FreqtradeBot(conf)
+    default_conf['trailing_stop'] = True
+    default_conf['trailing_stop_positive'] = 0.01
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
@@ -1625,11 +1598,10 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
         get_markets=markets,
     )
 
-    conf = deepcopy(default_conf)
-    conf['trailing_stop'] = True
-    conf['trailing_stop_positive'] = 0.01
-    conf['trailing_stop_positive_offset'] = 0.011
-    freqtrade = FreqtradeBot(conf)
+    default_conf['trailing_stop'] = True
+    default_conf['trailing_stop_positive'] = 0.01
+    default_conf['trailing_stop_positive_offset'] = 0.011
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
@@ -1685,13 +1657,10 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
         get_fee=fee,
         get_markets=markets
     )
-
-    conf = deepcopy(default_conf)
-    conf['experimental'] = {
+    default_conf['experimental'] = {
         'ignore_roi_if_buy_signal': False
     }
-
-    freqtrade = FreqtradeBot(conf)
+    freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
 

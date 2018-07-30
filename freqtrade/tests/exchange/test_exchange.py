@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
 # pragma pylint: disable=protected-access
 import logging
-from copy import deepcopy
 from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock, PropertyMock
@@ -78,12 +77,11 @@ def test_validate_pairs_not_compatible(default_conf, mocker):
     api_mock.load_markets = MagicMock(return_value={
         'ETH/BTC': '', 'TKN/BTC': '', 'TRST/BTC': '', 'SWT/BTC': '', 'BCC/BTC': ''
     })
-    conf = deepcopy(default_conf)
-    conf['stake_currency'] = 'ETH'
+    default_conf['stake_currency'] = 'ETH'
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     with pytest.raises(OperationalException, match=r'not compatible'):
-        Exchange(conf)
+        Exchange(default_conf)
 
 
 def test_validate_pairs_exception(default_conf, mocker, caplog):
@@ -108,8 +106,7 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 
 def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
-    conf = deepcopy(default_conf)
-    conf['stake_currency'] = 'ETH'
+    default_conf['stake_currency'] = 'ETH'
     api_mock = MagicMock()
     api_mock.name = MagicMock(return_value='binance')
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
@@ -119,7 +116,7 @@ def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
         OperationalException,
         match=r'Pair ETH/BTC not compatible with stake_currency: ETH'
     ):
-        Exchange(conf)
+        Exchange(default_conf)
 
 
 def test_validate_timeframes(default_conf, mocker):

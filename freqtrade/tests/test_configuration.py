@@ -2,7 +2,6 @@
 
 import json
 from argparse import Namespace
-from copy import deepcopy
 import logging
 from unittest.mock import MagicMock
 
@@ -18,30 +17,27 @@ from freqtrade.tests.conftest import log_has
 
 
 def test_load_config_invalid_pair(default_conf) -> None:
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('ETH-BTC')
+    default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(conf)
+        configuration._validate_config(default_conf)
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    conf = deepcopy(default_conf)
-    conf.pop('exchange')
+    default_conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(conf)
+        configuration._validate_config(default_conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = 'fake'
+    default_conf['stake_amount'] = 'fake'
 
     with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(conf)
+        configuration._validate_config(default_conf)
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
@@ -58,10 +54,9 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
-    conf = deepcopy(default_conf)
-    conf['max_open_trades'] = 0
+    default_conf['max_open_trades'] = 0
     file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(conf)
+        read_data=json.dumps(default_conf)
     ))
 
     Configuration(Namespace())._load_config_file('somefile')
@@ -152,13 +147,12 @@ def test_load_config_with_params(default_conf, mocker) -> None:
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
-    custom_conf = deepcopy(default_conf)
-    custom_conf.update({
+    default_conf.update({
         'strategy': 'CustomStrategy',
         'strategy_path': '/tmp/strategies',
     })
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(custom_conf)
+        read_data=json.dumps(default_conf)
     ))
 
     args = Arguments([], '').get_parsed_arg()
@@ -323,26 +317,25 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
 
 def test_check_exchange(default_conf) -> None:
-    conf = deepcopy(default_conf)
     configuration = Configuration(Namespace())
 
     # Test a valid exchange
-    conf.get('exchange').update({'name': 'BITTREX'})
-    assert configuration.check_exchange(conf)
+    default_conf.get('exchange').update({'name': 'BITTREX'})
+    assert configuration.check_exchange(default_conf)
 
     # Test a valid exchange
-    conf.get('exchange').update({'name': 'binance'})
-    assert configuration.check_exchange(conf)
+    default_conf.get('exchange').update({'name': 'binance'})
+    assert configuration.check_exchange(default_conf)
 
     # Test a invalid exchange
-    conf.get('exchange').update({'name': 'unknown_exchange'})
-    configuration.config = conf
+    default_conf.get('exchange').update({'name': 'unknown_exchange'})
+    configuration.config = default_conf
 
     with pytest.raises(
         OperationalException,
         match=r'.*Exchange "unknown_exchange" not supported.*'
     ):
-        configuration.check_exchange(conf)
+        configuration.check_exchange(default_conf)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:

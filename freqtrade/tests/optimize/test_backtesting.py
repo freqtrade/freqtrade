@@ -3,7 +3,6 @@
 import json
 import math
 import random
-from copy import deepcopy
 from typing import List
 from unittest.mock import MagicMock
 
@@ -270,11 +269,10 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
 
 def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
 
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(conf)
+        read_data=json.dumps(default_conf)
     ))
 
     args = [
@@ -422,15 +420,14 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         get_timeframe=get_timeframe,
     )
 
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    conf['ticker_interval'] = 1
-    conf['live'] = False
-    conf['datadir'] = None
-    conf['export'] = None
-    conf['timerange'] = '-100'
+    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    default_conf['ticker_interval'] = 1
+    default_conf['live'] = False
+    default_conf['datadir'] = None
+    default_conf['export'] = None
+    default_conf['timerange'] = '-100'
 
-    backtesting = Backtesting(conf)
+    backtesting = Backtesting(default_conf)
     backtesting.start()
     # check the logs, that will contain the backtest result
     exists = [
@@ -458,15 +455,14 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
         get_timeframe=get_timeframe,
     )
 
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    conf['ticker_interval'] = "1m"
-    conf['live'] = False
-    conf['datadir'] = None
-    conf['export'] = None
-    conf['timerange'] = '20180101-20180102'
+    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    default_conf['ticker_interval'] = "1m"
+    default_conf['live'] = False
+    default_conf['datadir'] = None
+    default_conf['export'] = None
+    default_conf['timerange'] = '20180101-20180102'
 
-    backtesting = Backtesting(conf)
+    backtesting = Backtesting(default_conf)
     backtesting.start()
     # check the logs, that will contain the backtest result
 
@@ -680,15 +676,14 @@ def test_backtest_record(default_conf, fee, mocker):
 
 
 def test_backtest_start_live(default_conf, mocker, caplog):
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
+    default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history',
                  new=lambda s, n, i: _load_pair_as_ticks(n, i))
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(conf)
+        read_data=json.dumps(default_conf)
     ))
 
     args = MagicMock()
