@@ -322,9 +322,6 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
 
 def test_check_exchange(default_conf) -> None:
-    """
-    Test the configuration validator with a missing attribute
-    """
     conf = deepcopy(default_conf)
     configuration = Configuration(Namespace())
 

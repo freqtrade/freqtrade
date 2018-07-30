@@ -278,9 +278,6 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
 
 
 def test_rpc_balance_handle(default_conf, mocker):
-    """
-    Test rpc_balance() method
-    """
     mock_balance = {
         'BTC': {
             'free': 10.0,

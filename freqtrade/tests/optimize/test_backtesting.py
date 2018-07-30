@@ -164,9 +164,6 @@ def _trend_alternate(dataframe=None):
 
 # Unit tests
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -205,9 +202,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -276,10 +270,6 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
 
 def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
-
     conf = deepcopy(default_conf)
     conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
 
@@ -298,9 +288,6 @@ def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:
-    """
-    Test start() function
-    """
     start_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
@@ -323,9 +310,6 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
 
 
 def test_backtesting_init(mocker, default_conf) -> None:
-    """
-    Test Backtesting._init() method
-    """
     patch_exchange(mocker)
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
@@ -339,9 +323,6 @@ def test_backtesting_init(mocker, default_conf) -> None:
 
 
 def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
-    """
-    Test Backtesting.tickerdata_to_dataframe() method
-    """
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
     tick = optimize.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
@@ -358,9 +339,6 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
 
 
 def test_get_timeframe(default_conf, mocker) -> None:
-    """
-    Test Backtesting.get_timeframe() method
-    """
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
@@ -377,9 +355,6 @@ def test_get_timeframe(default_conf, mocker) -> None:
 
 
 def test_generate_text_table(default_conf, mocker):
-    """
-    Test Backtesting.generate_text_table() method
-    """
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
@@ -408,9 +383,6 @@ def test_generate_text_table(default_conf, mocker):
 
 
 def test_generate_text_table_sell_reason(default_conf, mocker):
-    """
-    Test Backtesting.generate_text_table_sell_reason() method
-    """
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
@@ -437,10 +409,6 @@ def test_generate_text_table_sell_reason(default_conf, mocker):
 
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
-    """
-    Test Backtesting.start() method
-    """
-
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
@@ -477,10 +445,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
-    """
-    Test Backtesting.start() method if no data is found
-    """
-
     def get_timeframe(input1, input2):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
@@ -510,9 +474,6 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
 
 def test_backtest(default_conf, fee, mocker) -> None:
-    """
-    Test Backtesting.backtest() method
-    """
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
@@ -560,9 +521,6 @@ def test_backtest(default_conf, fee, mocker) -> None:
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
-    """
-    Test Backtesting.backtest() method with 1 min ticker
-    """
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
@@ -583,9 +541,6 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
 
 
 def test_processed(default_conf, mocker) -> None:
-    """
-    Test Backtesting.backtest() method with offline data
-    """
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 

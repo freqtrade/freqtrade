@@ -45,9 +45,6 @@ def create_trials(mocker) -> None:
 
 
 def test_start(mocker, default_conf, caplog) -> None:
-    """
-    Test start() function
-    """
     start_mock = MagicMock()
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',
@@ -204,10 +201,6 @@ def test_start_calls_optimizer(mocker, init_hyperopt, default_conf, caplog) -> N
 
 
 def test_format_results(init_hyperopt):
-    """
-    Test Hyperopt.format_results()
-    """
-
     # Test with BTC as stake_currency
     trades = [
         ('ETH/BTC', 2, 2, 123),

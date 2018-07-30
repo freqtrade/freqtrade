@@ -1,8 +1,5 @@
+# pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
-
-"""
-Unit test file for freqtradebot.py
-"""
 
 import logging
 import re
@@ -64,9 +61,6 @@ def patch_RPCManager(mocker) -> MagicMock:
 # Unit tests
 
 def test_freqtradebot(mocker, default_conf) -> None:
-    """
-    Test __init__, _init_modules, update_state, and get_state methods
-    """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING
 
@@ -77,9 +71,6 @@ def test_freqtradebot(mocker, default_conf) -> None:
 
 
 def test_cleanup(mocker, default_conf, caplog) -> None:
-    """
-    Test clean() method
-    """
     mock_cleanup = MagicMock()
     mocker.patch('freqtrade.persistence.cleanup', mock_cleanup)
 
@@ -90,9 +81,6 @@ def test_cleanup(mocker, default_conf, caplog) -> None:
 
 
 def test_worker_running(mocker, default_conf, caplog) -> None:
-    """
-    Test worker() method. Test when we start the bot
-    """
     mock_throttle = MagicMock()
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot._throttle', mock_throttle)
 
@@ -105,9 +93,6 @@ def test_worker_running(mocker, default_conf, caplog) -> None:
 
 
 def test_worker_stopped(mocker, default_conf, caplog) -> None:
-    """
-    Test worker() method. Test when we stop the bot
-    """
     mock_throttle = MagicMock()
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot._throttle', mock_throttle)
     mock_sleep = mocker.patch('time.sleep', return_value=None)
@@ -122,9 +107,6 @@ def test_worker_stopped(mocker, default_conf, caplog) -> None:
 
 
 def test_throttle(mocker, default_conf, caplog) -> None:
-    """
-    Test _throttle() method
-    """
     def func():
         """
         Test function to throttle
@@ -147,9 +129,6 @@ def test_throttle(mocker, default_conf, caplog) -> None:
 
 
 def test_throttle_with_assets(mocker, default_conf) -> None:
-    """
-    Test _throttle() method when the function passed can have parameters
-    """
     def func(nb_assets=-1):
         """
         Test function to throttle
@@ -166,9 +145,6 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
 
 
 def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
-    """
-    Test _gen_pair_whitelist() method
-    """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -193,17 +169,10 @@ def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
 
 @pytest.mark.skip(reason="Test not implemented")
 def test_refresh_whitelist() -> None:
-    """
-    Test _refresh_whitelist() method
-    """
     pass
 
 
 def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
-    """
-    Test get_trade_stake_amount() method
-    """
-
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -222,17 +191,12 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
                                                 limit_buy_order,
                                                 fee,
                                                 mocker) -> None:
-    """
-    Test get_trade_stake_amount() method
-    """
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
     )
-
-    # test defined stake amount
     freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
@@ -245,9 +209,6 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
                                                  fee,
                                                  markets,
                                                  mocker) -> None:
-    """
-    Test get_trade_stake_amount() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -291,10 +252,6 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
 
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
-    """
-    Test get_trade_stake_amount() method
-    """
-
     patch_RPCManager(mocker)
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     freqtrade = FreqtradeBot(default_conf)
@@ -430,9 +387,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
 
 def test_create_trade(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -468,9 +422,6 @@ def test_create_trade(default_conf, ticker, limit_buy_order, fee, markets, mocke
 
 def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
                                       fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -491,9 +442,6 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
 
 def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
                                      fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     buy_mock = MagicMock(return_value={'id': limit_buy_order['id']})
@@ -505,7 +453,6 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
         get_fee=fee,
         get_markets=markets
     )
-
     conf = deepcopy(default_conf)
     conf['stake_amount'] = 0.0005
     freqtrade = FreqtradeBot(conf)
@@ -518,9 +465,6 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
 
 def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order,
                                              fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     buy_mock = MagicMock(return_value={'id': limit_buy_order['id']})
@@ -544,9 +488,6 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
 
 def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
                                     fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -570,9 +511,6 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
 
 
 def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -598,9 +536,6 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, marke
 
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
                                                limit_buy_order, fee, markets, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -625,9 +560,6 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
-    """
-    Test create_trade() method
-    """
     conf = deepcopy(default_conf)
     conf['dry_run'] = True
 
@@ -653,9 +585,6 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
 
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
                                 markets, fee, mocker, caplog) -> None:
-    """
-    Test the trade creation in _process() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
@@ -694,9 +623,6 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
 
 
 def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> None:
-    """
-    Test _process() method when a RequestException happens
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
@@ -717,9 +643,6 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
 
 
 def test_process_operational_exception(default_conf, ticker, markets, mocker) -> None:
-    """
-    Test _process() method when an OperationalException happens
-    """
     msg_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
@@ -742,9 +665,6 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
 
 def test_process_trade_handling(
         default_conf, ticker, limit_buy_order, markets, fee, mocker) -> None:
-    """
-    Test _process()
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
@@ -771,9 +691,6 @@ def test_process_trade_handling(
 
 
 def test_balance_fully_ask_side(mocker, default_conf) -> None:
-    """
-    Test get_target_bid() method
-    """
     default_conf['bid_strategy']['ask_last_balance'] = 0.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
@@ -781,9 +698,6 @@ def test_balance_fully_ask_side(mocker, default_conf) -> None:
 
 
 def test_balance_fully_last_side(mocker, default_conf) -> None:
-    """
-    Test get_target_bid() method
-    """
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
@@ -791,9 +705,6 @@ def test_balance_fully_last_side(mocker, default_conf) -> None:
 
 
 def test_balance_bigger_last_ask(mocker, default_conf) -> None:
-    """
-    Test get_target_bid() method
-    """
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
@@ -801,9 +712,6 @@ def test_balance_bigger_last_ask(mocker, default_conf) -> None:
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
-    """
-    Test process_maybe_execute_buy() method
-    """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade', MagicMock(return_value=True))
@@ -814,9 +722,6 @@ def test_process_maybe_execute_buy(mocker, default_conf) -> None:
 
 
 def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> None:
-    """
-    Test exception on process_maybe_execute_buy() method
-    """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch(
@@ -828,9 +733,6 @@ def test_process_maybe_execute_buy_exception(mocker, default_conf, caplog) -> No
 
 
 def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplog) -> None:
-    """
-    Test process_maybe_execute_sell() method
-    """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
@@ -864,9 +766,6 @@ def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplo
 
 def test_process_maybe_execute_sell_exception(mocker, default_conf,
                                               limit_buy_order, caplog) -> None:
-    """
-    Test the exceptions in process_maybe_execute_sell()
-    """
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
 
@@ -893,9 +792,6 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
                       fee, markets, mocker) -> None:
-    """
-    Test check_handle() method
-    """
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -939,9 +835,6 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
 
 def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
                                      fee, markets, mocker) -> None:
-    """
-    Test check_handle() method
-    """
     conf = deepcopy(default_conf)
     conf.update({'experimental': {'use_sell_signal': True}})
 
@@ -999,9 +892,6 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
 
 def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
                           fee, mocker, markets, caplog) -> None:
-    """
-    Test check_handle() method
-    """
     caplog.set_level(logging.DEBUG)
     conf = deepcopy(default_conf)
     conf.update({'experimental': {'use_sell_signal': True}})
@@ -1038,9 +928,6 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
 
 def test_handle_trade_experimental(
         default_conf, ticker, limit_buy_order, fee, mocker, markets, caplog) -> None:
-    """
-    Test check_handle() method
-    """
     caplog.set_level(logging.DEBUG)
     conf = deepcopy(default_conf)
     conf.update({'experimental': {'use_sell_signal': True}})
@@ -1074,9 +961,6 @@ def test_handle_trade_experimental(
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
                      fee, markets, mocker) -> None:
-    """
-    Test check_handle() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1105,9 +989,6 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
 
 
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fee, mocker) -> None:
-    """
-    Test check_handle_timedout() method
-    """
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_coinmarketcap(mocker)
@@ -1146,9 +1027,6 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
 
 
 def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker) -> None:
-    """
-    Test check_handle_timedout() method
-    """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     cancel_order_mock = MagicMock()
@@ -1186,9 +1064,6 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
                                        mocker) -> None:
-    """
-    Test check_handle_timedout() method
-    """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     cancel_order_mock = MagicMock()
@@ -1228,9 +1103,6 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
 
 
 def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -> None:
-    """
-    Test check_handle_timedout() method when get_order throw an exception
-    """
     patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_coinmarketcap(mocker)
@@ -1274,9 +1146,6 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
 
 
 def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
-    """
-    Test handle_timedout_limit_buy() method
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     cancel_order_mock = MagicMock()
@@ -1300,9 +1169,6 @@ def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
 
 
 def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
-    """
-    Test handle_timedout_limit_sell() method
-    """
     patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_coinmarketcap(mocker)
@@ -1326,9 +1192,6 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
 
 
 def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
-    """
-    Test execute_sell() method with a ticker going UP
-    """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1376,9 +1239,6 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
 
 
 def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
-    """
-    Test execute_sell() method with a ticker going DOWN
-    """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1428,9 +1288,6 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
 
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
                                            ticker_sell_up, markets, mocker) -> None:
-    """
-    Test execute_sell() method with a ticker going DOWN and with a bot config empty
-    """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
@@ -1478,9 +1335,6 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
 
 def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
                                              ticker_sell_down, markets, mocker) -> None:
-    """
-    Test execute_sell() method with a ticker going DOWN and with a bot config empty
-    """
     rpc_mock = patch_RPCManager(mocker)
     patch_coinmarketcap(mocker, value={'price_usd': 12345.0})
     mocker.patch.multiple(
@@ -1529,9 +1383,6 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
 
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
                                         fee, markets, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1566,9 +1417,6 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
 
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
                                          fee, markets, mocker) -> None:
-    """
-    Test sell_profit_only feature when disabled
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1601,9 +1449,6 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
 
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, markets, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1637,9 +1482,6 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
 
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, markets, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1675,9 +1517,6 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
 
 
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1716,9 +1555,6 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
 
 
 def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1756,9 +1592,6 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
 
 def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets,
                                      caplog, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
@@ -1884,9 +1717,6 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, m
 
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
                                           fee, markets, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch.multiple(
@@ -1926,12 +1756,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
 
 
 def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
-    """
-    Test get_real_amount - fee in quote currency
-    """
-
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
-
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
@@ -1954,10 +1779,6 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, ca
 
 
 def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
-    """
-    Test get_real_amount - fee in quote currency
-    """
-
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
 
     patch_RPCManager(mocker)
@@ -1982,9 +1803,6 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
 
 
 def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mocker):
-    """
-    Test get_real_amount - fees in Stake currency
-    """
     trades_for_order[0]['fee']['currency'] = 'ETH'
 
     patch_RPCManager(mocker)
@@ -2007,10 +1825,6 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mo
 
 
 def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mocker):
-    """
-    Test get_real_amount - Fees in BNB
-    """
-
     trades_for_order[0]['fee']['currency'] = 'BNB'
     trades_for_order[0]['fee']['cost'] = 0.00094518
 
@@ -2034,10 +1848,6 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mock
 
 
 def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, caplog, mocker):
-    """
-    Test get_real_amount with split trades (multiple trades for this order)
-    """
-
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
@@ -2061,9 +1871,6 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
 
 
 def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
-    """
-    Test get_real_amount with split trades (multiple trades for this order)
-    """
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004, 'currency': 'LTC'}
 
@@ -2091,9 +1898,6 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
 
 
 def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order_fee, mocker):
-    """
-    Test get_real_amount with split trades (multiple trades for this order)
-    """
     limit_buy_order = deepcopy(buy_order_fee)
     limit_buy_order['fee'] = {'cost': 0.004}
 
@@ -2117,9 +1921,6 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
 
 
 def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, mocker):
-    """
-    Test get_real_amount - fees in Stake currency
-    """
     # Remove "Currency" from fee dict
     trades_for_order[0]['fee'] = {'cost': 0.008}
 
@@ -2142,9 +1943,6 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
 
 
 def test_get_real_amount_open_trade(default_conf, mocker):
-    """
-    Test get_real_amount condition trade.fee_open == 0 or order['status'] == 'open'
-    """
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))

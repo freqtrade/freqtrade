@@ -15,8 +15,6 @@ from freqtrade.tests.conftest import get_patched_exchange, log_has
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
-    """Function to test ccxt exception handling """
-
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
