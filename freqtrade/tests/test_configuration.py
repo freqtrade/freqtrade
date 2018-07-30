@@ -7,8 +7,9 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import ValidationError
+from jsonschema import validate, ValidationError
 
+from freqtrade import constants
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
@@ -395,3 +396,7 @@ def test_set_loggers() -> None:
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
     assert logging.getLogger('telegram').level is logging.INFO
+
+
+def test_validate_default_conf(default_conf) -> None:
+    validate(default_conf, constants.CONF_SCHEMA)
