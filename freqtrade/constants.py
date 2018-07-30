@@ -125,6 +125,7 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
+                'sandbox': {'type': 'boolean'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
                 'password': {'type': 'string'},
