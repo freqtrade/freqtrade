@@ -155,32 +155,22 @@ class Exchange(object):
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
         Rounded down
-        :param pair: the symbol
-        :param amount: amount
-        :return: amount
         '''
-        if self._api.markets[pair]['precision']['amount'] > 0:
+        if self._api.markets[pair]['precision']['amount']:
             symbol_prec = self._api.markets[pair]['precision']['amount']
-            multiplier = int('1' + ('0' * symbol_prec))
-            big_amount = amount * multiplier
-            round_down = floor(big_amount)
-            amount = round_down / multiplier
+            big_amount = amount * pow(10, symbol_prec)
+            amount = floor(big_amount) / pow(10, symbol_prec)
         return amount
 
     def symbol_price_prec(self, pair, price: float):
         '''
         Returns the price buying or selling with to the precision the Exchange accepts
         Rounds up
-        :param pair: the symbol
-        :param price: amount
-        :return: price
         '''
-        if self._api.markets[pair]['precision']['price'] > 0:
+        if self._api.markets[pair]['precision']['price']:
             symbol_prec = self._api.markets[pair]['precision']['price']
-            multiplier = int('1' + ('0' * symbol_prec))
-            big_price = price * multiplier
-            round_up = ceil(big_price)
-            price = round_up / multiplier
+            big_price = price * pow(10, symbol_prec)
+            price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
