@@ -183,7 +183,7 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
     freqtrade = FreqtradeBot(default_conf)
 
     result = freqtrade._get_trade_stake_amount()
-    assert(result == default_conf['stake_amount'])
+    assert result == default_conf['stake_amount']
 
 
 def test_get_trade_stake_amount_no_stake_amount(default_conf,
