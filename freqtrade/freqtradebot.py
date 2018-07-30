@@ -330,7 +330,9 @@ class FreqtradeBot(object):
 
         # Pick pair based on buy signals
         for _pair in whitelist:
-            (buy, sell) = self.strategy.get_signal(self.exchange, _pair, interval)
+            thistory = self.exchange.get_ticker_history(_pair, interval)
+            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
+
             if buy and not sell:
                 return self.execute_buy(_pair, stake_amount)
         return False
@@ -495,8 +497,9 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            (buy, sell) = self.strategy.get_signal(self.exchange,
-                                                   trade.pair, self.strategy.ticker_interval)
+            ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
+            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
+                                                   ticker)
 
         should_sell = self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell)
         if should_sell.sell_flag:

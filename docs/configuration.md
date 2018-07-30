@@ -27,6 +27,7 @@ The table below will list all configuration parameters.
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `trailing_stoploss` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
 | `trailing_stoploss_positve` | 0 | No | Changes stop-loss once profit has been reached.
+| `trailing_stoploss_positve_offset` | 0 | No | Offset on when to apply `trailing_stoploss_positive`. Percentage value which should be positive.
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.

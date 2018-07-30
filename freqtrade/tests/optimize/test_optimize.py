@@ -53,9 +53,6 @@ def _clean_test_file(file: str) -> None:
 
 
 def test_load_data_30min_ticker(ticker_history, mocker, caplog, default_conf) -> None:
-    """
-    Test load_data() with 30 min ticker
-    """
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history', return_value=ticker_history)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-30m.json')
     _backup_file(file, copy_file=True)
@@ -66,9 +63,6 @@ def test_load_data_30min_ticker(ticker_history, mocker, caplog, default_conf) ->
 
 
 def test_load_data_5min_ticker(ticker_history, mocker, caplog, default_conf) -> None:
-    """
-    Test load_data() with 5 min ticker
-    """
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history', return_value=ticker_history)
 
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-5m.json')
@@ -80,11 +74,7 @@ def test_load_data_5min_ticker(ticker_history, mocker, caplog, default_conf) -> 
 
 
 def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
-    """
-    Test load_data() with 1 min ticker
-    """
     mocker.patch('freqtrade.exchange.Exchange.get_ticker_history', return_value=ticker_history)
-
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
     _backup_file(file, copy_file=True)
     optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
@@ -421,10 +411,6 @@ def test_trim_tickerlist() -> None:
 
 
 def test_file_dump_json() -> None:
-    """
-    Test file_dump_json()
-    :return: None
-    """
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata',
                         'test_{id}.json'.format(id=str(uuid.uuid4())))
     data = {'bar': 'foo'}

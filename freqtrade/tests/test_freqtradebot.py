@@ -47,6 +47,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :return: None
     """
     freqtrade.strategy.get_signal = lambda e, s, t: value
+    freqtrade.exchange.get_ticker_history = lambda p, i: None
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -61,22 +62,6 @@ def patch_RPCManager(mocker) -> MagicMock:
 
 
 # Unit tests
-def test_freqtradebot_object() -> None:
-    """
-    Test the FreqtradeBot object has the mandatory public methods
-    """
-    assert hasattr(FreqtradeBot, 'worker')
-    assert hasattr(FreqtradeBot, 'cleanup')
-    assert hasattr(FreqtradeBot, 'create_trade')
-    assert hasattr(FreqtradeBot, 'get_target_bid')
-    assert hasattr(FreqtradeBot, 'process_maybe_execute_buy')
-    assert hasattr(FreqtradeBot, 'process_maybe_execute_sell')
-    assert hasattr(FreqtradeBot, 'handle_trade')
-    assert hasattr(FreqtradeBot, 'check_handle_timedout')
-    assert hasattr(FreqtradeBot, 'handle_timedout_limit_buy')
-    assert hasattr(FreqtradeBot, 'handle_timedout_limit_sell')
-    assert hasattr(FreqtradeBot, 'execute_sell')
-
 
 def test_freqtradebot(mocker, default_conf) -> None:
     """
@@ -1813,7 +1798,71 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
                  }))
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f'using positive stop loss mode: 0.01 since we have profit 0.26662643',
+    assert log_has(f'using positive stop loss mode: 0.01 with offset 0 '
+                   f'since we have profit 0.2666%',
+                   caplog.record_tuples)
+    assert log_has(f'adjusted stop loss', caplog.record_tuples)
+    assert trade.stop_loss == 0.0000138501
+
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.000002,
+                     'ask': buy_price + 0.000002,
+                     'last': buy_price + 0.000002
+                 }))
+    # Lower price again (but still positive)
+    assert freqtrade.handle_trade(trade) is True
+    assert log_has(
+        f'HIT STOP: current price at {buy_price + 0.000002:.6f}, '
+        f'stop loss is {trade.stop_loss:.6f}, '
+        f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
+
+
+def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, mocker) -> None:
+    """
+    Test sell_profit_only feature when enabled and we have a loss
+    """
+    buy_price = limit_buy_order['price']
+    patch_RPCManager(mocker)
+    patch_coinmarketcap(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price - 0.000001,
+            'ask': buy_price - 0.000001,
+            'last': buy_price - 0.000001
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+    )
+
+    conf = deepcopy(default_conf)
+    conf['trailing_stop'] = True
+    conf['trailing_stop_positive'] = 0.01
+    conf['trailing_stop_positive_offset'] = 0.011
+    freqtrade = FreqtradeBot(conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    caplog.set_level(logging.DEBUG)
+    # stop-loss not reached
+    assert freqtrade.handle_trade(trade) is False
+
+    # Raise ticker above buy price
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.000003,
+                     'ask': buy_price + 0.000003,
+                     'last': buy_price + 0.000003
+                 }))
+    # stop-loss not reached, adjusted stoploss
+    assert freqtrade.handle_trade(trade) is False
+    assert log_has(f'using positive stop loss mode: 0.01 with offset 0.011 '
+                   f'since we have profit 0.2666%',
                    caplog.record_tuples)
     assert log_has(f'adjusted stop loss', caplog.record_tuples)
     assert trade.stop_loss == 0.0000138501

@@ -7,13 +7,13 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, NamedTuple, Tuple
+import warnings
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
-from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -58,34 +58,45 @@ class IStrategy(ABC):
         ticker_interval -> str: value of the ticker interval to use for the strategy
     """
 
+    _populate_fun_len: int = 0
+    _buy_fun_len: int = 0
+    _sell_fun_len: int = 0
+    # associated minimal roi
     minimal_roi: Dict
+
+    # associated stoploss
     stoploss: float
+
+    # associated ticker interval
     ticker_interval: str
 
     def __init__(self, config: dict) -> None:
         self.config = config
 
     @abstractmethod
-    def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
     @abstractmethod
-    def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
+        :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
 
     @abstractmethod
-    def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
+        :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
 
@@ -95,32 +106,31 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def analyze_ticker(self, ticker_history: List[Dict]) -> DataFrame:
+    def analyze_ticker(self, ticker_history: List[Dict], metadata: dict) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
         dataframe = parse_ticker_dataframe(ticker_history)
-        dataframe = self.populate_indicators(dataframe)
-        dataframe = self.populate_buy_trend(dataframe)
-        dataframe = self.populate_sell_trend(dataframe)
+        dataframe = self.advise_indicators(dataframe, metadata)
+        dataframe = self.advise_buy(dataframe, metadata)
+        dataframe = self.advise_sell(dataframe, metadata)
         return dataframe
 
-    def get_signal(self, exchange: Exchange, pair: str, interval: str) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        ticker_hist = exchange.get_ticker_history(pair, interval)
         if not ticker_hist:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist)
+            dataframe = self.analyze_ticker(ticker_hist, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -202,6 +212,7 @@ class IStrategy(ABC):
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
+        :param current_profit: current profit in percent
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
@@ -229,12 +240,15 @@ class IStrategy(ABC):
             # check if we have a special stop loss for positive condition
             # and if profit is positive
             stop_loss_value = self.stoploss
-            if 'trailing_stop_positive' in self.config and current_profit > 0:
+            sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
+
+            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
 
                 # Ignore mypy error check in configuration that this is a float
                 stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
                 logger.debug(f"using positive stop loss mode: {stop_loss_value} "
-                             f"since we have profit {current_profit}")
+                             f"with offset {sl_offset:.4g} "
+                             f"since we have profit {current_profit:.4f}%")
 
             trade.adjust_stop_loss(current_rate, stop_loss_value)
 
@@ -261,5 +275,50 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.populate_indicators(parse_ticker_dataframe(pair_data))
+        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), {'pair': pair})
                 for pair, pair_data in tickerdata.items()}
+
+    def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Populate indicators that will be used in the Buy and Sell strategy
+        This method should not be overridden.
+        :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
+        :param metadata: Additional information, like the currently traded pair
+        :return: a Dataframe with all mandatory indicators for the strategies
+        """
+        if self._populate_fun_len == 2:
+            warnings.warn("deprecated - check out the Sample strategy to see "
+                          "the current function headers!", DeprecationWarning)
+            return self.populate_indicators(dataframe)  # type: ignore
+        else:
+            return self.populate_indicators(dataframe, metadata)
+
+    def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators, populates the buy signal for the given dataframe
+        This method should not be overridden.
+        :param dataframe: DataFrame
+        :param pair: Additional information, like the currently traded pair
+        :return: DataFrame with buy column
+        """
+        if self._buy_fun_len == 2:
+            warnings.warn("deprecated - check out the Sample strategy to see "
+                          "the current function headers!", DeprecationWarning)
+            return self.populate_buy_trend(dataframe)  # type: ignore
+        else:
+            return self.populate_buy_trend(dataframe, metadata)
+
+    def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators, populates the sell signal for the given dataframe
+        This method should not be overridden.
+        :param dataframe: DataFrame
+        :param pair: Additional information, like the currently traded pair
+        :return: DataFrame with sell column
+        """
+        if self._sell_fun_len == 2:
+            warnings.warn("deprecated - check out the Sample strategy to see "
+                          "the current function headers!", DeprecationWarning)
+            return self.populate_sell_trend(dataframe)  # type: ignore
+        else:
+            return self.populate_sell_trend(dataframe, metadata)

@@ -63,6 +63,7 @@ CONF_SCHEMA = {
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'trailing_stop': {'type': 'boolean'},
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
@@ -127,6 +128,8 @@ CONF_SCHEMA = {
                 'sandbox': {'type': 'boolean'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
+                'password': {'type': 'string'},
+                'uid': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
                     'items': {
