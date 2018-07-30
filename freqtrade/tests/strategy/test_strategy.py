@@ -1,8 +1,10 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
-import os
+from os import path
+import warnings
 
 import pytest
+from pandas import DataFrame
 
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -37,8 +39,8 @@ def test_import_strategy(caplog):
 
 def test_search_strategy():
     default_config = {}
-    default_location = os.path.join(os.path.dirname(
-        os.path.realpath(__file__)), '..', '..', 'strategy'
+    default_location = path.join(path.dirname(
+        path.realpath(__file__)), '..', '..', 'strategy'
     )
     assert isinstance(
         StrategyResolver._search_strategy(
@@ -57,12 +59,13 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    assert 'adx' in resolver.strategy.populate_indicators(result)
+    metadata = {'pair': 'ETH/BTC'}
+    assert 'adx' in resolver.strategy.advise_indicators(result, metadata=metadata)
 
 
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
-    extra_dir = os.path.join('some', 'path')
+    extra_dir = path.join('some', 'path')
     resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
     assert (
@@ -70,7 +73,8 @@ def test_load_strategy_invalid_directory(result, caplog):
         logging.WARNING,
         'Path "{}" does not exist'.format(extra_dir),
     ) in caplog.record_tuples
-    assert 'adx' in resolver.strategy.populate_indicators(result)
+
+    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_not_found_strategy():
@@ -85,7 +89,7 @@ def test_strategy(result):
     config = {'strategy': 'DefaultStrategy'}
 
     resolver = StrategyResolver(config)
-
+    metadata = {'pair': 'ETH/BTC'}
     assert resolver.strategy.minimal_roi[0] == 0.04
     assert config["minimal_roi"]['0'] == 0.04
 
@@ -95,12 +99,13 @@ def test_strategy(result):
     assert resolver.strategy.ticker_interval == '5m'
     assert config['ticker_interval'] == '5m'
 
-    assert 'adx' in resolver.strategy.populate_indicators(result)
+    df_indicators = resolver.strategy.advise_indicators(result, metadata=metadata)
+    assert 'adx' in df_indicators
 
-    dataframe = resolver.strategy.populate_buy_trend(resolver.strategy.populate_indicators(result))
+    dataframe = resolver.strategy.advise_buy(df_indicators, metadata=metadata)
     assert 'buy' in dataframe.columns
 
-    dataframe = resolver.strategy.populate_sell_trend(resolver.strategy.populate_indicators(result))
+    dataframe = resolver.strategy.advise_sell(df_indicators, metadata=metadata)
     assert 'sell' in dataframe.columns
 
 
@@ -150,3 +155,59 @@ def test_strategy_override_ticker_interval(caplog):
             logging.INFO,
             'Override strategy \'ticker_interval\' with value in config file: 60.'
             ) in caplog.record_tuples
+
+
+def test_deprecate_populate_indicators(result):
+    default_location = path.join(path.dirname(path.realpath(__file__)))
+    resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
+                                 'strategy_path': default_location})
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        indicators = resolver.strategy.advise_indicators(result, 'ETH/BTC')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - check out the Sample strategy to see the current function headers!" \
+            in str(w[-1].message)
+
+    with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        resolver.strategy.advise_buy(indicators, 'ETH/BTC')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - check out the Sample strategy to see the current function headers!" \
+            in str(w[-1].message)
+
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        resolver.strategy.advise_sell(indicators, 'ETH_BTC')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "deprecated - check out the Sample strategy to see the current function headers!" \
+            in str(w[-1].message)
+
+
+def test_call_deprecated_function(result, monkeypatch):
+    default_location = path.join(path.dirname(path.realpath(__file__)))
+    resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
+                                 'strategy_path': default_location})
+    metadata = {'pair': 'ETH/BTC'}
+
+    # Make sure we are using a legacy function
+    assert resolver.strategy._populate_fun_len == 2
+    assert resolver.strategy._buy_fun_len == 2
+    assert resolver.strategy._sell_fun_len == 2
+
+    indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
+    assert type(indicator_df) is DataFrame
+    assert 'adx' in indicator_df.columns
+
+    buydf = resolver.strategy.advise_buy(result, metadata=metadata)
+    assert type(buydf) is DataFrame
+    assert 'buy' in buydf.columns
+
+    selldf = resolver.strategy.advise_sell(result, metadata=metadata)
+    assert type(selldf) is DataFrame
+    assert 'sell' in selldf
