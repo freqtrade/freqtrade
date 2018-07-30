@@ -52,6 +52,52 @@ def test_init_exception(default_conf, mocker):
         Exchange(default_conf)
 
 
+def test_symbol_amount_prec(default_conf, mocker):
+    '''
+    Test rounds down to 4 Decimal places
+    '''
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value={
+        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
+    })
+    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='binance'))
+
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': 4}}})
+    type(api_mock).markets = markets
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    exchange = Exchange(default_conf)
+
+    amount = 2.34559
+    pair = 'ETH/BTC'
+    amount = exchange.symbol_amount_prec(pair, amount)
+    assert amount == 2.3455
+
+
+def test_symbol_price_prec(default_conf, mocker):
+    '''
+    Test rounds up to 4 decimal places
+    '''
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value={
+        'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
+    })
+    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='binance'))
+
+    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': 4}}})
+    type(api_mock).markets = markets
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    exchange = Exchange(default_conf)
+
+    price = 2.34559
+    pair = 'ETH/BTC'
+    price = exchange.symbol_price_prec(pair, price)
+    assert price == 2.3456
+
+
 def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.load_markets = MagicMock(return_value={
@@ -173,7 +219,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     Exchange(default_conf)
 
 
-def test_exchange_has(default_conf, mocker):
+def test_exchangehas(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
     assert not exchange.exchange_has('ASDFASDF')
     api_mock = MagicMock()
