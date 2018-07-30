@@ -1651,10 +1651,8 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
         f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
 
 
-def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, mocker) -> None:
-    """
-    Test sell_profit_only feature when enabled and we have a loss
-    """
+def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
+                                   caplog, mocker, markets) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
     patch_coinmarketcap(mocker)
@@ -1668,6 +1666,7 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee, caplog, m
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
+        get_markets=markets,
     )
 
     conf = deepcopy(default_conf)
