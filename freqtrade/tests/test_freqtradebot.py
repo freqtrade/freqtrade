@@ -106,40 +106,34 @@ def test_worker_stopped(mocker, default_conf, caplog) -> None:
 
 
 def test_throttle(mocker, default_conf, caplog) -> None:
-    def func():
-        """
-        Test function to throttle
-        """
+    def throttled_func():
         return 42
 
     caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     start = time.time()
-    result = freqtrade._throttle(func, min_secs=0.1)
+    result = freqtrade._throttle(throttled_func, min_secs=0.1)
     end = time.time()
 
     assert result == 42
     assert end - start > 0.1
-    assert log_has('Throttling func for 0.10 seconds', caplog.record_tuples)
+    assert log_has('Throttling throttled_func for 0.10 seconds', caplog.record_tuples)
 
-    result = freqtrade._throttle(func, min_secs=-1)
+    result = freqtrade._throttle(throttled_func, min_secs=-1)
     assert result == 42
 
 
 def test_throttle_with_assets(mocker, default_conf) -> None:
-    def func(nb_assets=-1):
-        """
-        Test function to throttle
-        """
+    def throttled_func(nb_assets=-1):
         return nb_assets
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    result = freqtrade._throttle(func, min_secs=0.1, nb_assets=666)
+    result = freqtrade._throttle(throttled_func, min_secs=0.1, nb_assets=666)
     assert result == 666
 
-    result = freqtrade._throttle(func, min_secs=0.1)
+    result = freqtrade._throttle(throttled_func, min_secs=0.1)
     assert result == -1
 
 
