@@ -55,6 +55,7 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self._init_modules()
+        self._klines = {}
 
     def _init_modules(self) -> None:
         """
@@ -338,7 +339,7 @@ class FreqtradeBot(object):
         # running get_signal on historical data fetched
         # to find buy signals
         for _pair in whitelist:
-            (buy, sell) = self.strategy.get_signal(_pair, interval, self._klines[_pair])
+            (buy, sell) = self.strategy.get_signal(_pair, interval, self._klines.get(_pair))
             if buy and not sell:
                 buy_pairs.append(_pair)
 
