@@ -511,7 +511,7 @@ class FreqtradeBot(object):
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
             # ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
-            ticker = self._klines[trade.pair]
+            ticker = self._klines.get(trade.pair)
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 
