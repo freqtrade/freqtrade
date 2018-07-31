@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-from copy import deepcopy
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,46 +22,40 @@ def test_init_create_session(default_conf):
 
 
 def test_init_custom_db_url(default_conf, mocker):
-    conf = deepcopy(default_conf)
-
     # Update path to a value other than default, but still in-memory
-    conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
+    default_conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
     create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
 
-    init(conf)
+    init(default_conf)
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tmp/freqtrade2_test.sqlite'
 
 
 def test_init_invalid_db_url(default_conf):
-    conf = deepcopy(default_conf)
-
     # Update path to a value other than default, but still in-memory
-    conf.update({'db_url': 'unknown:///some.url'})
+    default_conf.update({'db_url': 'unknown:///some.url'})
     with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
-        init(conf)
+        init(default_conf)
 
 
 def test_init_prod_db(default_conf, mocker):
-    conf = deepcopy(default_conf)
-    conf.update({'dry_run': False})
-    conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})
+    default_conf.update({'dry_run': False})
+    default_conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})
 
     create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
 
-    init(conf)
+    init(default_conf)
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
 
 
 def test_init_dryrun_db(default_conf, mocker):
-    conf = deepcopy(default_conf)
-    conf.update({'dry_run': True})
-    conf.update({'db_url': constants.DEFAULT_DB_DRYRUN_URL})
+    default_conf.update({'dry_run': True})
+    default_conf.update({'db_url': constants.DEFAULT_DB_DRYRUN_URL})
 
     create_engine_mock = mocker.patch('freqtrade.persistence.create_engine', MagicMock())
 
-    init(conf)
+    init(default_conf)
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite://'
 

@@ -1,9 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 
-"""
-Unit test file for arguments.py
-"""
-
 import argparse
 
 import pytest

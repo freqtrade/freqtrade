@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 
 import logging
-from copy import deepcopy
 from unittest.mock import MagicMock
 
 from freqtrade.rpc import RPCMessageType, RPCManager
@@ -9,18 +8,16 @@ from freqtrade.tests.conftest import log_has, get_patched_freqtradebot
 
 
 def test__init__(mocker, default_conf) -> None:
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
+    default_conf['telegram']['enabled'] = False
 
-    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, conf))
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
     assert rpc_manager.registered_modules == []
 
 
 def test_init_telegram_disabled(mocker, default_conf, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, conf))
+    default_conf['telegram']['enabled'] = False
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     assert not log_has('Enabling rpc.telegram ...', caplog.record_tuples)
     assert rpc_manager.registered_modules == []
@@ -40,10 +37,9 @@ def test_init_telegram_enabled(mocker, default_conf, caplog) -> None:
 def test_cleanup_telegram_disabled(mocker, default_conf, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.cleanup', MagicMock())
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
+    default_conf['telegram']['enabled'] = False
 
-    freqtradebot = get_patched_freqtradebot(mocker, conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.cleanup()
 
@@ -70,10 +66,9 @@ def test_cleanup_telegram_enabled(mocker, default_conf, caplog) -> None:
 
 def test_send_msg_telegram_disabled(mocker, default_conf, caplog) -> None:
     telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
+    default_conf['telegram']['enabled'] = False
 
-    freqtradebot = get_patched_freqtradebot(mocker, conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg({
         'type': RPCMessageType.STATUS_NOTIFICATION,
@@ -101,10 +96,9 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
 
 def test_init_webhook_disabled(mocker, default_conf, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    conf['webhook'] = {'enabled': False}
-    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, conf))
+    default_conf['telegram']['enabled'] = False
+    default_conf['webhook'] = {'enabled': False}
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     assert not log_has('Enabling rpc.webhook ...', caplog.record_tuples)
     assert rpc_manager.registered_modules == []
