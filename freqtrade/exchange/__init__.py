@@ -364,6 +364,12 @@ class Exchange(object):
             raise OperationalException(f'Could not fetch ticker data. Msg: {e}')
 
     def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> Dict:
+        """
+        Refresh tickers asyncronously and return the result.
+        """
+        # TODO: maybe add since_ms to use async in the download-script?
+        # TODO: only refresh once per interval ? *may require this to move to freqtradebot.py
+        # TODO@ Add tests for this and the async stuff above
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
         datatups = asyncio.get_event_loop().run_until_complete(
             self.async_get_tickers_history(pair_list, ticker_interval))
