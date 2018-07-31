@@ -98,9 +98,6 @@ def test_get_signal_handles_exceptions(mocker, default_conf):
 
 
 def test_tickerdata_to_dataframe(default_conf) -> None:
-    """
-    Test Analyze.tickerdata_to_dataframe() method
-    """
     strategy = DefaultStrategy(default_conf)
 
     timerange = TimeRange(None, 'line', 0, -100)

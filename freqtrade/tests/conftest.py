@@ -8,10 +8,8 @@ from unittest.mock import MagicMock
 
 import arrow
 import pytest
-from jsonschema import validate
 from telegram import Chat, Message, Update
 
-from freqtrade import constants
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
@@ -127,7 +125,6 @@ def default_conf():
         "db_url": "sqlite://",
         "loglevel": logging.DEBUG,
     }
-    validate(configuration, constants.CONF_SCHEMA)
     return configuration
 
 

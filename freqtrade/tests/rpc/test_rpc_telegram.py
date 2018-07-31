@@ -3,7 +3,6 @@
 # pragma pylint: disable=too-many-lines, too-many-arguments
 
 import re
-from copy import deepcopy
 from datetime import datetime
 from random import randint
 from unittest.mock import MagicMock, ANY
@@ -21,8 +20,8 @@ from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
                                       patch_exchange)
-from freqtrade.tests.test_freqtradebot import (patch_coinmarketcap,
-                                               patch_get_signal)
+from freqtrade.tests.test_freqtradebot import patch_get_signal
+from freqtrade.tests.conftest import patch_coinmarketcap
 
 
 class DummyCls(Telegram):
@@ -96,9 +95,8 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
     update = Update(randint(1, 100))
     update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
 
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    bot = FreqtradeBot(conf)
+    default_conf['telegram']['enabled'] = False
+    bot = FreqtradeBot(default_conf)
     patch_get_signal(bot, (True, False))
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
@@ -124,9 +122,8 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     update = Update(randint(1, 100))
     update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
 
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    bot = FreqtradeBot(conf)
+    default_conf['telegram']['enabled'] = False
+    bot = FreqtradeBot(default_conf)
     patch_get_signal(bot, (True, False))
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
@@ -152,10 +149,9 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
     update = Update(randint(1, 100))
     update.message = Message(randint(1, 100), 0, datetime.utcnow(), Chat(0, 0))
 
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
+    default_conf['telegram']['enabled'] = False
 
-    bot = FreqtradeBot(conf)
+    bot = FreqtradeBot(default_conf)
     patch_get_signal(bot, (True, False))
     dummy = DummyCls(bot)
 
@@ -177,9 +173,8 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
 def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     update.message.chat.id = 123
-    conf = deepcopy(default_conf)
-    conf['telegram']['enabled'] = False
-    conf['telegram']['chat_id'] = 123
+    default_conf['telegram']['enabled'] = False
+    default_conf['telegram']['chat_id'] = 123
 
     patch_coinmarketcap(mocker)
 
@@ -214,7 +209,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(conf)
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -294,9 +289,8 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = 15.0
-    freqtradebot = FreqtradeBot(conf)
+    default_conf['stake_amount'] = 15.0
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
 
     telegram = Telegram(freqtradebot)
@@ -1181,9 +1175,8 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
 def test__send_msg(default_conf, mocker) -> None:
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
-    conf = deepcopy(default_conf)
     bot = MagicMock()
-    freqtradebot = get_patched_freqtradebot(mocker, conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._config['telegram']['enabled'] = True
@@ -1194,10 +1187,9 @@ def test__send_msg(default_conf, mocker) -> None:
 def test__send_msg_network_error(default_conf, mocker, caplog) -> None:
     patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
-    conf = deepcopy(default_conf)
     bot = MagicMock()
     bot.send_message = MagicMock(side_effect=NetworkError('Oh snap'))
-    freqtradebot = get_patched_freqtradebot(mocker, conf)
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     telegram = Telegram(freqtradebot)
 
     telegram._config['telegram']['enabled'] = True
