@@ -91,7 +91,7 @@ class Exchange(object):
                 'secret': exchange_config.get('secret'),
                 'password': exchange_config.get('password'),
                 'uid': exchange_config.get('uid', ''),
-                'enableRateLimit': exchange_config.get('ccxt_rate_limit', False),
+                'enableRateLimit': exchange_config.get('ccxt_rate_limit', True),
             })
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
