@@ -8,7 +8,6 @@ import time
 import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
-import asyncio
 
 import arrow
 import requests
@@ -56,6 +55,7 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self._init_modules()
+        self._klines = {}
 
     def _init_modules(self) -> None:
         """
@@ -148,6 +148,8 @@ class FreqtradeBot(object):
             # Keep only the subsets of pairs wanted (up to nb_assets)
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
+
+            self._klines = self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -302,13 +304,7 @@ class FreqtradeBot(object):
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
-        return min(min_stake_amounts)/amount_reserve_percent
-
-    async def async_get_tickers(self, exchange, pairs):
-        input_coroutines = [exchange.async_get_ticker_history(symbol, self.strategy.ticker_interval) for symbol in pairs]
-        tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
-        return tickers
-        #await exchange.close()
+        return min(min_stake_amounts) / amount_reserve_percent
 
     def create_trade(self) -> bool:
         """
@@ -337,25 +333,21 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        
-        # fetching kline history for all pairs asynchronously and wait till all done
-        data = asyncio.get_event_loop().run_until_complete(self.exchange.async_get_tickers_history(whitelist, self.strategy.ticker_interval))
-        
         # list of pairs having buy signals
         buy_pairs = []
 
-        # running get_signal on historical data fetched 
+        # running get_signal on historical data fetched
         # to find buy signals
-        for _pair, thistory in data: 
-            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
-            if buy and not sell: 
+        for _pair in whitelist:
+            (buy, sell) = self.strategy.get_signal(_pair, interval, self._klines.get(_pair))
+            if buy and not sell:
                 buy_pairs.append(_pair)
 
-        # If there is at least one buy signal then 
-        # Go ahead and buy the first pair 
+        # If there is at least one buy signal then
+        # Go ahead and buy the first pair
         if buy_pairs:
             return self.execute_buy(buy_pairs[0], stake_amount)
-        
+
         return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
@@ -518,7 +510,8 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
+            # ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
+            ticker = self._klines.get(trade.pair)
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 

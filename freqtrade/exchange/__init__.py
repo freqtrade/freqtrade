@@ -2,7 +2,7 @@
 """ Cryptocurrency Exchanges support """
 import logging
 from random import randint
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
 from math import floor, ceil
 
@@ -95,7 +95,7 @@ class Exchange(object):
                 'secret': exchange_config.get('secret'),
                 'password': exchange_config.get('password'),
                 'uid': exchange_config.get('uid', ''),
-                #'enableRateLimit': True,
+                # 'enableRateLimit': True,
                 'enableRateLimit': False,
             })
         except (KeyError, AttributeError):
@@ -334,23 +334,23 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-
     async def async_get_tickers_history(self, pairs, tick_interval):
-        # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ? 
-        #loop = asyncio.new_event_loop()
-        #asyncio.set_event_loop(loop)
-        input_coroutines = [self.async_get_ticker_history(symbol, tick_interval) for symbol in pairs]
+        # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
+        input_coroutines = [self.async_get_ticker_history(
+            symbol, tick_interval) for symbol in pairs]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
-        #await self._api_async.close()
+        # await self._api_async.close()
         return tickers
 
     async def async_get_ticker_history(self, pair: str, tick_interval: str,
-                           since_ms: Optional[int] = None) -> List[Dict]:
+                                       since_ms: Optional[int] = None) -> Tuple[str, List]:
         try:
             # fetch ohlcv asynchronously
-            print("fetching %s ..." % pair)
+            logger.debug("fetching %s ...",  pair)
             data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
-            print("done fetching %s ..." % pair)
+            logger.debug("done fetching %s ...", pair)
             return pair, data
 
         except ccxt.NotSupported as e:
@@ -362,6 +362,18 @@ class Exchange(object):
                 f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch ticker data. Msg: {e}')
+
+    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> Dict:
+        """
+        Refresh tickers asyncronously and return the result.
+        """
+        # TODO: maybe add since_ms to use async in the download-script?
+        # TODO: only refresh once per interval ? *may require this to move to freqtradebot.py
+        # TODO@ Add tests for this and the async stuff above
+        logger.debug("Refreshing klines for %d pairs", len(pair_list))
+        datatups = asyncio.get_event_loop().run_until_complete(
+            self.async_get_tickers_history(pair_list, ticker_interval))
+        return {pair: data for (pair, data) in datatups}
 
     @retrier
     def get_ticker_history(self, pair: str, tick_interval: str,
