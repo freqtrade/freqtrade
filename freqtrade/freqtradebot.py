@@ -8,7 +8,6 @@ import time
 import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
-import asyncio
 
 import arrow
 import requests
@@ -149,9 +148,7 @@ class FreqtradeBot(object):
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
 
-            datatups = asyncio.get_event_loop().run_until_complete(
-                self.exchange.async_get_tickers_history(final_list, self.strategy.ticker_interval))
-            self._klines = {pair: data for (pair, data) in datatups}
+            self._klines = self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -306,13 +303,7 @@ class FreqtradeBot(object):
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
-        return min(min_stake_amounts)/amount_reserve_percent
-
-    async def async_get_tickers(self, exchange, pairs):
-        input_coroutines = [exchange.async_get_ticker_history(symbol, self.strategy.ticker_interval) for symbol in pairs]
-        tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
-        return tickers
-        #await exchange.close()
+        return min(min_stake_amounts) / amount_reserve_percent
 
     def create_trade(self) -> bool:
         """
@@ -341,17 +332,13 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-
-        # fetching kline history for all pairs asynchronously and wait till all done
-        # data = asyncio.get_event_loop().run_until_complete(self.exchange.async_get_tickers_history(whitelist, self.strategy.ticker_interval))
-
         # list of pairs having buy signals
         buy_pairs = []
 
         # running get_signal on historical data fetched
         # to find buy signals
-        for _pair, thistory in self._klines.items():
-            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
+        for _pair in whitelist:
+            (buy, sell) = self.strategy.get_signal(_pair, interval, self._klines[_pair])
             if buy and not sell:
                 buy_pairs.append(_pair)
 
