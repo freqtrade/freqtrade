@@ -330,14 +330,15 @@ class FreqtradeBot(object):
 
         # Pick pair based on buy signals
         for _pair in whitelist:
-            thistory = self.exchange.get_ticker_history(_pair, interval)
-            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
+            (buy, sell, custom_orders) = self.strategy.get_signal(self.exchange, _pair, interval)
 
             if buy and not sell:
-                return self.execute_buy(_pair, stake_amount)
+                return self.execute_buy(_pair, stake_amount, custom_orders)
+            if custom_orders:
+                return self.execute_buy(_pair, stake_amount, custom_orders)
         return False
 
-    def execute_buy(self, pair: str, stake_amount: float) -> bool:
+    def execute_buy(self, pair: str, stake_amount: float, custom_orders: list) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -352,46 +353,63 @@ class FreqtradeBot(object):
         buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
 
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
-        if min_stake_amount is not None and min_stake_amount > stake_amount:
-            logger.warning(
-                f'Can\'t open a new trade for {pair_s}: stake amount'
-                f' is too small ({stake_amount} < {min_stake_amount})'
+
+        # if custom trades are set over_ride stake_amount test
+
+        if custom_orders:
+            # todo condider how or if to do this for limit, market, stop cutom_orders.
+            logger.info("bypassing stake amount test for custom_orders")
+        else:
+            if min_stake_amount is not None and min_stake_amount > stake_amount:
+                logger.warning(
+                    f'Can\'t open a new trade for {pair_s}: stake amount'
+                    f' is too small ({stake_amount} < {min_stake_amount})'
+                )
+                return False
+
+        # Call exchange to make order or customOrder
+        if custom_orders:
+            # Call custom_oders in exchange/__init__.py
+            logger.info("Calling customOrders in exchange")
+            order_ids = self.exchange.customOrders(custom_orders)
+
+        else:
+
+            amount = stake_amount / buy_limit
+
+            order_id = self.exchange.buy(pair, buy_limit, amount)['id']
+
+            self.rpc.send_msg({
+                'type': RPCMessageType.BUY_NOTIFICATION,
+                'exchange': self.exchange.name.capitalize(),
+                'pair': pair_s,
+                'market_url': pair_url,
+                'limit': buy_limit,
+                'stake_amount': stake_amount,
+                'stake_currency': stake_currency,
+                'fiat_currency': fiat_currency
+            })
+            # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
+            fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+            trade = Trade(
+                pair=pair,
+                stake_amount=stake_amount,
+                amount=amount,
+                fee_open=fee,
+                fee_close=fee,
+                open_rate=buy_limit,
+                open_rate_requested=buy_limit,
+                open_date=datetime.utcnow(),
+                exchange=self.exchange.id,
+                open_order_id=order_id,
+                strategy=self.strategy.get_strategy_name(),
+                ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
             )
-            return False
+            Trade.session.add(trade)
+            Trade.session.flush()
+            return True
 
-        amount = stake_amount / buy_limit
-
-        order_id = self.exchange.buy(pair, buy_limit, amount)['id']
-
-        self.rpc.send_msg({
-            'type': RPCMessageType.BUY_NOTIFICATION,
-            'exchange': self.exchange.name.capitalize(),
-            'pair': pair_s,
-            'market_url': pair_url,
-            'limit': buy_limit,
-            'stake_amount': stake_amount,
-            'stake_currency': stake_currency,
-            'fiat_currency': fiat_currency
-        })
-        # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-        fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
-        trade = Trade(
-            pair=pair,
-            stake_amount=stake_amount,
-            amount=amount,
-            fee_open=fee,
-            fee_close=fee,
-            open_rate=buy_limit,
-            open_rate_requested=buy_limit,
-            open_date=datetime.utcnow(),
-            exchange=self.exchange.id,
-            open_order_id=order_id,
-            strategy=self.strategy.get_strategy_name(),
-            ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
-        )
-        Trade.session.add(trade)
-        Trade.session.flush()
-        return True
+        return False
 
     def process_maybe_execute_buy(self) -> bool:
         """
@@ -497,9 +515,8 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
-            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
-                                                   ticker)
+            (buy, sell, custom_orders) = self.strategy.get_signal(self.exchange,
+                                                   trade.pair, self.strategy.ticker_interval)
 
         should_sell = self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell)
         if should_sell.sell_flag:

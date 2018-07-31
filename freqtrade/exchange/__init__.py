@@ -91,7 +91,7 @@ class Exchange(object):
                 'secret': exchange_config.get('secret'),
                 'password': exchange_config.get('password'),
                 'uid': exchange_config.get('uid', ''),
-                'enableRateLimit': True,
+                'enableRateLimit': exchange_config.get('ccxt_rate_limit', True),
             })
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
@@ -184,6 +184,79 @@ class Exchange(object):
             big_price = price * pow(10, symbol_prec)
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
+
+    def submit_custom_order(self, symbol, type, side, amount, price=None, params={}):
+        pair = symbol
+        rate = price
+        try:
+
+            return self._api.createOrder(symbol, type, side, amount, price, params)
+
+        except ccxt.InsufficientFunds as e:
+            raise DependencyException(
+                f'Insufficient funds to create limit buy order on market {pair}.'
+                f'Tried to buy amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Message: {e}')
+
+        except ccxt.InvalidOrder as e:
+            raise DependencyException(
+                f'Could not create limit buy order on market {pair}.'
+                f'Tried to buy amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Message: {e}')
+
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not place buy order due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
+
+    def customOrders(self, custom_orders):
+        '''
+        To process custom orders.
+        These are a list of dicts of orders created in strategy.
+
+        :param custom_orders:
+        :return:
+        '''
+        sorted_custom_orders = sorted(custom_orders, key=lambda k: k['order_type'])
+
+        for order in sorted_custom_orders:
+            order_type       = order.get('order_type')     if order.get('order_type')     else ""
+            symbol           = order.get('symbol')         if order.get('symbol')         else ""
+            type             = order.get('type')           if order.get('type')           else ""
+            side             = order.get('side')           if order.get('side')           else ""
+            amount           = order.get('amount')         if order.get('amount')         else None
+            price            = order.get('price')          if order.get('price')          else None
+            stop             = order.get('stop')           if order.get('stop')           else ""
+            stop_price       = order.get('stop_price')     if order.get('stop_price')     else None
+            params           = order.get('params')         if order.get('params')         else {}
+
+            # Set the precision for amount and price(rate) as accepted by the exchange
+            if amount:
+                float(amount)
+                amount = self.symbol_amount_prec(symbol, amount)
+                float(amount)
+
+            if price:
+                float(price)
+                price = self.symbol_price_prec(symbol, price)
+                float(price)
+
+            if params.get('stop_price'):
+                stop_price = params['stop_price']
+                float(stop_price)
+                params['stop_price'] = self.symbol_price_prec(symbol, stop_price)
+                float(stop_price)
+
+            # destroy the params dict if its empty, not to pass to CCXT
+            if not params:
+                params = ""
+
+            # create_order(self, symbol, type, side, amount, price=None, params={})
+            print(symbol, type, side, amount, price, params)
+            custom_order_id = self.submit_custom_order(symbol=symbol, type=type, side=side,
+                                                       amount=amount, price=price, params=params)
+            print("custom order_id is", custom_order_id)
 
     def buy(self, pair: str, rate: float, amount: float) -> Dict:
         if self._conf['dry_run']:

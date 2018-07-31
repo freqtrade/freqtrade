@@ -14,6 +14,7 @@ from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
+from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -74,29 +75,29 @@ class IStrategy(ABC):
         self.config = config
 
     @abstractmethod
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
-        :param metadata: Additional information, like the currently traded pair
+        :param pair: Pair currently analyzed
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
     @abstractmethod
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
+        :param pair: Pair currently analyzed
         :return: DataFrame with buy column
         """
 
     @abstractmethod
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
+        :param pair: Pair currently analyzed
         :return: DataFrame with sell column
         """
 
@@ -106,31 +107,51 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def analyze_ticker(self, ticker_history: List[Dict], metadata: dict) -> DataFrame:
+    def analyze_ticker(self, ticker_history: List[Dict], pair: str) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
+        :return custom_orders list of dicts containing any custom trades from strategy
         """
         dataframe = parse_ticker_dataframe(ticker_history)
-        dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
-        return dataframe
+        dataframe = self.advise_indicators(dataframe, pair)
+        dataframe = self.advise_buy(dataframe, pair)
+        dataframe = self.advise_sell(dataframe, pair)
 
-    def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
+        ## Strategy Plugin stop_stops_mgt' if in strategy.
+        # Analyzes stop-count of past X from Y trades, cancels BUY if True
+        if hasattr(self, 'stop_stops_plugin'):
+            dataframe = self.stop_stops_plugin(dataframe, pair)
+
+        ## Strategy Plugin 'win_rate' if in strategy.
+        # Calls micro backslap on proposed buy=1 pair. If winrate is poor, cancels BUY
+        if hasattr(self, 'win_rate_plugin'):
+            dataframe = self.win_rate_plugin(dataframe, pair)
+
+        ## Strategy Plugin 'money_mgt' if in strategy.
+        # Money management for any order in buy. Determines stake size, stop-loss, take-profit
+        # Returns dataframe, custom_orders (list of dicts)
+        if hasattr(self, 'money_mgt_plugin'):
+            dataframe, custom_orders = self.money_mgt_plugin(dataframe, pair)
+
+        return dataframe, custom_orders
+
+    def get_signal(self, exchange: Exchange, pair: str, interval: str) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
-        :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
+        :return: (Buy, Sell, custom_orders) A bool-tuple indicating buy/sell signal,
+        and any custom_orders
         """
+        ticker_hist = exchange.get_ticker_history(pair, interval)
         if not ticker_hist:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist, {'pair': pair})
+            dataframe, custom_orders = self.analyze_ticker(ticker_hist, pair)
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -155,13 +176,13 @@ class IStrategy(ABC):
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + 5))):
-            logger.warning(
-                'Outdated history for pair %s. Last tick is %s minutes old',
-                pair,
-                (arrow.utcnow() - signal_date).seconds // 60
-            )
-            return False, False
+        # if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + 5))):
+        #     logger.warning(
+        #         'Outdated history for pair %s. Last tick is %s minutes old',
+        #         pair,
+        #         (arrow.utcnow() - signal_date).seconds // 60
+        #     )
+        #     return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug(
@@ -171,7 +192,7 @@ class IStrategy(ABC):
             str(buy),
             str(sell)
         )
-        return buy, sell
+        return buy, sell, custom_orders
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
                     sell: bool) -> SellCheckTuple:
@@ -212,7 +233,6 @@ class IStrategy(ABC):
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
-        :param current_profit: current profit in percent
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
@@ -240,15 +260,12 @@ class IStrategy(ABC):
             # check if we have a special stop loss for positive condition
             # and if profit is positive
             stop_loss_value = self.stoploss
-            sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
-
-            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
+            if 'trailing_stop_positive' in self.config and current_profit > 0:
 
                 # Ignore mypy error check in configuration that this is a float
                 stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
                 logger.debug(f"using positive stop loss mode: {stop_loss_value} "
-                             f"with offset {sl_offset:.4g} "
-                             f"since we have profit {current_profit:.4f}%")
+                             f"since we have profit {current_profit}")
 
             trade.adjust_stop_loss(current_rate, stop_loss_value)
 
@@ -275,15 +292,15 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), {'pair': pair})
+        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), pair)
                 for pair, pair_data in tickerdata.items()}
 
-    def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_indicators(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         This method should not be overridden.
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
-        :param metadata: Additional information, like the currently traded pair
+        :param pair: The currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
         if self._populate_fun_len == 2:
@@ -291,14 +308,14 @@ class IStrategy(ABC):
                           "the current function headers!", DeprecationWarning)
             return self.populate_indicators(dataframe)  # type: ignore
         else:
-            return self.populate_indicators(dataframe, metadata)
+            return self.populate_indicators(dataframe, pair)
 
-    def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_buy(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: Additional information, like the currently traded pair
+        :param pair: The currently traded pair
         :return: DataFrame with buy column
         """
         if self._buy_fun_len == 2:
@@ -306,14 +323,14 @@ class IStrategy(ABC):
                           "the current function headers!", DeprecationWarning)
             return self.populate_buy_trend(dataframe)  # type: ignore
         else:
-            return self.populate_buy_trend(dataframe, metadata)
+            return self.populate_buy_trend(dataframe, pair)
 
-    def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_sell(self, dataframe: DataFrame, pair: str) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: Additional information, like the currently traded pair
+        :param pair: The currently traded pair
         :return: DataFrame with sell column
         """
         if self._sell_fun_len == 2:
@@ -321,4 +338,4 @@ class IStrategy(ABC):
                           "the current function headers!", DeprecationWarning)
             return self.populate_sell_trend(dataframe)  # type: ignore
         else:
-            return self.populate_sell_trend(dataframe, metadata)
+            return self.populate_sell_trend(dataframe, pair)
