@@ -149,6 +149,10 @@ class FreqtradeBot(object):
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
 
+            datatups = asyncio.get_event_loop().run_until_complete(
+                self.exchange.async_get_tickers_history(final_list, self.strategy.ticker_interval))
+            self._klines = {pair: data for (pair, data) in datatups}
+
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
@@ -337,25 +341,25 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        
+
         # fetching kline history for all pairs asynchronously and wait till all done
-        data = asyncio.get_event_loop().run_until_complete(self.exchange.async_get_tickers_history(whitelist, self.strategy.ticker_interval))
-        
+        # data = asyncio.get_event_loop().run_until_complete(self.exchange.async_get_tickers_history(whitelist, self.strategy.ticker_interval))
+
         # list of pairs having buy signals
         buy_pairs = []
 
-        # running get_signal on historical data fetched 
+        # running get_signal on historical data fetched
         # to find buy signals
-        for _pair, thistory in data: 
+        for _pair, thistory in self._klines.items():
             (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
-            if buy and not sell: 
+            if buy and not sell:
                 buy_pairs.append(_pair)
 
-        # If there is at least one buy signal then 
-        # Go ahead and buy the first pair 
+        # If there is at least one buy signal then
+        # Go ahead and buy the first pair
         if buy_pairs:
             return self.execute_buy(buy_pairs[0], stake_amount)
-        
+
         return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
@@ -518,7 +522,8 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
+            # ticker = self.exchange.get_ticker_history(trade.pair, self.strategy.ticker_interval)
+            ticker = self._klines[trade.pair]
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 
