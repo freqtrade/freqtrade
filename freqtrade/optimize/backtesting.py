@@ -91,8 +91,8 @@ class Backtesting(object):
         self.strategy = strategy
         self.ticker_interval = self.config.get('ticker_interval')
         self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
-        self.populate_buy_trend = strategy.populate_buy_trend
-        self.populate_sell_trend = strategy.populate_sell_trend
+        self.advise_buy = strategy.advise_buy
+        self.advise_sell = strategy.advise_sell
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
