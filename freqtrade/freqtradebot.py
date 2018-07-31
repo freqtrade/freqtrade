@@ -8,10 +8,13 @@ import time
 import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
+import asyncio
 
 import arrow
 import requests
+
 from cachetools import TTLCache, cached
+
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
@@ -301,6 +304,12 @@ class FreqtradeBot(object):
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
         return min(min_stake_amounts)/amount_reserve_percent
 
+    async def async_get_tickers(self, exchange, pairs):
+        input_coroutines = [exchange.async_get_ticker_history(symbol, self.strategy.ticker_interval) for symbol in pairs]
+        tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
+        return tickers
+        #await exchange.close()
+
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
@@ -328,13 +337,25 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on buy signals
-        for _pair in whitelist:
-            thistory = self.exchange.get_ticker_history(_pair, interval)
-            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
+        
+        # fetching kline history for all pairs asynchronously and wait till all done
+        data = asyncio.get_event_loop().run_until_complete(self.exchange.async_get_tickers_history(whitelist, self.strategy.ticker_interval))
+        
+        # list of pairs having buy signals
+        buy_pairs = []
 
-            if buy and not sell:
-                return self.execute_buy(_pair, stake_amount)
+        # running get_signal on historical data fetched 
+        # to find buy signals
+        for _pair, thistory in data: 
+            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
+            if buy and not sell: 
+                buy_pairs.append(_pair)
+
+        # If there is at least one buy signal then 
+        # Go ahead and buy the first pair 
+        if buy_pairs:
+            return self.execute_buy(buy_pairs[0], stake_amount)
+        
         return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
