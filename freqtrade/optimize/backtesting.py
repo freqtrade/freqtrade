@@ -98,7 +98,13 @@ class Backtesting(object):
         # self.np_sto: int = self.np_close  # stops_triggered_on - Should be low, FT uses close
         # self.np_sco: int = self.np_close  # stops_calculated_on - Should be stop, FT uses close
 
-        self.use_backslap = True  # Enable backslap - if false Orginal code is executed.
+        if 'backslap' in config:
+            self.use_backslap = config['backslap']  # Enable backslap - if false Orginal code is executed.
+        else:
+            self.use_backslap = False
+
+        logger.info("using backslap: {}".format(self.use_backslap))
+
         self.debug = False  # Main debug enable, very print heavy, enable 2 loops recommended
         self.debug_timing = False  # Stages within Backslap
         self.debug_2loops = False  # Limit each pair to two loops, useful when debugging
@@ -364,7 +370,6 @@ class Backtesting(object):
             timerange = Arguments.parse_timerange(None if self.config.get(
                 'timerange') is None else str(self.config.get('timerange')))
 
-            ld_files = self.s()
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
@@ -374,6 +379,7 @@ class Backtesting(object):
                 timerange=timerange
             )
 
+        ld_files = self.s()
         if not data:
             logger.critical("No data found. Terminating.")
             return
@@ -489,7 +495,7 @@ def setup_configuration(args: Namespace) -> Dict[str, Any]:
     # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
-
+    config['backslap'] = args.backslap
     if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
         raise DependencyException('stake amount could not be "%s" for backtesting' %
                                   constants.UNLIMITED_STAKE_AMOUNT)
