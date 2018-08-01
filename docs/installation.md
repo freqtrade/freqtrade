@@ -56,23 +56,29 @@ Reset parameter will hard reset your branch (only if you are on `master` or `dev
 
 Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
 
-
 ## Manual installation - Linux/MacOS
+
 The following steps are made for Linux/MacOS environment
 
-**1. Clone the repo**
+### 1. Clone the repo
+
 ```bash
 git clone git@github.com:freqtrade/freqtrade.git
 git checkout develop
 cd freqtrade
 ```
-**2. Create the config file**  
+
+### 2. Create the config file
+
 Switch `"dry_run": true,`
+
 ```bash
 cp config.json.example config.json
 vi config.json
 ```
-**3. Build your docker image and run it**
+
+### 3. Build your docker image and run it
+
 ```bash
 docker build -t freqtrade .
 docker run --rm -v /etc/localtime:/etc/localtime:ro -v `pwd`/config.json:/freqtrade/config.json -it freqtrade

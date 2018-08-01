@@ -18,7 +18,7 @@ setup(name='freqtrade',
       license='GPLv3',
       packages=['freqtrade'],
       scripts=['bin/freqtrade'],
-      setup_requires=['pytest-runner'],
+      setup_requires=['pytest-runner', 'numpy'],
       tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
       install_requires=[
           'ccxt',
