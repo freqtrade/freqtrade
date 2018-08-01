@@ -568,6 +568,53 @@ async def test_async_get_ticker_history(default_conf, mocker):
         await exchange.async_get_ticker_history(pair, "5m")
 
 
+@pytest.mark.asyncio
+async def test_async_get_tickers_history(default_conf, mocker):
+    tick = [
+        [
+            1511686200000,  # unix timestamp ms
+            1,  # open
+            2,  # high
+            3,  # low
+            4,  # close
+            5,  # volume (in quote currency)
+        ]
+    ]
+
+    async def async_fetch_ohlcv(pair, timeframe, since):
+        return tick
+
+    exchange = get_patched_exchange(mocker, default_conf)
+    # Monkey-patch async function
+    exchange._api_async.fetch_ohlcv = async_fetch_ohlcv
+
+    exchange = Exchange(default_conf)
+    pairs = ['ETH/BTC', 'XRP/BTC']
+    res = await exchange.async_get_tickers_history(pairs, "5m")
+    assert type(res) is list
+    assert len(res) == 2
+    assert type(res[0]) is tuple
+    assert res[0][0] == pairs[0]
+    assert res[0][1] == tick
+    assert res[1][0] == pairs[1]
+    assert res[1][1] == tick
+
+    # await async_ccxt_exception(mocker, default_conf, MagicMock(),
+    #                            "async_get_tickers_history", "fetch_ohlcv",
+    #                            pairs=pairs, tick_interval=default_conf['ticker_interval'])
+
+    # api_mock = MagicMock()
+    # with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
+    #     api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
+    #     exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    #     await exchange.async_get_tickers_history('ETH/BTC', "5m")
+
+
+def test_refresh_tickers():
+    # TODO: Implement test for this
+    pass
+
+
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
         if since:
