@@ -4,7 +4,7 @@
 This module manage Telegram communication
 """
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
@@ -12,7 +12,8 @@ from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
-from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.fiat_convert import CryptoToFiatConverter
+from freqtrade.rpc import RPC, RPCException, RPCMessageType
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +56,6 @@ def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Call
 class Telegram(RPC):
     """  This class handles all telegram communication """
 
-    @property
-    def name(self) -> str:
-        return "telegram"
-
     def __init__(self, freqtrade) -> None:
         """
         Init the Telegram call, and init the super class RPC
@@ -70,6 +67,8 @@ class Telegram(RPC):
         self._updater: Updater = None
         self._config = freqtrade.config
         self._init()
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
     def _init(self) -> None:
         """
@@ -114,9 +113,51 @@ class Telegram(RPC):
         """
         self._updater.stop()
 
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
-        self._send_msg(msg)
+
+        if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
+            if self._fiat_converter:
+                msg['stake_amount_fiat'] = self._fiat_converter.convert_amount(
+                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            else:
+                msg['stake_amount_fiat'] = 0
+
+            message = "*{exchange}:* Buying [{pair}]({market_url})\n" \
+                      "with limit `{limit:.8f}\n" \
+                      "({stake_amount:.6f} {stake_currency}".format(**msg)
+
+            if msg.get('fiat_currency', None):
+                message += ",{stake_amount_fiat:.3f} {fiat_currency}".format(**msg)
+            message += ")`"
+
+        elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
+            msg['amount'] = round(msg['amount'], 8)
+            msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
+
+            message = "*{exchange}:* Selling [{pair}]({market_url})\n" \
+                      "*Limit:* `{limit:.8f}`\n" \
+                      "*Amount:* `{amount:.8f}`\n" \
+                      "*Open Rate:* `{open_rate:.8f}`\n" \
+                      "*Current Rate:* `{current_rate:.8f}`\n" \
+                      "*Profit:* `{profit_percent:.2f}%`".format(**msg)
+
+            # Check if all sell properties are available.
+            # This might not be the case if the message origin is triggered by /forcesell
+            if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
+               and self._fiat_converter):
+                msg['profit_fiat'] = self._fiat_converter.convert_amount(
+                    msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
+                message += '` ({gain}: {profit_amount:.8f} {stake_currency}`' \
+                           '` / {profit_fiat:.3f} {fiat_currency})`'.format(**msg)
+
+        elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
+            message = '*Status:* `{status}`'.format(**msg)
+
+        else:
+            raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
+
+        self._send_msg(message)
 
     @authorized_only
     def _status(self, bot: Bot, update: Update) -> None:
@@ -136,8 +177,26 @@ class Telegram(RPC):
             return
 
         try:
-            for trade_msg in self._rpc_trade_status():
-                self._send_msg(trade_msg, bot=bot)
+            results = self._rpc_trade_status()
+            # pre format data
+            for result in results:
+                result['date'] = result['date'].humanize()
+
+            messages = [
+                "*Trade ID:* `{trade_id}`\n"
+                "*Current Pair:* [{pair}]({market_url})\n"
+                "*Open Since:* `{date}`\n"
+                "*Amount:* `{amount}`\n"
+                "*Open Rate:* `{open_rate:.8f}`\n"
+                "*Close Rate:* `{close_rate}`\n"
+                "*Current Rate:* `{current_rate:.8f}`\n"
+                "*Close Profit:* `{close_profit}`\n"
+                "*Current Profit:* `{current_profit:.2f}%`\n"
+                "*Open Order:* `{open_order}`".format(**result)
+                for result in results
+            ]
+            for msg in messages:
+                self._send_msg(msg, bot=bot)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
@@ -167,7 +226,7 @@ class Telegram(RPC):
         :return: None
         """
         stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config['fiat_display_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', '')
         try:
             timescale = int(update.message.text.replace('/daily', '').strip())
         except (TypeError, ValueError):
@@ -200,7 +259,7 @@ class Telegram(RPC):
         :return: None
         """
         stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config['fiat_display_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
         try:
             stats = self._rpc_trade_statistics(
@@ -239,10 +298,9 @@ class Telegram(RPC):
     def _balance(self, bot: Bot, update: Update) -> None:
         """ Handler for /balance """
         try:
-            currencys, total, symbol, value = \
-                self._rpc_balance(self._config['fiat_display_currency'])
+            result = self._rpc_balance(self._config.get('fiat_display_currency', ''))
             output = ''
-            for currency in currencys:
+            for currency in result['currencies']:
                 output += "*{currency}:*\n" \
                           "\t`Available: {available: .8f}`\n" \
                           "\t`Balance: {balance: .8f}`\n" \
@@ -250,8 +308,8 @@ class Telegram(RPC):
                           "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
 
             output += "\n*Estimated Value*:\n" \
-                      "\t`BTC: {0: .8f}`\n" \
-                      "\t`{1}: {2: .2f}`\n".format(total, symbol, value)
+                      "\t`BTC: {total: .8f}`\n" \
+                      "\t`{symbol}: {value: .2f}`\n".format(**result)
             self._send_msg(output, bot=bot)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
@@ -266,7 +324,7 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_start()
-        self._send_msg(msg, bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
     def _stop(self, bot: Bot, update: Update) -> None:
@@ -278,7 +336,7 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_stop()
-        self._send_msg(msg, bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
     def _reload_conf(self, bot: Bot, update: Update) -> None:
@@ -290,7 +348,7 @@ class Telegram(RPC):
         :return: None
         """
         msg = self._rpc_reload_conf()
-        self._send_msg(msg, bot=bot)
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
     def _forcesell(self, bot: Bot, update: Update) -> None:

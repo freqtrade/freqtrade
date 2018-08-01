@@ -1,4 +1,4 @@
-FROM python:3.6.5-slim-stretch
+FROM python:3.6.6-slim-stretch
 
 # Install TA-lib
 RUN apt-get update && apt-get -y install curl build-essential && apt-get clean
@@ -15,7 +15,8 @@ WORKDIR /freqtrade
 
 # Install dependencies
 COPY requirements.txt /freqtrade/
-RUN pip install -r requirements.txt
+RUN pip install numpy \
+  && pip install -r requirements.txt
 
 # Install and execute
 COPY . /freqtrade/

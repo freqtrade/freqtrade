@@ -3,7 +3,6 @@ This module contains the argument manager class
 """
 
 import argparse
-import logging
 import os
 import re
 from typing import List, NamedTuple, Optional
@@ -64,11 +63,10 @@ class Arguments(object):
         """
         self.parser.add_argument(
             '-v', '--verbose',
-            help='be verbose',
-            action='store_const',
+            help='verbose mode (-vv for more, -vvv to get all messages)',
+            action='count',
             dest='loglevel',
-            const=logging.DEBUG,
-            default=logging.INFO,
+            default=0,
         )
         self.parser.add_argument(
             '--version',
@@ -178,11 +176,22 @@ class Arguments(object):
             type=str,
         )
         parser.add_argument(
-            '--realistic-simulation',
-            help='uses max_open_trades from config to simulate real world limitations',
+            '--eps', '--enable-position-stacking',
+            help='Allow buying the same pair multiple times (position stacking)',
             action='store_true',
-            dest='realistic_simulation',
+            dest='position_stacking',
+            default=False
         )
+
+        parser.add_argument(
+            '--dmmp', '--disable-max-market-positions',
+            help='Disable applying `max_open_trades` during backtest '
+                 '(same as setting `max_open_trades` to a very high number)',
+            action='store_false',
+            dest='use_max_market_positions',
+            default=True
+        )
+
         parser.add_argument(
             '--timerange',
             help='specify what timerange of data to use.',

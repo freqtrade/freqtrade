@@ -83,11 +83,16 @@ def check_migrate(engine) -> None:
 
     # Check for latest column
     if not has_column(cols, 'max_rate'):
+        fee_open = get_column_def(cols, 'fee_open', 'fee')
+        fee_close = get_column_def(cols, 'fee_close', 'fee')
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
         close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
         stop_loss = get_column_def(cols, 'stop_loss', '0.0')
         initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
         max_rate = get_column_def(cols, 'max_rate', '0.0')
+        sell_reason = get_column_def(cols, 'sell_reason', 'null')
+        strategy = get_column_def(cols, 'strategy', 'null')
+        ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
@@ -99,7 +104,8 @@ def check_migrate(engine) -> None:
                 (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
-                stop_loss, initial_stop_loss, max_rate
+                stop_loss, initial_stop_loss, max_rate, sell_reason, strategy,
+                ticker_interval
                 )
             select id, lower(exchange),
                 case
@@ -109,12 +115,13 @@ def check_migrate(engine) -> None:
                     else pair
                     end
                 pair,
-                is_open, fee fee_open, fee fee_close,
+                is_open, {fee_open} fee_open, {fee_close} fee_close,
                 open_rate, {open_rate_requested} open_rate_requested, close_rate,
                 {close_rate_requested} close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
                 {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
-                {max_rate} max_rate
+                {max_rate} max_rate, {sell_reason} sell_reason, {strategy} strategy,
+                {ticker_interval} ticker_interval
                 from {table_back_name}
              """)
 
@@ -170,6 +177,9 @@ class Trade(_DECL_BASE):
     initial_stop_loss = Column(Float, nullable=True, default=0.0)
     # absolute value of the highest reached price
     max_rate = Column(Float, nullable=True, default=0.0)
+    sell_reason = Column(String, nullable=True)
+    strategy = Column(String, nullable=True)
+    ticker_interval = Column(Integer, nullable=True)
 
     def __repr__(self):
         open_since = arrow.get(self.open_date).humanize() if self.is_open else 'closed'

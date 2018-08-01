@@ -29,25 +29,25 @@ The backtesting is very easy with freqtrade.
 #### With 5 min tickers (Per default)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation
+python3 ./freqtrade/main.py backtesting
 ```
 
 #### With 1 min tickers
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
+python3 ./freqtrade/main.py backtesting --ticker-interval 1m
 ```
 
 #### Update cached pairs with the latest data
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
+python3 ./freqtrade/main.py backtesting --refresh-pairs-cached
 ```
 
 #### With live data (do not alter your testdata files)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --live
+python3 ./freqtrade/main.py backtesting --live
 ```
 
 #### Using a different on-disk ticker-data source
@@ -83,7 +83,7 @@ with filename.open() as file:
         data = json.load(file)
 
 columns = ["pair", "profit", "opents", "closets", "index", "duration",
-           "open_rate", "close_rate", "open_at_end"]
+           "open_rate", "close_rate", "open_at_end", "sell_reason"]
 df = pd.DataFrame(data, columns=columns)
 
 df['opents'] = pd.to_datetime(df['opents'],
@@ -97,6 +97,8 @@ df['closets'] = pd.to_datetime(df['closets'],
                                infer_datetime_format=True
                               )
 ```
+
+If you have some ideas for interesting / helpful backtest data analysis, feel free to submit a PR so the community can benefit from it.
 
 #### Exporting trades to file specifying a custom filename
 

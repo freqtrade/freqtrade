@@ -7,7 +7,7 @@ from freqtrade.strategy.interface import IStrategy
 logger = logging.getLogger(__name__)
 
 
-def import_strategy(strategy: IStrategy) -> IStrategy:
+def import_strategy(strategy: IStrategy, config: dict) -> IStrategy:
     """
     Imports given Strategy instance to global scope
     of freqtrade.strategy and returns an instance of it
@@ -29,4 +29,4 @@ def import_strategy(strategy: IStrategy) -> IStrategy:
     # Modify global scope to declare class
     globals()[name] = clazz
 
-    return clazz()
+    return clazz(config)

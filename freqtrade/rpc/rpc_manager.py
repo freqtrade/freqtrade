@@ -2,9 +2,9 @@
 This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
 import logging
-from typing import List
+from typing import List, Dict, Any
 
-from freqtrade.rpc.rpc import RPC
+from freqtrade.rpc import RPC
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,12 @@ class RPCManager(object):
             from freqtrade.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(freqtrade))
 
+        # Enable Webhook
+        if freqtrade.config.get('webhook', {}).get('enabled', False):
+            logger.info('Enabling rpc.webhook ...')
+            from freqtrade.rpc.webhook import Webhook
+            self.registered_modules.append(Webhook(freqtrade))
+
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
@@ -32,11 +38,14 @@ class RPCManager(object):
             mod.cleanup()
             del mod
 
-    def send_msg(self, msg: str) -> None:
+    def send_msg(self, msg: Dict[str, Any]) -> None:
         """
-        Send given markdown message to all registered rpc modules
-        :param msg: message
-        :return: None
+        Send given message to all registered rpc modules.
+        A message consists of one or more key value pairs of strings.
+        e.g.:
+        {
+            'status': 'stopping bot'
+        }
         """
         logger.info('Sending rpc message: %s', msg)
         for mod in self.registered_modules:

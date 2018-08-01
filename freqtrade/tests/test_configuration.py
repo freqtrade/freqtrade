@@ -1,76 +1,46 @@
-# pragma pylint: disable=protected-access, invalid-name
+# pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
-"""
-Unit test file for configuration.py
-"""
 import json
 from argparse import Namespace
-from copy import deepcopy
+import logging
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import ValidationError
+from jsonschema import validate, ValidationError
 
+from freqtrade import constants
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
+from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.tests.conftest import log_has
 
 
-def test_configuration_object() -> None:
-    """
-    Test the Constants object has the mandatory Constants
-    """
-    assert hasattr(Configuration, 'load_config')
-    assert hasattr(Configuration, '_load_config_file')
-    assert hasattr(Configuration, '_validate_config')
-    assert hasattr(Configuration, '_load_common_config')
-    assert hasattr(Configuration, '_load_backtesting_config')
-    assert hasattr(Configuration, '_load_hyperopt_config')
-    assert hasattr(Configuration, 'get_config')
-
-
 def test_load_config_invalid_pair(default_conf) -> None:
-    """
-    Test the configuration validator with an invalid PAIR format
-    """
-    conf = deepcopy(default_conf)
-    conf['exchange']['pair_whitelist'].append('ETH-BTC')
+    default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(conf)
+        configuration._validate_config(default_conf)
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
-    """
-    Test the configuration validator with a missing attribute
-    """
-    conf = deepcopy(default_conf)
-    conf.pop('exchange')
+    default_conf.pop('exchange')
 
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(conf)
+        configuration._validate_config(default_conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
-    """
-    Test the configuration validator with a missing attribute
-    """
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = 'fake'
+    default_conf['stake_amount'] = 'fake'
 
     with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(conf)
+        configuration._validate_config(default_conf)
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration._load_config_file() method
-    """
     file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -84,13 +54,9 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
 
 
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration._load_config_file() method
-    """
-    conf = deepcopy(default_conf)
-    conf['max_open_trades'] = 0
+    default_conf['max_open_trades'] = 0
     file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(conf)
+        read_data=json.dumps(default_conf)
     ))
 
     Configuration(Namespace())._load_config_file('somefile')
@@ -99,9 +65,6 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 
 
 def test_load_config_file_exception(mocker) -> None:
-    """
-    Test Configuration._load_config_file() method
-    """
     mocker.patch(
         'freqtrade.configuration.open',
         MagicMock(side_effect=FileNotFoundError('File not found'))
@@ -113,9 +76,6 @@ def test_load_config_file_exception(mocker) -> None:
 
 
 def test_load_config(default_conf, mocker) -> None:
-    """
-    Test Configuration.load_config() without any cli params
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -130,13 +90,9 @@ def test_load_config(default_conf, mocker) -> None:
 
 
 def test_load_config_with_params(default_conf, mocker) -> None:
-    """
-    Test Configuration.load_config() with cli params used
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
@@ -144,7 +100,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
         '--db-url', 'sqlite:///someurl',
     ]
     args = Arguments(arglist, '').get_parsed_arg()
-
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
@@ -161,10 +116,10 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     ))
 
     arglist = [
-         '--dynamic-whitelist', '10',
-         '--strategy', 'TestStrategy',
-         '--strategy-path', '/some/path'
-     ]
+        '--dynamic-whitelist', '10',
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
     args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
@@ -192,16 +147,12 @@ def test_load_config_with_params(default_conf, mocker) -> None:
 
 
 def test_load_custom_strategy(default_conf, mocker) -> None:
-    """
-    Test Configuration.load_config() without any cli params
-    """
-    custom_conf = deepcopy(default_conf)
-    custom_conf.update({
+    default_conf.update({
         'strategy': 'CustomStrategy',
         'strategy_path': '/tmp/strategies',
     })
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
-        read_data=json.dumps(custom_conf)
+        read_data=json.dumps(default_conf)
     ))
 
     args = Arguments([], '').get_parsed_arg()
@@ -213,13 +164,9 @@ def test_load_custom_strategy(default_conf, mocker) -> None:
 
 
 def test_show_info(default_conf, mocker, caplog) -> None:
-    """
-    Test Configuration.show_info()
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
@@ -236,19 +183,14 @@ def test_show_info(default_conf, mocker, caplog) -> None:
         '(not applicable with Backtesting and Hyperopt)',
         caplog.record_tuples
     )
-
     assert log_has('Using DB: "sqlite:///tmp/testdb"', caplog.record_tuples)
     assert log_has('Dry run is enabled', caplog.record_tuples)
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
@@ -275,8 +217,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation' not in config
-    assert not log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
+    assert 'position_stacking' not in config
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
 
     assert 'refresh_pairs' not in config
     assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -286,9 +228,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
@@ -300,7 +239,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         'backtesting',
         '--ticker-interval', '1m',
         '--live',
-        '--realistic-simulation',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
         '--refresh-pairs-cached',
         '--timerange', ':100',
         '--export', '/bar/foo'
@@ -330,9 +270,12 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
 
-    assert 'realistic_simulation'in config
-    assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
-    assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
+    assert 'position_stacking'in config
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
 
     assert 'refresh_pairs'in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -350,19 +293,14 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
 
 def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
-    """
-    Test setup_configuration() function
-    """
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
-
     arglist = [
         'hyperopt',
         '--epochs', '10',
         '--spaces', 'all',
     ]
-
     args = Arguments(arglist, '').get_parsed_arg()
 
     configuration = Configuration(args)
@@ -379,26 +317,79 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
 
 def test_check_exchange(default_conf) -> None:
-    """
-    Test the configuration validator with a missing attribute
-    """
-    conf = deepcopy(default_conf)
     configuration = Configuration(Namespace())
 
     # Test a valid exchange
-    conf.get('exchange').update({'name': 'BITTREX'})
-    assert configuration.check_exchange(conf)
+    default_conf.get('exchange').update({'name': 'BITTREX'})
+    assert configuration.check_exchange(default_conf)
 
     # Test a valid exchange
-    conf.get('exchange').update({'name': 'binance'})
-    assert configuration.check_exchange(conf)
+    default_conf.get('exchange').update({'name': 'binance'})
+    assert configuration.check_exchange(default_conf)
 
     # Test a invalid exchange
-    conf.get('exchange').update({'name': 'unknown_exchange'})
-    configuration.config = conf
+    default_conf.get('exchange').update({'name': 'unknown_exchange'})
+    configuration.config = default_conf
 
     with pytest.raises(
         OperationalException,
         match=r'.*Exchange "unknown_exchange" not supported.*'
     ):
-        configuration.check_exchange(conf)
+        configuration.check_exchange(default_conf)
+
+
+def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)))
+    # Prevent setting loggers
+    mocker.patch('freqtrade.configuration.set_loggers', MagicMock)
+    arglist = ['-vvv']
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('verbosity') == 3
+    assert log_has('Verbosity set to 3', caplog.record_tuples)
+
+
+def test_set_loggers() -> None:
+    # Reset Logging to Debug, otherwise this fails randomly as it's set globally
+    logging.getLogger('requests').setLevel(logging.DEBUG)
+    logging.getLogger("urllib3").setLevel(logging.DEBUG)
+    logging.getLogger('ccxt.base.exchange').setLevel(logging.DEBUG)
+    logging.getLogger('telegram').setLevel(logging.DEBUG)
+
+    previous_value1 = logging.getLogger('requests').level
+    previous_value2 = logging.getLogger('ccxt.base.exchange').level
+    previous_value3 = logging.getLogger('telegram').level
+
+    set_loggers()
+
+    value1 = logging.getLogger('requests').level
+    assert previous_value1 is not value1
+    assert value1 is logging.INFO
+
+    value2 = logging.getLogger('ccxt.base.exchange').level
+    assert previous_value2 is not value2
+    assert value2 is logging.INFO
+
+    value3 = logging.getLogger('telegram').level
+    assert previous_value3 is not value3
+    assert value3 is logging.INFO
+
+    set_loggers(log_level=2)
+
+    assert logging.getLogger('requests').level is logging.DEBUG
+    assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
+    assert logging.getLogger('telegram').level is logging.INFO
+
+    set_loggers(log_level=3)
+
+    assert logging.getLogger('requests').level is logging.DEBUG
+    assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
+    assert logging.getLogger('telegram').level is logging.INFO
+
+
+def test_validate_default_conf(default_conf) -> None:
+    validate(default_conf, constants.CONF_SCHEMA)

@@ -7,7 +7,6 @@ import logging
 import time
 from typing import Dict, List
 
-from requests.exceptions import RequestException
 from coinmarketcap import Market
 
 from freqtrade.constants import SUPPORTED_FIAT
@@ -90,10 +89,10 @@ class CryptoToFiatConverter(object):
             coinlistings = self._coinmarketcap.listings()
             self._cryptomap = dict(map(lambda coin: (coin["symbol"], str(coin["id"])),
                                        coinlistings["data"]))
-        except (ValueError, RequestException) as exception:
+        except (BaseException) as exception:
             logger.error(
                 "Could not load FIAT Cryptocurrency map for the following problem: %s",
-                exception
+                type(exception).__name__
             )
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:

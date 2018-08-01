@@ -63,6 +63,7 @@ CONF_SCHEMA = {
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'trailing_stop': {'type': 'boolean'},
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
@@ -100,6 +101,15 @@ CONF_SCHEMA = {
             },
             'required': ['enabled', 'token', 'chat_id']
         },
+        'webhook': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'webhookbuy': {'type': 'object'},
+                'webhooksell': {'type': 'object'},
+                'webhookstatus': {'type': 'object'},
+            },
+        },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'internals': {
@@ -115,8 +125,11 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
+                'sandbox': {'type': 'boolean'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
+                'password': {'type': 'string'},
+                'uid': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
                     'items': {
@@ -144,7 +157,6 @@ CONF_SCHEMA = {
         'max_open_trades',
         'stake_currency',
         'stake_amount',
-        'fiat_display_currency',
         'dry_run',
         'bid_strategy',
         'telegram'

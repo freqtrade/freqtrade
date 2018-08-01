@@ -26,9 +26,8 @@ import plotly.graph_objs as go
 
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.analyze import Analyze
 from freqtrade import constants
-
+from freqtrade.strategy.resolver import StrategyResolver
 import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 
@@ -87,7 +86,8 @@ def plot_profit(args: Namespace) -> None:
 
     # Init strategy
     try:
-        analyze = Analyze({'strategy': config.get('strategy')})
+        strategy = StrategyResolver({'strategy': config.get('strategy')}).strategy
+
     except AttributeError:
         logger.critical(
             'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
@@ -113,7 +113,7 @@ def plot_profit(args: Namespace) -> None:
     else:
         filter_pairs = config['exchange']['pair_whitelist']
 
-    tick_interval = analyze.strategy.ticker_interval
+    tick_interval = strategy.ticker_interval
     pairs = config['exchange']['pair_whitelist']
 
     if filter_pairs:
@@ -127,7 +127,7 @@ def plot_profit(args: Namespace) -> None:
         refresh_pairs=False,
         timerange=timerange
     )
-    dataframes = analyze.tickerdata_to_dataframe(tickers)
+    dataframes = strategy.tickerdata_to_dataframe(tickers)
 
     # NOTE: the dataframes are of unequal length,
     # 'dates' is an merged date array of them all.
