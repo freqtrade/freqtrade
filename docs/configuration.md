@@ -197,6 +197,33 @@ you run it in production mode.
 ```
 If you have not your Bittrex API key yet, [see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
 
+
+### Embedding Strategies
+
+FreqTrade provides you with with an easy way to embed the strategy into your configuration file. 
+This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
+in your chosen config file.
+
+##### Encoding a string as BASE64
+
+This is a quick example, how to generate the BASE64 string in python
+
+```python
+from base64 import urlsafe_b64encode
+
+with open(file, 'r') as f:
+    content = f.read()
+content = urlsafe_b64encode(content.encode('utf-8'))
+```
+
+The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following
+
+```json
+"strategy": "NameOfStrategy:BASE64String"
+```
+
+Please ensure that 'NameOfStrategy' is identical to the strategy name!
+
 ## Next step
 
 Now you have configured your config.json, the next step is to [start your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md).
