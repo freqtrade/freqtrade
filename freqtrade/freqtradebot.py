@@ -12,10 +12,11 @@ from typing import Any, Callable, Dict, List, Optional
 import arrow
 import requests
 from cachetools import TTLCache, cached
+import asyncio
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, run_async_task
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
@@ -43,6 +44,8 @@ class FreqtradeBot(object):
             __version__,
         )
 
+        self.loop = asyncio.get_event_loop()
+
         # Init bot states
         self.state = State.STOPPED
 
@@ -52,6 +55,7 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
+        self.exchange.loop = self.loop
         self._init_modules()
 
     def _init_modules(self) -> None:
@@ -145,6 +149,10 @@ class FreqtradeBot(object):
             # Keep only the subsets of pairs wanted (up to nb_assets)
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
+
+            # async update ticker history
+            run_async_task(self.exchange.get_ticker_history_async,
+                           tick_interval = self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
