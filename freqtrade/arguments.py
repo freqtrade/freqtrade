@@ -161,6 +161,14 @@ class Arguments(object):
             dest='exportfilename',
             metavar='PATH',
         )
+        parser.add_argument(
+            '--backslap',
+            help="Utilize the Backslapping approach instead of the default Backtesting. This should provide more "
+                 "accurate results, unless you are utilizing Min/Max function in your strategy.",
+            required=False,
+            dest='backslap',
+            action='store_true'
+        )
 
     @staticmethod
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
