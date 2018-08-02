@@ -47,7 +47,6 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     freqtrade.exchange.refresh_tickers = lambda pl, i: {}
 
 
-
 def patch_RPCManager(mocker) -> MagicMock:
     """
     This function mock RPC manager to avoid repeating this code in almost every tests
