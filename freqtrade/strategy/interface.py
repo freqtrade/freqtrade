@@ -25,7 +25,7 @@ class candle_analyzed:
     this allows analyze_ticker to not keep testing the same candle data
     which is wastful in CPU and time
     '''
-    def __init__(self, candle_row = 0):
+    def __init__(self, candle_row=0):
         self.candle_row = candle_row
 
     def get_candle_row(self):
