@@ -152,7 +152,7 @@ The project is currently setup in two main branches:
 
 - `develop` - This branch has often new features, but might also cause breaking changes.
 - `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
-- `feat/*` - This are feature branches, which are beeing worked on heavily. Please don't use these unless you want to test a specific feature.
+- `feat/*` - These are feature branches, which are beeing worked on heavily. Please don't use these unless you want to test a specific feature.
 
 
 ## A note on Binance
