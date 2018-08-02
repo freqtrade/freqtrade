@@ -19,9 +19,9 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 
-class candle_analyzed:
+class CandleAnalyzed:
     '''
-    Maintains candle_row, an int set by analyze_ticker
+    Maintains candle_row, the last df ['date'], set by analyze_ticker
     This allows analyze_ticker to test if analysed the candle row in dataframe prior.
     To not keep testing the same candle data, which is wasteful in CPU and time
     '''
@@ -90,7 +90,7 @@ class IStrategy(ABC):
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.r = candle_analyzed()
+        self.r = CandleAnalyzed()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -136,12 +136,12 @@ class IStrategy(ABC):
         last_candle_processed = self.r.get_candle_row()
         dataframe = parse_ticker_dataframe(ticker_history)
 
-        if last_candle_processed != len(dataframe.index):
+        if last_candle_processed != dataframe.iloc[-1]['date']:
             # Defs that only make change on new candle data here
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
-            self.r.set_candle_row(len(dataframe.index))
+            self.r.set_candle_row(dataframe.iloc[-1]['date'])
         else:
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
