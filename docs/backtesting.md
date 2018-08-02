@@ -151,7 +151,7 @@ cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 Then run:
 
 ```bash
-python scripts/download_backtest_data --exchange binance
+python scripts/download_backtest_data.py --exchange binance
 ```
 
 This will download ticker data for all the currency pairs you defined in `pairs.json`.
@@ -237,6 +237,31 @@ On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 (55%), there is a lot of chance that the bot will never reach this 
 profit. Hence, keep in mind that your performance is a mix of your 
 strategies, your configuration, and the crypto-currency you have set up.
+
+## Backtesting multiple strategies
+
+To backtest multiple strategies, a list of Strategies can be provided.
+
+This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple 
+strategies you'd like to compare, this should give a nice runtime boost.
+
+All listed Strategies need to be in the same folder.
+
+``` bash
+freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades 
+```
+
+This will save the results to `user_data/backtest_data/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
+There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
+Detailed output for all strategies one after the other will be available, so make sure to scroll up.
+
+```
+=================================================== Strategy Summary ====================================================
+| Strategy   |   buy count |   avg profit % |   cum profit % |   total profit ETH | avg duration    |   profit |   loss |
+|:-----------|------------:|---------------:|---------------:|-------------------:|:----------------|---------:|-------:|
+| Strategy1  |          19 |          -0.76 |         -14.39 |        -0.01440287 | 15:48:00        |       15 |      4 |
+| Strategy2  |           6 |          -2.73 |         -16.40 |        -0.01641299 | 1 day, 14:12:00 |        3 |      3 |
+```
 
 ## Next step
 

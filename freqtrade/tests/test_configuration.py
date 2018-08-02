@@ -292,6 +292,61 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     )
 
 
+def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> None:
+    """
+    Test setup_configuration() function
+    """
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+
+    arglist = [
+        '--config', 'config.json',
+        'backtesting',
+        '--ticker-interval', '1m',
+        '--export', '/bar/foo',
+        '--strategy-list',
+        'DefaultStrategy',
+        'TestStrategy'
+    ]
+
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    config = configuration.get_config()
+    assert 'max_open_trades' in config
+    assert 'stake_currency' in config
+    assert 'stake_amount' in config
+    assert 'exchange' in config
+    assert 'pair_whitelist' in config['exchange']
+    assert 'datadir' in config
+    assert log_has(
+        'Using data folder: {} ...'.format(config['datadir']),
+        caplog.record_tuples
+    )
+    assert 'ticker_interval' in config
+    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert log_has(
+        'Using ticker_interval: 1m ...',
+        caplog.record_tuples
+    )
+
+    assert 'strategy_list' in config
+    assert log_has('Using strategy list of 2 Strategies', caplog.record_tuples)
+
+    assert 'position_stacking' not in config
+
+    assert 'use_max_market_positions' not in config
+
+    assert 'timerange' not in config
+
+    assert 'export' in config
+    assert log_has(
+        'Parameter --export detected: {} ...'.format(config['export']),
+        caplog.record_tuples
+    )
+
+
 def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)

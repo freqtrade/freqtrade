@@ -187,6 +187,14 @@ class Configuration(object):
             config.update({'refresh_pairs': True})
             logger.info('Parameter -r/--refresh-pairs-cached detected ...')
 
+        if 'strategy_list' in self.args and self.args.strategy_list:
+            config.update({'strategy_list': self.args.strategy_list})
+            logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
+
+        if 'ticker_interval' in self.args and self.args.ticker_interval:
+            config.update({'ticker_interval': self.args.ticker_interval})
+            logger.info('Overriding ticker interval with Command line argument')
+
         # If --export is used we add it to the configuration
         if 'export' in self.args and self.args.export:
             config.update({'export': self.args.export})
