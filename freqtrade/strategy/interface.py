@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class CandleAnalyzed:
     '''
-    Maintains candle_row, the last df ['date'], set by analyze_ticker
+    Maintains candle_row, the last df ['date'], set by analyze_ticker.
     This allows analyze_ticker to test if analysed the candle row in dataframe prior.
     To not keep testing the same candle data, which is wasteful in CPU and time
     '''
