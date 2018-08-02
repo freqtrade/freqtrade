@@ -146,8 +146,8 @@ class IStrategy(ABC):
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
 
-        # Other Defs that want to see and run every ticker here:
-        # example = self.watch_ticker(do something)
+        # Other Defs in startegy that want to be called every loop here
+        # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
 
         return dataframe
 
