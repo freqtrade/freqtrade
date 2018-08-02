@@ -43,8 +43,9 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :return: None
     """
     freqtrade.strategy.get_signal = lambda e, s, t: value
-    freqtrade.exchange.get_ticker_history = lambda p, i: None
+    freqtrade.exchange.get_candle_history = lambda p, i: None
     freqtrade.exchange.refresh_tickers = lambda pl, i: {}
+
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -545,7 +546,7 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
-        get_ticker_history=MagicMock(return_value=20),
+        get_candle_history=MagicMock(return_value=20),
         get_balance=MagicMock(return_value=20),
         get_fee=fee,
     )

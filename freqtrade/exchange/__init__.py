@@ -95,8 +95,7 @@ class Exchange(object):
                 'secret': exchange_config.get('secret'),
                 'password': exchange_config.get('password'),
                 'uid': exchange_config.get('uid', ''),
-                # 'enableRateLimit': True,
-                'enableRateLimit': False,
+                'enableRateLimit': exchange_config.get('ccxt_rate_limit', True)
             })
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
@@ -334,17 +333,17 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    async def async_get_tickers_history(self, pairs, tick_interval) -> List[Tuple[str, List]]:
+    async def async_get_candles_history(self, pairs, tick_interval) -> List[Tuple[str, List]]:
         # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
-        input_coroutines = [self.async_get_ticker_history(
+        input_coroutines = [self.async_get_candle_history(
             symbol, tick_interval) for symbol in pairs]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
         # await self._api_async.close()
         return tickers
 
-    async def async_get_ticker_history(self, pair: str, tick_interval: str,
+    async def async_get_candle_history(self, pair: str, tick_interval: str,
                                        since_ms: Optional[int] = None) -> Tuple[str, List]:
         try:
             # fetch ohlcv asynchronously
@@ -369,14 +368,14 @@ class Exchange(object):
         """
         # TODO: maybe add since_ms to use async in the download-script?
         # TODO: only refresh once per interval ? *may require this to move to freqtradebot.py
-        # TODO@ Add tests for this and the async stuff above
+        # TODO: Add tests for this and the async stuff above
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
         datatups = asyncio.get_event_loop().run_until_complete(
-            self.async_get_tickers_history(pair_list, ticker_interval))
+            self.async_get_candles_history(pair_list, ticker_interval))
         return {pair: data for (pair, data) in datatups}
 
     @retrier
-    def get_ticker_history(self, pair: str, tick_interval: str,
+    def get_candle_history(self, pair: str, tick_interval: str,
                            since_ms: Optional[int] = None) -> List[Dict]:
         try:
             # last item should be in the time interval [now - tick_interval, now]

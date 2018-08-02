@@ -219,7 +219,7 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    new_data = exchange.get_ticker_history(pair=pair, tick_interval=tick_interval,
+    new_data = exchange.get_candle_history(pair=pair, tick_interval=tick_interval,
                                            since_ms=since_ms)
     data.extend(new_data)
 
