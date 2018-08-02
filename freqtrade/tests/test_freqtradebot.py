@@ -544,7 +544,7 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
-        get_ticker_history=MagicMock(return_value=20),
+        get_candle_history=MagicMock(return_value=20),
         get_balance=MagicMock(return_value=20),
         get_fee=fee,
     )
