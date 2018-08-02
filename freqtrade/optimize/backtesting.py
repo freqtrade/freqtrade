@@ -283,7 +283,7 @@ class Backtesting(object):
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
             for pair in pairs:
-                data[pair] = self.exchange.get_ticker_history(pair, self.ticker_interval)
+                data[pair] = self.exchange.get_candle_history(pair, self.ticker_interval)
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
