@@ -776,7 +776,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
 
 def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker_history',
+    mocker.patch('freqtrade.exchange.Exchange.get_candle_history',
                  new=lambda s, n, i: _load_pair_as_ticks(n, i))
     patch_exchange(mocker)
     backtestmock = MagicMock()
