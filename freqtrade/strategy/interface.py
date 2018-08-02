@@ -19,6 +19,23 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 
+class candle_analyzed:
+    '''
+    Maintains candle_row, an int set by analyze_ticker
+    this allows analyze_ticker to not keep testing the same candle data
+    which is wastful in CPU and time
+    '''
+    def __init__(self, candle_row = 0):
+        self.candle_row = candle_row
+
+    def get_candle_row(self):
+        return self._candle_row
+
+    def set_candle_row(self, row):
+        self._candle_row = row
+
+    candle_row = property(get_candle_row, set_candle_row)
+
 class SignalType(Enum):
     """
     Enum to distinguish between buy and sell signals
@@ -72,6 +89,7 @@ class IStrategy(ABC):
 
     def __init__(self, config: dict) -> None:
         self.config = config
+        self.r = candle_analyzed()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -112,10 +130,24 @@ class IStrategy(ABC):
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
+
+        # Get last candle processed and ln of Dataframe
+        last_candle_processed = self.r.get_candle_row()
         dataframe = parse_ticker_dataframe(ticker_history)
-        dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
+
+        if last_candle_processed != len(dataframe.index):
+            # Defs that only make change on new candle data here
+            dataframe = self.advise_indicators(dataframe, metadata)
+            dataframe = self.advise_buy(dataframe, metadata)
+            dataframe = self.advise_sell(dataframe, metadata)
+            self.r.set_candle_row(len(dataframe.index))
+        else:
+            dataframe.loc['buy'] = 0
+            dataframe.loc['sell'] = 0
+
+        ## Other Defs that want to see and run every ticker here:
+        # example = self.watch_ticker(do something)
+
         return dataframe
 
     def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
