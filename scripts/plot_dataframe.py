@@ -138,7 +138,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
-        tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
+        tickers[pair] = exchange.get_candle_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
             datadir=_CONF.get("datadir"),
