@@ -55,7 +55,7 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self._init_modules()
-        self._klines = {}
+        self._klines: Dict[str, List[Dict]] = {}
 
     def _init_modules(self) -> None:
         """

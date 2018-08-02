@@ -334,7 +334,7 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    async def async_get_tickers_history(self, pairs, tick_interval):
+    async def async_get_tickers_history(self, pairs, tick_interval) -> List[Tuple[str, List]]:
         # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
