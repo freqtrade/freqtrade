@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class candle_analyzed:
     '''
     Maintains candle_row, an int set by analyze_ticker
-    this allows analyze_ticker to not keep testing the same candle data
-    which is wastful in CPU and time
+    This allows analyze_ticker to test if analysed the candle row in dataframe prior.
+    To not keep testing the same candle data, which is wasteful in CPU and time
     '''
     def __init__(self, candle_row=0):
         self.candle_row = candle_row
@@ -146,7 +146,7 @@ class IStrategy(ABC):
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
 
-        # Other Defs in startegy that want to be called every loop here
+        # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
 
         return dataframe
