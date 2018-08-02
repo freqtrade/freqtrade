@@ -36,6 +36,7 @@ class candle_analyzed:
 
     candle_row = property(get_candle_row, set_candle_row)
 
+
 class SignalType(Enum):
     """
     Enum to distinguish between buy and sell signals
@@ -145,7 +146,7 @@ class IStrategy(ABC):
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
 
-        ## Other Defs that want to see and run every ticker here:
+        # Other Defs that want to see and run every ticker here:
         # example = self.watch_ticker(do something)
 
         return dataframe
