@@ -135,7 +135,7 @@ class IStrategy(ABC):
         # Test if seen this pair and last candle before.
         dataframe = parse_ticker_dataframe(ticker_history)
 
-        pair = metadata['pair']
+        pair = metadata.get('pair')
         last_seen = self.candleSeen.get_last_seen(pair)
 
         if last_seen != dataframe.iloc[-1]['date'] or self.config.get('ta_on_candle') is False:
