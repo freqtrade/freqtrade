@@ -132,22 +132,28 @@ class IStrategy(ABC):
         :return DataFrame with ticker data and indicator data
         """
 
-        # Get last candle processed and ln of Dataframe
-        last_candle_processed = self.r.get_candle_row()
+        # Test if seen this pair and last candle before.
         dataframe = parse_ticker_dataframe(ticker_history)
 
-        if last_candle_processed != dataframe.iloc[-1]['date']:
+        last_seen = metadata['pair'] + str(dataframe.iloc[-1]['date'])
+        last_candle_processed = self.r.get_candle_row()
+
+        if last_candle_processed != last_seen:
             # Defs that only make change on new candle data here
+            logging.info("New Candle Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
-            self.r.set_candle_row(dataframe.iloc[-1]['date'])
+
+            last_seen = metadata['pair'] + str(dataframe.iloc[-1]['date'])
+            self.r.set_candle_row(last_seen)
         else:
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
+        logging.info("Loop Analysis Launched")
 
         return dataframe
 
