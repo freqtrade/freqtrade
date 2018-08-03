@@ -25,7 +25,7 @@ class CandleAnalyzed:
     This allows analyze_ticker to test if analysed the candle row in dataframe prior.
     To not keep testing the same candle data, which is wasteful in CPU and time
     '''
-    def __init__(self, last_seen = {}):
+    def __init__(self, last_seen={}):
         self.last_seen = last_seen
 
     def get_last_seen(self, pair):
@@ -136,9 +136,9 @@ class IStrategy(ABC):
         dataframe = parse_ticker_dataframe(ticker_history)
 
         pair = metadata['pair']
-        last_candle_seen = self.candleSeen.get_last_seen(pair)
+        last_seen = self.candleSeen.get_last_seen(pair)
 
-        if  last_candle_seen != dataframe.iloc[-1]['date'] or self.config.get('ta_on_candle') is False:
+        if last_seen != dataframe.iloc[-1]['date'] or self.config.get('ta_on_candle') is False:
             # Defs that only make change on new candle data.
             logging.info("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
