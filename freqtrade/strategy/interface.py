@@ -138,7 +138,7 @@ class IStrategy(ABC):
         last_seen = metadata['pair'] + str(dataframe.iloc[-1]['date'])
         last_candle_processed = self.r.get_candle_row()
 
-        if last_candle_processed != last_seen or self.config.get('ta_on_candle') == False:
+        if last_candle_processed != last_seen or self.config.get('ta_on_candle') is False:
             # Defs that only make change on new candle data.
             logging.info("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
