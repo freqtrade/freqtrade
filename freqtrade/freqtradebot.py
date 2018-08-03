@@ -9,6 +9,7 @@ import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
+import asyncio
 import arrow
 import requests
 
@@ -56,6 +57,7 @@ class FreqtradeBot(object):
         self.exchange = Exchange(self.config)
         self._init_modules()
         self._klines: Dict[str, List[Dict]] = {}
+        self._klines_last_fetched_time = 0
 
     def _init_modules(self) -> None:
         """
@@ -129,6 +131,34 @@ class FreqtradeBot(object):
         time.sleep(duration)
         return result
 
+    def refresh_tickers(self, pair_list: List[str]) -> Dict:
+        """
+        Refresh tickers asyncronously and return the result.
+        """
+        # TODO: maybe add since_ms to use async in the download-script?
+        # TODO: only refresh once per interval ? *may require this to move to freqtradebot.py
+        # TODO: Add tests for this and the async stuff above
+         
+        ticker_interval = self.strategy.ticker_interval
+        interval_in_seconds = int(ticker_interval[:-1]) * 60
+
+        should_not_update = ((self._klines_last_fetched_time + interval_in_seconds +1) > round(time.time()))
+
+        if should_not_update:
+            return False
+
+        logger.debug("Refreshing klines for %d pairs", len(pair_list))
+        datatups = asyncio.get_event_loop().run_until_complete(
+            self.exchange.async_get_candles_history(pair_list, ticker_interval))
+
+        # fetching the timestamp of last candle
+        self._klines_last_fetched_time = datatups[0][1][-1][0] / 1000
+
+        # updating klines
+        self._klines = {pair: data for (pair, data) in datatups}
+
+        return True
+
     def _process(self, nb_assets: Optional[int] = 0) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
@@ -149,7 +179,8 @@ class FreqtradeBot(object):
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
 
-            self._klines = self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
+            # Refreshing candles
+            self.refresh_tickers(final_list)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()

@@ -6,10 +6,11 @@ from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
 from math import floor, ceil
 
+import asyncio
 import ccxt
 import ccxt.async_support as ccxt_async
 import arrow
-import asyncio
+
 
 from freqtrade import constants, OperationalException, DependencyException, TemporaryError
 
@@ -361,18 +362,6 @@ class Exchange(object):
                 f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(f'Could not fetch ticker data. Msg: {e}')
-
-    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> Dict:
-        """
-        Refresh tickers asyncronously and return the result.
-        """
-        # TODO: maybe add since_ms to use async in the download-script?
-        # TODO: only refresh once per interval ? *may require this to move to freqtradebot.py
-        # TODO: Add tests for this and the async stuff above
-        logger.debug("Refreshing klines for %d pairs", len(pair_list))
-        datatups = asyncio.get_event_loop().run_until_complete(
-            self.async_get_candles_history(pair_list, ticker_interval))
-        return {pair: data for (pair, data) in datatups}
 
     @retrier
     def get_candle_history(self, pair: str, tick_interval: str,
