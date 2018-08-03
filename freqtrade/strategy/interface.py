@@ -34,8 +34,6 @@ class CandleAnalyzed:
     def set_last_seen(self, pair, candle_date):
         self.last_seen[pair] = candle_date
 
-    candle_row = property(get_last_seen, set_last_seen)
-
 
 class SignalType(Enum):
     """
