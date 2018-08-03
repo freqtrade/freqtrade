@@ -21,20 +21,20 @@ logger = logging.getLogger(__name__)
 
 class CandleAnalyzed:
     '''
-    Maintains candle_row, the last df ['date'], set by analyze_ticker.
+    Maintains dictionary of the last candle date a pair was processed with
     This allows analyze_ticker to test if analysed the candle row in dataframe prior.
     To not keep testing the same candle data, which is wasteful in CPU and time
     '''
-    def __init__(self, candle_row=0):
-        self.candle_row = candle_row
+    def __init__(self, last_seen = {}):
+        self.last_seen = last_seen
 
-    def get_candle_row(self):
-        return self._candle_row
+    def get_last_seen(self, pair):
+        return self.last_seen.get(pair)
 
-    def set_candle_row(self, row):
-        self._candle_row = row
+    def set_last_seen(self, pair, candle_date):
+        self.last_seen[pair] = candle_date
 
-    candle_row = property(get_candle_row, set_candle_row)
+    candle_row = property(get_last_seen, set_last_seen)
 
 
 class SignalType(Enum):
@@ -90,7 +90,7 @@ class IStrategy(ABC):
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.r = CandleAnalyzed()
+        self.candleSeen = CandleAnalyzed()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -135,18 +135,16 @@ class IStrategy(ABC):
         # Test if seen this pair and last candle before.
         dataframe = parse_ticker_dataframe(ticker_history)
 
-        last_seen = metadata['pair'] + str(dataframe.iloc[-1]['date'])
-        last_candle_processed = self.r.get_candle_row()
+        pair = metadata['pair']
+        last_candle_seen = self.candleSeen.get_last_seen(pair)
 
-        if last_candle_processed != last_seen or self.config.get('ta_on_candle') is False:
+        if  last_candle_seen != dataframe.iloc[-1]['date'] or self.config.get('ta_on_candle') is False:
             # Defs that only make change on new candle data.
             logging.info("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
-
-            last_seen = metadata['pair'] + str(dataframe.iloc[-1]['date'])
-            self.r.set_candle_row(last_seen)
+            self.candleSeen.set_last_seen(pair=pair, candle_date=dataframe.iloc[-1]['date'])
         else:
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
