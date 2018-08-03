@@ -118,7 +118,8 @@ class IStrategy(ABC):
         dataframe = self.advise_sell(dataframe, metadata)
         return dataframe
 
-    def get_signal(self, pair: str, interval: str, ticker_hist: Optional[List[Dict]]) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, interval: str,
+                   ticker_hist: Optional[List[Dict]]) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
