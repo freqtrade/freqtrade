@@ -264,11 +264,6 @@ class FreqtradeBot(object):
         else:
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
-        percent_from_top = self.config.get('bid_strategy', {}).get('percent_from_top', 0)
-        if percent_from_top > 0:
-            used_rate = used_rate - (used_rate * percent_from_top)
-            used_rate = self._trunc_num(used_rate, 8)
-            logger.info('...percent_from_top enabled, new buy rate %0.8f', used_rate)
 
         return used_rate
 
@@ -377,7 +372,7 @@ class FreqtradeBot(object):
                 return self.execute_buy(_pair, stake_amount)
         return False
 
-    def _check_depth_of_market_buy(self, pair: str, ) -> bool:
+    def _check_depth_of_market_buy(self, pair: str) -> bool:
         """
         Checks depth of market before executing a buy
         """

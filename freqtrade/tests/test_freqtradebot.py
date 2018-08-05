@@ -1909,3 +1909,84 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, 
 
     assert trade.open_rate == 0.00001099
     assert whitelist == default_conf['exchange']['pair_whitelist']
+
+
+def test_order_book_depth_of_market_high_delta(default_conf, ticker,
+                                               limit_buy_order, fee, markets, mocker):
+    default_conf['experimental']['check_depth_of_market']['enabled'] = True
+    default_conf['experimental']['check_depth_of_market']['bids_to_ask_delta'] = 100
+    patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets
+    )
+
+    # Save state of current whitelist
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    assert trade is None
+
+
+def test_order_book_bid_strategy(default_conf) -> None:
+    default_conf['exchange']['name'] = 'binance'
+    default_conf['experimental']['bid_strategy']['use_order_book'] = True
+    default_conf['experimental']['bid_strategy']['order_book_top'] = 2
+    default_conf['telegram']['enabled'] = False
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) != 20
+
+
+def test_trunc_num(default_conf) -> None:
+    default_conf['telegram']['enabled'] = False
+    freqtrade = FreqtradeBot(default_conf)
+
+    assert freqtrade._trunc_num(10.1111, 2) == 10.11
+
+
+def test_check_depth_of_market_buy(default_conf) -> None:
+    default_conf['telegram']['enabled'] = False
+    default_conf['exchange']['name'] = 'binance'
+    default_conf['experimental']['check_depth_of_market']['enabled'] = True
+    default_conf['experimental']['check_depth_of_market']['bids_to_ask_delta'] = 100
+    freqtrade = FreqtradeBot(default_conf)
+
+    assert freqtrade._check_depth_of_market_buy('ETH/BTC') is False
+
+
+def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order,
+                                 fee, markets, mocker) -> None:
+    default_conf['exchange']['name'] = 'binance'
+    default_conf['experimental']['ask_strategy']['use_order_book'] = True
+    default_conf['experimental']['ask_strategy']['order_book_min'] = 1
+    default_conf['experimental']['ask_strategy']['order_book_max'] = 2
+    default_conf['telegram']['enabled'] = False
+    patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    assert trade

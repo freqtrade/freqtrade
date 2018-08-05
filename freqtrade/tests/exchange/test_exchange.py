@@ -525,6 +525,22 @@ def test_get_order_book(default_conf, mocker):
     assert len(order_book['asks']) == 50
 
 
+def test_get_order_book_exception(default_conf, mocker):
+    api_mock = MagicMock()
+    with pytest.raises(OperationalException):
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NotSupported)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_order_book(pair='ETH/BTC', limit=50)
+    with pytest.raises(TemporaryError):
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_order_book(pair='ETH/BTC', limit=50)
+    with pytest.raises(OperationalException):
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_order_book(pair='ETH/BTC', limit=50)
+
+
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
         if since:
