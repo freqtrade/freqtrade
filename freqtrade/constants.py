@@ -89,7 +89,30 @@ CONF_SCHEMA = {
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
-                "ignore_roi_if_buy_signal_true": {'type': 'boolean'}
+                'ignore_roi_if_buy_signal_true': {'type': 'boolean'},
+                'check_depth_of_market': {
+                    'type': 'object',
+                    'properties': {
+                        'enabled': {'type': 'boolean'},
+                        'bids_to_ask_delta': {'type': 'number', 'minimum': 0},
+                    }
+                },
+                'bid_strategy': {
+                    'type': 'object',
+                    'properties': {
+                        'percent_from_top': {'type': 'number', 'minimum': 0},
+                        'use_order_book': {'type': 'boolean'},
+                        'order_book_top': {'type': 'number', 'maximum': 20, 'minimum': 1}
+                    }
+                },
+                'ask_strategy': {
+                    'type': 'object',
+                    'properties': {
+                        'use_order_book': {'type': 'boolean'},
+                        'order_book_min': {'type': 'number', 'minimum': 1},
+                        'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
+                    }
+                }
             }
         },
         'telegram': {

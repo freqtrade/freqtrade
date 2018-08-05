@@ -116,6 +116,22 @@ def default_conf():
                 "NEO/BTC"
             ]
         },
+        "experimental": {
+            "check_depth_of_market": {
+                "enabled": False,
+                "bids_to_ask_delta": 1
+            },
+            "bid_strategy": {
+                "percent_from_top": 0,
+                "use_order_book": False,
+                "order_book_top": 1
+            },
+            "ask_strategy": {
+                "use_order_book": False,
+                "order_book_min": 1,
+                "order_book_max": 1
+            }
+        },
         "telegram": {
             "enabled": True,
             "token": "token",

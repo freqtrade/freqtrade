@@ -39,6 +39,13 @@ The table below will list all configuration parameters.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `experimental.ignore_roi_if_buy_signal` | false | No | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`
+| `experimental.check_depth_of_market` | false | No | Does not sell if the % difference of buy orders and sell orders is met in Order Book.
+| `experimental.bids_to_ask_delta` | 0 | No | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
+| `experimental.bid_strategy.use_order_book` | false | No | Allows buying of pair using the rates in Order Book Bids.
+| `experimental.bid_strategy.order_book_top` | 0 | No | Bot will use the top N rate in Order Book Bids. Ie. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
+| `experimental.ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
+| `experimental.ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
+| `experimental.ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.

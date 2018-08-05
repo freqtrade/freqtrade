@@ -515,6 +515,16 @@ def test_get_ticker(default_conf, mocker):
     exchange.get_ticker(pair='ETH/BTC', refresh=True)
 
 
+def test_get_order_book(default_conf, mocker):
+    default_conf['exchange']['name'] = 'binance'
+    exchange = Exchange(default_conf)
+    order_book = exchange.get_order_book(pair='ETH/BTC', limit=50)
+    assert 'bids' in order_book
+    assert 'asks' in order_book
+    assert len(order_book['bids']) == 50
+    assert len(order_book['asks']) == 50
+
+
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
         if since:

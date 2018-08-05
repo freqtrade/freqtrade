@@ -410,6 +410,29 @@ class Exchange(object):
             raise OperationalException(e)
 
     @retrier
+    def get_order_book(self, pair: str, limit: int = 100) -> dict:
+        try:
+            # 20180619: bittrex doesnt support limits -.-
+            # 20180619: binance support limits but only on specific range
+            if self._api.name == 'Binance':
+                limit_range = [5, 10, 20, 50, 100, 500, 1000]
+                for limitx in limit_range:
+                    if limit <= limitx:
+                        limit = limitx
+                        break
+
+            return self._api.fetch_l2_order_book(pair, limit)
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching order book.'
+                f'Message: {e}')
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order book due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
+
+    @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
         if self._conf['dry_run']:
             return []

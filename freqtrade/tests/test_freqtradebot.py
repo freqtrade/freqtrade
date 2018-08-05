@@ -664,21 +664,21 @@ def test_balance_fully_ask_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 0.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    assert freqtrade.get_target_bid({'ask': 20, 'last': 10}) == 20
+    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) == 20
 
 
 def test_balance_fully_last_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    assert freqtrade.get_target_bid({'ask': 20, 'last': 10}) == 10
+    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) == 10
 
 
 def test_balance_bigger_last_ask(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    assert freqtrade.get_target_bid({'ask': 5, 'last': 10}) == 5
+    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 5, 'last': 10}) == 5
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
@@ -1876,3 +1876,36 @@ def test_get_real_amount_open_trade(default_conf, mocker):
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     assert freqtrade.get_real_amount(trade, order) == amount
+
+
+def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, markets, mocker):
+    default_conf['experimental']['check_depth_of_market']['enabled'] = True
+    default_conf['experimental']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
+    patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        validate_pairs=MagicMock(),
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets
+    )
+
+    # Save state of current whitelist
+    whitelist = deepcopy(default_conf['exchange']['pair_whitelist'])
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    assert trade is not None
+    assert trade.stake_amount == 0.001
+    assert trade.is_open
+    assert trade.open_date is not None
+    assert trade.exchange == 'bittrex'
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    assert trade.open_rate == 0.00001099
+    assert whitelist == default_conf['exchange']['pair_whitelist']

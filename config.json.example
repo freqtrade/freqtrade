@@ -37,7 +37,21 @@
     "experimental": {
         "use_sell_signal": false,
         "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
+        "ignore_roi_if_buy_signal": false,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        },
+        "bid_strategy": {
+            "use_order_book": false,
+            "order_book_top": 2,
+            "percent_from_top": 0
+        },
+        "ask_strategy":{
+            "use_order_book": false,
+            "order_book_min": 1,
+            "order_book_max": 9
+        }
     },
     "telegram": {
         "enabled": true,
