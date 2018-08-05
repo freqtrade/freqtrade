@@ -386,7 +386,7 @@ class FreqtradeBot(object):
         conf_bids_to_ask_delta = experimental_check_depth_of_market.get('bids_to_ask_delta', 0)
         logger.info('checking depth of market for %s', pair)
         order_book = self.exchange.get_order_book(pair, 1000)
-        order_book_data_frame = order_book_to_dataframe(order_book)
+        order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
         bids_ask_delta = order_book_bids / order_book_asks

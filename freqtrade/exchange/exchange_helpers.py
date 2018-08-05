@@ -34,7 +34,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     return frame
 
 
-def order_book_to_dataframe(data: list) -> DataFrame:
+def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     """
     Gets order book list, returns dataframe with below format per suggested by creslin
     -------------------------------------------------------------------
@@ -42,11 +42,12 @@ def order_book_to_dataframe(data: list) -> DataFrame:
     -------------------------------------------------------------------
     """
     cols = ['bids', 'b_size']
-    bids_frame = DataFrame(data['bids'], columns=cols)
+
+    bids_frame = DataFrame(bids, columns=cols)
     # add cumulative sum column
     bids_frame['b_sum'] = bids_frame['b_size'].cumsum()
     cols2 = ['asks', 'a_size']
-    asks_frame = DataFrame(data['asks'], columns=cols2)
+    asks_frame = DataFrame(asks, columns=cols2)
     # add cumulative sum column
     asks_frame['a_sum'] = asks_frame['a_size'].cumsum()
 
