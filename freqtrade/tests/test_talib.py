@@ -3,6 +3,7 @@
 import talib.abstract as ta
 import pandas as pd
 
+
 def test_talib_bollingerbands_near_zero_values():
     inputs = pd.DataFrame([
         {'close': 0.00000010},
