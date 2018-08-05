@@ -1938,11 +1938,12 @@ def test_order_book_bid_strategy(default_conf) -> None:
     default_conf['exchange']['name'] = 'binance'
     default_conf['experimental']['bid_strategy']['use_order_book'] = True
     default_conf['experimental']['bid_strategy']['order_book_top'] = 2
+    default_conf['bid_strategy']['ask_last_balance'] = 0
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
 
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) != 20
+    assert freqtrade.get_target_bid('BTC/USDT', {'ask': 2, 'last': 2}) == 2
 
 
 def test_trunc_num(default_conf) -> None:
@@ -1990,3 +1991,10 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     trade = Trade.query.first()
     assert trade
+
+    time.sleep(0.01)  # Race condition fix
+    trade.update(limit_buy_order)
+    assert trade.is_open is True
+
+    patch_get_signal(freqtrade, value=(False, True))
+    assert freqtrade.handle_trade(trade) is True

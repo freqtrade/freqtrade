@@ -260,7 +260,8 @@ class FreqtradeBot(object):
             if ticker_rate < order_book_rate:
                 logger.info('...using ticker rate instead %0.8f', ticker_rate)
                 used_rate = ticker_rate
-            used_rate = order_book_rate
+            else:
+                used_rate = order_book_rate
         else:
             logger.info('Using Last Ask / Last Price')
             used_rate = ticker_rate
@@ -557,8 +558,7 @@ class FreqtradeBot(object):
                                                    ticker)
 
         experimental_ask_strategy = self.config.get('experimental', {}).get('ask_strategy', {})
-        if 'use_order_book' in experimental_ask_strategy and\
-                experimental_ask_strategy.get('use_order_book', False):
+        if experimental_ask_strategy.get('use_order_book', False):
             logger.info('Using order book for selling...')
             # logger.debug('Order book %s',orderBook)
             order_book_min = experimental_ask_strategy.get('order_book_min', 1)
