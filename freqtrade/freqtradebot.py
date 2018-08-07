@@ -268,10 +268,6 @@ class FreqtradeBot(object):
 
         return used_rate
 
-    def _trunc_num(self, f, n):
-        import math
-        return math.floor(f * 10 ** n) / 10 ** n
-
     def _get_trade_stake_amount(self) -> Optional[float]:
         """
         Check if stake amount can be fulfilled with the available balance
@@ -366,20 +362,18 @@ class FreqtradeBot(object):
                     get('check_depth_of_market', {})
                 if (experimental_check_depth_of_market.get('enabled', False)) and\
                         (experimental_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
-                    if self._check_depth_of_market_buy(_pair):
+                    if self._check_depth_of_market_buy(_pair, experimental_check_depth_of_market):
                         return self.execute_buy(_pair, stake_amount)
                     else:
                         return False
                 return self.execute_buy(_pair, stake_amount)
         return False
 
-    def _check_depth_of_market_buy(self, pair: str) -> bool:
+    def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
         Checks depth of market before executing a buy
         """
-        experimental_check_depth_of_market = self.config.get('experimental', {}).\
-            get('check_depth_of_market', {})
-        conf_bids_to_ask_delta = experimental_check_depth_of_market.get('bids_to_ask_delta', 0)
+        conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
         logger.info('checking depth of market for %s', pair)
         order_book = self.exchange.get_order_book(pair, 1000)
         order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
@@ -387,8 +381,7 @@ class FreqtradeBot(object):
         order_book_asks = order_book_data_frame['a_size'].sum()
         bids_ask_delta = order_book_bids / order_book_asks
         logger.info('bids: %s, asks: %s, delta: %s', order_book_bids,
-                    order_book_asks,
-                    order_book_bids / order_book_asks)
+                    order_book_asks, bids_ask_delta)
         if bids_ask_delta >= conf_bids_to_ask_delta:
             return True
         return False

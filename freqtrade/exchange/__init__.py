@@ -411,15 +411,23 @@ class Exchange(object):
 
     @retrier
     def get_order_book(self, pair: str, limit: int = 100) -> dict:
+        """
+        get order book level 2 from exchange
+
+        Notes:
+        20180619: bittrex doesnt support limits -.-
+        20180619: binance support limits but only on specific range
+        """
         try:
-            # 20180619: bittrex doesnt support limits -.-
-            # 20180619: binance support limits but only on specific range
             if self._api.name == 'Binance':
                 limit_range = [5, 10, 20, 50, 100, 500, 1000]
-                for limitx in limit_range:
-                    if limit <= limitx:
-                        limit = limitx
-                        break
+                # get next-higher step in the limit_range list
+                limit = min(list(filter(lambda x: limit <= x, limit_range)))
+                # above script works like loop below (but with slightly better performance):
+                #   for limitx in limit_range:
+                #        if limit <= limitx:
+                #           limit = limitx
+                #           break
 
             return self._api.fetch_l2_order_book(pair, limit)
         except ccxt.NotSupported as e:
