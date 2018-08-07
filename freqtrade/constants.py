@@ -145,7 +145,8 @@ CONF_SCHEMA = {
                         'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
-                }
+                },
+                'outdated_offset': {'type': 'integer', 'minimum': 1}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
         }
