@@ -131,18 +131,18 @@ class FreqtradeBot(object):
         time.sleep(duration)
         return result
 
-    def refresh_tickers(self, pair_list: List[str]) -> Dict:
+    def refresh_tickers(self, pair_list: List[str]) -> bool:
         """
         Refresh tickers asyncronously and return the result.
         """
         # TODO: maybe add since_ms to use async in the download-script?
-        # TODO: only refresh once per interval ? *may require this to move to freqtradebot.py
         # TODO: Add tests for this and the async stuff above
-         
+
         ticker_interval = self.strategy.ticker_interval
         interval_in_seconds = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
-        should_not_update = ((self._klines_last_fetched_time + interval_in_seconds +1) > round(time.time()))
+        should_not_update = ((self._klines_last_fetched_time +
+                              interval_in_seconds + 1) > round(time.time()))
 
         if should_not_update:
             return False
