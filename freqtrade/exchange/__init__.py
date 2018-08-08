@@ -322,7 +322,7 @@ class Exchange(object):
                 return data
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
                 raise TemporaryError(
-                    f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
+                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}')
             except ccxt.BaseError as e:
                 raise OperationalException(e)
         else:
