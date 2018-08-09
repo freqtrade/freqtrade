@@ -5,6 +5,7 @@ from random import randint
 from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
 from math import floor, ceil
+import time
 
 import asyncio
 import ccxt
@@ -51,6 +52,12 @@ class Exchange(object):
     _api_async: ccxt_async.Exchange = None
     _conf: Dict = {}
     _cached_ticker: Dict[str, Any] = {}
+
+    # Holds last candle refreshed time of each pair
+    _pairs_last_refreshed_time = {}
+
+    # Holds candles
+    _cached_klines: Dict[str, Any] = {}
 
     # Holds all open sell orders for dry_run
     _dry_run_open_orders: Dict[str, Any] = {}
@@ -349,8 +356,25 @@ class Exchange(object):
                                        since_ms: Optional[int] = None) -> Tuple[str, List]:
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s ...",  pair)
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
+            logger.debug("fetching %s ...", pair)
+
+            # Calculating ticker interval in second
+            interval_in_seconds = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
+
+            # If (last update time) + (interval in second) + (1 second) is greater than now
+            # that means we don't have to hit the API as there is no new candle
+            # so we fetch it from local cache
+            if self._pairs_last_refreshed_time.get(pair, 0) + interval_in_seconds + 1 > round(time.time()):
+                data = self._cached_klines[pair]
+            else: 
+                data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
+
+            # keeping last candle time as last refreshed time of the pair
+            self._pairs_last_refreshed_time[pair] = data[-1][0] / 1000
+
+            # keeping candles in cache
+            self._cached_klines[pair] = data
+
             logger.debug("done fetching %s ...", pair)
             return pair, data
 
