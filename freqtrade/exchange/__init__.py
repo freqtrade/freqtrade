@@ -338,6 +338,7 @@ class Exchange(object):
         # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
+        await self._api_async.load_markets()
         input_coroutines = [self.async_get_candle_history(
             symbol, tick_interval) for symbol in pairs]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
