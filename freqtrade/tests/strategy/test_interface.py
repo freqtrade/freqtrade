@@ -107,8 +107,8 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed
 
 
-def test_analyze_ticker_default(ticker_history, mocker) -> None:
-
+def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
     buy_mock = MagicMock(side_effect=lambda x, meta: x)
     sell_mock = MagicMock(side_effect=lambda x, meta: x)
@@ -125,15 +125,23 @@ def test_analyze_ticker_default(ticker_history, mocker) -> None:
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
 
+    assert log_has('TA Analysis Launched', caplog.record_tuples)
+    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+                       caplog.record_tuples)
+    caplog.clear()
+
     ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
     # No analysis happens as ta_on_candle is true
     assert ind_mock.call_count == 2
     assert buy_mock.call_count == 2
     assert buy_mock.call_count == 2
+    assert log_has('TA Analysis Launched', caplog.record_tuples)
+    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+                       caplog.record_tuples)
 
 
-def test_analyze_ticker_only_once(ticker_history, mocker) -> None:
-
+def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
     buy_mock = MagicMock(side_effect=lambda x, meta: x)
     sell_mock = MagicMock(side_effect=lambda x, meta: x)
@@ -151,6 +159,10 @@ def test_analyze_ticker_only_once(ticker_history, mocker) -> None:
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
+    assert log_has('TA Analysis Launched', caplog.record_tuples)
+    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+                       caplog.record_tuples)
+    caplog.clear()
 
     ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
     # No analysis happens as ta_on_candle is true
@@ -162,3 +174,6 @@ def test_analyze_ticker_only_once(ticker_history, mocker) -> None:
     assert 'sell' in ret
     assert ret['buy'].sum() == 0
     assert ret['sell'].sum() == 0
+    assert not log_has('TA Analysis Launched', caplog.record_tuples)
+    assert log_has('Skippinig TA Analysis for already analyzed candle',
+                   caplog.record_tuples)
