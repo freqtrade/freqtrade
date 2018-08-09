@@ -105,3 +105,60 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     tickerlist = {'UNITTEST/BTC': tick}
     data = strategy.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed
+
+
+def test_analyze_ticker_default(ticker_history, mocker) -> None:
+
+    ind_mock = MagicMock(side_effect=lambda x, meta: x)
+    buy_mock = MagicMock(side_effect=lambda x, meta: x)
+    sell_mock = MagicMock(side_effect=lambda x, meta: x)
+    mocker.patch.multiple(
+        'freqtrade.strategy.interface.IStrategy',
+        advise_indicators=ind_mock,
+        advise_buy=buy_mock,
+        advise_sell=sell_mock,
+
+    )
+    strategy = DefaultStrategy({})
+    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    assert ind_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert buy_mock.call_count == 1
+
+    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    # No analysis happens as ta_on_candle is true
+    assert ind_mock.call_count == 2
+    assert buy_mock.call_count == 2
+    assert buy_mock.call_count == 2
+
+
+def test_analyze_ticker_only_once(ticker_history, mocker) -> None:
+
+    ind_mock = MagicMock(side_effect=lambda x, meta: x)
+    buy_mock = MagicMock(side_effect=lambda x, meta: x)
+    sell_mock = MagicMock(side_effect=lambda x, meta: x)
+    mocker.patch.multiple(
+        'freqtrade.strategy.interface.IStrategy',
+        advise_indicators=ind_mock,
+        advise_buy=buy_mock,
+        advise_sell=sell_mock,
+
+    )
+    strategy = DefaultStrategy({})
+    strategy.ta_on_candle = True
+
+    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    assert ind_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert buy_mock.call_count == 1
+
+    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    # No analysis happens as ta_on_candle is true
+    assert ind_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    # only skipped analyze adds buy and sell columns, otherwise it's all mocked
+    assert 'buy' in ret
+    assert 'sell' in ret
+    assert ret['buy'].sum() == 0
+    assert ret['sell'].sum() == 0
