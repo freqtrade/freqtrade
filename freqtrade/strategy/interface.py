@@ -74,10 +74,11 @@ class IStrategy(ABC):
     ta_on_candle: bool = False
 
     # Dict to determine if analysis is necessary
-    candle_seen: Dict[str, datetime] = {}
+    _candle_seen: Dict[str, datetime] = {}
 
     def __init__(self, config: dict) -> None:
         self.config = config
+        self._candle_seen = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -126,16 +127,16 @@ class IStrategy(ABC):
 
         # always run if ta_on_candle is set to true
         if (not self.ta_on_candle or
-                self.candle_seen.get(pair, None) != dataframe.iloc[-1]['date']):
+                self._candle_seen.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
             logging.debug("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
-            self.candle_seen[pair] = dataframe.iloc[-1]['date']
+            self._candle_seen[pair] = dataframe.iloc[-1]['date']
         else:
-            dataframe.loc['buy'] = 0
-            dataframe.loc['sell'] = 0
+            dataframe['buy'] = 0
+            dataframe['sell'] = 0
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
