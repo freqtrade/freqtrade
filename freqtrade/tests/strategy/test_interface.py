@@ -120,7 +120,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
 
     )
     strategy = DefaultStrategy({})
-    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
@@ -130,7 +130,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
                        caplog.record_tuples)
     caplog.clear()
 
-    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
     # No analysis happens as ta_on_candle is true
     assert ind_mock.call_count == 2
     assert buy_mock.call_count == 2

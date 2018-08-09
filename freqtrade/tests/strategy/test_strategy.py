@@ -174,11 +174,12 @@ def test_strategy_override_ta_on_candle(caplog):
     }
     resolver = StrategyResolver(config)
 
-    assert resolver.strategy.ta_on_candle == True
+    assert resolver.strategy.ta_on_candle
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
             "Override ta_on_candle 'ta_on_candle' with value in config file: True."
             ) in caplog.record_tuples
+
 
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
