@@ -130,7 +130,7 @@ def test_strategy_override_minimal_roi(caplog):
     assert resolver.strategy.minimal_roi[0] == 0.5
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            'Override strategy \'minimal_roi\' with value in config file.'
+            "Override strategy 'minimal_roi' with value in config file."
             ) in caplog.record_tuples
 
 
@@ -145,7 +145,7 @@ def test_strategy_override_stoploss(caplog):
     assert resolver.strategy.stoploss == -0.5
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            'Override strategy \'stoploss\' with value in config file: -0.5.'
+            "Override strategy 'stoploss' with value in config file: -0.5."
             ) in caplog.record_tuples
 
 
@@ -161,9 +161,24 @@ def test_strategy_override_ticker_interval(caplog):
     assert resolver.strategy.ticker_interval == 60
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            'Override strategy \'ticker_interval\' with value in config file: 60.'
+            "Override strategy 'ticker_interval' with value in config file: 60."
             ) in caplog.record_tuples
 
+
+def test_strategy_override_ta_on_candle(caplog):
+    caplog.set_level(logging.INFO)
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'ta_on_candle': True
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.ta_on_candle == True
+    assert ('freqtrade.strategy.resolver',
+            logging.INFO,
+            "Override ta_on_candle 'ta_on_candle' with value in config file: True."
+            ) in caplog.record_tuples
 
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))

@@ -135,6 +135,7 @@ class IStrategy(ABC):
             dataframe = self.advise_sell(dataframe, metadata)
             self._candle_seen[pair] = dataframe.iloc[-1]['date']
         else:
+            logging.debug("Skippinig TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
 
