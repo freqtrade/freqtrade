@@ -19,22 +19,6 @@ from freqtrade.persistence import Trade
 logger = logging.getLogger(__name__)
 
 
-class CandleAnalyzed:
-    '''
-    Maintains dictionary of the last candle date a pair was processed with
-    This allows analyze_ticker to test if analysed the candle row in dataframe prior.
-    To not keep testing the same candle data, which is wasteful in CPU and time
-    '''
-    def __init__(self, last_seen={}):
-        self.last_seen = last_seen
-
-    def get_last_seen(self, pair):
-        return self.last_seen.get(pair)
-
-    def set_last_seen(self, pair, candle_date):
-        self.last_seen[pair] = candle_date
-
-
 class SignalType(Enum):
     """
     Enum to distinguish between buy and sell signals
@@ -86,9 +70,11 @@ class IStrategy(ABC):
     # associated ticker interval
     ticker_interval: str
 
+    # Dict to determine if analysis is necessary
+    candle_seen: Dict[str, datetime] = {}
+
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.candleSeen = CandleAnalyzed()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -133,23 +119,23 @@ class IStrategy(ABC):
         # Test if seen this pair and last candle before.
         dataframe = parse_ticker_dataframe(ticker_history)
 
-        pair = metadata.get('pair')
-        last_seen = self.candleSeen.get_last_seen(pair)
+        pair = str(metadata.get('pair'))
 
-        if last_seen != dataframe.iloc[-1]['date'] or self.config.get('ta_on_candle') is False:
+        if (not self.config.get('ta_on_candle') or
+                self.candle_seen.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
-            logging.info("TA Analysis Launched")
+            logging.debug("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
-            self.candleSeen.set_last_seen(pair=pair, candle_date=dataframe.iloc[-1]['date'])
+            self.candle_seen[pair] = dataframe.iloc[-1]['date']
         else:
             dataframe.loc['buy'] = 0
             dataframe.loc['sell'] = 0
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
-        logging.info("Loop Analysis Launched")
+        logging.debug("Loop Analysis Launched")
 
         return dataframe
 
