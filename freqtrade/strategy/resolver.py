@@ -65,6 +65,15 @@ class StrategyResolver(object):
         else:
             config['ticker_interval'] = self.strategy.ticker_interval
 
+        if 'ta_on_candle' in config:
+            self.strategy.ta_on_candle = config['ta_on_candle']
+            logger.info(
+                "Override ta_on_candle \'ta_on_candle\' with value in config file: %s.",
+                config['ta_on_candle']
+            )
+        else:
+            config['ta_on_candle'] = self.strategy.ta_on_candle
+
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),

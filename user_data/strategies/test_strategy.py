@@ -45,6 +45,9 @@ class TestStrategy(IStrategy):
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'
 
+    # run "populate_indicators" only for new candle
+    ta_on_candle = False
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
