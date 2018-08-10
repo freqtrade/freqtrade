@@ -368,6 +368,7 @@ class Exchange(object):
                     self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
                     int(time.time())):
                 data = self._cached_klines[pair]
+                logger.debug("Using cached klines data for %s ...", pair)
             else:
                 data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
                                                          since=since_ms)
