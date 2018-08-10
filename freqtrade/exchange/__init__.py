@@ -78,6 +78,7 @@ class Exchange(object):
         self._api = self._init_ccxt(exchange_config)
         self._api_async = self._init_ccxt(exchange_config, ccxt_async)
 
+        self._load_async_markets()
         logger.info('Using Exchange "%s"', self.name)
 
         # Check if all pairs are available
@@ -132,6 +133,15 @@ class Exchange(object):
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
+    def _load_async_markets(self) -> None:
+        try:
+            if self._api_async:
+                asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
+
+        except ccxt.BaseError as e:
+            logger.warning('Could not load async markets. Reason: %s', e)
+            return
+
     def validate_pairs(self, pairs: List[str]) -> None:
         """
         Checks if all given pairs are tradable on the current exchange.
@@ -142,7 +152,6 @@ class Exchange(object):
 
         try:
             markets = self._api.load_markets()
-            asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
         except ccxt.BaseError as e:
             logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
             return
