@@ -191,19 +191,18 @@ def download_backtesting_testdata(datadir: str,
                                   timerange: Optional[TimeRange] = None) -> None:
 
     """
-    Download the latest ticker intervals from the exchange for the pairs passed in parameters
+    Download the latest ticker intervals from the exchange for the pair passed in parameters
     The data is downloaded starting from the last correct ticker interval data that
-    esists in a cache. If timerange starts earlier than the data in the cache,
+    exists in a cache. If timerange starts earlier than the data in the cache,
     the full data will be redownloaded
 
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
-    :param pairs: list of pairs to download
+    :param pair: pair to download
     :param tick_interval: ticker interval
     :param timerange: range of time to download
     :return: None
 
     """
-
     path = make_testdata_path(datadir)
     filepair = pair.replace("/", "_")
     filename = os.path.join(path, f'{filepair}-{tick_interval}.json')

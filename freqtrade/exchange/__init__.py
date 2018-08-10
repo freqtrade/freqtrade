@@ -54,7 +54,7 @@ class Exchange(object):
     _cached_ticker: Dict[str, Any] = {}
 
     # Holds last candle refreshed time of each pair
-    _pairs_last_refresh_time : Dict[str, int] = {}
+    _pairs_last_refresh_time: Dict[str, int] = {}
 
     # Holds candles
     _cached_klines: Dict[str, Any] = {}
