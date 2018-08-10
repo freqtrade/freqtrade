@@ -78,7 +78,6 @@ class Exchange(object):
         self._api = self._init_ccxt(exchange_config)
         self._api_async = self._init_ccxt(exchange_config, ccxt_async)
 
-        self._load_async_markets()
         logger.info('Using Exchange "%s"', self.name)
 
         # Check if all pairs are available
@@ -152,6 +151,7 @@ class Exchange(object):
 
         try:
             markets = self._api.load_markets()
+            self._load_async_markets()
         except ccxt.BaseError as e:
             logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
             return
