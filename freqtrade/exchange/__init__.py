@@ -54,7 +54,7 @@ class Exchange(object):
     _cached_ticker: Dict[str, Any] = {}
 
     # Holds last candle refreshed time of each pair
-    _pairs_last_refreshed_time = {}
+    _pairs_last_refresh_time = {}
 
     # Holds candles
     _cached_klines: Dict[str, Any] = {}
@@ -359,18 +359,26 @@ class Exchange(object):
             logger.debug("fetching %s ...", pair)
 
             # Calculating ticker interval in second
-            interval_in_seconds = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
+            interval_in_sec = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
 
-            # If (last update time) + (interval in second) + (1 second) is greater than now
+            # If (last update time) + (interval in second) is greater or equal than now
             # that means we don't have to hit the API as there is no new candle
             # so we fetch it from local cache
-            if self._pairs_last_refreshed_time.get(pair, 0) + interval_in_seconds + 1 > round(time.time()):
+            if (not since_ms and
+                    self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
+                    int(time.time())):
                 data = self._cached_klines[pair]
-            else: 
-                data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
+            else:
+                data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
+                                                         since=since_ms)
+
+            # Because some exchange sort Tickers ASC and other DESC.
+            # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
+            # when GDAX returns a list of tickers DESC (newest first, oldest last)
+            data = sorted(data, key=lambda x: x[0])
 
             # keeping last candle time as last refreshed time of the pair
-            self._pairs_last_refreshed_time[pair] = data[-1][0] / 1000
+            self._pairs_last_refresh_time[pair] = data[-1][0] // 1000
 
             # keeping candles in cache
             self._cached_klines[pair] = data
