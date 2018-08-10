@@ -54,7 +54,7 @@ class Exchange(object):
     _cached_ticker: Dict[str, Any] = {}
 
     # Holds last candle refreshed time of each pair
-    _pairs_last_refresh_time = {}
+    _pairs_last_refresh_time : Dict[str, int] = {}
 
     # Holds candles
     _cached_klines: Dict[str, Any] = {}
@@ -341,7 +341,8 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    async def async_get_candles_history(self, pairs, tick_interval) -> List[Tuple[str, List]]:
+    async def async_get_candles_history(self, pairs: List[str],
+                                        tick_interval: str) -> List[Tuple[str, List]]:
         # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
