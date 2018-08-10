@@ -584,11 +584,15 @@ async def test_async_get_candles_history(default_conf, mocker):
     async def async_fetch_ohlcv(pair, timeframe, since):
         return tick
 
+    async def async_load_markets():
+        return {}
+
     exchange = get_patched_exchange(mocker, default_conf)
     # Monkey-patch async function
     exchange._api_async.fetch_ohlcv = async_fetch_ohlcv
 
-    exchange = Exchange(default_conf)
+    exchange._api_async.load_markets = async_load_markets
+
     pairs = ['ETH/BTC', 'XRP/BTC']
     res = await exchange.async_get_candles_history(pairs, "5m")
     assert type(res) is list
