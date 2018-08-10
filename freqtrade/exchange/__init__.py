@@ -366,7 +366,7 @@ class Exchange(object):
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # Combine tickers
-        data = []
+        data: List = []
         for tick in tickers:
             if tick[0] == pair:
                 data.extend(tick[1])

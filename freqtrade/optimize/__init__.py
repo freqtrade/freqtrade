@@ -218,8 +218,11 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
+    # Default since_ms to 30 days if nothing is given
     new_data = exchange.get_history(pair=pair, tick_interval=tick_interval,
-                                    since_ms=since_ms)
+                                    since_ms=since_ms if since_ms
+                                    else
+                                    int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000)
     data.extend(new_data)
 
     logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
