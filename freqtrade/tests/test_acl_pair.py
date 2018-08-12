@@ -11,7 +11,6 @@ import freqtrade.tests.conftest as tt  # test tools
 
 def whitelist_conf():
     config = tt.default_conf()
-
     config['stake_currency'] = 'BTC'
     config['exchange']['pair_whitelist'] = [
         'ETH/BTC',
@@ -20,7 +19,6 @@ def whitelist_conf():
         'SWT/BTC',
         'BCC/BTC'
     ]
-
     config['exchange']['pair_blacklist'] = [
         'BLK/BTC'
     ]

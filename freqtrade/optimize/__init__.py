@@ -77,11 +77,11 @@ def load_tickerdata_file(
     if os.path.isfile(gzipfile):
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
-            pairdata = json_load(tickerdata)
+            pairdata = json.load(tickerdata)
     elif os.path.isfile(file):
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            pairdata = json_load(tickerdata)
+            pairdata = json.load(tickerdata)
     else:
         return None
 
@@ -177,7 +177,7 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            data = json_load(file)
+            data = json.load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:
@@ -233,7 +233,7 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    new_data = exchange.get_ticker_history(pair=pair, tick_interval=tick_interval,
+    new_data = exchange.get_candle_history(pair=pair, tick_interval=tick_interval,
                                            since_ms=since_ms)
     data.extend(new_data)
 

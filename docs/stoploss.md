@@ -35,14 +35,17 @@ basically what this means is that your stop loss will be adjusted to be always b
 
 ### Custom positive loss
 
-Due to demand, it is possible to have a default stop loss, when you are in the red with your buy, but once your buy turns positive,
-the system will utilize a new stop loss, which can be a different value. For example your default stop loss is 5%, but once you are in the
-black, it will be changed to be only a 1% stop loss
+Due to demand, it is possible to have a default stop loss, when you are in the red with your buy, but once your profit surpasses a certain percentage,
+the system will utilize a new stop loss, which can be a different value. For example your default stop loss is 5%, but once you have 1.1% profit,
+it will be changed to be only a 1% stop loss, which trails the green candles until it goes below them.
 
-This can be configured in the main configuration file and requires `"trailing_stop": true` to be set to true.
+Both values can be configured in the main configuration file and requires `"trailing_stop": true` to be set to true.
 
 ``` json
     "trailing_stop_positive":  0.01,
+    "trailing_stop_positive_offset":  0.011,
 ```
 
-The 0.01 would translate to a 1% stop loss, once you hit profit.
+The 0.01 would translate to a 1% stop loss, once you hit 1.1% profit.
+
+You should also make sure to have this value higher than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.

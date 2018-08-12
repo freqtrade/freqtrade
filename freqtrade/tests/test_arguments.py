@@ -1,9 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 
-"""
-Unit test file for arguments.py
-"""
-
 import argparse
 
 import pytest
@@ -11,22 +7,10 @@ import pytest
 from freqtrade.arguments import Arguments, TimeRange
 
 
-def test_arguments_object() -> None:
-    """
-    Test the Arguments object has the mandatory methods
-    :return: None
-    """
-    assert hasattr(Arguments, 'get_parsed_arg')
-    assert hasattr(Arguments, 'parse_args')
-    assert hasattr(Arguments, 'parse_timerange')
-    assert hasattr(Arguments, 'scripts_options')
-
-
 # Parse common command-line-arguments. Used for all tools
 def test_parse_args_none() -> None:
     arguments = Arguments([], '')
     assert isinstance(arguments, Arguments)
-    assert isinstance(arguments.parser, argparse.ArgumentParser)
     assert isinstance(arguments.parser, argparse.ArgumentParser)
 
 
@@ -148,7 +132,11 @@ def test_parse_args_backtesting_custom() -> None:
         'backtesting',
         '--live',
         '--ticker-interval', '1m',
-        '--refresh-pairs-cached']
+        '--refresh-pairs-cached',
+        '--strategy-list',
+        'DefaultStrategy',
+        'TestStrategy'
+        ]
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == 'test_conf.json'
     assert call_args.live is True
@@ -157,6 +145,8 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args.func is not None
     assert call_args.ticker_interval == '1m'
     assert call_args.refresh_pairs is True
+    assert type(call_args.strategy_list) is list
+    assert len(call_args.strategy_list) == 2
 
 
 def test_parse_args_hyperopt_custom() -> None:

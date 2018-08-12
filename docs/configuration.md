@@ -27,6 +27,7 @@ The table below will list all configuration parameters.
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `trailing_stoploss` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
 | `trailing_stoploss_positve` | 0 | No | Changes stop-loss once profit has been reached.
+| `trailing_stoploss_positve_offset` | 0 | No | Offset on when to apply `trailing_stoploss_positive`. Percentage value which should be positive.
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
@@ -195,6 +196,33 @@ you run it in production mode.
 
 ```
 If you have not your Bittrex API key yet, [see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
+
+
+### Embedding Strategies
+
+FreqTrade provides you with with an easy way to embed the strategy into your configuration file. 
+This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
+in your chosen config file.
+
+##### Encoding a string as BASE64
+
+This is a quick example, how to generate the BASE64 string in python
+
+```python
+from base64 import urlsafe_b64encode
+
+with open(file, 'r') as f:
+    content = f.read()
+content = urlsafe_b64encode(content.encode('utf-8'))
+```
+
+The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following
+
+```json
+"strategy": "NameOfStrategy:BASE64String"
+```
+
+Please ensure that 'NameOfStrategy' is identical to the strategy name!
 
 ## Next step
 

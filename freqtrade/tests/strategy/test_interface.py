@@ -1,9 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 
-"""
-Unit test file for analyse.py
-"""
-
 import logging
 from unittest.mock import MagicMock
 
@@ -92,7 +88,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
-    mocker.patch('freqtrade.exchange.Exchange.get_ticker_history', return_value=MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.get_candle_history', return_value=MagicMock())
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
@@ -102,9 +98,6 @@ def test_get_signal_handles_exceptions(mocker, default_conf):
 
 
 def test_tickerdata_to_dataframe(default_conf) -> None:
-    """
-    Test Analyze.tickerdata_to_dataframe() method
-    """
     strategy = DefaultStrategy(default_conf)
 
     timerange = TimeRange(None, 'line', 0, -100)

@@ -138,7 +138,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
-        tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
+        tickers[pair] = exchange.get_candle_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
             datadir=_CONF.get("datadir"),
@@ -159,8 +159,8 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     dataframes = strategy.tickerdata_to_dataframe(tickers)
 
     dataframe = dataframes[pair]
-    dataframe = strategy.populate_buy_trend(dataframe)
-    dataframe = strategy.populate_sell_trend(dataframe)
+    dataframe = strategy.advise_buy(dataframe, {'pair': pair})
+    dataframe = strategy.advise_sell(dataframe, {'pair': pair})
 
     if len(dataframe.index) > args.plot_limit:
         logger.warning('Ticker contained more than %s candles as defined '

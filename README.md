@@ -24,7 +24,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 ## Exchange marketplaces supported
 
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [Binance](https://www.binance.com/)
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](#a-note-on-binance))
 - [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ## Features
@@ -50,6 +50,7 @@ hesitate to read the source code and understand the mechanism of this bot.
   - [Strategy Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
   - [Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
   - [Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
+  - [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md)
 - [Basic Usage](#basic-usage)
   - [Bot commands](#bot-commands)
   - [Telegram RPC commands](#telegram-rpc-commands)
@@ -61,6 +62,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [Requirements](#requirements)
   - [Min hardware required](#min-hardware-required)
   - [Software requirements](#software-requirements)
+ 
 
 ## Quick start
 
@@ -150,6 +152,13 @@ The project is currently setup in two main branches:
 
 - `develop` - This branch has often new features, but might also cause breaking changes.
 - `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
+- `feat/*` - These are feature branches, which are beeing worked on heavily. Please don't use these unless you want to test a specific feature.
+
+
+## A note on Binance
+
+For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
+Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
 
 ## Support
 

@@ -7,7 +7,10 @@ import importlib.util
 import inspect
 import logging
 import os
+import tempfile
+from base64 import urlsafe_b64decode
 from collections import OrderedDict
+from pathlib import Path
 from typing import Dict, Optional, Type
 
 from freqtrade import constants
@@ -87,11 +90,34 @@ class StrategyResolver(object):
             # Add extra strategy directory on top of search paths
             abs_paths.insert(0, extra_dir)
 
+        if ":" in strategy_name:
+            logger.info("loading base64 endocded strategy")
+            strat = strategy_name.split(":")
+
+            if len(strat) == 2:
+                temp = Path(tempfile.mkdtemp("freq", "strategy"))
+                name = strat[0] + ".py"
+
+                temp.joinpath(name).write_text(urlsafe_b64decode(strat[1]).decode('utf-8'))
+                temp.joinpath("__init__.py").touch()
+
+                strategy_name = os.path.splitext(name)[0]
+
+                # register temp path with the bot
+                abs_paths.insert(0, str(temp.resolve()))
+
         for path in abs_paths:
             try:
                 strategy = self._search_strategy(path, strategy_name=strategy_name, config=config)
                 if strategy:
                     logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                    strategy._populate_fun_len = len(
+                        inspect.getfullargspec(strategy.populate_indicators).args)
+                    strategy._buy_fun_len = len(
+                        inspect.getfullargspec(strategy.populate_buy_trend).args)
+                    strategy._sell_fun_len = len(
+                        inspect.getfullargspec(strategy.populate_sell_trend).args)
+
                     return import_strategy(strategy, config=config)
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', path)
