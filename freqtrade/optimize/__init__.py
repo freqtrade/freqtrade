@@ -3,10 +3,11 @@
 import gzip
 try:
     import ujson as json
+    _UJSON = True
 except ImportError:
     # see mypy/issues/1153
     import json  # type: ignore
-import inspect
+    _UJSON = False
 import logging
 import os
 from typing import Optional, List, Dict, Tuple, Any
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def json_load(data):
     """Try to load data with ujson"""
-    if inspect.getfullargspec(json.load)[5].get('precise_float'):
+    if _UJSON:
         return json.load(data, precise_float=True)
     else:
         return json.load(data)
