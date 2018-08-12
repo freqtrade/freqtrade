@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
 #encoding=utf8
 
+# Check which python version is installed
+function check_installed_python() {
+    which python3.7
+    if [ $? -eq 0 ]; then
+        echo "using Python 3.7"
+        PYTHON=python3.7
+        return
+    fi
+
+    which python3.6
+    if [ $? -eq 0 ]; then
+        echo "using Python 3.6"
+        PYTHON=python3.6
+        return
+   fi
+
+}
+
 function updateenv () {
     echo "-------------------------"
     echo "Update your virtual env"
     echo "-------------------------"
     source .env/bin/activate
     echo "pip3 install in-progress. Please wait..."
-    pip3.6 install --quiet --upgrade pip
+    pip3 install --quiet --upgrade pip
     pip3 install --quiet -r requirements.txt --upgrade
     pip3 install --quiet -r requirements.txt
     pip3 install --quiet -e .
@@ -79,7 +97,7 @@ function reset () {
     fi
 
     echo
-    python3.6 -m venv .env
+    ${PYTHON} -m venv .env
     updateenv
 }
 
@@ -183,7 +201,7 @@ function install () {
         install_debian
     else
         echo "This script does not support your OS."
-        echo "If you have Python3.6, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python3.6 or Python3.7, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi
@@ -193,7 +211,7 @@ function install () {
     echo "-------------------------"
     echo "Run the bot"
     echo "-------------------------"
-    echo "You can now use the bot by executing 'source .env/bin/activate; python3.6 freqtrade/main.py'."
+    echo "You can now use the bot by executing 'source .env/bin/activate; ${PYTHON} freqtrade/main.py'."
 }
 
 function plot () {
@@ -213,6 +231,9 @@ function help () {
     echo "	-c,--config     Easy config generator (Will override your existing file)."
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
+
+# Verify if 3.6 or 3.7 is installed
+check_installed_python
 
 case $* in
 --install|-i)
