@@ -1,7 +1,7 @@
 FROM python:3.6.6-slim-stretch
 
 # Install TA-lib
-RUN apt-get update && apt-get -y install curl build-essential git && apt-get clean
+RUN apt-get update && apt-get -y install curl build-essential && apt-get clean
 RUN curl -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz | \
   tar xzvf - && \
   cd ta-lib && \
@@ -12,11 +12,6 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 # Prepare environment
 RUN mkdir /freqtrade
 WORKDIR /freqtrade
-
-# Update PIP
-RUN python -m pip install --upgrade pip
-RUN pip install future
-RUN pip install numpy
 
 # Install dependencies
 COPY requirements.txt /freqtrade/
