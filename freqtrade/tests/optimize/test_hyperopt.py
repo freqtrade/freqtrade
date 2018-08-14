@@ -263,7 +263,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)
 
     mocker.patch(
-        'freqtrade.optimize.hyperopt.Hyperopt.backtest',
+        'freqtrade.optimize.hyperopt.Hyperopt.run',
         MagicMock(return_value=backtest_result)
     )
     patch_exchange(mocker)

@@ -91,7 +91,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
     data = load_data_test(contour)
     processed = backtesting.tickerdata_to_dataframe(data)
     assert isinstance(processed, dict)
-    results = backtesting.backtest(
+    results = backtesting.run(
         {
             'stake_amount': config['stake_amount'],
             'processed': processed,
@@ -347,7 +347,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
             pairs=['UNITTEST/BTC']
         )
     )
-    min_date, max_date = backtesting.get_timeframe(data)
+    min_date, max_date = backtesting._get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
 
@@ -459,9 +459,9 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
-        backtest=MagicMock(),
+        run=MagicMock(),
         _generate_text_table=MagicMock(return_value='1'),
-        get_timeframe=get_timeframe,
+        _get_timeframe=get_timeframe,
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
@@ -494,9 +494,9 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
-        backtest=MagicMock(),
+        run=MagicMock(),
         _generate_text_table=MagicMock(return_value='1'),
-        get_timeframe=get_timeframe,
+        _get_timeframe=get_timeframe,
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
@@ -521,7 +521,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     data_processed = backtesting.tickerdata_to_dataframe(data)
-    results = backtesting.backtest(
+    results = backtesting.run(
         {
             'stake_amount': default_conf['stake_amount'],
             'processed': data_processed,
@@ -568,7 +568,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
-    results = backtesting.backtest(
+    results = backtesting.run(
         {
             'stake_amount': default_conf['stake_amount'],
             'processed': backtesting.tickerdata_to_dataframe(data),
@@ -612,7 +612,7 @@ def test_backtest_ticks(default_conf, fee, mocker):
         backtesting = Backtesting(default_conf)
         backtesting.advise_buy = fun  # Override
         backtesting.advise_sell = fun  # Override
-        results = backtesting.backtest(backtest_conf)
+        results = backtesting.run(backtest_conf)
         assert not results.empty
 
 
@@ -627,7 +627,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf):
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = fun  # Override
     backtesting.advise_sell = fun  # Override
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.run(backtest_conf)
     assert results.empty
 
 
@@ -642,7 +642,7 @@ def test_backtest_only_sell(mocker, default_conf):
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = fun  # Override
     backtesting.advise_sell = fun  # Override
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.run(backtest_conf)
     assert results.empty
 
 
@@ -652,7 +652,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = _trend_alternate  # Override
     backtesting.advise_sell = _trend_alternate  # Override
-    results = backtesting.backtest(backtest_conf)
+    results = backtesting.run(backtest_conf)
     backtesting._store_backtest_result("test_.json", results)
     assert len(results) == 4
     # One trade was force-closed at the end
@@ -665,7 +665,7 @@ def test_backtest_record(default_conf, fee, mocker):
     patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch(
-        'freqtrade.optimize.backtesting.file_dump_json',
+        'freqtrade.optimize.optimize.file_dump_json',
         new=lambda n, r: (names.append(n), records.append(r))
     )
 
@@ -736,7 +736,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.get_candle_history',
                  new=lambda s, n, i: _load_pair_as_ticks(n, i))
     patch_exchange(mocker)
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.run', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
@@ -780,7 +780,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
                  new=lambda s, n, i: _load_pair_as_ticks(n, i))
     patch_exchange(mocker)
     backtestmock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.run', backtestmock)
     gen_table_mock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', gen_table_mock)
     gen_strattable_mock = MagicMock()
