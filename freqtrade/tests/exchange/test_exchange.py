@@ -51,6 +51,12 @@ def test_init(default_conf, mocker, caplog):
     assert log_has('Instance is running with dry_run enabled', caplog.record_tuples)
 
 
+def test_destroy(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    get_patched_exchange(mocker, default_conf)
+    assert log_has('Exchange object destroyed, closing async loop', caplog.record_tuples)
+
+
 def test_init_exception(default_conf, mocker):
     default_conf['exchange']['name'] = 'wrong_exchange_name'
 

@@ -1,6 +1,7 @@
 # pragma pylint: disable=W0603
 """ Cryptocurrency Exchanges support """
 import logging
+import inspect
 from random import randint
 from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
@@ -86,6 +87,14 @@ class Exchange(object):
         if config.get('ticker_interval'):
             # Check if timeframe is available
             self.validate_timeframes(config['ticker_interval'])
+
+    def __del__(self):
+        """
+        Destructor - clean up async stuff
+        """
+        logger.debug("Exchange object destroyed, closing async loop")
+        if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
+            asyncio.get_event_loop().run_until_complete(self._api_async.close())
 
     def _init_ccxt(self, exchange_config: dict, ccxt_module=ccxt) -> ccxt.Exchange:
         """
