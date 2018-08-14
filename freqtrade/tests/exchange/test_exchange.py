@@ -173,6 +173,20 @@ def test_set_sandbox_exception(default_conf, mocker):
         exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
 
 
+def test__load_async_markets(default_conf, mocker, caplog):
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._api_async.load_markets = get_mock_coro(None)
+    exchange._load_async_markets()
+    assert exchange._api_async.load_markets.call_count == 1
+    caplog.set_level(logging.DEBUG)
+
+    exchange._api_async.load_markets = Mock(side_effect=ccxt.BaseError("deadbeef"))
+    exchange._load_async_markets()
+
+    assert log_has('Could not load async markets. Reason: deadbeef',
+                   caplog.record_tuples)
+
+
 def test_validate_pairs(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.load_markets = MagicMock(return_value={
