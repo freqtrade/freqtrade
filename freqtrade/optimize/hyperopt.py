@@ -24,6 +24,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data
+from freqtrade.optimize.optimize import OptimizeType
 from freqtrade.optimize.backtesting import Backtesting
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class Hyperopt(Backtesting):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
+        self._optimizetype = OptimizeType.HYPEROPT
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
         self.target_trades = 600

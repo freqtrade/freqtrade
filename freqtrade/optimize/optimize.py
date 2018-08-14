@@ -11,6 +11,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+from enum import Enum
 
 import arrow
 from pandas import DataFrame
@@ -44,6 +45,12 @@ class BacktestResult(NamedTuple):
     open_rate: float
     close_rate: float
     sell_reason: SellType
+
+
+class OptimizeType(Enum):
+    BACKTEST = "backtest"
+    BACKSLAP = "backslap"
+    HYPEROPT = "hyperopt"
 
 
 class IOptimize(ABC):
@@ -269,7 +276,7 @@ class IOptimize(ABC):
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")
-            print(' BACKTESTING REPORT '.center(119, '='))
+            print(f' {self._optimizetype.value.upper()} REPORT '.center(119, '='))
             print(self._generate_text_table(data, results))
 
             print(' SELL REASON STATS '.center(119, '='))

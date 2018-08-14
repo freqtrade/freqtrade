@@ -6,7 +6,7 @@ from typing import Dict, Any
 from pandas import DataFrame
 
 from freqtrade.exchange import Exchange
-from freqtrade.optimize.optimize import IOptimize, BacktestResult, setup_configuration
+from freqtrade.optimize.optimize import IOptimize, BacktestResult, OptimizeType, setup_configuration
 from freqtrade.strategy import IStrategy
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import StrategyResolver
@@ -24,6 +24,7 @@ class Backslapping(IOptimize):
         constructor
         """
         super().__init__(config)
+        self._optimizetype = OptimizeType.BACKTEST
 
         self.fee = self.exchange.get_fee()
 

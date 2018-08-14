@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
 
-from freqtrade.optimize.optimize import IOptimize, BacktestResult, setup_configuration
+from freqtrade.optimize.optimize import IOptimize, BacktestResult, OptimizeType, setup_configuration
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import SellType
 
@@ -27,6 +27,7 @@ class Backtesting(IOptimize):
 
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
+        self._optimizetype = OptimizeType.BACKTEST
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
