@@ -161,14 +161,6 @@ class Arguments(object):
             dest='exportfilename',
             metavar='PATH',
         )
-        parser.add_argument(
-            '--backslap',
-            help="Utilize the Backslapping approach instead of the default Backtesting. This should provide more "
-                 "accurate results, unless you are utilizing Min/Max function in your strategy.",
-            required=False,
-            dest='backslap',
-            action='store_true'
-        )
 
     @staticmethod
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
@@ -236,7 +228,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import backtesting, hyperopt
+        from freqtrade.optimize import backtesting, backslapping, hyperopt
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -245,6 +237,12 @@ class Arguments(object):
         backtesting_cmd.set_defaults(func=backtesting.start)
         self.optimizer_shared_options(backtesting_cmd)
         self.backtesting_options(backtesting_cmd)
+
+        # Add backslapping subcommand
+        backslapping_cmd = subparsers.add_parser('backslapping', help='backslapping module')
+        backslapping_cmd.set_defaults(func=backslapping.start)
+        self.optimizer_shared_options(backslapping_cmd)
+        self.backtesting_options(backslapping_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')

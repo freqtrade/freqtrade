@@ -1,48 +1,35 @@
 import timeit
+from argparse import Namespace
+import logging
 from typing import Dict, Any
 
 from pandas import DataFrame
 
 from freqtrade.exchange import Exchange
+from freqtrade.optimize.optimize import IOptimize, BacktestResult, setup_configuration
 from freqtrade.strategy import IStrategy
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import StrategyResolver
 
+logger = logging.getLogger(__name__)
 
-class Backslapping:
+
+class Backslapping(IOptimize):
     """
     provides a quick way to evaluate strategies over a longer term of time
     """
 
-    def __init__(self, config: Dict[str, Any], exchange = None) -> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         constructor
         """
-
-        self.config = config
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
-        self.ticker_interval = self.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.populate_buy_trend = self.strategy.populate_buy_trend
-        self.populate_sell_trend = self.strategy.populate_sell_trend
-
-        ###
-        #
-        ###
-        if exchange is None:
-            self.config['exchange']['secret'] = ''
-            self.config['exchange']['password'] = ''
-            self.config['exchange']['uid'] = ''
-            self.config['dry_run'] = True
-            self.exchange = Exchange(self.config)
-        else:
-            self.exchange = exchange
+        super().__init__(config)
 
         self.fee = self.exchange.get_fee()
 
         self.stop_loss_value = self.strategy.stoploss
 
-        #### backslap config
+        #  backslap config
         '''
         Numpy arrays are used for 100x speed up
         We requires setting Int values for
@@ -81,7 +68,7 @@ class Backslapping:
     def f(self, st):
         return (timeit.default_timer() - st)
 
-    def run(self,args):
+    def run(self, args):
 
         headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
         processed = args['processed']
@@ -96,8 +83,8 @@ class Backslapping:
             if self.debug_timing:  # Start timer
                 fl = self.s()
 
-            ticker_data = self.populate_sell_trend(
-                self.populate_buy_trend(pair_data))[headers].copy()
+            ticker_data = self.advise_sell(self.advise_buy(pair_data, {'pair': pair}),
+                                           {'pair': pair})[headers].copy()
 
             if self.debug_timing:  # print time taken
                 flt = self.f(fl)
@@ -132,7 +119,7 @@ class Backslapping:
 
             bslap_results_df = self.vector_fill_results_table(bslap_results_df, pair)
         else:
-            from freqtrade.optimize.backtesting import BacktestResult
+
 
             bslap_results_df = []
             bslap_results_df = DataFrame.from_records(bslap_results_df, columns=BacktestResult._fields)
@@ -221,13 +208,13 @@ class Backslapping:
         """
          The purpose of this def is to return the next "buy" = 1
          after t_exit_ind.
-         
-         This function will also check is the stop limit for the pair has been reached. 
+
+         This function will also check is the stop limit for the pair has been reached.
          if stop_stops is the limit and stop_stops_count it the number of times the stop has been hit.
 
          t_exit_ind is the index the last trade exited on
          or 0 if first time around this loop.
-         
+
          stop_stops i
          """
         debug = self.debug
@@ -379,7 +366,7 @@ class Backslapping:
                a) Find first buy index
                b) Discover first stop and sell hit after buy index
                c) Chose first instance as trade exit
-    
+
              Phase 2
               2) Manage dynamic Stop and ROI Exit
                a) Create trade slice from 1
@@ -392,14 +379,14 @@ class Backslapping:
             '''
             0 - Find next buy entry
             Finds index for first (buy = 1) flag
-    
+
             Requires: np_buy_arr - a 1D array of the 'buy' column. To find next "1"
             Required: t_exit_ind - Either 0, first loop. Or The index we last exited on
-            Requires: np_buy_arr_len - length of pair array. 
-            Requires: stops_stops - number of stops allowed before stop trading a pair 
+            Requires: np_buy_arr_len - length of pair array.
+            Requires: stops_stops - number of stops allowed before stop trading a pair
             Requires: stop_stop_counts - count of stops hit in the pair
             Provides: The next "buy" index after t_exit_ind
-    
+
             If -1 is returned no buy has been found in remainder of array, skip to exit loop
             '''
             t_open_ind = self.np_get_t_open_ind(np_buy_arr, t_exit_ind, np_buy_arr_len, stop_stops, stop_stops_count)
@@ -416,19 +403,19 @@ class Backslapping:
 
                 """
                 1 - Create views to search within for our open trade
-    
+
                 The views are our search space for the next Stop or Sell
                 Numpy view is employed as:
                 1,000 faster than pandas searches
                 Pandas cannot assure it will always return a view, it may make a slow copy.
-    
+
                 The view contains columns:
                 buy 0 - open 1 - close 2 - sell 3 - high 4 - low 5
-    
+
                 Requires: np_bslap is our numpy array of the ticker DataFrame
                 Requires: t_open_ind is the index row with the  buy.
                 Provides: np_t_open_v View of array after buy.
-                Provides: np_t_open_v_stop View of array after buy +1  
+                Provides: np_t_open_v_stop View of array after buy +1
                           (Stop will search in here to prevent stopping in the past)
                 """
                 np_t_open_v = np_bslap[t_open_ind:]
@@ -446,13 +433,13 @@ class Backslapping:
 
                 '''
                 2 - Calculate our stop-loss price
-    
+
                 As stop is based on buy price of our trade
                 - (BTO)Buys are Triggered On np_bto, typically the CLOSE of candle
                 - (BCO)Buys are Calculated On np_bco, default is OPEN of the next candle.
                 This is as we only see the CLOSE after it has happened.
                 The  back test assumption is we have bought at first available price, the OPEN
-    
+
                 Requires: np_bslap   - is our numpy array of the ticker DataFrame
                 Requires: t_open_ind - is the index row with the first buy.
                 Requires: p_stop     - is the stop rate, ie. 0.99 is -1%
@@ -469,9 +456,9 @@ class Backslapping:
 
                 '''
                 3 -  Find candle STO is under Stop-Loss After Trade opened.
-    
+
                 where [np_sto] (stop tiggered on variable: "close", "low" etc) < np_t_stop_pri
-    
+
                 Requires: np_t_open_v_stop   Numpy view of ticker_data after buy row +1 (when trade was opened)
                 Requires: np_sto        User Var(STO)StopTriggeredOn. Typically set to "low" or "close"
                 Requires: np_t_stop_pri The stop-loss price STO must fall under to trigger stop
@@ -501,9 +488,9 @@ class Backslapping:
 
                 '''
                 4 - Find first sell index after trade open
-    
+
                 First index in the view np_t_open_v where ['sell'] = 1
-    
+
                 Requires: np_t_open_v - view of ticker_data from buy onwards
                 Requires: no_sell - integer '3', the buy column in the array
                 Provides: np_t_sell_ind index of view where first sell=1 after buy
@@ -528,13 +515,13 @@ class Backslapping:
                 '''
                 5 - Determine which was hit first a stop or sell
                 To then use as exit index price-field (sell on buy, stop on stop)
-    
+
                 STOP takes priority over SELL as would be 'in candle' from tick data
                 Sell would use Open from Next candle.
                 So in a draw Stop would be hit first on ticker data in live
-    
+
                 Validity of when types of trades may be executed can be summarised as:
-    
+
                             Tick	View
                             index	index	Buy Sell open	low	     close	 high   Stop price
                 open 2am	94	        -1	0	 0	-----	------	 ------  -----   -----
@@ -542,25 +529,25 @@ class Backslapping:
                 open 4am 	96	        1	0	 1	Enter	trgstop	 trg sel ROI out Stop out
                 open 5am 	97	        2	0	 0	Exit	------	 ------- -----   -----
                 open 6am	98	        3	0	 0	----- 	------	 ------- -----   -----
-    
+
                 -1 means not found till end of view i.e no valid Stop found. Exclude from match.
                 Stop tiggering and closing in 96-1, the candle we bought at OPEN in, is valid.
-    
+
                 Buys and sells are triggered at candle close
                 Both will open their postions at the open of the next candle. i/e  + 1 index
-    
+
                 Stop and buy Indexes are on the view. To map to the ticker dataframe
                 the t_open_ind index should be summed.
-    
+
                 np_t_stop_ind: Stop Found index in view
                 t_exit_ind   : Sell found in view
                 t_open_ind   : Where view was started on ticker_data
-    
+
                 TODO: fix this frig for logic test,, case/switch/dictionary would be better...
                       more so when later testing many options, dynamic stop / roi etc
                 cludge - Setting np_t_sell_ind as 9999999999 when -1 (not found)
                 cludge - Setting np_t_stop_ind as 9999999999 when -1 (not found)
-    
+
                 '''
                 if debug:
                     print("\n(5) numpy debug\nStop or Sell Logic Processing")
@@ -730,7 +717,7 @@ class Backslapping:
             if t_exit_last >= t_exit_ind or t_exit_last == -1:
                 """
                 Break loop and go on to next pair.
-    
+
                 When last trade exit equals index of last exit, there is no
                 opportunity to close any more trades.
                 """
@@ -763,7 +750,7 @@ class Backslapping:
                 bslap_result["open_rate"] = round(np_trade_enter_price, 15)
                 bslap_result["close_rate"] = round(np_trade_exit_price, 15)
                 bslap_result["exit_type"] = t_exit_type
-                bslap_result["sell_reason"] = t_exit_type #duplicated, but I don't care
+                bslap_result["sell_reason"] = t_exit_type  # duplicated, but I don't care
                 # append the dict to the list and print list
                 bslap_pair_results.append(bslap_result)
 
@@ -787,3 +774,18 @@ class Backslapping:
 
         # Send back List of trade dicts
         return bslap_pair_results
+
+
+def start(args: Namespace) -> None:
+    """
+    Start Backtesting script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    # Initialize configuration
+    config = setup_configuration(args)
+    logger.info('Starting freqtrade in Backtesting mode')
+
+    # Initialize backtesting object
+    backslapping = Backslapping(config)
+    backslapping.start()

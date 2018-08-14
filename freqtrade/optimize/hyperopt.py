@@ -276,7 +276,7 @@ class Hyperopt(Backtesting):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
-        results = self.backtest(
+        results = self.run(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
