@@ -137,6 +137,36 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
     assert result == -1
 
 
+def test_refresh_tickers(mocker, default_conf, caplog) -> None:
+    tick = [
+         [
+             1511686200000,  # unix timestamp ms
+             1,  # open
+             2,  # high
+             3,  # low
+             4,  # close
+             5,  # volume (in quote currency)
+         ]
+     ]
+
+    async def async_get_candles_history(pairlist, timeframe):
+        return [(pair, tick) for pair in pairlist]
+
+    caplog.set_level(logging.DEBUG)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.exchange.async_get_candles_history = async_get_candles_history
+
+    pairs = ['IOTA/ETH', 'XRP/ETH']
+    # empty dicts
+    assert not freqtrade._klines
+    freqtrade.refresh_tickers(['IOTA/ETH', 'XRP/ETH'])
+
+    assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
+    assert freqtrade._klines
+    for pair in pairs:
+        assert freqtrade._klines[pair]
+
+
 def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)

@@ -624,11 +624,6 @@ async def test_async_get_candles_history(default_conf, mocker):
     #     await exchange.async_get_candles_history('ETH/BTC', "5m")
 
 
-def test_refresh_tickers():
-    # TODO: Implement test for this
-    pass
-
-
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
         if since:

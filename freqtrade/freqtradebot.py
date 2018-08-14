@@ -135,7 +135,6 @@ class FreqtradeBot(object):
         """
         Refresh tickers asyncronously and return the result.
         """
-        # TODO: maybe add since_ms to use async in the download-script?
         # TODO: Add tests for this and the async stuff above
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
         datatups = asyncio.get_event_loop().run_until_complete(
