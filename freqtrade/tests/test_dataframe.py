@@ -14,7 +14,7 @@ def load_dataframe_pair(pairs, strategy):
     assert isinstance(pairs[0], str)
     dataframe = ld[pairs[0]]
 
-    dataframe = strategy.analyze_ticker(dataframe, pairs[0])
+    dataframe = strategy.analyze_ticker(dataframe, {'pair': pairs[0]})
     return dataframe
 
 

@@ -82,7 +82,7 @@ def check_migrate(engine) -> None:
         logger.info(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'max_rate'):
+    if not has_column(cols, 'ticker_interval'):
         fee_open = get_column_def(cols, 'fee_open', 'fee')
         fee_close = get_column_def(cols, 'fee_close', 'fee')
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
@@ -157,8 +157,8 @@ class Trade(_DECL_BASE):
 
     id = Column(Integer, primary_key=True)
     exchange = Column(String, nullable=False)
-    pair = Column(String, nullable=False)
-    is_open = Column(Boolean, nullable=False, default=True)
+    pair = Column(String, nullable=False, index=True)
+    is_open = Column(Boolean, nullable=False, default=True, index=True)
     fee_open = Column(Float, nullable=False, default=0.0)
     fee_close = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)

@@ -330,7 +330,7 @@ class Exchange(object):
             return self._cached_ticker[pair]
 
     @retrier
-    def get_ticker_history(self, pair: str, tick_interval: str,
+    def get_candle_history(self, pair: str, tick_interval: str,
                            since_ms: Optional[int] = None) -> List[Dict]:
         try:
             # last item should be in the time interval [now - tick_interval, now]

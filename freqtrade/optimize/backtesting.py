@@ -9,9 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
 
-import freqtrade.optimize as optimize
 from freqtrade.optimize.optimize import IOptimize, BacktestResult, setup_configuration
-from freqtrade.arguments import Arguments
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import SellType
 
@@ -156,8 +154,6 @@ class Backtesting(IOptimize):
                     lock_pair_until = ticker_data.iloc[-1].date
 
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
-
- 
 
 
 def start(args: Namespace) -> None:
