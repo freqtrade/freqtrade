@@ -143,6 +143,16 @@ class Arguments(object):
             dest='refresh_pairs',
         )
         parser.add_argument(
+            '--strategy-list',
+            help='Provide a commaseparated list of strategies to backtest '
+                 'Please note that ticker-interval needs to be set either in config '
+                 'or via command line. When using this together with --export trades, '
+                 'the strategy-name is injected into the filename '
+                 '(so backtest-data.json becomes backtest-data-DefaultStrategy.json',
+            nargs='+',
+            dest='strategy_list',
+        )
+        parser.add_argument(
             '--export',
             help='export backtest results, argument are: trades\
                   Example --export=trades',
@@ -160,14 +170,6 @@ class Arguments(object):
             default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
             dest='exportfilename',
             metavar='PATH',
-        )
-        parser.add_argument(
-            '--backslap',
-            help="Utilize the Backslapping approach instead of the default Backtesting. This should provide more "
-                 "accurate results, unless you are utilizing Min/Max function in your strategy.",
-            required=False,
-            dest='backslap',
-            action='store_true'
         )
 
     @staticmethod
@@ -236,7 +238,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import backtesting, hyperopt
+        from freqtrade.optimize import backtesting, backslapping, hyperopt
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -245,6 +247,12 @@ class Arguments(object):
         backtesting_cmd.set_defaults(func=backtesting.start)
         self.optimizer_shared_options(backtesting_cmd)
         self.backtesting_options(backtesting_cmd)
+
+        # Add backslapping subcommand
+        backslapping_cmd = subparsers.add_parser('backslapping', help='backslapping module')
+        backslapping_cmd.set_defaults(func=backslapping.start)
+        self.optimizer_shared_options(backslapping_cmd)
+        self.backtesting_options(backslapping_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
