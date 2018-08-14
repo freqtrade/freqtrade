@@ -3,7 +3,8 @@
 import logging
 from datetime import datetime
 from random import randint
-from unittest.mock import MagicMock, PropertyMock
+import time
+from unittest.mock import Mock, MagicMock, PropertyMock
 
 import ccxt
 import pytest
@@ -11,6 +12,14 @@ import pytest
 from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.exchange import API_RETRY_COUNT, Exchange
 from freqtrade.tests.conftest import get_patched_exchange, log_has
+
+
+# Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
+def get_mock_coro(return_value):
+    async def mock_coro(*args, **kwargs):
+        return return_value
+
+    return Mock(wraps=mock_coro)
 
 
 async def async_load_markets():
@@ -549,10 +558,10 @@ def test_get_ticker(default_conf, mocker):
 
 
 @pytest.mark.asyncio
-async def test_async_get_candle_history(default_conf, mocker):
+async def test__async_get_candle_history(default_conf, mocker, caplog):
     tick = [
         [
-            1511686200000,  # unix timestamp ms
+            int(time.time() * 1000),  # unix timestamp ms
             1,  # open
             2,  # high
             3,  # low
@@ -563,28 +572,37 @@ async def test_async_get_candle_history(default_conf, mocker):
 
     async def async_fetch_ohlcv(pair, timeframe, since):
         return tick
-
+    caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf)
     # Monkey-patch async function
-    exchange._api_async.fetch_ohlcv = async_fetch_ohlcv
+    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
     exchange = Exchange(default_conf)
     pair = 'ETH/BTC'
-    res = await exchange.async_get_candle_history(pair, "5m")
+    res = await exchange._async_get_candle_history(pair, "5m")
     assert type(res) is tuple
     assert len(res) == 2
     assert res[0] == pair
     assert res[1] == tick
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert not log_has(f"Using cached klines data for {pair} ...", caplog.record_tuples)
+    # test caching
+    res = await exchange._async_get_candle_history(pair, "5m")
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert log_has(f"Using cached klines data for {pair} ...", caplog.record_tuples)
 
+    # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
-                               "async_get_candle_history", "fetch_ohlcv",
+                               "_async_get_candle_history", "fetch_ohlcv",
                                pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
+    # # reinit exchange
+    # del exchange
 
-    api_mock = MagicMock()
-    with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
-        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        await exchange.async_get_candle_history(pair, "5m")
+    # api_mock = MagicMock()
+    # with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
+    #     api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
+    #     exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    #     await exchange._async_get_candle_history(pair, "5m")
 
 
 @pytest.mark.asyncio
@@ -600,14 +618,14 @@ async def test_async_get_candles_history(default_conf, mocker):
         ]
     ]
 
-    async def async_fetch_ohlcv(pair, timeframe, since):
-        return tick
+    async def mock_get_candle_hist(pair, tick_interval, since_ms=None):
+        return (pair, tick)
 
     exchange = get_patched_exchange(mocker, default_conf)
     # Monkey-patch async function
-    exchange._api_async.fetch_ohlcv = async_fetch_ohlcv
+    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
-    exchange._api_async.load_markets = async_load_markets
+    exchange._async_get_candle_history = Mock(wraps=mock_get_candle_hist)
 
     pairs = ['ETH/BTC', 'XRP/BTC']
     res = await exchange.async_get_candles_history(pairs, "5m")
@@ -618,16 +636,7 @@ async def test_async_get_candles_history(default_conf, mocker):
     assert res[0][1] == tick
     assert res[1][0] == pairs[1]
     assert res[1][1] == tick
-
-    # await async_ccxt_exception(mocker, default_conf, MagicMock(),
-    #                            "async_get_candles_history", "fetch_ohlcv",
-    #                            pairs=pairs, tick_interval=default_conf['ticker_interval'])
-
-    # api_mock = MagicMock()
-    # with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
-    #     api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
-    #     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    #     await exchange.async_get_candles_history('ETH/BTC', "5m")
+    assert exchange._async_get_candle_history.call_count == 2
 
 
 def make_fetch_ohlcv_mock(data):

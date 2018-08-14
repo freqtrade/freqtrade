@@ -378,7 +378,7 @@ class Exchange(object):
 
         one_call = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60 * _LIMIT * 1000
         logger.debug("one_call: %s", one_call)
-        input_coroutines = [self.async_get_candle_history(
+        input_coroutines = [self._async_get_candle_history(
             pair, tick_interval, since) for since in
                 range(since_ms, int(time.time() * 1000), one_call)]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
@@ -397,14 +397,14 @@ class Exchange(object):
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
         # await self._api_async.load_markets()
-        input_coroutines = [self.async_get_candle_history(
+        input_coroutines = [self._async_get_candle_history(
             symbol, tick_interval) for symbol in pairs]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
         # await self._api_async.close()
         return tickers
 
-    async def async_get_candle_history(self, pair: str, tick_interval: str,
-                                       since_ms: Optional[int] = None) -> Tuple[str, List]:
+    async def _async_get_candle_history(self, pair: str, tick_interval: str,
+                                        since_ms: Optional[int] = None) -> Tuple[str, List]:
         try:
             # fetch ohlcv asynchronously
             logger.debug("fetching %s since %s ...", pair, since_ms)
