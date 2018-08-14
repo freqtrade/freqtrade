@@ -595,14 +595,12 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
                                pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
-    # # reinit exchange
-    # del exchange
 
-    # api_mock = MagicMock()
-    # with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
-    #     api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
-    #     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    #     await exchange._async_get_candle_history(pair, "5m")
+    api_mock = MagicMock()
+    with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
+        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        await exchange._async_get_candle_history(pair, "5m", int((time.time() - 2000) * 1000))
 
 
 @pytest.mark.asyncio
