@@ -571,6 +571,34 @@ def test_get_ticker(default_conf, mocker):
     exchange.get_ticker(pair='ETH/BTC', refresh=True)
 
 
+def test_get_history(default_conf, mocker, caplog):
+    exchange = get_patched_exchange(mocker, default_conf)
+    tick = [
+        [
+            int(time.time() * 1000),  # unix timestamp ms
+            1,  # open
+            2,  # high
+            3,  # low
+            4,  # close
+            5,  # volume (in quote currency)
+        ]
+    ]
+    pair = 'ETH/BTC'
+
+    async def mock_cacndle_hist(pair, tick_interval, since_ms):
+        return pair, tick
+
+    exchange._async_get_candle_history = Mock(wraps=mock_cacndle_hist)
+    # one_call calculation * 1.8 should do 2 calls
+    since = 5 * 60 * 500 * 1.8
+    print(f"since = {since}")
+    ret = exchange.get_history(pair, "5m", int((time.time() - since) * 1000))
+
+    assert exchange._async_get_candle_history.call_count == 2
+    # Returns twice the above tick
+    assert len(ret) == 2
+
+
 @pytest.mark.asyncio
 async def test__async_get_candle_history(default_conf, mocker, caplog):
     tick = [
