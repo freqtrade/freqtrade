@@ -1,10 +1,8 @@
 #!/bin/sh
-# Tag with travis build
-TAG=$TRAVIS_BUILD_NUMBER
 # - export TAG=`if [ "$TRAVIS_BRANCH" == "develop" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
 # Replace / with _ to create a valid tag
 TAG=$(echo "${TRAVIS_BRANCH}" | sed -e "s/\//_/")
-
+TAG_TECH="${TAG}_technical"
 
 # Pull last build to avoid rebuilding the whole image
 docker pull ${REPO}:${TAG}
@@ -23,6 +21,10 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 
+# build technical image
+sed -i Dockerfile.technical -e "s/FROM freqtradeorg\/freqtrade:develop/FROM freqtradeorg\/freqtrade:${TAG}/"
+docker build --cache-from freqtrade:${TAG} -t ${IMAGE_NAME}:${TAG_TECH} -f Dockerfile.technical .
+
 # Tag image for upload
 docker tag freqtrade:$TAG ${IMAGE_NAME}:$TAG
 if [ $? -ne 0 ]; then
@@ -31,7 +33,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Tag as latest for develop builds
-if [ "${TRAVIS_BRANCH}"  == "develop" ]; then
+if [ "${TRAVIS_BRANCH}"  = "develop" ]; then
     docker tag freqtrade:$TAG ${IMAGE_NAME}:latest
 fi
 
