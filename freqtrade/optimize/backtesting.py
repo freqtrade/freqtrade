@@ -23,7 +23,6 @@ from freqtrade.optimize.backslapping import Backslapping
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
-from profilehooks import profile
 from collections import OrderedDict
 import timeit
 from time import sleep
