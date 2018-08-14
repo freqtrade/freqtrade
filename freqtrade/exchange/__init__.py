@@ -54,7 +54,7 @@ class Exchange(object):
     _cached_ticker: Dict[str, Any] = {}
 
     # Holds last candle refreshed time of each pair
-    _pairs_last_refreshed_time = {}
+    _pairs_last_refresh_time: Dict[str, int] = {}
 
     # Holds candles
     _cached_klines: Dict[str, Any] = {}
@@ -132,6 +132,15 @@ class Exchange(object):
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
+    def _load_async_markets(self) -> None:
+        try:
+            if self._api_async:
+                asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
+
+        except ccxt.BaseError as e:
+            logger.warning('Could not load async markets. Reason: %s', e)
+            return
+
     def validate_pairs(self, pairs: List[str]) -> None:
         """
         Checks if all given pairs are tradable on the current exchange.
@@ -142,6 +151,7 @@ class Exchange(object):
 
         try:
             markets = self._api.load_markets()
+            self._load_async_markets()
         except ccxt.BaseError as e:
             logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
             return
@@ -341,11 +351,43 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    async def async_get_candles_history(self, pairs, tick_interval) -> List[Tuple[str, List]]:
+    def get_history(self, pair: str, tick_interval: str,
+                    since_ms: int) -> List:
+        """
+        Gets candle history using asyncio and returns the list of candles.
+        Handles all async doing.
+        """
+        return asyncio.get_event_loop().run_until_complete(
+            self._async_get_history(pair=pair, tick_interval=tick_interval,
+                                    since_ms=since_ms))
+
+    async def _async_get_history(self, pair: str,
+                                 tick_interval: str,
+                                 since_ms: int) -> List:
+        # Assume exchange returns 500 candles
+        _LIMIT = 500
+
+        one_call = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60 * _LIMIT * 1000
+        logger.debug("one_call: %s", one_call)
+        input_coroutines = [self.async_get_candle_history(
+            pair, tick_interval, since) for since in
+                range(since_ms, int(time.time() * 1000), one_call)]
+        tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
+
+        # Combine tickers
+        data: List = []
+        for tick in tickers:
+            if tick[0] == pair:
+                data.extend(tick[1])
+        logger.info("downloaded %s with length %s.", pair, len(data))
+        return data
+
+    async def async_get_candles_history(self, pairs: List[str],
+                                        tick_interval: str) -> List[Tuple[str, List]]:
         # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
         # loop = asyncio.new_event_loop()
         # asyncio.set_event_loop(loop)
-        await self._api_async.load_markets()
+        # await self._api_async.load_markets()
         input_coroutines = [self.async_get_candle_history(
             symbol, tick_interval) for symbol in pairs]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
@@ -356,21 +398,30 @@ class Exchange(object):
                                        since_ms: Optional[int] = None) -> Tuple[str, List]:
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s ...", pair)
+            logger.debug("fetching %s since %s ...", pair, since_ms)
 
             # Calculating ticker interval in second
-            interval_in_seconds = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
+            interval_in_sec = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
 
-            # If (last update time) + (interval in second) + (1 second) is greater than now
+            # If (last update time) + (interval in second) is greater or equal than now
             # that means we don't have to hit the API as there is no new candle
             # so we fetch it from local cache
-            if self._pairs_last_refreshed_time.get(pair, 0) + interval_in_seconds + 1 > round(time.time()):
+            if (not since_ms and
+                    self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
+                    int(time.time())):
                 data = self._cached_klines[pair]
-            else: 
-                data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
+                logger.debug("Using cached klines data for %s ...", pair)
+            else:
+                data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
+                                                         since=since_ms)
+
+            # Because some exchange sort Tickers ASC and other DESC.
+            # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
+            # when GDAX returns a list of tickers DESC (newest first, oldest last)
+            data = sorted(data, key=lambda x: x[0])
 
             # keeping last candle time as last refreshed time of the pair
-            self._pairs_last_refreshed_time[pair] = data[-1][0] / 1000
+            self._pairs_last_refresh_time[pair] = data[-1][0] // 1000
 
             # keeping candles in cache
             self._cached_klines[pair] = data
