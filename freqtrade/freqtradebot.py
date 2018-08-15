@@ -2,6 +2,7 @@
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
+import asyncio
 import copy
 import logging
 import time
@@ -9,12 +10,10 @@ import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-import asyncio
 import arrow
 import requests
 
 from cachetools import TTLCache, cached
-
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
@@ -135,12 +134,11 @@ class FreqtradeBot(object):
         """
         Refresh tickers asyncronously and return the result.
         """
-        # TODO: Add tests for this and the async stuff above
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
         datatups = asyncio.get_event_loop().run_until_complete(
             self.exchange.async_get_candles_history(pair_list, self.strategy.ticker_interval))
 
-        # updating klines
+        # updating cached klines available to bot
         self._klines = {pair: data for (pair, data) in datatups}
 
         return True
