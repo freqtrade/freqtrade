@@ -1,4 +1,5 @@
 import logging
+import sys
 from copy import deepcopy
 
 from freqtrade.strategy.interface import IStrategy
@@ -20,7 +21,7 @@ def import_strategy(strategy: IStrategy, config: dict) -> IStrategy:
     # Delete '_abc_impl' from dict as deepcopy fails on 3.7 with
     # `TypeError: can't pickle _abc_data objects``
     # This will only apply to python 3.7
-    if '_abc_impl' in comb:
+    if sys.version_info.major == 3 and sys.version_info.minor == 7 and '_abc_impl' in comb:
         del comb['_abc_impl']
 
     attr = deepcopy(comb)
