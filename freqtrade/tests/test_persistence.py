@@ -404,6 +404,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     Test Database migration (starting with new pairformat)
     """
     amount = 103.223
+    # Always create all columns apart from the last!
     create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
                                 id INTEGER NOT NULL,
                                 exchange VARCHAR NOT NULL,
@@ -418,14 +419,21 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 open_date DATETIME NOT NULL,
                                 close_date DATETIME,
                                 open_order_id VARCHAR,
+                                stop_loss FLOAT,
+                                initial_stop_loss FLOAT,
+                                max_rate FLOAT,
+                                sell_reason VARCHAR,
+                                strategy VARCHAR,
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
-                          open_rate, stake_amount, amount, open_date)
+                          open_rate, stake_amount, amount, open_date,
+                          stop_loss, initial_stop_loss, max_rate)
                           VALUES ('binance', 'ETC/BTC', 1, {fee},
                           0.00258580, {stake}, {amount},
-                          '2019-11-28 12:44:24.000000')
+                          '2019-11-28 12:44:24.000000',
+                          0.0, 0.0, 0.0)
                           """.format(fee=fee.return_value,
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount

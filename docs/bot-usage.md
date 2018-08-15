@@ -1,13 +1,15 @@
 # Bot usage
-This page explains the difference parameters of the bot and how to run 
-it.
+
+This page explains the difference parameters of the bot and how to run it.
 
 ## Table of Contents
+
 - [Bot commands](#bot-commands)
 - [Backtesting commands](#backtesting-commands)
 - [Hyperopt commands](#hyperopt-commands)
 
 ## Bot commands
+
 ```
 usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
                  [--strategy-path PATH] [--dynamic-whitelist [INT]]
@@ -41,6 +43,7 @@ optional arguments:
 ```
 
 ### How to use a different config file?
+
 The bot allows you to select which config file you want to use. Per 
 default, the bot will load the file `./config.json`
 
@@ -49,6 +52,7 @@ python3 ./freqtrade/main.py -c path/far/far/away/config.json
 ```
 
 ### How to use --strategy?
+
 This parameter will allow you to load your custom strategy class.
 Per default without `--strategy` or `-s` the bot will load the
 `DefaultStrategy` included with the bot (`freqtrade/strategy/default_strategy.py`).
@@ -60,6 +64,7 @@ To load a strategy, simply pass the class name (e.g.: `CustomStrategy`) in this 
 **Example:**  
 In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
 a strategy class called `AwesomeStrategy` to load it:
+
 ```bash
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
@@ -70,6 +75,7 @@ message the reason (File not found, or errors in your code).
 Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
 
 ### How to use --strategy-path?
+
 This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a folder!):
 ```bash
@@ -77,21 +83,25 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/fol
 ```
 
 #### How to install a strategy?
+
 This is very simple. Copy paste your strategy file into the folder 
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
 
 ### How to use --dynamic-whitelist?
+
 Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
 on BaseVolume. This value can be changed when you run the script.
 
 **By Default**  
 Get the 20 currencies based on BaseVolume.  
+
 ```bash
 python3 ./freqtrade/main.py --dynamic-whitelist
 ```
 
 **Customize the number of currencies to retrieve**  
 Get the 30 currencies based on BaseVolume.  
+
 ```bash
 python3 ./freqtrade/main.py --dynamic-whitelist 30
 ```
@@ -102,6 +112,7 @@ negative value (e.g -2), `--dynamic-whitelist` will use the default
 value (20).
 
 ### How to use --db-url?
+
 When you run the bot in Dry-run mode, per default no transactions are 
 stored in a database. If you want to store your bot actions in a DB 
 using `--db-url`. This can also be used to specify a custom database
@@ -111,14 +122,14 @@ in production mode. Example command:
 python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
-
 ## Backtesting commands
 
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
+usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
                              [--timerange TIMERANGE] [-l] [-r]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
@@ -139,6 +150,13 @@ optional arguments:
                         refresh the pairs files in tests/testdata with the
                         latest data from the exchange. Use it if you want to
                         run your backtesting with up-to-date data.
+  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
+                        Provide a commaseparated list of strategies to
+                        backtest Please note that ticker-interval needs to be
+                        set either in config or via command line. When using
+                        this together with --export trades, the strategy-name
+                        is injected into the filename (so backtest-data.json
+                        becomes backtest-data-DefaultStrategy.json
   --export EXPORT       export backtest results, argument are: trades Example
                         --export=trades
   --export-filename PATH
@@ -151,6 +169,7 @@ optional arguments:
 ```
 
 ### How to use --refresh-pairs-cached parameter?
+
 The first time your run Backtesting, it will take the pairs you have 
 set in your config file and download data from Bittrex. 
 
@@ -161,7 +180,6 @@ to come back to the previous version.**
 
 To test your strategy with latest data, we recommend continuing using 
 the parameter `-l` or `--live`.
-
 
 ## Hyperopt commands
 
@@ -194,10 +212,11 @@ optional arguments:
 ```
 
 ## A parameter missing in the configuration?
+
 All parameters for `main.py`, `backtesting`, `hyperopt` are referenced
 in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L84)
 
 ## Next step
-The optimal strategy of the bot will change with time depending of the
-market trends. The next step is to 
+
+The optimal strategy of the bot will change with time depending of the market trends. The next step is to 
 [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).

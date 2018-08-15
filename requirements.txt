@@ -1,4 +1,4 @@
-ccxt==1.17.60
+ccxt==1.17.122
 SQLAlchemy==1.2.10
 python-telegram-bot==10.1.0
 arrow==0.12.1
@@ -6,13 +6,13 @@ cachetools==2.1.0
 requests==2.19.1
 urllib3==1.22
 wrapt==1.10.11
-pandas==0.23.3
+pandas==0.23.4
 scikit-learn==0.19.2
 scipy==1.1.0
 jsonschema==2.6.0
 numpy==1.15.0
 TA-Lib==0.4.17
-pytest==3.7.0
+pytest==3.7.1
 pytest-mock==1.10.0
 pytest-cov==2.5.1
 tabulate==0.8.2
