@@ -140,8 +140,8 @@ class FreqtradeBot(object):
             specific_pairs = '\n' + ', '.join(self.config['exchange'].get('pair_whitelist', ''))
         self.rpc.send_msg({
             'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': f'Searching for {top_pairs} {stake_currency} pairs to buy and sell...\
-                          {specific_pairs}'
+            'status': f'Searching for {top_pairs} {stake_currency} pairs to buy and sell...'
+                      f'{specific_pairs}'
         })
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
