@@ -59,7 +59,7 @@ SELECT * FROM trades;
 
 ```sql
 UPDATE trades
-SET is_open=0, close_date=<close_date>, close_rate=<close_rate>, close_profit=close_rate/open_rate  
+SET is_open=0, close_date=<close_date>, close_rate=<close_rate>, close_profit=close_rate/open_rate-1  
 WHERE id=<trade_ID_to_update>;
 ```
 

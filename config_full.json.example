@@ -5,6 +5,9 @@
     "fiat_display_currency": "USD",
     "dry_run": false,
     "ticker_interval": "5m",
+    "trailing_stop": false,
+    "trailing_stop_positive": 0.005,
+    "trailing_stop_positive_offset": 0.0051,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -12,7 +15,10 @@
         "0":  0.04
     },
     "stoploss": -0.10,
-    "unfilledtimeout": 600,
+    "unfilledtimeout": {
+        "buy": 10,
+        "sell": 30
+    },
     "bid_strategy": {
         "ask_last_balance": 0.0
     },
@@ -20,6 +26,7 @@
         "name": "bittrex",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
+        "ccxt_rate_limit": true,
         "pair_whitelist": [
             "ETH/BTC",
             "LTC/BTC",

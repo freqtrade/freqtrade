@@ -24,26 +24,75 @@ Example of usage:
 > python3 scripts/plot_dataframe.py --pair BTC/EUR -d user_data/data/ --indicators1 sma,ema3
 --indicators2 fastk,fastd
 """
+import json
 import logging
-import os
 import sys
 from argparse import Namespace
+from pathlib import Path
 from typing import Dict, List, Any
 
+import pandas as pd
 import plotly.graph_objs as go
+import pytz
+
 from plotly import tools
 from plotly.offline import plot
 
 import freqtrade.optimize as optimize
 from freqtrade import persistence
-from freqtrade.analyze import Analyze
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
+from freqtrade.strategy.resolver import StrategyResolver
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
+
+timeZone = pytz.UTC
+
+
+def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFrame:
+    trades: pd.DataFrame = pd.DataFrame()
+    if args.db_url:
+        persistence.init(_CONF)
+        columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
+
+        for x in Trade.query.all():
+            print("date: {}".format(x.open_date))
+
+        trades = pd.DataFrame([(t.pair, t.calc_profit(),
+                                t.open_date.replace(tzinfo=timeZone),
+                                t.close_date.replace(tzinfo=timeZone) if t.close_date else None,
+                                t.open_rate, t.close_rate,
+                                t.close_date.timestamp() - t.open_date.timestamp() if t.close_date else None)
+                               for t in Trade.query.filter(Trade.pair.is_(pair)).all()],
+                              columns=columns)
+
+    elif args.exportfilename:
+        file = Path(args.exportfilename)
+        # must align with columns in backtest.py
+        columns = ["pair", "profit", "opents", "closets", "index", "duration",
+                   "open_rate", "close_rate", "open_at_end"]
+        with file.open() as f:
+            data = json.load(f)
+            trades = pd.DataFrame(data, columns=columns)
+        trades = trades.loc[trades["pair"] == pair]
+        if timerange:
+            if timerange.starttype == 'date':
+                trades = trades.loc[trades["opents"] >= timerange.startts]
+            if timerange.stoptype == 'date':
+                trades = trades.loc[trades["opents"] <= timerange.stopts]
+
+        trades['opents'] = pd.to_datetime(trades['opents'],
+                                          unit='s',
+                                          utc=True,
+                                          infer_datetime_format=True)
+        trades['closets'] = pd.to_datetime(trades['closets'],
+                                           unit='s',
+                                           utc=True,
+                                           infer_datetime_format=True)
+    return trades
 
 
 def plot_analyzed_dataframe(args: Namespace) -> None:
@@ -56,6 +105,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     # Load the configuration
     _CONF.update(setup_configuration(args))
 
+    print(_CONF)
     # Set the pair to audit
     pair = args.pair
 
@@ -72,7 +122,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
 
     # Load the strategy
     try:
-        analyze = Analyze(_CONF)
+        strategy = StrategyResolver(_CONF).strategy
         exchange = Exchange(_CONF)
     except AttributeError:
         logger.critical(
@@ -82,20 +132,21 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         exit()
 
     # Set the ticker to use
-    tick_interval = analyze.get_ticker_interval()
+    tick_interval = strategy.ticker_interval
 
     # Load pair tickers
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
-        tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
+        tickers[pair] = exchange.get_candle_history(pair, tick_interval)
     else:
         tickers = optimize.load_data(
             datadir=_CONF.get("datadir"),
             pairs=[pair],
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
-            timerange=timerange
+            timerange=timerange,
+            exchange=Exchange(_CONF)
         )
 
         # No ticker found, or impossible to download
@@ -103,30 +154,31 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             exit()
 
     # Get trades already made from the DB
-    trades: List[Trade] = []
-    if args.db_url:
-        persistence.init(_CONF)
-        trades = Trade.query.filter(Trade.pair.is_(pair)).all()
+    trades = load_trades(args, pair, timerange)
 
-    dataframes = analyze.tickerdata_to_dataframe(tickers)
+    dataframes = strategy.tickerdata_to_dataframe(tickers)
+
     dataframe = dataframes[pair]
-    dataframe = analyze.populate_buy_trend(dataframe)
-    dataframe = analyze.populate_sell_trend(dataframe)
+    dataframe = strategy.advise_buy(dataframe, {'pair': pair})
+    dataframe = strategy.advise_sell(dataframe, {'pair': pair})
 
-    if len(dataframe.index) > 750:
-        logger.warning('Ticker contained more than 750 candles, clipping.')
+    if len(dataframe.index) > args.plot_limit:
+        logger.warning('Ticker contained more than %s candles as defined '
+                       'with --plot-limit, clipping.', args.plot_limit)
+    dataframe = dataframe.tail(args.plot_limit)
 
+    trades = trades.loc[trades['opents'] >= dataframe.iloc[0]['date']]
     fig = generate_graph(
         pair=pair,
         trades=trades,
-        data=dataframe.tail(750),
+        data=dataframe,
         args=args
     )
 
-    plot(fig, filename=os.path.join('user_data', 'freqtrade-plot.html'))
+    plot(fig, filename=str(Path('user_data').joinpath('freqtrade-plot.html')))
 
 
-def generate_graph(pair, trades, data, args) -> tools.make_subplots:
+def generate_graph(pair, trades: pd.DataFrame, data: pd.DataFrame, args) -> tools.make_subplots:
     """
     Generate the graph from the data generated by Backtesting or from DB
     :param pair: Pair to Display on the graph
@@ -187,8 +239,8 @@ def generate_graph(pair, trades, data, args) -> tools.make_subplots:
     )
 
     trade_buys = go.Scattergl(
-        x=[t.open_date.isoformat() for t in trades],
-        y=[t.open_rate for t in trades],
+        x=trades["opents"],
+        y=trades["open_rate"],
         mode='markers',
         name='trade_buy',
         marker=dict(
@@ -199,8 +251,8 @@ def generate_graph(pair, trades, data, args) -> tools.make_subplots:
         )
     )
     trade_sells = go.Scattergl(
-        x=[t.close_date.isoformat() for t in trades],
-        y=[t.close_rate for t in trades],
+        x=trades["closets"],
+        y=trades["close_rate"],
         mode='markers',
         name='trade_sell',
         marker=dict(
@@ -219,7 +271,7 @@ def generate_graph(pair, trades, data, args) -> tools.make_subplots:
             x=data.date,
             y=data.bb_lowerband,
             name='BB lower',
-            line={'color': "transparent"},
+            line={'color': 'rgba(255,255,255,0)'},
         )
         bb_upper = go.Scatter(
             x=data.date,
@@ -227,7 +279,7 @@ def generate_graph(pair, trades, data, args) -> tools.make_subplots:
             name='BB upper',
             fill="tonexty",
             fillcolor="rgba(0,176,246,0.2)",
-            line={'color': "transparent"},
+            line={'color': 'rgba(255,255,255,0)'},
         )
         fig.append_trace(bb_lower, 1, 1)
         fig.append_trace(bb_upper, 1, 1)
@@ -299,11 +351,17 @@ def plot_parse_args(args: List[str]) -> Namespace:
         default='macd',
         dest='indicators2',
     )
-
+    arguments.parser.add_argument(
+        '--plot-limit',
+        help='Specify tick limit for plotting - too high values cause huge files - '
+             'Default: %(default)s',
+        dest='plot_limit',
+        default=750,
+        type=int,
+    )
     arguments.common_args_parser()
     arguments.optimizer_shared_options(arguments.parser)
     arguments.backtesting_options(arguments.parser)
-
     return arguments.parse_args()
 
 

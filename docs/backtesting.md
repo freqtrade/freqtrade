@@ -29,25 +29,25 @@ The backtesting is very easy with freqtrade.
 #### With 5 min tickers (Per default)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation
+python3 ./freqtrade/main.py backtesting
 ```
 
 #### With 1 min tickers
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --ticker-interval 1m
+python3 ./freqtrade/main.py backtesting --ticker-interval 1m
 ```
 
 #### Update cached pairs with the latest data
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --refresh-pairs-cached
+python3 ./freqtrade/main.py backtesting --refresh-pairs-cached
 ```
 
 #### With live data (do not alter your testdata files)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --realistic-simulation --live
+python3 ./freqtrade/main.py backtesting --live
 ```
 
 #### Using a different on-disk ticker-data source
@@ -69,6 +69,36 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 ```bash
 python3 ./freqtrade/main.py backtesting --export trades
 ```
+
+The exported trades can be read using the following code for manual analysis, or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
+
+``` python
+import json
+from pathlib import Path
+import pandas as pd
+
+filename=Path('user_data/backtest_data/backtest-result.json')
+
+with filename.open() as file:
+        data = json.load(file)
+
+columns = ["pair", "profit", "opents", "closets", "index", "duration",
+           "open_rate", "close_rate", "open_at_end", "sell_reason"]
+df = pd.DataFrame(data, columns=columns)
+
+df['opents'] = pd.to_datetime(df['opents'],
+                              unit='s',
+                              utc=True,
+                              infer_datetime_format=True
+                             )
+df['closets'] = pd.to_datetime(df['closets'],
+                               unit='s',
+                               utc=True,
+                               infer_datetime_format=True
+                              )
+```
+
+If you have some ideas for interesting / helpful backtest data analysis, feel free to submit a PR so the community can benefit from it.
 
 #### Exporting trades to file specifying a custom filename
 
@@ -121,7 +151,7 @@ cp freqtrade/tests/testdata/pairs.json user_data/data/binance
 Then run:
 
 ```bash
-python scripts/download_backtest_data --exchange binance
+python scripts/download_backtest_data.py --exchange binance
 ```
 
 This will download ticker data for all the currency pairs you defined in `pairs.json`.
@@ -207,6 +237,31 @@ On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 (55%), there is a lot of chance that the bot will never reach this 
 profit. Hence, keep in mind that your performance is a mix of your 
 strategies, your configuration, and the crypto-currency you have set up.
+
+## Backtesting multiple strategies
+
+To backtest multiple strategies, a list of Strategies can be provided.
+
+This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple 
+strategies you'd like to compare, this should give a nice runtime boost.
+
+All listed Strategies need to be in the same folder.
+
+``` bash
+freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades 
+```
+
+This will save the results to `user_data/backtest_data/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
+There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
+Detailed output for all strategies one after the other will be available, so make sure to scroll up.
+
+```
+=================================================== Strategy Summary ====================================================
+| Strategy   |   buy count |   avg profit % |   cum profit % |   total profit ETH | avg duration    |   profit |   loss |
+|:-----------|------------:|---------------:|---------------:|-------------------:|:----------------|---------:|-------:|
+| Strategy1  |          19 |          -0.76 |         -14.39 |        -0.01440287 | 15:48:00        |       15 |      4 |
+| Strategy2  |           6 |          -2.73 |         -16.40 |        -0.01641299 | 1 day, 14:12:00 |        3 |      3 |
+```
 
 ## Next step
 

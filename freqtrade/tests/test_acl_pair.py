@@ -1,7 +1,8 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
-import freqtrade.tests.conftest as tt  # test tools
 from unittest.mock import MagicMock
+
+import freqtrade.tests.conftest as tt  # test tools
 
 # whitelist, blacklist, filtering, all of that will
 # eventually become some rules to run on a generic ACL engine
@@ -10,7 +11,6 @@ from unittest.mock import MagicMock
 
 def whitelist_conf():
     config = tt.default_conf()
-
     config['stake_currency'] = 'BTC'
     config['exchange']['pair_whitelist'] = [
         'ETH/BTC',
@@ -19,7 +19,6 @@ def whitelist_conf():
         'SWT/BTC',
         'BCC/BTC'
     ]
-
     config['exchange']['pair_blacklist'] = [
         'BLK/BTC'
     ]

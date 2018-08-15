@@ -1,19 +1,31 @@
 """
 This module contains the configuration class
 """
-import os
 import json
 import logging
+import os
 from argparse import Namespace
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import ccxt
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
-import ccxt
 
 from freqtrade import OperationalException, constants
-
-
 logger = logging.getLogger(__name__)
+
+
+def set_loggers(log_level: int = 0) -> None:
+    """
+    Set the logger level for Third party libs
+    :return: None
+    """
+
+    logging.getLogger('requests').setLevel(logging.INFO if log_level <= 1 else logging.DEBUG)
+    logging.getLogger("urllib3").setLevel(logging.INFO if log_level <= 1 else logging.DEBUG)
+    logging.getLogger('ccxt.base.exchange').setLevel(
+        logging.INFO if log_level <= 2 else logging.DEBUG)
+    logging.getLogger('telegram').setLevel(logging.INFO)
 
 
 class Configuration(object):
@@ -62,8 +74,8 @@ class Configuration(object):
                 conf = json.load(file)
         except FileNotFoundError:
             raise OperationalException(
-                'Config file "{}" not found!'
-                ' Please create a config file or check whether it exists.'.format(path))
+                f'Config file "{path}" not found!'
+                ' Please create a config file or check whether it exists.')
 
         if 'internals' not in conf:
             conf['internals'] = {}
@@ -79,12 +91,15 @@ class Configuration(object):
 
         # Log level
         if 'loglevel' in self.args and self.args.loglevel:
-            config.update({'loglevel': self.args.loglevel})
-            logging.basicConfig(
-                level=config['loglevel'],
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            )
-            logger.info('Log level set to %s', logging.getLevelName(config['loglevel']))
+            config.update({'verbosity': self.args.loglevel})
+        else:
+            config.update({'verbosity': 0})
+        logging.basicConfig(
+            level=logging.INFO if config['verbosity'] < 1 else logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        )
+        set_loggers(config['verbosity'])
+        logger.info('Verbosity set to %s', config['verbosity'])
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
@@ -109,7 +124,7 @@ class Configuration(object):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
-        logger.info('Using DB: "{}"'.format(config['db_url']))
+        logger.info(f'Using DB: "{config["db_url"]}"')
 
         # Check if the exchange set by the user is supported
         self.check_exchange(config)
@@ -142,11 +157,18 @@ class Configuration(object):
             config.update({'live': True})
             logger.info('Parameter -l/--live detected ...')
 
-        # If --realistic-simulation is used we add it to the configuration
-        if 'realistic_simulation' in self.args and self.args.realistic_simulation:
-            config.update({'realistic_simulation': True})
-            logger.info('Parameter --realistic-simulation detected ...')
-        logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+        # If --enable-position-stacking is used we add it to the configuration
+        if 'position_stacking' in self.args and self.args.position_stacking:
+            config.update({'position_stacking': True})
+            logger.info('Parameter --enable-position-stacking detected ...')
+
+        # If --disable-max-market-positions is used we add it to the configuration
+        if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
+            config.update({'use_max_market_positions': False})
+            logger.info('Parameter --disable-max-market-positions detected ...')
+            logger.info('max_open_trades set to unlimited ...')
+        else:
+            logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
@@ -165,6 +187,14 @@ class Configuration(object):
             config.update({'refresh_pairs': True})
             logger.info('Parameter -r/--refresh-pairs-cached detected ...')
 
+        if 'strategy_list' in self.args and self.args.strategy_list:
+            config.update({'strategy_list': self.args.strategy_list})
+            logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
+
+        if 'ticker_interval' in self.args and self.args.ticker_interval:
+            config.update({'ticker_interval': self.args.ticker_interval})
+            logger.info('Overriding ticker interval with Command line argument')
+
         # If --export is used we add it to the configuration
         if 'export' in self.args and self.args.export:
             config.update({'export': self.args.export})
@@ -182,7 +212,7 @@ class Configuration(object):
         Extract information for sys.argv and load Hyperopt configuration
         :return: configuration as dictionary
         """
-        # If --realistic-simulation is used we add it to the configuration
+        # If --epochs is used we add it to the configuration
         if 'epochs' in self.args and self.args.epochs:
             config.update({'epochs': self.args.epochs})
             logger.info('Parameter --epochs detected ...')

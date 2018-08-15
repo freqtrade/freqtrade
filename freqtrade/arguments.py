@@ -2,12 +2,12 @@
 This module contains the argument manager class
 """
 
-import os
 import argparse
-import logging
+import os
 import re
+from typing import List, NamedTuple, Optional
+
 import arrow
-from typing import List, Optional, NamedTuple
 
 from freqtrade import __version__, constants
 
@@ -63,11 +63,10 @@ class Arguments(object):
         """
         self.parser.add_argument(
             '-v', '--verbose',
-            help='be verbose',
-            action='store_const',
+            help='verbose mode (-vv for more, -vvv to get all messages)',
+            action='count',
             dest='loglevel',
-            const=logging.DEBUG,
-            default=logging.INFO,
+            default=0,
         )
         self.parser.add_argument(
             '--version',
@@ -144,6 +143,16 @@ class Arguments(object):
             dest='refresh_pairs',
         )
         parser.add_argument(
+            '--strategy-list',
+            help='Provide a commaseparated list of strategies to backtest '
+                 'Please note that ticker-interval needs to be set either in config '
+                 'or via command line. When using this together with --export trades, '
+                 'the strategy-name is injected into the filename '
+                 '(so backtest-data.json becomes backtest-data-DefaultStrategy.json',
+            nargs='+',
+            dest='strategy_list',
+        )
+        parser.add_argument(
             '--export',
             help='export backtest results, argument are: trades\
                   Example --export=trades',
@@ -177,11 +186,22 @@ class Arguments(object):
             type=str,
         )
         parser.add_argument(
-            '--realistic-simulation',
-            help='uses max_open_trades from config to simulate real world limitations',
+            '--eps', '--enable-position-stacking',
+            help='Allow buying the same pair multiple times (position stacking)',
             action='store_true',
-            dest='realistic_simulation',
+            dest='position_stacking',
+            default=False
         )
+
+        parser.add_argument(
+            '--dmmp', '--disable-max-market-positions',
+            help='Disable applying `max_open_trades` during backtest '
+                 '(same as setting `max_open_trades` to a very high number)',
+            action='store_false',
+            dest='use_max_market_positions',
+            default=True
+        )
+
         parser.add_argument(
             '--timerange',
             help='specify what timerange of data to use.',
@@ -333,4 +353,11 @@ class Arguments(object):
             default=['1m', '5m'],
             nargs='+',
             dest='timeframes',
+        )
+
+        self.parser.add_argument(
+            '--erase',
+            help='Clean all existing data for the selected exchange/pairs/timeframes',
+            dest='erase',
+            action='store_true'
         )

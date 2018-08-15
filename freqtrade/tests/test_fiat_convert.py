@@ -5,7 +5,6 @@ import time
 from unittest.mock import MagicMock
 
 import pytest
-
 from requests.exceptions import RequestException
 
 from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter
@@ -182,6 +181,24 @@ def test_fiat_convert_without_network(mocker):
     assert fiat_convert._coinmarketcap is None
     assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
     CryptoToFiatConverter._coinmarketcap = cmc_temp
+
+
+def test_fiat_invalid_response(mocker, caplog):
+    # Because CryptoToFiatConverter is a Singleton we reset the listings
+    listmock = MagicMock(return_value="{'novalidjson':DEADBEEFf}")
+    mocker.patch.multiple(
+        'freqtrade.fiat_convert.Market',
+        listings=listmock,
+    )
+    # with pytest.raises(RequestEsxception):
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert._cryptomap = {}
+    fiat_convert._load_cryptomap()
+
+    length_cryptomap = len(fiat_convert._cryptomap)
+    assert length_cryptomap == 0
+    assert log_has('Could not load FIAT Cryptocurrency map for the following problem: TypeError',
+                   caplog.record_tuples)
 
 
 def test_convert_amount(mocker):

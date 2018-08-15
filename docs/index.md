@@ -1,4 +1,5 @@
 # freqtrade documentation
+
 Welcome to freqtrade documentation. Please feel free to contribute to
 this documentation if you see it became outdated by sending us a 
 Pull-request. Do not hesitate to reach us on 
@@ -6,6 +7,7 @@ Pull-request. Do not hesitate to reach us on
  if you do not find the answer to your questions.
 
 ## Table of Contents
+
 - [Pre-requisite](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md)
 	- [Setup your Bittrex account](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md#setup-your-bittrex-account)
 	- [Setup your Telegram bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md#setup-your-telegram-bot)
@@ -25,8 +27,10 @@ Pull-request. Do not hesitate to reach us on
     - [Test your strategy with Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
     - [Find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
 - [Control the bot with telegram](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md)
+- [Receive notifications via webhook](https://github.com/freqtrade/freqtrade/blob/develop/docs/webhook-config.md)
 - [Contribute to the project](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 	- [How to contribute](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 	- [Run tests & Check PEP8 compliance](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 - [FAQ](https://github.com/freqtrade/freqtrade/blob/develop/docs/faq.md)
     - [SQL cheatsheet](https://github.com/freqtrade/freqtrade/blob/develop/docs/sql_cheatsheet.md)
+- [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md))

@@ -36,7 +36,7 @@ SUPPORTED_FIAT = [
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
+    "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
     ]
 
 # Required json-schema for user specified config
@@ -45,7 +45,7 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
+        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],
             "minimum": 0.0005,
@@ -61,7 +61,16 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
-        'unfilledtimeout': {'type': 'integer', 'minimum': 0},
+        'trailing_stop': {'type': 'boolean'},
+        'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'unfilledtimeout': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'number', 'minimum': 3},
+                'sell': {'type': 'number', 'minimum': 10}
+            }
+        },
         'bid_strategy': {
             'type': 'object',
             'properties': {
@@ -92,6 +101,15 @@ CONF_SCHEMA = {
             },
             'required': ['enabled', 'token', 'chat_id']
         },
+        'webhook': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'webhookbuy': {'type': 'object'},
+                'webhooksell': {'type': 'object'},
+                'webhookstatus': {'type': 'object'},
+            },
+        },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'internals': {
@@ -107,8 +125,11 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
+                'sandbox': {'type': 'boolean'},
                 'key': {'type': 'string'},
                 'secret': {'type': 'string'},
+                'password': {'type': 'string'},
+                'uid': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
                     'items': {
@@ -136,7 +157,6 @@ CONF_SCHEMA = {
         'max_open_trades',
         'stake_currency',
         'stake_amount',
-        'fiat_display_currency',
         'dry_run',
         'bid_strategy',
         'telegram'
