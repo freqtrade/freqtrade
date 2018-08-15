@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 class RPCMessageType(Enum):
     STATUS_NOTIFICATION = 'status'
+    WARNING_NOTIFICATION = 'warning'
+    CUSTOM_NOTIFICATION = 'custom'
     BUY_NOTIFICATION = 'buy'
     SELL_NOTIFICATION = 'sell'
 
