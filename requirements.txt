@@ -1,4 +1,4 @@
-ccxt==1.17.122
+ccxt==1.17.126
 SQLAlchemy==1.2.10
 python-telegram-bot==10.1.0
 arrow==0.12.1
@@ -23,4 +23,4 @@ coinmarketcap==5.0.3
 scikit-optimize==0.5.2
 
 # Required for plotting data
-#plotly==3.0.0
+#plotly==3.1.1

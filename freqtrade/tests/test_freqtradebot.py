@@ -1907,3 +1907,9 @@ def test_get_real_amount_open_trade(default_conf, mocker):
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     assert freqtrade.get_real_amount(trade, order) == amount
+
+
+def test_startup_messages(default_conf, mocker):
+    default_conf['dynamic_whitelist'] = 20
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert freqtrade.state is State.RUNNING

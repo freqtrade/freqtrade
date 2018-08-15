@@ -135,8 +135,8 @@ class Exchange(object):
                 api.urls['api'] = api.urls['test']
                 logger.info("Enabled Sandbox API on %s", name)
             else:
-                logger.warning(self, "No Sandbox URL in CCXT, exiting. "
-                                     "Please check your config.json")
+                logger.warning(self._api.name, "No Sandbox URL in CCXT, exiting. "
+                                               "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
     def _load_async_markets(self) -> None:
