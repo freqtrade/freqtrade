@@ -3,9 +3,9 @@
 import logging
 from datetime import datetime
 from random import randint
-import time
 from unittest.mock import Mock, MagicMock, PropertyMock
 
+import arrow
 import ccxt
 import pytest
 
@@ -575,7 +575,7 @@ def test_get_history(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf)
     tick = [
         [
-            int(time.time() * 1000),  # unix timestamp ms
+            arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
             2,  # high
             3,  # low
@@ -592,7 +592,7 @@ def test_get_history(default_conf, mocker, caplog):
     # one_call calculation * 1.8 should do 2 calls
     since = 5 * 60 * 500 * 1.8
     print(f"since = {since}")
-    ret = exchange.get_history(pair, "5m", int((time.time() - since) * 1000))
+    ret = exchange.get_history(pair, "5m", int((arrow.utcnow().timestamp - since) * 1000))
 
     assert exchange._async_get_candle_history.call_count == 2
     # Returns twice the above tick
@@ -603,7 +603,7 @@ def test_get_history(default_conf, mocker, caplog):
 async def test__async_get_candle_history(default_conf, mocker, caplog):
     tick = [
         [
-            int(time.time() * 1000),  # unix timestamp ms
+            arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
             2,  # high
             3,  # low
@@ -642,7 +642,8 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        await exchange._async_get_candle_history(pair, "5m", int((time.time() - 2000) * 1000))
+        await exchange._async_get_candle_history(pair, "5m",
+                                                 (arrow.utcnow().timestamp - 2000) * 1000)
 
 
 @pytest.mark.asyncio

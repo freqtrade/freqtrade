@@ -6,7 +6,6 @@ from random import randint
 from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
 from math import floor, ceil
-import time
 
 import asyncio
 import ccxt
@@ -379,7 +378,7 @@ class Exchange(object):
         logger.debug("one_call: %s", one_call)
         input_coroutines = [self._async_get_candle_history(
             pair, tick_interval, since) for since in
-                range(since_ms, int(time.time() * 1000), one_call)]
+            range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # Combine tickers
@@ -412,7 +411,7 @@ class Exchange(object):
             # so we fetch it from local cache
             if (not since_ms and
                     self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
-                    int(time.time())):
+                    arrow.utcnow().timestamp):
                 data = self._cached_klines[pair]
                 logger.debug("Using cached klines data for %s ...", pair)
             else:
