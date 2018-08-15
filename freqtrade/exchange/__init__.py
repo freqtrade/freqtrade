@@ -13,7 +13,6 @@ import ccxt
 import ccxt.async_support as ccxt_async
 import arrow
 
-
 from freqtrade import constants, OperationalException, DependencyException, TemporaryError
 
 logger = logging.getLogger(__name__)
@@ -393,14 +392,10 @@ class Exchange(object):
 
     async def async_get_candles_history(self, pairs: List[str],
                                         tick_interval: str) -> List[Tuple[str, List]]:
-        # COMMENTED CODE IS FOR DISCUSSION: where should we close the loop on async ?
-        # loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(loop)
-        # await self._api_async.load_markets()
+        """Download ohlcv history for pair-list asyncronously """
         input_coroutines = [self._async_get_candle_history(
             symbol, tick_interval) for symbol in pairs]
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
-        # await self._api_async.close()
         return tickers
 
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
