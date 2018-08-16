@@ -158,13 +158,13 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
 
     pairs = ['IOTA/ETH', 'XRP/ETH']
     # empty dicts
-    assert not freqtrade._klines
+    assert not freqtrade.exchange.klines
     freqtrade.refresh_tickers(['IOTA/ETH', 'XRP/ETH'])
 
     assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
-    assert freqtrade._klines
+    assert freqtrade.exchange.klines
     for pair in pairs:
-        assert freqtrade._klines[pair]
+        assert freqtrade.exchange.klines[pair]
 
 
 def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:

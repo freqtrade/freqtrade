@@ -55,8 +55,6 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self._init_modules()
-        self._klines: Dict[str, List[Dict]] = {}
-        self._klines_last_fetched_time = 0
 
     def _init_modules(self) -> None:
         """
@@ -173,7 +171,8 @@ class FreqtradeBot(object):
             self.exchange.async_get_candles_history(pair_list, self.strategy.ticker_interval))
 
         # updating cached klines available to bot
-        self._klines = {pair: data for (pair, data) in datatups}
+        #self.exchange.klines = {pair: data for (pair, data) in datatups}
+        # self.exchange.klines = datatups
 
         return True
 
@@ -385,7 +384,7 @@ class FreqtradeBot(object):
         # running get_signal on historical data fetched
         # to find buy signals
         for _pair in whitelist:
-            (buy, sell) = self.strategy.get_signal(_pair, interval, self._klines.get(_pair))
+            (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
             if buy and not sell:
                 return self.execute_buy(_pair, stake_amount)
 
@@ -551,7 +550,7 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            ticker = self._klines.get(trade.pair)
+            ticker = self.exchange.klines.get(trade.pair)
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 

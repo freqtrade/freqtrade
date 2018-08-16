@@ -56,7 +56,7 @@ class Exchange(object):
     _pairs_last_refresh_time: Dict[str, int] = {}
 
     # Holds candles
-    _cached_klines: Dict[str, Any] = {}
+    klines: Dict[str, Any] = {}
 
     # Holds all open sell orders for dry_run
     _dry_run_open_orders: Dict[str, Any] = {}
@@ -412,7 +412,7 @@ class Exchange(object):
             if (not since_ms and
                     self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
                     arrow.utcnow().timestamp):
-                data = self._cached_klines[pair]
+                data = self.klines[pair]
                 logger.debug("Using cached klines data for %s ...", pair)
             else:
                 data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
@@ -427,7 +427,7 @@ class Exchange(object):
             self._pairs_last_refresh_time[pair] = data[-1][0] // 1000
 
             # keeping candles in cache
-            self._cached_klines[pair] = data
+            self.klines[pair] = data
 
             logger.debug("done fetching %s ...", pair)
             return pair, data
