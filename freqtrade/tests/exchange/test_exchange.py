@@ -599,6 +599,33 @@ def test_get_history(default_conf, mocker, caplog):
     assert len(ret) == 2
 
 
+def test_refresh_tickers(mocker, default_conf, caplog) -> None:
+    tick = [
+        [
+            1511686200000,  # unix timestamp ms
+            1,  # open
+            2,  # high
+            3,  # low
+            4,  # close
+            5,  # volume (in quote currency)
+        ]
+    ]
+
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+
+    pairs = ['IOTA/ETH', 'XRP/ETH']
+    # empty dicts
+    assert not exchange.klines
+    exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
+
+    assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
+    assert exchange.klines
+    for pair in pairs:
+        assert exchange.klines[pair]
+
+
 @pytest.mark.asyncio
 async def test__async_get_candle_history(default_conf, mocker, caplog):
     tick = [

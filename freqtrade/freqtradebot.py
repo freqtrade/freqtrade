@@ -2,7 +2,6 @@
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 
-import asyncio
 import copy
 import logging
 import time
@@ -162,20 +161,6 @@ class FreqtradeBot(object):
         time.sleep(duration)
         return result
 
-    def refresh_tickers(self, pair_list: List[str]) -> bool:
-        """
-        Refresh tickers asyncronously and return the result.
-        """
-        logger.debug("Refreshing klines for %d pairs", len(pair_list))
-        datatups = asyncio.get_event_loop().run_until_complete(
-            self.exchange.async_get_candles_history(pair_list, self.strategy.ticker_interval))
-
-        # updating cached klines available to bot
-        #self.exchange.klines = {pair: data for (pair, data) in datatups}
-        # self.exchange.klines = datatups
-
-        return True
-
     def _process(self, nb_assets: Optional[int] = 0) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
@@ -197,7 +182,7 @@ class FreqtradeBot(object):
             self.config['exchange']['pair_whitelist'] = final_list
 
             # Refreshing candles
-            self.refresh_tickers(final_list)
+            self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
