@@ -122,6 +122,7 @@ class FreqtradeBot(object):
         stake_amount = self.config['stake_amount']
         minimal_roi = self.config['minimal_roi']
         ticker_interval = self.config['ticker_interval']
+        max_open_trades = self.config['max_open_trades']
         exchange_name = self.config['exchange']['name']
         strategy_name = self.config.get('strategy', '')
         self.rpc.send_msg({
@@ -130,10 +131,12 @@ class FreqtradeBot(object):
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
                       f'*Ticker Interval:* `{ticker_interval}`\n'
-                      f'*Strategy:* `{strategy_name}`'
+                      f'*Strategy:* `{strategy_name}`\n'
+                      f'*Maximum Open Trades:* `{max_open_trades}`'
         })
         if self.config.get('dynamic_whitelist', False):
-            top_pairs = 'top ' + str(self.config.get('dynamic_whitelist', 20))
+            top_pairs = 'top ' + str(self.config.get('dynamic_whitelist', 20)) +\
+                        ' highest volume'
             specific_pairs = ''
         else:
             top_pairs = 'whitelisted'
@@ -181,7 +184,8 @@ class FreqtradeBot(object):
             self.config['exchange']['pair_whitelist'] = final_list
 
             # Query trades from persistence layer
-            trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+            trades = Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+                filter(Trade.is_open.is_(True)).all()
 
             # First process current opened trades
             for trade in trades:
@@ -288,7 +292,8 @@ class FreqtradeBot(object):
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-            open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
+            open_trades = len(Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).
+                              filter(Trade.is_open.is_(True)).all())
             if open_trades >= self.config['max_open_trades']:
                 logger.warning('Can\'t open a new trade: max number of trades is reached')
                 return None
@@ -354,7 +359,8 @@ class FreqtradeBot(object):
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
 
         # Remove currently opened and latest pairs from whitelist
-        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+        for trade in Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+                filter(Trade.is_open.is_(True)).all():
             if trade.pair in whitelist:
                 whitelist.remove(trade.pair)
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
@@ -553,7 +559,8 @@ class FreqtradeBot(object):
         buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
         sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
-        for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+        for trade in Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+                filter(Trade.open_order_id.isnot(None)).all():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.

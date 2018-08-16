@@ -62,6 +62,7 @@ class RPC(object):
         :return: None
         """
         self._freqtrade = freqtrade
+        self.bot_id = freqtrade.config.get('bot_id', 0)
 
     @property
     def name(self) -> str:
@@ -82,7 +83,8 @@ class RPC(object):
         a remotely exposed function
         """
         # Fetch open trade
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+        trades = Trade.query.filter(Trade.bot_id == self.bot_id).\
+            filter(Trade.is_open.is_(True)).all()
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
         elif not trades:
@@ -116,7 +118,8 @@ class RPC(object):
             return results
 
     def _rpc_status_table(self) -> DataFrame:
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+        trades = Trade.query.filter(Trade.bot_id == self.bot_id).\
+            filter(Trade.is_open.is_(True)).all()
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
         elif not trades:
@@ -188,7 +191,8 @@ class RPC(object):
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
-        trades = Trade.query.order_by(Trade.id).all()
+        trades = Trade.query.filter(Trade.bot_id == self.bot_id).\
+            order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_percent = []
@@ -357,12 +361,13 @@ class RPC(object):
 
         if trade_id == 'all':
             # Execute sell for all open orders
-            for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+            for trade in Trade.query.filter(Trade.bot_id == self.bot_id).\
+                    filter(Trade.is_open.is_(True)).all():
                 _exec_forcesell(trade)
             return
 
         # Query for trade
-        trade = Trade.query.filter(
+        trade = Trade.query.filter(Trade.bot_id == self.bot_id).filter(
             sql.and_(
                 Trade.id == trade_id,
                 Trade.is_open.is_(True)
@@ -400,4 +405,5 @@ class RPC(object):
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        return Trade.query.filter(Trade.is_open.is_(True)).all()
+        return Trade.query.filter(Trade.bot_id == self.bot_id).\
+            filter(Trade.is_open.is_(True)).all()

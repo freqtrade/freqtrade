@@ -57,7 +57,7 @@ def init(config: Dict) -> None:
 
     # Clean dry_run DB if the db is not in-memory
     if config.get('dry_run', False) and db_url != 'sqlite://':
-        clean_dry_run_db()
+        clean_dry_run_db(config.get('bot_id', 0))
 
 
 def has_column(columns, searchname: str) -> bool:
@@ -129,6 +129,21 @@ def check_migrate(engine) -> None:
         inspector = inspect(engine)
         cols = inspector.get_columns('trades')
 
+        # backwards compatible
+        if not has_column(cols, 'open_rate_requested'):
+            engine.execute("alter table trades add open_rate_requested float")
+        if not has_column(cols, 'close_rate_requested'):
+            engine.execute("alter table trades add close_rate_requested float")
+        if not has_column(cols, 'stop_loss'):
+            engine.execute("alter table trades add stop_loss float")
+        if not has_column(cols, 'initial_stop_loss'):
+            engine.execute("alter table trades add initial_stop_loss float")
+        if not has_column(cols, 'max_rate'):
+            engine.execute("alter table trades add max_rate float")
+        if not has_column(cols, 'bot_id'):
+            engine.execute("alter table trades add bot_id integer")
+            engine.execute("create index bot_id_idx ON trades (bot_id);")
+
 
 def cleanup() -> None:
     """
@@ -138,12 +153,13 @@ def cleanup() -> None:
     Trade.session.flush()
 
 
-def clean_dry_run_db() -> None:
+def clean_dry_run_db(bot_id: int = 0) -> None:
     """
     Remove open_order_id from a Dry_run DB
     :return: None
     """
-    for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+    for trade in Trade.query.filter(Trade.bot_id == bot_id).\
+            filter(Trade.open_order_id.isnot(None)).all():
         # Check we are updating only a dry_run order not a prod one
         if 'dry_run' in trade.open_order_id:
             trade.open_order_id = None
@@ -156,6 +172,7 @@ class Trade(_DECL_BASE):
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
+    bot_id = Column(Integer, default=0, index=True)
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False, index=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
