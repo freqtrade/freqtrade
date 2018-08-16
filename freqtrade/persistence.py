@@ -53,11 +53,12 @@ def init(config: Dict) -> None:
     Trade.session = session()
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)
-    check_migrate(engine)
+    bot_id = config.get('bot_id', '0')
+    check_migrate(engine, bot_id)
 
     # Clean dry_run DB if the db is not in-memory
     if config.get('dry_run', False) and db_url != 'sqlite://':
-        clean_dry_run_db(config.get('bot_id', 0))
+        clean_dry_run_db(bot_id)
 
 
 def has_column(columns, searchname: str) -> bool:
@@ -68,12 +69,34 @@ def get_column_def(columns, column: str, default: str) -> str:
     return default if not has_column(columns, column) else column
 
 
-def check_migrate(engine) -> None:
+def check_migrate(engine, bot_id_value) -> None:
     """
     Checks if migration is necessary and migrates if necessary
     """
     inspector = inspect(engine)
 
+    cols = inspector.get_columns('trades')
+
+    needs_migration = False
+
+    if not has_column(cols, 'bot_id'):
+        engine.execute("alter table trades add bot_id integer")
+        engine.execute("create index bot_id_idx ON trades (bot_id);")
+        needs_migration = True
+
+    # Check for latest column
+    if not has_column(cols, 'ticker_interval'):
+        needs_migration = True
+
+    if needs_migration:
+        migrate(engine, bot_id_value)
+
+
+def migrate(engine, bot_id_str) -> None:
+    """
+    migrate trades table
+    """
+    inspector = inspect(engine)
     cols = inspector.get_columns('trades')
     tabs = inspector.get_table_names()
     table_back_name = 'trades_bak'
@@ -81,68 +104,52 @@ def check_migrate(engine) -> None:
         table_back_name = f'trades_bak{i}'
         logger.info(f'trying {table_back_name}')
 
-    # Check for latest column
-    if not has_column(cols, 'ticker_interval'):
-        fee_open = get_column_def(cols, 'fee_open', 'fee')
-        fee_close = get_column_def(cols, 'fee_close', 'fee')
-        open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
-        close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
-        stop_loss = get_column_def(cols, 'stop_loss', '0.0')
-        initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
-        max_rate = get_column_def(cols, 'max_rate', '0.0')
-        sell_reason = get_column_def(cols, 'sell_reason', 'null')
-        strategy = get_column_def(cols, 'strategy', 'null')
-        ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
+    fee_open = get_column_def(cols, 'fee_open', 'fee')
+    fee_close = get_column_def(cols, 'fee_close', 'fee')
+    open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
+    close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
+    stop_loss = get_column_def(cols, 'stop_loss', '0.0')
+    initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
+    max_rate = get_column_def(cols, 'max_rate', '0.0')
+    sell_reason = get_column_def(cols, 'sell_reason', 'null')
+    strategy = get_column_def(cols, 'strategy', 'null')
+    ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
+    bot_id = get_column_def(cols, 'bot_id', bot_id_str)
 
-        # Schema migration necessary
-        engine.execute(f"alter table trades rename to {table_back_name}")
-        # let SQLAlchemy create the schema as required
-        _DECL_BASE.metadata.create_all(engine)
+    # Schema migration necessary
+    engine.execute(f"alter table trades rename to {table_back_name}")
+    # let SQLAlchemy create the schema as required
+    _DECL_BASE.metadata.create_all(engine)
 
-        # Copy data back - following the correct schema
-        engine.execute(f"""insert into trades
-                (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
-                open_rate_requested, close_rate, close_rate_requested, close_profit,
-                stake_amount, amount, open_date, close_date, open_order_id,
-                stop_loss, initial_stop_loss, max_rate, sell_reason, strategy,
-                ticker_interval
-                )
-            select id, lower(exchange),
-                case
-                    when instr(pair, '_') != 0 then
-                    substr(pair,    instr(pair, '_') + 1) || '/' ||
-                    substr(pair, 1, instr(pair, '_') - 1)
-                    else pair
-                    end
-                pair,
-                is_open, {fee_open} fee_open, {fee_close} fee_close,
-                open_rate, {open_rate_requested} open_rate_requested, close_rate,
-                {close_rate_requested} close_rate_requested, close_profit,
-                stake_amount, amount, open_date, close_date, open_order_id,
-                {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
-                {max_rate} max_rate, {sell_reason} sell_reason, {strategy} strategy,
-                {ticker_interval} ticker_interval
-                from {table_back_name}
-             """)
+    # Copy data back - following the correct schema
+    engine.execute(f"""insert into trades
+            (id, bot_id, exchange, pair, is_open, fee_open, fee_close, open_rate,
+            open_rate_requested, close_rate, close_rate_requested, close_profit,
+            stake_amount, amount, open_date, close_date, open_order_id,
+            stop_loss, initial_stop_loss, max_rate, sell_reason, strategy,
+            ticker_interval
+            )
+        select id, {bot_id} bot_id, lower(exchange),
+            case
+                when instr(pair, '_') != 0 then
+                substr(pair,    instr(pair, '_') + 1) || '/' ||
+                substr(pair, 1, instr(pair, '_') - 1)
+                else pair
+                end
+            pair,
+            is_open, {fee_open} fee_open, {fee_close} fee_close,
+            open_rate, {open_rate_requested} open_rate_requested, close_rate,
+            {close_rate_requested} close_rate_requested, close_profit,
+            stake_amount, amount, open_date, close_date, open_order_id,
+            {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
+            {max_rate} max_rate, {sell_reason} sell_reason, {strategy} strategy,
+            {ticker_interval} ticker_interval
+            from {table_back_name}
+         """)
 
-        # Reread columns - the above recreated the table!
-        inspector = inspect(engine)
-        cols = inspector.get_columns('trades')
-
-        # backwards compatible
-        if not has_column(cols, 'open_rate_requested'):
-            engine.execute("alter table trades add open_rate_requested float")
-        if not has_column(cols, 'close_rate_requested'):
-            engine.execute("alter table trades add close_rate_requested float")
-        if not has_column(cols, 'stop_loss'):
-            engine.execute("alter table trades add stop_loss float")
-        if not has_column(cols, 'initial_stop_loss'):
-            engine.execute("alter table trades add initial_stop_loss float")
-        if not has_column(cols, 'max_rate'):
-            engine.execute("alter table trades add max_rate float")
-        if not has_column(cols, 'bot_id'):
-            engine.execute("alter table trades add bot_id integer")
-            engine.execute("create index bot_id_idx ON trades (bot_id);")
+    # Reread columns - the above recreated the table!
+    inspector = inspect(engine)
+    cols = inspector.get_columns('trades')
 
 
 def cleanup() -> None:
