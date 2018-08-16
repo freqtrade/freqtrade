@@ -130,7 +130,7 @@ def test_strategy_override_minimal_roi(caplog):
     assert resolver.strategy.minimal_roi[0] == 0.5
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            'Override strategy \'minimal_roi\' with value in config file.'
+            "Override strategy 'minimal_roi' with value in config file: {'0': 0.5}."
             ) in caplog.record_tuples
 
 
@@ -145,7 +145,7 @@ def test_strategy_override_stoploss(caplog):
     assert resolver.strategy.stoploss == -0.5
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            'Override strategy \'stoploss\' with value in config file: -0.5.'
+            "Override strategy 'stoploss' with value in config file: -0.5."
             ) in caplog.record_tuples
 
 
@@ -161,7 +161,7 @@ def test_strategy_override_ticker_interval(caplog):
     assert resolver.strategy.ticker_interval == 60
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            'Override strategy \'ticker_interval\' with value in config file: 60.'
+            "Override strategy 'ticker_interval' with value in config file: 60."
             ) in caplog.record_tuples
 
 
