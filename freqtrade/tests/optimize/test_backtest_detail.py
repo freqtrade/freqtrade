@@ -72,8 +72,8 @@ tc1 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 11:00:00').datetime, 9955, 9975, 9955, 9990, 12345, 0, 0],
     [getdate('2018-06-10 12:00:00').datetime, 9990, 9990, 9990, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.01, roi=1, trades=1, profit_perc=-0.01, sell_r=SellType.STOP_LOSS)  # should be
-    stop_loss=-0.01, roi=1, trades=1, profit_perc=-0.003, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.01, roi=1, trades=1, profit_perc=-0.01, sell_r=SellType.STOP_LOSS)  # should be
+    # stop_loss=-0.01, roi=1, trades=1, profit_perc=-0.003, sell_r=SellType.FORCE_SELL)  #
 
 
 # Test 2 Minus 4% Low, minus 1% close
@@ -88,8 +88,8 @@ tc2 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 11:00:00').datetime, 9925, 9975, 9875, 9900, 12345, 0, 0],
     [getdate('2018-06-10 12:00:00').datetime, 9900, 9950, 9850, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.03, sell_r=SellType.STOP_LOSS)  #should be
-    stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.03, sell_r=SellType.STOP_LOSS)  #should be
+    # stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.007, sell_r=SellType.FORCE_SELL)  #
 
 
 # Test 3 Candle drops 4%, Recovers 1%.
@@ -108,8 +108,9 @@ tc3 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 12:00:00').datetime, 9925, 9975, 8000, 8000, 12345, 0, 0],
     [getdate('2018-06-10 13:00:00').datetime, 9900, 9950, 9950, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.02, roi=1, trades=2, profit_perc=-0.4, sell_r=SellType.STOP_LOSS)  #should be
-    stop_loss=-0.02, roi=1, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.02, roi=1, trades=2, profit_perc=-0.04, sell_r=SellType.STOP_LOSS)  #should be
+    # stop_loss=-0.02, roi=1, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
+    # stop_loss=-0.02, roi=1, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
 
 
 # Test 4 Minus 3% / recovery +15%
@@ -124,8 +125,8 @@ tc4 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 11:00:00').datetime, 9925, 9975, 9875, 9900, 12345, 0, 0],
     [getdate('2018-06-10 12:00:00').datetime, 9900, 9950, 9850, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
-    stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)
+    stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
+    # stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)
 
 # Test 5 / Drops 0.5% Closes +20%
 # Candle Data for test 5
@@ -139,8 +140,8 @@ tc5 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 11:00:00').datetime, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [getdate('2018-06-10 12:00:00').datetime, 9900, 9950, 9850, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.01, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)  #should be
-    stop_loss=-0.01, roi=0.03, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)
+    stop_loss=-0.01, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)  #should be
+    # stop_loss=-0.01, roi=0.03, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)
 
 # Test 6 / Drops 3% / Recovers 6% Positive / Closes 1% positve
 # Candle Data for test 6
@@ -154,8 +155,8 @@ tc6 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 11:00:00').datetime, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [getdate('2018-06-10 12:00:00').datetime, 9900, 9950, 9850, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
-    stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
+    # stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
 
 # Test 7 - 6% Positive / 1% Negative / Close 1% Positve
 # Candle Data for test 7
@@ -169,8 +170,8 @@ tc7 = BTContainer(data=DataFrame([
     [getdate('2018-06-10 11:00:00').datetime, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [getdate('2018-06-10 12:00:00').datetime, 9900, 9950, 9850, 9900, 12345, 0, 0]
 ], columns=columns),
-    # stop_loss=-0.02, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)  #should be
-    stop_loss=-0.02, roi=0.03, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.02, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)  #should be
+    # stop_loss=-0.02, roi=0.03, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
 
 TESTS = [
     # tc_profit1,
@@ -193,7 +194,9 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = {"0": data.roi}
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    # mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    # TODO: don't Mock fee to for now
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
     patch_exchange(mocker)
 
     backtesting = Backtesting(default_conf)

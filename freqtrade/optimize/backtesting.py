@@ -206,12 +206,20 @@ class Backtesting(object):
 
             buy_signal = sell_row.buy
             sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
-                                             sell_row.sell)
+                                             sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
+                if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+                    # Set close_rate to stoploss
+                    closerate = trade.stop_loss
+                elif sell.sell_type == (SellType.ROI):
+                    # set close-rate to min-roi
+                    closerate = trade.open_rate + trade.open_rate * self.strategy.minimal_roi[0]
+                else:
+                    closerate = sell_row.open
 
                 return BacktestResult(pair=pair,
-                                      profit_percent=trade.calc_profit_percent(rate=sell_row.open),
-                                      profit_abs=trade.calc_profit(rate=sell_row.open),
+                                      profit_percent=trade.calc_profit_percent(rate=closerate),
+                                      profit_abs=trade.calc_profit(rate=closerate),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
                                       trade_duration=int((
@@ -220,7 +228,7 @@ class Backtesting(object):
                                       close_index=sell_row.Index,
                                       open_at_end=False,
                                       open_rate=buy_row.open,
-                                      close_rate=sell_row.open,
+                                      close_rate=closerate,
                                       sell_reason=sell.sell_type
                                       )
         if partial_ticker:
@@ -260,7 +268,7 @@ class Backtesting(object):
             position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
-        headers = ['date', 'buy', 'open', 'close', 'sell']
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
