@@ -44,14 +44,15 @@ class StrategyResolver(object):
         # Check if we need to override configuration
         if 'minimal_roi' in config:
             self.strategy.minimal_roi = config['minimal_roi']
-            logger.info("Override strategy \'minimal_roi\' with value in config file.")
+            logger.info("Override strategy 'minimal_roi' with value in config file: %s.",
+                        config['minimal_roi'])
         else:
             config['minimal_roi'] = self.strategy.minimal_roi
 
         if 'stoploss' in config:
             self.strategy.stoploss = config['stoploss']
             logger.info(
-                "Override strategy \'stoploss\' with value in config file: %s.", config['stoploss']
+                "Override strategy 'stoploss' with value in config file: %s.", config['stoploss']
             )
         else:
             config['stoploss'] = self.strategy.stoploss
@@ -59,7 +60,7 @@ class StrategyResolver(object):
         if 'ticker_interval' in config:
             self.strategy.ticker_interval = config['ticker_interval']
             logger.info(
-                "Override strategy \'ticker_interval\' with value in config file: %s.",
+                "Override strategy 'ticker_interval' with value in config file: %s.",
                 config['ticker_interval']
             )
         else:
