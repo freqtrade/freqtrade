@@ -208,12 +208,17 @@ class Backtesting(object):
             sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
                                              sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
+                trade_dur = int((sell_row.date - buy_row.date).total_seconds() // 60)
                 if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
                     # Set close_rate to stoploss
                     closerate = trade.stop_loss
                 elif sell.sell_type == (SellType.ROI):
+                    # get entry in min_roi >= to trade duration
+                    roi_entry = max(list(filter(lambda x: trade_dur >= x,
+                                                list(self.strategy.minimal_roi.keys()))))
                     # set close-rate to min-roi
-                    closerate = trade.open_rate + trade.open_rate * self.strategy.minimal_roi[0]
+                    closerate = trade.open_rate + trade.open_rate * \
+                        self.strategy.minimal_roi[roi_entry]
                 else:
                     closerate = sell_row.open
 
@@ -222,8 +227,7 @@ class Backtesting(object):
                                       profit_abs=trade.calc_profit(rate=closerate),
                                       open_time=buy_row.date,
                                       close_time=sell_row.date,
-                                      trade_duration=int((
-                                          sell_row.date - buy_row.date).total_seconds() // 60),
+                                      trade_duration=trade_dur,
                                       open_index=buy_row.Index,
                                       close_index=sell_row.Index,
                                       open_at_end=False,
