@@ -26,6 +26,24 @@ _EXCHANGE_URLS = {
 }
 
 
+def retrier_async(f):
+    async def wrapper(*args, **kwargs):
+        count = kwargs.pop('count', API_RETRY_COUNT)
+        try:
+            return await f(*args, **kwargs)
+        except (TemporaryError, DependencyException) as ex:
+            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
+            if count > 0:
+                count -= 1
+                kwargs.update({'count': count})
+                logger.warning('retrying %s() still for %s times', f.__name__, count)
+                return await wrapper(*args, **kwargs)
+            else:
+                logger.warning('Giving up retrying: %s()', f.__name__)
+                raise ex
+    return wrapper
+
+
 def retrier(f):
     def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
@@ -407,6 +425,7 @@ class Exchange(object):
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
         return tickers
 
+    @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
                                         since_ms: Optional[int] = None) -> Tuple[str, List]:
         try:

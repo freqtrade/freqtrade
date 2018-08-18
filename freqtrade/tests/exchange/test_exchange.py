@@ -45,7 +45,7 @@ async def async_ccxt_exception(mocker, default_conf, api_mock, fun, mock_ccxt_fu
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await getattr(exchange, fun)(**kwargs)
-    assert api_mock.__dict__[mock_ccxt_fun].call_count == 1
+    assert api_mock.__dict__[mock_ccxt_fun].call_count == API_RETRY_COUNT + 1
 
     with pytest.raises(OperationalException):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.BaseError)
