@@ -404,6 +404,8 @@ class Exchange(object):
         for tick in tickers:
             if tick[0] == pair:
                 data.extend(tick[1])
+        # Sort data again after extending the result - above calls return in "async order" order
+        data = sorted(data, key=lambda x: x[0])
         logger.info("downloaded %s with length %s.", pair, len(data))
         return data
 
