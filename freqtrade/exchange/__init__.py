@@ -50,13 +50,6 @@ class Exchange(object):
     _api: ccxt.Exchange = None
     _api_async: ccxt_async.Exchange = None
     _conf: Dict = {}
-    _cached_ticker: Dict[str, Any] = {}
-
-    # Holds last candle refreshed time of each pair
-    _pairs_last_refresh_time: Dict[str, int] = {}
-
-    # Holds candles
-    klines: Dict[str, Any] = {}
 
     # Holds all open sell orders for dry_run
     _dry_run_open_orders: Dict[str, Any] = {}
@@ -69,6 +62,14 @@ class Exchange(object):
         :return: None
         """
         self._conf.update(config)
+
+        self._cached_ticker: Dict[str, Any] = {}
+
+        # Holds last candle refreshed time of each pair
+        self._pairs_last_refresh_time: Dict[str, int] = {}
+
+        # Holds candles
+        self.klines: Dict[str, Any] = {}
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
