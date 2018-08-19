@@ -455,7 +455,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
-    mocker.patch('freqtrade.exchange.Exchange.get_candle_history')
+    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
@@ -490,7 +490,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.get_candle_history')
+    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
@@ -733,9 +733,14 @@ def test_backtest_record(default_conf, fee, mocker):
 
 def test_backtest_start_live(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    mocker.patch('freqtrade.exchange.Exchange.get_candle_history',
-                 new=lambda s, n, i: _load_pair_as_ticks(n, i))
-    patch_exchange(mocker)
+
+    async def load_pairs(pair, timeframe, since):
+        return _load_pair_as_ticks(pair, timeframe)
+
+    api_mock = MagicMock()
+    api_mock.fetch_ohlcv = load_pairs
+
+    patch_exchange(mocker, api_mock)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', MagicMock())
     mocker.patch('freqtrade.optimize.backtesting.Backtesting._generate_text_table', MagicMock())
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
@@ -776,9 +781,13 @@ def test_backtest_start_live(default_conf, mocker, caplog):
 
 def test_backtest_start_multi_strat(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    mocker.patch('freqtrade.exchange.Exchange.get_candle_history',
-                 new=lambda s, n, i: _load_pair_as_ticks(n, i))
-    patch_exchange(mocker)
+
+    async def load_pairs(pair, timeframe, since):
+        return _load_pair_as_ticks(pair, timeframe)
+    api_mock = MagicMock()
+    api_mock.fetch_ohlcv = load_pairs
+
+    patch_exchange(mocker, api_mock)
     backtestmock = MagicMock()
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     gen_table_mock = MagicMock()
