@@ -177,7 +177,7 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            data = json.load(file)
+            data = json_load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:
