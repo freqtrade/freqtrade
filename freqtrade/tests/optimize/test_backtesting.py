@@ -110,7 +110,7 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
     return pairdata
 
 
-# use for mock freqtrade.exchange.get_candle_history'
+# use for mock ccxt.fetch_ohlvc'
 def _load_pair_as_ticks(pair, tickfreq):
     ticks = optimize.load_data(None, ticker_interval=tickfreq, pairs=[pair])
     ticks = trim_dictlist(ticks, -201)
