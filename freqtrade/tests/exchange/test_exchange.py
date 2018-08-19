@@ -22,10 +22,6 @@ def get_mock_coro(return_value):
     return Mock(wraps=mock_coro)
 
 
-async def async_load_markets():
-    return {}
-
-
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, fun, mock_ccxt_fun, **kwargs):
     with pytest.raises(TemporaryError):
         api_mock.__dict__[mock_ccxt_fun] = MagicMock(side_effect=ccxt.NetworkError)
