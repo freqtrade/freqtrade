@@ -462,12 +462,3 @@ class Exchange(object):
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
-
-    def get_amount_lots(self, pair: str, amount: float) -> float:
-        """
-        get buyable amount rounding, ..
-        """
-        # validate that markets are loaded before trying to get fee
-        if not self._api.markets:
-            self._api.load_markets()
-        return self._api.amount_to_lots(pair, amount)
