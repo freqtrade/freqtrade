@@ -823,15 +823,3 @@ def test_get_fee(default_conf, mocker):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock,
                            'get_fee', 'calculate_fee')
-
-
-def test_get_amount_lots(default_conf, mocker):
-    api_mock = MagicMock()
-    api_mock.amount_to_lots = MagicMock(return_value=1.0)
-    api_mock.markets = None
-    marketmock = MagicMock()
-    api_mock.load_markets = marketmock
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-
-    assert exchange.get_amount_lots('LTC/BTC', 1.54) == 1
-    assert marketmock.call_count == 1
