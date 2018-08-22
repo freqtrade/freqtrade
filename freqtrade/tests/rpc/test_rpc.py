@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, ANY
 
 import pytest
 
+from freqtrade import TemporaryError
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -285,11 +286,12 @@ def test_rpc_balance_handle(default_conf, mocker):
             'used': 2.0,
         },
         'ETH': {
-            'free': 0.0,
-            'total': 0.0,
-            'used': 0.0,
+            'free': 1.0,
+            'total': 5.0,
+            'used': 4.0,
         }
     }
+    # ETH will be skipped due to mocked Error below
 
     mocker.patch.multiple(
         'freqtrade.fiat_convert.Market',
@@ -301,7 +303,8 @@ def test_rpc_balance_handle(default_conf, mocker):
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
-        get_balances=MagicMock(return_value=mock_balance)
+        get_balances=MagicMock(return_value=mock_balance),
+        get_ticker=MagicMock(side_effect=TemporaryError('Could not load ticker due to xxx'))
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -320,6 +323,7 @@ def test_rpc_balance_handle(default_conf, mocker):
         'pending': 2.0,
         'est_btc': 12.0,
     }]
+    assert result['total'] == 12.0
 
 
 def test_rpc_start(mocker, default_conf) -> None:
