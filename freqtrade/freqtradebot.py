@@ -342,6 +342,9 @@ class FreqtradeBot(object):
         :return: True if a trade object has been created and persisted, False otherwise
         """
         interval = self.strategy.ticker_interval
+
+        # EDGE
+        # STAKE AMOUNT SHOULD COME FROM EDGE
         stake_amount = self._get_trade_stake_amount()
 
         if not stake_amount:
@@ -361,6 +364,16 @@ class FreqtradeBot(object):
 
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
+
+
+        # EDGE 
+        # WinRate and Expected Risk Reward should be calculated for all whitelisted pairs
+        # ASYNC: For each pair call backslap 
+        # Save WR and ERR in Edge Dict
+        # Save last time updated for each pair in edge_last_update_time
+        # Calulate expectancy and position size and stop loss
+
+        # whitelist = Edge.filter(whitelist)
 
         # Pick pair based on buy signals
         for _pair in whitelist:
