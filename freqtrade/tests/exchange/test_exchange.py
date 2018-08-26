@@ -515,14 +515,17 @@ def test_get_ticker(default_conf, mocker):
     exchange.get_ticker(pair='ETH/BTC', refresh=True)
 
 
-def test_get_order_book(default_conf, mocker):
+def test_get_order_book(default_conf, mocker, order_book_l2):
     default_conf['exchange']['name'] = 'binance'
-    exchange = Exchange(default_conf)
-    order_book = exchange.get_order_book(pair='ETH/BTC', limit=50)
+    api_mock = MagicMock()
+
+    api_mock.fetch_l2_order_book = order_book_l2
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    order_book = exchange.get_order_book(pair='ETH/BTC', limit=10)
     assert 'bids' in order_book
     assert 'asks' in order_book
-    assert len(order_book['bids']) == 50
-    assert len(order_book['asks']) == 50
+    assert len(order_book['bids']) == 10
+    assert len(order_book['asks']) == 10
 
 
 def test_get_order_book_exception(default_conf, mocker):
