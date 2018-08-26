@@ -335,11 +335,11 @@ cp config.json.example config.json
 #### 2. Setup your Python virtual environment (virtualenv)
 
 ```bash
-python3.6 -m venv .env
+python3 -m venv .env
 source .env/bin/activate
-pip3.6 install --upgrade pip
-pip3.6 install -r requirements.txt
-pip3.6 install -e .
+pip3 install --upgrade pip
+pip3 install -r requirements.txt
+pip3 install -e .
 ```
 
 #### 3. Run the Bot
