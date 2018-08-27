@@ -1,4 +1,4 @@
-ccxt==1.17.188
+ccxt==1.17.194
 SQLAlchemy==1.2.11
 python-telegram-bot==10.1.0
 arrow==0.12.1
@@ -12,7 +12,7 @@ scipy==1.1.0
 jsonschema==2.6.0
 numpy==1.15.1
 TA-Lib==0.4.17
-pytest==3.7.2
+pytest==3.7.3
 pytest-mock==1.10.0
 pytest-cov==2.5.1
 tabulate==0.8.2
