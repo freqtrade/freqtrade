@@ -346,7 +346,7 @@ git clone https://github.com/freqtrade/freqtrade.git
 
 copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 
-#### install ta-lib
+#### Install ta-lib
 
 Install ta-lib according to the [ta-lib documentation](https://github.com/mrjbq7/ta-lib#windows).
 
@@ -366,6 +366,18 @@ REM >pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl
 ```
 
 > Thanks [Owdr](https://github.com/Owdr) for the commands. Source: [Issue #222](https://github.com/freqtrade/freqtrade/issues/222)
+
+#### Error during installation under Windows
+
+``` bash
+error: Microsoft Visual C++ 14.0 is required. Get it with "Microsoft Visual C++ Build Tools": http://landinghub.visualstudio.com/visual-cpp-build-tools
+```
+
+Unfortunately, many packages requiring compilation don't provide a pre-build wheel. It is therefore mandatory to have a C/C++ compiler installed and available for your python environment to use.
+
+The easiest way is to download install Microsoft Visual Studio Community [here](https://visualstudio.microsoft.com/downloads/) and make sure to install "Common Tools for Visual C++" to enable building c code on Windows. Unfortunately, this is a heavy download / dependency (~4Gb) so you might want to consider WSL or docker first.
+
+---
 
 Now you have an environment ready, the next step is
 [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md)...
