@@ -232,6 +232,23 @@ sudo apt-get update
 sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
 ```
 
+#### Raspberry Pi / Raspbian
+
+Before installing FreqTrade on a Raspberry Pi running the official Raspbian Image, make sure you have at least Python 3.6 installed. The default image only provides Python 3.5. Probably the easiest way to get a recent version of python is [miniconda](https://repo.continuum.io/miniconda/).
+
+The following assumes that miniconda3 is installed and available in your environment, and is installed.
+It's recommended to use (mini)conda for this as installation/compilation of `scipy` and `pandas` takes a long time.
+
+``` bash
+conda config --add channels rpi
+conda install python=3.6
+conda create -n freqtrade python=3.6
+conda install scipy pandas
+
+pip install -r requirements.txt
+pip install -e .
+```
+
 ### MacOS
 
 #### Install Python 3.6, git, wget and ta-lib
