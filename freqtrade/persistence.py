@@ -54,7 +54,8 @@ def init(config: Dict) -> None:
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)
     bot_id = config.get('bot_id', '0')
-    check_migrate(engine, bot_id)
+    if check_migrate(engine):
+        migrate(engine, bot_id)
 
     # Clean dry_run DB if the db is not in-memory
     if config.get('dry_run', False) and db_url != 'sqlite://':
@@ -69,7 +70,7 @@ def get_column_def(columns, column: str, default: str) -> str:
     return default if not has_column(columns, column) else column
 
 
-def check_migrate(engine, bot_id_value) -> None:
+def check_migrate(engine) -> bool:
     """
     Checks if migration is necessary and migrates if necessary
     """
@@ -88,8 +89,7 @@ def check_migrate(engine, bot_id_value) -> None:
     if not has_column(cols, 'ticker_interval'):
         needs_migration = True
 
-    if needs_migration:
-        migrate(engine, bot_id_value)
+    return needs_migration
 
 
 def migrate(engine, bot_id_str) -> None:
@@ -114,7 +114,7 @@ def migrate(engine, bot_id_str) -> None:
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
     ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
-    bot_id = get_column_def(cols, 'bot_id', bot_id_str)
+    bot_id = bot_id_str
 
     # Schema migration necessary
     engine.execute(f"alter table trades rename to {table_back_name}")
