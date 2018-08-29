@@ -581,10 +581,10 @@ def test_get_history(default_conf, mocker, caplog):
     ]
     pair = 'ETH/BTC'
 
-    async def mock_cacndle_hist(pair, tick_interval, since_ms):
+    async def mock_candle_hist(pair, tick_interval, since_ms):
         return pair, tick
 
-    exchange._async_get_candle_history = Mock(wraps=mock_cacndle_hist)
+    exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
     since = 5 * 60 * 500 * 1.8
     print(f"since = {since}")

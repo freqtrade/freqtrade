@@ -410,15 +410,13 @@ class Exchange(object):
         logger.info("downloaded %s with length %s.", pair, len(data))
         return data
 
-    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> bool:
+    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> None:
         """
         Refresh tickers asyncronously and return the result.
         """
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
         asyncio.get_event_loop().run_until_complete(
             self.async_get_candles_history(pair_list, ticker_interval))
-
-        return True
 
     async def async_get_candles_history(self, pairs: List[str],
                                         tick_interval: str) -> List[Tuple[str, List]]:
