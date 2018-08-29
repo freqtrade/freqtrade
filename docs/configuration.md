@@ -17,6 +17,7 @@ The table below will list all configuration parameters.
 
 |  Command | Default | Mandatory | Description |
 |----------|---------|----------|-------------|
+| `bot_id` | 0 | No | Allows multiple bot connect to 1 database server. This value should be unique in each bot instance.
 | `max_open_trades` | 3 | Yes | Number of trades open your bot will have.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
@@ -54,6 +55,10 @@ The table below will list all configuration parameters.
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
 The definition of each config parameters is in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L205).
+
+### Understand bot_id
+
+`bot_id` is a value assigned to each instance of the bot. Use only UNIQUE `bot_id` value per bot instance when connected to a single database server such as Postgre, Mysql, etc. 
 
 ### Understand stake_amount
 

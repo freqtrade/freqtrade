@@ -1,4 +1,5 @@
 {
+    "bot_id": 0,
     "max_open_trades": 3,
     "stake_currency": "BTC",
     "stake_amount": 0.05,

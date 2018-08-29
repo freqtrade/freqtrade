@@ -118,6 +118,7 @@ class FreqtradeBot(object):
                 'type': RPCMessageType.WARNING_NOTIFICATION,
                 'status': 'Dry run is enabled. All trades are simulated.'
             })
+        bot_id = self.config.get('bot_id',0)
         stake_currency = self.config['stake_currency']
         stake_amount = self.config['stake_amount']
         minimal_roi = self.config['minimal_roi']
@@ -127,7 +128,8 @@ class FreqtradeBot(object):
         strategy_name = self.config.get('strategy', '')
         self.rpc.send_msg({
             'type': RPCMessageType.CUSTOM_NOTIFICATION,
-            'status': f'*Exchange:* `{exchange_name}`\n'
+            'status': f'*Bot ID:* `{bot_id}`\n'
+                      f'*Exchange:* `{exchange_name}`\n'
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
                       f'*Ticker Interval:* `{ticker_interval}`\n'
