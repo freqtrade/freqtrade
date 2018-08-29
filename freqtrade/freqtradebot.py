@@ -118,7 +118,7 @@ class FreqtradeBot(object):
                 'type': RPCMessageType.WARNING_NOTIFICATION,
                 'status': 'Dry run is enabled. All trades are simulated.'
             })
-        bot_id = self.config.get('bot_id',0)
+        bot_id = self.config.get('bot_id', 0)
         stake_currency = self.config['stake_currency']
         stake_amount = self.config['stake_amount']
         minimal_roi = self.config['minimal_roi']
