@@ -247,11 +247,11 @@ class FreqtradeBot(object):
             ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
         used_rate = ticker_rate
-        experimental_bid_strategy = self.config.get('experimental', {}).get('bid_strategy', {})
-        if 'use_order_book' in experimental_bid_strategy and\
-                experimental_bid_strategy.get('use_order_book', False):
+        config_bid_strategy = self.config.get('bid_strategy', {})
+        if 'use_order_book' in config_bid_strategy and\
+                config_bid_strategy.get('use_order_book', False):
             logger.info('Getting price from order book')
-            order_book_top = experimental_bid_strategy.get('order_book_top', 1)
+            order_book_top = config_bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.get_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
@@ -359,11 +359,11 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
 
             if buy and not sell:
-                experimental_check_depth_of_market = self.config.get('experimental', {}).\
+                bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
-                if (experimental_check_depth_of_market.get('enabled', False)) and\
-                        (experimental_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
-                    if self._check_depth_of_market_buy(_pair, experimental_check_depth_of_market):
+                if (bidstrat_check_depth_of_market.get('enabled', False)) and\
+                        (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
+                    if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
                         return self.execute_buy(_pair, stake_amount)
                     else:
                         return False
@@ -551,12 +551,12 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 
-        experimental_ask_strategy = self.config.get('experimental', {}).get('ask_strategy', {})
-        if experimental_ask_strategy.get('use_order_book', False):
+        config_ask_strategy = self.config.get('ask_strategy', {})
+        if config_ask_strategy.get('use_order_book', False):
             logger.info('Using order book for selling...')
             # logger.debug('Order book %s',orderBook)
-            order_book_min = experimental_ask_strategy.get('order_book_min', 1)
-            order_book_max = experimental_ask_strategy.get('order_book_max', 1)
+            order_book_min = config_ask_strategy.get('order_book_min', 1)
+            order_book_max = config_ask_strategy.get('order_book_max', 1)
 
             order_book = self.exchange.get_order_book(trade.pair, order_book_max)
 

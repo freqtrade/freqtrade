@@ -1889,8 +1889,8 @@ def test_get_real_amount_open_trade(default_conf, mocker):
 
 def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, markets, mocker,
                                     order_book_l2):
-    default_conf['experimental']['check_depth_of_market']['enabled'] = True
-    default_conf['experimental']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
+    default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
+    default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
     patch_RPCManager(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
     mocker.patch.multiple(
@@ -1924,9 +1924,9 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, 
 
 def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_order,
                                                fee, markets, mocker, order_book_l2):
-    default_conf['experimental']['check_depth_of_market']['enabled'] = True
+    default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
     # delta is 100 which is impossible to reach. hence check_depth_of_market will return false
-    default_conf['experimental']['check_depth_of_market']['bids_to_ask_delta'] = 100
+    default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 100
     patch_RPCManager(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
     mocker.patch.multiple(
@@ -1958,8 +1958,8 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2, markets) 
         get_order_book=order_book_l2
     )
     default_conf['exchange']['name'] = 'binance'
-    default_conf['experimental']['bid_strategy']['use_order_book'] = True
-    default_conf['experimental']['bid_strategy']['order_book_top'] = 2
+    default_conf['bid_strategy']['use_order_book'] = True
+    default_conf['bid_strategy']['order_book_top'] = 2
     default_conf['bid_strategy']['ask_last_balance'] = 0
     default_conf['telegram']['enabled'] = False
 
@@ -1979,8 +1979,8 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
            get_order_book=order_book_l2
     )
     default_conf['exchange']['name'] = 'binance'
-    default_conf['experimental']['bid_strategy']['use_order_book'] = True
-    default_conf['experimental']['bid_strategy']['order_book_top'] = 2
+    default_conf['bid_strategy']['use_order_book'] = True
+    default_conf['bid_strategy']['order_book_top'] = 2
     default_conf['bid_strategy']['ask_last_balance'] = 0
     default_conf['telegram']['enabled'] = False
 
@@ -2000,8 +2000,8 @@ def test_order_book_bid_strategy3(default_conf, mocker, order_book_l2, markets) 
         get_order_book=order_book_l2
     )
     default_conf['exchange']['name'] = 'binance'
-    default_conf['experimental']['bid_strategy']['use_order_book'] = True
-    default_conf['experimental']['bid_strategy']['order_book_top'] = 1
+    default_conf['bid_strategy']['use_order_book'] = True
+    default_conf['bid_strategy']['order_book_top'] = 1
     default_conf['bid_strategy']['ask_last_balance'] = 0
     default_conf['telegram']['enabled'] = False
 
@@ -2022,12 +2022,12 @@ def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2, markets)
     )
     default_conf['telegram']['enabled'] = False
     default_conf['exchange']['name'] = 'binance'
-    default_conf['experimental']['check_depth_of_market']['enabled'] = True
+    default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
     # delta is 100 which is impossible to reach. hence function will return false
-    default_conf['experimental']['check_depth_of_market']['bids_to_ask_delta'] = 100
+    default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 100
     freqtrade = FreqtradeBot(default_conf)
 
-    conf = default_conf['experimental']['check_depth_of_market']
+    conf = default_conf['bid_strategy']['check_depth_of_market']
     assert freqtrade._check_depth_of_market_buy('ETH/BTC', conf) is False
 
 
@@ -2038,9 +2038,9 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
     """
     mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
     default_conf['exchange']['name'] = 'binance'
-    default_conf['experimental']['ask_strategy']['use_order_book'] = True
-    default_conf['experimental']['ask_strategy']['order_book_min'] = 1
-    default_conf['experimental']['ask_strategy']['order_book_max'] = 2
+    default_conf['ask_strategy']['use_order_book'] = True
+    default_conf['ask_strategy']['order_book_min'] = 1
+    default_conf['ask_strategy']['order_book_max'] = 2
     default_conf['telegram']['enabled'] = False
     patch_RPCManager(mocker)
     mocker.patch.multiple(

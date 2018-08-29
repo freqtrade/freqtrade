@@ -102,7 +102,18 @@ def default_conf():
             "sell": 30
         },
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "ask_last_balance": 0.0,
+            "use_order_book": False,
+            "order_book_top": 1,
+            "check_depth_of_market": {
+                "enabled": False,
+                "bids_to_ask_delta": 1
+            }
+        },
+        "ask_strategy": {
+            "use_order_book": False,
+            "order_book_min": 1,
+            "order_book_max": 1
         },
         "exchange": {
             "name": "bittrex",
@@ -115,22 +126,6 @@ def default_conf():
                 "XRP/BTC",
                 "NEO/BTC"
             ]
-        },
-        "experimental": {
-            "check_depth_of_market": {
-                "enabled": False,
-                "bids_to_ask_delta": 1
-            },
-            "bid_strategy": {
-                "percent_from_top": 0,
-                "use_order_book": False,
-                "order_book_top": 1
-            },
-            "ask_strategy": {
-                "use_order_book": False,
-                "order_book_min": 1,
-                "order_book_max": 1
-            }
         },
         "telegram": {
             "enabled": True,
