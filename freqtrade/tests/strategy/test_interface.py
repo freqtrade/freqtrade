@@ -8,6 +8,7 @@ from pandas import DataFrame
 
 from freqtrade.arguments import TimeRange
 from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.persistence import Trade
 from freqtrade.tests.conftest import get_patched_exchange, log_has
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
@@ -104,3 +105,26 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     tickerlist = {'UNITTEST/BTC': tick}
     data = strategy.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed
+
+
+def test_min_roi_reached(default_conf, fee) -> None:
+    strategy = DefaultStrategy(default_conf)
+    strategy.minimal_roi = {0: 0.1, 20: 0.05, 55: 0.01}
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+    )
+
+    assert not strategy.min_roi_reached(trade, 0.01, arrow.utcnow().shift(minutes=-55).datetime)
+    assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-55).datetime)
+
+    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+
+    assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
+    assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
