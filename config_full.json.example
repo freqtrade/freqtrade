@@ -52,7 +52,8 @@
         ],
         "pair_blacklist": [
             "DOGE/BTC"
-        ]
+        ],
+        "outdated_offset": 5
     },
     "experimental": {
         "use_sell_signal": false,

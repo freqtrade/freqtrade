@@ -43,7 +43,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :return: None
     """
     freqtrade.strategy.get_signal = lambda e, s, t: value
-    freqtrade.exchange.get_ticker_history = lambda p, i: None
+    freqtrade.exchange.get_candle_history = lambda p, i: None
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -553,7 +553,7 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
-        get_ticker_history=MagicMock(return_value=20),
+        get_candle_history=MagicMock(return_value=20),
         get_balance=MagicMock(return_value=20),
         get_fee=fee,
     )
@@ -2070,3 +2070,9 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is True
+
+
+def test_startup_messages(default_conf, mocker):
+    default_conf['dynamic_whitelist'] = 20
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert freqtrade.state is State.RUNNING

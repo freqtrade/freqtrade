@@ -322,7 +322,7 @@ class Exchange(object):
                 return data
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
                 raise TemporaryError(
-                    f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
+                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}')
             except ccxt.BaseError as e:
                 raise OperationalException(e)
         else:
@@ -330,7 +330,7 @@ class Exchange(object):
             return self._cached_ticker[pair]
 
     @retrier
-    def get_ticker_history(self, pair: str, tick_interval: str,
+    def get_candle_history(self, pair: str, tick_interval: str,
                            since_ms: Optional[int] = None) -> List[Dict]:
         try:
             # last item should be in the time interval [now - tick_interval, now]
@@ -493,12 +493,3 @@ class Exchange(object):
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
-
-    def get_amount_lots(self, pair: str, amount: float) -> float:
-        """
-        get buyable amount rounding, ..
-        """
-        # validate that markets are loaded before trying to get fee
-        if not self._api.markets:
-            self._api.load_markets()
-        return self._api.amount_to_lots(pair, amount)

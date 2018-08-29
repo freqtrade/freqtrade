@@ -132,7 +132,11 @@ def test_parse_args_backtesting_custom() -> None:
         'backtesting',
         '--live',
         '--ticker-interval', '1m',
-        '--refresh-pairs-cached']
+        '--refresh-pairs-cached',
+        '--strategy-list',
+        'DefaultStrategy',
+        'TestStrategy'
+        ]
     call_args = Arguments(args, '').get_parsed_arg()
     assert call_args.config == 'test_conf.json'
     assert call_args.live is True
@@ -141,6 +145,8 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args.func is not None
     assert call_args.ticker_interval == '1m'
     assert call_args.refresh_pairs is True
+    assert type(call_args.strategy_list) is list
+    assert len(call_args.strategy_list) == 2
 
 
 def test_parse_args_hyperopt_custom() -> None:

@@ -36,7 +36,7 @@ SUPPORTED_FIAT = [
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
+    "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
     ]
 
 # Required json-schema for user specified config
@@ -45,7 +45,7 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
+        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],
             "minimum": 0.0005,
@@ -162,7 +162,8 @@ CONF_SCHEMA = {
                         'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
-                }
+                },
+                'outdated_offset': {'type': 'integer', 'minimum': 1}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
         }

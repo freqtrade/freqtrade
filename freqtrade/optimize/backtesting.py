@@ -6,7 +6,9 @@ This module contains the backtesting logic
 import logging
 import operator
 from argparse import Namespace
+from copy import deepcopy
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
@@ -52,13 +54,9 @@ class Backtesting(object):
     backtesting = Backtesting(config)
     backtesting.start()
     """
+
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
-        self.ticker_interval = self.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.advise_buy = self.strategy.advise_buy
-        self.advise_sell = self.strategy.advise_sell
 
         # Reset keys for backtesting
         self.config['exchange']['key'] = ''
@@ -66,8 +64,35 @@ class Backtesting(object):
         self.config['exchange']['password'] = ''
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
+        self.strategylist: List[IStrategy] = []
+        if self.config.get('strategy_list', None):
+            # Force one interval
+            self.ticker_interval = str(self.config.get('ticker_interval'))
+            for strat in list(self.config['strategy_list']):
+                stratconf = deepcopy(self.config)
+                stratconf['strategy'] = strat
+                self.strategylist.append(StrategyResolver(stratconf).strategy)
+
+        else:
+            # only one strategy
+            strat = StrategyResolver(self.config).strategy
+
+            self.strategylist.append(StrategyResolver(self.config).strategy)
+        # Load one strategy
+        self._set_strategy(self.strategylist[0])
+
         self.exchange = Exchange(self.config)
         self.fee = self.exchange.get_fee()
+
+    def _set_strategy(self, strategy):
+        """
+        Load strategy into backtesting
+        """
+        self.strategy = strategy
+        self.ticker_interval = self.config.get('ticker_interval')
+        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
+        self.advise_buy = strategy.advise_buy
+        self.advise_sell = strategy.advise_sell
 
     @staticmethod
     def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
@@ -132,7 +157,32 @@ class Backtesting(object):
             tabular_data.append([reason.value,  count])
         return tabulate(tabular_data, headers=headers, tablefmt="pipe")
 
-    def _store_backtest_result(self, recordfilename: Optional[str], results: DataFrame) -> None:
+    def _generate_text_table_strategy(self, all_results: dict) -> str:
+        """
+        Generate summary table per strategy
+        """
+        stake_currency = str(self.config.get('stake_currency'))
+
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
+        tabular_data = []
+        headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
+                   'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
+        for strategy, results in all_results.items():
+            tabular_data.append([
+                strategy,
+                len(results.index),
+                results.profit_percent.mean() * 100.0,
+                results.profit_percent.sum() * 100.0,
+                results.profit_abs.sum(),
+                str(timedelta(
+                    minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
+                len(results[results.profit_abs > 0]),
+                len(results[results.profit_abs < 0])
+            ])
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+
+    def _store_backtest_result(self, recordfilename: str, results: DataFrame,
+                               strategyname: Optional[str] = None) -> None:
 
         records = [(t.pair, t.profit_percent, t.open_time.timestamp(),
                     t.close_time.timestamp(), t.open_index - 1, t.trade_duration,
@@ -140,6 +190,11 @@ class Backtesting(object):
                    for index, t in results.iterrows()]
 
         if records:
+            if strategyname:
+                # Inject strategyname to filename
+                recname = Path(recordfilename)
+                recordfilename = str(Path.joinpath(
+                    recname.parent, f'{recname.stem}-{strategyname}').with_suffix(recname.suffix))
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
 
@@ -283,7 +338,7 @@ class Backtesting(object):
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
             for pair in pairs:
-                data[pair] = self.exchange.get_ticker_history(pair, self.ticker_interval)
+                data[pair] = self.exchange.get_candle_history(pair, self.ticker_interval)
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
@@ -307,62 +362,55 @@ class Backtesting(object):
         else:
             logger.info('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             max_open_trades = 0
+        all_results = {}
 
-        preprocessed = self.tickerdata_to_dataframe(data)
+        for strat in self.strategylist:
+            logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
+            self._set_strategy(strat)
 
-        # Print timeframe
-        min_date, max_date = self.get_timeframe(preprocessed)
-        logger.info(
-            'Measuring data from %s up to %s (%s days)..',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
-        )
+            # need to reprocess data every time to populate signals
+            preprocessed = self.tickerdata_to_dataframe(data)
 
-        # Execute backtest and print results
-        results = self.backtest(
-            {
-                'stake_amount': self.config.get('stake_amount'),
-                'processed': preprocessed,
-                'max_open_trades': max_open_trades,
-                'position_stacking': self.config.get('position_stacking', False),
-            }
-        )
-
-        if self.config.get('export', False):
-            self._store_backtest_result(self.config.get('exportfilename'), results)
-
-        logger.info(
-            '\n' + '=' * 49 +
-            ' BACKTESTING REPORT ' +
-            '=' * 50 + '\n'
-            '%s',
-            self._generate_text_table(
-                data,
-                results
+            # Print timeframe
+            min_date, max_date = self.get_timeframe(preprocessed)
+            logger.info(
+                'Measuring data from %s up to %s (%s days)..',
+                min_date.isoformat(),
+                max_date.isoformat(),
+                (max_date - min_date).days
             )
-        )
-        # logger.info(
-        #     results[['sell_reason']].groupby('sell_reason').count()
-        # )
 
-        logger.info(
-            '\n' +
-            ' SELL READON STATS '.center(119, '=') +
-            '\n%s \n',
-            self._generate_text_table_sell_reason(data, results)
-
-        )
-
-        logger.info(
-            '\n' +
-            ' LEFT OPEN TRADES REPORT '.center(119, '=') +
-            '\n%s',
-            self._generate_text_table(
-                data,
-                results.loc[results.open_at_end]
+            # Execute backtest and print results
+            all_results[self.strategy.get_strategy_name()] = self.backtest(
+                {
+                    'stake_amount': self.config.get('stake_amount'),
+                    'processed': preprocessed,
+                    'max_open_trades': max_open_trades,
+                    'position_stacking': self.config.get('position_stacking', False),
+                }
             )
-        )
+
+        for strategy, results in all_results.items():
+
+            if self.config.get('export', False):
+                self._store_backtest_result(self.config['exportfilename'], results,
+                                            strategy if len(self.strategylist) > 1 else None)
+
+            print(f"Result for strategy {strategy}")
+            print(' BACKTESTING REPORT '.center(119, '='))
+            print(self._generate_text_table(data, results))
+
+            print(' SELL REASON STATS '.center(119, '='))
+            print(self._generate_text_table_sell_reason(data, results))
+
+            print(' LEFT OPEN TRADES REPORT '.center(119, '='))
+            print(self._generate_text_table(data, results.loc[results.open_at_end]))
+            print()
+        if len(all_results) > 1:
+            # Print Strategy summary table
+            print(' Strategy Summary '.center(119, '='))
+            print(self._generate_text_table_strategy(all_results))
+            print('\nFor more details, please look at the detail tables above')
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
