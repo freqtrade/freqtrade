@@ -31,6 +31,13 @@ The table below will list all configuration parameters.
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
+| `bid_strategy.use_order_book` | false | No | Allows buying of pair using the rates in Order Book Bids.
+| `bid_strategy.order_book_top` | 0 | No | Bot will use the top N rate in Order Book Bids. Ie. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
+| `bid_strategy.check_depth_of_market.enabled` | false | No | Does not buy if the % difference of buy orders and sell orders is met in Order Book.
+| `bid_strategy.check_depth_of_market.bids_to_ask_delta` | 0 | No | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
+| `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
+| `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
+| `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
