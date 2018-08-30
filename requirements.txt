@@ -1,4 +1,4 @@
-ccxt==1.17.205
+ccxt==1.17.210
 SQLAlchemy==1.2.11
 python-telegram-bot==10.1.0
 arrow==0.12.1
