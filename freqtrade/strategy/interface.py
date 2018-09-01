@@ -74,11 +74,11 @@ class IStrategy(ABC):
     ta_on_candle: bool = False
 
     # Dict to determine if analysis is necessary
-    _candle_seen: Dict[str, datetime] = {}
+    _last_candle_seen_per_pair: Dict[str, datetime] = {}
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self._candle_seen = {}
+        self._last_candle_seen_per_pair = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -119,7 +119,6 @@ class IStrategy(ABC):
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
-
         # Test if seen this pair and last candle before.
         dataframe = parse_ticker_dataframe(ticker_history)
 
@@ -127,13 +126,13 @@ class IStrategy(ABC):
 
         # always run if ta_on_candle is set to true
         if (not self.ta_on_candle or
-                self._candle_seen.get(pair, None) != dataframe.iloc[-1]['date']):
+                self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
             logging.debug("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
-            self._candle_seen[pair] = dataframe.iloc[-1]['date']
+            self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
         else:
             logging.debug("Skippinig TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
