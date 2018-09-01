@@ -71,7 +71,7 @@ class IStrategy(ABC):
     ticker_interval: str
 
     # run "populate_indicators" only for new candle
-    ta_on_candle: bool = False
+    process_only_new_candles: bool = False
 
     # Dict to determine if analysis is necessary
     _last_candle_seen_per_pair: Dict[str, datetime] = {}
@@ -124,8 +124,8 @@ class IStrategy(ABC):
 
         pair = str(metadata.get('pair'))
 
-        # always run if ta_on_candle is set to true
-        if (not self.ta_on_candle or
+        # always run if process_only_new_candles is set to true
+        if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
             logging.debug("TA Analysis Launched")

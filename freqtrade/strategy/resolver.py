@@ -65,14 +65,14 @@ class StrategyResolver(object):
         else:
             config['ticker_interval'] = self.strategy.ticker_interval
 
-        if 'ta_on_candle' in config:
-            self.strategy.ta_on_candle = config['ta_on_candle']
+        if 'process_only_new_candles' in config:
+            self.strategy.process_only_new_candles = config['process_only_new_candles']
             logger.info(
-                "Override ta_on_candle 'ta_on_candle' with value in config file: %s.",
-                config['ta_on_candle']
+                "Override process_only_new_candles 'process_only_new_candles' "
+                "with value in config file: %s.", config['process_only_new_candles']
             )
         else:
-            config['ta_on_candle'] = self.strategy.ta_on_candle
+            config['process_only_new_candles'] = self.strategy.process_only_new_candles
 
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(

@@ -165,19 +165,20 @@ def test_strategy_override_ticker_interval(caplog):
             ) in caplog.record_tuples
 
 
-def test_strategy_override_ta_on_candle(caplog):
+def test_strategy_override_process_only_new_candles(caplog):
     caplog.set_level(logging.INFO)
 
     config = {
         'strategy': 'DefaultStrategy',
-        'ta_on_candle': True
+        'process_only_new_candles': True
     }
     resolver = StrategyResolver(config)
 
-    assert resolver.strategy.ta_on_candle
+    assert resolver.strategy.process_only_new_candles
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
-            "Override ta_on_candle 'ta_on_candle' with value in config file: True."
+            "Override process_only_new_candles 'process_only_new_candles' "
+            "with value in config file: True."
             ) in caplog.record_tuples
 
 

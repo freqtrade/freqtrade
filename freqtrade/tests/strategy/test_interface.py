@@ -131,7 +131,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     caplog.clear()
 
     strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
-    # No analysis happens as ta_on_candle is true
+    # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 2
     assert buy_mock.call_count == 2
     assert buy_mock.call_count == 2
@@ -153,7 +153,7 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
 
     )
     strategy = DefaultStrategy({})
-    strategy.ta_on_candle = True
+    strategy.process_only_new_candles = True
 
     ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
     assert ind_mock.call_count == 1
@@ -165,7 +165,7 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     caplog.clear()
 
     ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
-    # No analysis happens as ta_on_candle is true
+    # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
