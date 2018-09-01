@@ -127,6 +127,10 @@ def default_conf():
                 "NEO/BTC"
             ]
         },
+        "multithreading": {
+            "enabled": False,
+            "workers_number": 4
+        },
         "telegram": {
             "enabled": True,
             "token": "token",
