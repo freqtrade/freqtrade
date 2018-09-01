@@ -1,7 +1,13 @@
 # pragma pylint: disable=missing-docstring
 
 import gzip
-import json
+try:
+    import ujson as json
+    _UJSON = True
+except ImportError:
+    # see mypy/issues/1153
+    import json  # type: ignore
+    _UJSON = False
 import logging
 import os
 from typing import Optional, List, Dict, Tuple, Any
@@ -12,6 +18,14 @@ from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
 logger = logging.getLogger(__name__)
+
+
+def json_load(data):
+    """Try to load data with ujson"""
+    if _UJSON:
+        return json.load(data, precise_float=True)
+    else:
+        return json.load(data)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
@@ -163,7 +177,7 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            data = json.load(file)
+            data = json_load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:

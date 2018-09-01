@@ -44,7 +44,8 @@ class StrategyResolver(object):
         # Check if we need to override configuration
         if 'minimal_roi' in config:
             self.strategy.minimal_roi = config['minimal_roi']
-            logger.info("Override strategy 'minimal_roi' with value in config file.")
+            logger.info("Override strategy 'minimal_roi' with value in config file: %s.",
+                        config['minimal_roi'])
         else:
             config['minimal_roi'] = self.strategy.minimal_roi
 

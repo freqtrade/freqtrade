@@ -20,7 +20,18 @@
         "sell": 30
     },
     "bid_strategy": {
-        "ask_last_balance": 0.0
+        "ask_last_balance": 0.0,
+        "use_order_book": false,
+        "order_book_top": 1,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "ask_strategy":{
+        "use_order_book": false,
+        "order_book_min": 1,
+        "order_book_max": 9
     },
     "exchange": {
         "name": "bittrex",
@@ -41,7 +52,8 @@
         ],
         "pair_blacklist": [
             "DOGE/BTC"
-        ]
+        ],
+        "outdated_offset": 5
     },
     "experimental": {
         "use_sell_signal": false,

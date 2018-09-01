@@ -154,6 +154,12 @@ class Telegram(RPC):
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
 
+        elif msg['type'] == RPCMessageType.WARNING_NOTIFICATION:
+            message = '*Warning:* `{status}`'.format(**msg)
+
+        elif msg['type'] == RPCMessageType.CUSTOM_NOTIFICATION:
+            message = '{status}'.format(**msg)
+
         else:
             raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
 

@@ -182,7 +182,8 @@ class IStrategy(ABC):
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + 5))):
+        offset = self.config.get('exchange', {}).get('outdated_offset', 5)
+        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,

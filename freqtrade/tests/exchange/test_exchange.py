@@ -515,6 +515,35 @@ def test_get_ticker(default_conf, mocker):
     exchange.get_ticker(pair='ETH/BTC', refresh=True)
 
 
+def test_get_order_book(default_conf, mocker, order_book_l2):
+    default_conf['exchange']['name'] = 'binance'
+    api_mock = MagicMock()
+
+    api_mock.fetch_l2_order_book = order_book_l2
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    order_book = exchange.get_order_book(pair='ETH/BTC', limit=10)
+    assert 'bids' in order_book
+    assert 'asks' in order_book
+    assert len(order_book['bids']) == 10
+    assert len(order_book['asks']) == 10
+
+
+def test_get_order_book_exception(default_conf, mocker):
+    api_mock = MagicMock()
+    with pytest.raises(OperationalException):
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NotSupported)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_order_book(pair='ETH/BTC', limit=50)
+    with pytest.raises(TemporaryError):
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_order_book(pair='ETH/BTC', limit=50)
+    with pytest.raises(OperationalException):
+        api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.get_order_book(pair='ETH/BTC', limit=50)
+
+
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
         if since:
@@ -823,15 +852,3 @@ def test_get_fee(default_conf, mocker):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock,
                            'get_fee', 'calculate_fee')
-
-
-def test_get_amount_lots(default_conf, mocker):
-    api_mock = MagicMock()
-    api_mock.amount_to_lots = MagicMock(return_value=1.0)
-    api_mock.markets = None
-    marketmock = MagicMock()
-    api_mock.load_markets = marketmock
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-
-    assert exchange.get_amount_lots('LTC/BTC', 1.54) == 1
-    assert marketmock.call_count == 1

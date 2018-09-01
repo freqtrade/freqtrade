@@ -26,12 +26,19 @@ The table below will list all configuration parameters.
 | `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. Can be set either in Configuration or in the strategy. 
 | `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. 
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
-| `trailing_stoploss` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
-| `trailing_stoploss_positve` | 0 | No | Changes stop-loss once profit has been reached.
-| `trailing_stoploss_positve_offset` | 0 | No | Offset on when to apply `trailing_stoploss_positive`. Percentage value which should be positive.
+| `trailing_stop` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
+| `trailing_stop_positve` | 0 | No | Changes stop-loss once profit has been reached.
+| `trailing_stop_positve_offset` | 0 | No | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive.
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
+| `bid_strategy.use_order_book` | false | No | Allows buying of pair using the rates in Order Book Bids.
+| `bid_strategy.order_book_top` | 0 | No | Bot will use the top N rate in Order Book Bids. Ie. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
+| `bid_strategy.check_depth_of_market.enabled` | false | No | Does not buy if the % difference of buy orders and sell orders is met in Order Book.
+| `bid_strategy.check_depth_of_market.bids_to_ask_delta` | 0 | No | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
+| `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
+| `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
+| `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.

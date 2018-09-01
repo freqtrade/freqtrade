@@ -116,7 +116,7 @@ class Exchange(object):
                 api.urls['api'] = api.urls['test']
                 logger.info("Enabled Sandbox API on %s", name)
             else:
-                logger.warning(self, "No Sandbox URL in CCXT, exiting. "
+                logger.warning(name, "No Sandbox URL in CCXT, exiting. "
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
@@ -322,7 +322,7 @@ class Exchange(object):
                 return data
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
                 raise TemporaryError(
-                    f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
+                    f'Could not load ticker due to {e.__class__.__name__}. Message: {e}')
             except ccxt.BaseError as e:
                 raise OperationalException(e)
         else:
@@ -410,6 +410,37 @@ class Exchange(object):
             raise OperationalException(e)
 
     @retrier
+    def get_order_book(self, pair: str, limit: int = 100) -> dict:
+        """
+        get order book level 2 from exchange
+
+        Notes:
+        20180619: bittrex doesnt support limits -.-
+        20180619: binance support limits but only on specific range
+        """
+        try:
+            if self._api.name == 'Binance':
+                limit_range = [5, 10, 20, 50, 100, 500, 1000]
+                # get next-higher step in the limit_range list
+                limit = min(list(filter(lambda x: limit <= x, limit_range)))
+                # above script works like loop below (but with slightly better performance):
+                #   for limitx in limit_range:
+                #        if limit <= limitx:
+                #           limit = limitx
+                #           break
+
+            return self._api.fetch_l2_order_book(pair, limit)
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching order book.'
+                f'Message: {e}')
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order book due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
+
+    @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
         if self._conf['dry_run']:
             return []
@@ -462,12 +493,3 @@ class Exchange(object):
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
-
-    def get_amount_lots(self, pair: str, amount: float) -> float:
-        """
-        get buyable amount rounding, ..
-        """
-        # validate that markets are loaded before trying to get fee
-        if not self._api.markets:
-            self._api.load_markets()
-        return self._api.amount_to_lots(pair, amount)

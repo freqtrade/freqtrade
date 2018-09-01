@@ -13,6 +13,7 @@ import sqlalchemy as sql
 from numpy import mean, nan_to_num
 from pandas import DataFrame
 
+from freqtrade import TemporaryError
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 class RPCMessageType(Enum):
     STATUS_NOTIFICATION = 'status'
+    WARNING_NOTIFICATION = 'warning'
+    CUSTOM_NOTIFICATION = 'custom'
     BUY_NOTIFICATION = 'buy'
     SELL_NOTIFICATION = 'sell'
 
@@ -271,10 +274,13 @@ class RPC(object):
             if coin == 'BTC':
                 rate = 1.0
             else:
-                if coin == 'USDT':
-                    rate = 1.0 / self._freqtrade.exchange.get_ticker('BTC/USDT', False)['bid']
-                else:
-                    rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
+                try:
+                    if coin == 'USDT':
+                        rate = 1.0 / self._freqtrade.exchange.get_ticker('BTC/USDT', False)['bid']
+                    else:
+                        rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
+                except TemporaryError:
+                    continue
             est_btc: float = rate * balance['total']
             total = total + est_btc
             output.append({

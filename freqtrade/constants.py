@@ -36,7 +36,7 @@ SUPPORTED_FIAT = [
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
+    "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
     ]
 
 # Required json-schema for user specified config
@@ -45,7 +45,7 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 0},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT', 'EUR', 'USD']},
+        'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],
             "minimum": 0.0005,
@@ -79,10 +79,27 @@ CONF_SCHEMA = {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1,
-                    'exclusiveMaximum': False
+                    'exclusiveMaximum': False,
+                    'use_order_book': {'type': 'boolean'},
+                    'order_book_top': {'type': 'number', 'maximum': 20, 'minimum': 1},
+                    'check_depth_of_market': {
+                        'type': 'object',
+                        'properties': {
+                            'enabled': {'type': 'boolean'},
+                            'bids_to_ask_delta': {'type': 'number', 'minimum': 0},
+                        }
+                    },
                 },
             },
             'required': ['ask_last_balance']
+        },
+        'ask_strategy': {
+            'type': 'object',
+            'properties': {
+                'use_order_book': {'type': 'boolean'},
+                'order_book_min': {'type': 'number', 'minimum': 1},
+                'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
+            }
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
@@ -90,7 +107,7 @@ CONF_SCHEMA = {
             'properties': {
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
-                "ignore_roi_if_buy_signal_true": {'type': 'boolean'}
+                'ignore_roi_if_buy_signal_true': {'type': 'boolean'}
             }
         },
         'telegram': {
@@ -146,7 +163,8 @@ CONF_SCHEMA = {
                         'pattern': '^[0-9A-Z]+/[0-9A-Z]+$'
                     },
                     'uniqueItems': True
-                }
+                },
+                'outdated_offset': {'type': 'integer', 'minimum': 1}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
         }

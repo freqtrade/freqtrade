@@ -1095,6 +1095,38 @@ def test_send_msg_status_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] == '*Status:* `running`'
 
 
+def test_warning_notification(default_conf, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.WARNING_NOTIFICATION,
+        'status': 'message'
+    })
+    assert msg_mock.call_args[0][0] == '*Warning:* `message`'
+
+
+def test_custom_notification(default_conf, mocker) -> None:
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram.send_msg({
+        'type': RPCMessageType.CUSTOM_NOTIFICATION,
+        'status': '*Custom:* `Hello World`'
+    })
+    assert msg_mock.call_args[0][0] == '*Custom:* `Hello World`'
+
+
 def test_send_msg_unknown_type(default_conf, mocker) -> None:
     msg_mock = MagicMock()
     mocker.patch.multiple(
