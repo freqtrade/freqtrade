@@ -119,11 +119,12 @@ class IStrategy(ABC):
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
-        # Test if seen this pair and last candle before.
+
         dataframe = parse_ticker_dataframe(ticker_history)
 
         pair = str(metadata.get('pair'))
 
+        # Test if seen this pair and last candle before.
         # always run if process_only_new_candles is set to true
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
