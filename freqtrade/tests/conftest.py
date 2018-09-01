@@ -102,7 +102,18 @@ def default_conf():
             "sell": 30
         },
         "bid_strategy": {
-            "ask_last_balance": 0.0
+            "ask_last_balance": 0.0,
+            "use_order_book": False,
+            "order_book_top": 1,
+            "check_depth_of_market": {
+                "enabled": False,
+                "bids_to_ask_delta": 1
+            }
+        },
+        "ask_strategy": {
+            "use_order_book": False,
+            "order_book_min": 1,
+            "order_book_max": 1
         },
         "exchange": {
             "name": "bittrex",
@@ -401,6 +412,39 @@ def limit_sell_order():
         'remaining': 0.0,
         'status': 'closed'
     }
+
+
+@pytest.fixture
+def order_book_l2():
+    return MagicMock(return_value={
+        'bids': [
+            [0.043936, 10.442],
+            [0.043935, 31.865],
+            [0.043933, 11.212],
+            [0.043928, 0.088],
+            [0.043925, 10.0],
+            [0.043921, 10.0],
+            [0.04392, 37.64],
+            [0.043899, 0.066],
+            [0.043885, 0.676],
+            [0.04387, 22.758]
+        ],
+        'asks': [
+            [0.043949, 0.346],
+            [0.04395, 0.608],
+            [0.043951, 3.948],
+            [0.043954, 0.288],
+            [0.043958, 9.277],
+            [0.043995, 1.566],
+            [0.044, 0.588],
+            [0.044002, 0.992],
+            [0.044003, 0.095],
+            [0.04402, 37.64]
+        ],
+        'timestamp': None,
+        'datetime': None,
+        'nonce': 288004540
+    })
 
 
 @pytest.fixture

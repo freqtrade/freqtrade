@@ -21,6 +21,7 @@ from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -267,16 +268,40 @@ class FreqtradeBot(object):
 
         return final_list
 
-    def get_target_bid(self, ticker: Dict[str, float]) -> float:
+    def get_target_bid(self, pair: str, ticker: Dict[str, float]) -> float:
         """
         Calculates bid target between current ask price and last price
         :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
         if ticker['ask'] < ticker['last']:
-            return ticker['ask']
-        balance = self.config['bid_strategy']['ask_last_balance']
-        return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+            ticker_rate = ticker['ask']
+        else:
+            balance = self.config['bid_strategy']['ask_last_balance']
+            ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
+
+        used_rate = ticker_rate
+        config_bid_strategy = self.config.get('bid_strategy', {})
+        if 'use_order_book' in config_bid_strategy and\
+                config_bid_strategy.get('use_order_book', False):
+            logger.info('Getting price from order book')
+            order_book_top = config_bid_strategy.get('order_book_top', 1)
+            order_book = self.exchange.get_order_book(pair, order_book_top)
+            logger.debug('order_book %s', order_book)
+            # top 1 = index 0
+            order_book_rate = order_book['bids'][order_book_top - 1][0]
+            # if ticker has lower rate, then use ticker ( usefull if down trending )
+            logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
+            if ticker_rate < order_book_rate:
+                logger.info('...using ticker rate instead %0.8f', ticker_rate)
+                used_rate = ticker_rate
+            else:
+                used_rate = order_book_rate
+        else:
+            logger.info('Using Last Ask / Last Price')
+            used_rate = ticker_rate
+
+        return used_rate
 
     def _get_trade_stake_amount(self) -> Optional[float]:
         """
@@ -368,7 +393,32 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
 
             if buy and not sell:
+                bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
+                    get('check_depth_of_market', {})
+                if (bidstrat_check_depth_of_market.get('enabled', False)) and\
+                        (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
+                    if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
+                        return self.execute_buy(_pair, stake_amount)
+                    else:
+                        return False
                 return self.execute_buy(_pair, stake_amount)
+        return False
+
+    def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
+        """
+        Checks depth of market before executing a buy
+        """
+        conf_bids_to_ask_delta = conf.get('bids_to_ask_delta', 0)
+        logger.info('checking depth of market for %s', pair)
+        order_book = self.exchange.get_order_book(pair, 1000)
+        order_book_data_frame = order_book_to_dataframe(order_book['bids'], order_book['asks'])
+        order_book_bids = order_book_data_frame['b_size'].sum()
+        order_book_asks = order_book_data_frame['a_size'].sum()
+        bids_ask_delta = order_book_bids / order_book_asks
+        logger.info('bids: %s, asks: %s, delta: %s', order_book_bids,
+                    order_book_asks, bids_ask_delta)
+        if bids_ask_delta >= conf_bids_to_ask_delta:
+            return True
         return False
 
     def execute_buy(self, pair: str, stake_amount: float) -> bool:
@@ -383,7 +433,7 @@ class FreqtradeBot(object):
         fiat_currency = self.config.get('fiat_display_currency', None)
 
         # Calculate amount
-        buy_limit = self.get_target_bid(self.exchange.get_ticker(pair))
+        buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
 
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
@@ -526,7 +576,7 @@ class FreqtradeBot(object):
             raise ValueError(f'attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
-        current_rate = self.exchange.get_ticker(trade.pair)['bid']
+        sell_rate = self.exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
@@ -535,11 +585,41 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 
-        should_sell = self.strategy.should_sell(trade, current_rate, datetime.utcnow(), buy, sell)
-        if should_sell.sell_flag:
-            self.execute_sell(trade, current_rate, should_sell.sell_type)
-            return True
+        config_ask_strategy = self.config.get('ask_strategy', {})
+        if config_ask_strategy.get('use_order_book', False):
+            logger.info('Using order book for selling...')
+            # logger.debug('Order book %s',orderBook)
+            order_book_min = config_ask_strategy.get('order_book_min', 1)
+            order_book_max = config_ask_strategy.get('order_book_max', 1)
+
+            order_book = self.exchange.get_order_book(trade.pair, order_book_max)
+
+            for i in range(order_book_min, order_book_max + 1):
+                order_book_rate = order_book['asks'][i - 1][0]
+
+                # if orderbook has higher rate (high profit),
+                # use orderbook, otherwise just use bids rate
+                logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
+                if sell_rate < order_book_rate:
+                    sell_rate = order_book_rate
+
+                if self.check_sell(trade, sell_rate, buy, sell):
+                    return True
+                    break
+        else:
+            logger.info('checking sell')
+            if self.check_sell(trade, sell_rate, buy, sell):
+                return True
+
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
+        return False
+
+    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
+        should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+        if should_sell.sell_flag:
+            self.execute_sell(trade, sell_rate, should_sell.sell_type)
+            logger.info('excuted sell')
+            return True
         return False
 
     def check_handle_timedout(self) -> None:
