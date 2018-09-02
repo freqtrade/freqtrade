@@ -635,8 +635,6 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
         ]
     ]
 
-    async def async_fetch_ohlcv(pair, timeframe, since):
-        return tick
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf)
     # Monkey-patch async function
@@ -667,6 +665,26 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
+
+
+@pytest.mark.asyncio
+async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
+    """ Test empty exchange result """
+    tick = []
+
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf)
+    # Monkey-patch async function
+    exchange._api_async.fetch_ohlcv = get_mock_coro([])
+
+    exchange = Exchange(default_conf)
+    pair = 'ETH/BTC'
+    res = await exchange._async_get_candle_history(pair, "5m")
+    assert type(res) is tuple
+    assert len(res) == 2
+    assert res[0] == pair
+    assert res[1] == tick
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
 @pytest.mark.asyncio

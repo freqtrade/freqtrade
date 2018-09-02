@@ -454,7 +454,8 @@ class Exchange(object):
             data = sorted(data, key=lambda x: x[0])
 
             # keeping last candle time as last refreshed time of the pair
-            self._pairs_last_refresh_time[pair] = data[-1][0] // 1000
+            if data:
+                self._pairs_last_refresh_time[pair] = data[-1][0] // 1000
 
             # keeping candles in cache
             self.klines[pair] = data
