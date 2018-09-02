@@ -37,6 +37,7 @@ setup(name='freqtrade',
           'cachetools',
           'coinmarketcap',
           'scikit-optimize',
+          'dask[complete]'
       ],
       include_package_data=True,
       zip_safe=False,
