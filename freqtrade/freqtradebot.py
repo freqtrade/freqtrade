@@ -415,6 +415,10 @@ class FreqtradeBot(object):
                             (bidstrat_check_depth_of_market.get('bids_to_ask_delta', 0) > 0):
                         if self._check_depth_of_market_buy(_pair, bidstrat_check_depth_of_market):
                             self.execute_buy(_pair, stake_amount)
+                        else:
+                            continue
+                    else:
+                        self.execute_buy(_pair, stake_amount)
 
             client.restart()  # restart workers to prevent side effects of memory leaks
 
