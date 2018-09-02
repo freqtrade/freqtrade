@@ -92,3 +92,6 @@ target/
 
 .pytest_cache/
 .mypy_cache/
+
+# Dask
+dask-worker-space/

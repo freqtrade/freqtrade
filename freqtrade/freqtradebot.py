@@ -387,7 +387,11 @@ class FreqtradeBot(object):
             'Checking buy signals to create a new trade with stake_amount: %f ...',
             stake_amount
         )
+        log_msg_p1 = "Done gathering histories and checking signals for"
+        log_msg_p2 = "pairs of whitelist in"
+
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
+        pairs_number = len(whitelist)
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
@@ -417,12 +421,11 @@ class FreqtradeBot(object):
             client.restart()  # restart workers to prevent side effects of memory leaks
 
             total_time = (time.time() - loop_start_time)
-            pairs_number = len(whitelist)
-            print("Done gathering histories and checking signals for " + str(pairs_number) + " \
-            pairs of whitelist in " + str(total_time) + " seconds")
+            logger.info(log_msg_p1 + " %s " + log_msg_p2 + " %0.2fs", pairs_number, total_time)
 
         else:  # Synchronous single threaded LOOP
             # Pick pair based on buy signals
+            loop_start_time = time.time()
             for _pair in whitelist:
                 thistory = self.exchange.get_candle_history(_pair, interval)
                 (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
@@ -437,6 +440,10 @@ class FreqtradeBot(object):
                         else:
                             return False
                     return self.execute_buy(_pair, stake_amount)
+
+            total_time = (time.time() - loop_start_time)
+            logger.info(log_msg_p1 + " %s " + log_msg_p2 + " %0.2fs", pairs_number, total_time)
+
             return False
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
