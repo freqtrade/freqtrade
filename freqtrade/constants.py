@@ -53,6 +53,7 @@ CONF_SCHEMA = {
         },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
+        'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
             'patternProperties': {
