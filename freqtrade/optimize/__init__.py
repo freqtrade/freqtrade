@@ -16,8 +16,15 @@ import arrow
 from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
+import importlib
+ujson_found = importlib.util.find_spec("ujson")
+if ujson_found is not None:
+    import ujson
 
 logger = logging.getLogger(__name__)
+
+if ujson_found is not None:
+    logger.debug('Loaded UltraJson ujson in optimize.py')
 
 
 def json_load(data):
@@ -77,11 +84,17 @@ def load_tickerdata_file(
     if os.path.isfile(gzipfile):
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
-            pairdata = json.load(tickerdata)
+            if ujson_found is not None:
+                pairdata = ujson.load(tickerdata, precise_float=True)
+            else:
+                pairdata = json.load(tickerdata)
     elif os.path.isfile(file):
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            pairdata = json.load(tickerdata)
+            if ujson_found is not None:
+                pairdata = ujson.load(tickerdata, precise_float=True)
+            else:
+                pairdata = json.load(tickerdata)
     else:
         return None
 
@@ -177,7 +190,10 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            data = json_load(file)
+            if ujson_found is not None:
+                data = ujson.load(file, precise_float=True)
+            else:
+                data = json.load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:
