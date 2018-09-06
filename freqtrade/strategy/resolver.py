@@ -66,6 +66,15 @@ class StrategyResolver(object):
         else:
             config['ticker_interval'] = self.strategy.ticker_interval
 
+        if 'process_only_new_candles' in config:
+            self.strategy.process_only_new_candles = config['process_only_new_candles']
+            logger.info(
+                "Override process_only_new_candles 'process_only_new_candles' "
+                "with value in config file: %s.", config['process_only_new_candles']
+            )
+        else:
+            config['process_only_new_candles'] = self.strategy.process_only_new_candles
+
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),

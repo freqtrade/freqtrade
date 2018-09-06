@@ -22,12 +22,13 @@ The table below will list all configuration parameters.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
 | `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below. 
-| `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode. 
+| `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode.
+| `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. Can be set either in Configuration or in the strategy. 
 | `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. 
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
-| `trailing_stoploss` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
-| `trailing_stoploss_positve` | 0 | No | Changes stop-loss once profit has been reached.
-| `trailing_stoploss_positve_offset` | 0 | No | Offset on when to apply `trailing_stoploss_positive`. Percentage value which should be positive.
+| `trailing_stop` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
+| `trailing_stop_positve` | 0 | No | Changes stop-loss once profit has been reached.
+| `trailing_stop_positve_offset` | 0 | No | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive.
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.

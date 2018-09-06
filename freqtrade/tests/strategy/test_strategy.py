@@ -165,6 +165,23 @@ def test_strategy_override_ticker_interval(caplog):
             ) in caplog.record_tuples
 
 
+def test_strategy_override_process_only_new_candles(caplog):
+    caplog.set_level(logging.INFO)
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'process_only_new_candles': True
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.process_only_new_candles
+    assert ('freqtrade.strategy.resolver',
+            logging.INFO,
+            "Override process_only_new_candles 'process_only_new_candles' "
+            "with value in config file: True."
+            ) in caplog.record_tuples
+
+
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',

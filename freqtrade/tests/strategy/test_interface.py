@@ -128,3 +128,75 @@ def test_min_roi_reached(default_conf, fee) -> None:
 
     assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
     assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+
+
+def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    ind_mock = MagicMock(side_effect=lambda x, meta: x)
+    buy_mock = MagicMock(side_effect=lambda x, meta: x)
+    sell_mock = MagicMock(side_effect=lambda x, meta: x)
+    mocker.patch.multiple(
+        'freqtrade.strategy.interface.IStrategy',
+        advise_indicators=ind_mock,
+        advise_buy=buy_mock,
+        advise_sell=sell_mock,
+
+    )
+    strategy = DefaultStrategy({})
+    strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    assert ind_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert buy_mock.call_count == 1
+
+    assert log_has('TA Analysis Launched', caplog.record_tuples)
+    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+                       caplog.record_tuples)
+    caplog.clear()
+
+    strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    # No analysis happens as process_only_new_candles is true
+    assert ind_mock.call_count == 2
+    assert buy_mock.call_count == 2
+    assert buy_mock.call_count == 2
+    assert log_has('TA Analysis Launched', caplog.record_tuples)
+    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+                       caplog.record_tuples)
+
+
+def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    ind_mock = MagicMock(side_effect=lambda x, meta: x)
+    buy_mock = MagicMock(side_effect=lambda x, meta: x)
+    sell_mock = MagicMock(side_effect=lambda x, meta: x)
+    mocker.patch.multiple(
+        'freqtrade.strategy.interface.IStrategy',
+        advise_indicators=ind_mock,
+        advise_buy=buy_mock,
+        advise_sell=sell_mock,
+
+    )
+    strategy = DefaultStrategy({})
+    strategy.process_only_new_candles = True
+
+    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    assert ind_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert log_has('TA Analysis Launched', caplog.record_tuples)
+    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+                       caplog.record_tuples)
+    caplog.clear()
+
+    ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    # No analysis happens as process_only_new_candles is true
+    assert ind_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    assert buy_mock.call_count == 1
+    # only skipped analyze adds buy and sell columns, otherwise it's all mocked
+    assert 'buy' in ret
+    assert 'sell' in ret
+    assert ret['buy'].sum() == 0
+    assert ret['sell'].sum() == 0
+    assert not log_has('TA Analysis Launched', caplog.record_tuples)
+    assert log_has('Skippinig TA Analysis for already analyzed candle',
+                   caplog.record_tuples)
