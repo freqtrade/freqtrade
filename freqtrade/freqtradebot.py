@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import arrow
 import requests
+
 from cachetools import TTLCache, cached
 
 from freqtrade import (DependencyException, OperationalException,
@@ -180,6 +181,9 @@ class FreqtradeBot(object):
             # Keep only the subsets of pairs wanted (up to nb_assets)
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
+
+            # Refreshing candles
+            self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -358,7 +362,7 @@ class FreqtradeBot(object):
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
         amount_reserve_percent = max(amount_reserve_percent, 0.5)
-        return min(min_stake_amounts)/amount_reserve_percent
+        return min(min_stake_amounts) / amount_reserve_percent
 
     def create_trade(self) -> bool:
         """
@@ -387,11 +391,10 @@ class FreqtradeBot(object):
         if not whitelist:
             raise DependencyException('No currency pairs in whitelist')
 
-        # Pick pair based on buy signals
+        # running get_signal on historical data fetched
+        # to find buy signals
         for _pair in whitelist:
-            thistory = self.exchange.get_candle_history(_pair, interval)
-            (buy, sell) = self.strategy.get_signal(_pair, interval, thistory)
-
+            (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
             if buy and not sell:
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
@@ -402,6 +405,7 @@ class FreqtradeBot(object):
                     else:
                         return False
                 return self.execute_buy(_pair, stake_amount)
+
         return False
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
@@ -581,7 +585,7 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            ticker = self.exchange.get_candle_history(trade.pair, self.strategy.ticker_interval)
+            ticker = self.exchange.klines.get(trade.pair)
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
                                                    ticker)
 

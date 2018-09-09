@@ -89,7 +89,6 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
 
 
 def test_get_signal_handles_exceptions(mocker, default_conf):
-    mocker.patch('freqtrade.exchange.Exchange.get_candle_history', return_value=MagicMock())
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',

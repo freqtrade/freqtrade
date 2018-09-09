@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 import warnings
 
 import arrow
@@ -145,7 +145,8 @@ class IStrategy(ABC):
 
         return dataframe
 
-    def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, interval: str,
+                   ticker_hist: Optional[List[Dict]]) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC

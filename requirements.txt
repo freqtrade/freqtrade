@@ -14,6 +14,7 @@ numpy==1.15.1
 TA-Lib==0.4.17
 pytest==3.8.0
 pytest-mock==1.10.0
+pytest-asyncio==0.9.0
 pytest-cov==2.6.0
 tabulate==0.8.2
 coinmarketcap==5.0.3
