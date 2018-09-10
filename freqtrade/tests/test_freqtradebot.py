@@ -140,7 +140,6 @@ def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    # mocker.patch('freqtrade.exchange.validate_pairs', MagicMock(return_value=True))
 
     # Test to retrieved BTC sorted on quoteVolume (default)
     whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
@@ -175,9 +174,9 @@ def test_refresh_whitelist() -> None:
 
 def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
     )
 
@@ -193,9 +192,9 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
                                                 fee,
                                                 mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -211,6 +210,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
                                                  markets,
                                                  mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -253,7 +253,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.stoploss = -0.05
     # no pair found
@@ -388,9 +388,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
 def test_create_trade(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -422,9 +422,9 @@ def test_create_trade(default_conf, ticker, limit_buy_order, fee, markets, mocke
 def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
                                       fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5),
@@ -441,10 +441,10 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
 def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
                                      fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     buy_mock = MagicMock(return_value={'id': limit_buy_order['id']})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=buy_mock,
         get_fee=fee,
@@ -462,10 +462,10 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
 def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order,
                                              fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     buy_mock = MagicMock(return_value={'id': limit_buy_order['id']})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=buy_mock,
         get_fee=fee,
@@ -483,9 +483,9 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
 def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
                                     fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_balance=MagicMock(return_value=default_conf['stake_amount']),
@@ -504,9 +504,9 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
 
 def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -527,9 +527,9 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, marke
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
                                                limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -550,9 +550,9 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     default_conf['dry_run'] = True
 
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_balance=MagicMock(return_value=20),
         get_fee=fee,
     )
@@ -568,9 +568,9 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
 def test_process_trade_creation(default_conf, ticker, limit_buy_order,
                                 markets, fee, mocker, caplog) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_markets=markets,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
@@ -605,9 +605,9 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
 
 def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_markets=markets,
         buy=MagicMock(side_effect=TemporaryError)
@@ -624,9 +624,9 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
 
 def test_process_operational_exception(default_conf, ticker, markets, mocker) -> None:
     msg_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_markets=markets,
         buy=MagicMock(side_effect=OperationalException)
@@ -645,9 +645,9 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
 def test_process_trade_handling(
         default_conf, ticker, limit_buy_order, markets, fee, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_markets=markets,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
@@ -771,9 +771,9 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
                       fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00001172,
             'ask': 0.00001173,
@@ -814,9 +814,9 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
     default_conf.update({'experimental': {'use_sell_signal': True}})
 
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -870,9 +870,9 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
     default_conf.update({'experimental': {'use_sell_signal': True}})
 
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -903,9 +903,9 @@ def test_handle_trade_experimental(
     caplog.set_level(logging.DEBUG)
     default_conf.update({'experimental': {'use_sell_signal': True}})
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -931,9 +931,9 @@ def test_handle_trade_experimental(
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
                      fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -959,9 +959,9 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old),
         cancel_order=cancel_order_mock,
@@ -996,9 +996,9 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
 def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_order=MagicMock(return_value=limit_sell_order_old),
         cancel_order=cancel_order_mock
@@ -1032,9 +1032,9 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
                                        mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_order=MagicMock(return_value=limit_buy_order_old_partial),
         cancel_order=cancel_order_mock
@@ -1069,6 +1069,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
 
 def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     cancel_order_mock = MagicMock()
 
     mocker.patch.multiple(
@@ -1078,7 +1079,6 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_order=MagicMock(side_effect=requests.exceptions.RequestException('Oh snap')),
         cancel_order=cancel_order_mock
@@ -1111,10 +1111,10 @@ def test_check_handle_timedout_exception(default_conf, ticker, mocker, caplog) -
 
 def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         cancel_order=cancel_order_mock
     )
 
@@ -1133,10 +1133,10 @@ def test_handle_timedout_limit_buy(mocker, default_conf) -> None:
 
 def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     cancel_order_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         cancel_order=cancel_order_mock
     )
 
@@ -1155,9 +1155,9 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
 
 def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1174,7 +1174,6 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
     # Increase the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker_sell_up
     )
 
@@ -1201,9 +1200,9 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
 
 def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1220,7 +1219,6 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     # Decrease the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker_sell_down
     )
 
@@ -1249,9 +1247,9 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
                                            ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1268,7 +1266,6 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
     # Increase the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker_sell_up
     )
     freqtrade.config = {}
@@ -1295,9 +1292,9 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
 def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
                                              ticker_sell_down, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1314,7 +1311,6 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
     # Decrease the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker_sell_down
     )
 
@@ -1342,9 +1338,9 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
 def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
                                         fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00002172,
             'ask': 0.00002173,
@@ -1374,9 +1370,9 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
 def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
                                          fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00002172,
             'ask': 0.00002173,
@@ -1404,9 +1400,9 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
 
 def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00000172,
             'ask': 0.00000173,
@@ -1435,9 +1431,9 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
 
 def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.0000172,
             'ask': 0.0000173,
@@ -1467,9 +1463,9 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
 
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.0000172,
             'ask': 0.0000173,
@@ -1501,9 +1497,9 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
 
 def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00000102,
             'ask': 0.00000103,
@@ -1535,9 +1531,9 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
                                      caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': buy_price - 0.000001,
             'ask': buy_price - 0.000001,
@@ -1593,9 +1589,9 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
                                    caplog, mocker, markets) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': buy_price - 0.000001,
             'ask': buy_price - 0.000001,
@@ -1653,9 +1649,9 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
                                           fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00000172,
             'ask': 0.00000173,
@@ -1689,7 +1685,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
 def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, caplog, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
         pair='LTC/ETH',
@@ -1712,7 +1708,7 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
 
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     amount = buy_order_fee['amount']
     trade = Trade(
         pair='LTC/ETH',
@@ -1735,7 +1731,7 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mo
     trades_for_order[0]['fee']['currency'] = 'ETH'
 
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -1757,7 +1753,7 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mock
     trades_for_order[0]['fee']['cost'] = 0.00094518
 
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -1776,7 +1772,7 @@ def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mock
 
 def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, caplog, mocker):
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order2)
     amount = float(sum(x['amount'] for x in trades_for_order2))
     trade = Trade(
@@ -1801,7 +1797,7 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
     limit_buy_order['fee'] = {'cost': 0.004, 'currency': 'LTC'}
 
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order',
                  return_value=[trades_for_order])
     amount = float(sum(x['amount'] for x in trades_for_order))
@@ -1827,7 +1823,7 @@ def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order
     limit_buy_order['fee'] = {'cost': 0.004}
 
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
     amount = float(sum(x['amount'] for x in trades_for_order))
     trade = Trade(
@@ -1849,7 +1845,7 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
     trades_for_order[0]['fee'] = {'cost': 0.008}
 
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
     trade = Trade(
@@ -1867,7 +1863,7 @@ def test_get_real_amount_invalid(default_conf, trades_for_order, buy_order_fee, 
 
 def test_get_real_amount_open_trade(default_conf, mocker):
     patch_RPCManager(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock(return_value=True))
+    patch_exchange(mocker)
     amount = 12345
     trade = Trade(
         pair='LTC/ETH',
@@ -1891,10 +1887,10 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order, fee, 
     default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
     default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -1927,10 +1923,10 @@ def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_o
     # delta is 100 which is impossible to reach. hence check_depth_of_market will return false
     default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 100
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.get_order_book', order_book_l2)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -1950,9 +1946,9 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2, markets) 
     test if function get_target_bid will return the order book price
     instead of the ask rate
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_markets=markets,
         get_order_book=order_book_l2
     )
@@ -1971,9 +1967,9 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     test if function get_target_bid will return the ask rate (since its value is lower)
     instead of the order book rate (even if enabled)
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
            'freqtrade.exchange.Exchange',
-           validate_pairs=MagicMock(),
            get_markets=markets,
            get_order_book=order_book_l2
     )
@@ -1992,9 +1988,9 @@ def test_order_book_bid_strategy3(default_conf, mocker, order_book_l2, markets) 
     test if function get_target_bid will return ask rate instead
     of the order book rate
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_markets=markets,
         get_order_book=order_book_l2
     )
@@ -2013,9 +2009,9 @@ def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2, markets)
     """
     test check depth of market
     """
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_markets=markets,
         get_order_book=order_book_l2
     )
@@ -2044,7 +2040,6 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        validate_pairs=MagicMock(),
         get_ticker=MagicMock(return_value={
             'bid': 0.00001172,
             'ask': 0.00001173,
