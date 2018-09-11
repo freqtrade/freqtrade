@@ -1155,9 +1155,9 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
 
 def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1200,9 +1200,9 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
 
 def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1247,9 +1247,9 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
                                            ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -1292,9 +1292,9 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
 def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
                                              ticker_sell_down, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
         get_markets=markets
@@ -2038,6 +2038,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
     default_conf['ask_strategy']['order_book_max'] = 2
     default_conf['telegram']['enabled'] = False
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
