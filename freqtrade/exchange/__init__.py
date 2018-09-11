@@ -168,7 +168,7 @@ class Exchange(object):
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
-    def _load_markets(self) -> List[str]:
+    def _load_markets(self) -> Dict[str, Any]:
         """ Initialize markets both sync and async """
         try:
             markets = self._api.load_markets()
@@ -176,7 +176,7 @@ class Exchange(object):
             return markets
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
-        return []
+        return {}
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
@@ -188,7 +188,7 @@ class Exchange(object):
 
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
-            return
+        #     return
 
         stake_cur = self._conf['stake_currency']
         for pair in pairs:
@@ -197,7 +197,7 @@ class Exchange(object):
             if not pair.endswith(stake_cur):
                 raise OperationalException(
                     f'Pair {pair} not compatible with stake_currency: {stake_cur}')
-            if pair not in self.markets:
+            if self.markets and pair not in self.markets:
                 raise OperationalException(
                     f'Pair {pair} is not available at {self.name}')
 

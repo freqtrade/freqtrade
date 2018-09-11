@@ -26,7 +26,7 @@ def log_has(line, logs):
 
 
 def patch_exchange(mocker, api_mock=None) -> None:
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value=[]))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value="Bittrex"))
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value="bittrex"))
