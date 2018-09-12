@@ -69,3 +69,56 @@ pip3.6 install mypy
 ``` bash
 mypy freqtrade
 ```
+
+## (Core)-Committer Guide
+
+### Process: Pull Requests
+
+How to prioritize pull requests, from most to least important:
+
+1. Fixes for broken tests. Broken means broken on any supported platform or Python version.
+1. Extra tests to cover corner cases.
+1. Minor edits to docs.
+1. Bug fixes.
+1. Major edits to docs.
+1. Features.
+
+Ensure that each pull request meets all requirements in the Contributing document.
+
+### Process: Issues
+
+If an issue is a bug that needs an urgent fix, mark it for the next patch release.
+Then either fix it or mark as please-help.
+
+For other issues: encourage friendly discussion, moderate debate, offer your thoughts.
+
+### Process: Your own code changes
+
+All code changes, regardless of who does them, need to be reviewed and merged by someone else.
+This rule applies to all the core committers.
+
+Exceptions:
+
+- Minor corrections and fixes to pull requests submitted by others.
+- While making a formal release, the release manager can make necessary, appropriate changes.
+- Small documentation changes that reinforce existing subject matter. Most commonly being, but not limited to spelling and grammar corrections.
+
+### Responsibilities
+
+- Ensure cross-platform compatibility for every change that's accepted. Windows, Mac & Linux.
+- Create issues for any major changes and enhancements that you wish to make. Discuss things transparently and get community feedback.
+- Keep feature versions as small as possible, preferably one new feature per version.
+- Be welcoming to newcomers and encourage diverse new contributors from all backgrounds. See the Python Community Code of Conduct (https://www.python.org/psf/codeofconduct/).
+
+### Becoming a Committer
+
+Contributors may be given commit privileges. Preference will be given to those with:
+
+1. Past contributions to FreqTrade and other related open-source projects. Contributions to FreqTrade include both code (both accepted and pending) and friendly participation in the issue tracker and Pull request reviews. Quantity and quality are considered.
+1. A coding style that the other core committers find simple, minimal, and clean.
+1. Access to resources for cross-platform development and testing.
+1. Time to devote to the project regularly.
+
+Beeing a Committer does not grant write permission on `develop` or `master` for security reasons (Users trust FreqTrade with their Exchange API keys).
+
+After beeing Committer for some time, a Committer may be named Core Committer and given full repository access.
