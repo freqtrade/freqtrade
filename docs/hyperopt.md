@@ -5,6 +5,8 @@ algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
+*Note:* Hyperopt will crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
+
 ## Table of Contents
 - [Prepare your Hyperopt](#prepare-hyperopt)
 - [Configure your Guards and Triggers](#configure-your-guards-and-triggers)

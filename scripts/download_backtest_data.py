@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""This script generate json data from bittrex"""
+"""This script generate json data"""
 import json
 import sys
 from pathlib import Path
@@ -52,9 +52,10 @@ exchange = Exchange({'key': '',
                      'stake_currency': '',
                      'dry_run': True,
                      'exchange': {
-                        'name': args.exchange,
-                        'pair_whitelist': []
-                        }
+                         'name': args.exchange,
+                         'pair_whitelist': [],
+                         'ccxt_rate_limit': False
+                     }
                      })
 pairs_not_available = []
 

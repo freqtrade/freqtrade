@@ -434,15 +434,15 @@ class Backtesting(object):
         Run a backtesting end-to-end
         :return: None
         """
-        data = {}
+        data: Dict[str, Any] = {}
         pairs = self.config['exchange']['pair_whitelist']
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
-            for pair in pairs:
-                data[pair] = self.exchange.get_ticker_history(pair, self.ticker_interval)
+            self.exchange.refresh_tickers(pairs, self.ticker_interval)
+            data = self.exchange.klines
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
