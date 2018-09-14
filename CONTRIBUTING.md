@@ -106,6 +106,7 @@ Exceptions:
 ### Responsibilities
 
 - Ensure cross-platform compatibility for every change that's accepted. Windows, Mac & Linux.
+- Ensure no malicious code is introduced into the core code.
 - Create issues for any major changes and enhancements that you wish to make. Discuss things transparently and get community feedback.
 - Keep feature versions as small as possible, preferably one new feature per version.
 - Be welcoming to newcomers and encourage diverse new contributors from all backgrounds. See the Python Community Code of Conduct (https://www.python.org/psf/codeofconduct/).
