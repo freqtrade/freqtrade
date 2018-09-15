@@ -627,7 +627,7 @@ class Edge:
                 elif np_t_sell_ind < 99999999 and np_t_sell_ind < np_t_stop_ind:
                     # move sell onto next candle, we only look back on sell
                     # will use the open price later.
-                    t_exit_ind = t_open_ind + np_t_sell_ind + 1  # Set Exit row index
+                    t_exit_ind = t_open_ind + np_t_sell_ind  # Set Exit row index
                     t_exit_type = SellType.SELL_SIGNAL  # Set Exit type (sell)
                     np_t_exit_pri = np_open  # The price field our SELL exit will use
                     if debug:
