@@ -200,6 +200,10 @@ to understand the requirements before sending your pull-requests.
 
 ## Requirements
 
+### Uptodate clock
+
+The clock must be uptodate, ideally syncronized to a NTP server rather frequently. Drifting time can lead to losses.
+
 ### Min hardware required
 
 To run this bot we recommend you a cloud instance with a minimum of:
