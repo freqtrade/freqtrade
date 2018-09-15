@@ -852,10 +852,9 @@ class Edge:
         ###################################
 
 
-        # Removing outliers (Pump&Dumps) from the dataset 
+        # Removing outliers (Only Pumps) from the dataset 
         # The method to detect outliers is to calculate standard deviation
         # Then every value more than (standard deviation + 2*average) is out (pump)
-        # And every value less than (standard deviation - 2*average) is out (dump)
         #
         # Calculating standard deviation of profits
         std = results[["profit_abs"]].std()
@@ -865,9 +864,6 @@ class Edge:
         #
         # Removing Pumps
         results = results[results.profit_abs < float(avg + 2*std)]
-        #
-        # Removing Dumps
-        results = results[results.profit_abs > float(avg - 2*std)]
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)
