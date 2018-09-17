@@ -16,10 +16,10 @@ WORKDIR /freqtrade
 
 # Install dependencies
 COPY requirements.txt /freqtrade/
-RUN pip install numpy \
-  && pip install -r requirements.txt
+RUN pip install numpy --no-cache-dir \
+  && pip install -r requirements.txt --no-cache-dir
 
 # Install and execute
 COPY . /freqtrade/
-RUN pip install -e .
+RUN pip install -e . --no-cache-dir
 ENTRYPOINT ["freqtrade"]
