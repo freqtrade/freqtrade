@@ -15,7 +15,7 @@ RUN mkdir /freqtrade
 WORKDIR /freqtrade
 
 # Install dependencies
-COPY requirements.txt /freqtrade/ 
+COPY requirements.txt /freqtrade/
 RUN pip install numpy --no-cache-dir \
   && pip install -r requirements.txt --no-cache-dir
 
