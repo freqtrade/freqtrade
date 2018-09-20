@@ -1,5 +1,5 @@
-ccxt==1.17.316
-SQLAlchemy==1.2.11
+ccxt==1.17.324
+SQLAlchemy==1.2.12
 python-telegram-bot==11.1.0
 arrow==0.12.1
 cachetools==2.1.0
