@@ -133,6 +133,10 @@ class Edge:
             if self.debug_timing:  # Start timer
                 fl = self.s()
             
+            # Sorting dataframe by date and reset index 
+            pair_data = pair_data.sort_values(by=['date'])
+            pair_data = pair_data.reset_index(drop=True)
+
             ticker_data = self.populate_sell_trend(
                 self.populate_buy_trend(pair_data))[headers].copy()
 
@@ -150,11 +154,6 @@ class Edge:
             # call bslap - results are a list of dicts
             for stoploss in stoploss_range:
                 bslap_results += self.backslap_pair(ticker_data, pair, round(stoploss, 3))
-
-            #bslap_results += self.backslap_pair(ticker_data, pair, -0.05)
-            # bslap_pair_results = self.backslap_pair(ticker_data, pair, -0.05)
-            # last_bslap_results = bslap_results
-            # bslap_results = last_bslap_results + bslap_pair_results
 
             
             if self.debug_timing:  # print time taken
@@ -627,7 +626,7 @@ class Edge:
                 elif np_t_sell_ind < 99999999 and np_t_sell_ind < np_t_stop_ind:
                     # move sell onto next candle, we only look back on sell
                     # will use the open price later.
-                    t_exit_ind = t_open_ind + np_t_sell_ind  # Set Exit row index
+                    t_exit_ind = t_open_ind + np_t_sell_ind # Set Exit row index
                     t_exit_type = SellType.SELL_SIGNAL  # Set Exit type (sell)
                     np_t_exit_pri = np_open  # The price field our SELL exit will use
                     if debug:
@@ -737,6 +736,7 @@ class Edge:
                 if t_exit_type == SellType.STOP_LOSS:
                     if np_t_exit_pri == 6:
                         np_trade_exit_price = np_t_stop_pri
+                        t_exit_ind = t_exit_ind + 1
                     else:
                         np_trade_exit_price = np_bslap[t_exit_ind, np_t_exit_pri]
                 if t_exit_type == SellType.SELL_SIGNAL:
@@ -780,7 +780,7 @@ class Edge:
                 opportunity to close any more trades.
                 """
                 # TODO :add handing here to record none closed open trades
-
+                
                 if debug:
                     print(bslap_pair_results)
                 break
@@ -789,6 +789,12 @@ class Edge:
                 Add trade to backtest looking results list of dicts
                 Loop back to look for more trades.
                 """
+
+                # We added +1 to t_exit_ind if the exit was a stop-loss, to not exit early in the IF of this ELSE
+                # removing the +1 here so prices match.
+                if t_exit_type == SellType.STOP_LOSS:
+                    t_exit_ind = t_exit_ind - 1
+
                 # Build trade dictionary
                 ## In general if a field can be calculated later from other fields leave blank here
                 ## Its X(number of trades faster) to calc all in a single vector than 1 trade at a time
@@ -1014,6 +1020,5 @@ args = arguments.get_parsed_arg()
 
 config = setup_configuration(args)
 
-config["strategy"] = "MultiRSI"
 edge = Edge(config)
 edge.start()

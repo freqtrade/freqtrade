@@ -136,7 +136,7 @@ class Backslapping:
 
             bslap_results_df = []
             bslap_results_df = DataFrame.from_records(bslap_results_df, columns=BacktestResult._fields)
- 
+        
         return bslap_results_df
 
     def vector_fill_results_table(self, bslap_results_df: DataFrame, pair: str):
@@ -280,10 +280,19 @@ class Backslapping:
         # debug = False  # print values, to check accuracy
         debug_2loops = self.debug_2loops  # only loop twice, for faster debug
         debug_timing = self.debug_timing  # print timing for each step
-        debug = self.debug  # print values, to check accuracy
+        #debug = self.debug  # print values, to check accuracy
+        debug = False
+
+        ticker_data = ticker_data.sort_values(by=['date'])
+        ticker_data = ticker_data.reset_index(drop=True)
+
+        #pandas_df = df.toPandas()
+        #pandas_df.to_json
 
         # Read Stop Loss Values and Stake
+        # pdb.set_trace()
         stop = self.stop_loss_value
+        #stop = stoploss
         p_stop = (stop + 1)  # What stop really means, e.g 0.01 is 0.99 of price
 
         if debug:
@@ -583,7 +592,7 @@ class Backslapping:
                 elif np_t_sell_ind < 99999999 and np_t_sell_ind < np_t_stop_ind:
                     # move sell onto next candle, we only look back on sell
                     # will use the open price later.
-                    t_exit_ind = t_open_ind + np_t_sell_ind + 1  # Set Exit row index
+                    t_exit_ind = t_open_ind + np_t_sell_ind # Set Exit row index
                     t_exit_type = SellType.SELL_SIGNAL  # Set Exit type (sell)
                     np_t_exit_pri = np_open  # The price field our SELL exit will use
                     if debug:
@@ -693,6 +702,7 @@ class Backslapping:
                 if t_exit_type == SellType.STOP_LOSS:
                     if np_t_exit_pri == 6:
                         np_trade_exit_price = np_t_stop_pri
+                        t_exit_ind = t_exit_ind + 1
                     else:
                         np_trade_exit_price = np_bslap[t_exit_ind, np_t_exit_pri]
                 if t_exit_type == SellType.SELL_SIGNAL:
@@ -736,6 +746,7 @@ class Backslapping:
                 opportunity to close any more trades.
                 """
                 # TODO :add handing here to record none closed open trades
+                
 
                 if debug:
                     print(bslap_pair_results)
@@ -745,6 +756,12 @@ class Backslapping:
                 Add trade to backtest looking results list of dicts
                 Loop back to look for more trades.
                 """
+
+                # We added +1 to t_exit_ind if the exit was a stop-loss, to not exit early in the IF of this ELSE
+                # removing the +1 here so prices match.
+                if t_exit_type == SellType.STOP_LOSS:
+                    t_exit_ind = t_exit_ind - 1
+
                 # Build trade dictionary
                 ## In general if a field can be calculated later from other fields leave blank here
                 ## Its X(number of trades faster) to calc all in a single vector than 1 trade at a time
@@ -753,6 +770,7 @@ class Backslapping:
                 close_index: int = t_exit_ind
                 bslap_result = {}  # Must have at start or we end up with a list of multiple same last result
                 bslap_result["pair"] = pair
+                bslap_result["stoploss"] = stop
                 bslap_result["profit_percent"] = ""  # To be 1 vector calc across trades when loop complete
                 bslap_result["profit_abs"] = ""  # To be 1 vector calc across trades when loop complete
                 bslap_result["open_time"] = np_bslap_dates[t_open_ind + 1]  # use numpy array, pandas 20x slower
