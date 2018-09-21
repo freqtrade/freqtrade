@@ -25,7 +25,6 @@ from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
 
-import pdb
 
 logger = logging.getLogger(__name__)
 
