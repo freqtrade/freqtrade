@@ -130,8 +130,11 @@ def default_conf():
         "edge": {
             "enabled": False,
             "process_throttle_secs": 1800,
+            "total_capital_in_stake_currency": 0.5,
+            "allowed_risk": 0.01,
             "maximum_winrate": 0.80, 
             "min_trade_number": 15,
+            "max_trade_duration_minute": 1440,
             "remove_pumps": True,
             "minimum_delta": 1
         },

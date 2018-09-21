@@ -43,11 +43,13 @@ class Edge():
         self.get_timeframe = Backtesting.get_timeframe
         self.populate_buy_trend = self.strategy.populate_buy_trend
         self.populate_sell_trend = self.strategy.populate_sell_trend
+        
+        self.edge_config = self.config.get('edge', {})
 
         self._last_updated = None
         self._cached_pairs = []
-        self._total_capital = self.config['edge']['total_capital_in_stake_currency']
-        self._allowed_risk = self.config['edge']['allowed_risk']
+        self._total_capital = self.edge_config['total_capital_in_stake_currency']
+        self._allowed_risk = self.edge_config['allowed_risk']
 
         ###
         #
@@ -303,7 +305,7 @@ class Edge():
         ###################################
 
         # Removing pairs having less than min_trades_number
-        min_trades_number = 50
+        min_trades_number = self.edge_config.get('min_trade_number', 15)
         results = results.groupby('pair').filter(lambda x: len(x) > min_trades_number)
         ###################################
 
@@ -319,11 +321,12 @@ class Edge():
         avg = results[["profit_abs"]].mean()
         #
         # Removing Pumps
-        results = results[results.profit_abs < float(avg + 2*std)]
+        if self.edge_config.get('remove_pumps', True):
+            results = results[results.profit_abs < float(avg + 2*std)]
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)
-        max_trade_duration = 24*60
+        max_trade_duration = self.edge_config.get('max_trade_duration_minute', 1440)
         results = results[results.trade_duration < max_trade_duration]
         #######################################################################
 
@@ -906,23 +909,6 @@ class Edge():
 
         return (allowed_dollars_at_risk / symbol_strategy_stop_loss)
 
-        ### stake amount is the same as position size
-        ### calculate position size
-        # print("\n~~~~~~~~ Position Size ~~~~~~~~")
-        # print("bid price is            ", bid_price)
-        # print("stop trigger is         ", stop_trigger_price)
-
-        # allowed_dollars_at_risk = total_capital * allowed_risk
-        # print("allowed capital at risk ", round(allowed_dollars_at_risk, 5))
-
-        # position_size = (allowed_dollars_at_risk / symbol_strategy_stop_loss)
-        # print("position_size in dollars", round(position_size, 5 ))
-
-        # buy_amount = position_size / bid_price
-        # print("amount of tokens to buy ", round(buy_amount,5))
-
-        # check_risk = (buy_amount * (bid_price - stop_trigger_price))
-        # print("check risk capital      ", round(check_risk, 5), "** Should not be more than allowed capital at risk")
     
     def stoploss(self, pair: str) -> float:
         info = [x for x in self._cached_pairs if x[0] == pair][0]
