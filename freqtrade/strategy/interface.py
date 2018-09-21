@@ -203,7 +203,7 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool) -> SellCheckTuple:
+                    sell: bool, force_stoploss=0) -> SellCheckTuple:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
@@ -211,7 +211,7 @@ class IStrategy(ABC):
         """
         current_profit = trade.calc_profit_percent(rate)
         stoplossflag = self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date,
-                                              current_profit=current_profit)
+                                              current_profit=current_profit, force_stoploss=force_stoploss)
         if stoplossflag.sell_flag:
             return stoplossflag
 
@@ -237,7 +237,7 @@ class IStrategy(ABC):
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float) -> SellCheckTuple:
+                          current_profit: float, force_stoploss: float) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -246,7 +246,10 @@ class IStrategy(ABC):
 
         trailing_stop = self.config.get('trailing_stop', False)
 
-        trade.adjust_stop_loss(trade.open_rate, self.stoploss, initial=True)
+        if force_stoploss == 0:
+            trade.adjust_stop_loss(trade.open_rate, self.stoploss, initial=True)
+        else:
+            trade.adjust_stop_loss(trade.open_rate, force_stoploss, initial=True)
 
         # evaluate if the stoploss was hit
         if self.stoploss is not None and trade.stop_loss >= current_rate:

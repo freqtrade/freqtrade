@@ -50,6 +50,13 @@
         "sell_profit_only": false,
         "ignore_roi_if_buy_signal": false
     },
+    "edge": {
+        "enabled": false,
+        "process_throttle_secs": 1800,
+        "maximum_winrate_to_consider": 0.80, 
+        "remove_pumps": true,
+        "minimum_delta_to_consider": 1
+    },
     "telegram": {
         "enabled": true,
         "token": "your_telegram_token",

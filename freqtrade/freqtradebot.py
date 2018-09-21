@@ -17,12 +17,15 @@ from cachetools import TTLCache, cached
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
+from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
+
+import pdb
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,7 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
+        self.edge = Edge(self.config, self.exchange)
         self._init_modules()
 
     def _init_modules(self) -> None:
@@ -185,6 +189,10 @@ class FreqtradeBot(object):
             # Refreshing candles
             self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
 
+            # Calculating Edge positiong
+            if self.config['edge']['enabled']:
+                self.edge.calculate()
+
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
@@ -307,13 +315,17 @@ class FreqtradeBot(object):
 
         return used_rate
 
-    def _get_trade_stake_amount(self) -> Optional[float]:
+    def _get_trade_stake_amount(self, pair="") -> Optional[float]:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
         :return: float: Stake Amount
         """
-        stake_amount = self.config['stake_amount']
+        if self.config['edge']['enabled']:
+            stake_amount = self.edge.stake_amount(pair)
+        else:
+            stake_amount = self.config['stake_amount']
+
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
@@ -372,17 +384,8 @@ class FreqtradeBot(object):
         """
         interval = self.strategy.ticker_interval
 
-        # EDGE
-        # STAKE AMOUNT SHOULD COME FROM EDGE
-        stake_amount = self._get_trade_stake_amount()
+        logger.info('Checking buy signals to create a new trade: ...')
 
-        if not stake_amount:
-            return False
-
-        logger.info(
-            'Checking buy signals to create a new trade with stake_amount: %f ...',
-            stake_amount
-        )
         whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
 
         # Remove currently opened and latest pairs from whitelist
@@ -396,9 +399,13 @@ class FreqtradeBot(object):
 
         # running get_signal on historical data fetched
         # to find buy signals
+        if self.config['edge']['enabled']:
+            whitelist = self.edge.sort_pairs(whitelist)
+
         for _pair in whitelist:
             (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
             if buy and not sell:
+                stake_amount = self._get_trade_stake_amount(_pair)
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
                 if (bidstrat_check_depth_of_market.get('enabled', False)) and\
@@ -436,11 +443,12 @@ class FreqtradeBot(object):
         """
         pair_s = pair.replace('_', '/')
         pair_url = self.exchange.get_pair_detail_url(pair)
-        stake_currency = self.config['stake_currency']
-        fiat_currency = self.config.get('fiat_display_currency', None)
 
+        fiat_currency = self.config.get('fiat_display_currency', None)
+        
         # Calculate amount
         buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
+        stake_currency = self.config['stake_currency']
 
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
@@ -622,7 +630,12 @@ class FreqtradeBot(object):
         return False
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
-        should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+        if (self.config['edge']['enabled']):
+            stoploss = self.edge.stoploss(trade.pair)
+            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell, stoploss)
+        else:
+            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
             logger.info('excuted sell')
