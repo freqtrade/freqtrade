@@ -442,13 +442,12 @@ class FreqtradeBot(object):
         """
         pair_s = pair.replace('_', '/')
         pair_url = self.exchange.get_pair_detail_url(pair)
-
+        stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
         
         # Calculate amount
         buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
-        stake_currency = self.config['stake_currency']
-
+        
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
