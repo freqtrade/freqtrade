@@ -17,15 +17,8 @@ from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 import importlib
-ujson_found = importlib.util.find_spec("ujson")
-if ujson_found is not None:
-    import ujson
 
 logger = logging.getLogger(__name__)
-
-if ujson_found is not None:
-    logger.debug('Loaded UltraJson ujson in optimize.py')
-
 
 def json_load(data):
     """Try to load data with ujson"""
