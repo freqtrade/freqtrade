@@ -912,6 +912,7 @@ class Edge:
             reset_index().sort_values(by=['delta', 'stoploss'], ascending=False)\
             .groupby('pair').first().sort_values(by=['delta'], ascending=False)
         
+        pdb.set_trace()
         return final
         
 
@@ -1022,3 +1023,15 @@ config = setup_configuration(args)
 
 edge = Edge(config)
 edge.start()
+
+allowed_dollars_at_risk = total_capital * allowed_risk
+print("allowed capital at risk ", round(allowed_dollars_at_risk, 5))
+
+position_size = (allowed_dollars_at_risk / symbol_strategy_stop_loss)
+print("position_size in dollars", round(position_size, 5 ))
+
+buy_amount = position_size / bid_price
+print("amount of tokens to buy ", round(buy_amount,5))
+
+check_risk = (buy_amount * (bid_price - stop_trigger_price))
+print("check risk capital      ", round(check_risk, 5), "** Should not be more than allowed capital at risk")
