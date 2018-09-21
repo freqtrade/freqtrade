@@ -314,7 +314,7 @@ class FreqtradeBot(object):
 
         return used_rate
 
-    def _get_trade_stake_amount(self, pair="") -> Optional[float]:
+    def _get_trade_stake_amount(self, pair) -> Optional[float]:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
