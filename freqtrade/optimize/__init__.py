@@ -77,17 +77,11 @@ def load_tickerdata_file(
     if os.path.isfile(gzipfile):
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
-            if ujson_found is not None:
-                pairdata = ujson.load(tickerdata, precise_float=True)
-            else:
-                pairdata = json.load(tickerdata)
+            pairdata = json.load(tickerdata)
     elif os.path.isfile(file):
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            if ujson_found is not None:
-                pairdata = ujson.load(tickerdata, precise_float=True)
-            else:
-                pairdata = json.load(tickerdata)
+            pairdata = json.load(tickerdata)
     else:
         return None
 
@@ -183,10 +177,7 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            if ujson_found is not None:
-                data = ujson.load(file, precise_float=True)
-            else:
-                data = json.load(file)
+            data = json.load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:
