@@ -148,7 +148,11 @@ class Edge():
         max_open_trades = 0
 
         realistic = False
-        stoploss_range = np.arange(-0.11, -0.00, 0.01)
+        stoploss_range_min = float(self.edge_config.get('stoploss_range_min', -0.01))
+        stoploss_range_max = float(self.edge_config.get('stoploss_range_max', -0.05))
+        stoploss_range_step = float(self.edge_config.get('stoploss_range_step', -0.001))
+
+        stoploss_range = np.arange(stoploss_range_min, stoploss_range_max, stoploss_range_step)
         trades = []
         trade_count_lock: Dict = {}
 
@@ -165,7 +169,7 @@ class Edge():
 
             # call backslap - results are a list of dicts
             for stoploss in stoploss_range:
-                bslap_results += self.backslap_pair(ticker_data, pair, round(stoploss, 3))
+                bslap_results += self.backslap_pair(ticker_data, pair, round(stoploss, 6))
 
         # Switch List of Trade Dicts (bslap_results) to Dataframe
         # Fill missing, calculable columns, profit, duration , abs etc.
