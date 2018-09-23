@@ -6,11 +6,13 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
-from pandas import DataFrame, to_datetime
-from tabulate import tabulate
-import numpy as np
 
+from pandas import DataFrame, to_datetime
+import pandas as pd
+
+from tabulate import tabulate
 import freqtrade.optimize as optimize
+from freqtrade.optimize.backtesting import BacktestResult
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
@@ -21,10 +23,12 @@ from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.optimize.backtesting import Backtesting
 from collections import OrderedDict
-import timeit
-from time import sleep
 
-import pdb
+import numpy as np
+import timeit
+import utils_find_1st as utf1st
+from time import sleep
+from pandas import set_option
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +182,6 @@ class Edge():
         if len(bslap_results_df) > 0:  # Only post process a frame if it has a record
             bslap_results_df = self.vector_fill_results_table(bslap_results_df)
         else:
-            from freqtrade.optimize.backtesting import BacktestResult
-
             bslap_results_df = []
             bslap_results_df = DataFrame.from_records(bslap_results_df, columns=BacktestResult._fields)
  
@@ -207,8 +209,6 @@ class Edge():
         :param bslap_results Dataframe
         :return: bslap_results Dataframe
         """
-        import pandas as pd
-        import numpy as np
         debug = self.debug_vector
 
         # stake and fees
@@ -247,7 +247,6 @@ class Edge():
 
     def np_get_t_open_ind(self, np_buy_arr, t_exit_ind: int, np_buy_arr_len: int, stop_stops: int,
                           stop_stops_count: int):
-        import utils_find_1st as utf1st
         """
          The purpose of this def is to return the next "buy" = 1
          after t_exit_ind.
@@ -373,12 +372,6 @@ class Edge():
         return final.reset_index().values
 
     def backslap_pair(self, ticker_data, pair, stoploss):
-        import pandas as pd
-        import numpy as np
-        import timeit
-        import utils_find_1st as utf1st
-        from datetime import datetime
-        
         ### backslap debug wrap
         # debug_2loops = False  # only loop twice, for faster debug
         # debug_timing = False  # print timing for each step
@@ -388,7 +381,6 @@ class Edge():
         debug = self.debug  # print values, to check accuracy
 
         # Read Stop Loss Values and Stake
-        # pdb.set_trace()
         #stop = self.stop_loss_value
         stop = stoploss
         p_stop = (stop + 1)  # What stop really means, e.g 0.01 is 0.99 of price
@@ -398,7 +390,6 @@ class Edge():
             print("p_stop is", p_stop, "value used to multiply to entry price")
 
         if debug:
-            from pandas import set_option
             set_option('display.max_rows', 5000)
             set_option('display.max_columns', 8)
             pd.set_option('display.width', 1000)
