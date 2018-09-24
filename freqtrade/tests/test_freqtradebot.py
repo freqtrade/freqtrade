@@ -183,7 +183,7 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
 
     freqtrade = FreqtradeBot(default_conf)
 
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount']
 
 
@@ -201,7 +201,7 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
     freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        freqtrade._get_trade_stake_amount()
+        freqtrade._get_trade_stake_amount('ETH/BTC')
 
 
 def test_get_trade_stake_amount_unlimited_amount(default_conf,
@@ -499,7 +499,7 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
     patch_get_signal(freqtrade)
 
     assert freqtrade.create_trade() is False
-    assert freqtrade._get_trade_stake_amount() is None
+    assert freqtrade._get_trade_stake_amount('ETH/BTC') is None
 
 
 def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
