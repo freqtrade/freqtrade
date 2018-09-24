@@ -402,6 +402,8 @@ class FreqtradeBot(object):
             (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
             if buy and not sell:
                 stake_amount = self._get_trade_stake_amount(_pair)
+                if not stake_amount:
+                    return False
                 logger.info('Buy signal found: about create a new trade with stake_amount: %f ...', stake_amount)
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
