@@ -598,7 +598,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.amount == 90.99181073703367
 
     assert log_has(
-        'Checking buy signals to create a new trade with stake_amount: 0.001000 ...',
+        'Buy signal found: about create a new trade with stake_amount: 0.001000 ...',
         caplog.record_tuples
     )
 
