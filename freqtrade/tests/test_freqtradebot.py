@@ -229,25 +229,25 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     patch_get_signal(freqtrade)
 
     # no open trades, order amount should be 'balance / max_open_trades'
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount'] / conf['max_open_trades']
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
     freqtrade.create_trade()
 
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('LTC/BTC')
     assert result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1)
 
     # create 2 trades, order amount should be None
     freqtrade.create_trade()
 
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('XRP/BTC')
     assert result is None
 
     # set max_open_trades = None, so do not trade
     conf['max_open_trades'] = 0
     freqtrade = FreqtradeBot(conf)
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('NEO/BTC')
     assert result is None
 
 
