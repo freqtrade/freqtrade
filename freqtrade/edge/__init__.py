@@ -355,20 +355,23 @@ class Edge():
             return x
         ##############################
         
-        # The difference between risk reward ratio and required risk reward
-        # We use it as an indicator to find the most interesting pair to trade
-        def delta(x):
-            x = (abs(1/ ((x[x < 0].sum() / x[x < 0].count()) / (x[x > 0].sum() / x[x > 0].count())))) - (1/(x[x > 0].count()/x.count()) -1)
+        # Expectancy
+        # Tells you the interest percentage you should hope
+        # E.x. if expectancy is 0.35, on $1 trade you should expect a target of $1.35
+        def expectancy(x):
+            average_win = float(x[x > 0].sum() / x[x > 0].count())
+            average_loss = float(abs(x[x < 0].sum() / x[x < 0].count()))
+            winrate = float(x[x > 0].count()/x.count())
+            x = ((1 + average_win/average_loss) * winrate) - 1
             return x
         ##############################
-
         
         final = results.groupby(['pair', 'stoploss'])['profit_abs'].\
-            agg([winrate, risk_reward_ratio, required_risk_reward, delta]).\
-            reset_index().sort_values(by=['delta', 'stoploss'], ascending=False)\
-            .groupby('pair').first().sort_values(by=['delta'], ascending=False)
+            agg([winrate, risk_reward_ratio, required_risk_reward, expectancy]).\
+            reset_index().sort_values(by=['expectancy', 'stoploss'], ascending=False)\
+            .groupby('pair').first().sort_values(by=['expectancy'], ascending=False)
         
-        # Returning an array of pairs in order of "delta"
+        # Returning an array of pairs in order of "expectancy"
         return final.reset_index().values
 
     def backslap_pair(self, ticker_data, pair, stoploss):
