@@ -108,7 +108,7 @@ class Edge():
             # Sorting dataframe by date and reset index
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
-            
+
             ticker_data = self.advise_sell(
                 self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
