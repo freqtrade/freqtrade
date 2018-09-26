@@ -40,7 +40,7 @@ class Edge():
         self.edge_config = self.config.get('edge', {})
 
         self._last_updated = None
-        self._cached_pairs = []
+        self._cached_pairs : list = []
         self._total_capital = self.edge_config['total_capital_in_stake_currency']
         self._allowed_risk = self.edge_config['allowed_risk']
 
@@ -65,7 +65,7 @@ class Edge():
         if ((self._last_updated is not None) and (self._last_updated + heartbeat > arrow.utcnow().timestamp)):
             return False
 
-        data = {}
+        data: Dict[str, Any] = {}
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
         logger.info('Using local backtesting data (using whitelist in given config) ...')
@@ -84,7 +84,7 @@ class Edge():
 
         if not data:
             logger.critical("No data found. Edge is stopped ...")
-            return
+            return False
 
         preprocessed = self.tickerdata_to_dataframe(data)
 
@@ -142,7 +142,7 @@ class Edge():
         info = [x for x in self._cached_pairs if x[0] == pair][0]
         return info[1]
 
-    def sort_pairs(self, pairs) -> bool:
+    def sort_pairs(self, pairs) -> list:
         if len(self._cached_pairs) == 0:
             self.calculate()
         edge_sorted_pairs = [x[0] for x in self._cached_pairs]
@@ -195,7 +195,7 @@ class Edge():
 
         return result
 
-    def _process_expectancy(self, results: DataFrame) -> str:
+    def _process_expectancy(self, results: DataFrame) -> list:
         """
         This is a temporary version of edge positioning calculation.
         The function will be eventually moved to a plugin called Edge in order to calculate necessary WR, RRR and
@@ -330,19 +330,20 @@ class Edge():
             exit_type = SellType.SELL_SIGNAL
             exit_price = ohlc_columns[open_trade_index + sell_index + 1, 0]
 
-        trade = {}
-        trade["pair"] = pair
-        trade["stoploss"] = stoploss
-        trade["profit_percent"] = ""  # To be 1 vector calculation across trades when loop complete
-        trade["profit_abs"] = ""  # To be 1 vector calculation across trades when loop complete
-        trade["open_time"] = date_column[open_trade_index]
-        trade["close_time"] = date_column[exit_index]
-        trade["open_index"] = start_point + open_trade_index + 1  # +1 as we buy on next.
-        trade["close_index"] = start_point + exit_index
-        trade["trade_duration"] = ""  # To be 1 vector calculation across trades when loop complete
-        trade["open_rate"] = round(open_price, 15)
-        trade["close_rate"] = round(exit_price, 15)
-        trade["exit_type"] = exit_type
+        trade = {'pair': pair,
+                 'stoploss': stoploss,
+                 'profit_percent': '',
+                 'profit_abs': '',
+                 'open_time': date_column[open_trade_index],
+                 'close_time': date_column[exit_index],
+                 'open_index': start_point + open_trade_index + 1,
+                 'close_index': start_point + exit_index,
+                 'trade_duration': '',
+                 'open_rate': round(open_price, 15),
+                 'close_rate': round(exit_price, 15),
+                 'exit_type': exit_type
+                 }
+
         result.append(trade)
 
         return result + self._detect_stop_and_sell_points(
