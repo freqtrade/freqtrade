@@ -338,11 +338,11 @@ class FreqtradeBot(object):
         if avaliable_amount < stake_amount:
             raise DependencyException(
                 'Available balance(%f %s) is lower than stake amount(%f %s)' % (
-                    avaliable_amount, self.config['stake_currency'],
-                    stake_amount, self.config['stake_currency'])
+                    float(avaliable_amount), self.config['stake_currency'],
+                    float(stake_amount), self.config['stake_currency'])
             )
 
-        return stake_amount
+        return float(stake_amount)
 
     def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
         markets = self.exchange.get_markets()

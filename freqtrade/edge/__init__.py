@@ -33,8 +33,8 @@ class Edge():
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
         self.get_timeframe = Backtesting.get_timeframe
-        self.populate_buy_trend = self.strategy.populate_buy_trend
-        self.populate_sell_trend = self.strategy.populate_sell_trend
+        self.advise_sell = self.strategy.advise_sell
+        self.advise_buy = self.strategy.advise_buy
 
         self.edge_config = self.config.get('edge', {})
 
@@ -108,9 +108,9 @@ class Edge():
             # Sorting dataframe by date and reset index
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
-
-            ticker_data = self.populate_sell_trend(
-                self.populate_buy_trend(pair_data))[headers].copy()
+            
+            ticker_data = self.advise_sell(
+                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
             trades += self._find_trades_for_stoploss_range(ticker_data, pair, stoploss_range)
 
