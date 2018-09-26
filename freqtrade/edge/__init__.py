@@ -5,7 +5,6 @@ from typing import Any, Dict
 import arrow
 
 from pandas import DataFrame
-import pandas as pd
 
 import freqtrade.optimize as optimize
 from freqtrade.optimize.backtesting import BacktestResult
@@ -40,7 +39,7 @@ class Edge():
         self.edge_config = self.config.get('edge', {})
 
         self._last_updated = None
-        self._cached_pairs : list = []
+        self._cached_pairs: list = []
         self._total_capital = self.edge_config['total_capital_in_stake_currency']
         self._allowed_risk = self.edge_config['allowed_risk']
 
@@ -62,14 +61,15 @@ class Edge():
         pairs = self.config['exchange']['pair_whitelist']
         heartbeat = self.config['edge']['process_throttle_secs']
 
-        if ((self._last_updated is not None) and (self._last_updated + heartbeat > arrow.utcnow().timestamp)):
+        if (self._last_updated is not None) and \
+                (self._last_updated + heartbeat > arrow.utcnow().timestamp):
             return False
 
         data: Dict[str, Any] = {}
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        #TODO: add "timerange" to Edge config
+        # TODO: add "timerange" to Edge config
         timerange = Arguments.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
 
@@ -103,7 +103,6 @@ class Edge():
         stoploss_range_step = float(self.edge_config.get('stoploss_range_step', -0.001))
         stoploss_range = np.arange(stoploss_range_min, stoploss_range_max, stoploss_range_step)
 
-        ########################### Call out BSlap Loop instead of Original BT code
         trades: list = []
         for pair, pair_data in preprocessed.items():
             # Sorting dataframe by date and reset index
@@ -114,7 +113,6 @@ class Edge():
                 self.populate_buy_trend(pair_data))[headers].copy()
 
             trades += self._find_trades_for_stoploss_range(ticker_data, pair, stoploss_range)
-            
 
         # Switch List of Trade Dicts (trades) to Dataframe
         # Fill missing, calculable columns, profit, duration , abs etc.
@@ -126,7 +124,6 @@ class Edge():
             trades_df = []
             trades_df = DataFrame.from_records(trades_df, columns=BacktestResult._fields)
 
-        
         self._cached_pairs = self._process_expectancy(trades_df)
         self._last_updated = arrow.utcnow().timestamp
         return True
@@ -146,7 +143,7 @@ class Edge():
         if len(self._cached_pairs) == 0:
             self.calculate()
         edge_sorted_pairs = [x[0] for x in self._cached_pairs]
-        return [x for _, x in sorted(zip(edge_sorted_pairs,pairs), key=lambda pair: pair[0])]
+        return [x for _, x in sorted(zip(edge_sorted_pairs, pairs), key=lambda pair: pair[0])]
 
     def _fill_calculable_fields(self, result: DataFrame):
         """
@@ -173,9 +170,11 @@ class Edge():
         close_fee = fee / 2
 
         result['trade_duration'] = result['close_time'] - result['open_time']
-        result['trade_duration'] = result['trade_duration'].map(lambda x: int(x.total_seconds() / 60))
 
-        ## Spends, Takes, Profit, Absolute Profit
+        result['trade_duration'] = \
+            result['trade_duration'].map(lambda x: int(x.total_seconds() / 60))
+
+        # Spends, Takes, Profit, Absolute Profit
 
         # Buy Price
         result['buy_vol'] = stake / result['open_rate']  # How many target are we buying
@@ -188,8 +187,9 @@ class Edge():
         result['sell_take'] = result['sell_sum'] - result['sell_fee']
 
         # profit_percent
-        result['profit_percent'] = (result['sell_take'] - result['buy_spend']) \
-                                             / result['buy_spend']
+        result['profit_percent'] = \
+            (result['sell_take'] - result['buy_spend']) / result['buy_spend']
+
         # Absolute profit
         result['profit_abs'] = result['sell_take'] - result['buy_spend']
 
@@ -198,8 +198,10 @@ class Edge():
     def _process_expectancy(self, results: DataFrame) -> list:
         """
         This is a temporary version of edge positioning calculation.
-        The function will be eventually moved to a plugin called Edge in order to calculate necessary WR, RRR and
-        other indictaors related to money management periodically (each X minutes) and keep it in a storage.
+        The function will be eventually moved to a plugin called Edge in order
+        to calculate necessary WR, RRR and
+        other indictaors related to money management periodically (each X minutes)
+        and keep it in a storage.
         The calulation will be done per pair and per strategy.
         """
 
@@ -238,20 +240,16 @@ class Edge():
         # Risk Reward Ratio
         # 1 / ((loss money / losing trades) / (gained money / winning trades))
         def risk_reward_ratio(x):
-            x = abs(1/ ((x[x<0].sum() / x[x < 0].count()) / (x[x > 0].sum() / x[x > 0].count())))
+            x = abs(1 / ((x[x < 0].sum() / x[x < 0].count()) / (x[x > 0].sum() / x[x > 0].count())))
             return x
         ##############################
 
         # Required Risk Reward
         # (1/(winrate - 1)
         def required_risk_reward(x):
-            x = (1/(x[x > 0].count()/x.count()) -1)
+            x = (1 / (x[x > 0].count() / x.count()) - 1)
             return x
         ##############################
-
-        def delta(x):
-            x = (abs(1/ ((x[x < 0].sum() / x[x < 0].count()) / (x[x > 0].sum() / x[x > 0].count())))) - (1/(x[x > 0].count()/x.count()) -1)
-            return x
 
         # Expectancy
         # Tells you the interest percentage you should hope
@@ -265,7 +263,7 @@ class Edge():
         ##############################
 
         final = results.groupby(['pair', 'stoploss'])['profit_abs'].\
-            agg([winrate, risk_reward_ratio, required_risk_reward, expectancy, delta]).\
+            agg([winrate, risk_reward_ratio, required_risk_reward, expectancy]).\
             reset_index().sort_values(by=['expectancy', 'stoploss'], ascending=False)\
             .groupby('pair').first().sort_values(by=['expectancy'], ascending=False)
 
@@ -277,17 +275,29 @@ class Edge():
         sell_column = ticker_data['sell'].values
         date_column = ticker_data['date'].values
         ohlc_columns = ticker_data[['open', 'high', 'low', 'close']].values
-        
+
         result: list = []
         for stoploss in stoploss_range:
-            result += self._detect_stop_and_sell_points(buy_column, sell_column, date_column, ohlc_columns, round(stoploss, 6), pair)
+            result += self._detect_stop_and_sell_points(
+                buy_column, sell_column, date_column, ohlc_columns, round(stoploss, 6), pair
+                )
 
         return result
 
-    def _detect_stop_and_sell_points(self, buy_column, sell_column, date_column, ohlc_columns, stoploss, pair, start_point=0):
+    def _detect_stop_and_sell_points(
+            self,
+            buy_column,
+            sell_column,
+            date_column,
+            ohlc_columns,
+            stoploss,
+            pair,
+            start_point=0
+            ):
+
         result: list = []
         open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
-        #open_trade_index = np.argmax(buy_column == 1)
+        # open_trade_index = np.argmax(buy_column == 1)
 
         # return empty if we don't find trade entry (i.e. buy==1)
         if open_trade_index == -1:
@@ -298,13 +308,14 @@ class Edge():
         stop_price = (open_price * stop_price_percentage)
 
         # Searching for the index where stoploss is hit
-        stop_index = utf1st.find_1st(ohlc_columns[open_trade_index + 1:, 2], stop_price, utf1st.cmp_smaller)
+        stop_index = \
+            utf1st.find_1st(ohlc_columns[open_trade_index + 1:, 2], stop_price, utf1st.cmp_smaller)
 
         # If we don't find it then we assume stop_index will be far in future (infinite number)
         if stop_index == -1:
             stop_index = float('inf')
 
-        #stop_index = np.argmax((ohlc_columns[open_trade_index + 1:, 2] < stop_price) == True)
+        # stop_index = np.argmax((ohlc_columns[open_trade_index + 1:, 2] < stop_price) == True)
 
         # Searching for the index where sell is hit
         sell_index = utf1st.find_1st(sell_column[open_trade_index + 1:], 1, utf1st.cmp_equal)
@@ -313,7 +324,7 @@ class Edge():
         if sell_index == -1:
             sell_index = float('inf')
 
-        #sell_index = np.argmax(sell_column[open_trade_index + 1:] == 1)
+        # sell_index = np.argmax(sell_column[open_trade_index + 1:] == 1)
 
         # Check if we don't find any stop or sell point (in that case trade remains open)
         # It is not interesting for Edge to consider it so we simply ignore the trade
