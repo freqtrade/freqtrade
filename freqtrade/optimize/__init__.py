@@ -16,7 +16,6 @@ import arrow
 from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
-import importlib
 
 logger = logging.getLogger(__name__)
 

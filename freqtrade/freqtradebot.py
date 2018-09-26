@@ -404,7 +404,12 @@ class FreqtradeBot(object):
                 stake_amount = self._get_trade_stake_amount(_pair)
                 if not stake_amount:
                     return False
-                logger.info('Buy signal found: about create a new trade with stake_amount: %f ...', stake_amount)
+
+                logger.info(
+                    'Buy signal found: about create a new trade with stake_amount: %f ...',
+                    stake_amount
+                )
+
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
                 if (bidstrat_check_depth_of_market.get('enabled', False)) and\
@@ -444,10 +449,10 @@ class FreqtradeBot(object):
         pair_url = self.exchange.get_pair_detail_url(pair)
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
-        
+
         # Calculate amount
         buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
-        
+
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
@@ -630,9 +635,11 @@ class FreqtradeBot(object):
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if (self.config['edge']['enabled']):
             stoploss = self.edge.stoploss(trade.pair)
-            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell, stoploss)
+            should_sell = \
+                self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell, stoploss)
         else:
-            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+            should_sell = \
+                self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
 
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)

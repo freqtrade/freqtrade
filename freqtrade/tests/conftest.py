@@ -137,7 +137,7 @@ def default_conf():
             "stoploss_range_min": -0.01,
             "stoploss_range_max": -0.1,
             "stoploss_range_step": -0.001,
-            "maximum_winrate": 0.80, 
+            "maximum_winrate": 0.80,
             "min_trade_number": 15,
             "max_trade_duration_minute": 1440,
             "remove_pumps": True,
