@@ -108,7 +108,8 @@ class Backtesting(object):
         return min(timeframe, key=operator.itemgetter(0))[0], \
             max(timeframe, key=operator.itemgetter(1))[1]
 
-    def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame) -> str:
+    def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
+                             skip_nan: bool = False) -> str:
         """
         Generates and returns a text table for the given backtest data and the results dataframe
         :return: pretty printed table with tabulate as str
@@ -121,6 +122,9 @@ class Backtesting(object):
                    'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
         for pair in data:
             result = results[results.pair == pair]
+            if skip_nan and result.profit_abs.isnull().all():
+                continue
+
             tabular_data.append([
                 pair,
                 len(result.index),
@@ -404,7 +408,7 @@ class Backtesting(object):
             print(self._generate_text_table_sell_reason(data, results))
 
             print(' LEFT OPEN TRADES REPORT '.center(119, '='))
-            print(self._generate_text_table(data, results.loc[results.open_at_end]))
+            print(self._generate_text_table(data, results.loc[results.open_at_end], True))
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
