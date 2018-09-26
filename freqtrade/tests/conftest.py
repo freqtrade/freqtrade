@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from functools import reduce
 from typing import Dict, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import arrow
 import pytest
@@ -26,8 +26,10 @@ def log_has(line, logs):
 
 
 def patch_exchange(mocker, api_mock=None) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value="Bittrex"))
+    mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value="bittrex"))
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
