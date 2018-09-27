@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 import arrow
-import requests
+from requests.exceptions import RequestException
 
 from cachetools import TTLCache, cached
 
@@ -667,7 +667,7 @@ class FreqtradeBot(object):
                 if not trade.open_order_id:
                     continue
                 order = self.exchange.get_order(trade.open_order_id, trade.pair)
-            except requests.exceptions.RequestException:
+            except (RequestException, DependencyException):
                 logger.info(
                     'Cannot query order for %s due to %s',
                     trade,
