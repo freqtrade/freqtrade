@@ -4,6 +4,8 @@ import logging
 from typing import Any, Dict
 import arrow
 
+import numpy as np
+import utils_find_1st as utf1st
 from pandas import DataFrame
 
 import freqtrade.optimize as optimize
@@ -14,8 +16,6 @@ from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.optimize.backtesting import Backtesting
 
-import numpy as np
-import utils_find_1st as utf1st
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,8 @@ class Edge():
         pairs = self.config['exchange']['pair_whitelist']
         heartbeat = self.config['edge']['process_throttle_secs']
 
-        if (self._last_updated is not None) and \
-                (self._last_updated + heartbeat > arrow.utcnow().timestamp):
+        if (self._last_updated is not None) and (
+                self._last_updated + heartbeat > arrow.utcnow().timestamp):
             return False
 
         data: Dict[str, Any] = {}
@@ -78,6 +78,7 @@ class Edge():
             pairs=pairs,
             ticker_interval=self.ticker_interval,
             refresh_pairs=self.config.get('refresh_pairs', False),
+            # refresh_pairs=True,
             exchange=self.exchange,
             timerange=timerange
         )
@@ -171,8 +172,8 @@ class Edge():
 
         result['trade_duration'] = result['close_time'] - result['open_time']
 
-        result['trade_duration'] = \
-            result['trade_duration'].map(lambda x: int(x.total_seconds() / 60))
+        result['trade_duration'] = result['trade_duration'].map(
+            lambda x: int(x.total_seconds() / 60))
 
         # Spends, Takes, Profit, Absolute Profit
 
@@ -187,8 +188,7 @@ class Edge():
         result['sell_take'] = result['sell_sum'] - result['sell_fee']
 
         # profit_percent
-        result['profit_percent'] = \
-            (result['sell_take'] - result['buy_spend']) / result['buy_spend']
+        result['profit_percent'] = (result['sell_take'] - result['buy_spend']) / result['buy_spend']
 
         # Absolute profit
         result['profit_abs'] = result['sell_take'] - result['buy_spend']
@@ -222,7 +222,7 @@ class Edge():
         #
         # Removing Pumps
         if self.edge_config.get('remove_pumps', True):
-            results = results[results.profit_abs < float(avg + 2*std)]
+            results = results[results.profit_abs < float(avg + 2 * std)]
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)
@@ -257,8 +257,8 @@ class Edge():
         def expectancy(x):
             average_win = float(x[x > 0].sum() / x[x > 0].count())
             average_loss = float(abs(x[x < 0].sum() / x[x < 0].count()))
-            winrate = float(x[x > 0].count()/x.count())
-            x = ((1 + average_win/average_loss) * winrate) - 1
+            winrate = float(x[x > 0].count() / x.count())
+            x = ((1 + average_win / average_loss) * winrate) - 1
             return x
         ##############################
 
@@ -280,7 +280,7 @@ class Edge():
         for stoploss in stoploss_range:
             result += self._detect_stop_and_sell_points(
                 buy_column, sell_column, date_column, ohlc_columns, round(stoploss, 6), pair
-                )
+            )
 
         return result
 
@@ -292,8 +292,7 @@ class Edge():
             ohlc_columns,
             stoploss,
             pair,
-            start_point=0
-            ):
+            start_point=0):
 
         result: list = []
         open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
@@ -308,8 +307,8 @@ class Edge():
         stop_price = (open_price * stop_price_percentage)
 
         # Searching for the index where stoploss is hit
-        stop_index = \
-            utf1st.find_1st(ohlc_columns[open_trade_index + 1:, 2], stop_price, utf1st.cmp_smaller)
+        stop_index = utf1st.find_1st(
+            ohlc_columns[open_trade_index + 1:, 2], stop_price, utf1st.cmp_smaller)
 
         # If we don't find it then we assume stop_index will be far in future (infinite number)
         if stop_index == -1:
