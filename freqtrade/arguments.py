@@ -119,7 +119,6 @@ class Arguments(object):
             help='Override trades database URL, this is useful if dry_run is enabled'
                  ' or in custom deployments (default: %(default)s)',
             dest='db_url',
-            default=constants.DEFAULT_DB_PROD_URL,
             type=str,
             metavar='PATH',
         )
