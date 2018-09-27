@@ -202,7 +202,7 @@ to understand the requirements before sending your pull-requests.
 
 ### Uptodate clock
 
-The clock must be uptodate, ideally syncronized to a NTP server rather frequently. Drifting time can lead to losses.
+The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 
 ### Min hardware required
 
