@@ -129,9 +129,11 @@ class Edge():
 
         # Not a nice hack but probably simplest solution:
         # When backtest load data it loads the delta between disk and exchange
-        # The problem is that exchange consider that recent. it is but it is incomplete (c.f. _async_get_candle_history)
+        # The problem is that exchange consider that recent.
+        # it is but it is incomplete (c.f. _async_get_candle_history)
         # So it causes get_signal to exit cause incomplete ticker_hist
-        # A patch to that would be update _pairs_last_refresh_time of exchange so it will download again all pairs
+        # A patch to that would be update _pairs_last_refresh_time of exchange
+        # so it will download again all pairs
         # Another solution is to add new data to klines instead of reassigning it:
         # self.klines[pair].update(data) instead of self.klines[pair] = data in exchange package.
         # But that means indexing timestamp and having a verification so that
