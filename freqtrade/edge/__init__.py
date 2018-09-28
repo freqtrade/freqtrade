@@ -154,11 +154,14 @@ class Edge():
         info = [x for x in self._cached_pairs if x[0] == pair][0]
         return info[1]
 
-    def sort_pairs(self, pairs) -> list:
-        if len(self._cached_pairs) == 0:
-            self.calculate()
-        edge_sorted_pairs = [x[0] for x in self._cached_pairs]
-        return [x for _, x in sorted(zip(edge_sorted_pairs, pairs), key=lambda pair: pair[0])]
+    def filter(self, pairs) -> list:
+        # Filtering pairs acccording to the expectancy
+        filtered_expectancy: list = []
+        filtered_expectancy = [x[0] for x in self._cached_pairs if x[5] > float(self.edge_config.get('minimum_expectancy', 0.2))]
+
+        # Only return pairs which are included in "pairs" argument list
+        final = [x for x in filtered_expectancy if x in pairs]
+        return final
 
     def _fill_calculable_fields(self, result: DataFrame):
         """
@@ -312,8 +315,9 @@ class Edge():
         open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
         # open_trade_index = np.argmax(buy_column == 1)
 
-        # return empty if we don't find trade entry (i.e. buy==1)
-        if open_trade_index == -1:
+        # return empty if we don't find trade entry (i.e. buy==1) or
+        # we find a buy but at the of array
+        if open_trade_index == -1 or open_trade_index == len(buy_column) - 1:
             return []
 
         stop_price_percentage = stoploss + 1

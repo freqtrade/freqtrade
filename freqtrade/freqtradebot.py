@@ -399,7 +399,7 @@ class FreqtradeBot(object):
         # running get_signal on historical data fetched
         # to find buy signals
         if self.config['edge']['enabled']:
-            whitelist = self.edge.sort_pairs(whitelist)
+            whitelist = self.edge.filter(whitelist)
 
         for _pair in whitelist:
             (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
