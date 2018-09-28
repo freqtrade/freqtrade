@@ -185,12 +185,15 @@ class FreqtradeBot(object):
             final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
             self.config['exchange']['pair_whitelist'] = final_list
 
-            # Refreshing candles
-            self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
-
             # Calculating Edge positiong
+            # Should be called before refresh_tickers
+            # Otherwise it will override cached klines in exchange
+            # with delta value (klines only from last refresh_pairs)
             if self.config['edge']['enabled']:
                 self.edge.calculate()
+
+            # Refreshing candles
+            self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()

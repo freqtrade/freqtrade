@@ -77,8 +77,7 @@ class Edge():
             self.config['datadir'],
             pairs=pairs,
             ticker_interval=self.ticker_interval,
-            refresh_pairs=self.config.get('refresh_pairs', False),
-            # refresh_pairs=True,
+            refresh_pairs=True,
             exchange=self.exchange,
             timerange=timerange
         )
@@ -127,6 +126,19 @@ class Edge():
 
         self._cached_pairs = self._process_expectancy(trades_df)
         self._last_updated = arrow.utcnow().timestamp
+
+        # Not a nice hack but probably simplest solution:
+        # When backtest load data it loads the delta between disk and exchange
+        # The problem is that exchange consider that recent. it is but it is incomplete (c.f. _async_get_candle_history)
+        # So it causes get_signal to exit cause incomplete ticker_hist
+        # A patch to that would be update _pairs_last_refresh_time of exchange so it will download again all pairs
+        # Another solution is to add new data to klines instead of reassigning it:
+        # self.klines[pair].update(data) instead of self.klines[pair] = data in exchange package.
+        # But that means indexing timestamp and having a verification so that
+        # there is no empty range between two timestaps (recently added and last
+        # one)
+        self.exchange._pairs_last_refresh_time = {}
+
         return True
 
     def stake_amount(self, pair: str) -> str:
