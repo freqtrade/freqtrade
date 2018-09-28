@@ -15,6 +15,13 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     :return: DataFrame
     """
     cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+
+    # Sometimes the newly open candle "open price" is different from
+    # the complete candle "close price". we should consider the
+    # partial candle open price as the close price for last
+    # complete candle
+    ticker[-2][4] = ticker[-1][1]
+
     frame = DataFrame(ticker, columns=cols)
 
     frame['date'] = to_datetime(frame['date'],
