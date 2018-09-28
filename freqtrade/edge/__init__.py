@@ -157,7 +157,10 @@ class Edge():
     def filter(self, pairs) -> list:
         # Filtering pairs acccording to the expectancy
         filtered_expectancy: list = []
-        filtered_expectancy = [x[0] for x in self._cached_pairs if x[5] > float(self.edge_config.get('minimum_expectancy', 0.2))]
+        filtered_expectancy = [
+            x[0] for x in self._cached_pairs if x[5] > float(
+                self.edge_config.get(
+                    'minimum_expectancy', 0.2))]
 
         # Only return pairs which are included in "pairs" argument list
         final = [x for x in filtered_expectancy if x in pairs]
