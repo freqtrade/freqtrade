@@ -75,8 +75,6 @@ class Backtesting(object):
 
         else:
             # only one strategy
-            strat = StrategyResolver(self.config).strategy
-
             self.strategylist.append(StrategyResolver(self.config).strategy)
         # Load one strategy
         self._set_strategy(self.strategylist[0])
