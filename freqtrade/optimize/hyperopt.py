@@ -41,6 +41,14 @@ class Hyperopt(Backtesting):
     hyperopt.start()
     """
     def __init__(self, config: Dict[str, Any]) -> None:
+        if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
+            logger.error("Please don't use --strategy for hyperopt.")
+            logger.error(
+                "Read the documentation at "
+                "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
+                "to understand how to configure hyperopt.")
+            raise ValueError("--strategy configured but not supported for hyperopt")
+
         super().__init__(config)
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
@@ -152,7 +160,7 @@ class Hyperopt(Backtesting):
     @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
         """
-        Generate the ROI table thqt will be used by Hyperopt
+        Generate the ROI table that will be used by Hyperopt
         """
         roi_table = {}
         roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
