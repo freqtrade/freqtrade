@@ -41,14 +41,6 @@ class Hyperopt(Backtesting):
     hyperopt.start()
     """
     def __init__(self, config: Dict[str, Any]) -> None:
-        if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
-            logger.error("Please don't use --strategy for hyperopt.")
-            logger.error(
-                "Read the documentation at "
-                "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
-                "to understand how to configure hyperopt.")
-            raise ValueError("--strategy configured but not supported for hyperopt")
-
         super().__init__(config)
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
@@ -410,6 +402,13 @@ def start(args: Namespace) -> None:
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 
+    if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
+        logger.error("Please don't use --strategy for hyperopt.")
+        logger.error(
+            "Read the documentation at "
+            "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
+            "to understand how to configure hyperopt.")
+        raise ValueError("--strategy configured but not supported for hyperopt")
     # Initialize backtesting object
     hyperopt = Hyperopt(config)
     hyperopt.start()
