@@ -65,6 +65,31 @@ def test_start(mocker, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
+def test_start_failure(mocker, default_conf, caplog) -> None:
+    start_mock = MagicMock()
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    patch_exchange(mocker)
+
+    args = [
+        '--config', 'config.json',
+        '--strategy', 'TestStrategy',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+    StrategyResolver({'strategy': 'DefaultStrategy'})
+    with pytest.raises(ValueError):
+        start(args)
+    assert log_has(
+        "Please don't use --strategy for hyperopt.",
+        caplog.record_tuples
+    )
+
+
 def test_loss_calculation_prefer_correct_trade_count(hyperopt) -> None:
     StrategyResolver({'strategy': 'DefaultStrategy'})
 
