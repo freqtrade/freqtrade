@@ -997,6 +997,7 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
                                              fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
