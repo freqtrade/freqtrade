@@ -41,7 +41,6 @@ class Edge():
         self.advise_buy = self.strategy.advise_buy
 
         self.edge_config = self.config.get('edge', {})
-        self._last_updated = None
         self._cached_pairs: list = []
         self._total_capital = self.edge_config.get('total_capital_in_stake_currency')
         self._allowed_risk = self.edge_config.get('allowed_risk')
