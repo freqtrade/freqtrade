@@ -638,11 +638,10 @@ class FreqtradeBot(object):
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if (self.config['edge']['enabled']):
             stoploss = self.edge.stoploss(trade.pair)
-            should_sell = \
-                self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell, stoploss)
+            should_sell = self.strategy.should_sell(
+                trade, sell_rate, datetime.utcnow(), buy, sell, stoploss)
         else:
-            should_sell = \
-                self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
 
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
