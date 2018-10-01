@@ -14,7 +14,6 @@ install:
 - ./install_ta-lib.sh
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 - pip install --upgrade flake8 coveralls pytest-random-order pytest-asyncio mypy
-- pip install future
 - pip install -r requirements.txt
 - pip install -e .
 jobs:
