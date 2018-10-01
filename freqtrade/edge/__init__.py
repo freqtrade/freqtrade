@@ -23,11 +23,9 @@ logger = logging.getLogger(__name__)
 class Edge():
 
     config: Dict = {}
+    _cached_pairs: list = []
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
-        """
-        constructor
-        """
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
         self.ticker_interval = self.strategy.ticker_interval
