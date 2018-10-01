@@ -32,6 +32,7 @@ class Edge():
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
         self.config = config
+        self.exchange = exchange
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
@@ -45,23 +46,11 @@ class Edge():
         self._total_capital = self.edge_config.get('total_capital_in_stake_currency')
         self._allowed_risk = self.edge_config.get('allowed_risk')
 
-        ###
-        #
-        ###
-        if exchange is None:
-            self.config['exchange']['secret'] = ''
-            self.config['exchange']['password'] = ''
-            self.config['exchange']['uid'] = ''
-            self.config['dry_run'] = True
-            self.exchange = Exchange(self.config)
-        else:
-            self.exchange = exchange
-
         self.fee = self.exchange.get_fee()
 
     def calculate(self) -> bool:
         pairs = self.config['exchange']['pair_whitelist']
-        heartbeat = self.config['edge']['process_throttle_secs']
+        heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated is not None) and (
                 self._last_updated + heartbeat > arrow.utcnow().timestamp):
@@ -318,7 +307,6 @@ class Edge():
 
         result: list = []
         open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
-        # open_trade_index = np.argmax(buy_column == 1)
 
         # return empty if we don't find trade entry (i.e. buy==1) or
         # we find a buy but at the of array
@@ -337,16 +325,12 @@ class Edge():
         if stop_index == -1:
             stop_index = float('inf')
 
-        # stop_index = np.argmax((ohlc_columns[open_trade_index + 1:, 2] < stop_price) == True)
-
         # Searching for the index where sell is hit
         sell_index = utf1st.find_1st(sell_column[open_trade_index + 1:], 1, utf1st.cmp_equal)
 
         # If we don't find it then we assume sell_index will be far in future (infinite number)
         if sell_index == -1:
             sell_index = float('inf')
-
-        # sell_index = np.argmax(sell_column[open_trade_index + 1:] == 1)
 
         # Check if we don't find any stop or sell point (in that case trade remains open)
         # It is not interesting for Edge to consider it so we simply ignore the trade
@@ -379,6 +363,8 @@ class Edge():
 
         result.append(trade)
 
+        # Calling again the same function recursively but giving
+        # it a view of exit_index till the end of array
         return result + self._detect_stop_and_sell_points(
             buy_column[exit_index:],
             sell_column[exit_index:],
