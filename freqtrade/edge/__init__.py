@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 class Edge():
 
     config: Dict = {}
-    _cached_pairs: list = []
+    _last_updated: int  # Timestamp of pairs last updated time
+    _cached_pairs: list = []  # Keeps an array of
+    # [pair, winrate, risk reward ratio, required risk reward, expectancy]
+
+    _total_capital: float
+    _allowed_risk: float
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
         self.config = config
@@ -35,11 +40,10 @@ class Edge():
         self.advise_buy = self.strategy.advise_buy
 
         self.edge_config = self.config.get('edge', {})
-
         self._last_updated = None
         self._cached_pairs: list = []
-        self._total_capital = self.edge_config['total_capital_in_stake_currency']
-        self._allowed_risk = self.edge_config['allowed_risk']
+        self._total_capital = self.edge_config.get('total_capital_in_stake_currency')
+        self._allowed_risk = self.edge_config.get('allowed_risk')
 
         ###
         #
