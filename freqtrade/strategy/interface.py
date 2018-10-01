@@ -251,10 +251,8 @@ class IStrategy(ABC):
 
         trailing_stop = self.config.get('trailing_stop', False)
 
-        if force_stoploss == 0:
-            trade.adjust_stop_loss(trade.open_rate, self.stoploss, initial=True)
-        else:
-            trade.adjust_stop_loss(trade.open_rate, force_stoploss, initial=True)
+        trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
+                               else self.stoploss, initial=True)
 
         # evaluate if the stoploss was hit
         if self.stoploss is not None and trade.stop_loss >= current_rate:
