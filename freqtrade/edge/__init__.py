@@ -11,7 +11,6 @@ from pandas import DataFrame
 import freqtrade.optimize as optimize
 from freqtrade.optimize.backtesting import BacktestResult
 from freqtrade.arguments import Arguments
-from freqtrade.exchange import Exchange
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.optimize.backtesting import Backtesting
