@@ -114,7 +114,6 @@ class Edge():
         if len(trades_df) > 0:  # Only post process a frame if it has a record
             trades_df = self._fill_calculable_fields(trades_df)
         else:
-            trades_df = []
             trades_df = DataFrame.from_records(trades_df, columns=BacktestResult._fields)
 
         self._cached_pairs = self._process_expectancy(trades_df)
