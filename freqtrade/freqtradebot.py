@@ -345,8 +345,8 @@ class FreqtradeBot(object):
         if avaliable_amount < stake_amount:
             raise DependencyException(
                 'Available balance(%f %s) is lower than stake amount(%f %s)' % (
-                    float(avaliable_amount), self.config['stake_currency'],
-                    float(stake_amount), self.config['stake_currency'])
+                    avaliable_amount, self.config['stake_currency'],
+                    stake_amount, self.config['stake_currency'])
             )
 
         return float(stake_amount)
