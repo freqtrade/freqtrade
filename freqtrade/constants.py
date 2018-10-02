@@ -37,7 +37,7 @@ SUPPORTED_FIAT = [
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
     "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
-    ]
+]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
@@ -102,6 +102,7 @@ CONF_SCHEMA = {
             }
         },
         'exchange': {'$ref': '#/definitions/exchange'},
+        'edge': {'$ref': '#/definitions/edge'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -167,6 +168,24 @@ CONF_SCHEMA = {
                 'outdated_offset': {'type': 'integer', 'minimum': 1}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
+        },
+        'edge': {
+            'type': 'object',
+            'properties': {
+                "enabled": {'type': 'boolean'},
+                "process_throttle_secs": {'type': 'integer', 'minimum': 600},
+                "calculate_since_number_of_days": {'type': 'integer'},
+                "total_capital_in_stake_currency": {'type': 'number'},
+                "allowed_risk": {'type': 'number'},
+                "stoploss_range_min": {'type': 'number'},
+                "stoploss_range_max": {'type': 'number'},
+                "stoploss_range_step": {'type': 'number'},
+                "maximum_winrate": {'type': 'number'},
+                "minimum_expectancy": {'type': 'number'},
+                "min_trade_number": {'type': 'number'},
+                "max_trade_duration_minute": {'type': 'integer'},
+                "remove_pumps": {'type': 'boolean'}
+            }
         }
     },
     'anyOf': [

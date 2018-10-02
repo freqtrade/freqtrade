@@ -137,13 +137,12 @@ def default_conf():
             "allowed_risk": 0.01,
             "stoploss_range_min": -0.01,
             "stoploss_range_max": -0.1,
-            "stoploss_range_step": -0.001,
+            "stoploss_range_step": -0.01,
             "maximum_winrate": 0.80,
             "minimum_expectancy": 0.20,
             "min_trade_number": 15,
             "max_trade_duration_minute": 1440,
-            "remove_pumps": True,
-            "minimum_delta": 1
+            "remove_pumps": True
         },
         "telegram": {
             "enabled": True,
