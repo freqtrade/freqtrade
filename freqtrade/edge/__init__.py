@@ -158,7 +158,7 @@ class Edge():
         final = [x for x in filtered_expectancy if x in pairs]
         return final
 
-    def _fill_calculable_fields(self, result: DataFrame):
+    def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
         """
         The result frame contains a number of columns that are calculable
         from other columns. These are left blank till all rows are added,
