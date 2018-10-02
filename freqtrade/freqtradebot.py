@@ -56,7 +56,11 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
-        self.edge = Edge(self.config, self.exchange)
+
+        # Initializing Edge only if enabled
+        if self.config.get('edge', {}).get('enabled', False):
+            self.edge = Edge(self.config, self.exchange)
+
         self._init_modules()
 
     def _init_modules(self) -> None:
@@ -189,7 +193,7 @@ class FreqtradeBot(object):
             # Should be called before refresh_tickers
             # Otherwise it will override cached klines in exchange
             # with delta value (klines only from last refresh_pairs)
-            if self.config['edge']['enabled']:
+            if self.config.get('edge', {}).get('enabled', False):
                 self.edge.calculate()
 
             # Refreshing candles
