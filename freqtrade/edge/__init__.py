@@ -161,7 +161,7 @@ class Edge():
     def _fill_calculable_fields(self, result: DataFrame):
         """
         The result frame contains a number of columns that are calculable
-        from othe columns. These are left blank till all rows are added,
+        from other columns. These are left blank till all rows are added,
         to be populated in single vector calls.
 
         Columns to be populated are:
