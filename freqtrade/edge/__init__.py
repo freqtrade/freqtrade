@@ -46,7 +46,7 @@ class Edge():
         self._cached_pairs: list = []
         self._total_capital = self.edge_config.get('total_capital_in_stake_currency')
         self._allowed_risk = self.edge_config.get('allowed_risk')
-        self._since_number_of_days = self.edge_config.get('since_number_of_days', 14)
+        self._since_number_of_days = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated = 0
 
         self._timerange = Arguments.parse_timerange("%s-" % arrow.now().shift(
