@@ -1,27 +1,4 @@
-# pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
-
-import json
-import math
-import random
-from typing import List
-from unittest.mock import MagicMock
-
-import numpy as np
-import pandas as pd
-import pytest
-from arrow import Arrow
-
-from freqtrade import DependencyException, constants, optimize
-from freqtrade.arguments import Arguments, TimeRange
-from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
-                                            start)
-from freqtrade.tests.conftest import log_has, patch_exchange, get_patched_exchange
-from freqtrade.strategy.interface import SellType
-from freqtrade.strategy.default_strategy import DefaultStrategy
-
-from freqtrade.exchange import Exchange
-from freqtrade.freqtradebot import FreqtradeBot
-
+from freqtrade.tests.conftest import log_has, get_patched_exchange
 from freqtrade.edge import Edge
 
 
