@@ -135,7 +135,7 @@ class Edge():
 
         return True
 
-    def stake_amount(self, pair: str) -> str:
+    def stake_amount(self, pair: str) -> float:
         info = [x for x in self._cached_pairs if x[0] == pair][0]
         stoploss = info[1]
         allowed_capital_at_risk = round(self._total_capital * self._allowed_risk, 5)
