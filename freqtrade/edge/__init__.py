@@ -11,6 +11,7 @@ from pandas import DataFrame
 import freqtrade.optimize as optimize
 from freqtrade.optimize.backtesting import BacktestResult
 from freqtrade.arguments import Arguments
+from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.optimize.backtesting import Backtesting
@@ -28,6 +29,8 @@ class Edge():
 
     _total_capital: float
     _allowed_risk: float
+    _since_number_of_days: int
+    _timerange: TimeRange
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
         self.config = config
@@ -43,6 +46,11 @@ class Edge():
         self._cached_pairs: list = []
         self._total_capital = self.edge_config.get('total_capital_in_stake_currency')
         self._allowed_risk = self.edge_config.get('allowed_risk')
+        self._since_number_of_days = self.edge_config.get('since_number_of_days', 14)
+        self._last_updated = 0
+
+        self._timerange = Arguments.parse_timerange("%s-" % arrow.now().shift(
+                 days=-1 * self._since_number_of_days).format('YYYYMMDD'))
 
         self.fee = self.exchange.get_fee()
 
@@ -50,17 +58,13 @@ class Edge():
         pairs = self.config['exchange']['pair_whitelist']
         heartbeat = self.edge_config.get('process_throttle_secs')
 
-        if (self._last_updated is not None) and (
+        if (self._last_updated > 0) and (
                 self._last_updated + heartbeat > arrow.utcnow().timestamp):
             return False
 
         data: Dict[str, Any] = {}
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
-        logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
         logger.info('Using local backtesting data (using whitelist in given config) ...')
-        # TODO: add "timerange" to Edge config
-        timerange = Arguments.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
 
         data = optimize.load_data(
             self.config['datadir'],
@@ -68,7 +72,7 @@ class Edge():
             ticker_interval=self.ticker_interval,
             refresh_pairs=True,
             exchange=self.exchange,
-            timerange=timerange
+            timerange=self._timerange
         )
 
         if not data:
@@ -332,7 +336,7 @@ class Edge():
 
         # Check if we don't find any stop or sell point (in that case trade remains open)
         # It is not interesting for Edge to consider it so we simply ignore the trade
-        # And stop iterating as the party is over
+        # And stop iterating there is no more entry
         if stop_index == sell_index == float('inf'):
             return []
 
@@ -343,7 +347,7 @@ class Edge():
         elif stop_index > sell_index:
             exit_index = open_trade_index + sell_index + 1
             exit_type = SellType.SELL_SIGNAL
-            exit_price = ohlc_columns[open_trade_index + sell_index + 1, 0]
+            exit_price = ohlc_columns[exit_index, 0]
 
         trade = {'pair': pair,
                  'stoploss': stoploss,
