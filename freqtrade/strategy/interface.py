@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 import warnings
 
 import arrow
@@ -70,8 +70,15 @@ class IStrategy(ABC):
     # associated ticker interval
     ticker_interval: str
 
+    # run "populate_indicators" only for new candle
+    process_only_new_candles: bool = False
+
+    # Dict to determine if analysis is necessary
+    _last_candle_seen_per_pair: Dict[str, datetime] = {}
+
     def __init__(self, config: dict) -> None:
         self.config = config
+        self._last_candle_seen_per_pair = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -112,13 +119,34 @@ class IStrategy(ABC):
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
+
         dataframe = parse_ticker_dataframe(ticker_history)
-        dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
+
+        pair = str(metadata.get('pair'))
+
+        # Test if seen this pair and last candle before.
+        # always run if process_only_new_candles is set to true
+        if (not self.process_only_new_candles or
+                self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
+            # Defs that only make change on new candle data.
+            logging.debug("TA Analysis Launched")
+            dataframe = self.advise_indicators(dataframe, metadata)
+            dataframe = self.advise_buy(dataframe, metadata)
+            dataframe = self.advise_sell(dataframe, metadata)
+            self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
+        else:
+            logging.debug("Skippinig TA Analysis for already analyzed candle")
+            dataframe['buy'] = 0
+            dataframe['sell'] = 0
+
+        # Other Defs in strategy that want to be called every loop here
+        # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
+        logging.debug("Loop Analysis Launched")
+
         return dataframe
 
-    def get_signal(self, pair: str, interval: str, ticker_hist: List[Dict]) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, interval: str,
+                   ticker_hist: Optional[List[Dict]]) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
@@ -155,7 +183,8 @@ class IStrategy(ABC):
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + 5))):
+        offset = self.config.get('exchange', {}).get('outdated_offset', 5)
+        if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair,

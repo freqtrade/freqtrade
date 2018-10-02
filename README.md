@@ -152,7 +152,7 @@ The project is currently setup in two main branches:
 
 - `develop` - This branch has often new features, but might also cause breaking changes.
 - `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
-- `feat/*` - These are feature branches, which are beeing worked on heavily. Please don't use these unless you want to test a specific feature.
+- `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
 
 
 ## A note on Binance
@@ -199,6 +199,10 @@ to understand the requirements before sending your pull-requests.
 **Important:** Always create your PR against the `develop` branch, not `master`.
 
 ## Requirements
+
+### Uptodate clock
+
+The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 
 ### Min hardware required
 

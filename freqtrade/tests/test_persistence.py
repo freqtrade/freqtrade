@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 from unittest.mock import MagicMock
+import logging
 
 import pytest
 from sqlalchemy import create_engine
@@ -403,6 +404,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
+    caplog.set_level(logging.DEBUG)
     amount = 103.223
     # Always create all columns apart from the last!
     create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
@@ -471,12 +473,15 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.ticker_interval is None
     assert log_has("trying trades_bak1", caplog.record_tuples)
     assert log_has("trying trades_bak2", caplog.record_tuples)
+    assert log_has("Running database migration - backup available as trades_bak2",
+                   caplog.record_tuples)
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
+    caplog.set_level(logging.DEBUG)
     amount = 103.223
     create_table_old = """CREATE TABLE IF NOT EXISTS "trades" (
                                 id INTEGER NOT NULL,
@@ -530,6 +535,8 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
     assert log_has("trying trades_bak0", caplog.record_tuples)
+    assert log_has("Running database migration - backup available as trades_bak0",
+                   caplog.record_tuples)
 
 
 def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
