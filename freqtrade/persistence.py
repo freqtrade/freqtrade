@@ -79,10 +79,12 @@ def check_migrate(engine) -> None:
     table_back_name = 'trades_bak'
     for i, table_back_name in enumerate(tabs):
         table_back_name = f'trades_bak{i}'
-        logger.info(f'trying {table_back_name}')
+        logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
     if not has_column(cols, 'ticker_interval'):
+        logger.info(f'Running database migration - backup available as {table_back_name}')
+
         fee_open = get_column_def(cols, 'fee_open', 'fee')
         fee_close = get_column_def(cols, 'fee_close', 'fee')
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')

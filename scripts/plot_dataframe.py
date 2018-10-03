@@ -73,7 +73,7 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
         file = Path(args.exportfilename)
         # must align with columns in backtest.py
         columns = ["pair", "profit", "opents", "closets", "index", "duration",
-                   "open_rate", "close_rate", "open_at_end"]
+                   "open_rate", "close_rate", "open_at_end", "sell_reason"]
         with file.open() as f:
             data = json.load(f)
             trades = pd.DataFrame(data, columns=columns)
@@ -138,7 +138,8 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
-        tickers[pair] = exchange.get_candle_history(pair, tick_interval)
+        exchange.refresh_tickers([pair], tick_interval)
+        tickers[pair] = exchange.klines[pair]
     else:
         tickers = optimize.load_data(
             datadir=_CONF.get("datadir"),

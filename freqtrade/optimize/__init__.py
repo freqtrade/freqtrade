@@ -1,7 +1,13 @@
 # pragma pylint: disable=missing-docstring
 
 import gzip
-import json
+try:
+    import ujson as json
+    _UJSON = True
+except ImportError:
+    # see mypy/issues/1153
+    import json  # type: ignore
+    _UJSON = False
 import logging
 import os
 from typing import Optional, List, Dict, Tuple, Any
@@ -12,6 +18,14 @@ from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
 logger = logging.getLogger(__name__)
+
+
+def json_load(data):
+    """Try to load data with ujson"""
+    if _UJSON:
+        return json.load(data, precise_float=True)
+    else:
+        return json.load(data)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
@@ -163,7 +177,7 @@ def load_cached_data_for_updating(filename: str,
     # read the cached file
     if os.path.isfile(filename):
         with open(filename, "rt") as file:
-            data = json.load(file)
+            data = json_load(file)
             # remove the last item, because we are not sure if it is correct
             # it could be fetched when the candle was incompleted
             if data:
@@ -191,19 +205,18 @@ def download_backtesting_testdata(datadir: str,
                                   timerange: Optional[TimeRange] = None) -> None:
 
     """
-    Download the latest ticker intervals from the exchange for the pairs passed in parameters
+    Download the latest ticker intervals from the exchange for the pair passed in parameters
     The data is downloaded starting from the last correct ticker interval data that
-    esists in a cache. If timerange starts earlier than the data in the cache,
+    exists in a cache. If timerange starts earlier than the data in the cache,
     the full data will be redownloaded
 
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
-    :param pairs: list of pairs to download
+    :param pair: pair to download
     :param tick_interval: ticker interval
     :param timerange: range of time to download
     :return: None
 
     """
-
     path = make_testdata_path(datadir)
     filepair = pair.replace("/", "_")
     filename = os.path.join(path, f'{filepair}-{tick_interval}.json')
@@ -219,8 +232,11 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    new_data = exchange.get_candle_history(pair=pair, tick_interval=tick_interval,
-                                           since_ms=since_ms)
+    # Default since_ms to 30 days if nothing is given
+    new_data = exchange.get_history(pair=pair, tick_interval=tick_interval,
+                                    since_ms=since_ms if since_ms
+                                    else
+                                    int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000)
     data.extend(new_data)
 
     logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
