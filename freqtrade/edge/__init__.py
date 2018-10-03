@@ -25,7 +25,7 @@ class Edge():
     config: Dict = {}
     _last_updated: int  # Timestamp of pairs last updated time
     _cached_pairs: list = []  # Keeps an array of
-    # [pair, winrate, risk reward ratio, required risk reward, expectancy]
+    # [pair, stoploss, winrate, risk reward ratio, required risk reward, expectancy]
 
     _total_capital: float
     _allowed_risk: float
@@ -156,6 +156,14 @@ class Edge():
 
         # Only return pairs which are included in "pairs" argument list
         final = [x for x in filtered_expectancy if x in pairs]
+        if final:
+            logger.info(
+                'Edge validated only %s',
+                final
+            )
+        else:
+            logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
+
         return final
 
     def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
@@ -234,7 +242,7 @@ class Edge():
         #
         # Removing Pumps
         if self.edge_config.get('remove_pumps', True):
-            results = results[results.profit_abs < float(avg + 2 * std)]
+            results = results[results.profit_abs <= float(avg + 2 * std)]
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)
@@ -290,13 +298,13 @@ class Edge():
 
         result: list = []
         for stoploss in stoploss_range:
-            result += self._detect_stop_and_sell_points(
+            result += self._detect_next_stop_or_sell_point(
                 buy_column, sell_column, date_column, ohlc_columns, round(stoploss, 6), pair
             )
 
         return result
 
-    def _detect_stop_and_sell_points(
+    def _detect_next_stop_or_sell_point(
             self,
             buy_column,
             sell_column,
@@ -366,7 +374,7 @@ class Edge():
 
         # Calling again the same function recursively but giving
         # it a view of exit_index till the end of array
-        return result + self._detect_stop_and_sell_points(
+        return result + self._detect_next_stop_or_sell_point(
             buy_column[exit_index:],
             sell_column[exit_index:],
             date_column[exit_index:],
