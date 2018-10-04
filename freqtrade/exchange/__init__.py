@@ -93,8 +93,9 @@ class Exchange(object):
             logger.info('Instance is running with dry_run enabled')
 
         exchange_config = config['exchange']
-        self._api = self._init_ccxt(exchange_config)
-        self._api_async = self._init_ccxt(exchange_config, ccxt_async)
+        self._api = self._init_ccxt(exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
+        self._api_async = self._init_ccxt(exchange_config, ccxt_async,
+                                          ccxt_kwargs=exchange_config.get('ccxt_async_config'))
 
         logger.info('Using Exchange "%s"', self.name)
 
@@ -114,7 +115,8 @@ class Exchange(object):
         if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
             asyncio.get_event_loop().run_until_complete(self._api_async.close())
 
-    def _init_ccxt(self, exchange_config: dict, ccxt_module=ccxt) -> ccxt.Exchange:
+    def _init_ccxt(self, exchange_config: dict, ccxt_module=ccxt,
+                   ccxt_kwargs: dict = None) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
         ccxt instance.
@@ -124,14 +126,20 @@ class Exchange(object):
 
         if name not in ccxt_module.exchanges:
             raise OperationalException(f'Exchange {name} is not supported')
-        try:
-            api = getattr(ccxt_module, name.lower())({
+
+        ex_config = {
                 'apiKey': exchange_config.get('key'),
                 'secret': exchange_config.get('secret'),
                 'password': exchange_config.get('password'),
                 'uid': exchange_config.get('uid', ''),
                 'enableRateLimit': exchange_config.get('ccxt_rate_limit', True)
-            })
+            }
+        if ccxt_kwargs:
+            logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
+            ex_config.update(ccxt_kwargs)
+        try:
+
+            api = getattr(ccxt_module, name.lower())(ex_config)
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
 
