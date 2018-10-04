@@ -41,6 +41,21 @@ def test_filter(mocker, default_conf):
     assert(edge.filter(pairs) == ['E/F', 'C/D'])
 
 
+def test_stoploss(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value=[
+            ['E/F', -0.01, 0.66, 3.71, 0.50, 1.71],
+            ['C/D', -0.01, 0.66, 3.71, 0.50, 1.71],
+            ['N/O', -0.01, 0.66, 3.71, 0.50, 1.71]
+        ]
+    ))
+
+    pairs = ['A/B', 'C/D', 'E/F', 'G/H']
+    assert edge.stoploss('E/F') == -0.01
+
+
 def _validate_ohlc(buy_ohlc_sell_matrice):
     for index, ohlc in enumerate(buy_ohlc_sell_matrice):
         # if not high < open < low or not high < close < low
