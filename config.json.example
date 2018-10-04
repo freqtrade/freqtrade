@@ -28,7 +28,10 @@
         "name": "bittrex",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
-        "ccxt_rate_limit": true,
+        "ccxt_config": {"enableRateLimit": true},
+        "ccxt_async_config": {
+            "enableRateLimit": false
+        },
         "pair_whitelist": [
             "ETH/BTC",
             "LTC/BTC",

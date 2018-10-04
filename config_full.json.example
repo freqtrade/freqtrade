@@ -37,7 +37,11 @@
         "name": "bittrex",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
-        "ccxt_rate_limit": true,
+        "ccxt_config": {"enableRateLimit": true},
+        "ccxt_async_config": {
+            "enableRateLimit": false,
+            "aiohttp_trust_env": false
+        },
         "pair_whitelist": [
             "ETH/BTC",
             "LTC/BTC",
@@ -53,11 +57,7 @@
         "pair_blacklist": [
             "DOGE/BTC"
         ],
-        "outdated_offset": 5,
-        "ccxt_config": {},
-        "ccxt_async_config": {
-            "aiohttp_trust_env": false
-            }
+        "outdated_offset": 5
     },
     "experimental": {
         "use_sell_signal": false,
