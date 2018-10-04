@@ -53,9 +53,10 @@ def patch_edge(mocker) -> None:
             ['NEO/BTC', -0.20, 0.66, 3.71, 0.50, 1.71],
             ['LTC/BTC', -0.21, 0.66, 3.71, 0.50, 1.71],
         ]
-     ))
+    ))
     mocker.patch('freqtrade.edge.Edge.stoploss', MagicMock(return_value=-0.20))
     mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value=True))
+
 
 def get_patched_edge(mocker, config) -> Edge:
     patch_edge(mocker)
@@ -63,6 +64,8 @@ def get_patched_edge(mocker, config) -> Edge:
     return edge
 
 # Functions for recurrent object patching
+
+
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     """
     This function patch _init_modules() to not call dependencies

@@ -268,7 +268,13 @@ def test_edge_overrides_stake_amount(mocker, default_conf) -> None:
     assert freqtrade._get_trade_stake_amount('LTC/BTC') == 0.02381
 
 
-def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, default_conf) -> None:
+def test_edge_overrides_stoploss(
+        limit_buy_order,
+        fee,
+        markets,
+        caplog,
+        mocker,
+        default_conf) -> None:
     default_conf['edge']['enabled'] = True
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -309,7 +315,7 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, 
 
 
 def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
-                                 mocker, default_conf) -> None:
+                                              mocker, default_conf) -> None:
     default_conf['edge']['enabled'] = True
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -344,6 +350,7 @@ def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is False
+
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
@@ -1825,7 +1832,7 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, ca
         exchange='binance',
         open_rate=0.245441,
         open_order_id="123456"
-        )
+    )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -2101,9 +2108,9 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     """
     patch_exchange(mocker)
     mocker.patch.multiple(
-           'freqtrade.exchange.Exchange',
-           get_markets=markets,
-           get_order_book=order_book_l2
+        'freqtrade.exchange.Exchange',
+        get_markets=markets,
+        get_order_book=order_book_l2
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
