@@ -44,7 +44,7 @@ The table below will list all configuration parameters.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | No | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
-| `exchange.ccxt_rate_limit` | True | No | Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
+| `exchange.ccxt_rate_limit` | True | No | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
 | `exchange.ccxt_config` | None | No | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | No | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
