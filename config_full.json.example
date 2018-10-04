@@ -53,7 +53,11 @@
         "pair_blacklist": [
             "DOGE/BTC"
         ],
-        "outdated_offset": 5
+        "outdated_offset": 5,
+        "ccxt_config": {},
+        "ccxt_async_config": {
+            "aiohttp_trust_env": false
+            }
     },
     "experimental": {
         "use_sell_signal": false,
