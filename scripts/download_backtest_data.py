@@ -10,7 +10,14 @@ from freqtrade import arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.optimize import download_backtesting_testdata
+from freqtrade.configuration import set_loggers
 
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
+set_loggers(0)
 
 DEFAULT_DL_PATH = 'user_data/data'
 
@@ -54,7 +61,9 @@ exchange = Exchange({'key': '',
                      'exchange': {
                          'name': args.exchange,
                          'pair_whitelist': [],
-                         'ccxt_rate_limit': False
+                         'ccxt_async_config': {
+                             "enableRateLimit": False
+                         }
                      }
                      })
 pairs_not_available = []
