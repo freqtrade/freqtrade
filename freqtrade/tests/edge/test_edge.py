@@ -130,6 +130,8 @@ def test_process_expectancy(mocker, default_conf):
     final = edge._process_expectancy(trades_df)
     assert len(final) == 1
 
+    # TODO: check expectancy + win rate etc
+
 
 def test_three_complete_trades(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)

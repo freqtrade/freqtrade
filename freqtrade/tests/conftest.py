@@ -12,6 +12,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
+from freqtrade.edge import Edge
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -41,6 +42,25 @@ def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
     exchange = Exchange(config)
     return exchange
 
+
+def patch_edge(mocker) -> None:
+    # "ETH/BTC",
+    # "LTC/BTC",
+    # "XRP/BTC",
+    # "NEO/BTC"
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value=[
+            ['NEO/BTC', -0.20, 0.66, 3.71, 0.50, 1.71],
+            ['LTC/BTC', -0.21, 0.66, 3.71, 0.50, 1.71],
+        ]
+     ))
+    mocker.patch('freqtrade.edge.Edge.stoploss', MagicMock(return_value=-0.20))
+    mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value=True))
+
+def get_patched_edge(mocker, config) -> Edge:
+    patch_edge(mocker)
+    edge = Edge(config)
+    return edge
 
 # Functions for recurrent object patching
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:

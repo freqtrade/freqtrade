@@ -18,7 +18,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, SellCheckTuple
-from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.tests.conftest import log_has, patch_exchange, patch_edge
 
 
 # Functions for recurrent object patching
@@ -250,6 +250,100 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     result = freqtrade._get_trade_stake_amount('NEO/BTC')
     assert result is None
 
+
+def test_edge_overrides_stake_amount(mocker, default_conf) -> None:
+    default_conf['edge']['enabled'] = True
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+    freqtrade = FreqtradeBot(default_conf)
+
+    # strategy stoploss should be ignored
+    freqtrade.strategy.stoploss = -0.05
+
+    with pytest.raises(IndexError):
+        freqtrade._get_trade_stake_amount('ETH/BTC')
+
+    assert freqtrade._get_trade_stake_amount('NEO/BTC') == 0.025
+    assert freqtrade._get_trade_stake_amount('LTC/BTC') == 0.02381
+
+
+def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, default_conf) -> None:
+    default_conf['edge']['enabled'] = True
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+
+    # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
+    # Thus, if price falls 21%, stoploss should be triggered
+    #
+    # mocking the ticker: price is falling ...
+    buy_price = limit_buy_order['price']
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price * 0.79,
+            'ask': buy_price * 0.79,
+            'last': buy_price * 0.79
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+    )
+    #############################################
+
+    # Create a trade with "limit_buy_order" price
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    #############################################
+
+    # stoploss shoud be hit
+    assert freqtrade.handle_trade(trade) is True
+
+    assert log_has('executed sell, reason: SellType.STOP_LOSS', caplog.record_tuples)
+    assert trade.sell_reason == SellType.STOP_LOSS.value
+
+
+def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
+                                 mocker, default_conf) -> None:
+    default_conf['edge']['enabled'] = True
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+
+    # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
+    # Thus, if price falls 15%, stoploss should not be triggered
+    #
+    # mocking the ticker: price is falling ...
+    buy_price = limit_buy_order['price']
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price * 0.85,
+            'ask': buy_price * 0.85,
+            'last': buy_price * 0.85
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+    )
+    #############################################
+
+    # Create a trade with "limit_buy_order" price
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    #############################################
+
+    # stoploss shoud be hit
+    assert freqtrade.handle_trade(trade) is False
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     patch_RPCManager(mocker)

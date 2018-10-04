@@ -649,7 +649,7 @@ class FreqtradeBot(object):
 
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
-            logger.info('excuted sell')
+            logger.info('executed sell, reason: %s', should_sell.sell_type)
             return True
         return False
 
