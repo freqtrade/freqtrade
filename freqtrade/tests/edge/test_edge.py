@@ -1,8 +1,12 @@
 from freqtrade.tests.conftest import get_patched_exchange
 from freqtrade.edge import Edge
+from freqtrade import optimize
 from pandas import DataFrame, to_datetime
 import arrow
 import numpy as np
+import math
+
+from unittest.mock import MagicMock
 
 
 # Cases to be tested:
@@ -87,6 +91,61 @@ def _build_dataframe(buy_ohlc_sell_matrice):
                                 infer_datetime_format=True)
 
     return frame
+
+
+def test_edge_heartbeat_calculate(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+    heartbeat = default_conf['edge']['process_throttle_secs']
+
+    # should not recalculate if heartbeat not reached
+    edge._last_updated = arrow.utcnow().timestamp - heartbeat + 1
+
+    assert edge.calculate() == False
+
+
+def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
+                     timerange=None, exchange=None):
+    hz = 0.1
+    base = 0.001
+
+    ETHBTC = [
+        [
+            ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
+            math.sin(x * hz) / 1000 + base + 0.0001,
+            math.sin(x * hz) / 1000 + base - 0.0001,
+            math.sin(x * hz) / 1000 + base,
+            123.45
+        ] for x in range(0, 500)]
+
+    hz = 0.2
+    base = 0.002
+    LTCBTC = [
+        [
+            ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
+            math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
+            math.sin(x * hz) / 1000 + base + 0.0001,
+            math.sin(x * hz) / 1000 + base - 0.0001,
+            math.sin(x * hz) / 1000 + base,
+            123.45
+        ] for x in range(0, 500)]
+
+    pairdata = {'NEO/BTC': ETHBTC, 'LTC/BTC': LTCBTC}
+    return pairdata
+
+
+def test_edge_process_downloaded_data(mocker, default_conf):
+    default_conf['datadir'] = None
+    exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
+    mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
+    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
+    edge = Edge(default_conf, exchange)
+
+    assert edge.calculate()
+    assert len(edge._cached_pairs) == 2
+    assert edge._last_updated <= arrow.utcnow().timestamp + 2
 
 
 def test_process_expectancy(mocker, default_conf):
