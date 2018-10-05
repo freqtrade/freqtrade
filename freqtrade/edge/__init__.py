@@ -107,15 +107,12 @@ class Edge():
 
             trades += self._find_trades_for_stoploss_range(ticker_data, pair, stoploss_range)
 
-        # Switch List of Trade Dicts (trades) to Dataframe
+        # If no trade found then exit
+        if len(trades) == 0:
+            return False
+
         # Fill missing, calculable columns, profit, duration , abs etc.
-        trades_df = DataFrame(trades)
-
-        if len(trades_df) > 0:  # Only post process a frame if it has a record
-            trades_df = self._fill_calculable_fields(trades_df)
-        else:
-            trades_df = DataFrame.from_records(trades_df, columns=BacktestResult._fields)
-
+        trades_df = self._fill_calculable_fields(DataFrame(trades))
         self._cached_pairs = self._process_expectancy(trades_df)
         self._last_updated = arrow.utcnow().timestamp
 
@@ -187,6 +184,7 @@ class Edge():
 
         stake = self.config.get('stake_amount')
         fee = self.fee
+
         open_fee = fee / 2
         close_fee = fee / 2
 
