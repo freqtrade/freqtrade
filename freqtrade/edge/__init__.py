@@ -9,7 +9,6 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 import freqtrade.optimize as optimize
-from freqtrade.optimize.backtesting import BacktestResult
 from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
