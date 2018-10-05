@@ -1,6 +1,5 @@
 from freqtrade.tests.conftest import get_patched_exchange
 from freqtrade.edge import Edge
-from freqtrade import optimize
 from pandas import DataFrame, to_datetime
 import arrow
 import numpy as np
@@ -56,7 +55,6 @@ def test_stoploss(mocker, default_conf):
         ]
     ))
 
-    pairs = ['A/B', 'C/D', 'E/F', 'G/H']
     assert edge.stoploss('E/F') == -0.01
 
 
@@ -101,7 +99,7 @@ def test_edge_heartbeat_calculate(mocker, default_conf):
     # should not recalculate if heartbeat not reached
     edge._last_updated = arrow.utcnow().timestamp - heartbeat + 1
 
-    assert edge.calculate() == False
+    assert edge.calculate() is False
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
