@@ -275,7 +275,7 @@ class Configuration(object):
         if 'ccxt_rate_limit' in config.get('exchange', {}):
             logger.warning("`ccxt_rate_limit` has been deprecated in favor of "
                            "`ccxt_config` and `ccxt_async_config` and will be removed "
-                           "in future a future version.")
+                           "in a future version.")
 
         logger.debug('Exchange "%s" supported', exchange)
         return True

@@ -398,7 +398,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     configuration.check_exchange(default_conf)
     assert log_has("`ccxt_rate_limit` has been deprecated in favor of "
                    "`ccxt_config` and `ccxt_async_config` and will be removed "
-                   "in future a future version.",
+                   "in a future version.",
                    caplog.record_tuples)
 
 
