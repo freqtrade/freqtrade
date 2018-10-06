@@ -371,7 +371,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
 
 
-def test_check_exchange(default_conf) -> None:
+def test_check_exchange(default_conf, caplog) -> None:
     configuration = Configuration(Namespace())
 
     # Test a valid exchange
@@ -391,6 +391,15 @@ def test_check_exchange(default_conf) -> None:
         match=r'.*Exchange "unknown_exchange" not supported.*'
     ):
         configuration.check_exchange(default_conf)
+
+    # Test ccxt_rate_limit depreciation
+    default_conf.get('exchange').update({'name': 'binance'})
+    default_conf['exchange']['ccxt_rate_limit'] = True
+    configuration.check_exchange(default_conf)
+    assert log_has("`ccxt_rate_limit` has been deprecated in favor of "
+                   "`ccxt_config` and `ccxt_async_config` and will be removed "
+                   "in a future version.",
+                   caplog.record_tuples)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:

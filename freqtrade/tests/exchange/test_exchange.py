@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103, bad-continuation, global-statement
 # pragma pylint: disable=protected-access
+import copy
 import logging
 from datetime import datetime
 from random import randint
@@ -54,6 +55,32 @@ def test_init(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     get_patched_exchange(mocker, default_conf)
     assert log_has('Instance is running with dry_run enabled', caplog.record_tuples)
+
+
+def test_init_ccxt_kwargs(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    caplog.set_level(logging.INFO)
+    conf = copy.deepcopy(default_conf)
+    conf['exchange']['ccxt_async_config'] = {'aiohttp_trust_env': True}
+    ex = Exchange(conf)
+    assert log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}",
+                   caplog.record_tuples)
+    assert ex._api_async.aiohttp_trust_env
+    assert not ex._api.aiohttp_trust_env
+
+    # Reset logging and config
+    caplog.clear()
+    conf = copy.deepcopy(default_conf)
+    conf['exchange']['ccxt_config'] = {'TestKWARG': 11}
+    ex = Exchange(conf)
+    assert not log_has("Applying additional ccxt config: {'aiohttp_trust_env': True}",
+                       caplog.record_tuples)
+    assert not ex._api_async.aiohttp_trust_env
+    assert hasattr(ex._api, 'TestKWARG')
+    assert ex._api.TestKWARG == 11
+    assert not hasattr(ex._api_async, 'TestKWARG')
+    assert log_has("Applying additional ccxt config: {'TestKWARG': 11}",
+                   caplog.record_tuples)
 
 
 def test_destroy(default_conf, mocker, caplog):

@@ -44,7 +44,9 @@ The table below will list all configuration parameters.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
 | `exchange.pair_whitelist` | [] | No | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | No | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
-| `exchange.ccxt_rate_limit` | True | No | Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
+| `exchange.ccxt_rate_limit` | True | No | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
+| `exchange.ccxt_config` | None | No | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
+| `exchange.ccxt_async_config` | None | No | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `experimental.ignore_roi_if_buy_signal` | false | No | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`
@@ -204,7 +206,28 @@ you run it in production mode.
 }
 
 ```
+
 If you have not your Bittrex API key yet, [see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
+
+### Using proxy with FreqTrade
+
+To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
+
+An example for this can be found in `config_full.json.example`
+
+``` json
+"ccxt_async_config": {
+    "aiohttp_trust_env": true
+}
+```
+
+Then, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values
+
+``` bash
+export HTTP_PROXY="http://addr:port"
+export HTTPS_PROXY="http://addr:port"
+freqtrade
+```
 
 
 ### Embedding Strategies
@@ -213,7 +236,7 @@ FreqTrade provides you with with an easy way to embed the strategy into your con
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 
-##### Encoding a string as BASE64
+#### Encoding a string as BASE64
 
 This is a quick example, how to generate the BASE64 string in python
 

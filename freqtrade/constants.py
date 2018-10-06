@@ -164,7 +164,9 @@ CONF_SCHEMA = {
                     },
                     'uniqueItems': True
                 },
-                'outdated_offset': {'type': 'integer', 'minimum': 1}
+                'outdated_offset': {'type': 'integer', 'minimum': 1},
+                'ccxt_config': {'type': 'object'},
+                'ccxt_async_config': {'type': 'object'}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
         }

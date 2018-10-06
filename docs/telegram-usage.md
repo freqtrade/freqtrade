@@ -129,9 +129,3 @@ Day         Profit BTC      Profit USD
 ## /version
 > **Version:** `0.14.3` 
 
-### using proxy with telegram
-```
-$ export HTTP_PROXY="http://addr:port"
-$ export HTTPS_PROXY="http://addr:port"
-$ freqtrade
-```
