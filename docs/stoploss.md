@@ -48,4 +48,4 @@ Both values can be configured in the main configuration file and requires `"trai
 
 The 0.01 would translate to a 1% stop loss, once you hit 1.1% profit.
 
-You should also make sure to have this value higher than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.
+You should also make sure to have this value (`trailing_stop_positive_offset`) lower than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.
