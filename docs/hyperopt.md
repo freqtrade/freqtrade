@@ -131,12 +131,12 @@ you have on-disk, use the `--datadir PATH` option. Default hyperopt will
 use data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
-Use the `--timeperiod` argument to change how much of the testset
+Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py hyperopt --timeperiod -200
+python3 ./freqtrade/main.py hyperopt --timerange -200
 ```
 
 ### Running Hyperopt with Smaller Search Space
