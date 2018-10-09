@@ -363,6 +363,7 @@ class RPC(object):
             # Execute sell for all open orders
             for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
                 _exec_forcesell(trade)
+            Trade.session.flush()
             return
 
         # Query for trade
