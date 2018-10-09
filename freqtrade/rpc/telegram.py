@@ -437,6 +437,7 @@ class Telegram(RPC):
                   "*/count:* `Show number of trades running compared to allowed number of trades`" \
                   "\n" \
                   "*/balance:* `Show account balance per currency`\n" \
+                  "*/reload_conf:* `Reload configuration file` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
