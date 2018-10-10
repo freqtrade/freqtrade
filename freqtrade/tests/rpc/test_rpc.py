@@ -5,7 +5,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, ANY
 
 import pytest
-from numpy import NAN, isnan
+from numpy import isnan
 
 from freqtrade import TemporaryError, DependencyException
 from freqtrade.fiat_convert import CryptoToFiatConverter
@@ -252,6 +252,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
     assert isnan(stats['profit_all_coin'])
+
 
 # Test that rpc_trade_statistics can handle trades that lacks
 # trade.open_rate (it is set to None)
