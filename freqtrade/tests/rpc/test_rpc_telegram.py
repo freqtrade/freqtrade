@@ -250,9 +250,10 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
+    # Status is also enabled when stopped
     telegram._status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'trader is not running' in msg_mock.call_args_list[0][0][0]
+    assert 'no active trade' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     freqtradebot.state = State.RUNNING
@@ -295,9 +296,10 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
+    # Status table is also enabled when stopped
     telegram._status_table(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'trader is not running' in msg_mock.call_args_list[0][0][0]
+    assert 'no active order' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     freqtradebot.state = State.RUNNING
@@ -893,26 +895,6 @@ def test_performance_handle(default_conf, update, ticker, fee,
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
-
-
-def test_performance_handle_invalid(default_conf, update, mocker) -> None:
-    patch_coinmarketcap(mocker)
-    patch_exchange(mocker)
-    msg_mock = MagicMock()
-    mocker.patch.multiple(
-        'freqtrade.rpc.telegram.Telegram',
-        _init=MagicMock(),
-        _send_msg=msg_mock
-    )
-    freqtradebot = FreqtradeBot(default_conf)
-    patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
-
-    # Trader is not running
-    freqtradebot.state = State.STOPPED
-    telegram._performance(bot=MagicMock(), update=update)
-    assert msg_mock.call_count == 1
-    assert 'not running' in msg_mock.call_args_list[0][0][0]
 
 
 def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
