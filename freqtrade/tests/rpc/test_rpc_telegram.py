@@ -507,7 +507,12 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
             'total': 10.0,
             'free': 10.0,
             'used': 0.0
-        }
+        },
+        'XRP': {
+            'total': 1.0,
+            'free': 1.0,
+            'used': 0.0
+            }
     }
 
     def mock_ticker(symbol, refresh):
@@ -517,7 +522,12 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
                 'ask': 10000.00,
                 'last': 10000.00,
             }
-
+        elif symbol == 'XRP/BTC':
+            return {
+                'bid': 0.00001,
+                'ask': 0.00001,
+                'last': 0.00001,
+            }
         return {
             'bid': 0.1,
             'ask': 0.1,
@@ -548,7 +558,8 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     assert '*USDT:*' in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
-    assert 'BTC:  14.00000000' in result
+    assert 'BTC:  12.00000000' in result
+    assert '*XRP:* not showing <1$ amount' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:

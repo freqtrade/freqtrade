@@ -314,7 +314,7 @@ class Telegram(RPC):
                             "\t`Pending: {pending: .8f}`\n" \
                             "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
                 else:
-                    output += "*{currency}*: not showing <1$ amount \n".format(**currency)
+                    output += "*{currency}:* not showing <1$ amount \n".format(**currency)
 
             output += "\n*Estimated Value*:\n" \
                       "\t`BTC: {total: .8f}`\n" \
