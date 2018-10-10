@@ -10,10 +10,10 @@ from typing import Dict, Any, List, Optional
 
 import arrow
 import sqlalchemy as sql
-from numpy import mean, nan_to_num
+from numpy import mean, nan_to_num, NAN
 from pandas import DataFrame
 
-from freqtrade import TemporaryError
+from freqtrade import TemporaryError, DependencyException
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
@@ -93,7 +93,10 @@ class RPC(object):
                 if trade.open_order_id:
                     order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                try:
+                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                except DependencyException:
+                    current_rate = NAN
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
@@ -122,7 +125,10 @@ class RPC(object):
             trades_list = []
             for trade in trades:
                 # calculate profit and send message to user
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                try:
+                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                except DependencyException:
+                    current_rate = NAN
                 trade_perc = (100 * trade.calc_profit_percent(current_rate))
                 trades_list.append([
                     trade.id,
@@ -207,7 +213,10 @@ class RPC(object):
                 profit_closed_percent.append(profit_percent)
             else:
                 # Get current rate
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                try:
+                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                except DependencyException:
+                    current_rate = NAN
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
 
             profit_all_coin.append(
@@ -275,7 +284,7 @@ class RPC(object):
                         rate = 1.0 / self._freqtrade.exchange.get_ticker('BTC/USDT', False)['bid']
                     else:
                         rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
-                except TemporaryError:
+                except (TemporaryError, DependencyException):
                     continue
             est_btc: float = rate * balance['total']
             total = total + est_btc
