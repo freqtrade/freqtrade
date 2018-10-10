@@ -1,5 +1,4 @@
-
-
+import math
 import talib.abstract as ta
 import pandas as pd
 
@@ -13,4 +12,6 @@ def test_talib_bollingerbands_near_zero_values():
         {'close': 0.00000014}
     ])
     bollinger = ta.BBANDS(inputs, matype=0, timeperiod=2)
-    assert (bollinger['upperband'][3] != bollinger['middleband'][3])
+    upper_band = bollinger['upperband'][3]
+    middle_band = bollinger['middleband'][3]
+    assert not math.isclose(upper_band, middle_band)
