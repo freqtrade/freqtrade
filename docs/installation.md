@@ -251,7 +251,7 @@ python3 -m pip install -e .
 
 ### MacOS
 
-#### Install Python 3.6, git, wget and ta-lib
+#### Install Python 3.6, git and wget
 
 ```bash
 brew install python3 git wget
@@ -268,9 +268,9 @@ wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
 tar xvzf ta-lib-0.4.0-src.tar.gz
 cd ta-lib
 sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
-./configure --prefix=/usr # On MacOS this should be --prefix=/usr/local
+./configure --prefix=/usr/local
 make
-make install
+sudo make install
 cd ..
 rm -rf ./ta-lib*
 ```
