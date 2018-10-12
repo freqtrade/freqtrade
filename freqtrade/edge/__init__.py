@@ -15,7 +15,6 @@ from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.optimize.backtesting import Backtesting
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -221,25 +220,19 @@ class Edge():
         and keep it in a storage.
         The calulation will be done per pair and per strategy.
         """
-
         # Removing pairs having less than min_trades_number
         min_trades_number = self.edge_config.get('min_trade_number', 15)
-        results = results.groupby('pair').filter(lambda x: len(x) > min_trades_number)
+        results = results.groupby(['pair', 'stoploss']).filter(lambda x: len(x) > min_trades_number)
         ###################################
 
         # Removing outliers (Only Pumps) from the dataset
         # The method to detect outliers is to calculate standard deviation
         # Then every value more than (standard deviation + 2*average) is out (pump)
         #
-        # Calculating standard deviation of profits
-        std = results[["profit_abs"]].std()
-        #
-        # Calculating average of profits
-        avg = results[["profit_abs"]].mean()
-        #
         # Removing Pumps
         if self.edge_config.get('remove_pumps', True):
-            results = results[results.profit_abs <= float(avg + 2 * std)]
+            results = results.groupby(['pair', 'stoploss']).apply(
+                lambda x: x[x['profit_abs'] < 2 * x['profit_abs'].std() + x['profit_abs'].mean()])
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)
