@@ -322,6 +322,38 @@ def test_load_tickerdata_file() -> None:
     assert _BTC_UNITTEST_LENGTH == len(tickerdata)
 
 
+def test_load_partial_missing(caplog) -> None:
+    # Make sure we start fresh - test missing data at start
+    start = arrow.get('2018-01-01T00:00:00')
+    end = arrow.get('2018-01-11T00:00:00')
+    tickerdata = optimize.load_data(None, '5m', ['UNITTEST/BTC'],
+                                    refresh_pairs=False,
+                                    timerange=TimeRange('date', 'date',
+                                                        start.timestamp, end.timestamp))
+    # timedifference in 5 minutes
+    td = ((end - start).total_seconds() // 60 // 5) + 1
+    assert td != len(tickerdata['UNITTEST/BTC'])
+    start_real = arrow.get(tickerdata['UNITTEST/BTC'][0][0] / 1000)
+    assert log_has(f'Missing data at start for pair '
+                   f'UNITTEST/BTC, data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
+                   caplog.record_tuples)
+    # Make sure we start fresh - test missing data at end
+    caplog.clear()
+    start = arrow.get('2018-01-10T00:00:00')
+    end = arrow.get('2018-02-20T00:00:00')
+    tickerdata = optimize.load_data(None, '5m', ['UNITTEST/BTC'],
+                                    refresh_pairs=False,
+                                    timerange=TimeRange('date', 'date',
+                                                        start.timestamp, end.timestamp))
+    # timedifference in 5 minutes
+    td = ((end - start).total_seconds() // 60 // 5) + 1
+    assert td != len(tickerdata['UNITTEST/BTC'])
+    end_real = arrow.get(tickerdata['UNITTEST/BTC'][-1][0] / 1000)
+    assert log_has(f'Missing data at end for pair '
+                   f'UNITTEST/BTC, data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
+                   caplog.record_tuples)
+
+
 def test_init(default_conf, mocker) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     assert {} == optimize.load_data(
