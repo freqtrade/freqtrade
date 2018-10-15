@@ -66,6 +66,7 @@ class Backtesting(object):
         if self.config.get('strategy_list', None):
             # Force one interval
             self.ticker_interval = str(self.config.get('ticker_interval'))
+            self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -86,6 +87,8 @@ class Backtesting(object):
         """
         self.strategy = strategy
         self.ticker_interval = self.config.get('ticker_interval')
+        self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
+        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
 
@@ -280,8 +283,13 @@ class Backtesting(object):
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
+        start_date = args.get('start_date')
+        end_date = args.get('end_date')
         trades = []
         trade_count_lock: Dict = {}
+        ticker: Dict = {}
+        pairs = []
+        # Create ticker dict
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
@@ -296,15 +304,29 @@ class Backtesting(object):
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            ticker = [x for x in ticker_data.itertuples()]
+            ticker[pair] = [x for x in ticker_data.itertuples()]
+            pairs.append(pair)
 
-            lock_pair_until = None
-            for index, row in enumerate(ticker):
+        lock_pair_until: Dict = {}
+        tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
+        index = 0
+        # Loop timerange and test per pair
+        while tmp < end_date:
+            # print(f"time: {tmp}")
+            for i, pair in enumerate(ticker):
+                try:
+                    row = ticker[pair][index]
+                except IndexError:
+                    # missing Data for one pair ...
+                    # TODO:howto handle this
+                    # logger.warning(f"i: {index} - {tmp} did not exist for {pair}")
+                    continue
+
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
 
                 if not position_stacking:
-                    if lock_pair_until is not None and row.date <= lock_pair_until:
+                    if pair in lock_pair_until and row.date <= lock_pair_until[pair]:
                         continue
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
@@ -313,17 +335,19 @@ class Backtesting(object):
 
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][index + 1:],
                                                          trade_count_lock, args)
 
                 if trade_entry:
-                    lock_pair_until = trade_entry.close_time
+                    lock_pair_until[pair] = trade_entry.close_time
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
                     # This happens only if the buy-signal was with the last candle
-                    lock_pair_until = ticker_data.iloc[-1].date
+                    lock_pair_until[pair] = end_date
 
+            tmp += timedelta(minutes=self.ticker_interval_mins)
+            index += 1
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
@@ -390,6 +414,8 @@ class Backtesting(object):
                     'processed': preprocessed,
                     'max_open_trades': max_open_trades,
                     'position_stacking': self.config.get('position_stacking', False),
+                    'start_date': min_date,
+                    'end_date': max_date,
                 }
             )
 
