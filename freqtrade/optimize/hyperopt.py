@@ -276,11 +276,14 @@ class Hyperopt(Backtesting):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
+        min_date, max_date = Backtesting.get_timeframe(processed)
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
                 'position_stacking': self.config.get('position_stacking', True),
+                'start_date': min_date,
+                'end_date': max_date,
             }
         )
         result_explanation = self.format_results(results)
