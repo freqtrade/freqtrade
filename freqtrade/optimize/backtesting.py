@@ -283,8 +283,8 @@ class Backtesting(object):
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
-        start_date = args.get('start_date')
-        end_date = args.get('end_date')
+        start_date = args['start_date']
+        end_date = args['end_date']
         trades = []
         trade_count_lock: Dict = {}
         ticker: Dict = {}
