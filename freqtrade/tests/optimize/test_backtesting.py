@@ -638,14 +638,16 @@ def test_backtest_only_sell(mocker, default_conf):
 def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, pair='UNITTEST/BTC')
+    # We need to enable sell-signal - otherwise it sells on ROI!!
+    default_conf['experimental'] = {"use_sell_signal": True}
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = _trend_alternate  # Override
     backtesting.advise_sell = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
     backtesting._store_backtest_result("test_.json", results)
-    assert len(results) == 4
+    assert len(results) == 21
     # One trade was force-closed at the end
-    assert len(results.loc[results.open_at_end]) == 1
+    assert len(results.loc[results.open_at_end]) == 0
 
 
 def test_backtest_record(default_conf, fee, mocker):
