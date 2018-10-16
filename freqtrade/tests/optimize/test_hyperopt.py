@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+from datetime import datetime
 import os
 from unittest.mock import MagicMock
 
@@ -290,6 +291,10 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.backtest',
         MagicMock(return_value=backtest_result)
+    )
+    mocker.patch(
+        'freqtrade.optimize.backtesting.Backtesting.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.hyperopt.load', MagicMock())
