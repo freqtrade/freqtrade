@@ -449,7 +449,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    default_conf['ticker_interval'] = "1m"
+    default_conf['ticker_interval'] = '1m'
     default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
@@ -585,21 +585,6 @@ def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     tests = [['raise', 18], ['lower', 0], ['sine', 19]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
-
-
-# Test backtest using offline data (testdata directory)
-def test_backtest_ticks(default_conf, fee, mocker):
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    patch_exchange(mocker)
-    ticks = [1, 5]
-    fun = Backtesting(default_conf).advise_buy
-    for _ in ticks:
-        backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
-        backtesting = Backtesting(default_conf)
-        backtesting.advise_buy = fun  # Override
-        backtesting.advise_sell = fun  # Override
-        results = backtesting.backtest(backtest_conf)
-        assert not results.empty
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf):
