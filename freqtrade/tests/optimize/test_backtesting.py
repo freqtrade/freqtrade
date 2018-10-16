@@ -86,17 +86,21 @@ def load_data_test(what):
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
     patch_exchange(mocker)
+    config['ticker_interval'] = '1m'
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = Backtesting.get_timeframe(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         {
             'stake_amount': config['stake_amount'],
             'processed': processed,
             'max_open_trades': 1,
-            'position_stacking': False
+            'position_stacking': False,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
@@ -123,12 +127,16 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = Backtesting.get_timeframe(processed)
     return {
         'stake_amount': conf['stake_amount'],
-        'processed': backtesting.strategy.tickerdata_to_dataframe(data),
+        'processed': processed,
         'max_open_trades': 10,
         'position_stacking': False,
-        'record': record
+        'record': record,
+        'start_date': min_date,
+        'end_date': max_date,
     }
 
 
@@ -505,12 +513,15 @@ def test_backtest(default_conf, fee, mocker) -> None:
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = Backtesting.get_timeframe(data_processed)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
             'processed': data_processed,
             'max_open_trades': 10,
-            'position_stacking': False
+            'position_stacking': False,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     assert not results.empty
@@ -554,12 +565,16 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = Backtesting.get_timeframe(processed)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.strategy.tickerdata_to_dataframe(data),
+            'processed': processed,
             'max_open_trades': 1,
-            'position_stacking': False
+            'position_stacking': False,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     assert not results.empty
@@ -582,7 +597,10 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 18], ['lower', 0], ['sine', 19]]
+    tests = [['raise', 18], ['lower', 0], ['sine', 16]]
+    # We need to enable sell-signal - otherwise it sells on ROI!!
+    default_conf['experimental'] = {"use_sell_signal": True}
+
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 
