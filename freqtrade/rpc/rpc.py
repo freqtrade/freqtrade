@@ -84,9 +84,7 @@ class RPC(object):
         """
         # Fetch open trade
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-        elif not trades:
+        if not trades:
             raise RPCException('no active trade')
         else:
             results = []
@@ -118,9 +116,7 @@ class RPC(object):
 
     def _rpc_status_table(self) -> DataFrame:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-        elif not trades:
+        if not trades:
             raise RPCException('no active order')
         else:
             trades_list = []
@@ -385,8 +381,6 @@ class RPC(object):
         Handler for performance.
         Shows a performance statistic from finished trades
         """
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
 
         pair_rates = Trade.session.query(Trade.pair,
                                          sql.func.sum(Trade.close_profit).label('profit_sum'),
