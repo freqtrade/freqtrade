@@ -88,7 +88,6 @@ class Backtesting(object):
         """
         self.strategy = strategy
         self.ticker_interval = self.config.get('ticker_interval')
-        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
 
@@ -371,7 +370,7 @@ class Backtesting(object):
             self._set_strategy(strat)
 
             # need to reprocess data every time to populate signals
-            preprocessed = self.tickerdata_to_dataframe(data)
+            preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
             # Print timeframe
             min_date, max_date = self.get_timeframe(preprocessed)

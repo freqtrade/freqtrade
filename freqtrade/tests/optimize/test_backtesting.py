@@ -89,7 +89,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
-    processed = backtesting.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         {
@@ -125,7 +125,7 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     backtesting = Backtesting(conf)
     return {
         'stake_amount': conf['stake_amount'],
-        'processed': backtesting.tickerdata_to_dataframe(data),
+        'processed': backtesting.strategy.tickerdata_to_dataframe(data),
         'max_open_trades': 10,
         'position_stacking': False,
         'record': record
@@ -313,7 +313,7 @@ def test_backtesting_init(mocker, default_conf) -> None:
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert backtesting.ticker_interval == '5m'
-    assert callable(backtesting.tickerdata_to_dataframe)
+    assert callable(backtesting.strategy.tickerdata_to_dataframe)
     assert callable(backtesting.advise_buy)
     assert callable(backtesting.advise_sell)
     get_fee.assert_called()
@@ -327,7 +327,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     tickerlist = {'UNITTEST/BTC': tick}
 
     backtesting = Backtesting(default_conf)
-    data = backtesting.tickerdata_to_dataframe(tickerlist)
+    data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
     assert len(data['UNITTEST/BTC']) == 99
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
@@ -340,7 +340,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
-    data = backtesting.tickerdata_to_dataframe(
+    data = backtesting.strategy.tickerdata_to_dataframe(
         optimize.load_data(
             None,
             ticker_interval='1m',
@@ -520,7 +520,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
     pair = 'UNITTEST/BTC'
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
-    data_processed = backtesting.tickerdata_to_dataframe(data)
+    data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
@@ -571,7 +571,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.tickerdata_to_dataframe(data),
+            'processed': backtesting.strategy.tickerdata_to_dataframe(data),
             'max_open_trades': 1,
             'position_stacking': False
         }
@@ -585,7 +585,7 @@ def test_processed(default_conf, mocker) -> None:
     backtesting = Backtesting(default_conf)
 
     dict_of_tickerrows = load_data_test('raise')
-    dataframes = backtesting.tickerdata_to_dataframe(dict_of_tickerrows)
+    dataframes = backtesting.strategy.tickerdata_to_dataframe(dict_of_tickerrows)
     dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns

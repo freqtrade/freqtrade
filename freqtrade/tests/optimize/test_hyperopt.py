@@ -194,7 +194,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     default_conf.update({'spaces': 'all'})
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
     parallel.assert_called_once()
@@ -242,7 +242,7 @@ def test_has_space(hyperopt):
 def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
-    dataframes = hyperopt.tickerdata_to_dataframe(tickerlist)
+    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
 
     # Check if some indicators are generated. We will not test all of them
@@ -254,7 +254,7 @@ def test_populate_indicators(hyperopt) -> None:
 def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
-    dataframes = hyperopt.tickerdata_to_dataframe(tickerlist)
+    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
 
     populate_buy_trend = hyperopt.buy_strategy_generator(
