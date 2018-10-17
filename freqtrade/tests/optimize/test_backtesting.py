@@ -336,22 +336,6 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
 
-def test_get_timeframe(default_conf, mocker) -> None:
-    patch_exchange(mocker)
-    backtesting = Backtesting(default_conf)
-
-    data = backtesting.strategy.tickerdata_to_dataframe(
-        optimize.load_data(
-            None,
-            ticker_interval='1m',
-            pairs=['UNITTEST/BTC']
-        )
-    )
-    min_date, max_date = backtesting.get_timeframe(data)
-    assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
-    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
-
-
 def test_generate_text_table(default_conf, mocker):
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
@@ -451,17 +435,17 @@ def test_generate_text_table_strategyn(default_conf, mocker):
 
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
-    def get_timeframe(input1, input2):
+    def get_timeframe(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
+    mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
         backtest=MagicMock(),
         _generate_text_table=MagicMock(return_value='1'),
-        get_timeframe=get_timeframe,
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
@@ -486,17 +470,17 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
-    def get_timeframe(input1, input2):
+    def get_timeframe(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.optimize.load_data', MagicMock(return_value={}))
+    mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
         backtest=MagicMock(),
         _generate_text_table=MagicMock(return_value='1'),
-        get_timeframe=get_timeframe,
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']

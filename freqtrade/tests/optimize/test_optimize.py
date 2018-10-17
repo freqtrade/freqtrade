@@ -15,7 +15,8 @@ from freqtrade.optimize.__init__ import (download_backtesting_testdata,
                                          load_cached_data_for_updating,
                                          load_tickerdata_file,
                                          make_testdata_path, trim_tickerlist)
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.strategy.default_strategy import DefaultStrategy
+from freqtrade.tests.conftest import get_patched_exchange, log_has, patch_exchange
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -433,3 +434,19 @@ def test_file_dump_json() -> None:
 
     # Remove the file
     _clean_test_file(file)
+
+
+def test_get_timeframe(default_conf, mocker) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    data = strategy.tickerdata_to_dataframe(
+        optimize.load_data(
+            None,
+            ticker_interval='1m',
+            pairs=['UNITTEST/BTC']
+        )
+    )
+    min_date, max_date = optimize.get_timeframe(data)
+    assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
