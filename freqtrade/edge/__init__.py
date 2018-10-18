@@ -14,6 +14,7 @@ from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.optimize.backtesting import Backtesting
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Edge():
     _timerange: TimeRange
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
+        sys.setrecursionlimit(10000)
         self.config = config
         self.exchange = exchange
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
@@ -68,7 +70,7 @@ class Edge():
             self.config['datadir'],
             pairs=pairs,
             ticker_interval=self.ticker_interval,
-            refresh_pairs=True,
+            refresh_pairs=False,
             exchange=self.exchange,
             timerange=self._timerange
         )
@@ -272,13 +274,19 @@ class Edge():
             return x
         ##############################
 
-        final = results.groupby(['pair', 'stoploss'])['profit_abs'].\
-            agg([winrate, risk_reward_ratio, required_risk_reward, expectancy]).\
-            reset_index().sort_values(by=['expectancy', 'stoploss'], ascending=False)\
-            .groupby('pair').first().sort_values(by=['expectancy'], ascending=False)
+        if results.empty:
+            return []
+
+        groupby_aggregator = {'profit_abs': [winrate, risk_reward_ratio, required_risk_reward, expectancy, 'count'], 'trade_duration': ['mean']}
+        final = results.groupby(['pair', 'stoploss'])['profit_abs','trade_duration'].agg(groupby_aggregator).reset_index(col_level=1)
+        final.columns = final.columns.droplevel(0)
+        final = final.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
+            'pair').first().sort_values(by=['expectancy'], ascending=False).reset_index()
+
+        final.rename(columns={'mean': 'avg_duration(min)'}, inplace=True)
 
         # Returning an array of pairs in order of "expectancy"
-        return final.reset_index().values
+        return final.values
 
     def _find_trades_for_stoploss_range(self, ticker_data, pair, stoploss_range):
         buy_column = ticker_data['buy'].values
