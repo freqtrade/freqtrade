@@ -91,10 +91,11 @@ def validate_backtest_data(data: Dict[str, DataFrame], min_date: datetime,
     expected_frames = int((max_date - min_date).total_seconds() // 60 // ticker_interval_mins)
     found_missing = False
     for pair, df in data.items():
-        if len(df) < expected_frames:
+        dflen = len(df)
+        if dflen < expected_frames:
             found_missing = True
-            logger.warning('%s has missing frames: expected %s, got %s',
-                           pair, expected_frames, len(df))
+            logger.warning("%s has missing frames: expected %s, got %s, that's %s missing values",
+                           pair, expected_frames, dflen, expected_frames - dflen)
     return found_missing
 
 

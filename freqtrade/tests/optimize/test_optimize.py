@@ -468,8 +468,9 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
     assert optimize.validate_backtest_data(data, min_date, max_date,
                                            constants.TICKER_INTERVAL_MINUTES["1m"])
     assert len(caplog.record_tuples) == 1
-    assert log_has('UNITTEST/BTC has missing frames: expected 14396, got 13680',
-                   caplog.record_tuples)
+    assert log_has(
+        "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
+        caplog.record_tuples)
 
 
 def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
@@ -491,4 +492,3 @@ def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
     assert not optimize.validate_backtest_data(data, min_date, max_date,
                                                constants.TICKER_INTERVAL_MINUTES["5m"])
     assert len(caplog.record_tuples) == 0
-
