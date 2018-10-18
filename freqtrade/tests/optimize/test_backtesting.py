@@ -119,7 +119,7 @@ def _load_pair_as_ticks(pair, tickfreq):
 
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
-    data = optimize.load_data(None, ticker_interval='8m', pairs=[pair])
+    data = optimize.load_data(None, ticker_interval='1m', pairs=[pair])
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
@@ -449,7 +449,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    default_conf['ticker_interval'] = 1
+    default_conf['ticker_interval'] = "1m"
     default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
