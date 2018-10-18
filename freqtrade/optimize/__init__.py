@@ -10,6 +10,7 @@ except ImportError:
     _UJSON = False
 import logging
 import os
+from datetime import datetime
 from typing import Optional, List, Dict, Tuple, Any
 import operator
 
@@ -74,6 +75,24 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
     ]
     return min(timeframe, key=operator.itemgetter(0))[0], \
         max(timeframe, key=operator.itemgetter(1))[1]
+
+
+def validate_backtest_data(data: Dict[str, DataFrame], min_date: datetime,
+                           max_date: datetime, ticker_interval_mins: int) -> None:
+    """
+    Validates preprocessed backtesting data for missing values and shows warnings about it that.
+
+    :param data: dictionary with preprocessed backtesting data
+    :param min_date: start-date of the data
+    :param max_date: end-date of the data
+    :param ticker_interval_mins: ticker interval in minutes
+    """
+    # total difference in minutes / interval-minutes
+    expected_frames = int((max_date - min_date).total_seconds() // 60 // ticker_interval_mins)
+    for pair, df in data.items():
+        if len(df) < expected_frames:
+            logger.warning('%s has missing frames: expected %s, got %s',
+                           pair, expected_frames, len(df))
 
 
 def load_tickerdata_file(

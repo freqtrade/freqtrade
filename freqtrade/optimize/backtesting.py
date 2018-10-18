@@ -356,8 +356,10 @@ class Backtesting(object):
             # need to reprocess data every time to populate signals
             preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
-            # Print timeframe
             min_date, max_date = optimize.get_timeframe(preprocessed)
+            # Validate dataframe for missing values
+            optimize.validate_backtest_data(preprocessed, min_date, max_date,
+                                            constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
             logger.info(
                 'Measuring data from %s up to %s (%s days)..',
                 min_date.isoformat(),

@@ -7,7 +7,7 @@ from shutil import copyfile
 
 import arrow
 
-from freqtrade import optimize
+from freqtrade import optimize, constants
 from freqtrade.arguments import TimeRange
 from freqtrade.misc import file_dump_json
 from freqtrade.optimize.__init__ import (download_backtesting_testdata,
@@ -450,3 +450,45 @@ def test_get_timeframe(default_conf, mocker) -> None:
     min_date, max_date = optimize.get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
     assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
+
+
+def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    data = strategy.tickerdata_to_dataframe(
+        optimize.load_data(
+            None,
+            ticker_interval='1m',
+            pairs=['UNITTEST/BTC']
+        )
+    )
+    min_date, max_date = optimize.get_timeframe(data)
+    caplog.clear()
+    optimize.validate_backtest_data(data, min_date, max_date,
+                                    constants.TICKER_INTERVAL_MINUTES["1m"])
+    assert len(caplog.record_tuples) == 1
+    assert log_has('UNITTEST/BTC has missing frames: expected 14396, got 13680',
+                   caplog.record_tuples)
+
+
+def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    timerange = TimeRange('index', 'index', 200, 250)
+    data = strategy.tickerdata_to_dataframe(
+        optimize.load_data(
+            None,
+            ticker_interval='5m',
+            pairs=['UNITTEST/BTC'],
+            timerange=timerange
+        )
+    )
+
+    min_date, max_date = optimize.get_timeframe(data)
+    caplog.clear()
+    optimize.validate_backtest_data(data, min_date, max_date,
+                                    constants.TICKER_INTERVAL_MINUTES["5m"])
+    assert len(caplog.record_tuples) == 0
+
