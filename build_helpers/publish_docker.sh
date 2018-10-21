@@ -21,10 +21,6 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 
-# build technical image
-sed -i Dockerfile.technical -e "s/FROM freqtradeorg\/freqtrade:develop/FROM freqtradeorg\/freqtrade:${TAG}/"
-docker build --cache-from freqtrade:${TAG} -t ${IMAGE_NAME}:${TAG_TECH} -f Dockerfile.technical .
-
 # Tag image for upload
 docker tag freqtrade:$TAG ${IMAGE_NAME}:$TAG
 if [ $? -ne 0 ]; then
