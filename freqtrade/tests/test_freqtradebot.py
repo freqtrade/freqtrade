@@ -804,7 +804,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
     trade.update(limit_sell_order)
 
     assert trade.close_rate == 0.00001173
-    assert trade.close_profit == 0.06201057
+    assert trade.close_profit == 0.06201058
     assert trade.calc_profit() == 0.00006217
     assert trade.close_date is not None
 
@@ -1231,7 +1231,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
-        'profit_percent': 0.06110514,
+        'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -1277,7 +1277,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         'open_rate': 1.099e-05,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478343,
+        'profit_percent': -0.05478342,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -1324,7 +1324,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
-        'profit_percent': 0.06110514,
+        'profit_percent': 0.0611052,
     } == last_msg
 
 
@@ -1370,7 +1370,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
         'open_rate': 1.099e-05,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478343,
+        'profit_percent': -0.05478342,
     } == last_msg
 
 
