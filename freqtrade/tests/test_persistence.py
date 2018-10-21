@@ -113,7 +113,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     trade.update(limit_sell_order)
     assert trade.open_order_id is None
     assert trade.close_rate == 0.00001173
-    assert trade.close_profit == 0.06201057
+    assert trade.close_profit == 0.06201058
     assert trade.close_date is not None
 
 
@@ -129,16 +129,16 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
     trade.open_order_id = 'something'
     trade.update(limit_buy_order)
-    assert trade.calc_open_trade_price() == 0.001002500
+    assert trade.calc_open_trade_price() == 0.0010024999999225068
 
     trade.update(limit_sell_order)
-    assert trade.calc_close_trade_price() == 0.0010646656
+    assert trade.calc_close_trade_price() == 0.0010646656050132426
 
     # Profit in BTC
     assert trade.calc_profit() == 0.00006217
 
     # Profit in percent
-    assert trade.calc_profit_percent() == 0.06201057
+    assert trade.calc_profit_percent() == 0.06201058
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -207,10 +207,10 @@ def test_calc_open_trade_price(limit_buy_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get the open rate price with the standard fee rate
-    assert trade.calc_open_trade_price() == 0.001002500
+    assert trade.calc_open_trade_price() == 0.0010024999999225068
 
     # Get the open rate price with a custom fee rate
-    assert trade.calc_open_trade_price(fee=0.003) == 0.001003000
+    assert trade.calc_open_trade_price(fee=0.003) == 0.001002999999922468
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -226,14 +226,14 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get the close rate price with a custom close rate and a regular fee rate
-    assert trade.calc_close_trade_price(rate=0.00001234) == 0.0011200318
+    assert trade.calc_close_trade_price(rate=0.00001234) == 0.0011200318470471794
 
     # Get the close rate price with a custom close rate and a custom fee rate
-    assert trade.calc_close_trade_price(rate=0.00001234, fee=0.003) == 0.0011194704
+    assert trade.calc_close_trade_price(rate=0.00001234, fee=0.003) == 0.0011194704275749754
 
     # Test when we apply a Sell order, and ask price with a custom fee rate
     trade.update(limit_sell_order)
-    assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972
+    assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972701635854
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -281,17 +281,17 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get percent of profit with a custom rate (Higher than open rate)
-    assert trade.calc_profit_percent(rate=0.00001234) == 0.1172387
+    assert trade.calc_profit_percent(rate=0.00001234) == 0.11723875
 
     # Get percent of profit with a custom rate (Lower than open rate)
-    assert trade.calc_profit_percent(rate=0.00000123) == -0.88863827
+    assert trade.calc_profit_percent(rate=0.00000123) == -0.88863828
 
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)
-    assert trade.calc_profit_percent() == 0.06201057
+    assert trade.calc_profit_percent() == 0.06201058
 
     # Test with a custom fee rate on the close trade
-    assert trade.calc_profit_percent(fee=0.003) == 0.0614782
+    assert trade.calc_profit_percent(fee=0.003) == 0.06147824
 
 
 def test_clean_dry_run_db(default_conf, fee):
