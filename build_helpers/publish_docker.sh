@@ -2,12 +2,18 @@
 # - export TAG=`if [ "$TRAVIS_BRANCH" == "develop" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
 # Replace / with _ to create a valid tag
 TAG=$(echo "${TRAVIS_BRANCH}" | sed -e "s/\//_/")
-TAG_TECH="${TAG}_technical"
 
-# Pull last build to avoid rebuilding the whole image
-docker pull ${REPO}:${TAG}
 
-docker build --cache-from ${IMAGE_NAME}:${TAG} -t freqtrade:${TAG} .
+if [ "${TRAVIS_EVENT_TYPE}" = "cron" ]; then
+    echo "event ${TRAVIS_EVENT_TYPE}: full rebuild - skipping cache"
+    docker build -t freqtrade:${TAG} .
+else
+    echo "event ${TRAVIS_EVENT_TYPE}: building with cache"
+    # Pull last build to avoid rebuilding the whole image
+    docker pull ${REPO}:${TAG}
+    docker build --cache-from ${IMAGE_NAME}:${TAG} -t freqtrade:${TAG} .
+fi
+
 if [ $? -ne 0 ]; then
     echo "failed building image"
     return 1
@@ -29,7 +35,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Tag as latest for develop builds
-if [ "${TRAVIS_BRANCH}"  = "develop" ]; then
+if [ "${TRAVIS_BRANCH}" = "develop" ]; then
     docker tag freqtrade:$TAG ${IMAGE_NAME}:latest
 fi
 
