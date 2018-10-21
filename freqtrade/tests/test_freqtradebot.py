@@ -167,11 +167,6 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
         freqtrade._gen_pair_whitelist(base_currency='BTC')
 
 
-@pytest.mark.skip(reason="Test not implemented")
-def test_refresh_whitelist() -> None:
-    pass
-
-
 def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
