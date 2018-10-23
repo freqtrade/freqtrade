@@ -20,8 +20,8 @@ We recommend you start by taking a look at `hyperopt.py` file located in [freqtr
  
 ### Configure your Guards and Triggers
 There are two places you need to change to add a new buy strategy for testing:
-- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L278-L294).
-- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L218-L229) 
+- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L231-L264).
+- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L213-L224) 
 and the associated methods `indicator_space`, `roi_space`, `stoploss_space`.
 
 There you have two different type of indicators: 1. `guards` and 2. `triggers`.
