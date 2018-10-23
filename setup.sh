@@ -35,14 +35,13 @@ function updateenv () {
 
 # Install tab lib
 function install_talib () {
-    curl -O -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
     tar zxvf ta-lib-0.4.0-src.tar.gz
     cd ta-lib
     sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
     ./configure --prefix=/usr/local
     make
     sudo make install
-    cd .. && rm -rf ./ta-lib*
+    cd .. && rm -rf ./ta-lib/
 }
 
 # Install bot MacOS
