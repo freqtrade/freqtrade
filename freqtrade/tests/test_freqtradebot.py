@@ -167,11 +167,6 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
         freqtrade._gen_pair_whitelist(base_currency='BTC')
 
 
-@pytest.mark.skip(reason="Test not implemented")
-def test_refresh_whitelist() -> None:
-    pass
-
-
 def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -905,7 +900,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
     trade.update(limit_sell_order)
 
     assert trade.close_rate == 0.00001173
-    assert trade.close_profit == 0.06201057
+    assert trade.close_profit == 0.06201058
     assert trade.calc_profit() == 0.00006217
     assert trade.close_date is not None
 
@@ -1098,6 +1093,7 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
                                              fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
@@ -1331,7 +1327,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
-        'profit_percent': 0.06110514,
+        'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -1377,7 +1373,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         'open_rate': 1.099e-05,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478343,
+        'profit_percent': -0.05478342,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -1424,7 +1420,7 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
-        'profit_percent': 0.06110514,
+        'profit_percent': 0.0611052,
     } == last_msg
 
 
@@ -1470,7 +1466,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
         'open_rate': 1.099e-05,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478343,
+        'profit_percent': -0.05478342,
     } == last_msg
 
 

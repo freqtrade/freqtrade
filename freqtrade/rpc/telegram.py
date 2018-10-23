@@ -307,11 +307,14 @@ class Telegram(RPC):
             result = self._rpc_balance(self._config.get('fiat_display_currency', ''))
             output = ''
             for currency in result['currencies']:
-                output += "*{currency}:*\n" \
-                          "\t`Available: {available: .8f}`\n" \
-                          "\t`Balance: {balance: .8f}`\n" \
-                          "\t`Pending: {pending: .8f}`\n" \
-                          "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
+                if currency['est_btc'] > 0.0001:
+                    output += "*{currency}:*\n" \
+                            "\t`Available: {available: .8f}`\n" \
+                            "\t`Balance: {balance: .8f}`\n" \
+                            "\t`Pending: {pending: .8f}`\n" \
+                            "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
+                else:
+                    output += "*{currency}:* not showing <1$ amount \n".format(**currency)
 
             output += "\n*Estimated Value*:\n" \
                       "\t`BTC: {total: .8f}`\n" \
@@ -437,6 +440,7 @@ class Telegram(RPC):
                   "*/count:* `Show number of trades running compared to allowed number of trades`" \
                   "\n" \
                   "*/balance:* `Show account balance per currency`\n" \
+                  "*/reload_conf:* `Reload configuration file` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 

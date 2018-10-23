@@ -245,8 +245,8 @@ conda install python=3.6
 conda create -n freqtrade python=3.6
 conda install scipy pandas
 
-pip install -r requirements.txt
-pip install -e .
+python3 -m pip install -r requirements.txt
+python3 -m pip install -e .
 ```
 
 ### MacOS

@@ -40,10 +40,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
 
-    freqtradebot.state = State.STOPPED
-    with pytest.raises(RPCException, match=r'.*trader is not running*'):
-        rpc._rpc_trade_status()
-
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_trade_status()
@@ -80,10 +76,6 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
     freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
-
-    freqtradebot.state = State.STOPPED
-    with pytest.raises(RPCException, match=r'.*trader is not running*'):
-        rpc._rpc_status_table()
 
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active order*'):

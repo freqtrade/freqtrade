@@ -20,8 +20,8 @@ We recommend you start by taking a look at `hyperopt.py` file located in [freqtr
  
 ### Configure your Guards and Triggers
 There are two places you need to change to add a new buy strategy for testing:
-- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L278-L294).
-- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L218-L229) 
+- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L231-L264).
+- Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L213-L224) 
 and the associated methods `indicator_space`, `roi_space`, `stoploss_space`.
 
 There you have two different type of indicators: 1. `guards` and 2. `triggers`.
@@ -131,12 +131,12 @@ you have on-disk, use the `--datadir PATH` option. Default hyperopt will
 use data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
-Use the `--timeperiod` argument to change how much of the testset
+Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py hyperopt --timeperiod -200
+python3 ./freqtrade/main.py hyperopt --timerange -200
 ```
 
 ### Running Hyperopt with Smaller Search Space

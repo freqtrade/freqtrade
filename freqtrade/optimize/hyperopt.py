@@ -152,7 +152,7 @@ class Hyperopt(Backtesting):
     @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
         """
-        Generate the ROI table thqt will be used by Hyperopt
+        Generate the ROI table that will be used by Hyperopt
         """
         roi_table = {}
         roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
@@ -402,6 +402,13 @@ def start(args: Namespace) -> None:
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 
+    if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
+        logger.error("Please don't use --strategy for hyperopt.")
+        logger.error(
+            "Read the documentation at "
+            "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
+            "to understand how to configure hyperopt.")
+        raise ValueError("--strategy configured but not supported for hyperopt")
     # Initialize backtesting object
     hyperopt = Hyperopt(config)
     hyperopt.start()
