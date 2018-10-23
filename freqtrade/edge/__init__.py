@@ -358,7 +358,7 @@ class Edge():
                  'stoploss': stoploss,
                  'profit_percent': '',
                  'profit_abs': '',
-                 'open_time': date_column[open_trade_index],
+                 'open_time': date_column[open_trade_index + 1],
                  'close_time': date_column[exit_index],
                  'open_index': start_point + open_trade_index + 1,
                  'close_index': start_point + exit_index,
