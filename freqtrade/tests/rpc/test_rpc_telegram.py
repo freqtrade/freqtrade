@@ -250,9 +250,10 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
+    # Status is also enabled when stopped
     telegram._status(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'trader is not running' in msg_mock.call_args_list[0][0][0]
+    assert 'no active trade' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     freqtradebot.state = State.RUNNING
@@ -295,9 +296,10 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     telegram = Telegram(freqtradebot)
 
     freqtradebot.state = State.STOPPED
+    # Status table is also enabled when stopped
     telegram._status_table(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert 'trader is not running' in msg_mock.call_args_list[0][0][0]
+    assert 'no active order' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     freqtradebot.state = State.RUNNING
@@ -507,7 +509,12 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
             'total': 10.0,
             'free': 10.0,
             'used': 0.0
-        }
+        },
+        'XRP': {
+            'total': 1.0,
+            'free': 1.0,
+            'used': 0.0
+            }
     }
 
     def mock_ticker(symbol, refresh):
@@ -517,7 +524,12 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
                 'ask': 10000.00,
                 'last': 10000.00,
             }
-
+        elif symbol == 'XRP/BTC':
+            return {
+                'bid': 0.00001,
+                'ask': 0.00001,
+                'last': 0.00001,
+            }
         return {
             'bid': 0.1,
             'ask': 0.1,
@@ -548,7 +560,8 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     assert '*USDT:*' in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
-    assert 'BTC:  14.00000000' in result
+    assert 'BTC:  12.00000000' in result
+    assert '*XRP:* not showing <1$ amount' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
@@ -712,7 +725,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
-        'profit_percent': 0.06110514,
+        'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -765,7 +778,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
         'open_rate': 1.099e-05,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
-        'profit_percent': -0.05478343,
+        'profit_percent': -0.05478342,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
@@ -810,7 +823,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         'open_rate': 1.099e-05,
         'current_rate': 1.098e-05,
         'profit_amount': -5.91e-06,
-        'profit_percent': -0.00589292,
+        'profit_percent': -0.00589291,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == msg
@@ -893,26 +906,6 @@ def test_performance_handle(default_conf, update, ticker, fee,
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
-
-
-def test_performance_handle_invalid(default_conf, update, mocker) -> None:
-    patch_coinmarketcap(mocker)
-    patch_exchange(mocker)
-    msg_mock = MagicMock()
-    mocker.patch.multiple(
-        'freqtrade.rpc.telegram.Telegram',
-        _init=MagicMock(),
-        _send_msg=msg_mock
-    )
-    freqtradebot = FreqtradeBot(default_conf)
-    patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
-
-    # Trader is not running
-    freqtradebot.state = State.STOPPED
-    telegram._performance(bot=MagicMock(), update=update)
-    assert msg_mock.call_count == 1
-    assert 'not running' in msg_mock.call_args_list[0][0][0]
 
 
 def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> None:

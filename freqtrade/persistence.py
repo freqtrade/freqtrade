@@ -4,7 +4,7 @@ This module contains the class to persist trades into SQLite
 
 import logging
 from datetime import datetime
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from typing import Any, Dict, Optional
 
 import arrow
@@ -241,7 +241,6 @@ class Trade(_DECL_BASE):
 
         logger.info('Updating trade (id=%d) ...', self.id)
 
-        getcontext().prec = 8  # Bittrex do not go above 8 decimal
         if order_type == 'limit' and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
@@ -278,7 +277,6 @@ class Trade(_DECL_BASE):
         If rate is not set self.fee will be used
         :return: Price in BTC of the open trade
         """
-        getcontext().prec = 8
 
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
         fees = buy_trade * Decimal(fee or self.fee_open)
@@ -296,7 +294,6 @@ class Trade(_DECL_BASE):
         If rate is not set self.close_rate will be used
         :return: Price in BTC of the open trade
         """
-        getcontext().prec = 8
 
         if rate is None and not self.close_rate:
             return 0.0
@@ -336,7 +333,6 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit in percentage as float
         """
-        getcontext().prec = 8
 
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(

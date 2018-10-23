@@ -534,7 +534,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
 
     expected = pd.DataFrame(
         {'pair': [pair, pair],
-         'profit_percent': [0.00029975, 0.00056708],
+         'profit_percent': [0.00029977, 0.00056716],
          'profit_abs': [1.49e-06, 7.6e-07],
          'open_time': [Arrow(2018, 1, 29, 18, 40, 0).datetime,
                        Arrow(2018, 1, 30, 3, 30, 0).datetime],
