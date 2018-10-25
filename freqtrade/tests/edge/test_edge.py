@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 # Cases to be tested:
 # SELL POINTS:
-# 1) Three complete trades within dataframe (with sell hit for all)
+# 1) Two complete trades within dataframe (with sell hit for all)
 # 2) Two complete trades but one without sell hit (remains open)
 # 3) Two complete trades and one buy signal while one trade is open
 # 4) Two complete trades with buy=1 on the last frame
@@ -26,7 +26,8 @@ from unittest.mock import MagicMock
 ####################################################################
 
 ticker_start_time = arrow.get(2018, 10, 3)
-ticker_interval_in_minute = 5
+ticker_interval_in_minute = 60
+_ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
 
 def test_filter(mocker, default_conf):
@@ -72,7 +73,7 @@ def _build_dataframe(buy_ohlc_sell_matrice):
     for ohlc in buy_ohlc_sell_matrice:
         ticker = {
             # ticker every 5 min
-            'date': ticker_start_time.shift(minutes=(ohlc[0] * 5)).timestamp * 1000,
+            'date': ticker_start_time.shift(minutes=(ohlc[0] * ticker_interval_in_minute)).timestamp * 1000,
             'buy': ohlc[1],
             'open': ohlc[2],
             'high': ohlc[3],
@@ -90,6 +91,9 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
     return frame
 
+def _time_on_candle(number):
+    return np.datetime64(ticker_start_time.shift(
+        minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
 
 def test_edge_heartbeat_calculate(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
@@ -110,7 +114,7 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
     ETHBTC = [
         [
             ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
-            math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
+            math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
             math.sin(x * hz) / 1000 + base,
@@ -122,7 +126,7 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
     LTCBTC = [
         [
             ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
-            math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
+            math.sin(x * hz) / 1000 + base,
             math.sin(x * hz) / 1000 + base + 0.0001,
             math.sin(x * hz) / 1000 + base - 0.0001,
             math.sin(x * hz) / 1000 + base,
@@ -205,51 +209,58 @@ def test_process_expectancy(mocker, default_conf):
     # TODO: check expectancy + win rate etc
 
 
-def test_three_complete_trades(mocker, default_conf):
+def test_remove_open_trade_at_the_end(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
 
-    stoploss = -0.90  # we don't want stoploss to be hit in this test
-    three_sell_points_hit = [
-        # Date, Buy, O, H, L, C, Sell
-        [1, 1, 15, 20, 12, 17, 0],  # -> should enter the trade
-        [2, 0, 17, 18, 13, 14, 1],  # -> should sell (trade 1 completed)
-        [3, 0, 14, 15, 11, 12, 0],  # -> no action
-        [4, 1, 12, 25, 11, 20, 0],  # -> should enter the trade
-        [5, 0, 20, 30, 19, 25, 1],  # -> should sell (trade 2 completed)
-        [6, 1, 25, 27, 22, 26, 1],  # -> buy and sell, should enter the trade
-        [7, 0, 26, 36, 25, 35, 1],  # -> should sell (trade 3 completed)
+    stoploss = -0.99  # we don't want stoploss to be hit in this test
+    ticker = [
+        #D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        #D, B,  O,  H,  L,  C, S
+        [3, 1, 12, 25, 11, 20, 0],  # ->
+        [4, 0, 20, 30, 19, 25, 1],  # -> should enter the trade
     ]
 
-    ticker_df = _build_dataframe(three_sell_points_hit)
+    ticker_df = _build_dataframe(ticker)
     trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
 
-    # Three trades must have occured
-    assert len(trades) == 3
+    # No trade should be found
+    assert len(trades) == 0
 
-    # First trade check
-    # open time should be on line 1
-    assert trades[0]['open_time'] == np.datetime64(ticker_start_time.shift(
-        minutes=(1 * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+def test_two_complete_trades(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
 
-    # close time should be on line 2
-    assert trades[0]['close_time'] == np.datetime64(ticker_start_time.shift(
-        minutes=(2 * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+    stoploss = -0.99  # we don't want stoploss to be hit in this test
+    ticker = [
+        #D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        #D, B,  O,  H,  L,  C, S
+        [0, 1, 15, 20, 12, 17, 0],  # -> no action
+        [1, 0, 17, 18, 13, 14, 1],  # -> should enter the trade as B signal recieved on last candle
+        [2, 0, 14, 15, 11, 12, 0],  # -> exit the trade as the sell signal recieved on last candle
+        [3, 1, 12, 25, 11, 20, 0],  # -> no action
+        [4, 0, 20, 30, 19, 25, 0],  # -> should enter the trade
+        [5, 0, 25, 27, 22, 26, 1],  # -> no action
+        [6, 0, 26, 36, 25, 35, 0],  # -> should sell
+    ]
 
-    # Second trade check
-    # open time should be on line 4
-    assert trades[1]['open_time'] == np.datetime64(ticker_start_time.shift(
-        minutes=(4 * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+    ticker_df = _build_dataframe(ticker)
+    ticker_df.to_json('/Users/misaghshakeri/Projects/freq/misagh/bslap_test_df.json')
+    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
 
-    # close time should be on line 5
-    assert trades[1]['close_time'] == np.datetime64(ticker_start_time.shift(
-        minutes=(5 * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+    # Two trades must have occured
+    assert len(trades) == 2
 
-    # Third trade check
-    # open time should be on line 6
-    assert trades[2]['open_time'] == np.datetime64(ticker_start_time.shift(
-        minutes=(6 * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+    ################### First trade check ########################
+    assert trades[0]['open_time'] == _time_on_candle(1)
+    assert trades[0]['close_time'] == _time_on_candle(2)
+    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
+    assert trades[0]['close_rate'] == ticker[2][_ohlc['open']]
+    ##############################################################
 
-    # close time should be on line 7
-    assert trades[2]['close_time'] == np.datetime64(ticker_start_time.shift(
-        minutes=(7 * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+    ################### Second trade check ########################
+    assert trades[1]['open_time'] == _time_on_candle(4)
+    assert trades[1]['close_time'] == _time_on_candle(6)
+    assert trades[1]['open_rate'] == ticker[4][_ohlc['open']]
+    assert trades[1]['close_rate'] == ticker[6][_ohlc['open']]
+    ##############################################################
