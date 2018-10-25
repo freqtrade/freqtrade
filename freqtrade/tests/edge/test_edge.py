@@ -1,6 +1,7 @@
 from freqtrade.tests.conftest import get_patched_exchange
 from freqtrade.edge import Edge
 from pandas import DataFrame, to_datetime
+from freqtrade.strategy.interface import SellType
 import arrow
 import numpy as np
 import math
@@ -9,20 +10,22 @@ from unittest.mock import MagicMock
 
 
 # Cases to be tested:
-# SELL POINTS:
-# 1) Two complete trades within dataframe (with sell hit for all)
-# 2) Two complete trades but one without sell hit (remains open)
-# 3) Two complete trades and one buy signal while one trade is open
-# 4) Two complete trades with buy=1 on the last frame
+# 1) Open trade should be removed from the end
+# 2) Two complete trades within dataframe (with sell hit for all)
+# 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
+# 4) Entered, sl 3%, candle drops 4%, recovers to 1% => Trade closed, 3% loss
+# 5) Entered, sl 2%, candle drops 4%, recovers to 1%, entry met, candle drops 20% =>
+#    Trade 1 closed: loss 2%, Trade 2 opened, Trade 2 closed: loss 2%
+# 6)
 ###################################################################
 # STOPLOSS:
-# 5) Candle drops 8%, stoploss at 1%: Trade closed, 1% loss
-# 6) Candle drops 4% but recovers to 1% loss, stoploss at 3%: Trade closed, 3% loss
-# 7) Candle drops 4% recovers to 1% entry criteria are met, candle drops
+# 6) Candle drops 8%, stoploss at 1%: Trade closed, 1% loss
+# 7) Candle drops 4% but recovers to 1% loss, stoploss at 3%: Trade closed, 3% loss
+# 8) Candle drops 4% recovers to 1% entry criteria are met, candle drops
 #    20%, stoploss at 2%: Trade 1 closed, Loss 2%, Trade 2 opened, Trade 2 closed, Loss 2%
 ####################################################################
 # PRIORITY TO STOPLOSS:
-# 8) Stoploss and sell are hit. should sell on stoploss
+# 9) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
 ticker_start_time = arrow.get(2018, 10, 3)
@@ -72,15 +75,17 @@ def _build_dataframe(buy_ohlc_sell_matrice):
     tickers = []
     for ohlc in buy_ohlc_sell_matrice:
         ticker = {
-            # ticker every 5 min
-            'date': ticker_start_time.shift(minutes=(ohlc[0] * ticker_interval_in_minute)).timestamp * 1000,
+            'date': ticker_start_time.shift(
+                minutes=(
+                    ohlc[0] *
+                    ticker_interval_in_minute)).timestamp *
+            1000,
             'buy': ohlc[1],
             'open': ohlc[2],
             'high': ohlc[3],
             'low': ohlc[4],
             'close': ohlc[5],
-            'sell': ohlc[6]
-        }
+            'sell': ohlc[6]}
         tickers.append(ticker)
 
     frame = DataFrame(tickers)
@@ -91,9 +96,11 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
     return frame
 
+
 def _time_on_candle(number):
     return np.datetime64(ticker_start_time.shift(
         minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
+
 
 def test_edge_heartbeat_calculate(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
@@ -215,8 +222,8 @@ def test_remove_open_trade_at_the_end(mocker, default_conf):
 
     stoploss = -0.99  # we don't want stoploss to be hit in this test
     ticker = [
-        #D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        #D, B,  O,  H,  L,  C, S
+        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        # D, B,  O,  H,  L,  C, S
         [3, 1, 12, 25, 11, 20, 0],  # ->
         [4, 0, 20, 30, 19, 25, 1],  # -> should enter the trade
     ]
@@ -227,14 +234,15 @@ def test_remove_open_trade_at_the_end(mocker, default_conf):
     # No trade should be found
     assert len(trades) == 0
 
+
 def test_two_complete_trades(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
 
     stoploss = -0.99  # we don't want stoploss to be hit in this test
     ticker = [
-        #D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        #D, B,  O,  H,  L,  C, S
+        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        # D, B,  O,  H,  L,  C, S
         [0, 1, 15, 20, 12, 17, 0],  # -> no action
         [1, 0, 17, 18, 13, 14, 1],  # -> should enter the trade as B signal recieved on last candle
         [2, 0, 14, 15, 11, 12, 0],  # -> exit the trade as the sell signal recieved on last candle
@@ -245,22 +253,23 @@ def test_two_complete_trades(mocker, default_conf):
     ]
 
     ticker_df = _build_dataframe(ticker)
-    ticker_df.to_json('/Users/misaghshakeri/Projects/freq/misagh/bslap_test_df.json')
     trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
 
     # Two trades must have occured
     assert len(trades) == 2
 
-    ################### First trade check ########################
+    # First trade check
     assert trades[0]['open_time'] == _time_on_candle(1)
     assert trades[0]['close_time'] == _time_on_candle(2)
     assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
     assert trades[0]['close_rate'] == ticker[2][_ohlc['open']]
+    assert trades[0]['exit_type'] == SellType.SELL_SIGNAL
     ##############################################################
 
-    ################### Second trade check ########################
+    # Second trade check
     assert trades[1]['open_time'] == _time_on_candle(4)
     assert trades[1]['close_time'] == _time_on_candle(6)
     assert trades[1]['open_rate'] == ticker[4][_ohlc['open']]
     assert trades[1]['close_rate'] == ticker[6][_ohlc['open']]
+    assert trades[1]['exit_type'] == SellType.SELL_SIGNAL
     ##############################################################
