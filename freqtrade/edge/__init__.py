@@ -50,7 +50,7 @@ class Edge():
         self._last_updated = 0
 
         self._timerange = Arguments.parse_timerange("%s-" % arrow.now().shift(
-                 days=-1 * self._since_number_of_days).format('YYYYMMDD'))
+            days=-1 * self._since_number_of_days).format('YYYYMMDD'))
 
         self.fee = self.exchange.get_fee()
 
@@ -277,8 +277,18 @@ class Edge():
         if results.empty:
             return []
 
-        groupby_aggregator = {'profit_abs': [winrate, risk_reward_ratio, required_risk_reward, expectancy, 'count'], 'trade_duration': ['mean']}
-        final = results.groupby(['pair', 'stoploss'])['profit_abs','trade_duration'].agg(groupby_aggregator).reset_index(col_level=1)
+        groupby_aggregator = {
+            'profit_abs': [
+                winrate,
+                risk_reward_ratio,
+                required_risk_reward,
+                expectancy,
+                'count'],
+            'trade_duration': ['mean']}
+
+        final = results.groupby(['pair', 'stoploss'])['profit_abs', 'trade_duration'].agg(
+            groupby_aggregator).reset_index(col_level=1)
+
         final.columns = final.columns.droplevel(0)
         final = final.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
             'pair').first().sort_values(by=['expectancy'], ascending=False).reset_index()
@@ -319,21 +329,24 @@ class Edge():
         # we find a buy but at the of array
         if open_trade_index == -1 or open_trade_index == len(buy_column) - 1:
             return []
+        else:
+            open_trade_index += 1  # when a buy signal is seen,
+            # trade opens in reality on the next candle
 
         stop_price_percentage = stoploss + 1
-        open_price = ohlc_columns[open_trade_index + 1, 0]
+        open_price = ohlc_columns[open_trade_index, 0]
         stop_price = (open_price * stop_price_percentage)
 
         # Searching for the index where stoploss is hit
         stop_index = utf1st.find_1st(
-            ohlc_columns[open_trade_index + 1:, 2], stop_price, utf1st.cmp_smaller)
+            ohlc_columns[open_trade_index:, 2], stop_price, utf1st.cmp_smaller)
 
         # If we don't find it then we assume stop_index will be far in future (infinite number)
         if stop_index == -1:
             stop_index = float('inf')
 
         # Searching for the index where sell is hit
-        sell_index = utf1st.find_1st(sell_column[open_trade_index + 1:], 1, utf1st.cmp_equal)
+        sell_index = utf1st.find_1st(sell_column[open_trade_index:], 1, utf1st.cmp_equal)
 
         # If we don't find it then we assume sell_index will be far in future (infinite number)
         if sell_index == -1:
@@ -346,11 +359,17 @@ class Edge():
             return []
 
         if stop_index <= sell_index:
-            exit_index = open_trade_index + stop_index + 1
+            exit_index = open_trade_index + stop_index
             exit_type = SellType.STOP_LOSS
             exit_price = stop_price
         elif stop_index > sell_index:
+            # if exit is SELL then we exit at the next candle
             exit_index = open_trade_index + sell_index + 1
+
+            # check if we have the next candle
+            if len(ohlc_columns) - 1 < exit_index:
+                return []
+
             exit_type = SellType.SELL_SIGNAL
             exit_price = ohlc_columns[exit_index, 0]
 
@@ -358,9 +377,9 @@ class Edge():
                  'stoploss': stoploss,
                  'profit_percent': '',
                  'profit_abs': '',
-                 'open_time': date_column[open_trade_index + 1],
+                 'open_time': date_column[open_trade_index],
                  'close_time': date_column[exit_index],
-                 'open_index': start_point + open_trade_index + 1,
+                 'open_index': start_point + open_trade_index,
                  'close_index': start_point + exit_index,
                  'trade_duration': '',
                  'open_rate': round(open_price, 15),
