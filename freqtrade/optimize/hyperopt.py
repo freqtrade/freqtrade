@@ -352,7 +352,7 @@ class Hyperopt(Backtesting):
 
         if self.has_space('buy'):
             self.strategy.advise_indicators = Hyperopt.populate_indicators  # type: ignore
-        dump(self.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
+        dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
         self.exchange = None  # type: ignore
         self.load_previous_results()
 

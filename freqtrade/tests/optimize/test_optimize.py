@@ -7,7 +7,7 @@ from shutil import copyfile
 
 import arrow
 
-from freqtrade import optimize
+from freqtrade import optimize, constants
 from freqtrade.arguments import TimeRange
 from freqtrade.misc import file_dump_json
 from freqtrade.optimize.__init__ import (download_backtesting_testdata,
@@ -15,7 +15,8 @@ from freqtrade.optimize.__init__ import (download_backtesting_testdata,
                                          load_cached_data_for_updating,
                                          load_tickerdata_file,
                                          make_testdata_path, trim_tickerlist)
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.strategy.default_strategy import DefaultStrategy
+from freqtrade.tests.conftest import get_patched_exchange, log_has, patch_exchange
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -433,3 +434,61 @@ def test_file_dump_json() -> None:
 
     # Remove the file
     _clean_test_file(file)
+
+
+def test_get_timeframe(default_conf, mocker) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    data = strategy.tickerdata_to_dataframe(
+        optimize.load_data(
+            None,
+            ticker_interval='1m',
+            pairs=['UNITTEST/BTC']
+        )
+    )
+    min_date, max_date = optimize.get_timeframe(data)
+    assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
+
+
+def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    data = strategy.tickerdata_to_dataframe(
+        optimize.load_data(
+            None,
+            ticker_interval='1m',
+            pairs=['UNITTEST/BTC']
+        )
+    )
+    min_date, max_date = optimize.get_timeframe(data)
+    caplog.clear()
+    assert optimize.validate_backtest_data(data, min_date, max_date,
+                                           constants.TICKER_INTERVAL_MINUTES["1m"])
+    assert len(caplog.record_tuples) == 1
+    assert log_has(
+        "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
+        caplog.record_tuples)
+
+
+def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    timerange = TimeRange('index', 'index', 200, 250)
+    data = strategy.tickerdata_to_dataframe(
+        optimize.load_data(
+            None,
+            ticker_interval='5m',
+            pairs=['UNITTEST/BTC'],
+            timerange=timerange
+        )
+    )
+
+    min_date, max_date = optimize.get_timeframe(data)
+    caplog.clear()
+    assert not optimize.validate_backtest_data(data, min_date, max_date,
+                                               constants.TICKER_INTERVAL_MINUTES["5m"])
+    assert len(caplog.record_tuples) == 0
