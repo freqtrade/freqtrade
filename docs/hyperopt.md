@@ -231,7 +231,9 @@ This would translate to the following ROI table:
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
 To archive the same results (number of trades, ...) than during hyperopt, please use the command line flag `--disable-max-market-positions`.
-This setting is the default for hyperopt for speed reasons. you can overwrite this in the configuration by setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L283) 
+This setting is the default for hyperopt for speed reasons. You can overwrite this in the configuration by setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L283).
+
+Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality. 
 
 ## Next Step
 
