@@ -153,6 +153,14 @@ def load_data(datadir: str,
     for pair in pairs:
         pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
         if pairdata:
+            if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
+                logger.warning('Missing data at start for pair %s, data starts at %s',
+                               pair,
+                               arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+            if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
+                logger.warning('Missing data at end for pair %s, data ends at %s',
+                               pair,
+                               arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
             result[pair] = pairdata
         else:
             logger.warning(
