@@ -1,4 +1,5 @@
 # Hyperopt
+
 This page explains how to tune your strategy by finding the optimal 
 parameters, a process called hyperparameter optimization. The bot uses several 
 algorithms included in the `scikit-optimize` package to accomplish this. The
@@ -8,17 +9,20 @@ and still take a long time.
 *Note:* Hyperopt will crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
 
 ## Table of Contents
+
 - [Prepare your Hyperopt](#prepare-hyperopt)
 - [Configure your Guards and Triggers](#configure-your-guards-and-triggers)
 - [Solving a Mystery](#solving-a-mystery)
 - [Adding New Indicators](#adding-new-indicators)
 - [Execute Hyperopt](#execute-hyperopt)
-- [Understand the hyperopts result](#understand-the-backtesting-result)
+- [Understand the hyperopt result](#understand-the-hyperopt-result)
 
 ## Prepare Hyperopting
+
 We recommend you start by taking a look at `hyperopt.py` file located in [freqtrade/optimize](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py)
  
 ### Configure your Guards and Triggers
+
 There are two places you need to change to add a new buy strategy for testing:
 - Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L231-L264).
 - Inside [hyperopt_space()](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L213-L224) 
@@ -113,11 +117,12 @@ When you want to test an indicator that isn't used by the bot currently, remembe
 add it to the `populate_indicators()` method in `hyperopt.py`.
 
 ## Execute Hyperopt
-Once you have updated your hyperopt configuration you can run it. 
-Because hyperopt tries a lot of combination to find the best parameters
-it will take time you will have the result (more than 30 mins).
 
-We strongly recommend to use `screen` to prevent any connection loss.
+Once you have updated your hyperopt configuration you can run it.
+Because hyperopt tries a lot of combinations to find the best parameters it will take time you will have the result (more than 30 mins).
+
+We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
+
 ```bash
 python3 ./freqtrade/main.py -c config.json hyperopt -e 5000
 ```
@@ -126,11 +131,13 @@ The `-e` flag will set how many evaluations hyperopt will do. We recommend
 running at least several thousand evaluations.
 
 ### Execute Hyperopt with Different Ticker-Data Source
+
 If you would like to hyperopt parameters using an alternate ticker data that
 you have on-disk, use the `--datadir PATH` option. Default hyperopt will
 use data from directory `user_data/data`.
 
 ### Running Hyperopt with Smaller Testset
+
 Use the `--timerange` argument to change how much of the testset
 you want to use. The last N ticks/timeframes will be used.
 Example:
@@ -140,6 +147,7 @@ python3 ./freqtrade/main.py hyperopt --timerange -200
 ```
 
 ### Running Hyperopt with Smaller Search Space
+
 Use the `--spaces` argument to limit the search space used by hyperopt.
 Letting Hyperopt optimize everything is a huuuuge search space. Often it 
 might make more sense to start by just searching for initial buy algorithm. 
@@ -154,7 +162,8 @@ Legal values are:
 - `stoploss`: search for the best stoploss value
 - space-separated list of any of the above values for example `--spaces roi stoploss`
 
-## Understand the Hyperopts Result 
+## Understand the Hyperopt Result
+
 Once Hyperopt is completed you can use the result to create a new strategy.
 Given the following result from hyperopt:
 
@@ -166,22 +175,24 @@ with values:
 ```
 
 You should understand this result like:
+
 - The buy trigger that worked best was `bb_lower`.
 - You should not use ADX because `adx-enabled: False`) 
 - You should **consider** using the RSI indicator (`rsi-enabled: True` and the best value is `29.0` (`rsi-value: 29.0`)
 
 You have to look inside your strategy file into `buy_strategy_generator()` 
-method, what those values match to.   
+method, what those values match to.
   
-So for example you had `rsi-value: 29.0` so we would look 
-at `rsi`-block, that translates to the following code block:
+So for example you had `rsi-value: 29.0` so we would look at `rsi`-block, that translates to the following code block:
+
 ```
 (dataframe['rsi'] < 29.0)
 ```
   
 Translating your whole hyperopt result as the new buy-signal 
 would then look like:
-```
+
+```python
 def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
     dataframe.loc[
         (
@@ -192,6 +203,37 @@ def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
     return dataframe
 ```
 
+### Understand Hyperopt ROI results
+
+If you are optimizing ROI, you're result will look as follows and include a ROI table.
+
+```
+Best result:
+   135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
+with values:
+{'adx-value': 44, 'rsi-value': 29, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'bb_lower', 'roi_t1': 40, 'roi_t2': 57, 'roi_t3': 21, 'roi_p1': 0.03634636907306948, 'roi_p2': 0.055237357937802885, 'roi_p3': 0.015163796015548354, 'stoploss': -0.37996664668703606}
+ROI table:
+{0: 0.10674752302642071, 21: 0.09158372701087236, 78: 0.03634636907306948, 118: 0}
+```
+
+This would translate to the following ROI table:
+
+``` python
+ minimal_roi = {
+        "118": 0,
+        "78": 0.0363463,
+        "21": 0.0915,
+        "0": 0.106
+    }
+```
+
+### Validate backtest result
+
+Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
+To archive the same results (number of trades, ...) than during hyperopt, please use the command line flag `--disable-max-market-positions`.
+This setting is the default for hyperopt for speed reasons. you can overwrite this in the configuration by setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L283) 
+
 ## Next Step
+
 Now you have a perfect bot and want to control it from Telegram. Your
 next step is to learn the [Telegram usage](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md).
