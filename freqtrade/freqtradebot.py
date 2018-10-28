@@ -108,11 +108,8 @@ class FreqtradeBot(object):
                 constants.PROCESS_THROTTLE_SECS
             )
 
-            nb_assets = self.config.get('dynamic_whitelist', None)
-
             self._throttle(func=self._process,
-                           min_secs=min_secs,
-                           nb_assets=nb_assets)
+                           min_secs=min_secs)
         return state
 
     def _startup_messages(self) -> None:
@@ -163,15 +160,15 @@ class FreqtradeBot(object):
         time.sleep(duration)
         return result
 
-    def _process(self, nb_assets: Optional[int] = 0) -> bool:
+    def _process(self) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
-        :param: nb_assets: the maximum number of pairs to be traded at the same time
         :return: True if one or more trades has been created or closed, False otherwise
         """
         state_changed = False
         try:
+            nb_assets = self.config.get('dynamic_whitelist', None)
             # Refresh whitelist based on wallet maintenance
             sanitized_list = self._refresh_whitelist(
                 self._gen_pair_whitelist(
