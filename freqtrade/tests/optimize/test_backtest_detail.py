@@ -69,8 +69,8 @@ tc_loss0 = BTContainer(data=[
 # TC1: Stop-Loss Triggered 1% loss
 tc1 = BTContainer(data=[
     [0, 10000.0, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],
-    [2, 9975, 10025, 9200, 9200, 12345, 0, 0],
+    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
+    [2, 9975, 10025, 9200, 9200, 12345, 0, 0],  # Exit with stoploss hit
     [3, 9950, 10000, 9960, 9955, 12345, 0, 0],
     [4, 9955, 9975, 9955, 9990, 12345, 0, 0],
     [5, 9990, 9990, 9990, 9900, 12345, 0, 0]],
@@ -83,13 +83,12 @@ tc1 = BTContainer(data=[
 # TC2: Stop-Loss Triggered 3% Loss
 tc2 = BTContainer(data=[
     [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],
+    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
     [2, 9975, 10025, 9925, 9950, 12345, 0, 0],
-    [3, 9950, 10000, 9600, 9925, 12345, 0, 0],
+    [3, 9950, 10000, 9600, 9925, 12345, 0, 0],  # Exit with stoploss hit
     [4, 9925, 9975, 9875, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
-    stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.03, sell_r=SellType.STOP_LOSS)  #should be
-    # stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.007, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.03, roi=1, trades=1, profit_perc=-0.03, sell_r=SellType.STOP_LOSS)
 
 
 # Test 3 Candle drops 4%, Recovers 1%.
@@ -101,16 +100,13 @@ tc2 = BTContainer(data=[
 #          Trade-B: Stop-Loss Triggered 2% Loss
 tc3 = BTContainer(data=[
     [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],
+    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
     [2, 9975, 10025, 9600, 9950, 12345, 0, 0],
-    [3, 9950, 10000, 9900, 9925, 12345, 1, 0],
+    [3, 9950, 10000, 9900, 9925, 12345, 1, 0],  # enter trade 2 (signal on last candle)
     [4, 9950, 10000, 9900, 9925, 12345, 0, 0],
     [5, 9925, 9975, 8000, 8000, 12345, 0, 0],
     [6, 9900, 9950, 9950, 9900, 12345, 0, 0]],
-    stop_loss=-0.02, roi=1, trades=2, profit_perc=-0.04, sell_r=SellType.STOP_LOSS)  #should be
-    # stop_loss=-0.02, roi=1, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
-    # stop_loss=-0.02, roi=1, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
-
+    stop_loss=-0.02, roi=1, trades=2, profit_perc=-0.04, sell_r=SellType.STOP_LOSS)
 
 # Test 4 Minus 3% / recovery +15%
 # Candle Data for test 4 – Candle drops 3% Closed 15% up
@@ -118,13 +114,12 @@ tc3 = BTContainer(data=[
 # TC4: Stop-Loss Triggered 2% Loss
 tc4 = BTContainer(data=[
     [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],
+    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
     [2, 9975, 11500, 9700, 11500, 12345, 0, 0],
     [3, 9950, 10000, 9900, 9925, 12345, 0, 0],
-    [4, 9925, 9975, 9875, 9900, 12345, 0, 0],
+    [4, 9925, 9975, 9875, 9900, 12345, 0, 0],  # Exit with stoploss hit
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
-    stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
-    # stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)
+    stop_loss=-0.02, roi=0.06, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)
 
 # Test 5 / Drops 0.5% Closes +20%
 # Candle Data for test 5
@@ -132,13 +127,12 @@ tc4 = BTContainer(data=[
 # TC5: ROI triggers 3% Gain
 tc5 = BTContainer(data=[
     [0, 10000, 10050, 9960, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9960, 9975, 12345, 0, 0],
+    [1, 10000, 10050, 9960, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
     [2, 9975, 10050, 9950, 9975, 12345, 0, 0],
-    [3, 9950, 12000, 9950, 12000, 12345, 0, 0],
+    [3, 9950, 12000, 9950, 12000, 12345, 0, 0],  # ROI
     [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
-    stop_loss=-0.01, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)  #should be
-    # stop_loss=-0.01, roi=0.03, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)
+    stop_loss=-0.01, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)
 
 # Test 6 / Drops 3% / Recovers 6% Positive / Closes 1% positve
 # Candle Data for test 6
@@ -146,13 +140,12 @@ tc5 = BTContainer(data=[
 # TC6: Stop-Loss triggers 2% Loss
 tc6 = BTContainer(data=[
     [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],
-    [2, 9975, 10600, 9700, 10100, 12345, 0, 0],
+    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
+    [2, 9975, 10600, 9700, 10100, 12345, 0, 0],  # Exit with stoploss
     [3, 9950, 10000, 9900, 9925, 12345, 0, 0],
     [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
-    stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)  #should be
-    # stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.02, roi=0.05, trades=1, profit_perc=-0.02, sell_r=SellType.STOP_LOSS)
 
 # Test 7 - 6% Positive / 1% Negative / Close 1% Positve
 # Candle Data for test 7
@@ -160,13 +153,12 @@ tc6 = BTContainer(data=[
 # TC7: ROI Triggers 3% Gain
 tc7 = BTContainer(data=[
     [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],
-    [2, 9975, 10600, 9900, 10100, 12345, 0, 0],
+    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
+    [2, 9975, 10600, 9900, 10100, 12345, 0, 0],  # ROI
     [3, 9950, 10000, 9900, 9925, 12345, 0, 0],
     [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
-    stop_loss=-0.02, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)  #should be
-    # stop_loss=-0.02, roi=0.03, trades=1, profit_perc=-0.012, sell_r=SellType.FORCE_SELL)  #
+    stop_loss=-0.02, roi=0.03, trades=1, profit_perc=0.03, sell_r=SellType.ROI)
 
 TESTS = [
     # tc_profit1,
@@ -189,7 +181,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = {"0": data.roi}
-    # mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     # TODO: don't Mock fee to for now
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
     patch_exchange(mocker)
