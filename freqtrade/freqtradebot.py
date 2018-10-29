@@ -179,11 +179,16 @@ class FreqtradeBot(object):
             # Keep only the subsets of pairs wanted (up to nb_assets)
             self.active_pair_whitelist = sanitized_list[:nb_assets] if nb_assets else sanitized_list
 
-            # Refreshing candles
-            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
-
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+
+            # Extend active-pair whitelist with pairs from open trades
+            # ensures that tickers are downloaded for open trades
+            self.active_pair_whitelist.extend([trade.pair for trade in trades
+                                               if trade.pair not in self.active_pair_whitelist])
+
+            # Refreshing candles
+            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
 
             # First process current opened trades
             for trade in trades:

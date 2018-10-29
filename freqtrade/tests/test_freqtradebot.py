@@ -663,6 +663,52 @@ def test_process_trade_handling(
     assert result is False
 
 
+def test_process_trade_no_whitelist_pair(
+        default_conf, ticker, limit_buy_order, markets, fee, mocker) -> None:
+    """ Test _process with trade not in pair list """
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_markets=markets,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_order=MagicMock(return_value=limit_buy_order),
+        get_fee=fee,
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    pair = 'NOCLUE/BTC'
+    # create open trade not in whitelist
+    Trade.session.add(Trade(
+        pair=pair,
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        is_open=True,
+        amount=20,
+        open_rate=0.01,
+        exchange='bittrex',
+    ))
+    Trade.session.add(Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        is_open=True,
+        amount=12,
+        open_rate=0.001,
+        exchange='bittrex',
+    ))
+
+    assert pair not in freqtrade.active_pair_whitelist
+    result = freqtrade._process()
+    assert pair in freqtrade.active_pair_whitelist
+    # Make sure each pair is only in the list once
+    assert len(freqtrade.active_pair_whitelist) == len(set(freqtrade.active_pair_whitelist))
+    assert result is True
+
+
 def test_balance_fully_ask_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 0.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
