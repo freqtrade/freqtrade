@@ -1,56 +1,16 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 import logging
 from unittest.mock import MagicMock
-from typing import NamedTuple, List
 
 from pandas import DataFrame
 import pytest
-import arrow
 
 
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import patch_exchange, log_has
-
-
-ticker_start_time = arrow.get(2018, 10, 3)
-ticker_interval_in_minute = 60
-
-
-class BTrade(NamedTuple):
-    """
-    Minimalistic Trade result used for functional backtesting
-    """
-    sell_reason: SellType
-    open_tick: int
-    close_tick: int
-
-
-class BTContainer(NamedTuple):
-    """
-    Minimal BacktestContainer defining Backtest inputs and results.
-    """
-    data: List[float]
-    stop_loss: float
-    roi: float
-    trades: List[BTrade]
-    profit_perc: float
-
-
-def _get_frame_time_from_offset(offset):
-    return ticker_start_time.shift(
-        minutes=(offset * ticker_interval_in_minute)).datetime
-
-
-def _build_backtest_dataframe(ticker_with_signals):
-    columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell']
-
-    frame = DataFrame.from_records(ticker_with_signals, columns=columns)
-    frame['date'] = frame['date'].apply(_get_frame_time_from_offset)
-    # Ensure floats are in place
-    for column in ['open', 'high', 'low', 'close', 'volume']:
-        frame[column] = frame[column].astype('float64')
-    return frame
+from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
+                                      _get_frame_time_from_offset)
+from freqtrade.tests.conftest import patch_exchange
 
 
 # Test 0 Minus 8% Close
@@ -180,8 +140,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = {"0": data.roi}
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    # TODO: don't Mock fee to for now
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
