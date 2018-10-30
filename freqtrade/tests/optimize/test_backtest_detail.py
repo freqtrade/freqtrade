@@ -37,16 +37,16 @@ class BTContainer(NamedTuple):
     profit_perc: float
 
 
-def _get_frame_time(offset):
+def _get_frame_time_from_offset(offset):
     return ticker_start_time.shift(
         minutes=(offset * ticker_interval_in_minute)).datetime
 
 
-def _build_dataframe(ticker_with_signals):
+def _build_backtest_dataframe(ticker_with_signals):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell']
 
     frame = DataFrame.from_records(ticker_with_signals, columns=columns)
-    frame['date'] = frame['date'].apply(_get_frame_time)
+    frame['date'] = frame['date'].apply(_get_frame_time_from_offset)
     # Ensure floats are in place
     for column in ['open', 'high', 'low', 'close', 'volume']:
         frame[column] = frame[column].astype('float64')
@@ -184,7 +184,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     # TODO: don't Mock fee to for now
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
     patch_exchange(mocker)
-    frame = _build_dataframe(data.data)
+    frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = lambda a, m: frame
     backtesting.advise_sell = lambda a, m: frame
@@ -219,5 +219,5 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.sell_reason == trade.sell_reason
-        assert res.open_time == _get_frame_time(trade.open_tick)
-        assert res.close_time == _get_frame_time(trade.close_tick)
+        assert res.open_time == _get_frame_time_from_offset(trade.open_tick)
+        assert res.close_time == _get_frame_time_from_offset(trade.close_tick)
