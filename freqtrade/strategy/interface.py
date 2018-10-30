@@ -210,14 +210,14 @@ class IStrategy(ABC):
         :return: True if trade should be sold, False otherwise
         """
         # Set current rate to low for backtesting sell
-        current_rate = rate if not low else low
+        current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit)
         if stoplossflag.sell_flag:
             return stoplossflag
         # Set current rate to low for backtesting sell
-        current_rate = rate if not high else high
+        current_rate = high or rate
         current_profit = trade.calc_profit_percent(current_rate)
         experimental = self.config.get('experimental', {})
 

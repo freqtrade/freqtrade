@@ -217,7 +217,7 @@ class Backtesting(object):
                 elif sell.sell_type == (SellType.ROI):
                     # get entry in min_roi >= to trade duration
                     roi_entry = max(list(filter(lambda x: trade_dur >= x,
-                                                list(self.strategy.minimal_roi.keys()))))
+                                                self.strategy.minimal_roi.keys())))
                     # set close-rate to min-roi
                     closerate = trade.open_rate + trade.open_rate * \
                         self.strategy.minimal_roi[roi_entry]
