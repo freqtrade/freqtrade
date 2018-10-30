@@ -17,12 +17,12 @@ from freqtrade.tests.conftest import patch_exchange
 # Test with Stop-loss at 1%
 # TC1: Stop-Loss Triggered 1% loss
 tc0 = BTContainer(data=[
-    [0, 10000.0, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 10025, 9200, 9200, 12345, 0, 0],  # exit with stoploss hit
-    [3, 9950, 10000, 9960, 9955, 12345, 0, 0],
-    [4, 9955, 9975, 9955, 9990, 12345, 0, 0],
-    [5, 9990, 9990, 9990, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4600, 4600, 6172, 0, 0],  # exit with stoploss hit
+    [3, 4975, 5000, 4980, 4977, 6172, 0, 0],
+    [4, 4977, 4987, 4977, 4995, 6172, 0, 0],
+    [5, 4995, 4995, 4995, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi=1, profit_perc=-0.01,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
@@ -32,12 +32,12 @@ tc0 = BTContainer(data=[
 # Test with Stop-Loss at 3%
 # TC2: Stop-Loss Triggered 3% Loss
 tc1 = BTContainer(data=[
-    [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 10025, 9925, 9950, 12345, 0, 0],
-    [3, 9950, 10000, 9600, 9925, 12345, 0, 0],  # exit with stoploss hit
-    [4, 9925, 9975, 9875, 9900, 12345, 0, 0],
-    [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172,    1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172,    0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4962, 4975, 6172,    0, 0],
+    [3, 4975, 5000, 4800, 4962, 6172,    0, 0],  # exit with stoploss hit
+    [4, 4962, 4987, 4937, 4950, 6172,    0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172,    0, 0]],
     stop_loss=-0.03, roi=1, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
     )
@@ -51,13 +51,13 @@ tc1 = BTContainer(data=[
 # TC3: Trade-A: Stop-Loss Triggered 2% Loss
 #          Trade-B: Stop-Loss Triggered 2% Loss
 tc2 = BTContainer(data=[
-    [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 10025, 9600, 9950, 12345, 0, 0],  # exit with stoploss hit
-    [3, 9950, 10000, 9900, 9925, 12345, 1, 0],
-    [4, 9950, 10000, 9900, 9925, 12345, 0, 0],  # enter trade 2 (signal on last candle)
-    [5, 9925, 9975, 8000, 8000, 12345, 0, 0],  # exit with stoploss hit
-    [6, 9900, 9950, 9950, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4800, 4975, 6172, 0, 0],  # exit with stoploss hit
+    [3, 4975, 5000, 4950, 4962, 6172, 1, 0],
+    [4, 4975, 5000, 4950, 4962, 6172, 0, 0],  # enter trade 2 (signal on last candle)
+    [5, 4962, 4987, 4000, 4000, 6172, 0, 0],  # exit with stoploss hit
+    [6, 4950, 4975, 4975, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi=1, profit_perc=-0.04,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2),
             BTrade(sell_reason=SellType.STOP_LOSS, open_tick=4, close_tick=5)]
@@ -68,12 +68,12 @@ tc2 = BTContainer(data=[
 # Test with Stop-loss at 2% ROI 6%
 # TC4: Stop-Loss Triggered 2% Loss
 tc3 = BTContainer(data=[
-    [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 11500, 9700, 11500, 12345, 0, 0],  # Exit with stoploss hit
-    [3, 9950, 10000, 9900, 9925, 12345, 0, 0],
-    [4, 9925, 9975, 9875, 9900, 12345, 0, 0],
-    [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5750, 4850, 5750, 6172, 0, 0],  # Exit with stoploss hit
+    [3, 4975, 5000, 4950, 4962, 6172, 0, 0],
+    [4, 4962, 4987, 4937, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi=0.06, profit_perc=-0.02,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
@@ -82,12 +82,12 @@ tc3 = BTContainer(data=[
 # Set stop-loss at 1% ROI 3%
 # TC5: ROI triggers 3% Gain
 tc4 = BTContainer(data=[
-    [0, 10000, 10050, 9960, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9960, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 10050, 9950, 9975, 12345, 0, 0],
-    [3, 9950, 12000, 9950, 12000, 12345, 0, 0],  # ROI
-    [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
-    [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4980, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4980, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5025, 4975, 4987, 6172, 0, 0],
+    [3, 4975, 6000, 4975, 6000, 6172, 0, 0],  # ROI
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi=0.03, profit_perc=0.03,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
 )
@@ -97,12 +97,12 @@ tc4 = BTContainer(data=[
 # Set stop-loss at 2% ROI at 5%
 # TC6: Stop-Loss triggers 2% Loss
 tc5 = BTContainer(data=[
-    [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 10600, 9700, 10100, 12345, 0, 0],  # Exit with stoploss
-    [3, 9950, 10000, 9900, 9925, 12345, 0, 0],
-    [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
-    [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5300, 4850, 5050, 6172, 0, 0],  # Exit with stoploss
+    [3, 4975, 5000, 4950, 4962, 6172, 0, 0],
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi=0.05, profit_perc=-0.02,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
@@ -112,12 +112,12 @@ tc5 = BTContainer(data=[
 # Set stop-loss at 2% ROI at 3%
 # TC7: ROI Triggers 3% Gain
 tc6 = BTContainer(data=[
-    [0, 10000, 10050, 9950, 9975, 12345, 1, 0],
-    [1, 10000, 10050, 9950, 9975, 12345, 0, 0],  # enter trade (signal on last candle)
-    [2, 9975, 10600, 9900, 10100, 12345, 0, 0],  # ROI
-    [3, 9950, 10000, 9900, 9925, 12345, 0, 0],
-    [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
-    [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
+    [3, 4975, 5000, 4950, 4962, 6172, 0, 0],
+    [4, 4962, 4987, 4972, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi=0.03, profit_perc=0.03,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
     )
