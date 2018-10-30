@@ -203,7 +203,7 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float=None, high: float=None) -> SellCheckTuple:
+                    sell: bool, low: float = None, high: float = None) -> SellCheckTuple:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
@@ -212,8 +212,8 @@ class IStrategy(ABC):
         # Set current rate to low for backtesting sell
         current_rate = rate if not low else low
         current_profit = trade.calc_profit_percent(current_rate)
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade, current_time=date,
-                                              current_profit=current_profit)
+        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                              current_time=date, current_profit=current_profit)
         if stoplossflag.sell_flag:
             return stoplossflag
         # Set current rate to low for backtesting sell
