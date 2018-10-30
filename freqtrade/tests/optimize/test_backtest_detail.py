@@ -21,7 +21,7 @@ class BTrade(NamedTuple):
     """
     Minimalistic Trade result used for functional backtesting
     """
-    sell_r: SellType
+    sell_reason: SellType
     open_tick: int
     close_tick: int
 
@@ -64,7 +64,7 @@ tc0 = BTContainer(data=[
     [4, 9955, 9975, 9955, 9990, 12345, 0, 0],
     [5, 9990, 9990, 9990, 9900, 12345, 0, 0]],
     stop_loss=-0.01, roi=1, profit_perc=-0.01,
-    trades=[BTrade(sell_r=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 
@@ -79,7 +79,7 @@ tc1 = BTContainer(data=[
     [4, 9925, 9975, 9875, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
     stop_loss=-0.03, roi=1, profit_perc=-0.03,
-    trades=[BTrade(sell_r=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
     )
 
 
@@ -99,8 +99,8 @@ tc2 = BTContainer(data=[
     [5, 9925, 9975, 8000, 8000, 12345, 0, 0],  # exit with stoploss hit
     [6, 9900, 9950, 9950, 9900, 12345, 0, 0]],
     stop_loss=-0.02, roi=1, profit_perc=-0.04,
-    trades=[BTrade(sell_r=SellType.STOP_LOSS, open_tick=1, close_tick=2),
-            BTrade(sell_r=SellType.STOP_LOSS, open_tick=4, close_tick=5)]
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2),
+            BTrade(sell_reason=SellType.STOP_LOSS, open_tick=4, close_tick=5)]
 )
 
 # Test 4 Minus 3% / recovery +15%
@@ -115,7 +115,7 @@ tc3 = BTContainer(data=[
     [4, 9925, 9975, 9875, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
     stop_loss=-0.02, roi=0.06, profit_perc=-0.02,
-    trades=[BTrade(sell_r=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 # Test 4 / Drops 0.5% Closes +20%
@@ -129,7 +129,7 @@ tc4 = BTContainer(data=[
     [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
     stop_loss=-0.01, roi=0.03, profit_perc=0.03,
-    trades=[BTrade(sell_r=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 6 / Drops 3% / Recovers 6% Positive / Closes 1% positve
@@ -144,7 +144,7 @@ tc5 = BTContainer(data=[
     [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
     stop_loss=-0.02, roi=0.05, profit_perc=-0.02,
-    trades=[BTrade(sell_r=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 # Test 7 - 6% Positive / 1% Negative / Close 1% Positve
@@ -159,7 +159,7 @@ tc6 = BTContainer(data=[
     [4, 9925, 9975, 9945, 9900, 12345, 0, 0],
     [5, 9900, 9950, 9850, 9900, 12345, 0, 0]],
     stop_loss=-0.02, roi=0.03, profit_perc=0.03,
-    trades=[BTrade(sell_r=SellType.ROI, open_tick=1, close_tick=2)]
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
     )
 
 TESTS = [
@@ -218,6 +218,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     #                        caplog.record_tuples)
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
-        assert res.sell_reason == trade.sell_r
+        assert res.sell_reason == trade.sell_reason
         assert res.open_time == _get_frame_time(trade.open_tick)
         assert res.close_time == _get_frame_time(trade.close_tick)
