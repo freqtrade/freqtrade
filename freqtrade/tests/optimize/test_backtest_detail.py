@@ -17,7 +17,7 @@ from freqtrade.tests.conftest import patch_exchange
 # Test with Stop-loss at 1%
 # TC1: Stop-Loss Triggered 1% loss
 tc0 = BTContainer(data=[
-    # date, open, high, low, close, volume, buy, sell
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4600, 4600, 6172, 0, 0],  # exit with stoploss hit
