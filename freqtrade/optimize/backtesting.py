@@ -208,7 +208,9 @@ class Backtesting(object):
             sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
                                              sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
+
                 trade_dur = int((sell_row.date - buy_row.date).total_seconds() // 60)
+                # Special handling if high or low hit STOP_LOSS or ROI
                 if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
                     # Set close_rate to stoploss
                     closerate = trade.stop_loss
