@@ -218,9 +218,11 @@ class Backtesting(object):
                     # get entry in min_roi >= to trade duration
                     roi_entry = max(list(filter(lambda x: trade_dur >= x,
                                                 self.strategy.minimal_roi.keys())))
-                    # set close-rate to min-roi
-                    closerate = trade.open_rate + trade.open_rate * \
-                        self.strategy.minimal_roi[roi_entry]
+                    roi = self.strategy.minimal_roi[roi_entry]
+
+                    # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
+                    closerate = - (trade.open_rate * roi + trade.open_rate *
+                                   (1 + trade.fee_open)) / (trade.fee_close - 1)
                 else:
                     closerate = sell_row.open
 
