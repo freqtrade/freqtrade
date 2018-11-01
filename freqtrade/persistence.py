@@ -272,10 +272,10 @@ class Trade(_DECL_BASE):
             self,
             fee: Optional[float] = None) -> float:
         """
-        Calculate the open_rate in BTC
+        Calculate the open_rate including fee.
         :param fee: fee to use on the open rate (optional).
         If rate is not set self.fee will be used
-        :return: Price in BTC of the open trade
+        :return: Price in of the open trade incl. Fees
         """
 
         buy_trade = (Decimal(self.amount) * Decimal(self.open_rate))
@@ -287,7 +287,7 @@ class Trade(_DECL_BASE):
             rate: Optional[float] = None,
             fee: Optional[float] = None) -> float:
         """
-        Calculate the close_rate in BTC
+        Calculate the close_rate including fee
         :param fee: fee to use on the close rate (optional).
         If rate is not set self.fee will be used
         :param rate: rate to compare with (optional).
@@ -307,12 +307,12 @@ class Trade(_DECL_BASE):
             rate: Optional[float] = None,
             fee: Optional[float] = None) -> float:
         """
-        Calculate the profit in BTC between Close and Open trade
+        Calculate the absolute profit in stake currency between Close and Open trade
         :param fee: fee to use on the close rate (optional).
         If rate is not set self.fee will be used
         :param rate: close rate to compare with (optional).
         If rate is not set self.close_rate will be used
-        :return:  profit in BTC as float
+        :return:  profit in stake currency as float
         """
         open_trade_price = self.calc_open_trade_price()
         close_trade_price = self.calc_close_trade_price(
