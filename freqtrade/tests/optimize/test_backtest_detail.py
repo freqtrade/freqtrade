@@ -33,6 +33,7 @@ tc0 = BTContainer(data=[
 # Test with Stop-Loss at 3%
 # TC2: Stop-Loss Triggered 3% Loss
 tc1 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172,    1, 0],
     [1, 5000, 5025, 4975, 4987, 6172,    0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4962, 4975, 6172,    0, 0],
@@ -52,6 +53,7 @@ tc1 = BTContainer(data=[
 # TC3: Trade-A: Stop-Loss Triggered 2% Loss
 #          Trade-B: Stop-Loss Triggered 2% Loss
 tc2 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4800, 4975, 6172, 0, 0],  # exit with stoploss hit
@@ -69,6 +71,7 @@ tc2 = BTContainer(data=[
 # Test with Stop-loss at 2% ROI 6%
 # TC4: Stop-Loss Triggered 2% Loss
 tc3 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5750, 4850, 5750, 6172, 0, 0],  # Exit with stoploss hit
@@ -83,6 +86,7 @@ tc3 = BTContainer(data=[
 # Set stop-loss at 1% ROI 3%
 # TC5: ROI triggers 3% Gain
 tc4 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4980, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4980, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5025, 4975, 4987, 6172, 0, 0],
@@ -98,6 +102,7 @@ tc4 = BTContainer(data=[
 # Set stop-loss at 2% ROI at 5%
 # TC6: Stop-Loss triggers 2% Loss
 tc5 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5300, 4850, 5050, 6172, 0, 0],  # Exit with stoploss
@@ -113,6 +118,7 @@ tc5 = BTContainer(data=[
 # Set stop-loss at 2% ROI at 3%
 # TC7: ROI Triggers 3% Gain
 tc6 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
