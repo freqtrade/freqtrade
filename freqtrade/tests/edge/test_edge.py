@@ -14,9 +14,7 @@ from unittest.mock import MagicMock
 # 2) Two complete trades within dataframe (with sell hit for all)
 # 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
 # 4) Entered, sl 3%, candle drops 4%, recovers to 1% => Trade closed, 3% loss
-# 5) Entered, sl 2%, candle drops 4%, recovers to 1%, entry met, candle drops 20% =>
-#    Trade 1 closed: loss 2%, Trade 2 opened, Trade 2 closed: loss 2%
-# 6) Stoploss and sell are hit. should sell on stoploss
+# 5) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
 ticker_start_time = arrow.get(2018, 10, 3)
@@ -263,4 +261,96 @@ def test_two_complete_trades(mocker, default_conf):
     assert trades[1]['open_rate'] == ticker[4][_ohlc['open']]
     assert trades[1]['close_rate'] == ticker[6][_ohlc['open']]
     assert trades[1]['exit_type'] == SellType.SELL_SIGNAL
+    ##############################################################
+
+
+# 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
+def test_case_3(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+
+    stoploss = -0.01  # we don't want stoploss to be hit in this test
+    ticker = [
+        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        #D, B,  O,  H,  L,  C, S
+        [0, 1, 15, 20, 12, 17, 0],  # -> no action
+        [1, 0, 14, 15, 11, 12, 0],  # -> enter to trade, stoploss hit
+        [2, 1, 12, 25, 11, 20, 0],  # -> no action
+    ]
+
+    ticker_df = _build_dataframe(ticker)
+    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
+
+    # Two trades must have occured
+    assert len(trades) == 1
+
+    # First trade check
+    assert trades[0]['open_time'] == _time_on_candle(1)
+    assert trades[0]['close_time'] == _time_on_candle(1)
+    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
+    assert trades[0]['close_rate'] == (stoploss + 1) * trades[0]['open_rate']
+    assert trades[0]['exit_type'] == SellType.STOP_LOSS
+    ##############################################################
+
+
+# 4) Entered, sl 3 %, candle drops 4%, recovers to 1 % = > Trade closed, 3 % loss
+def test_case_4(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+
+    stoploss = -0.03  # we don't want stoploss to be hit in this test
+    ticker = [
+        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        #D, B,  O,  H,  L,   C,    S
+        [0, 1, 15, 20, 12, 17, 0],  # -> no action
+        [1, 0, 17, 22, 16.90, 17, 0],  # -> enter to trade
+        [2, 0, 16, 17, 14.4, 15.5, 0],  # -> stoploss hit
+        [3, 0, 17, 25, 16.9, 22, 0],  # -> no action
+    ]
+
+    ticker_df = _build_dataframe(ticker)
+    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
+
+    # Two trades must have occured
+    assert len(trades) == 1
+
+    # First trade check
+    assert trades[0]['open_time'] == _time_on_candle(1)
+    assert trades[0]['close_time'] == _time_on_candle(2)
+    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
+    assert trades[0]['close_rate'] == (stoploss + 1) * trades[0]['open_rate']
+    assert trades[0]['exit_type'] == SellType.STOP_LOSS
+    ##############################################################
+
+
+# 5) Stoploss and sell are hit. should sell on stoploss
+def test_case_5(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+
+    stoploss = -0.03  # we don't want stoploss to be hit in this test
+    ticker = [
+        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
+        #D, B,  O,  H,  L,   C,    S
+        [0, 1, 15, 20, 12, 17, 0],  # -> no action
+        [1, 0, 17, 22, 16.90, 17, 0],  # -> enter to trade
+        [2, 0, 16, 17, 14.4, 15.5, 1],  # -> stoploss hit and also sell signal
+        [3, 0, 17, 25, 16.9, 22, 0],  # -> no action
+    ]
+
+    ticker_df = _build_dataframe(ticker)
+    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
+
+    # Two trades must have occured
+    assert len(trades) == 1
+
+    # First trade check
+    assert trades[0]['open_time'] == _time_on_candle(1)
+    assert trades[0]['close_time'] == _time_on_candle(2)
+    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
+    assert trades[0]['close_rate'] == (stoploss + 1) * trades[0]['open_rate']
+    assert trades[0]['exit_type'] == SellType.STOP_LOSS
     ##############################################################
