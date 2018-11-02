@@ -272,7 +272,7 @@ def test_case_3(mocker, default_conf):
     stoploss = -0.01  # we don't want stoploss to be hit in this test
     ticker = [
         # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        #D, B,  O,  H,  L,  C, S
+        # D, B,  O,  H,  L,  C, S
         [0, 1, 15, 20, 12, 17, 0],  # -> no action
         [1, 0, 14, 15, 11, 12, 0],  # -> enter to trade, stoploss hit
         [2, 1, 12, 25, 11, 20, 0],  # -> no action
@@ -301,7 +301,7 @@ def test_case_4(mocker, default_conf):
     stoploss = -0.03  # we don't want stoploss to be hit in this test
     ticker = [
         # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        #D, B,  O,  H,  L,   C,    S
+        # D, B,  O,  H,  L,   C,    S
         [0, 1, 15, 20, 12, 17, 0],  # -> no action
         [1, 0, 17, 22, 16.90, 17, 0],  # -> enter to trade
         [2, 0, 16, 17, 14.4, 15.5, 0],  # -> stoploss hit
@@ -334,7 +334,7 @@ def test_case_5(mocker, default_conf):
     stoploss = -0.03  # we don't want stoploss to be hit in this test
     ticker = [
         # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        #D, B,  O,  H,  L,   C,    S
+        # D, B,  O,  H,  L,   C,    S
         [0, 1, 15, 20, 12, 17, 0],  # -> no action
         [1, 0, 17, 22, 16.90, 17, 0],  # -> enter to trade
         [2, 0, 16, 17, 14.4, 15.5, 1],  # -> stoploss hit and also sell signal
