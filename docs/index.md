@@ -1,8 +1,8 @@
 # freqtrade documentation
 
 Welcome to freqtrade documentation. Please feel free to contribute to
-this documentation if you see it became outdated by sending us a 
-Pull-request. Do not hesitate to reach us on 
+this documentation if you see it became outdated by sending us a
+Pull-request. Do not hesitate to reach us on
 [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE)
  if you do not find the answer to your questions.
 
@@ -24,7 +24,10 @@ Pull-request. Do not hesitate to reach us on
 - [Bot Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
 	- [Change your strategy](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#change-your-strategy)
     - [Add more Indicator](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#add-more-indicator)
-    - [Test your strategy with Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
+    - [Test your strategy with Backtesting]
+    (https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
+    - [Edge positionning]
+    (https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md)
     - [Find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
 - [Control the bot with telegram](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md)
 - [Receive notifications via webhook](https://github.com/freqtrade/freqtrade/blob/develop/docs/webhook-config.md)
