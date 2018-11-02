@@ -54,6 +54,7 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
+        self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
 
     def _init_modules(self) -> None:
@@ -107,11 +108,8 @@ class FreqtradeBot(object):
                 constants.PROCESS_THROTTLE_SECS
             )
 
-            nb_assets = self.config.get('dynamic_whitelist', None)
-
             self._throttle(func=self._process,
-                           min_secs=min_secs,
-                           nb_assets=nb_assets)
+                           min_secs=min_secs)
         return state
 
     def _startup_messages(self) -> None:
@@ -162,15 +160,15 @@ class FreqtradeBot(object):
         time.sleep(duration)
         return result
 
-    def _process(self, nb_assets: Optional[int] = 0) -> bool:
+    def _process(self) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
-        :param: nb_assets: the maximum number of pairs to be traded at the same time
         :return: True if one or more trades has been created or closed, False otherwise
         """
         state_changed = False
         try:
+            nb_assets = self.config.get('dynamic_whitelist', None)
             # Refresh whitelist based on wallet maintenance
             sanitized_list = self._refresh_whitelist(
                 self._gen_pair_whitelist(
@@ -179,14 +177,18 @@ class FreqtradeBot(object):
             )
 
             # Keep only the subsets of pairs wanted (up to nb_assets)
-            final_list = sanitized_list[:nb_assets] if nb_assets else sanitized_list
-            self.config['exchange']['pair_whitelist'] = final_list
-
-            # Refreshing candles
-            self.exchange.refresh_tickers(final_list, self.strategy.ticker_interval)
+            self.active_pair_whitelist = sanitized_list[:nb_assets] if nb_assets else sanitized_list
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+
+            # Extend active-pair whitelist with pairs from open trades
+            # ensures that tickers are downloaded for open trades
+            self.active_pair_whitelist.extend([trade.pair for trade in trades
+                                               if trade.pair not in self.active_pair_whitelist])
+
+            # Refreshing candles
+            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
 
             # First process current opened trades
             for trade in trades:
@@ -380,7 +382,7 @@ class FreqtradeBot(object):
             'Checking buy signals to create a new trade with stake_amount: %f ...',
             stake_amount
         )
-        whitelist = copy.deepcopy(self.config['exchange']['pair_whitelist'])
+        whitelist = copy.deepcopy(self.active_pair_whitelist)
 
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
