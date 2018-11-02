@@ -13,7 +13,6 @@ from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
-from freqtrade.optimize.backtesting import Backtesting
 import sys
 
 logger = logging.getLogger(__name__)
