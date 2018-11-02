@@ -56,7 +56,7 @@ def test_stoploss(mocker, default_conf):
 def _validate_ohlc(buy_ohlc_sell_matrice):
     for index, ohlc in enumerate(buy_ohlc_sell_matrice):
         # if not high < open < low or not high < close < low
-        if not ohlc[3] > ohlc[2] > ohlc[4] or not ohlc[3] > ohlc[5] > ohlc[4]:
+        if not ohlc[3] >= ohlc[2] >= ohlc[4] or not ohlc[3] >= ohlc[5] >= ohlc[4]:
             raise Exception('Line ' + str(index + 1) + ' of ohlc has invalid values!')
     return True
 
