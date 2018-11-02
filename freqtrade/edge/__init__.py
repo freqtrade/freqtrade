@@ -215,15 +215,11 @@ class Edge():
 
     def _process_expectancy(self, results: DataFrame) -> list:
         """
-        This is a temporary version of edge positioning calculation.
-        The function will be eventually moved to a plugin called Edge in order
-        to calculate necessary WR, RRR and
-        other indictaors related to money management periodically (each X minutes)
-        and keep it in a storage.
+        This calculates WinRate, Required Risk Reward, Risk Reward and Expectancy of all pairs
         The calulation will be done per pair and per strategy.
         """
         # Removing pairs having less than min_trades_number
-        min_trades_number = self.edge_config.get('min_trade_number', 15)
+        min_trades_number = self.edge_config.get('min_trade_number', 10)
         results = results.groupby(['pair', 'stoploss']).filter(lambda x: len(x) > min_trades_number)
         ###################################
 
@@ -242,61 +238,53 @@ class Edge():
         results = results[results.trade_duration < max_trade_duration]
         #######################################################################
 
-        # Win Rate is the number of profitable trades
-        # Divided by number of trades
-        def winrate(x):
-            x = x[x > 0].count() / x.count()
-            return x
-        #############################
-
-        # Risk Reward Ratio
-        # 1 / ((loss money / losing trades) / (gained money / winning trades))
-        def risk_reward_ratio(x):
-            x = abs(1 / ((x[x < 0].sum() / x[x < 0].count()) / (x[x > 0].sum() / x[x > 0].count())))
-            return x
-        ##############################
-
-        # Required Risk Reward
-        # (1/(winrate - 1)
-        def required_risk_reward(x):
-            x = (1 / (x[x > 0].count() / x.count()) - 1)
-            return x
-        ##############################
-
-        # Expectancy
-        # Tells you the interest percentage you should hope
-        # E.x. if expectancy is 0.35, on $1 trade you should expect a target of $1.35
-        def expectancy(x):
-            average_win = float(x[x > 0].sum() / x[x > 0].count())
-            average_loss = float(abs(x[x < 0].sum() / x[x < 0].count()))
-            winrate = float(x[x > 0].count() / x.count())
-            x = ((1 + average_win / average_loss) * winrate) - 1
-            return x
-        ##############################
-
         if results.empty:
             return []
 
         groupby_aggregator = {
             'profit_abs': [
-                winrate,
-                risk_reward_ratio,
-                required_risk_reward,
-                expectancy,
-                'count'],
-            'trade_duration': ['mean']}
+                ('nb_trades', 'count'),  # number of all trades
+                ('profit_sum', lambda x: x[x > 0].sum()),  # cumulative profit of all winning trades
+                ('loss_sum', lambda x: abs(x[x < 0].sum())),  # cumulative loss of all losing trades
+                ('nb_win_trades', lambda x: x[x > 0].count())  # number of winning trades
+            ],
+            'trade_duration': [('avg_trade_duration', 'mean')]
+        }
 
-        final = results.groupby(['pair', 'stoploss'])['profit_abs', 'trade_duration'].agg(
+        # Group by (pair and stoploss) the applying above aggregator
+        df = results.groupby(['pair', 'stoploss'])['profit_abs', 'trade_duration'].agg(
             groupby_aggregator).reset_index(col_level=1)
 
-        final.columns = final.columns.droplevel(0)
-        final = final.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
+        # Dropping level 0 as we don't need it
+        df.columns = df.columns.droplevel(0)
+
+        # Calculating number of losing trades, average win and average loss
+        df['nb_loss_trades'] = df['nb_trades'] - df['nb_win_trades']
+        df['average_win'] = df['profit_sum'] / df['nb_win_trades']
+        df['average_loss'] = df['loss_sum'] / df['nb_loss_trades']
+
+        # Win rate = number of profitable trades / number of trades
+        df['winrate'] = df['nb_win_trades'] / df['nb_trades']
+
+        # risk_reward_ratio = 1 / (average loss / average win)
+        df['risk_reward_ratio'] = 1 / (df['average_loss'] / df['average_win'])
+
+        # required_risk_reward = (1 / winrate) - 1
+        df['required_risk_reward'] = (1 / df['winrate']) - 1
+
+        # expectancy = ((1 + average_win/average_loss) * winrate) - 1
+        df['expectancy'] = ((1 + df['average_win'] / df['average_loss']) * df['winrate']) - 1
+
+        # sort by expectancy and stoploss
+        df = df.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
             'pair').first().sort_values(by=['expectancy'], ascending=False).reset_index()
 
-        final.rename(columns={'mean': 'avg_duration(min)'}, inplace=True)
+        # dropping unecessary columns
+        df.drop(columns=['nb_loss_trades', 'nb_win_trades', 'average_win', 'average_loss',
+                         'profit_sum', 'loss_sum', 'avg_trade_duration', 'nb_trades'], inplace=True)
 
         # Returning an array of pairs in order of "expectancy"
-        return final.values
+        return df.values
 
     def _find_trades_for_stoploss_range(self, ticker_data, pair, stoploss_range):
         buy_column = ticker_data['buy'].values
