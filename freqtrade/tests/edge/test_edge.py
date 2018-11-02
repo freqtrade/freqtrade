@@ -16,16 +16,7 @@ from unittest.mock import MagicMock
 # 4) Entered, sl 3%, candle drops 4%, recovers to 1% => Trade closed, 3% loss
 # 5) Entered, sl 2%, candle drops 4%, recovers to 1%, entry met, candle drops 20% =>
 #    Trade 1 closed: loss 2%, Trade 2 opened, Trade 2 closed: loss 2%
-# 6)
-###################################################################
-# STOPLOSS:
-# 6) Candle drops 8%, stoploss at 1%: Trade closed, 1% loss
-# 7) Candle drops 4% but recovers to 1% loss, stoploss at 3%: Trade closed, 3% loss
-# 8) Candle drops 4% recovers to 1% entry criteria are met, candle drops
-#    20%, stoploss at 2%: Trade 1 closed, Loss 2%, Trade 2 opened, Trade 2 closed, Loss 2%
-####################################################################
-# PRIORITY TO STOPLOSS:
-# 9) Stoploss and sell are hit. should sell on stoploss
+# 6) Stoploss and sell are hit. should sell on stoploss
 ####################################################################
 
 ticker_start_time = arrow.get(2018, 10, 3)
@@ -179,7 +170,7 @@ def test_process_expectancy(mocker, default_conf):
          'trade_duration': '',
          'open_rate': 17,
          'close_rate': 17,
-         'exit_type': 'sell_signal'},  # sdfsdf
+         'exit_type': 'sell_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
