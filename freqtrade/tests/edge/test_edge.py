@@ -202,7 +202,12 @@ def test_process_expectancy(mocker, default_conf):
     final = edge._process_expectancy(trades_df)
     assert len(final) == 1
 
-    # TODO: check expectancy + win rate etc
+    assert final[0][0] ==  'TEST/BTC'
+    assert final[0][1] == -0.9
+    assert round(final[0][2], 10) == 0.3333333333
+    assert round(final[0][3], 10) == 306.5384615384
+    assert round(final[0][4], 10) == 2.0
+    assert round(final[0][5], 10) == 101.5128205128
 
 # 1) Open trade should be removed from the end
 def test_case_1(mocker, default_conf):
