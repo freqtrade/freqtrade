@@ -38,7 +38,7 @@ class Edge():
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.get_timeframe = Backtesting.get_timeframe
+        self.get_timeframe = optimize.get_timeframe
         self.advise_sell = self.strategy.advise_sell
         self.advise_buy = self.strategy.advise_buy
 

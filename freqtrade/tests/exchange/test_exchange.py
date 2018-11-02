@@ -572,6 +572,7 @@ def test_get_ticker(default_conf, mocker):
         'last': 0.0001,
     }
     api_mock.fetch_ticker = MagicMock(return_value=tick)
+    api_mock.markets = {'ETH/BTC': {}}
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     # retrieve original ticker
     ticker = exchange.get_ticker(pair='ETH/BTC')
@@ -613,6 +614,9 @@ def test_get_ticker(default_conf, mocker):
     api_mock.fetch_ticker = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange.get_ticker(pair='ETH/BTC', refresh=True)
+
+    with pytest.raises(DependencyException, match=r'Pair XRP/ETH not available'):
+        exchange.get_ticker(pair='XRP/ETH', refresh=True)
 
 
 def test_get_history(default_conf, mocker, caplog):

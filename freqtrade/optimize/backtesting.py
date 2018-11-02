@@ -4,14 +4,12 @@
 This module contains the backtesting logic
 """
 import logging
-import operator
 from argparse import Namespace
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional
 
-import arrow
 from pandas import DataFrame
 from tabulate import tabulate
 
@@ -88,23 +86,8 @@ class Backtesting(object):
         """
         self.strategy = strategy
         self.ticker_interval = self.config.get('ticker_interval')
-        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
-
-    @staticmethod
-    def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
-        """
-        Get the maximum timeframe for the given backtest data
-        :param data: dictionary with preprocessed backtesting data
-        :return: tuple containing min_date, max_date
-        """
-        timeframe = [
-            (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
-            for frame in data.values()
-        ]
-        return min(timeframe, key=operator.itemgetter(0))[0], \
-            max(timeframe, key=operator.itemgetter(1))[1]
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
                              skip_nan: bool = False) -> str:
@@ -371,10 +354,12 @@ class Backtesting(object):
             self._set_strategy(strat)
 
             # need to reprocess data every time to populate signals
-            preprocessed = self.tickerdata_to_dataframe(data)
+            preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
-            # Print timeframe
-            min_date, max_date = self.get_timeframe(preprocessed)
+            min_date, max_date = optimize.get_timeframe(preprocessed)
+            # Validate dataframe for missing values
+            optimize.validate_backtest_data(preprocessed, min_date, max_date,
+                                            constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
             logger.info(
                 'Measuring data from %s up to %s (%s days)..',
                 min_date.isoformat(),

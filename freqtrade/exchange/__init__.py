@@ -375,6 +375,8 @@ class Exchange(object):
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._cached_ticker.keys():
             try:
+                if pair not in self._api.markets:
+                    raise DependencyException(f"Pair {pair} not available")
                 data = self._api.fetch_ticker(pair)
                 try:
                     self._cached_ticker[pair] = {
