@@ -204,8 +204,8 @@ def test_process_expectancy(mocker, default_conf):
 
     # TODO: check expectancy + win rate etc
 
-
-def test_remove_open_trade_at_the_end(mocker, default_conf):
+# 1) Open trade should be removed from the end
+def test_case_1(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
 
@@ -224,7 +224,8 @@ def test_remove_open_trade_at_the_end(mocker, default_conf):
     assert len(trades) == 0
 
 
-def test_two_complete_trades(mocker, default_conf):
+# 2) Two complete trades within dataframe (with sell hit for all)
+def test_case_2(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
 
