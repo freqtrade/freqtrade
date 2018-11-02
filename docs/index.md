@@ -25,7 +25,7 @@ Pull-request. Do not hesitate to reach us on
 	- [Change your strategy](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#change-your-strategy)
     - [Add more Indicator](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#add-more-indicator)
     - [Test your strategy with Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
-    - [Edge positionning](https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md)
+    - [Edge positionning](https://github.com/mishaker/freqtrade/blob/develop/docs/edge.md)
     - [Find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
 - [Control the bot with telegram](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md)
 - [Receive notifications via webhook](https://github.com/freqtrade/freqtrade/blob/develop/docs/webhook-config.md)
