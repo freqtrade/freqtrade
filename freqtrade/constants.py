@@ -182,7 +182,7 @@ CONF_SCHEMA = {
                 "stoploss_range_min": {'type': 'number'},
                 "stoploss_range_max": {'type': 'number'},
                 "stoploss_range_step": {'type': 'number'},
-                "maximum_winrate": {'type': 'number'},
+                "minimum_winrate": {'type': 'number'},
                 "minimum_expectancy": {'type': 'number'},
                 "min_trade_number": {'type': 'number'},
                 "max_trade_duration_minute": {'type': 'integer'},
