@@ -69,7 +69,7 @@ class Edge():
             self.config['datadir'],
             pairs=pairs,
             ticker_interval=self.ticker_interval,
-            refresh_pairs=False,
+            refresh_pairs=True,
             exchange=self.exchange,
             timerange=self._timerange
         )
