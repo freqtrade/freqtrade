@@ -13,6 +13,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from collections import namedtuple
 import sys
 
 logger = logging.getLogger(__name__)
@@ -21,16 +22,11 @@ logger = logging.getLogger(__name__)
 class Edge():
 
     config: Dict = {}
-    _last_updated: int  # Timestamp of pairs last updated time
-    _cached_pairs: list = []  # Keeps an array of
-    # [pair, stoploss, winrate, risk reward ratio, required risk reward, expectancy]
-
-    _total_capital: float
-    _allowed_risk: float
-    _since_number_of_days: int
-    _timerange: TimeRange
+    _cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
+
+        # Increasing recursive limit as with need it for large datasets
         sys.setrecursionlimit(10000)
         self.config = config
         self.exchange = exchange
@@ -42,13 +38,18 @@ class Edge():
         self.advise_buy = self.strategy.advise_buy
 
         self.edge_config = self.config.get('edge', {})
-        self._cached_pairs: list = []
-        self._total_capital = self.edge_config.get('total_capital_in_stake_currency')
-        self._allowed_risk = self.edge_config.get('allowed_risk')
-        self._since_number_of_days = self.edge_config.get('calculate_since_number_of_days', 14)
-        self._last_updated = 0
 
-        self._timerange = Arguments.parse_timerange("%s-" % arrow.now().shift(
+        # pair info data type
+        self._pair_info = namedtuple(
+            'pair_info', 'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
+        self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
+
+        self._total_capital: float = self.edge_config.get('total_capital_in_stake_currency')
+        self._allowed_risk: float = self.edge_config.get('allowed_risk')
+        self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
+        self._last_updated: int = 0  # Timestamp of pairs last updated time
+
+        self._timerange: TimeRange = Arguments.parse_timerange("%s-" % arrow.now().shift(
             days=-1 * self._since_number_of_days).format('YYYYMMDD'))
 
         self.fee = self.exchange.get_fee()
@@ -132,34 +133,24 @@ class Edge():
         return True
 
     def stake_amount(self, pair: str) -> float:
-        info = [x for x in self._cached_pairs if x[0] == pair][0]
-        stoploss = info[1]
+        stoploss = self._cached_pairs[pair].stoploss
         allowed_capital_at_risk = round(self._total_capital * self._allowed_risk, 5)
         position_size = abs(round((allowed_capital_at_risk / stoploss), 5))
         return position_size
 
     def stoploss(self, pair: str) -> float:
-        info = [x for x in self._cached_pairs if x[0] == pair][0]
-        return info[1]
+        return self._cached_pairs[pair].stoploss
 
     def filter(self, pairs) -> list:
-        # Filtering pairs acccording to the expectancy
-        filtered_expectancy: list = []
 
-        # [pair, stoploss, winrate, risk reward ratio, required risk reward, expectancy]
-        filtered_expectancy = [
-            x[0] for x in self._cached_pairs if (
-                (x[5] > float(
-                    self.edge_config.get(
-                        'minimum_expectancy',
-                        0.2))) & (
-                    x[2] > float(
-                        self.edge_config.get(
-                            'minimum_winrate',
-                            0.60))))]
+        final = []
 
-        # Only return pairs which are included in "pairs" argument list
-        final = [x for x in filtered_expectancy if x in pairs]
+        for pair, info in self._cached_pairs.items():
+            if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
+                info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)) and \
+                    pair in pairs:
+                        final.append(pair)
+
         if final:
             logger.info(
                 'Edge validated only %s',
@@ -220,7 +211,7 @@ class Edge():
 
         return result
 
-    def _process_expectancy(self, results: DataFrame) -> list:
+    def _process_expectancy(self, results: DataFrame) -> Dict[str, Any]:
         """
         This calculates WinRate, Required Risk Reward, Risk Reward and Expectancy of all pairs
         The calulation will be done per pair and per strategy.
@@ -246,7 +237,7 @@ class Edge():
         #######################################################################
 
         if results.empty:
-            return []
+            return {}
 
         groupby_aggregator = {
             'profit_abs': [
@@ -286,12 +277,17 @@ class Edge():
         df = df.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
             'pair').first().sort_values(by=['expectancy'], ascending=False).reset_index()
 
-        # dropping unecessary columns
-        df.drop(columns=['nb_loss_trades', 'nb_win_trades', 'average_win', 'average_loss',
-                         'profit_sum', 'loss_sum', 'avg_trade_duration', 'nb_trades'], inplace=True)
+        final = {}
+        for x in df.itertuples():
+            final[x.pair] = self._pair_info(
+                x.stoploss,
+                x.winrate,
+                x.risk_reward_ratio,
+                x.required_risk_reward,
+                x.expectancy)
 
-        # Returning an array of pairs in order of "expectancy"
-        return df.values
+        # Returning a list of pairs in order of "expectancy"
+        return final
 
     def _find_trades_for_stoploss_range(self, ticker_data, pair, stoploss_range):
         buy_column = ticker_data['buy'].values

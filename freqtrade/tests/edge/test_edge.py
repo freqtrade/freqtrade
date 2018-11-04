@@ -2,6 +2,7 @@ from freqtrade.tests.conftest import get_patched_exchange
 from freqtrade.edge import Edge
 from pandas import DataFrame, to_datetime
 from freqtrade.strategy.interface import SellType
+from collections import namedtuple
 import arrow
 import numpy as np
 import math
@@ -20,17 +21,19 @@ from unittest.mock import MagicMock
 ticker_start_time = arrow.get(2018, 10, 3)
 ticker_interval_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
+_pair_info = namedtuple(
+    'pair_info', 'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
 
 
 def test_filter(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
-        return_value=[
-            ['E/F', -0.01, 0.66, 3.71, 0.50, 1.71],
-            ['C/D', -0.01, 0.66, 3.71, 0.50, 1.71],
-            ['N/O', -0.01, 0.66, 3.71, 0.50, 1.71]
-        ]
+        return_value={
+            'E/F': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'C/D': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'N/O': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
+        }
     ))
 
     pairs = ['A/B', 'C/D', 'E/F', 'G/H']
@@ -41,11 +44,11 @@ def test_stoploss(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
-        return_value=[
-            ['E/F', -0.01, 0.66, 3.71, 0.50, 1.71],
-            ['C/D', -0.01, 0.66, 3.71, 0.50, 1.71],
-            ['N/O', -0.01, 0.66, 3.71, 0.50, 1.71]
-        ]
+        return_value={
+            'E/F': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'C/D': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'N/O': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
+        }
     ))
 
     assert edge.stoploss('E/F') == -0.01
@@ -61,7 +64,7 @@ def _validate_ohlc(buy_ohlc_sell_matrice):
 
 def _build_dataframe(buy_ohlc_sell_matrice):
     _validate_ohlc(buy_ohlc_sell_matrice)
-    tickers = []
+    tickers= []
     for ohlc in buy_ohlc_sell_matrice:
         ticker = {
             'date': ticker_start_time.shift(
@@ -79,9 +82,9 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
     frame = DataFrame(tickers)
     frame['date'] = to_datetime(frame['date'],
-                                unit='ms',
-                                utc=True,
-                                infer_datetime_format=True)
+                                unit = 'ms',
+                                utc = True,
+                                infer_datetime_format = True)
 
     return frame
 
@@ -92,17 +95,17 @@ def _time_on_candle(number):
 
 
 def test_edge_heartbeat_calculate(mocker, default_conf):
-    exchange = get_patched_exchange(mocker, default_conf)
-    edge = Edge(default_conf, exchange)
-    heartbeat = default_conf['edge']['process_throttle_secs']
+    exchange=get_patched_exchange(mocker, default_conf)
+    edge=Edge(default_conf, exchange)
+    heartbeat=default_conf['edge']['process_throttle_secs']
 
     # should not recalculate if heartbeat not reached
-    edge._last_updated = arrow.utcnow().timestamp - heartbeat + 1
+    edge._last_updated=arrow.utcnow().timestamp - heartbeat + 1
 
     assert edge.calculate() is False
 
 
-def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
+def mocked_load_data(datadir, pairs = [], ticker_interval = '0m', refresh_pairs = False,
                      timerange=None, exchange=None):
     hz = 0.1
     base = 0.001
@@ -202,13 +205,12 @@ def test_process_expectancy(mocker, default_conf):
     final = edge._process_expectancy(trades_df)
     assert len(final) == 1
 
-    assert final[0][0] == 'TEST/BTC'
-    assert final[0][1] == -0.9
-    assert round(final[0][2], 10) == 0.3333333333
-    assert round(final[0][3], 10) == 306.5384615384
-    assert round(final[0][4], 10) == 2.0
-    assert round(final[0][5], 10) == 101.5128205128
-
+    assert 'TEST/BTC' in final
+    assert final['TEST/BTC'].stoploss == -0.9
+    assert round(final['TEST/BTC'].winrate, 10) == 0.3333333333
+    assert round(final['TEST/BTC'].risk_reward_ratio, 10) == 306.5384615384
+    assert round(final['TEST/BTC'].required_risk_reward, 10) == 2.0
+    assert round(final['TEST/BTC'].expectancy, 10) == 101.5128205128
 
 # 1) Open trade should be removed from the end
 def test_case_1(mocker, default_conf):
