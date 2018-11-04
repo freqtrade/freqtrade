@@ -256,7 +256,7 @@ def test_edge_overrides_stake_amount(mocker, default_conf) -> None:
     # strategy stoploss should be ignored
     freqtrade.strategy.stoploss = -0.05
 
-    with pytest.raises(IndexError):
+    with pytest.raises(KeyError):
         freqtrade._get_trade_stake_amount('ETH/BTC')
 
     assert freqtrade._get_trade_stake_amount('NEO/BTC') == 0.025

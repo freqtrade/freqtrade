@@ -149,7 +149,7 @@ class Edge():
             if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
                 info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)) and \
                     pair in pairs:
-                        final.append(pair)
+                final.append(pair)
 
         if final:
             logger.info(
@@ -279,12 +279,14 @@ class Edge():
 
         final = {}
         for x in df.itertuples():
-            final[x.pair] = self._pair_info(
-                x.stoploss,
-                x.winrate,
-                x.risk_reward_ratio,
-                x.required_risk_reward,
-                x.expectancy)
+            info = {
+                'stoploss': x.stoploss,
+                'winrate': x.winrate,
+                'risk_reward_ratio': x.risk_reward_ratio,
+                'required_risk_reward': x.required_risk_reward,
+                'expectancy': x.expectancy
+            }
+            final[x.pair] = self._pair_info(**info)
 
         # Returning a list of pairs in order of "expectancy"
         return final
