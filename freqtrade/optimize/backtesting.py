@@ -318,8 +318,7 @@ class Backtesting(object):
                     row = ticker[pair][index]
                 except IndexError:
                     # missing Data for one pair ...
-                    # TODO:howto handle this
-                    # logger.warning(f"i: {index} - {tmp} did not exist for {pair}")
+                    # Warnings for this are shown by `validate_backtest_data`
                     continue
 
                 if row.buy == 0 or row.sell == 1:
