@@ -23,7 +23,7 @@ from skopt.space import Categorical, Dimension, Integer, Real
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.optimize import load_data
+from freqtrade.optimize import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 
 logger = logging.getLogger(__name__)
@@ -276,7 +276,7 @@ class Hyperopt(Backtesting):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
-        min_date, max_date = Backtesting.get_timeframe(processed)
+        min_date, max_date = get_timeframe(processed)
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],

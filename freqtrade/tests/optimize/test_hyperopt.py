@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.optimize import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
 from freqtrade.strategy.resolver import StrategyResolver
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -293,7 +293,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         MagicMock(return_value=backtest_result)
     )
     mocker.patch(
-        'freqtrade.optimize.backtesting.Backtesting.get_timeframe',
+        'freqtrade.optimize.hyperopt.get_timeframe',
         MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
     patch_exchange(mocker)
