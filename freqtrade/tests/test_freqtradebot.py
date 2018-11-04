@@ -730,6 +730,54 @@ def test_balance_bigger_last_ask(mocker, default_conf) -> None:
     assert freqtrade.get_target_bid('ETH/BTC', {'ask': 5, 'last': 10}) == 5
 
 
+def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(default_conf)
+    stake_amount = 2
+    bid = 0.11
+    get_bid = MagicMock(return_value=bid)
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        get_target_bid=get_bid,
+        _get_min_pair_stake_amount=MagicMock(return_value=1)
+        )
+    buy_mm = MagicMock(return_value={'id': limit_buy_order['id']})
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=buy_mm,
+        get_fee=fee,
+        get_markets=markets
+    )
+    pair = 'ETH/BTC'
+    print(buy_mm.call_args_list)
+
+    assert freqtrade.execute_buy(pair, stake_amount)
+    assert get_bid.call_count == 1
+    assert buy_mm.call_count == 1
+    call_args = buy_mm.call_args_list[0][0]
+    assert call_args[0] == pair
+    assert call_args[1] == bid
+    assert call_args[2] == stake_amount / bid
+
+    # Test calling with price
+    fix_price = 0.06
+    assert freqtrade.execute_buy(pair, stake_amount, fix_price)
+    # Make sure get_target_bid wasn't called again
+    assert get_bid.call_count == 1
+
+    assert buy_mm.call_count == 2
+    call_args = buy_mm.call_args_list[1][0]
+    assert call_args[0] == pair
+    assert call_args[1] == fix_price
+    assert call_args[2] == stake_amount / fix_price
+
+
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 

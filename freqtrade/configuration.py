@@ -127,6 +127,9 @@ class Configuration(object):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
+        if config.get('forcebuy_enable', False):
+            logger.warning('`forcebuy` RPC message enabled.')
+
         logger.info(f'Using DB: "{config["db_url"]}"')
 
         # Check if the exchange set by the user is supported

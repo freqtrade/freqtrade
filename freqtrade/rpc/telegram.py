@@ -86,6 +86,7 @@ class Telegram(RPC):
             CommandHandler('start', self._start),
             CommandHandler('stop', self._stop),
             CommandHandler('forcesell', self._forcesell),
+            CommandHandler('forcebuy', self._forcebuy),
             CommandHandler('performance', self._performance),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
@@ -372,6 +373,24 @@ class Telegram(RPC):
         trade_id = update.message.text.replace('/forcesell', '').strip()
         try:
             self._rpc_forcesell(trade_id)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+    @authorized_only
+    def _forcebuy(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /forcebuy <asset> <price>.
+        Buys a pair trade at the given or current price
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        message = update.message.text.replace('/forcebuy', '').strip().split()
+        pair = message[0]
+        price = float(message[1]) if len(message) > 1 else None
+        try:
+            self._rpc_forcebuy(pair, price)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
