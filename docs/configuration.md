@@ -53,13 +53,14 @@ The table below will list all configuration parameters.
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
-| `webhook.enabled` | false | No | Enable useage of Webhook notifications
+| `webhook.enabled` | false | No | Enable usage of Webhook notifications
 | `webhook.url` | false | No | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details.
 | `webhook.webhookbuy` | false | No | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
 | `webhook.webhooksell` | false | No | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
 | `webhook.webhookstatus` | false | No | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
 | `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
+| `forcebuy_enable` | false | No | Enables the RPC Commands to force a buy. More information below.
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
 | `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
@@ -112,6 +113,15 @@ Go to the [trailing stoploss Documentation](stoploss.md) for details on trailing
 `initial_state` is an optional field that defines the initial application state.
 Possible values are `running` or `stopped`. (default=`running`)
 If the value is `stopped` the bot has to be started with `/start` first.
+
+### Understand forcebuy_enable
+
+`forcebuy_enable` enables the usage of forcebuy commands via Telegram.
+This is disabled for security reasons by default, and will show a warning message on startup if enabled.
+You send `/forcebuy ETH/BTC` to the bot, who buys the pair and holds it until a regular sell-signal appears (ROI, stoploss, /forcesell).
+
+Can be dangerous with some strategies, so use with care
+See [the telegram documentation](telegram-usage.md) for details on usage.
 
 ### Understand process_throttle_secs
 

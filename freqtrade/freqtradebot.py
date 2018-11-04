@@ -451,7 +451,7 @@ class FreqtradeBot(object):
             return True
         return False
 
-    def execute_buy(self, pair: str, stake_amount: float) -> bool:
+    def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -462,8 +462,11 @@ class FreqtradeBot(object):
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
 
-        # Calculate amount
-        buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
+        if price:
+            buy_limit = price
+        else:
+            # Calculate amount
+            buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
 
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
         if min_stake_amount is not None and min_stake_amount > stake_amount:

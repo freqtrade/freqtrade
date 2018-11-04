@@ -86,6 +86,7 @@
     },
     "db_url": "sqlite:///tradesv3.sqlite",
     "initial_state": "running",
+    "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
     },

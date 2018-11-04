@@ -131,6 +131,7 @@ CONF_SCHEMA = {
         },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
+        'forcebuy_enable': {'type': 'boolean'},
         'internals': {
             'type': 'object',
             'properties': {
