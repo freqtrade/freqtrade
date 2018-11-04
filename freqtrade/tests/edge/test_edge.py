@@ -64,7 +64,7 @@ def _validate_ohlc(buy_ohlc_sell_matrice):
 
 def _build_dataframe(buy_ohlc_sell_matrice):
     _validate_ohlc(buy_ohlc_sell_matrice)
-    tickers= []
+    tickers = []
     for ohlc in buy_ohlc_sell_matrice:
         ticker = {
             'date': ticker_start_time.shift(
@@ -82,9 +82,9 @@ def _build_dataframe(buy_ohlc_sell_matrice):
 
     frame = DataFrame(tickers)
     frame['date'] = to_datetime(frame['date'],
-                                unit = 'ms',
-                                utc = True,
-                                infer_datetime_format = True)
+                                unit='ms',
+                                utc=True,
+                                infer_datetime_format=True)
 
     return frame
 
@@ -95,17 +95,17 @@ def _time_on_candle(number):
 
 
 def test_edge_heartbeat_calculate(mocker, default_conf):
-    exchange=get_patched_exchange(mocker, default_conf)
-    edge=Edge(default_conf, exchange)
-    heartbeat=default_conf['edge']['process_throttle_secs']
+    exchange = get_patched_exchange(mocker, default_conf)
+    edge = Edge(default_conf, exchange)
+    heartbeat = default_conf['edge']['process_throttle_secs']
 
     # should not recalculate if heartbeat not reached
-    edge._last_updated=arrow.utcnow().timestamp - heartbeat + 1
+    edge._last_updated = arrow.utcnow().timestamp - heartbeat + 1
 
     assert edge.calculate() is False
 
 
-def mocked_load_data(datadir, pairs = [], ticker_interval = '0m', refresh_pairs = False,
+def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
                      timerange=None, exchange=None):
     hz = 0.1
     base = 0.001
@@ -213,6 +213,8 @@ def test_process_expectancy(mocker, default_conf):
     assert round(final['TEST/BTC'].expectancy, 10) == 101.5128205128
 
 # 1) Open trade should be removed from the end
+
+
 def test_case_1(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)

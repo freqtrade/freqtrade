@@ -49,20 +49,22 @@ def patch_edge(mocker) -> None:
     # "LTC/BTC",
     # "XRP/BTC",
     # "NEO/BTC"
-    pair_info = namedtuple('pair_info', 'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
+    pair_info = namedtuple(
+        'pair_info',
+        'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'NEO/BTC': pair_info(-0.20, 0.66, 3.71, 0.50, 1.71),
             'LTC/BTC': pair_info(-0.21, 0.66, 3.71, 0.50, 1.71),
         }
     ))
-    mocker.patch('freqtrade.edge.Edge.stoploss', MagicMock(return_value = -0.20))
-    mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value = True))
+    mocker.patch('freqtrade.edge.Edge.stoploss', MagicMock(return_value=-0.20))
+    mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value=True))
 
 
 def get_patched_edge(mocker, config) -> Edge:
     patch_edge(mocker)
-    edge=Edge(config)
+    edge = Edge(config)
     return edge
 
 # Functions for recurrent object patching
@@ -86,15 +88,15 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     return FreqtradeBot(config)
 
 
-def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]]=None) -> None:
+def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
     """
     Mocker to coinmarketcap to speed up tests
     :param mocker: mocker to patch coinmarketcap class
     :return: None
     """
 
-    tickermock=MagicMock(return_value={'price_usd': 12345.0})
-    listmock=MagicMock(return_value={'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
+    tickermock = MagicMock(return_value={'price_usd': 12345.0})
+    listmock = MagicMock(return_value={'data': [{'id': 1, 'name': 'Bitcoin', 'symbol': 'BTC',
                                                  'website_slug': 'bitcoin'},
                                                 {'id': 1027, 'name': 'Ethereum', 'symbol': 'ETH',
                                                  'website_slug': 'ethereum'}
@@ -110,7 +112,7 @@ def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]]=None) -> None:
 @pytest.fixture(scope="function")
 def default_conf():
     """ Returns validated configuration suitable for most tests """
-    configuration={
+    configuration = {
         "max_open_trades": 1,
         "stake_currency": "BTC",
         "stake_amount": 0.001,
