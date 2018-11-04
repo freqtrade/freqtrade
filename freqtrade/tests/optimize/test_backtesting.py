@@ -13,6 +13,7 @@ from arrow import Arrow
 
 from freqtrade import DependencyException, constants, optimize
 from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -91,7 +92,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 
     data = load_data_test(contour)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
-    min_date, max_date = Backtesting.get_timeframe(processed)
+    min_date, max_date = get_timeframe(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         {
@@ -128,7 +129,7 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
-    min_date, max_date = Backtesting.get_timeframe(processed)
+    min_date, max_date = get_timeframe(processed)
     return {
         'stake_amount': conf['stake_amount'],
         'processed': processed,
@@ -513,7 +514,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
-    min_date, max_date = Backtesting.get_timeframe(data_processed)
+    min_date, max_date = get_timeframe(data_processed)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
@@ -566,7 +567,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
-    min_date, max_date = Backtesting.get_timeframe(processed)
+    min_date, max_date = get_timeframe(processed)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
