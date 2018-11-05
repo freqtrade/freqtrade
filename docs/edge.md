@@ -22,22 +22,30 @@ The answer comes to two factors:
 Means over X trades what is the perctange of winning trades to total number of trades (note that we don't consider how much you gained but only If you won or not).
 
 
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;W = \frac{NumberOfWinningTrades}{TotalTrades}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+W = (Number of winning trades) / (Number of losing trades)
 
 ### Risk Reward Ratio
 Risk Reward Ratio is a formula used to measure the expected gains of a given investment against the risk of loss. it is basically what you potentially win divided by what you potentially lose:
 
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;R = \frac{Profit}{Loss}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+R = Profit / Loss
 
 Over time, on many trades, you can calculate your risk reward by dividing your average profit on winning trades by your average loss on losing trades:
 
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;R = \frac{\frac{\sum Profit}{NumberOfWinningTrades}}{\frac{\sum Loss}{NumberOfLosignTrades}}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+average profit = (Sum of profits) / (Number of winning trades)
+
+average loss = (Sum of losses) / (Number of losing trades)
+
+R = (average profit) / (average loss)
 
 ### Expectancy
 
 At this point we can combine W and R to create an expectancy ratio. This is a simple process of multiplying the risk reward ratio by the percentage of winning trades, and subtracting the percentage of losing trades, which is calculated as follows:
 
 Expectancy Ratio = (Risk Reward Ratio x Win Rate) – Loss Rate
+
+So lets say your Win rate is 28% and your Risk Reward Ratio is 5:
+
+Expectancy = (5 * 0.28) - 0.72 = 0.68
 
 Superficially, this means that on average you expect this strategy’s trades to return .68 times the size of your losers. This is important for two reasons: First, it may seem obvious, but you know right away that you have a positive return. Second, you now have a number you can compare to other candidate systems to make decisions about which ones you employ.
 
