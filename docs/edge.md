@@ -100,10 +100,11 @@ Number of days of data agaist which Edge calculates Win Rate, Risk Reward and Ex
 Note that it downloads historical data so increasing this number would lead to slowing down the bot
 
 #### total_capital_in_stake_currency
-This your total capital at risk. if edge is enabled then stake_amount is ignored in favor of this parameter
+This your total capital at risk in your stake currency. if edge is enabled then stake_amount is ignored in favor of this parameter
 
 #### allowed_risk
-Percentage of allowed risk per trade
+Percentage of allowed risk per trade<br/>
+default to 1%
 
 #### stoploss_range_min
 Minimum stoploss (default to -0.01)
@@ -114,7 +115,7 @@ Maximum stoploss (default to -0.10)
 #### stoploss_range_step
 As an example if this is set to -0.01 then Edge will test the strategy for [-0.01, -0,02, -0,03 ..., -0.09, -0.10] ranges.
 Note than having a smaller step means having a bigger range which could lead to slow calculation. <br/>
-if you set this parameter to -0.001, you then slow down the Edge calculatiob by a factor of 10
+if you set this parameter to -0.001, you then slow down the Edge calculation by a factor of 10
 
 #### minimum_winrate
 It filters pairs which don't have at least minimum_winrate (default to 0.60)
@@ -132,7 +133,6 @@ Default to 10 (it is highly recommanded not to decrease this number)
 #### max_trade_duration_minute
 Edge will filter out trades with long duration. if a trade is profitable after 1 month, it is hard to evaluate the stratgy based on it. but if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br/>
 Default to 1 day (1440 = 60 * 24)
-
 
 #### remove_pumps
 Edge will remove sudden pumps in a given market while going through historical data. however, given that pumps happen very often in crypto markets, we recommand you keep this off.<br/>
