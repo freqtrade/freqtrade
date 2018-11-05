@@ -5,6 +5,8 @@ This page explains how to use Edge Positioning module in your bot in order to en
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [How does it work?](#how-does-it-work?)
+- [Configurations](#configurations)
 
 ## Introduction
 Trading is all about probability. no one can claim that he has the strategy working all the time. you have to assume that sometimes you lose.<br/><br/>
@@ -52,3 +54,86 @@ Superficially, this means that on average you expect this strategy’s trades to
 It is important to remember that any system with an expectancy greater than 0 is profitable using past data. The key is finding one that will be profitable in the future.
 
 You can also use this number to evaluate the effectiveness of modifications to this system.
+
+**NOTICE:** It's important to keep in mind that Edge is testing your expectancy using historical data , there's no guarantee that you will have a similar edge in the future. It's still vital to do this testing in order to build confidence in your methodology, but be wary of "curve-fitting" your approach to the historical data as things are unlikely to play out the exact same way for future trades.
+
+## How does it work?
+If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. it then calculates win rate and expectancy over X trades for each stoploss. here is an example:
+
+| Pair   |      Stoploss      |  Win Rate | Risk Reward Ratio | Expectancy |
+|----------|:-------------:|-------------:|------------------:|-----------:|
+| XZC/ETH  |  -0.03        |   0.52       |1.359670           | 0.228      |
+| XZC/ETH  |  -0.01        |   0.50       |1.176384           | 0.088      |
+| XZC/ETH  |  -0.02        |   0.51       |1.115941           | 0.079      |
+
+The goal here is to find the best stoploss for the strategy in order to have the maximum expectancy. in the above example stoploss at 3% leads to the maximum expectancy according to historical data.
+
+Edge then forces stoploss to your strategy dynamically.
+
+### Position size
+Edge dictates the stake amount for each trade to the bot according to the following factors:
+
+- Allowed capital at risk
+- Stoploss
+
+Alowed capital at risk is calculated as follows:
+
+**allowed capital at risk** = **total capital** X **allowed risk per trade**
+
+**Stoploss** is calculated as described above against historical data.
+
+Your position size then will be:
+
+**position size** = **allowed capital at risk** / **stoploss**
+
+## Configurations
+Edge has following configurations:
+
+#### enabled
+If true, then Edge will run periodically
+
+#### process_throttle_secs
+How often should Edge run ? (in seconds)
+
+#### calculate_since_number_of_days
+Number of days of data agaist which Edge calculates Win Rate, Risk Reward and Expectancy
+Note that it downloads historical data so increasing this number would lead to slowing down the bot
+
+#### total_capital_in_stake_currency
+This your total capital at risk. if edge is enabled then stake_amount is ignored in favor of this parameter
+
+#### allowed_risk
+Percentage of allowed risk per trade
+
+#### stoploss_range_min
+Minimum stoploss (default to -0.01)
+
+#### stoploss_range_max
+Maximum stoploss (default to -0.10)
+
+#### stoploss_range_step
+As an example if this is set to -0.01 then Edge will test the strategy for [-0.01, -0,02, -0,03 ..., -0.09, -0.10] ranges.
+Note than having a smaller step means having a bigger range which could lead to slow calculation. <br/>
+if you set this parameter to -0.001, you then slow down the Edge calculatiob by a factor of 10
+
+#### minimum_winrate
+It filters pairs which don't have at least minimum_winrate (default to 0.60)
+This comes handy if you want to be conservative and don't comprise win rate in favor of risk reward ratio.
+
+#### minimum_expectancy
+It filters paris which have an expectancy lower than this number (default to 0.20)
+Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return.
+
+#### min_trade_number
+When calulating W and R and E (expectancy) against histoical data, you always want to have a minimum number of trades. the more this number is the more Edge is reliable. having a win rate of 100% on a single trade doesn't mean anything at all. but having a win rate of 70% over past 100 trades means clearly something. <br/>
+
+Default to 10 (it is highly recommanded not to decrease this number)
+
+#### max_trade_duration_minute
+Edge will filter out trades with long duration. if a trade is profitable after 1 month, it is hard to evaluate the stratgy based on it. but if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br/>
+Default to 1 day (1440 = 60 * 24)
+
+
+#### remove_pumps
+Edge will remove sudden pumps in a given market while going through historical data. however, given that pumps happen very often in crypto markets, we recommand you keep this off.<br/>
+Default to false
