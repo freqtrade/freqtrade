@@ -1,6 +1,6 @@
 #  Edge positioning
 
-This page explains how to use Edge Positioning module in your bot in order to enter into a trade only of the trade has a reasonable win rate and risk reward ration, and consequently adjust your position size and stoploss.
+This page explains how to use Edge Positioning module in your bot in order to enter into a trade only if the trade has a reasonable win rate and risk reward ratio, and consequently adjust your position size and stoploss.
 
 ## Table of Contents
 
@@ -9,7 +9,7 @@ This page explains how to use Edge Positioning module in your bot in order to en
 - [Configurations](#configurations)
 
 ## Introduction
-Trading is all about probability. no one can claim that he has the strategy working all the time. you have to assume that sometimes you lose.<br/><br/>
+Trading is all about probability. no one can claim that he has a strategy working all the time. you have to assume that sometimes you lose.<br/><br/>
 But it doesn't mean there is no rule, it only means rules should work "most of the time". let's play a game: we toss a coin, heads: I give you 10$, tails: You give me 10$. is it an interetsing game ? no, it is quite boring, isn't it?<br/><br/>
 But lets say the probabiliy that we have heads is 80%, and the probablilty that we have tails is 20%. now it is becoming interesting ...
 That means 10$ x 80% versus 10$ x 20%. 8$ versus 2$. that means over time you will win 8$ risking only 2$ on each toss of coin.<br/><br/>
