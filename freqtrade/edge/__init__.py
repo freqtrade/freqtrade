@@ -33,8 +33,6 @@ class Edge():
 
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
 
-        # Increasing recursive limit as with need it for large datasets
-        sys.setrecursionlimit(10000)
         self.config = config
         self.exchange = exchange
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
