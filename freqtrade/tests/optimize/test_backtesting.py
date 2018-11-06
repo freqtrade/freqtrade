@@ -685,6 +685,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker):
         return dataframe
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    patch_exchange(mocker)
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
     data = optimize.load_data(None, ticker_interval='5m', pairs=pairs)
     data = trim_dictlist(data, -500)
