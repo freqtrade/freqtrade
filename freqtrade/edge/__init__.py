@@ -20,6 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 class Edge():
+    """
+    Calculates Win Rate, Risk Reward Ratio, Expectancy
+    against historical data for a give set of markets and a strategy
+    it then adjusts stoploss and position size accordingly
+    and force it into the strategy
+    Author: https://github.com/mishaker
+    """
 
     config: Dict = {}
     _cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
@@ -48,6 +55,17 @@ class Edge():
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
+
+        self._stoploss_range_min = float(self.edge_config.get('stoploss_range_min', -0.01))
+        self._stoploss_range_max = float(self.edge_config.get('stoploss_range_max', -0.05))
+        self._stoploss_range_step = float(self.edge_config.get('stoploss_range_step', -0.001))
+
+        # calculating stoploss range
+        self._stoploss_range = np.arange(
+            self._stoploss_range_min,
+            self._stoploss_range_max,
+            self._stoploss_range_step
+        )
 
         self._timerange: TimeRange = Arguments.parse_timerange("%s-" % arrow.now().shift(
             days=-1 * self._since_number_of_days).format('YYYYMMDD'))
@@ -91,11 +109,6 @@ class Edge():
         )
         headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
 
-        stoploss_range_min = float(self.edge_config.get('stoploss_range_min', -0.01))
-        stoploss_range_max = float(self.edge_config.get('stoploss_range_max', -0.05))
-        stoploss_range_step = float(self.edge_config.get('stoploss_range_step', -0.001))
-        stoploss_range = np.arange(stoploss_range_min, stoploss_range_max, stoploss_range_step)
-
         trades: list = []
         for pair, pair_data in preprocessed.items():
             # Sorting dataframe by date and reset index
@@ -105,7 +118,7 @@ class Edge():
             ticker_data = self.advise_sell(
                 self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
-            trades += self._find_trades_for_stoploss_range(ticker_data, pair, stoploss_range)
+            trades += self._find_trades_for_stoploss_range(ticker_data, pair, self._stoploss_range)
 
         # If no trade found then exit
         if len(trades) == 0:
