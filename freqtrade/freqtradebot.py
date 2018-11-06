@@ -58,8 +58,13 @@ class FreqtradeBot(object):
         self.exchange = Exchange(self.config)
 
         # Initializing Edge only if enabled
-        if self.config.get('edge', {}).get('enabled', False):
-            self.edge = Edge(self.config, self.exchange)
+        self.edge = Edge(
+            self.config,
+            self.exchange) if self.config.get(
+            'edge',
+            {}).get(
+            'enabled',
+            False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
@@ -190,7 +195,7 @@ class FreqtradeBot(object):
             # Should be called before refresh_tickers
             # Otherwise it will override cached klines in exchange
             # with delta value (klines only from last refresh_pairs)
-            if self.config.get('edge', {}).get('enabled', False):
+            if self.edge:
                 self.edge.calculate()
 
             # Refreshing candles
@@ -332,7 +337,7 @@ class FreqtradeBot(object):
         for the stake currency
         :return: float: Stake Amount
         """
-        if self.config['edge']['enabled']:
+        if self.edge:
             stake_amount = self.edge.stake_amount(pair)
         else:
             stake_amount = self.config['stake_amount']
@@ -354,7 +359,7 @@ class FreqtradeBot(object):
                     stake_amount, self.config['stake_currency'])
             )
 
-        return float(stake_amount)
+        return stake_amount
 
     def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
         markets = self.exchange.get_markets()
@@ -407,7 +412,7 @@ class FreqtradeBot(object):
 
         # running get_signal on historical data fetched
         # to find buy signals
-        if self.config['edge']['enabled']:
+        if self.edge:
             whitelist = self.edge.filter(whitelist)
 
         for _pair in whitelist:
