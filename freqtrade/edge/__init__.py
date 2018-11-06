@@ -226,7 +226,7 @@ class Edge():
         # Then every value more than (standard deviation + 2*average) is out (pump)
         #
         # Removing Pumps
-        if self.edge_config.get('remove_pumps', True):
+        if self.edge_config.get('remove_pumps', False):
             results = results.groupby(['pair', 'stoploss']).apply(
                 lambda x: x[x['profit_abs'] < 2 * x['profit_abs'].std() + x['profit_abs'].mean()])
         ##########################################################################
@@ -249,7 +249,7 @@ class Edge():
             'trade_duration': [('avg_trade_duration', 'mean')]
         }
 
-        # Group by (pair and stoploss) the applying above aggregator
+        # Group by (pair and stoploss) by applying above aggregator
         df = results.groupby(['pair', 'stoploss'])['profit_abs', 'trade_duration'].agg(
             groupby_aggregator).reset_index(col_level=1)
 
@@ -264,14 +264,14 @@ class Edge():
         # Win rate = number of profitable trades / number of trades
         df['winrate'] = df['nb_win_trades'] / df['nb_trades']
 
-        # risk_reward_ratio = 1 / (average loss / average win)
-        df['risk_reward_ratio'] = 1 / (df['average_loss'] / df['average_win'])
+        # risk_reward_ratio = average win / average loss
+        df['risk_reward_ratio'] = df['average_win'] / df['average_loss']
 
         # required_risk_reward = (1 / winrate) - 1
         df['required_risk_reward'] = (1 / df['winrate']) - 1
 
-        # expectancy = ((1 + average_win/average_loss) * winrate) - 1
-        df['expectancy'] = ((1 + df['average_win'] / df['average_loss']) * df['winrate']) - 1
+        # expectancy = (risk_reward_ratio * winrate) - (lossrate)
+        df['expectancy'] = (df['risk_reward_ratio'] * df['winrate']) - (1 - df['winrate'])
 
         # sort by expectancy and stoploss
         df = df.sort_values(by=['expectancy', 'stoploss'], ascending=False).groupby(
