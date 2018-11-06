@@ -56,7 +56,7 @@
     "edge": {
         "enabled": false,
         "process_throttle_secs": 3600,
-        "calculate_since_number_of_days": 2,
+        "calculate_since_number_of_days": 7,
         "total_capital_in_stake_currency": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,

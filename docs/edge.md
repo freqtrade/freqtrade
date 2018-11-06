@@ -9,12 +9,12 @@ This page explains how to use Edge Positioning module in your bot in order to en
 - [Configurations](#configurations)
 
 ## Introduction
-Trading is all about probability. no one can claim that he has a strategy working all the time. you have to assume that sometimes you lose.<br/><br/>
-But it doesn't mean there is no rule, it only means rules should work "most of the time". let's play a game: we toss a coin, heads: I give you 10$, tails: You give me 10$. is it an interetsing game ? no, it is quite boring, isn't it?<br/><br/>
-But lets say the probabiliy that we have heads is 80%, and the probablilty that we have tails is 20%. now it is becoming interesting ...
-That means 10$ x 80% versus 10$ x 20%. 8$ versus 2$. that means over time you will win 8$ risking only 2$ on each toss of coin.<br/><br/>
-lets complicate it more: you win 80% of the time but only 2$, I win 20% of the time but 8$. the calculation is: 80% * 2$ versus 20% * 8$. it is becoming boring again because overtime you win $1.6$ (80% x 2$) and me $1.6 (20% * 8$) too.<br/><br/>
-The question is: how do you calculate that? how do you know if you wanna play?
+Trading is all about probability. No one can claim that he has a strategy working all the time. You have to assume that sometimes you lose.<br/><br/>
+But it doesn't mean there is no rule, it only means rules should work "most of the time". Let's play a game: we toss a coin, heads: I give you 10$, tails: You give me 10$. Is it an interetsing game ? no, it is quite boring, isn't it?<br/><br/>
+But lets say the probabiliy that we have heads is 80%, and the probablilty that we have tails is 20%. Now it is becoming interesting ...
+That means 10$ x 80% versus 10$ x 20%. 8$ versus 2$. That means over time you will win 8$ risking only 2$ on each toss of coin.<br/><br/>
+Lets complicate it more: you win 80% of the time but only 2$, I win 20% of the time but 8$. The calculation is: 80% * 2$ versus 20% * 8$. It is becoming boring again because overtime you win $1.6$ (80% x 2$) and me $1.6 (20% * 8$) too.<br/><br/>
+The question is: How do you calculate that? how do you know if you wanna play?
 The answer comes to two factors:
 - Win Rate
 - Risk Reward Ratio
@@ -27,7 +27,7 @@ Means over X trades what is the perctange of winning trades to total number of t
 W = (Number of winning trades) / (Number of losing trades)
 
 ### Risk Reward Ratio
-Risk Reward Ratio is a formula used to measure the expected gains of a given investment against the risk of loss. it is basically what you potentially win divided by what you potentially lose:
+Risk Reward Ratio is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose:
 
 R = Profit / Loss
 
@@ -58,7 +58,7 @@ You can also use this number to evaluate the effectiveness of modifications to t
 **NOTICE:** It's important to keep in mind that Edge is testing your expectancy using historical data , there's no guarantee that you will have a similar edge in the future. It's still vital to do this testing in order to build confidence in your methodology, but be wary of "curve-fitting" your approach to the historical data as things are unlikely to play out the exact same way for future trades.
 
 ## How does it work?
-If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. it then calculates win rate and expectancy over X trades for each stoploss. here is an example:
+If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. It then calculates win rate and expectancy over X trades for each stoploss. Here is an example:
 
 | Pair   |      Stoploss      |  Win Rate | Risk Reward Ratio | Expectancy |
 |----------|:-------------:|-------------:|------------------:|-----------:|
@@ -66,7 +66,7 @@ If enabled in config, Edge will go through historical data with a range of stopl
 | XZC/ETH  |  -0.01        |   0.50       |1.176384           | 0.088      |
 | XZC/ETH  |  -0.02        |   0.51       |1.115941           | 0.079      |
 
-The goal here is to find the best stoploss for the strategy in order to have the maximum expectancy. in the above example stoploss at 3% leads to the maximum expectancy according to historical data.
+The goal here is to find the best stoploss for the strategy in order to have the maximum expectancy. In the above example stoploss at 3% leads to the maximum expectancy according to historical data.
 
 Edge then forces stoploss to your strategy dynamically.
 
@@ -93,18 +93,19 @@ Edge has following configurations:
 If true, then Edge will run periodically
 
 #### process_throttle_secs
-How often should Edge run ? (in seconds)
+How often should Edge run in seconds? (default to 3600 so one hour)
 
 #### calculate_since_number_of_days
 Number of days of data agaist which Edge calculates Win Rate, Risk Reward and Expectancy
-Note that it downloads historical data so increasing this number would lead to slowing down the bot
+Note that it downloads historical data so increasing this number would lead to slowing down the bot<br/>
+(default to 7)
 
 #### total_capital_in_stake_currency
-This your total capital at risk in your stake currency. if edge is enabled then stake_amount is ignored in favor of this parameter
+This your total capital at risk in your stake currency. If edge is enabled then stake_amount is ignored in favor of this parameter
 
 #### allowed_risk
 Percentage of allowed risk per trade<br/>
-default to 1%
+(default to 1%)
 
 #### stoploss_range_min
 Minimum stoploss (default to -0.01)
@@ -126,14 +127,14 @@ It filters paris which have an expectancy lower than this number (default to 0.2
 Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return.
 
 #### min_trade_number
-When calulating W and R and E (expectancy) against histoical data, you always want to have a minimum number of trades. the more this number is the more Edge is reliable. having a win rate of 100% on a single trade doesn't mean anything at all. but having a win rate of 70% over past 100 trades means clearly something. <br/>
+When calulating W and R and E (expectancy) against histoical data, you always want to have a minimum number of trades. The more this number is the more Edge is reliable. Having a win rate of 100% on a single trade doesn't mean anything at all. But having a win rate of 70% over past 100 trades means clearly something. <br/>
 
 Default to 10 (it is highly recommanded not to decrease this number)
 
 #### max_trade_duration_minute
-Edge will filter out trades with long duration. if a trade is profitable after 1 month, it is hard to evaluate the stratgy based on it. but if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br/>
+Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the stratgy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br/>
 Default to 1 day (1440 = 60 * 24)
 
 #### remove_pumps
-Edge will remove sudden pumps in a given market while going through historical data. however, given that pumps happen very often in crypto markets, we recommand you keep this off.<br/>
+Edge will remove sudden pumps in a given market while going through historical data. However, given that pumps happen very often in crypto markets, we recommand you keep this off.<br/>
 Default to false
