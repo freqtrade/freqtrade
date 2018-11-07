@@ -316,15 +316,16 @@ class Edge():
 
         return result
 
-    def _detect_next_stop_or_sell_point(
-            self,
-            buy_column,
-            sell_column,
-            date_column,
-            ohlc_columns,
-            stoploss,
-            pair,
-            start_point=0):
+    def _detect_next_stop_or_sell_point(self, buy_column, sell_column, date_column,
+                                        ohlc_columns, stoploss, pair, start_point=0):
+        """
+        Iterate through ohlc_columns recursively in order to find the next trade
+        Next trade opens from the first buy signal noticed to
+        The sell or stoploss signal after it.
+        It then calls itself cutting OHLC, buy_column, sell_colum and date_column
+        Cut from (the exit trade index) + 1
+        Author: https://github.com/mishaker
+        """
 
         result: list = []
         open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
