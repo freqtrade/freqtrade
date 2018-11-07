@@ -139,6 +139,7 @@ When calculating W and R and E (expectancy) against historical data, you always 
 
 #### max_trade_duration_minute
 Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the strategy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br/>
+**NOTICE:** While configuring this value, you should take into consideration your ticker interval. as an example filtering out trades having duration less than one day for a strategy which has 4h interval does not make sense. default value is set assuming your strategy interval is relatively small (1m or 5m, etc).<br/>
 (default to 1 day, 1440 = 60 * 24)
 
 #### remove_pumps
