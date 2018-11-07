@@ -108,7 +108,7 @@ class Arguments(object):
             '--customhyperopt',
             help='specify hyperopt class name (default: %(default)s)',
             dest='hyperopt',
-            default=Constants.DEFAULT_HYPEROPT,
+            default=constants.DEFAULT_HYPEROPT,
             type=str,
             metavar='NAME',
         )

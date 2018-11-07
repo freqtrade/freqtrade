@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Optional, Dict, Type
 
-from freqtrade.constants import Constants
+from freqtrade.constants import DEFAULT_HYPEROPT
 from freqtrade.optimize.interface import IHyperOpt
 
 
@@ -31,7 +31,7 @@ class HyperOptResolver(object):
         config = config or {}
 
         # Verify the hyperopt is in the configuration, otherwise fallback to the default hyperopt
-        hyperopt_name = config.get('hyperopt') or Constants.DEFAULT_HYPEROPT
+        hyperopt_name = config.get('hyperopt') or DEFAULT_HYPEROPT
         self.hyperopt = self._load_hyperopt(hyperopt_name, extra_dir=config.get('hyperopt_path'))
 
     def _load_hyperopt(
