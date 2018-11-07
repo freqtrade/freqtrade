@@ -2,7 +2,6 @@ from freqtrade.tests.conftest import get_patched_exchange
 from freqtrade.edge import Edge
 from pandas import DataFrame, to_datetime
 from freqtrade.strategy.interface import SellType
-from collections import namedtuple
 import arrow
 import numpy as np
 import math
@@ -21,8 +20,6 @@ from unittest.mock import MagicMock
 ticker_start_time = arrow.get(2018, 10, 3)
 ticker_interval_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
-_pair_info = namedtuple(
-    'pair_info', 'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
 
 
 def test_filter(mocker, default_conf):
@@ -30,9 +27,9 @@ def test_filter(mocker, default_conf):
     edge = Edge(default_conf, exchange)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'C/D': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'N/O': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
+            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
         }
     ))
 
@@ -45,9 +42,9 @@ def test_stoploss(mocker, default_conf):
     edge = Edge(default_conf, exchange)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'C/D': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'N/O': _pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
+            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
+            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
         }
     ))
 

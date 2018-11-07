@@ -30,6 +30,11 @@ class Edge():
     config: Dict = {}
     _cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
 
+    # pair info data type
+    _pair_info = namedtuple(
+        'pair_info',
+        ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy'])
+
     def __init__(self, config: Dict[str, Any], exchange=None) -> None:
 
         self.config = config
@@ -42,10 +47,6 @@ class Edge():
         self.advise_buy = self.strategy.advise_buy
 
         self.edge_config = self.config.get('edge', {})
-
-        # pair info data type
-        self._pair_info = namedtuple(
-            'pair_info', 'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
 
         self._total_capital: float = self.edge_config.get('total_capital_in_stake_currency')
