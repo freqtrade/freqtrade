@@ -518,18 +518,18 @@ def test_backtest(default_conf, fee, mocker) -> None:
 
     expected = pd.DataFrame(
         {'pair': [pair, pair],
-         'profit_percent': [0.00029977, 0.00056716],
-         'profit_abs': [1.49e-06, 7.6e-07],
+         'profit_percent': [0.0, 0.0],
+         'profit_abs': [0.0, 0.0],
          'open_time': [Arrow(2018, 1, 29, 18, 40, 0).datetime,
                        Arrow(2018, 1, 30, 3, 30, 0).datetime],
-         'close_time': [Arrow(2018, 1, 29, 22, 40, 0).datetime,
-                        Arrow(2018, 1, 30, 4, 20, 0).datetime],
+         'close_time': [Arrow(2018, 1, 29, 22, 35, 0).datetime,
+                        Arrow(2018, 1, 30, 4, 15, 0).datetime],
          'open_index': [77, 183],
-         'close_index': [125, 193],
-         'trade_duration': [240, 50],
+         'close_index': [124, 192],
+         'trade_duration': [235, 45],
          'open_at_end': [False, False],
          'open_rate': [0.104445, 0.10302485],
-         'close_rate': [0.105, 0.10359999],
+         'close_rate': [0.104969, 0.103541],
          'sell_reason': [SellType.ROI, SellType.ROI]
          })
     pd.testing.assert_frame_equal(results, expected)
@@ -539,9 +539,11 @@ def test_backtest(default_conf, fee, mocker) -> None:
         # Check open trade rate alignes to open rate
         assert ln is not None
         assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
-        # check close trade rate alignes to close rate
+        # check close trade rate alignes to close rate or is between high and low
         ln = data_pair.loc[data_pair["date"] == t["close_time"]]
-        assert round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6)
+        assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
+                round(ln.iloc[0]["low"], 6) < round(
+                t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
 
 
 def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
@@ -580,7 +582,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 18], ['lower', 0], ['sine', 16]]
+    tests = [['raise', 18], ['lower', 0], ['sine', 19]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
 
