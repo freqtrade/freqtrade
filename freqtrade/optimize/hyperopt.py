@@ -105,7 +105,7 @@ class Hyperopt(Backtesting):
             best_result['params']
         )
         if 'roi_t1' in best_result['params']:
-            logger.info('ROI table:\n%s', self.generate_roi_table(best_result['params']))
+            logger.info('ROI table:\n%s', self.custom_hyperopt.generate_roi_table(best_result['params']))
 
     def log_results(self, results) -> None:
         """
@@ -147,19 +147,20 @@ class Hyperopt(Backtesting):
         """
         spaces: List[Dimension] = []
         if self.has_space('buy'):
-            spaces = {**spaces, **self.custom_hyperopt.indicator_space()}
+            spaces += self.custom_hyperopt.indicator_space()
         if self.has_space('roi'):
-            spaces = {**spaces, **self.custom_hyperopt.roi_space()}
+            spaces += self.custom_hyperopt.roi_space()
         if self.has_space('stoploss'):
-            spaces = {**spaces, **self.custom_hyperopt.stoploss_space()}
+            spaces += self.custom_hyperopt.stoploss_space()
         return spaces
 
-    def generate_optimizer(self, params: Dict) -> Dict:
+    def generate_optimizer(self, _params: Dict) -> Dict:
+        params = self.get_args(_params)
         if self.has_space('roi'):
-            self.analyze.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
+            self.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
 
         if self.has_space('buy'):
-            self.populate_buy_trend = self.custom_hyperopt.buy_strategy_generator(params)
+            self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']

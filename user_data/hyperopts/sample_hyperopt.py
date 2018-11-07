@@ -11,13 +11,21 @@ from skopt.space import Categorical, Dimension, Integer, Real
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.interface import IHyperOpt
 
-class_name = 'DefaultHyperOpts'
+class_name = 'SampleHyperOpts'
 
 
-class DefaultHyperOpts(IHyperOpt):
+# This class is a sample. Feel free to customize it.
+class SampleHyperOpts(IHyperOpt):
     """
-    Default hyperopt provided by freqtrade bot.
-    You can override it with your own hyperopt
+    This is a test hyperopt to inspire you.
+    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md
+     You can:
+    - Rename the class name (Do not forget to update class_name)
+    - Add any methods you want to build your hyperopt
+    - Add any lib you need to build your hyperopt
+     You must keep:
+    - the prototype for the methods: populate_indicators, indicator_space, buy_strategy_generator,
+    roi_space, generate_roi_table, stoploss_space
     """
 
     @staticmethod
