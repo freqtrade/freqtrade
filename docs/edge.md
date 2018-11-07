@@ -90,10 +90,12 @@ Your position size then will be:
 Edge has following configurations:
 
 #### enabled
-If true, then Edge will run periodically
+If true, then Edge will run periodically<br/>
+(default to false)
 
 #### process_throttle_secs
-How often should Edge run in seconds? (default to 3600 so one hour)
+How often should Edge run in seconds? <br/>
+(default to 3600 so one hour)
 
 #### calculate_since_number_of_days
 Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy
@@ -108,33 +110,37 @@ Percentage of allowed risk per trade<br/>
 (default to 1%)
 
 #### stoploss_range_min
-Minimum stoploss (default to -0.01)
+Minimum stoploss <br/>
+(default to -0.01)
 
 #### stoploss_range_max
-Maximum stoploss (default to -0.10)
+Maximum stoploss <br/>
+(default to -0.10)
 
 #### stoploss_range_step
 As an example if this is set to -0.01 then Edge will test the strategy for [-0.01, -0,02, -0,03 ..., -0.09, -0.10] ranges.
 Note than having a smaller step means having a bigger range which could lead to slow calculation. <br/>
-if you set this parameter to -0.001, you then slow down the Edge calculation by a factor of 10
+if you set this parameter to -0.001, you then slow down the Edge calculation by a factor of 10. <br/>
+(default to -0.01)
 
 #### minimum_winrate
-It filters pairs which don't have at least minimum_winrate (default to 0.60)
-This comes handy if you want to be conservative and don't comprise win rate in favor of risk reward ratio.
+It filters pairs which don't have at least minimum_winrate.
+This comes handy if you want to be conservative and don't comprise win rate in favor of risk reward ratio.<br/>
+(default to 0.60)
 
 #### minimum_expectancy
-It filters paris which have an expectancy lower than this number (default to 0.20)
-Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return.
+It filters paris which have an expectancy lower than this number .
+Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return.<br/>
+(default to 0.20)
 
 #### min_trade_number
 When calculating W and R and E (expectancy) against historical data, you always want to have a minimum number of trades. The more this number is the more Edge is reliable. Having a win rate of 100% on a single trade doesn't mean anything at all. But having a win rate of 70% over past 100 trades means clearly something. <br/>
-
-Default to 10 (it is highly recommended not to decrease this number)
+(default to 10, it is highly recommended not to decrease this number)
 
 #### max_trade_duration_minute
 Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the strategy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br/>
-Default to 1 day (1440 = 60 * 24)
+(default to 1 day, 1440 = 60 * 24)
 
 #### remove_pumps
 Edge will remove sudden pumps in a given market while going through historical data. However, given that pumps happen very often in crypto markets, we recommend you keep this off.<br/>
-Default to false
+(default to false)
