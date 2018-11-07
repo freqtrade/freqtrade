@@ -2,6 +2,7 @@
 """ Edge positioning package """
 import logging
 from typing import Any, Dict
+from collections import namedtuple
 import arrow
 
 import numpy as np
@@ -12,8 +13,7 @@ import freqtrade.optimize as optimize
 from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
-from collections import namedtuple
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,11 @@ class Edge():
         'pair_info',
         ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy'])
 
-    def __init__(self, config: Dict[str, Any], exchange=None) -> None:
+    def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
 
         self.config = config
         self.exchange = exchange
-        self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.strategy = strategy
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
         self.get_timeframe = optimize.get_timeframe

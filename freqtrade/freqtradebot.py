@@ -58,7 +58,7 @@ class FreqtradeBot(object):
         self.exchange = Exchange(self.config)
 
         # Initializing Edge only if enabled
-        self.edge = Edge(self.config, self.exchange) if \
+        self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
