@@ -92,6 +92,8 @@ class Edge():
         )
 
         if not data:
+            # Reinitializing cached pairs
+            self._cached_pairs = {}
             logger.critical("No data found. Edge is stopped ...")
             return False
 

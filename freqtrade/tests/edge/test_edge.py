@@ -22,7 +22,7 @@ ticker_interval_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
 
-def test_filter(mocker, default_conf):
+def test_adjust(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
     edge = Edge(default_conf, exchange)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
@@ -34,7 +34,7 @@ def test_filter(mocker, default_conf):
     ))
 
     pairs = ['A/B', 'C/D', 'E/F', 'G/H']
-    assert(edge.filter(pairs) == ['E/F', 'C/D'])
+    assert(edge.adjust(pairs) == ['E/F', 'C/D'])
 
 
 def test_stoploss(mocker, default_conf):
