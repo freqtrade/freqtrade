@@ -58,13 +58,8 @@ class FreqtradeBot(object):
         self.exchange = Exchange(self.config)
 
         # Initializing Edge only if enabled
-        self.edge = Edge(
-            self.config,
-            self.exchange) if self.config.get(
-            'edge',
-            {}).get(
-            'enabled',
-            False) else None
+        self.edge = Edge(self.config, self.exchange) if \
+            self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
@@ -653,10 +648,10 @@ class FreqtradeBot(object):
         return False
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
-        if (self.config['edge']['enabled']):
+        if self.edge:
             stoploss = self.edge.stoploss(trade.pair)
             should_sell = self.strategy.should_sell(
-                trade, sell_rate, datetime.utcnow(), buy, sell, stoploss)
+                trade, sell_rate, datetime.utcnow(), buy, sell, force_stoploss=stoploss)
         else:
             should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
 
