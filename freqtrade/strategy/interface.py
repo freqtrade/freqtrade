@@ -203,7 +203,8 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None, force_stoploss: float = 0) -> SellCheckTuple:
+                    sell: bool, low: float = None, high: float = None,
+                    force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.

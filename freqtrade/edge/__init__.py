@@ -14,7 +14,6 @@ from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from collections import namedtuple
-import sys
 
 logger = logging.getLogger(__name__)
 
