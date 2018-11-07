@@ -152,10 +152,12 @@ class Edge():
     def stoploss(self, pair: str) -> float:
         return self._cached_pairs[pair].stoploss
 
-    def filter(self, pairs) -> list:
+    def adjust(self, pairs) -> list:
+        """
+        Filters out and sorts "pairs" according to Edge calculated pairs
+        """
 
         final = []
-
         for pair, info in self._cached_pairs.items():
             if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
                 info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)) and \
@@ -163,10 +165,7 @@ class Edge():
                 final.append(pair)
 
         if final:
-            logger.info(
-                'Edge validated only %s',
-                final
-            )
+            logger.info('Edge validated only %s', final)
         else:
             logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
 
