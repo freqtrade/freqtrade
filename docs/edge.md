@@ -2,6 +2,8 @@
 
 This page explains how to use Edge Positioning module in your bot in order to enter into a trade only if the trade has a reasonable win rate and risk reward ratio, and consequently adjust your position size and stoploss.
 
+**NOTICE:** Edge positioning is not compatible with dynamic whitelist. it overrides dynamic whitelist.
+
 ## Table of Contents
 
 - [Introduction](#introduction)
