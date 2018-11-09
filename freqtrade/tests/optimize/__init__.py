@@ -4,9 +4,10 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.strategy.interface import SellType
+from freqtrade.constants import TICKER_INTERVAL_MINUTES
 
 ticker_start_time = arrow.get(2018, 10, 3)
-ticker_interval_in_minute = 60
+tests_ticker_interval = "1h"
 
 
 class BTrade(NamedTuple):
@@ -31,7 +32,7 @@ class BTContainer(NamedTuple):
 
 def _get_frame_time_from_offset(offset):
     return ticker_start_time.shift(
-        minutes=(offset * ticker_interval_in_minute)).datetime
+        minutes=(offset * TICKER_INTERVAL_MINUTES[tests_ticker_interval])).datetime
 
 
 def _build_backtest_dataframe(ticker_with_signals):
