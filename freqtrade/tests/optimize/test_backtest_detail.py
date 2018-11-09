@@ -174,18 +174,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
 
     assert len(results) == len(data.trades)
     assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
-    # if data.sell_r == SellType.STOP_LOSS:
-    #     assert log_has("Stop loss hit.", caplog.record_tuples)
-    # else:
-    #     assert not log_has("Stop loss hit.", caplog.record_tuples)
-    # log_test = (f'Force_selling still open trade UNITTEST/BTC with '
-    #             f'{results.iloc[-1].profit_percent} perc - {results.iloc[-1].profit_abs}')
-    # if data.sell_r == SellType.FORCE_SELL:
-    #     assert log_has(log_test,
-    #                    caplog.record_tuples)
-    # else:
-    #     assert not log_has(log_test,
-    #                        caplog.record_tuples)
+
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.sell_reason == trade.sell_reason
