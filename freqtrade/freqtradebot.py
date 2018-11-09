@@ -192,6 +192,7 @@ class FreqtradeBot(object):
             # with delta value (klines only from last refresh_pairs)
             if self.edge:
                 self.edge.calculate()
+                self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
 
             # Refreshing candles
             self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
@@ -406,10 +407,6 @@ class FreqtradeBot(object):
             raise DependencyException('No currency pairs in whitelist')
 
         # running get_signal on historical data fetched
-        # to find buy signals
-        if self.edge:
-            whitelist = self.edge.adjust(whitelist)
-
         for _pair in whitelist:
             (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
             if buy and not sell:
