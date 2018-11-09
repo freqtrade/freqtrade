@@ -88,6 +88,10 @@ Your position size then will be:
 
 **position size** = **allowed capital at risk** / **stoploss**
 
+Example:
+Let's say your total capital is 3 ETH, you would allow 1% of risk for each trade. thus your allowed capital at risk would be **3 x 0.01 = 0.03 ETH**. Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.03 / 0.02= 1.5ETH**.<br/>
+**Notice:** if Edge is enabled, the stake_amount config is overriden by total_capital_in_stake_currency config explained below (see configuration part)
+
 ## Configurations
 Edge has following configurations:
 
