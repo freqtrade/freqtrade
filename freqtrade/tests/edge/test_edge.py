@@ -1,16 +1,19 @@
-# pragma pylint: disable=missing-docstring, C0103
+# pragma pylint: disable=missing-docstring, C0103, C0330
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
+import pytest
+import logging
 from freqtrade.tests.conftest import get_patched_freqtradebot
 from freqtrade.edge import Edge
 from pandas import DataFrame, to_datetime
 from freqtrade.strategy.interface import SellType
+from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
+                                      _get_frame_time_from_offset)
 import arrow
 import numpy as np
 import math
 
 from unittest.mock import MagicMock
-
 
 # Cases to be tested:
 # 1) Open trade should be removed from the end
@@ -23,6 +26,101 @@ from unittest.mock import MagicMock
 ticker_start_time = arrow.get(2018, 10, 3)
 ticker_interval_in_minute = 60
 _ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
+
+
+# Open trade should be removed from the end
+tc0 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 1]],  # enter trade (signal on last candle)
+    stop_loss=-0.99, roi=float('inf'), profit_perc=0.00,
+    trades=[]
+)
+
+# Two complete trades within dataframe(with sell hit for all)
+tc1 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 1],  # enter trade (signal on last candle)
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],  # exit at open
+    [3, 5000, 5025, 4975, 4987, 6172, 1, 0],  # no action
+    [4, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should enter the trade
+    [5, 5000, 5025, 4975, 4987, 6172, 0, 1],  # no action
+    [6, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should sell
+],
+    stop_loss=-0.99, roi=float('inf'), profit_perc=0.00,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=2),
+            BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=4, close_tick=6)]
+)
+
+# 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
+tc2 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4600, 4987, 6172, 0, 0],  # enter trade, stoploss hit
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
+],
+    stop_loss=-0.01, roi=float('inf'), profit_perc=-0.01,
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+# 4) Entered, sl 3 %, candle drops 4%, recovers to 1 % = > Trade closed, 3 % loss
+tc3 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4800, 4987, 6172, 0, 0],  # enter trade, stoploss hit
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
+],
+    stop_loss=-0.03, roi=float('inf'), profit_perc=-0.03,
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+#5) Stoploss and sell are hit. should sell on stoploss
+tc4=BTContainer(data = [
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4800, 4987, 6172, 0, 1],  # enter trade, stoploss hit, sell signal
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
+],
+    stop_loss = -0.03, roi = float('inf'), profit_perc = -0.03,
+    trades = [BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+TESTS = [
+    tc0,
+    tc1,
+    tc2,
+    tc3,
+    tc4
+]
+
+
+@pytest.mark.parametrize("data", TESTS)
+def test_edge_results(edge_conf, mocker, caplog, data) -> None:
+    """
+    run functional tests
+    """
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+    frame = _build_backtest_dataframe(data.data)
+    caplog.set_level(logging.DEBUG)
+    edge.fee = 0
+
+    trades = edge._find_trades_for_stoploss_range(frame, 'TEST/BTC', [data.stop_loss])
+    results = edge._fill_calculable_fields(DataFrame(trades)) if trades else DataFrame()
+
+    print(results)
+
+    assert len(trades) == len(data.trades)
+
+    if not results.empty:
+        assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
+
+    for c, trade in enumerate(data.trades):
+        res = results.iloc[c]
+        assert res.exit_type == trade.sell_reason
+        assert res.open_time == _get_frame_time_from_offset(trade.open_tick)
+        assert res.close_time == _get_frame_time_from_offset(trade.close_tick)
 
 
 def test_adjust(mocker, default_conf):
@@ -94,10 +192,10 @@ def _time_on_candle(number):
         minutes=(number * ticker_interval_in_minute)).timestamp * 1000, 'ms')
 
 
-def test_edge_heartbeat_calculate(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-    heartbeat = default_conf['edge']['process_throttle_secs']
+def test_edge_heartbeat_calculate(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+    heartbeat = edge_conf['edge']['process_throttle_secs']
 
     # should not recalculate if heartbeat not reached
     edge._last_updated = arrow.utcnow().timestamp - heartbeat + 1
@@ -148,15 +246,15 @@ def test_edge_process_downloaded_data(mocker, default_conf):
     assert edge._last_updated <= arrow.utcnow().timestamp + 2
 
 
-def test_process_expectancy(mocker, default_conf):
-    default_conf['edge']['min_trade_number'] = 2
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+def test_process_expectancy(mocker, edge_conf):
+    edge_conf['edge']['min_trade_number'] = 2
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
 
     def get_fee():
         return 0.001
 
     freqtrade.exchange.get_fee = get_fee
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
     trades = [
         {'pair': 'TEST/BTC',
@@ -210,157 +308,3 @@ def test_process_expectancy(mocker, default_conf):
     assert round(final['TEST/BTC'].risk_reward_ratio, 10) == 306.5384615384
     assert round(final['TEST/BTC'].required_risk_reward, 10) == 2.0
     assert round(final['TEST/BTC'].expectancy, 10) == 101.5128205128
-
-# 1) Open trade should be removed from the end
-
-
-def test_case_1(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-
-    stoploss = -0.99  # we don't want stoploss to be hit in this test
-    ticker = [
-        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        # D, B,  O,  H,  L,  C, S
-        [3, 1, 12, 25, 11, 20, 0],  # ->
-        [4, 0, 20, 30, 19, 25, 1],  # -> should enter the trade
-    ]
-
-    ticker_df = _build_dataframe(ticker)
-    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
-
-    # No trade should be found
-    assert len(trades) == 0
-
-
-# 2) Two complete trades within dataframe (with sell hit for all)
-def test_case_2(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-
-    stoploss = -0.99  # we don't want stoploss to be hit in this test
-    ticker = [
-        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        # D, B,  O,  H,  L,  C, S
-        [0, 1, 15, 20, 12, 17, 0],  # -> no action
-        [1, 0, 17, 18, 13, 14, 1],  # -> should enter the trade as B signal recieved on last candle
-        [2, 0, 14, 15, 11, 12, 0],  # -> exit the trade as the sell signal recieved on last candle
-        [3, 1, 12, 25, 11, 20, 0],  # -> no action
-        [4, 0, 20, 30, 19, 25, 0],  # -> should enter the trade
-        [5, 0, 25, 27, 22, 26, 1],  # -> no action
-        [6, 0, 26, 36, 25, 35, 0],  # -> should sell
-    ]
-
-    ticker_df = _build_dataframe(ticker)
-    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
-
-    # Two trades must have occured
-    assert len(trades) == 2
-
-    # First trade check
-    assert trades[0]['open_time'] == _time_on_candle(1)
-    assert trades[0]['close_time'] == _time_on_candle(2)
-    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
-    assert trades[0]['close_rate'] == ticker[2][_ohlc['open']]
-    assert trades[0]['exit_type'] == SellType.SELL_SIGNAL
-    ##############################################################
-
-    # Second trade check
-    assert trades[1]['open_time'] == _time_on_candle(4)
-    assert trades[1]['close_time'] == _time_on_candle(6)
-    assert trades[1]['open_rate'] == ticker[4][_ohlc['open']]
-    assert trades[1]['close_rate'] == ticker[6][_ohlc['open']]
-    assert trades[1]['exit_type'] == SellType.SELL_SIGNAL
-    ##############################################################
-
-
-# 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
-def test_case_3(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-
-    stoploss = -0.01  # we don't want stoploss to be hit in this test
-    ticker = [
-        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        # D, B,  O,  H,  L,  C, S
-        [0, 1, 15, 20, 12, 17, 0],  # -> no action
-        [1, 0, 14, 15, 11, 12, 0],  # -> enter to trade, stoploss hit
-        [2, 1, 12, 25, 11, 20, 0],  # -> no action
-    ]
-
-    ticker_df = _build_dataframe(ticker)
-    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
-
-    # Two trades must have occured
-    assert len(trades) == 1
-
-    # First trade check
-    assert trades[0]['open_time'] == _time_on_candle(1)
-    assert trades[0]['close_time'] == _time_on_candle(1)
-    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
-    assert trades[0]['close_rate'] == (stoploss + 1) * trades[0]['open_rate']
-    assert trades[0]['exit_type'] == SellType.STOP_LOSS
-    ##############################################################
-
-
-# 4) Entered, sl 3 %, candle drops 4%, recovers to 1 % = > Trade closed, 3 % loss
-def test_case_4(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-
-    stoploss = -0.03  # we don't want stoploss to be hit in this test
-    ticker = [
-        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        # D, B,  O,  H,  L,   C,    S
-        [0, 1, 15, 20, 12, 17, 0],  # -> no action
-        [1, 0, 17, 22, 16.90, 17, 0],  # -> enter to trade
-        [2, 0, 16, 17, 14.4, 15.5, 0],  # -> stoploss hit
-        [3, 0, 17, 25, 16.9, 22, 0],  # -> no action
-    ]
-
-    ticker_df = _build_dataframe(ticker)
-    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
-
-    # Two trades must have occured
-    assert len(trades) == 1
-
-    # First trade check
-    assert trades[0]['open_time'] == _time_on_candle(1)
-    assert trades[0]['close_time'] == _time_on_candle(2)
-    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
-    assert trades[0]['close_rate'] == (stoploss + 1) * trades[0]['open_rate']
-    assert trades[0]['exit_type'] == SellType.STOP_LOSS
-    ##############################################################
-
-
-# 5) Stoploss and sell are hit. should sell on stoploss
-def test_case_5(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
-
-    stoploss = -0.03  # we don't want stoploss to be hit in this test
-    ticker = [
-        # D=Date, B=Buy,  O=Open,  H=High,  L=Low,  C=Close, S=Sell
-        # D, B,  O,  H,  L,   C,    S
-        [0, 1, 15, 20, 12, 17, 0],  # -> no action
-        [1, 0, 17, 22, 16.90, 17, 0],  # -> enter to trade
-        [2, 0, 16, 17, 14.4, 15.5, 1],  # -> stoploss hit and also sell signal
-        [3, 0, 17, 25, 16.9, 22, 0],  # -> no action
-    ]
-
-    ticker_df = _build_dataframe(ticker)
-    trades = edge._find_trades_for_stoploss_range(ticker_df, 'TEST/BTC', [stoploss])
-
-    # Two trades must have occured
-    assert len(trades) == 1
-
-    # First trade check
-    assert trades[0]['open_time'] == _time_on_candle(1)
-    assert trades[0]['close_time'] == _time_on_candle(2)
-    assert trades[0]['open_rate'] == ticker[1][_ohlc['open']]
-    assert trades[0]['close_rate'] == (stoploss + 1) * trades[0]['open_rate']
-    assert trades[0]['exit_type'] == SellType.STOP_LOSS
-    ##############################################################

@@ -156,21 +156,6 @@ def default_conf():
                 "NEO/BTC"
             ]
         },
-        "edge": {
-            "enabled": False,
-            "process_throttle_secs": 1800,
-            "calculate_since_number_of_days": 14,
-            "total_capital_in_stake_currency": 0.5,
-            "allowed_risk": 0.01,
-            "stoploss_range_min": -0.01,
-            "stoploss_range_max": -0.1,
-            "stoploss_range_step": -0.01,
-            "maximum_winrate": 0.80,
-            "minimum_expectancy": 0.20,
-            "min_trade_number": 15,
-            "max_trade_duration_minute": 1440,
-            "remove_pumps": True
-        },
         "telegram": {
             "enabled": True,
             "token": "token",
@@ -794,3 +779,23 @@ def buy_order_fee():
         'status': 'closed',
         'fee': None
     }
+
+@pytest.fixture(scope="function")
+def edge_conf(default_conf):
+    default_conf['edge'] = {
+        "enabled": False,
+        "process_throttle_secs": 1800,
+        "calculate_since_number_of_days": 14,
+        "total_capital_in_stake_currency": 0.5,
+        "allowed_risk": 0.01,
+        "stoploss_range_min": -0.01,
+        "stoploss_range_max": -0.1,
+        "stoploss_range_step": -0.01,
+        "maximum_winrate": 0.80,
+        "minimum_expectancy": 0.20,
+        "min_trade_number": 15,
+        "max_trade_duration_minute": 1440,
+        "remove_pumps": False
+    }
+
+    return default_conf
