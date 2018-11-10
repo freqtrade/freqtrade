@@ -49,7 +49,7 @@ class Edge():
         self.edge_config = self.config.get('edge', {})
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
 
-        self._total_capital: float = self.config.get('stake_amount')
+        self._total_capital: float = self.config['stake_amount']
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
