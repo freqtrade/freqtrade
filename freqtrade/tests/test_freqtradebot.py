@@ -249,6 +249,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
 def test_edge_called_in_process(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_edge(mocker)
+
     def _refresh_whitelist(list):
         return ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
 
