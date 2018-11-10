@@ -72,7 +72,8 @@ def test_init(default_conf, mocker, caplog) -> None:
 
     message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], " \
-                  "['performance'], ['daily'], ['count'], ['reload_conf'], ['help'], ['version']]"
+                  "['performance'], ['daily'], ['count'], ['reload_conf'], " \
+                  "['whitelist'], ['help'], ['version']]"
 
     assert log_has(message_str, caplog.record_tuples)
 
@@ -1004,6 +1005,43 @@ def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> Non
             default_conf['stake_amount']
         )
     assert msg in msg_mock.call_args_list[0][0][0]
+
+
+def test_whitelist_static(default_conf, update, mocker) -> None:
+    patch_coinmarketcap(mocker)
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._whitelist(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert ('Using static whitelist with `4` pairs \n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
+            in msg_mock.call_args_list[0][0][0])
+
+
+def test_whitelist_dynamic(default_conf, update, mocker) -> None:
+    patch_coinmarketcap(mocker)
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    default_conf['dynamic_whitelist'] = 4
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._whitelist(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert ('Dynamic whitelist with `4` pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
+            in msg_mock.call_args_list[0][0][0])
 
 
 def test_help_handle(default_conf, update, mocker) -> None:
