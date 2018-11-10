@@ -780,10 +780,11 @@ def buy_order_fee():
         'fee': None
     }
 
+
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
     default_conf['edge'] = {
-        "enabled": False,
+        "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
         "total_capital_in_stake_currency": 0.5,

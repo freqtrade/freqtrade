@@ -75,15 +75,15 @@ tc3 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
-#5) Stoploss and sell are hit. should sell on stoploss
-tc4=BTContainer(data = [
+# 5) Stoploss and sell are hit. should sell on stoploss
+tc4 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4800, 4987, 6172, 0, 1],  # enter trade, stoploss hit, sell signal
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
-    stop_loss = -0.03, roi = float('inf'), profit_perc = -0.03,
-    trades = [BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+    stop_loss=-0.03, roi=float('inf'), profit_perc=-0.03,
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 TESTS = [

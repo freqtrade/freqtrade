@@ -246,12 +246,11 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     assert result is None
 
 
-def test_edge_overrides_stake_amount(mocker, default_conf) -> None:
-    default_conf['edge']['enabled'] = True
+def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = FreqtradeBot(edge_conf)
 
     # strategy stoploss should be ignored
     freqtrade.strategy.stoploss = -0.05
@@ -261,14 +260,8 @@ def test_edge_overrides_stake_amount(mocker, default_conf) -> None:
     assert freqtrade._get_trade_stake_amount('LTC/BTC') == 0.02381
 
 
-def test_edge_overrides_stoploss(
-        limit_buy_order,
-        fee,
-        markets,
-        caplog,
-        mocker,
-        default_conf) -> None:
-    default_conf['edge']['enabled'] = True
+def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, edge_conf) -> None:
+
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
@@ -292,7 +285,8 @@ def test_edge_overrides_stoploss(
     #############################################
 
     # Create a trade with "limit_buy_order" price
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = FreqtradeBot(edge_conf)
+    freqtrade.active_pair_whitelist = ['NEO/BTC']
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
@@ -302,14 +296,12 @@ def test_edge_overrides_stoploss(
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is True
-
     assert log_has('executed sell, reason: SellType.STOP_LOSS', caplog.record_tuples)
     assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
 def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
-                                              mocker, default_conf) -> None:
-    default_conf['edge']['enabled'] = True
+                                              mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
@@ -333,7 +325,8 @@ def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
     #############################################
 
     # Create a trade with "limit_buy_order" price
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = FreqtradeBot(edge_conf)
+    freqtrade.active_pair_whitelist = ['NEO/BTC']
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
     freqtrade.create_trade()
@@ -341,7 +334,7 @@ def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
     trade.update(limit_buy_order)
     #############################################
 
-    # stoploss shoud be hit
+    # stoploss shoud not be hit
     assert freqtrade.handle_trade(trade) is False
 
 
