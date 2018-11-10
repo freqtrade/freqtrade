@@ -246,6 +246,20 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     assert result is None
 
 
+def test_edge_called_in_process(mocker, edge_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_edge(mocker)
+    def _refresh_whitelist(list):
+        return ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
+
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(edge_conf)
+    freqtrade._refresh_whitelist = _refresh_whitelist
+    patch_get_signal(freqtrade)
+    freqtrade._process()
+    assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']
+
+
 def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
