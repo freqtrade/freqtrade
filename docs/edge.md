@@ -82,6 +82,8 @@ Allowed capital at risk is calculated as follows:
 
 **allowed capital at risk** = **total capital** X **allowed risk per trade**
 
+**total capital** is your stake amount.
+
 **Stoploss** is calculated as described above against historical data.
 
 Your position size then will be:
@@ -89,8 +91,7 @@ Your position size then will be:
 **position size** = **allowed capital at risk** / **stoploss**
 
 Example:
-Let's say your total capital is 3 ETH, you would allow 1% of risk for each trade. thus your allowed capital at risk would be **3 x 0.01 = 0.03 ETH**. Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.03 / 0.02= 1.5ETH**.<br/>
-**Notice:** if Edge is enabled, the stake_amount config is overriden by total_capital_in_stake_currency config explained below (see configuration part)
+Let's say your stake amount is 3 ETH, you would allow 1% of risk for each trade. thus your allowed capital at risk would be **3 x 0.01 = 0.03 ETH**. Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.03 / 0.02= 1.5ETH**.<br/>
 
 ## Configurations
 Edge has following configurations:
@@ -107,9 +108,6 @@ How often should Edge run in seconds? <br/>
 Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy
 Note that it downloads historical data so increasing this number would lead to slowing down the bot<br/>
 (default to 7)
-
-#### total_capital_in_stake_currency
-This your total capital at risk in your stake currency. If edge is enabled then stake_amount is ignored in favor of this parameter
 
 #### allowed_risk
 Percentage of allowed risk per trade<br/>

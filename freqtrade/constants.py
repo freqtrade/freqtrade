@@ -178,7 +178,6 @@ CONF_SCHEMA = {
                 "enabled": {'type': 'boolean'},
                 "process_throttle_secs": {'type': 'integer', 'minimum': 600},
                 "calculate_since_number_of_days": {'type': 'integer'},
-                "total_capital_in_stake_currency": {'type': 'number'},
                 "allowed_risk": {'type': 'number'},
                 "stoploss_range_min": {'type': 'number'},
                 "stoploss_range_max": {'type': 'number'},

@@ -787,7 +787,7 @@ def edge_conf(default_conf):
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
-        "total_capital_in_stake_currency": 0.5,
+        #"total_capital_in_stake_currency": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,
