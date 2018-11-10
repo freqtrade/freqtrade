@@ -267,12 +267,8 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_edge(mocker)
     freqtrade = FreqtradeBot(edge_conf)
 
-    # strategy stoploss should be ignored
-    freqtrade.strategy.stoploss = -0.05
-
-    assert 'ETH/BTC' not in freqtrade.edge._cached_pairs
-    assert freqtrade._get_trade_stake_amount('NEO/BTC') == 0.025
-    assert freqtrade._get_trade_stake_amount('LTC/BTC') == 0.02381
+    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (0.001 * 0.01) / 0.20
+    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (0.001 * 0.01) / 0.20
 
 
 def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, edge_conf) -> None:
