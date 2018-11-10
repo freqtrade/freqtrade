@@ -480,6 +480,7 @@ class Telegram(RPC):
                   "\n" \
                   "*/balance:* `Show account balance per currency`\n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
+                  "*/whitelist:* `Show current whitelist` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
