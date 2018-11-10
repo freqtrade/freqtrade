@@ -62,6 +62,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [Requirements](#requirements)
   - [Min hardware required](#min-hardware-required)
   - [Software requirements](#software-requirements)
+- [Wanna help?]
  
 
 ## Quick start
@@ -189,10 +190,14 @@ in the bug reports.
 
 ### [Pull Requests](https://github.com/freqtrade/freqtrade/pulls)
 
-Feel like our bot is missing a feature? We welcome your pull requests! 
+Feel like our bot is missing a feature? We welcome your pull requests!
+
 Please read our 
 [Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests. 
+
+Coding is not a neccessity to contribute - maybe start with improving our documentation?
+Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
 **Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
@@ -218,3 +223,4 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
 - [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)
+
