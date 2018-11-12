@@ -111,7 +111,7 @@ Note that it downloads historical data so increasing this number would lead to s
 
 #### allowed_risk
 Percentage of allowed risk per trade<br/>
-(default to 1%)
+(default to 0.01 [1%])
 
 #### stoploss_range_min
 Minimum stoploss <br/>
