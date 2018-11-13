@@ -24,3 +24,9 @@ scikit-optimize==0.5.2
 
 # Required for plotting data
 #plotly==3.1.1
+
+# find first, C search in arrays
+py_find_1st==1.1.2
+
+#Load ticker files 30% faster
+ujson==1.35

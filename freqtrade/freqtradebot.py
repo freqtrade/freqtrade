@@ -17,12 +17,14 @@ from cachetools import TTLCache, cached
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
+from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 from freqtrade.strategy.resolver import IStrategy, StrategyResolver
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,11 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
+
+        # Initializing Edge only if enabled
+        self.edge = Edge(self.config, self.exchange, self.strategy) if \
+            self.config.get('edge', {}).get('enabled', False) else None
+
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
 
@@ -178,6 +185,17 @@ class FreqtradeBot(object):
 
             # Keep only the subsets of pairs wanted (up to nb_assets)
             self.active_pair_whitelist = sanitized_list[:nb_assets] if nb_assets else sanitized_list
+
+            # Calculating Edge positiong
+            # Should be called before refresh_tickers
+            # Otherwise it will override cached klines in exchange
+            # with delta value (klines only from last refresh_pairs)
+            if self.edge:
+                self.edge.calculate()
+                self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
+
+            # Refreshing candles
+            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -309,13 +327,17 @@ class FreqtradeBot(object):
 
         return used_rate
 
-    def _get_trade_stake_amount(self) -> Optional[float]:
+    def _get_trade_stake_amount(self, pair) -> Optional[float]:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
         :return: float: Stake Amount
         """
-        stake_amount = self.config['stake_amount']
+        if self.edge:
+            stake_amount = self.edge.stake_amount(pair)
+        else:
+            stake_amount = self.config['stake_amount']
+
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
@@ -373,15 +395,6 @@ class FreqtradeBot(object):
         :return: True if a trade object has been created and persisted, False otherwise
         """
         interval = self.strategy.ticker_interval
-        stake_amount = self._get_trade_stake_amount()
-
-        if not stake_amount:
-            return False
-
-        logger.info(
-            'Checking buy signals to create a new trade with stake_amount: %f ...',
-            stake_amount
-        )
         whitelist = copy.deepcopy(self.active_pair_whitelist)
 
         # Remove currently opened and latest pairs from whitelist
@@ -394,10 +407,18 @@ class FreqtradeBot(object):
             raise DependencyException('No currency pairs in whitelist')
 
         # running get_signal on historical data fetched
-        # to find buy signals
         for _pair in whitelist:
             (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines.get(_pair))
             if buy and not sell:
+                stake_amount = self._get_trade_stake_amount(_pair)
+                if not stake_amount:
+                    return False
+
+                logger.info(
+                    'Buy signal found: about create a new trade with stake_amount: %f ...',
+                    stake_amount
+                )
+
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
                 if (bidstrat_check_depth_of_market.get('enabled', False)) and\
@@ -624,10 +645,16 @@ class FreqtradeBot(object):
         return False
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
-        should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+        if self.edge:
+            stoploss = self.edge.stoploss(trade.pair)
+            should_sell = self.strategy.should_sell(
+                trade, sell_rate, datetime.utcnow(), buy, sell, force_stoploss=stoploss)
+        else:
+            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
-            logger.info('excuted sell')
+            logger.info('executed sell, reason: %s', should_sell.sell_type)
             return True
         return False
 
