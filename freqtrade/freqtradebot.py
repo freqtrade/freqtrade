@@ -438,6 +438,8 @@ class FreqtradeBot(object):
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
 
+        # self.execution.execute_buy(pair, stake_amount, price)
+
         if price:
             buy_limit = price
         else:
