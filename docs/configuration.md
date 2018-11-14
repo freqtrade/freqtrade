@@ -17,7 +17,7 @@ The table below will list all configuration parameters.
 
 |  Command | Default | Mandatory | Description |
 |----------|---------|----------|-------------|
-| `max_open_trades` | 3 | Yes | Number of trades open your bot will have.
+| `max_open_trades` | 3 | Yes | Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes

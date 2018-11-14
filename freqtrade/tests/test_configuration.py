@@ -64,6 +64,22 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
+def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> None:
+    default_conf['max_open_trades'] = -1
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+
+    args = Arguments([], '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    print(validated_conf)
+
+    assert validated_conf['max_open_trades'] > 999999999
+    assert validated_conf['max_open_trades'] == float('inf')
+    assert log_has('Validating configuration ...', caplog.record_tuples)
+
+
 def test_load_config_file_exception(mocker) -> None:
     mocker.patch(
         'freqtrade.configuration.open',
