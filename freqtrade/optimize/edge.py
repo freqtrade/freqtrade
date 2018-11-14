@@ -75,6 +75,7 @@ class EdgeCli(object):
 
     def start(self) -> None:
         self.edge.calculate()
+        print('')  # blank like for readability
         print(self._generate_edge_table(self.edge._cached_pairs))
 
 
