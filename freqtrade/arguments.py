@@ -200,6 +200,13 @@ class Arguments(object):
             dest='refresh_pairs',
         )
         parser.add_argument(
+            '--stoplosses',
+            help='defines a range of stoploss against which edge will assess the strategy'
+                 'the format is "min, max, step". example: -0.01, -0.1, -0.001',
+            type=str,
+            dest='stoploss_range',
+        )
+        parser.add_argument(
             '--export',
             help='export backtest results, argument are: trades\
                   Example --export=trades',

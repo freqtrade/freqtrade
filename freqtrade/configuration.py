@@ -227,6 +227,14 @@ class Configuration(object):
             config.update({'timerange': self.args.timerange})
             logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
 
+        # If --timerange is used we add it to the configuration
+        if 'stoploss_range' in self.args and self.args.stoploss_range:
+            txt_range = eval(self.args.stoploss_range)
+            config['edge'].update({'stoploss_range_min': txt_range[0]})
+            config['edge'].update({'stoploss_range_max': txt_range[1]})
+            config['edge'].update({'stoploss_range_step': txt_range[2]})
+            logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
+
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self.args.datadir})

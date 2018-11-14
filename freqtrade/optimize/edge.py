@@ -53,7 +53,7 @@ class EdgeCli(object):
 
     def _generate_edge_table(self, results: dict) -> str:
 
-        floatfmt = ('s', '.2f', '.2f', '.2f', '.2f', '.2f', 'd', '.d')
+        floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', '.d')
         tabular_data = []
         headers = ['pair', 'stoploss', 'win rate', 'risk reward ratio',
                    'required risk reward', 'expectancy', 'total number of trades', 'average duration (min)']
