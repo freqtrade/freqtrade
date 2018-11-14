@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 from freqtrade.edge import Edge
+from tabulate import tabulate
 
 import freqtrade.optimize as optimize
 from freqtrade import DependencyException, constants
@@ -50,10 +51,28 @@ class EdgeCli(object):
         self.edge = Edge(config, self.exchange, self.strategy)
         self.edge._refresh_pairs = self.config.get('refresh_pairs', False)
 
+    def _generate_edge_table(self, results: dict) -> str:
+
+        floatfmt = ('s', '.2f', '.2f', '.2f', '.2f', '.2f')
+        tabular_data = []
+        headers = ['pair', 'stoploss', 'win rate', 'risk reward ratio',
+                   'required risk reward', 'expectancy']
+
+        for result in results.items():
+            tabular_data.append([
+                result[0],
+                result[1].stoploss,
+                result[1].winrate,
+                result[1].risk_reward_ratio,
+                result[1].required_risk_reward,
+                result[1].expectancy
+            ])
+
+        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+
     def start(self) -> None:
         self.edge.calculate()
-        # pair_info(stoploss=-0.01, winrate=0.08333333333333333, risk_reward_ratio=0.6399436929988924, required_risk_reward=11.0, expectancy=-0.8633380255834255)
-        pdb.set_trace()
+        print(self._generate_edge_table(self.edge._cached_pairs))
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
