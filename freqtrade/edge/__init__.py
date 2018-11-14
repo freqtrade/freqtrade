@@ -33,7 +33,9 @@ class Edge():
     # pair info data type
     _pair_info = namedtuple(
         'pair_info',
-        ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy'])
+        ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy',
+         'nb_trades', 'avg_trade_duration']
+    )
 
     def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
 
@@ -297,7 +299,9 @@ class Edge():
                 'winrate': x.winrate,
                 'risk_reward_ratio': x.risk_reward_ratio,
                 'required_risk_reward': x.required_risk_reward,
-                'expectancy': x.expectancy
+                'expectancy': x.expectancy,
+                'nb_trades': x.nb_trades,
+                'avg_trade_duration': x.avg_trade_duration
             }
             final[x.pair] = self._pair_info(**info)
 
