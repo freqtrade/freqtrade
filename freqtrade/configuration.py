@@ -58,6 +58,9 @@ class Configuration(object):
         # Load Backtesting
         config = self._load_backtesting_config(config)
 
+        # Load Edge
+        config = self._load_edge_config(config)
+
         # Load Hyperopt
         config = self._load_hyperopt_config(config)
 
@@ -196,6 +199,45 @@ class Configuration(object):
         if 'strategy_list' in self.args and self.args.strategy_list:
             config.update({'strategy_list': self.args.strategy_list})
             logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
+
+        if 'ticker_interval' in self.args and self.args.ticker_interval:
+            config.update({'ticker_interval': self.args.ticker_interval})
+            logger.info('Overriding ticker interval with Command line argument')
+
+        # If --export is used we add it to the configuration
+        if 'export' in self.args and self.args.export:
+            config.update({'export': self.args.export})
+            logger.info('Parameter --export detected: %s ...', self.args.export)
+
+        # If --export-filename is used we add it to the configuration
+        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
+            config.update({'exportfilename': self.args.exportfilename})
+            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
+
+        return config
+
+    def _load_edge_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load Edge configuration
+        :return: configuration as dictionary
+        """
+
+        # If --timerange is used we add it to the configuration
+        if 'timerange' in self.args and self.args.timerange:
+            config.update({'timerange': self.args.timerange})
+            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+
+        # If --datadir is used we add it to the configuration
+        if 'datadir' in self.args and self.args.datadir:
+            config.update({'datadir': self.args.datadir})
+        else:
+            config.update({'datadir': self._create_default_datadir(config)})
+        logger.info('Using data folder: %s ...', config.get('datadir'))
+
+        # If -r/--refresh-pairs-cached is used we add it to the configuration
+        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
+            config.update({'refresh_pairs': True})
+            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
 
         if 'ticker_interval' in self.args and self.args.ticker_interval:
             config.update({'ticker_interval': self.args.ticker_interval})

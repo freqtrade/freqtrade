@@ -35,7 +35,7 @@ class Edge():
         'pair_info',
         ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy'])
 
-    def __init__(self, config: Dict[str, Any], exchange, strategy, refresh_pairs=True) -> None:
+    def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
 
         self.config = config
         self.exchange = exchange
@@ -53,6 +53,7 @@ class Edge():
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
+        self._refresh_pairs = True
 
         self._stoploss_range_min = float(self.edge_config.get('stoploss_range_min', -0.01))
         self._stoploss_range_max = float(self.edge_config.get('stoploss_range_max', -0.05))
@@ -86,7 +87,7 @@ class Edge():
             self.config['datadir'],
             pairs=pairs,
             ticker_interval=self.ticker_interval,
-            refresh_pairs=True,
+            refresh_pairs=self._refresh_pairs,
             exchange=self.exchange,
             timerange=self._timerange
         )

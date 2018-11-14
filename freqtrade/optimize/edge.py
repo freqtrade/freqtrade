@@ -48,6 +48,7 @@ class EdgeCli(object):
         self.strategy = StrategyResolver(self.config).strategy
 
         self.edge = Edge(config, self.exchange, self.strategy)
+        self.edge._refresh_pairs = self.config.get('refresh_pairs', False)
 
     def start(self) -> None:
         self.edge.calculate()
@@ -80,7 +81,7 @@ def start(args: Namespace) -> None:
     # Initialize configuration
     config = setup_configuration(args)
     logger.info('Starting freqtrade in Edge mode')
-    print('edge talking here...')
+
     # Initialize Edge object
     edge_cli = EdgeCli(config)
     edge_cli.start()
