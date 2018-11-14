@@ -4,25 +4,14 @@
 This module contains the backtesting logic
 """
 import logging
-import operator
 from argparse import Namespace
-from copy import deepcopy
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
-from freqtrade.edge import Edge
+from typing import Dict, Any
 from tabulate import tabulate
+from freqtrade.edge import Edge
 
-import freqtrade.optimize as optimize
-from freqtrade import DependencyException, constants
-from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
-from freqtrade.misc import file_dump_json
-from freqtrade.persistence import Trade
-from freqtrade.strategy.interface import SellType
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
-import pdb
+from freqtrade.strategy.resolver import StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +45,8 @@ class EdgeCli(object):
         floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', '.d')
         tabular_data = []
         headers = ['pair', 'stoploss', 'win rate', 'risk reward ratio',
-                   'required risk reward', 'expectancy', 'total number of trades', 'average duration (min)']
+                   'required risk reward', 'expectancy', 'total number of trades',
+                   'average duration (min)']
 
         for result in results.items():
             if result[1].nb_trades > 0:
