@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from functools import reduce
 from typing import Dict, Optional
+from collections import namedtuple
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -12,6 +13,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
+from freqtrade.edge import Edge
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -42,7 +44,32 @@ def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
     return exchange
 
 
+def patch_edge(mocker) -> None:
+    # "ETH/BTC",
+    # "LTC/BTC",
+    # "XRP/BTC",
+    # "NEO/BTC"
+    pair_info = namedtuple(
+        'pair_info',
+        'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'NEO/BTC': pair_info(-0.20, 0.66, 3.71, 0.50, 1.71),
+            'LTC/BTC': pair_info(-0.21, 0.66, 3.71, 0.50, 1.71),
+        }
+    ))
+    mocker.patch('freqtrade.edge.Edge.stoploss', MagicMock(return_value=-0.20))
+    mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value=True))
+
+
+def get_patched_edge(mocker, config) -> Edge:
+    patch_edge(mocker)
+    edge = Edge(config)
+    return edge
+
 # Functions for recurrent object patching
+
+
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     """
     This function patch _init_modules() to not call dependencies
@@ -752,3 +779,23 @@ def buy_order_fee():
         'status': 'closed',
         'fee': None
     }
+
+
+@pytest.fixture(scope="function")
+def edge_conf(default_conf):
+    default_conf['edge'] = {
+        "enabled": True,
+        "process_throttle_secs": 1800,
+        "calculate_since_number_of_days": 14,
+        "allowed_risk": 0.01,
+        "stoploss_range_min": -0.01,
+        "stoploss_range_max": -0.1,
+        "stoploss_range_step": -0.01,
+        "maximum_winrate": 0.80,
+        "minimum_expectancy": 0.20,
+        "min_trade_number": 15,
+        "max_trade_duration_minute": 1440,
+        "remove_pumps": False
+    }
+
+    return default_conf

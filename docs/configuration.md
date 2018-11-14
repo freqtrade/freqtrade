@@ -13,7 +13,7 @@ This page explains how to configure your `config.json` file.
 We recommend to copy and use the `config.json.example` as a template
 for your bot configuration.
 
-The table below will list all configuration parameters. 
+The table below will list all configuration parameters.
 
 |  Command | Default | Mandatory | Description |
 |----------|---------|----------|-------------|
@@ -21,11 +21,11 @@ The table below will list all configuration parameters.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
-| `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below. 
+| `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below.
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode.
-| `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. Can be set either in Configuration or in the strategy. 
-| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. 
-| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
+| `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. Can be set either in Configuration or in the strategy.
+| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file.
+| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file.
 | `trailing_stop` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
 | `trailing_stop_positve` | 0 | No | Changes stop-loss once profit has been reached.
 | `trailing_stop_positve_offset` | 0 | No | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive.
@@ -47,6 +47,7 @@ The table below will list all configuration parameters.
 | `exchange.ccxt_rate_limit` | True | No | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
 | `exchange.ccxt_config` | None | No | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | No | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
+| `edge` | false | No | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `experimental.ignore_roi_if_buy_signal` | false | No | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`
@@ -70,7 +71,7 @@ The definition of each config parameters is in [misc.py](https://github.com/freq
 ### Understand stake_amount
 
 `stake_amount` is an amount of crypto-currency your bot will use for each trade.
-The minimal value is 0.0005. If there is not enough crypto-currency in 
+The minimal value is 0.0005. If there is not enough crypto-currency in
 the account an exception is generated.
 To allow the bot to trade all the avaliable `stake_currency` in your account set `stake_amount` = `unlimited`.
 In this case a trade amount is calclulated as `currency_balanse / (max_open_trades - current_open_trades)`.
@@ -186,13 +187,13 @@ creating trades.
 }
 ```
 
-Once you will be happy with your bot performance, you can switch it to 
+Once you will be happy with your bot performance, you can switch it to
 production mode.
 
 ## Switch to production mode
 
-In production mode, the bot will engage your money. Be careful a wrong 
-strategy can lose all your money. Be aware of what you are doing when 
+In production mode, the bot will engage your money. Be careful a wrong
+strategy can lose all your money. Be aware of what you are doing when
 you run it in production mode.
 
 ### To switch your bot in production mode:
@@ -242,7 +243,7 @@ freqtrade
 
 ### Embedding Strategies
 
-FreqTrade provides you with with an easy way to embed the strategy into your configuration file. 
+FreqTrade provides you with with an easy way to embed the strategy into your configuration file.
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 

@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
+# pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, C0330, unused-argument
 import logging
 from unittest.mock import MagicMock
 
@@ -34,15 +34,15 @@ tc0 = BTContainer(data=[
 # TC2: Stop-Loss Triggered 3% Loss
 tc1 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
-    [0, 5000, 5025, 4975, 4987, 6172,    1, 0],
-    [1, 5000, 5025, 4975, 4987, 6172,    0, 0],  # enter trade (signal on last candle)
-    [2, 4987, 5012, 4962, 4975, 6172,    0, 0],
-    [3, 4975, 5000, 4800, 4962, 6172,    0, 0],  # exit with stoploss hit
-    [4, 4962, 4987, 4937, 4950, 6172,    0, 0],
-    [5, 4950, 4975, 4925, 4950, 6172,    0, 0]],
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4962, 4975, 6172, 0, 0],
+    [3, 4975, 5000, 4800, 4962, 6172, 0, 0],  # exit with stoploss hit
+    [4, 4962, 4987, 4937, 4950, 6172, 0, 0],
+    [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.03, roi=1, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
-    )
+)
 
 
 # Test 3 Candle drops 4%, Recovers 1%.
@@ -127,7 +127,7 @@ tc6 = BTContainer(data=[
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi=0.03, profit_perc=0.03,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
-    )
+)
 
 TESTS = [
     tc0,

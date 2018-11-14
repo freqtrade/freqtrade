@@ -203,17 +203,20 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None) -> SellCheckTuple:
+                    sell: bool, low: float = None, high: float = None,
+                    force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
+
         # Set current rate to low for backtesting sell
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=date, current_profit=current_profit)
+                                              current_time=date, current_profit=current_profit,
+                                              force_stoploss=force_stoploss)
         if stoplossflag.sell_flag:
             return stoplossflag
         # Set current rate to low for backtesting sell
@@ -241,7 +244,7 @@ class IStrategy(ABC):
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float) -> SellCheckTuple:
+                          current_profit: float, force_stoploss: float) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -250,7 +253,8 @@ class IStrategy(ABC):
 
         trailing_stop = self.config.get('trailing_stop', False)
 
-        trade.adjust_stop_loss(trade.open_rate, self.stoploss, initial=True)
+        trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
+                               else self.stoploss, initial=True)
 
         # evaluate if the stoploss was hit
         if self.stoploss is not None and trade.stop_loss >= current_rate:

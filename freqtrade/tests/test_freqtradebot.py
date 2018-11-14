@@ -18,7 +18,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, SellCheckTuple
-from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.tests.conftest import log_has, patch_exchange, patch_edge
 
 
 # Functions for recurrent object patching
@@ -177,7 +177,7 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
 
     freqtrade = FreqtradeBot(default_conf)
 
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount']
 
 
@@ -195,7 +195,7 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf,
     freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        freqtrade._get_trade_stake_amount()
+        freqtrade._get_trade_stake_amount('ETH/BTC')
 
 
 def test_get_trade_stake_amount_unlimited_amount(default_conf,
@@ -224,26 +224,129 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
     patch_get_signal(freqtrade)
 
     # no open trades, order amount should be 'balance / max_open_trades'
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount'] / conf['max_open_trades']
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
     freqtrade.create_trade()
 
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('LTC/BTC')
     assert result == default_conf['stake_amount'] / (conf['max_open_trades'] - 1)
 
     # create 2 trades, order amount should be None
     freqtrade.create_trade()
 
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('XRP/BTC')
     assert result is None
 
     # set max_open_trades = None, so do not trade
     conf['max_open_trades'] = 0
     freqtrade = FreqtradeBot(conf)
-    result = freqtrade._get_trade_stake_amount()
+    result = freqtrade._get_trade_stake_amount('NEO/BTC')
     assert result is None
+
+
+def test_edge_called_in_process(mocker, edge_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_edge(mocker)
+
+    def _refresh_whitelist(list):
+        return ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
+
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(edge_conf)
+    freqtrade._refresh_whitelist = _refresh_whitelist
+    patch_get_signal(freqtrade)
+    freqtrade._process()
+    assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']
+
+
+def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+    freqtrade = FreqtradeBot(edge_conf)
+
+    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (0.001 * 0.01) / 0.20
+    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (0.001 * 0.01) / 0.20
+
+
+def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, edge_conf) -> None:
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+
+    # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
+    # Thus, if price falls 21%, stoploss should be triggered
+    #
+    # mocking the ticker: price is falling ...
+    buy_price = limit_buy_order['price']
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price * 0.79,
+            'ask': buy_price * 0.79,
+            'last': buy_price * 0.79
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+    )
+    #############################################
+
+    # Create a trade with "limit_buy_order" price
+    freqtrade = FreqtradeBot(edge_conf)
+    freqtrade.active_pair_whitelist = ['NEO/BTC']
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    #############################################
+
+    # stoploss shoud be hit
+    assert freqtrade.handle_trade(trade) is True
+    assert log_has('executed sell, reason: SellType.STOP_LOSS', caplog.record_tuples)
+    assert trade.sell_reason == SellType.STOP_LOSS.value
+
+
+def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
+                                              mocker, edge_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+
+    # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
+    # Thus, if price falls 15%, stoploss should not be triggered
+    #
+    # mocking the ticker: price is falling ...
+    buy_price = limit_buy_order['price']
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price * 0.85,
+            'ask': buy_price * 0.85,
+            'last': buy_price * 0.85
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+    )
+    #############################################
+
+    # Create a trade with "limit_buy_order" price
+    freqtrade = FreqtradeBot(edge_conf)
+    freqtrade.active_pair_whitelist = ['NEO/BTC']
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    #############################################
+
+    # stoploss shoud not be hit
+    assert freqtrade.handle_trade(trade) is False
 
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
@@ -494,7 +597,7 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
     patch_get_signal(freqtrade)
 
     assert freqtrade.create_trade() is False
-    assert freqtrade._get_trade_stake_amount() is None
+    assert freqtrade._get_trade_stake_amount('ETH/BTC') is None
 
 
 def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
@@ -593,7 +696,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.amount == 90.99181073703367
 
     assert log_has(
-        'Checking buy signals to create a new trade with stake_amount: 0.001000 ...',
+        'Buy signal found: about create a new trade with stake_amount: 0.001000 ...',
         caplog.record_tuples
     )
 
@@ -1547,7 +1650,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.stop_loss_reached = \
-        lambda current_rate, trade, current_time, current_profit: SellCheckTuple(
+        lambda current_rate, trade, current_time, force_stoploss, current_profit: SellCheckTuple(
             sell_flag=False, sell_type=SellType.NONE)
     freqtrade.create_trade()
 
@@ -1821,7 +1924,7 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, ca
         exchange='binance',
         open_rate=0.245441,
         open_order_id="123456"
-        )
+    )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
@@ -2097,9 +2200,9 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     """
     patch_exchange(mocker)
     mocker.patch.multiple(
-           'freqtrade.exchange.Exchange',
-           get_markets=markets,
-           get_order_book=order_book_l2
+        'freqtrade.exchange.Exchange',
+        get_markets=markets,
+        get_order_book=order_book_l2
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True

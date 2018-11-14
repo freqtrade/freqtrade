@@ -31,7 +31,7 @@ class BTContainer(NamedTuple):
 
 def _get_frame_time_from_offset(offset):
     return ticker_start_time.shift(
-        minutes=(offset * ticker_interval_in_minute)).datetime
+        minutes=(offset * ticker_interval_in_minute)).datetime.replace(tzinfo=None)
 
 
 def _build_backtest_dataframe(ticker_with_signals):

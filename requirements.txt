@@ -1,5 +1,5 @@
-ccxt==1.17.485
-SQLAlchemy==1.2.13
+ccxt==1.17.492
+SQLAlchemy==1.2.14
 python-telegram-bot==11.1.0
 arrow==0.12.1
 cachetools==3.0.0
@@ -12,7 +12,7 @@ scipy==1.1.0
 jsonschema==2.6.0
 numpy==1.15.4
 TA-Lib==0.4.17
-pytest==3.10.0
+pytest==3.10.1
 pytest-mock==1.10.0
 pytest-asyncio==0.9.0
 pytest-cov==2.6.0
@@ -24,3 +24,9 @@ scikit-optimize==0.5.2
 
 # Required for plotting data
 #plotly==3.1.1
+
+# find first, C search in arrays
+py_find_1st==1.1.2
+
+#Load ticker files 30% faster
+ujson==1.35
