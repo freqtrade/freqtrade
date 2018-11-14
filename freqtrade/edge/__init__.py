@@ -35,7 +35,7 @@ class Edge():
         'pair_info',
         ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy'])
 
-    def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
+    def __init__(self, config: Dict[str, Any], exchange, strategy, refresh_pairs=True) -> None:
 
         self.config = config
         self.exchange = exchange
