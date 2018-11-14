@@ -10,6 +10,7 @@ from tabulate import tabulate
 from freqtrade.edge import Edge
 
 from freqtrade.configuration import Configuration
+from freqtrade.arguments import Arguments
 from freqtrade.exchange import Exchange
 from freqtrade.strategy.resolver import StrategyResolver
 
@@ -39,6 +40,11 @@ class EdgeCli(object):
 
         self.edge = Edge(config, self.exchange, self.strategy)
         self.edge._refresh_pairs = self.config.get('refresh_pairs', False)
+
+        self.timerange = Arguments.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+
+        self.edge._timerange = self.timerange
 
     def _generate_edge_table(self, results: dict) -> str:
 
