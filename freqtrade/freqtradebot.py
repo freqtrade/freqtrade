@@ -459,6 +459,9 @@ class FreqtradeBot(object):
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
 
+
+        # THE LOGIC TO BE EXTRACTED
+        ######################################################
         # self.execution.execute_buy(pair, stake_amount, price)
 
         if price:
@@ -478,6 +481,9 @@ class FreqtradeBot(object):
         amount = stake_amount / buy_limit
 
         order_id = self.exchange.buy(pair, buy_limit, amount)['id']
+        # THE ABOVE BLOCK WILL BE REPLACED BY THE FOLLWING LINE:
+        # order_id = self.execution.execute_buy(pair, stake_amount, price)
+        ######################################################
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
