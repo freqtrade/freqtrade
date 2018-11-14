@@ -9,6 +9,7 @@ This page explains how to use Edge Positioning module in your bot in order to en
 - [Introduction](#introduction)
 - [How does it work?](#how-does-it-work?)
 - [Configurations](#configurations)
+- [Running Edge independently](#running-edge-independently)
 
 ## Introduction
 Trading is all about probability. No one can claim that he has a strategy working all the time. You have to assume that sometimes you lose.<br/><br/>
@@ -149,3 +150,57 @@ Edge will filter out trades with long duration. If a trade is profitable after 1
 #### remove_pumps
 Edge will remove sudden pumps in a given market while going through historical data. However, given that pumps happen very often in crypto markets, we recommend you keep this off.<br/>
 (default to false)
+
+
+## Running Edge independently
+You can run Edge independently in order to see in details the result. Here is an example:
+```bash
+python3 ./freqtrade/main.py edge
+```
+
+An example of its output:
+
+| pair      |   stoploss |   win rate |   risk reward ratio |   required risk reward |   expectancy |   total number of trades |   average duration (min) |
+|:----------|-----------:|-----------:|--------------------:|-----------------------:|-------------:|-------------------------:|-------------------------:|
+| AGI/BTC   |      -0.02 |       0.64 |                5.86 |                   0.56 |         3.41 |                       14 |                       54 |
+| NXS/BTC   |      -0.03 |       0.64 |                2.99 |                   0.57 |         1.54 |                       11 |                       26 |
+| LEND/BTC  |      -0.02 |       0.82 |                2.05 |                   0.22 |         1.50 |                       11 |                       36 |
+| VIA/BTC   |      -0.01 |       0.55 |                3.01 |                   0.83 |         1.19 |                       11 |                       48 |
+| MTH/BTC   |      -0.09 |       0.56 |                2.82 |                   0.80 |         1.12 |                       18 |                       52 |
+| ARDR/BTC  |      -0.04 |       0.42 |                3.14 |                   1.40 |         0.73 |                       12 |                       42 |
+| BCPT/BTC  |      -0.01 |       0.71 |                1.34 |                   0.40 |         0.67 |                       14 |                       30 |
+| WINGS/BTC |      -0.02 |       0.56 |                1.97 |                   0.80 |         0.65 |                       27 |                       42 |
+| VIBE/BTC  |      -0.02 |       0.83 |                0.91 |                   0.20 |         0.59 |                       12 |                       35 |
+| MCO/BTC   |      -0.02 |       0.79 |                0.97 |                   0.27 |         0.55 |                       14 |                       31 |
+| GNT/BTC   |      -0.02 |       0.50 |                2.06 |                   1.00 |         0.53 |                       18 |                       24 |
+| HOT/BTC   |      -0.01 |       0.17 |                7.72 |                   4.81 |         0.50 |                      209 |                        7 |
+| SNM/BTC   |      -0.03 |       0.71 |                1.06 |                   0.42 |         0.45 |                       17 |                       38 |
+| APPC/BTC  |      -0.02 |       0.44 |                2.28 |                   1.27 |         0.44 |                       25 |                       43 |
+| NEBL/BTC  |      -0.03 |       0.63 |                1.29 |                   0.58 |         0.44 |                       19 |                       59 |
+
+### Update cached pairs with the latest data
+```bash
+python3 ./freqtrade/main.py edge --refresh-pairs-cached
+```
+
+### Precising stoploss range
+```bash
+python3 ./freqtrade/main.py edge --stoplosses=-0.01,-0.1,-0.001 #min,max,step
+```
+
+### Advanced use of timerange
+```bash
+python3 ./freqtrade/main.py edge --timerange=20181110-20181113
+```
+
+Doing --timerange=-200 will get the last 200 timeframes from your inputdata. You can also specify specific dates, or a range span indexed by start and stop.
+
+The full timerange specification:
+
+* Use last 123 tickframes of data: --timerange=-123
+* Use first 123 tickframes of data: --timerange=123-
+* Use tickframes from line 123 through 456: --timerange=123-456
+* Use tickframes till 2018/01/31: --timerange=-20180131
+* Use tickframes since 2018/01/31: --timerange=20180131-
+* Use tickframes since 2018/01/31 till 2018/03/01 : --timerange=20180131-20180301
+* Use tickframes between POSIX timestamps 1527595200 1527618600: --timerange=1527595200-1527618600
