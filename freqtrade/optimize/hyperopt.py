@@ -14,7 +14,7 @@ from operator import itemgetter
 from typing import Any, Dict, List
 
 from pandas import DataFrame
-from sklearn.externals.joblib import Parallel, delayed, dump, load
+from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects
 from skopt import Optimizer
 from skopt.space import Dimension
 
@@ -219,7 +219,7 @@ class Hyperopt(Backtesting):
         )
 
     def run_optimizer_parallel(self, parallel, asked) -> List:
-        return parallel(delayed(self.generate_optimizer)(v) for v in asked)
+        return parallel(delayed(wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
 
     def load_previous_results(self):
         """ read trials file if we have one """
