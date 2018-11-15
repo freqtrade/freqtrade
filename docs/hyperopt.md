@@ -21,21 +21,21 @@ and still take a long time.
 
 ## Prepare Hyperopt
 Before we start digging in Hyperopt, we recommend you to take a look at 
-an example hyperopt file located into [user_data/strategies/](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
+an example hyperopt file located into [user_data/hyperopts/](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
 
 ### 1. Install a Custom Hyperopt File
 This is very simple. Put your hyperopt file into the folder 
 `user_data/hyperopts`.
 
 Let assume you want a hyperopt file `awesome_hyperopt.py`:
-1. Copy the file `user_data/hyperopts/test_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
+1. Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
 
  
 ### 2. Configure your Guards and Triggers
 There are two places you need to change in your hyperopt file to add a 
 new buy hyperopt for testing:
-- Inside [populate_buy_trend()](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L230-L251).
-- Inside [indicator_space()](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L207-L223).
+- Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L230-L251).
+- Inside [indicator_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L207-L223).
 
 There you have two different type of indicators: 1. `guards` and 2. 
 `triggers`.
