@@ -195,7 +195,7 @@ class Arguments(object):
         parser.add_argument(
             '-r', '--refresh-pairs-cached',
             help='refresh the pairs files in tests/testdata with the latest data from the '
-                 'exchange. Use it if you want to run your backtesting with up-to-date data.',
+                 'exchange. Use it if you want to run your edge with up-to-date data.',
             action='store_true',
             dest='refresh_pairs',
         )
@@ -206,25 +206,6 @@ class Arguments(object):
                  'example: --stoplosses=-0.01,-0.1,-0.001',
             type=str,
             dest='stoploss_range',
-        )
-        parser.add_argument(
-            '--export',
-            help='export backtest results, argument are: trades\
-                  Example --export=trades',
-            type=str,
-            default=None,
-            dest='export',
-        )
-        parser.add_argument(
-            '--export-filename',
-            help='Save backtest results to this filename \
-                  requires --export to be set as well\
-                  Example --export-filename=user_data/backtest_data/backtest_today.json\
-                  (default: %(default)s)',
-            type=str,
-            default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
-            dest='exportfilename',
-            metavar='PATH',
         )
 
     @staticmethod
