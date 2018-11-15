@@ -33,6 +33,7 @@ class Configuration(object):
     Class to read and init the bot configuration
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
+
     def __init__(self, args: Namespace) -> None:
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
@@ -129,6 +130,10 @@ class Configuration(object):
 
         if config.get('forcebuy_enable', False):
             logger.warning('`forcebuy` RPC message enabled.')
+
+        # Setting max_open_trades to infinite if -1
+        if config.get('max_open_trades') == -1:
+            config['max_open_trades'] = float('inf')
 
         logger.info(f'Using DB: "{config["db_url"]}"')
 
