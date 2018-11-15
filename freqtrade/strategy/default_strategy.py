@@ -28,6 +28,13 @@ class DefaultStrategy(IStrategy):
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'
 
+    # Optional order types
+    order_types = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'market'
+    }
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame

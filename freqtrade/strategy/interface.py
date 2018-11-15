@@ -70,6 +70,13 @@ class IStrategy(ABC):
     # associated ticker interval
     ticker_interval: str
 
+    # Optional order types
+    order_types: Dict = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'market'
+    }
+
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
