@@ -6,7 +6,7 @@ import json
 from typing import List
 from freqtrade.edge import Edge
 from freqtrade.arguments import Arguments
-from freqtrade.optimize.edge import (EdgeCli, setup_configuration, start)
+from freqtrade.optimize.edge_cli import (EdgeCli, setup_configuration, start)
 from freqtrade.tests.conftest import log_has, patch_exchange
 
 
@@ -93,7 +93,7 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
     start_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
-    mocker.patch('freqtrade.optimize.edge.EdgeCli.start', start_mock)
+    mocker.patch('freqtrade.optimize.edge_cli.EdgeCli.start', start_mock)
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(edge_conf)
     ))
