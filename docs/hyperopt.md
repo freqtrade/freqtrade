@@ -19,7 +19,6 @@ and still take a long time.
 
 ## Prepare Hyperopting
 
-## Prepare Hyperopt
 Before we start digging in Hyperopt, we recommend you to take a look at 
 an example hyperopt file located into [user_data/hyperopts/](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
 

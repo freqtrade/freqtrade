@@ -30,7 +30,7 @@ setup(name='freqtrade',
           'wrapt',
           'pandas',
           'scikit-learn',
-          'joblib'
+          'joblib',
           'scipy',
           'jsonschema',
           'TA-Lib',
