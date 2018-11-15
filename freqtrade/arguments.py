@@ -201,7 +201,7 @@ class Arguments(object):
         )
         parser.add_argument(
             '--stoplosses',
-            help='defines a range of stoploss against which edge will assess the strategy'
+            help='defines a range of stoploss against which edge will assess the strategy '
                  'the format is "min,max,step" (without any space).'
                  'example: --stoplosses=-0.01,-0.1,-0.001',
             type=str,
