@@ -33,7 +33,9 @@ class Edge():
     # pair info data type
     _pair_info = namedtuple(
         'pair_info',
-        ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy'])
+        ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy',
+         'nb_trades', 'avg_trade_duration']
+    )
 
     def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
 
@@ -53,6 +55,7 @@ class Edge():
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
+        self._refresh_pairs = True
 
         self._stoploss_range_min = float(self.edge_config.get('stoploss_range_min', -0.01))
         self._stoploss_range_max = float(self.edge_config.get('stoploss_range_max', -0.05))
@@ -86,7 +89,7 @@ class Edge():
             self.config['datadir'],
             pairs=pairs,
             ticker_interval=self.ticker_interval,
-            refresh_pairs=True,
+            refresh_pairs=self._refresh_pairs,
             exchange=self.exchange,
             timerange=self._timerange
         )
@@ -296,7 +299,9 @@ class Edge():
                 'winrate': x.winrate,
                 'risk_reward_ratio': x.risk_reward_ratio,
                 'required_risk_reward': x.required_risk_reward,
-                'expectancy': x.expectancy
+                'expectancy': x.expectancy,
+                'nb_trades': x.nb_trades,
+                'avg_trade_duration': x.avg_trade_duration
             }
             final[x.pair] = self._pair_info(**info)
 

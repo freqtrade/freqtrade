@@ -21,6 +21,7 @@ Pull-request. Do not hesitate to reach us on
     - [Bot commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
     - [Backtesting commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
     - [Hyperopt commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands)
+    - [Edge commands](https://github.com/mishaker/freqtrade/blob/develop/docs/bot-usage.md#edge-commands)
 - [Bot Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
 	- [Change your strategy](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#change-your-strategy)
     - [Add more Indicator](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#add-more-indicator)

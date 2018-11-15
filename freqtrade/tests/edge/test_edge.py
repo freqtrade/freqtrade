@@ -128,9 +128,9 @@ def test_adjust(mocker, default_conf):
     edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
+            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60)
         }
     ))
 
@@ -143,9 +143,9 @@ def test_stoploss(mocker, default_conf):
     edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71),
-            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71)
+            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60)
         }
     ))
 
