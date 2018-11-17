@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
-                        create_engine, inspect)
+                        create_engine, inspect, PrimaryKeyConstraint)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
@@ -50,8 +50,13 @@ def init(config: Dict) -> None:
                                    f'is no valid database URL! (See {_SQL_DOCS_URL})')
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+
     Trade.session = session()
     Trade.query = session.query_property()
+
+    Wallet.session = session()
+    Wallet.query = session.query_property()
+
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
@@ -341,3 +346,26 @@ class Trade(_DECL_BASE):
         )
         profit_percent = (close_trade_price / open_trade_price) - 1
         return float(f"{profit_percent:.8f}")
+
+
+class Wallet(_DECL_BASE):
+    """
+    Class for wallet structure
+    It is a mirror of wallets on an exchange
+    """
+    __tablename__ = 'wallets'
+
+    exchange = Column(String, nullable=False, primary_key=True, index=True)
+    currency = Column(String, nullable=False, primary_key=True, index=True)
+
+    free = Column(Float, index=True)
+    used = Column(Float)
+    total = Column(Float)
+    base = Column(Boolean, index=True, default=False)
+    quote = Column(Boolean, index=True, default=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            exchange,
+            currency),
+        {})
