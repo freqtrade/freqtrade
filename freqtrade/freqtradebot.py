@@ -475,8 +475,8 @@ class FreqtradeBot(object):
 
         amount = stake_amount / buy_limit
 
-        order_id = self.exchange.buy(pair=pair, rate=buy_limit, amount=amount,
-                                     ordertype=self.strategy.order_types['buy'])['id']
+        order_id = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
+                                     amount=amount, rate=buy_limit)['id']
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
@@ -767,8 +767,9 @@ class FreqtradeBot(object):
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
         # Execute sell and update trade record
-        order_id = self.exchange.sell(pair=str(trade.pair), rate=limit, amount=trade.amount,
-                                      ordertype=self.strategy.order_types[sell_type])['id']
+        order_id = self.exchange.sell(pair=str(trade.pair),
+                                      ordertype=self.strategy.order_types[sell_type],
+                                      amount=trade.amount, rate=limit)['id']
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value

@@ -249,14 +249,14 @@ class Exchange(object):
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
-    def buy(self, pair: str, rate: float, amount: float, ordertype: str = 'limt') -> Dict:
+    def buy(self, pair: str, ordertype: str, amount: float, rate: float) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
                 'pair': pair,
                 'price': rate,
                 'amount': amount,
-                'type': 'limit',
+                'type': ordertype,
                 'side': 'buy',
                 'remaining': 0.0,
                 'datetime': arrow.utcnow().isoformat(),
@@ -287,14 +287,14 @@ class Exchange(object):
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
-    def sell(self, pair: str, rate: float, amount: float, ordertype: str = 'limt') -> Dict:
+    def sell(self, pair: str, ordertype: str, amount: float, rate: float) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_sell_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
                 'pair': pair,
                 'price': rate,
                 'amount': amount,
-                'type': 'limit',
+                'type': ordertype,
                 'side': 'sell',
                 'remaining': 0.0,
                 'datetime': arrow.utcnow().isoformat(),
