@@ -396,8 +396,9 @@ def test_buy_prod(default_conf, mocker):
     assert 'info' in order
     assert order['id'] == order_id
     assert api_mock.create_order.call_args[0][1] == order_type
-    order_type = 'limit'
+
     api_mock.create_order.reset_mock()
+    order_type = 'limit'
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
     assert api_mock.create_order.call_args[0][1] == order_type
 
@@ -452,8 +453,8 @@ def test_sell_prod(default_conf, mocker):
     assert order['id'] == order_id
     assert api_mock.create_order.call_args[0][1] == order_type
 
-    order_type = 'limit'
     api_mock.create_order.reset_mock()
+    order_type = 'limit'
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
     assert api_mock.create_order.call_args[0][1] == order_type
 
