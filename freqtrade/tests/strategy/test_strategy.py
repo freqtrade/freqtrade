@@ -88,8 +88,8 @@ def test_load_strategy_invalid_directory(result, caplog):
 def test_load_not_found_strategy():
     strategy = StrategyResolver()
     with pytest.raises(ImportError,
-                       match=r'Impossible to load Strategy \'NotFoundStrategy\'.'
-                             r' This class does not exist or contains Python code errors'):
+                       match=r"Impossible to load Strategy 'NotFoundStrategy'."
+                             r" This class does not exist or contains Python code errors"):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
 
 
