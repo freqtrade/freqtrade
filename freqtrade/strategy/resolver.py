@@ -75,6 +75,15 @@ class StrategyResolver(object):
         else:
             config['process_only_new_candles'] = self.strategy.process_only_new_candles
 
+        if 'order_types' in config:
+            self.strategy.order_types = config['order_types']
+            logger.info(
+                "Override strategy 'order_types' with value in config file: %s.",
+                config['order_types']
+            )
+        else:
+            config['order_types'] = self.strategy.order_types
+
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),

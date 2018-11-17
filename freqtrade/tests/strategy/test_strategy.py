@@ -182,6 +182,32 @@ def test_strategy_override_process_only_new_candles(caplog):
             ) in caplog.record_tuples
 
 
+def test_strategy_override_order_types(caplog):
+    caplog.set_level(logging.INFO)
+
+    order_types = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit'
+    }
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': order_types
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.order_types
+    for method in ['buy', 'sell', 'stoploss']:
+        assert resolver.strategy.order_types[method] == order_types[method]
+
+    assert ('freqtrade.strategy.resolver',
+            logging.INFO,
+            "Override strategy 'order_types' with value in config file:"
+            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit'}."
+            ) in caplog.record_tuples
+
+
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
