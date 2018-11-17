@@ -74,7 +74,7 @@ class IStrategy(ABC):
     order_types: Dict = {
         'buy': 'limit',
         'sell': 'limit',
-        'stoploss': 'market'
+        'stoploss': 'limit'
     }
 
     # run "populate_indicators" only for new candle

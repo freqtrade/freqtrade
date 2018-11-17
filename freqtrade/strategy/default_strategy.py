@@ -32,7 +32,7 @@ class DefaultStrategy(IStrategy):
     order_types = {
         'buy': 'limit',
         'sell': 'limit',
-        'stoploss': 'market'
+        'stoploss': 'limit'
     }
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
