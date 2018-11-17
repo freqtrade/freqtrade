@@ -17,6 +17,7 @@ from cachetools import TTLCache, cached
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
+from freqtrade.finance.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
@@ -56,6 +57,7 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
+        self.wallets = Wallets(self.exchange)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -505,6 +507,10 @@ class FreqtradeBot(object):
         )
         Trade.session.add(trade)
         Trade.session.flush()
+
+        # Updating wallets
+        self.wallets.update()
+
         return True
 
     def process_maybe_execute_buy(self) -> bool:
@@ -549,7 +555,11 @@ class FreqtradeBot(object):
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
-                return self.handle_trade(trade)
+                result =  self.handle_trade(trade)
+                if result:
+                    self.wallets.update()
+                return result
+
         except DependencyException as exception:
             logger.warning('Unable to sell trade: %s', exception)
         return False
