@@ -28,7 +28,7 @@ class DefaultStrategy(IStrategy):
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'
 
-    # Optional order types
+    # Optional order type mapping
     order_types = {
         'buy': 'limit',
         'sell': 'limit',
