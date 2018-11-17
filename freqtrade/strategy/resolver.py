@@ -84,6 +84,10 @@ class StrategyResolver(object):
         else:
             config['order_types'] = self.strategy.order_types
 
+        if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
+            raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
+                              f"Order-types mapping is incomplete.")
+
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),

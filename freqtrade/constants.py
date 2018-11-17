@@ -12,6 +12,7 @@ DEFAULT_STRATEGY = 'DefaultStrategy'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
+REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
 
 
 TICKER_INTERVAL_MINUTES = {
