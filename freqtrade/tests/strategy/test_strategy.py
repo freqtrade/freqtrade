@@ -207,6 +207,16 @@ def test_strategy_override_order_types(caplog):
             " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit'}."
             ) in caplog.record_tuples
 
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': {'buy': 'market'}
+    }
+    # Raise error for invalid configuration
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"Order-types mapping is incomplete."):
+        StrategyResolver(config)
+
 
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
