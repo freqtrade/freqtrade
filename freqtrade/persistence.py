@@ -346,26 +346,3 @@ class Trade(_DECL_BASE):
         )
         profit_percent = (close_trade_price / open_trade_price) - 1
         return float(f"{profit_percent:.8f}")
-
-
-class Wallet(_DECL_BASE):
-    """
-    Class for wallet structure
-    It is a mirror of wallets on an exchange
-    """
-    __tablename__ = 'wallets'
-
-    exchange = Column(String, nullable=False, primary_key=True, index=True)
-    currency = Column(String, nullable=False, primary_key=True, index=True)
-
-    free = Column(Float, index=True)
-    used = Column(Float)
-    total = Column(Float)
-    base = Column(Boolean, index=True, default=False)
-    quote = Column(Boolean, index=True, default=False)
-
-    __table_args__ = (
-        PrimaryKeyConstraint(
-            exchange,
-            currency),
-        {})
