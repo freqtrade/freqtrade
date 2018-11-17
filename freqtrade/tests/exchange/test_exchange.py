@@ -373,7 +373,7 @@ def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf)
 
-    order = exchange.buy(pair='ETH/BTC', rate=200, amount=1)
+    order = exchange.buy(pair='ETH/BTC', ordertype='limit', amount=1, rate=200)
     assert 'id' in order
     assert 'dry_run_buy_' in order['id']
 
@@ -381,6 +381,7 @@ def test_buy_dry_run(default_conf, mocker):
 def test_buy_prod(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_type = 'market'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -390,38 +391,43 @@ def test_buy_prod(default_conf, mocker):
     default_conf['dry_run'] = False
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
-    order = exchange.buy(pair='ETH/BTC', rate=200, amount=1)
+    order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][1] == order_type
+    order_type = 'limit'
+    api_mock.create_order.reset_mock()
+    order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+    assert api_mock.create_order.call_args[0][1] == order_type
 
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', rate=200, amount=1)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', rate=200, amount=1)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', rate=200, amount=1)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', rate=200, amount=1)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
 
 def test_sell_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf)
 
-    order = exchange.sell(pair='ETH/BTC', rate=200, amount=1)
+    order = exchange.sell(pair='ETH/BTC', ordertype='limit', amount=1, rate=200)
     assert 'id' in order
     assert 'dry_run_sell_' in order['id']
 
@@ -429,6 +435,7 @@ def test_sell_dry_run(default_conf, mocker):
 def test_sell_prod(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    order_type = 'market'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -439,31 +446,37 @@ def test_sell_prod(default_conf, mocker):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
-    order = exchange.sell(pair='ETH/BTC', rate=200, amount=1)
+    order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][1] == order_type
+
+    order_type = 'limit'
+    api_mock.create_order.reset_mock()
+    order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+    assert api_mock.create_order.call_args[0][1] == order_type
 
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.sell(pair='ETH/BTC', rate=200, amount=1)
+        exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.sell(pair='ETH/BTC', rate=200, amount=1)
+        exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.sell(pair='ETH/BTC', rate=200, amount=1)
+        exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.sell(pair='ETH/BTC', rate=200, amount=1)
+        exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
 
 def test_get_balance_dry_run(default_conf, mocker):
