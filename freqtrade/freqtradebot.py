@@ -556,8 +556,11 @@ class FreqtradeBot(object):
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
                 result = self.handle_trade(trade)
+
+                # Updating wallets if any trade occured
                 if result:
                     self.wallets.update()
+
                 return result
 
         except DependencyException as exception:
