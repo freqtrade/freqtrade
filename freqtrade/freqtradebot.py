@@ -18,7 +18,7 @@ from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge
-from freqtrade.persistence import Trade, Wallet
+from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
