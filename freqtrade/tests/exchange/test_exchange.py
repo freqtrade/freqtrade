@@ -419,18 +419,28 @@ def test_buy_prod(default_conf, mocker):
         }
     })
     default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'buy'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] is None
 
     api_mock.create_order.reset_mock()
     order_type = 'limit'
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'buy'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] == 200
 
     # test exception handling
     with pytest.raises(DependencyException):
@@ -476,17 +486,27 @@ def test_sell_prod(default_conf, mocker):
     default_conf['dry_run'] = False
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
 
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'sell'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] is None
 
     api_mock.create_order.reset_mock()
     order_type = 'limit'
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'sell'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] == 200
 
     # test exception handling
     with pytest.raises(DependencyException):

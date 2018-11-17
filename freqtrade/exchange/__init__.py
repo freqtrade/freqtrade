@@ -277,7 +277,7 @@ class Exchange(object):
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate)
+            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
             return self._api.create_order(pair, ordertype, 'buy', amount, rate)
         except ccxt.InsufficientFunds as e:
@@ -314,7 +314,7 @@ class Exchange(object):
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate)
+            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
             return self._api.create_order(pair, ordertype, 'sell', amount, rate)
         except ccxt.InsufficientFunds as e:
