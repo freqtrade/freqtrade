@@ -813,17 +813,3 @@ class FreqtradeBot(object):
         # Send the message
         self.rpc.send_msg(msg)
         Trade.session.flush()
-
-    def update_wallets(self) -> bool:
-        wallets = self.exchange.get_balances()
-
-        for currency in wallets:
-            wallet = Wallet(
-                exchange=self.exchange._api.id,
-                currency=currency,
-                free=wallets[currency]['free'],
-                used=wallets[currency]['used'],
-                total=wallets[currency]['total']
-            )
-            Wallet.session.add(wallet)
-        Wallet.session.flush()
