@@ -355,6 +355,36 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     Exchange(default_conf)
 
 
+def test_validate_order_types(default_conf, mocker):
+    api_mock = MagicMock()
+
+    type(api_mock).has = PropertyMock(return_value={'createMarketOrder': True})
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    default_conf['order_types'] = {'buy': 'limit', 'sell': 'limit', 'stoploss': 'market'}
+    Exchange(default_conf)
+
+    type(api_mock).has = PropertyMock(return_value={'createMarketOrder': False})
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+
+    default_conf['order_types'] = {'buy': 'limit', 'sell': 'limit', 'stoploss': 'market'}
+
+    with pytest.raises(OperationalException,
+                       match=r'Exchange .* does not support market orders.'):
+        Exchange(default_conf)
+
+
+def test_validate_order_types_not_in_config(default_conf, mocker):
+    api_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+
+    conf = copy.deepcopy(default_conf)
+    Exchange(conf)
+
+
 def test_exchange_has(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
     assert not exchange.exchange_has('ASDFASDF')

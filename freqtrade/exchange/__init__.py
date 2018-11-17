@@ -102,7 +102,7 @@ class Exchange(object):
         self.markets = self._load_markets()
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
-
+        self.validate_ordertypes(config.get('order_types', {}))
         if config.get('ticker_interval'):
             # Check if timeframe is available
             self.validate_timeframes(config['ticker_interval'])
@@ -217,6 +217,15 @@ class Exchange(object):
         if timeframe not in timeframes:
             raise OperationalException(
                 f'Invalid ticker {timeframe}, this Exchange supports {timeframes}')
+
+    def validate_ordertypes(self, order_types: Dict) -> None:
+        """
+        Checks if order-types configured in strategy/config are supported
+        """
+        if any(v == 'market' for k, v in order_types.items()):
+            if not self.exchange_has('createMarketOrder'):
+                raise OperationalException(
+                    f'Exchange {self.name} does not support market orders.')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
