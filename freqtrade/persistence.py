@@ -54,9 +54,6 @@ def init(config: Dict) -> None:
     Trade.session = session()
     Trade.query = session.query_property()
 
-    Wallet.session = session()
-    Wallet.query = session.query_property()
-
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
