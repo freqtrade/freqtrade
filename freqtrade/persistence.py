@@ -50,10 +50,8 @@ def init(config: Dict) -> None:
                                    f'is no valid database URL! (See {_SQL_DOCS_URL})')
 
     session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-
     Trade.session = session()
     Trade.query = session.query_property()
-
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine)
 
