@@ -1,7 +1,7 @@
 # pragma pylint: disable=W0603
 """ Wallet """
 import logging
-from typing import Dict
+from typing import Dict, Any
 from collections import namedtuple
 from freqtrade.exchange import Exchange
 
@@ -18,7 +18,7 @@ class Wallets(object):
 
     def __init__(self, exchange: Exchange) -> None:
         self.exchange = exchange
-        self.wallets: Dict[str, self.wallet] = {}
+        self.wallets: Dict[str, Any] = {}
         self.update()
 
     def update(self) -> None:
