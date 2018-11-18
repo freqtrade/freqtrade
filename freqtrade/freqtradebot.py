@@ -17,7 +17,7 @@ from cachetools import TTLCache, cached
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
-from freqtrade.finance.wallets import Wallets
+from freqtrade.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
