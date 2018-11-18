@@ -19,9 +19,9 @@ class Wallets(object):
     def __init__(self, exchange: Exchange) -> None:
         self.exchange = exchange
         self.wallets: Dict[str, self.wallet] = {}
-        self._update_wallets()
+        self.update()
 
-    def _update_wallets(self) -> None:
+    def update(self) -> None:
         balances = self.exchange.get_balances()
 
         for currency in balances:
@@ -36,6 +36,3 @@ class Wallets(object):
             self.wallets[currency] = self.wallet(**info)
 
         logger.info('Wallets synced ...')
-
-    def update(self) -> None:
-        self._update_wallets()
