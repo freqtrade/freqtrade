@@ -102,7 +102,7 @@ class Exchange(object):
         self.markets = self._load_markets()
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
-
+        self.validate_ordertypes(config.get('order_types', {}))
         if config.get('ticker_interval'):
             # Check if timeframe is available
             self.validate_timeframes(config['ticker_interval'])
@@ -218,6 +218,15 @@ class Exchange(object):
             raise OperationalException(
                 f'Invalid ticker {timeframe}, this Exchange supports {timeframes}')
 
+    def validate_ordertypes(self, order_types: Dict) -> None:
+        """
+        Checks if order-types configured in strategy/config are supported
+        """
+        if any(v == 'market' for k, v in order_types.items()):
+            if not self.exchange_has('createMarketOrder'):
+                raise OperationalException(
+                    f'Exchange {self.name} does not support market orders.')
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.
@@ -249,14 +258,14 @@ class Exchange(object):
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
-    def buy(self, pair: str, rate: float, amount: float) -> Dict:
+    def buy(self, pair: str, ordertype: str, amount: float, rate: float) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
                 'pair': pair,
                 'price': rate,
                 'amount': amount,
-                'type': 'limit',
+                'type': ordertype,
                 'side': 'buy',
                 'remaining': 0.0,
                 'datetime': arrow.utcnow().isoformat(),
@@ -268,9 +277,9 @@ class Exchange(object):
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate)
+            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            return self._api.create_limit_buy_order(pair, amount, rate)
+            return self._api.create_order(pair, ordertype, 'buy', amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create limit buy order on market {pair}.'
@@ -287,14 +296,14 @@ class Exchange(object):
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
-    def sell(self, pair: str, rate: float, amount: float) -> Dict:
+    def sell(self, pair: str, ordertype: str, amount: float, rate: float) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_sell_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
                 'pair': pair,
                 'price': rate,
                 'amount': amount,
-                'type': 'limit',
+                'type': ordertype,
                 'side': 'sell',
                 'remaining': 0.0,
                 'datetime': arrow.utcnow().isoformat(),
@@ -305,9 +314,9 @@ class Exchange(object):
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate)
+            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            return self._api.create_limit_sell_order(pair, amount, rate)
+            return self._api.create_order(pair, ordertype, 'sell', amount, rate)
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create limit sell order on market {pair}.'
