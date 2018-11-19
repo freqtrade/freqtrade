@@ -340,7 +340,9 @@ class FreqtradeBot(object):
         else:
             stake_amount = self.config['stake_amount']
 
+        # TODO: should come from the wallet
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
+        #avaliable_amount = self.wallets.wallets[self.config['stake_currency']].free
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
@@ -707,8 +709,10 @@ class FreqtradeBot(object):
             if order['status'] == 'open':
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
+                    self.wallets.update()
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
                     self.handle_timedout_limit_sell(trade, order)
+                    self.wallets.update()
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the
