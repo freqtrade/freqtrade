@@ -342,7 +342,7 @@ class FreqtradeBot(object):
 
         # TODO: should come from the wallet
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
-        #avaliable_amount = self.wallets.wallets[self.config['stake_currency']].free
+        # avaliable_amount = self.wallets.wallets[self.config['stake_currency']].free
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
