@@ -67,6 +67,11 @@ class IStrategy(ABC):
     # associated stoploss
     stoploss: float
 
+    # if the stoploss should be on exchange.
+    # if this is True then a stoploss order will be placed
+    # immediately after a successful buy order.
+    stoploss_on_exchange: bool = False
+
     # associated ticker interval
     ticker_interval: str
 
@@ -214,7 +219,11 @@ class IStrategy(ABC):
         # Set current rate to low for backtesting sell
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+
+        if self.stoploss_on_exchange:
+            stoplossflag = False
+        else:
+            stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss)
         if stoplossflag.sell_flag:
