@@ -105,7 +105,8 @@ class Hyperopt(Backtesting):
             best_result['params']
         )
         if 'roi_t1' in best_result['params']:
-            logger.info('ROI table:\n%s', self.custom_hyperopt.generate_roi_table(best_result['params']))
+            logger.info('ROI table:\n%s',
+                        self.custom_hyperopt.generate_roi_table(best_result['params']))
 
     def log_results(self, results) -> None:
         """
@@ -219,7 +220,8 @@ class Hyperopt(Backtesting):
         )
 
     def run_optimizer_parallel(self, parallel, asked) -> List:
-        return parallel(delayed(wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
+        return parallel(delayed(
+                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
 
     def load_previous_results(self):
         """ read trials file if we have one """
@@ -241,7 +243,8 @@ class Hyperopt(Backtesting):
         )
 
         if self.has_space('buy'):
-            self.strategy.advise_indicators = self.custom_hyperopt.populate_indicators  # type: ignore
+            self.strategy.advise_indicators = \
+                self.custom_hyperopt.populate_indicators  # type: ignore
         dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
         self.exchange = None  # type: ignore
         self.load_previous_results()
