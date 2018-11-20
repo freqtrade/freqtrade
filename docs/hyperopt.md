@@ -36,8 +36,7 @@ new buy hyperopt for testing:
 - Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L230-L251).
 - Inside [indicator_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L207-L223).
 
-There you have two different type of indicators: 1. `guards` and 2. 
-`triggers`.
+There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
 1. Guards are conditions like "never buy if ADX < 10", or never buy if 
 current price is over EMA10.
