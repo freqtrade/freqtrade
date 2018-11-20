@@ -9,7 +9,7 @@ import numpy
 from skopt.space import Categorical, Dimension, Integer, Real
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.optimize.interface import IHyperOpt
+from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 class_name = 'SampleHyperOpts'
 

@@ -10,7 +10,7 @@ import os
 from typing import Optional, Dict, Type
 
 from freqtrade.constants import DEFAULT_HYPEROPT
-from freqtrade.optimize.interface import IHyperOpt
+from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 
 logger = logging.getLogger(__name__)
