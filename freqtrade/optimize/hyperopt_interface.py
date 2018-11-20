@@ -4,9 +4,10 @@ This module defines the interface to apply for hyperopts
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List
 
 from pandas import DataFrame
+from skopt.space import Dimension
 
 
 class IHyperOpt(ABC):
@@ -20,40 +21,46 @@ class IHyperOpt(ABC):
         ticker_interval -> int: value of the ticker interval to use for the strategy
     """
 
+    @staticmethod
     @abstractmethod
-    def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
+    def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy and Sell strategy
         :param dataframe: Raw data from the exchange and parsed by parse_ticker_dataframe()
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
+    @staticmethod
     @abstractmethod
-    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
+    def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Create a buy strategy generator
         """
 
+    @staticmethod
     @abstractmethod
-    def indicator_space(self) -> Dict[str, Any]:
+    def indicator_space() -> List[Dimension]:
         """
         Create an indicator space
         """
 
+    @staticmethod
     @abstractmethod
-    def generate_roi_table(self, params: Dict) -> Dict[int, float]:
+    def generate_roi_table(params: Dict) -> Dict[int, float]:
         """
         Create an roi table
         """
 
+    @staticmethod
     @abstractmethod
-    def stoploss_space(self) -> Dict[str, Any]:
+    def stoploss_space() -> List[Dimension]:
         """
         Create a stoploss space
         """
 
+    @staticmethod
     @abstractmethod
-    def roi_space(self) -> Dict[str, Any]:
+    def roi_space() -> List[Dimension]:
         """
         Create a roi space
         """

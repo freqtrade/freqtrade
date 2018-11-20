@@ -35,7 +35,7 @@ class HyperOptResolver(object):
         self.hyperopt = self._load_hyperopt(hyperopt_name, extra_dir=config.get('hyperopt_path'))
 
     def _load_hyperopt(
-            self, hyperopt_name: str, extra_dir: Optional[str] = None) -> Optional[IHyperOpt]:
+            self, hyperopt_name: str, extra_dir: Optional[str] = None) -> IHyperOpt:
         """
         Search and loads the specified hyperopt.
         :param hyperopt_name: name of the module to import
@@ -75,7 +75,7 @@ class HyperOptResolver(object):
         # Generate spec based on absolute path
         spec = importlib.util.spec_from_file_location('user_data.hyperopts', module_path)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
 
         valid_hyperopts_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)

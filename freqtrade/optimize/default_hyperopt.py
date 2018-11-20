@@ -36,7 +36,8 @@ class DefaultHyperOpts(IHyperOpt):
         dataframe['sar'] = ta.SAR(dataframe)
         return dataframe
 
-    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
+    @staticmethod
+    def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Define the buy strategy parameters to be used by hyperopt
         """
