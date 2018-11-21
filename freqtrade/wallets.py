@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class Wallet(NamedTuple):
-    exchange: Optional[str] = None
-    currency: Optional[str] = None
+    exchange: Optional[str]
+    currency: Optional[str]
     free: float = 0
     used: float = 0
     total: float = 0
