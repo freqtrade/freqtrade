@@ -4,7 +4,7 @@
 import pytest
 import logging
 from freqtrade.tests.conftest import get_patched_freqtradebot
-from freqtrade.edge import Edge
+from freqtrade.edge import Edge, PairInfo
 from pandas import DataFrame, to_datetime
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
@@ -128,9 +128,9 @@ def test_adjust(mocker, default_conf):
     edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
-            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
-            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60)
+            'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'C/D': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'N/O': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60)
         }
     ))
 
@@ -143,9 +143,9 @@ def test_stoploss(mocker, default_conf):
     edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
-            'C/D': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
-            'N/O': Edge._pair_info(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60)
+            'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'C/D': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'N/O': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60)
         }
     ))
 
