@@ -1,7 +1,7 @@
 # pragma pylint: disable=W0603
 """ Wallet """
 import logging
-from typing import Dict, Any, NamedTuple, Optional
+from typing import Dict, Any, NamedTuple
 from collections import namedtuple
 from freqtrade.exchange import Exchange
 
