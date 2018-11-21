@@ -48,6 +48,13 @@ class TestStrategy(IStrategy):
     # run "populate_indicators" only for new candle
     ta_on_candle = False
 
+    # Optional order type mapping
+    order_types = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'market'
+    }
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame

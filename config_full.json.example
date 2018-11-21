@@ -33,6 +33,11 @@
         "order_book_min": 1,
         "order_book_max": 9
     },
+    "order_types": {
+        "buy": "limit",
+        "sell": "limit",
+        "stoploss": "market"
+    },
     "exchange": {
         "name": "bittrex",
         "key": "your_exchange_key",
