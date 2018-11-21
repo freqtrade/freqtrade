@@ -194,9 +194,6 @@ class FreqtradeBot(object):
                 self.edge.calculate()
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
 
-            # Refreshing candles
-            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
-
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
