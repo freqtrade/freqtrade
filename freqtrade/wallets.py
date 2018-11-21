@@ -1,11 +1,19 @@
 # pragma pylint: disable=W0603
 """ Wallet """
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, NamedTuple
 from collections import namedtuple
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)
+
+
+class Wallet(NamedTuple):
+    exchange: str = None
+    currency: str = None
+    free: float = 0
+    used: float = 0
+    total: float = 0
 
 
 class Wallets(object):
@@ -25,14 +33,12 @@ class Wallets(object):
         balances = self.exchange.get_balances()
 
         for currency in balances:
-            info = {
-                'exchange': self.exchange.id,
-                'currency': currency,
-                'free': balances[currency]['free'],
-                'used': balances[currency]['used'],
-                'total': balances[currency]['total']
-            }
-
-            self.wallets[currency] = self.wallet(**info)
+            self.wallets[currency] = Wallet(
+                self.exchange.id,
+                currency,
+                balances[currency].get('free', None),
+                balances[currency].get('used', None),
+                balances[currency].get('total', None)
+            )
 
         logger.info('Wallets synced ...')
