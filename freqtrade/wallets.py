@@ -1,7 +1,7 @@
 # pragma pylint: disable=W0603
 """ Wallet """
 import logging
-from typing import Dict, Any, NamedTuple
+from typing import Dict, Any, NamedTuple, Optional
 from collections import namedtuple
 from freqtrade.exchange import Exchange
 
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class Wallet(NamedTuple):
-    exchange: str = None
-    currency: str = None
+    exchange: Optional[str] = None
+    currency: Optional[str] = None
     free: float = 0
     used: float = 0
     total: float = 0
