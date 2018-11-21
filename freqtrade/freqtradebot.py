@@ -703,6 +703,7 @@ class FreqtradeBot(object):
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
+                self.wallets.update()
                 continue
 
             # Check if trade is still actually open
