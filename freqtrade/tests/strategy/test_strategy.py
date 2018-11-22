@@ -88,8 +88,8 @@ def test_load_strategy_invalid_directory(result, caplog):
 def test_load_not_found_strategy():
     strategy = StrategyResolver()
     with pytest.raises(ImportError,
-                       match=r'Impossible to load Strategy \'NotFoundStrategy\'.'
-                             r' This class does not exist or contains Python code errors'):
+                       match=r"Impossible to load Strategy 'NotFoundStrategy'."
+                             r" This class does not exist or contains Python code errors"):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
 
 
@@ -180,6 +180,42 @@ def test_strategy_override_process_only_new_candles(caplog):
             "Override process_only_new_candles 'process_only_new_candles' "
             "with value in config file: True."
             ) in caplog.record_tuples
+
+
+def test_strategy_override_order_types(caplog):
+    caplog.set_level(logging.INFO)
+
+    order_types = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit'
+    }
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': order_types
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.order_types
+    for method in ['buy', 'sell', 'stoploss']:
+        assert resolver.strategy.order_types[method] == order_types[method]
+
+    assert ('freqtrade.strategy.resolver',
+            logging.INFO,
+            "Override strategy 'order_types' with value in config file:"
+            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit'}."
+            ) in caplog.record_tuples
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': {'buy': 'market'}
+    }
+    # Raise error for invalid configuration
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"Order-types mapping is incomplete."):
+        StrategyResolver(config)
 
 
 def test_deprecate_populate_indicators(result):

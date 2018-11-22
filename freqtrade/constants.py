@@ -9,9 +9,12 @@ TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
+DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
+REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
+ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 
 
 TICKER_INTERVAL_MINUTES = {
@@ -100,6 +103,15 @@ CONF_SCHEMA = {
                 'order_book_min': {'type': 'number', 'minimum': 1},
                 'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
             }
+        },
+        'order_types': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES}
+            },
+            'required': ['buy', 'sell', 'stoploss']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},

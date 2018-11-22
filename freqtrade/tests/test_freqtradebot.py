@@ -553,7 +553,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order,
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
-    rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
+    rate, amount = buy_mock.call_args[1]['rate'], buy_mock.call_args[1]['amount']
     assert rate * amount >= default_conf['stake_amount']
 
 
@@ -863,10 +863,10 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert freqtrade.execute_buy(pair, stake_amount)
     assert get_bid.call_count == 1
     assert buy_mm.call_count == 1
-    call_args = buy_mm.call_args_list[0][0]
-    assert call_args[0] == pair
-    assert call_args[1] == bid
-    assert call_args[2] == stake_amount / bid
+    call_args = buy_mm.call_args_list[0][1]
+    assert call_args['pair'] == pair
+    assert call_args['rate'] == bid
+    assert call_args['amount'] == stake_amount / bid
 
     # Test calling with price
     fix_price = 0.06
@@ -875,10 +875,10 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert get_bid.call_count == 1
 
     assert buy_mm.call_count == 2
-    call_args = buy_mm.call_args_list[1][0]
-    assert call_args[0] == pair
-    assert call_args[1] == fix_price
-    assert call_args[2] == stake_amount / fix_price
+    call_args = buy_mm.call_args_list[1][1]
+    assert call_args['pair'] == pair
+    assert call_args['rate'] == fix_price
+    assert call_args['amount'] == stake_amount / fix_price
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:

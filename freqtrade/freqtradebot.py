@@ -17,6 +17,7 @@ from cachetools import TTLCache, cached
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
+from freqtrade.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
@@ -56,6 +57,7 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
+        self.wallets = Wallets(self.exchange)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -193,9 +195,6 @@ class FreqtradeBot(object):
             if self.edge:
                 self.edge.calculate()
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
-
-            # Refreshing candles
-            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
 
             # Query trades from persistence layer
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -338,7 +337,9 @@ class FreqtradeBot(object):
         else:
             stake_amount = self.config['stake_amount']
 
+        # TODO: should come from the wallet
         avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
+        # avaliable_amount = self.wallets.wallets[self.config['stake_currency']].free
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
@@ -475,7 +476,8 @@ class FreqtradeBot(object):
 
         amount = stake_amount / buy_limit
 
-        order_id = self.exchange.buy(pair, buy_limit, amount)['id']
+        order_id = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
+                                     amount=amount, rate=buy_limit)['id']
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
@@ -505,6 +507,10 @@ class FreqtradeBot(object):
         )
         Trade.session.add(trade)
         Trade.session.flush()
+
+        # Updating wallets
+        self.wallets.update()
+
         return True
 
     def process_maybe_execute_buy(self) -> bool:
@@ -549,7 +555,14 @@ class FreqtradeBot(object):
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
-                return self.handle_trade(trade)
+                result = self.handle_trade(trade)
+
+                # Updating wallets if any trade occured
+                if result:
+                    self.wallets.update()
+
+                return result
+
         except DependencyException as exception:
             logger.warning('Unable to sell trade: %s', exception)
         return False
@@ -688,14 +701,17 @@ class FreqtradeBot(object):
 
             # Check if trade is still actually open
             if int(order['remaining']) == 0:
+                self.wallets.update()
                 continue
 
             # Check if trade is still actually open
             if order['status'] == 'open':
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
+                    self.wallets.update()
                 elif order['side'] == 'sell' and ordertime < sell_timeoutthreashold:
                     self.handle_timedout_limit_sell(trade, order)
+                    self.wallets.update()
 
     # FIX: 20180110, why is cancel.order unconditionally here, whereas
     #                it is conditionally called in the
@@ -762,8 +778,13 @@ class FreqtradeBot(object):
         :param sellreason: Reason the sell was triggered
         :return: None
         """
+        sell_type = 'sell'
+        if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+            sell_type = 'stoploss'
         # Execute sell and update trade record
-        order_id = self.exchange.sell(str(trade.pair), limit, trade.amount)['id']
+        order_id = self.exchange.sell(pair=str(trade.pair),
+                                      ordertype=self.strategy.order_types[sell_type],
+                                      amount=trade.amount, rate=limit)['id']
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value

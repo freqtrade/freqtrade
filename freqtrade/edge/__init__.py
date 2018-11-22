@@ -1,8 +1,7 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
-from typing import Any, Dict
-from collections import namedtuple
+from typing import Any, Dict, NamedTuple
 import arrow
 
 import numpy as np
@@ -18,6 +17,16 @@ from freqtrade.strategy.interface import SellType
 logger = logging.getLogger(__name__)
 
 
+class PairInfo(NamedTuple):
+    stoploss: float
+    winrate: float
+    risk_reward_ratio: float
+    required_risk_reward: float
+    expectancy: float
+    nb_trades: int
+    avg_trade_duration: float
+
+
 class Edge():
     """
     Calculates Win Rate, Risk Reward Ratio, Expectancy
@@ -29,13 +38,6 @@ class Edge():
 
     config: Dict = {}
     _cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
-
-    # pair info data type
-    _pair_info = namedtuple(
-        'pair_info',
-        ['stoploss', 'winrate', 'risk_reward_ratio', 'required_risk_reward', 'expectancy',
-         'nb_trades', 'avg_trade_duration']
-    )
 
     def __init__(self, config: Dict[str, Any], exchange, strategy) -> None:
 
@@ -294,16 +296,15 @@ class Edge():
 
         final = {}
         for x in df.itertuples():
-            info = {
-                'stoploss': x.stoploss,
-                'winrate': x.winrate,
-                'risk_reward_ratio': x.risk_reward_ratio,
-                'required_risk_reward': x.required_risk_reward,
-                'expectancy': x.expectancy,
-                'nb_trades': x.nb_trades,
-                'avg_trade_duration': x.avg_trade_duration
-            }
-            final[x.pair] = self._pair_info(**info)
+            final[x.pair] = PairInfo(
+                x.stoploss,
+                x.winrate,
+                x.risk_reward_ratio,
+                x.required_risk_reward,
+                x.expectancy,
+                x.nb_trades,
+                x.avg_trade_duration
+            )
 
         # Returning a list of pairs in order of "expectancy"
         return final
