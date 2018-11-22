@@ -1172,9 +1172,9 @@ def test_get_fee(default_conf, mocker):
     ccxt_exceptionhandlers(mocker, default_conf, api_mock,
                            'get_fee', 'calculate_fee')
 
+
 def test_stoploss_limit_available_only_for_binance(default_conf, mocker):
     api_mock = MagicMock()
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(NotImplementedError):
         exchange.stoploss_limit('BTC/ETH', 1, 0.8, 0.79)
-

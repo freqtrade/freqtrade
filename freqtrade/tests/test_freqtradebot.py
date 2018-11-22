@@ -885,7 +885,7 @@ def test_execute_buy_with_stoploss_on_exchange(mocker, default_conf,
                                                fee, markets, limit_buy_order) -> None:
     default_conf['exchange']['name'] = 'binance'
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
+    patch_exchange(mocker, id='binance')
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.stoploss_on_exchange = True
     freqtrade.strategy.stoploss = -0.05
