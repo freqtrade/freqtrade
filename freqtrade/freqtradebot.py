@@ -805,6 +805,11 @@ class FreqtradeBot(object):
         if self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
             self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
 
+            # Dry-run should consider stoploss is executed at the limit price
+            # So overriding limit in case of dry-run
+            if self.config['dry_run']:
+                limit = trade.stop_loss
+
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),
                                       ordertype=self.strategy.order_types[sell_type],
