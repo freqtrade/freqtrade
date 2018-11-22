@@ -880,7 +880,9 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert call_args['rate'] == fix_price
     assert call_args['amount'] == stake_amount / fix_price
 
-def test_execute_buy_with_stoploss_on_exchange(mocker, default_conf, fee, markets, limit_buy_order) -> None:
+
+def test_execute_buy_with_stoploss_on_exchange(mocker, default_conf,
+                                               fee, markets, limit_buy_order) -> None:
     default_conf['exchange']['name'] = 'binance'
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -930,6 +932,7 @@ def test_execute_buy_with_stoploss_on_exchange(mocker, default_conf, fee, market
     trade = Trade.query.first()
     assert trade.is_open is True
     assert trade.stoploss_order_id == 13434334
+
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
