@@ -492,8 +492,8 @@ class FreqtradeBot(object):
             # 0.98 is arbitrary here.
             limit_price = stop_price * 0.98
 
-            stoploss_order_id = self.exchange.stoploss_limit(pair=pair, amount=amount,
-                                        stop_price=stop_price, rate=limit_price)['id']
+            stoploss_order_id = self.exchange.stoploss_limit(
+                pair=pair, amount=amount, stop_price=stop_price, rate=limit_price)['id']
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,

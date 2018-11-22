@@ -349,7 +349,8 @@ class Exchange(object):
             raise OperationalException(
                 'In stoploss limit order, stop price should be more than limit price')
 
-        return self._api.create_order(pair, 'stop_loss', 'sell', amount, rate, {'stopPrice': stop_price})
+        return self._api.create_order(pair, 'stop_loss', 'sell',
+                                      amount, rate, {'stopPrice': stop_price})
 
     @retrier
     def get_balance(self, currency: str) -> float:

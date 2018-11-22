@@ -231,8 +231,8 @@ class IStrategy(ABC):
             stoplossflag = False
         else:
             stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=date, current_profit=current_profit,
-                                              force_stoploss=force_stoploss)
+                                                  current_time=date, current_profit=current_profit,
+                                                  force_stoploss=force_stoploss)
 
         if stoplossflag.sell_flag:
             return stoplossflag
