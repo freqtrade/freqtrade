@@ -4,7 +4,7 @@
 from unittest.mock import MagicMock
 import json
 from typing import List
-from freqtrade.edge import Edge
+from freqtrade.edge import PairInfo
 from freqtrade.arguments import Arguments
 from freqtrade.optimize.edge_cli import (EdgeCli, setup_configuration, start)
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -123,17 +123,8 @@ def test_generate_edge_table(edge_conf, mocker):
     edge_cli = EdgeCli(edge_conf)
 
     results = {}
-    info = {
-        'stoploss': -0.01,
-        'winrate': 0.60,
-        'risk_reward_ratio': 2,
-        'required_risk_reward': 1,
-        'expectancy': 3,
-        'nb_trades': 10,
-        'avg_trade_duration': 60
-    }
+    results['ETH/BTC'] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
 
-    results['ETH/BTC'] = Edge._pair_info(**info)
     assert edge_cli._generate_edge_table(results).count(':|') == 7
     assert edge_cli._generate_edge_table(results).count('| ETH/BTC |') == 1
     assert edge_cli._generate_edge_table(results).count(
