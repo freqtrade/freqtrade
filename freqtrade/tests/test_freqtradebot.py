@@ -880,6 +880,56 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert call_args['rate'] == fix_price
     assert call_args['amount'] == stake_amount / fix_price
 
+def test_execute_buy_with_stoploss_on_exchange(mocker, default_conf, fee, markets, limit_buy_order) -> None:
+    default_conf['exchange']['name'] = 'binance'
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.stoploss_on_exchange = True
+    freqtrade.strategy.stoploss = -0.05
+    stake_amount = 2
+    bid = 0.11
+    get_bid = MagicMock(return_value=bid)
+    mocker.patch.multiple(
+        'freqtrade.freqtradebot.FreqtradeBot',
+        get_target_bid=get_bid,
+        _get_min_pair_stake_amount=MagicMock(return_value=1)
+    )
+    buy_mm = MagicMock(return_value={'id': limit_buy_order['id']})
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=buy_mm,
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+    pair = 'ETH/BTC'
+    print(buy_mm.call_args_list)
+
+    assert freqtrade.execute_buy(pair, stake_amount)
+    assert stoploss_limit.call_count == 1
+    assert get_bid.call_count == 1
+    assert buy_mm.call_count == 1
+    call_args = buy_mm.call_args_list[0][1]
+    assert call_args['pair'] == pair
+    assert call_args['rate'] == bid
+    assert call_args['amount'] == stake_amount / bid
+
+    call_args = stoploss_limit.call_args_list[0][1]
+    assert call_args['pair'] == pair
+    assert call_args['amount'] == stake_amount / bid
+    assert call_args['stop_price'] == 0.11 * 0.95
+    assert call_args['rate'] == 0.11 * 0.95 * 0.98
+
+    trade = Trade.query.first()
+    assert trade.is_open is True
+    assert trade.stoploss_order_id == 13434334
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

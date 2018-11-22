@@ -335,7 +335,7 @@ class Exchange(object):
 
     def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
         # Only binance is supported
-        if not self._api.name == 'Binance':
+        if not self.name == 'Binance':
             raise NotImplementedError(
                 'Stoploss limit orders are implemented only for binance as of now.')
 
