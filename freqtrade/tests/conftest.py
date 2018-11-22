@@ -40,8 +40,8 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
-    patch_exchange(mocker, api_mock)
+def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
+    patch_exchange(mocker, api_mock, id)
     exchange = Exchange(config)
     return exchange
 

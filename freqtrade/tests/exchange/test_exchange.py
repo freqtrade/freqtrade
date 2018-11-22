@@ -1178,3 +1178,39 @@ def test_stoploss_limit_available_only_for_binance(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     with pytest.raises(NotImplementedError):
         exchange.stoploss_limit('BTC/ETH', 1, 0.8, 0.79)
+
+
+def test_stoploss_limit_order(default_conf, mocker):
+    api_mock = MagicMock()
+    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_type = 'stop_loss'
+
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+
+    default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
+
+    with pytest.raises(OperationalException):
+        order = exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=190, rate=200)
+
+    api_mock.create_order.reset_mock()
+
+    order = exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
+    assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'sell'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] == 200
+    assert api_mock.create_order.call_args[0][5] == {'stopPrice': 220}

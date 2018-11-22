@@ -345,7 +345,7 @@ class Exchange(object):
         stop_price = self.symbol_price_prec(pair, stop_price)
 
         # Ensure rate is less than stop price
-        if stop_price >= rate:
+        if stop_price <= rate:
             raise OperationalException(
                 'In stoploss limit order, stop price should be more than limit price')
 
