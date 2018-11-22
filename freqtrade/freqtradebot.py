@@ -479,6 +479,22 @@ class FreqtradeBot(object):
         order_id = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
                                      amount=amount, rate=buy_limit)['id']
 
+        stoploss_order_id: int = None
+
+        # Check if stoploss should be added on exchange
+        # If True then here immediately after buy we should
+        # Add the stoploss order
+        if self.strategy.stoploss_on_exchange:
+            stoploss = self.edge.stoploss if self.edge else self.strategy.stoploss
+            stop_price = buy_limit * (1 + stoploss)
+
+            # limit price should be less than stop price.
+            # 0.98 is arbitrary here.
+            limit_price = stop_price * 0.98
+
+            stoploss_order_id = self.exchange.stoploss_limit(pair=pair, amount=amount,
+                                        stop_price=stop_price, rate=limit_price)['id']
+
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
@@ -502,42 +518,12 @@ class FreqtradeBot(object):
             open_date=datetime.utcnow(),
             exchange=self.exchange.id,
             open_order_id=order_id,
+            stoploss_order_id=stoploss_order_id,
             strategy=self.strategy.get_strategy_name(),
             ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
         Trade.session.add(trade)
         Trade.session.flush()
-
-        # Check if stoploss should be added on exchange
-        # If True then here immediately after buy we should
-        # Add the stoploss order
-        if self.strategy.stoploss_on_exchange:
-            stoploss = self.edge.stoploss if self.edge else self.strategy.stoploss
-            stop_price = buy_limit * (1 + stoploss)
-
-            # limit price should be less than stop price.
-            # 0.98 is arbitrary here.
-            limit_price = stop_price * 0.98
-
-            order_id = self.exchange.stoploss_limit(pair=pair, amount=amount,
-                                        stop_price=stop_price, rate=limit_price)['id']
-
-            trade = Trade(
-                pair=pair,
-                stake_amount=stake_amount,
-                amount=amount,
-                fee_open=fee,
-                fee_close=fee,
-                stoploss=stop_price,
-                open_date=datetime.utcnow(),
-                exchange=self.exchange.id,
-                open_order_id=order_id,
-                strategy=self.strategy.get_strategy_name(),
-                ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
-            )
-
-            Trade.session.add(trade)
-            Trade.session.flush()
 
         # Updating wallets
         self.wallets.update()
