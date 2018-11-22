@@ -1528,6 +1528,56 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
     } == last_msg
 
 
+def test_execute_sell_with_stoploss_on_exchange(default_conf,
+                                                ticker, fee, ticker_sell_up,
+                                                markets, mocker) -> None:
+
+    default_conf['exchange']['name'] = 'binance'
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
+        get_ticker=ticker,
+        get_fee=fee,
+        get_markets=markets
+    )
+
+    stoploss_limit = MagicMock(return_value={
+        'id': 123,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+
+    cancel_order = MagicMock(return_value=True)
+
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.stoploss_on_exchange = True
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Increase the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker_sell_up
+    )
+
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'], sell_reason=SellType.ROI)
+
+    trade = Trade.query.first()
+    assert trade
+    assert cancel_order.call_count == 1
+
+
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
                                            ticker_sell_up, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
