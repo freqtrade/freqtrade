@@ -228,7 +228,7 @@ class IStrategy(ABC):
         current_profit = trade.calc_profit_percent(current_rate)
 
         if self.stoploss_on_exchange:
-            stoplossflag = False
+            stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
         else:
             stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                                   current_time=date, current_profit=current_profit,

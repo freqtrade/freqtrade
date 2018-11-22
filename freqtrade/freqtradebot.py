@@ -479,13 +479,13 @@ class FreqtradeBot(object):
         order_id = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
                                      amount=amount, rate=buy_limit)['id']
 
-        stoploss_order_id: int = None
+        stoploss_order_id = None
 
         # Check if stoploss should be added on exchange
         # If True then here immediately after buy we should
         # Add the stoploss order
         if self.strategy.stoploss_on_exchange:
-            stoploss = self.edge.stoploss if self.edge else self.strategy.stoploss
+            stoploss = self.edge.stoploss(pair=pair) if self.edge else self.strategy.stoploss
             stop_price = buy_limit * (1 + stoploss)
 
             # limit price should be less than stop price.
