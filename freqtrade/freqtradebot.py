@@ -505,6 +505,7 @@ class FreqtradeBot(object):
             'stake_currency': stake_currency,
             'fiat_currency': fiat_currency
         })
+
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
@@ -522,6 +523,7 @@ class FreqtradeBot(object):
             strategy=self.strategy.get_strategy_name(),
             ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
+
         Trade.session.add(trade)
         Trade.session.flush()
 
@@ -798,6 +800,11 @@ class FreqtradeBot(object):
         sell_type = 'sell'
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
+
+        # First cancelling stoploss on exchange ...
+        if self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
+            self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),
                                       ordertype=self.strategy.order_types[sell_type],
