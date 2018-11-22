@@ -1533,6 +1533,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
                                                 markets, mocker) -> None:
 
     default_conf['exchange']['name'] = 'binance'
+    rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         _load_markets=MagicMock(return_value={}),
@@ -1576,6 +1577,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
     trade = Trade.query.first()
     assert trade
     assert cancel_order.call_count == 1
+    assert rpc_mock.call_count == 2
 
 
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
