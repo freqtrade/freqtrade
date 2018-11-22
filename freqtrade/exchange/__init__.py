@@ -333,6 +333,24 @@ class Exchange(object):
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
+    def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
+        # Only binance is supported
+        if not self._api.name == 'Binance':
+            raise NotImplementedError(
+                'Stoploss limit orders are implemented only for binance as of now.')
+
+        # Set the precision for amount and price(rate) as accepted by the exchange
+        amount = self.symbol_amount_prec(pair, amount)
+        rate = self.symbol_price_prec(pair, rate)
+        stop_price = self.symbol_price_prec(pair, stop_price)
+
+        # Ensure rate is less than stop price
+        if stop_price >= rate:
+            raise OperationalException(
+                'In stoploss limit order, stop price should be more than limit price')
+
+        return self._api.create_order(pair, 'stop_loss', 'sell', amount, rate, {'stopPrice': stop_price})
+
     @retrier
     def get_balance(self, currency: str) -> float:
         if self._conf['dry_run']:

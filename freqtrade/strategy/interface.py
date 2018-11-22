@@ -233,8 +233,10 @@ class IStrategy(ABC):
             stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss)
+
         if stoplossflag.sell_flag:
             return stoplossflag
+
         # Set current rate to low for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_percent(current_rate)
