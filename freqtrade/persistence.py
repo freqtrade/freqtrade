@@ -178,6 +178,7 @@ class Trade(_DECL_BASE):
     # absolute value of the initial stop loss
     initial_stop_loss = Column(Float, nullable=True, default=0.0)
     # absolute value of the highest reached price
+    stoploss_order_id = Column(Integer, nullable=True, index=True)
     max_rate = Column(Float, nullable=True, default=0.0)
     sell_reason = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
