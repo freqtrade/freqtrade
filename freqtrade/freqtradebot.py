@@ -479,22 +479,6 @@ class FreqtradeBot(object):
         order_id = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
                                      amount=amount, rate=buy_limit)['id']
 
-        stoploss_order_id = None
-
-        # Check if stoploss should be added on exchange
-        # If True then here immediately after buy we should
-        # Add the stoploss order
-        if self.strategy.stoploss_on_exchange:
-            stoploss = self.edge.stoploss(pair=pair) if self.edge else self.strategy.stoploss
-            stop_price = buy_limit * (1 + stoploss)
-
-            # limit price should be less than stop price.
-            # 0.98 is arbitrary here.
-            limit_price = stop_price * 0.98
-
-            stoploss_order_id = self.exchange.stoploss_limit(
-                pair=pair, amount=amount, stop_price=stop_price, rate=limit_price)['id']
-
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
@@ -519,7 +503,6 @@ class FreqtradeBot(object):
             open_date=datetime.utcnow(),
             exchange=self.exchange.id,
             open_order_id=order_id,
-            stoploss_order_id=stoploss_order_id,
             strategy=self.strategy.get_strategy_name(),
             ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
@@ -572,16 +555,32 @@ class FreqtradeBot(object):
 
                 trade.update(order)
 
-            # Check if stoploss on exchnage is hit first
-            if self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
+            # Check uf trade is fulfulled in which case the stoploss
+            # on exchange should be added immediately if stoploss on exchnage
+            # is on
+            if self.strategy.stoploss_on_exchange and trade.is_open and \
+                trade.open_order_id is None and trade.stoploss_order_id is None:
+
+                stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
+                stop_price = trade.open_rate * (1 + stoploss)
+
+                # limit price should be less than stop price.
+                # 0.98 is arbitrary here.
+                limit_price = stop_price * 0.98
+
+                stoploss_order_id = self.exchange.stoploss_limit(
+                        pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price)['id']
+                trade.stoploss_order_id = stoploss_order_id
+
+            # Or Check if there is a stoploss on exchnage and it is hit
+            elif self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
                 # Check if stoploss is hit
                 result = self.handle_stoploss_on_exchage(trade)
 
                 # Updating wallets if stoploss is hit
                 if result:
                     self.wallets.update()
-
-                return result
+                    return result
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
