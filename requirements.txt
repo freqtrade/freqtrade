@@ -7,7 +7,7 @@ requests==2.20.1
 urllib3==1.24.1
 wrapt==1.10.11
 pandas==0.23.4
-scikit-learn==0.20.0
+scikit-learn==0.20.1
 joblib==0.13.0
 scipy==1.1.0
 jsonschema==2.6.0
