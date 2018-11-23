@@ -669,6 +669,7 @@ class FreqtradeBot(object):
         # Check uf trade is fulfulled in which case the stoploss
         # on exchange should be added immediately if stoploss on exchnage
         # is on
+        result = False
         if trade.is_open and trade.open_order_id is None and trade.stoploss_order_id is None:
             if self.edge:
                 stoploss = self.edge.stoploss(pair=trade.pair)
@@ -684,9 +685,7 @@ class FreqtradeBot(object):
             stoploss_order_id = self.exchange.stoploss_limit(
                 pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
             )['id']
-
             trade.stoploss_order_id = str(stoploss_order_id)
-            return False
 
         # Or Check if there is a stoploss on exchnage and it is hit
         elif trade.stoploss_order_id:
@@ -695,9 +694,10 @@ class FreqtradeBot(object):
             if order['status'] == 'closed':
                 trade.sell_reason = SellType.STOPLOSS_ON_EXCHNAGE.value
                 trade.update(order)
-                return True
+                result = True
             else:
-                return False
+                result = False
+        return result
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:
