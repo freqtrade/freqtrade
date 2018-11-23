@@ -699,7 +699,6 @@ class FreqtradeBot(object):
             else:
                 return False
 
-
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:
             stoploss = self.edge.stoploss(trade.pair)
