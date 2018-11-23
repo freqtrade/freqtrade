@@ -33,6 +33,7 @@ class SellType(Enum):
     """
     ROI = "roi"
     STOP_LOSS = "stop_loss"
+    STOPLOSS_ON_EXCHNAGE = "stoploss_on_exchange"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"

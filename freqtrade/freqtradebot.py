@@ -572,6 +572,17 @@ class FreqtradeBot(object):
 
                 trade.update(order)
 
+            # Check if stoploss on exchnage is hit first
+            if self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
+                # Check if stoploss is hit
+                result = self.handle_stoploss_on_exchage(trade)
+
+                # Updating wallets if stoploss is hit
+                if result:
+                    self.wallets.update()
+
+                return result
+
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
                 result = self.handle_trade(trade)
@@ -675,6 +686,19 @@ class FreqtradeBot(object):
 
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
+
+    def handle_stoploss_on_exchage(self, trade: Trade) -> bool:
+        if not trade.is_open:
+            raise ValueError(f'attempt to handle stoploss on exchnage for a closed trade: {trade}')
+
+        logger.debug('Handling stoploss on exchange %s ...', trade)
+        order = self.exchange.get_order(trade.stoploss_order_id, trade.pair)
+        if order['status'] == 'closed':
+            trade.sell_reason = SellType.STOPLOSS_ON_EXCHNAGE.value
+            trade.update(order)
+            return True
+        else:
+            return False
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:
