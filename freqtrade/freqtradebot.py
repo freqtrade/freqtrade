@@ -559,9 +559,13 @@ class FreqtradeBot(object):
             # on exchange should be added immediately if stoploss on exchnage
             # is on
             if self.strategy.stoploss_on_exchange and trade.is_open and \
-                trade.open_order_id is None and trade.stoploss_order_id is None:
+               trade.open_order_id is None and trade.stoploss_order_id is None:
 
-                stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
+                if self.edge:
+                    stoploss = self.edge.stoploss(pair=trade.pair)
+                else:
+                    stoploss = self.strategy.stoploss
+
                 stop_price = trade.open_rate * (1 + stoploss)
 
                 # limit price should be less than stop price.
@@ -569,8 +573,10 @@ class FreqtradeBot(object):
                 limit_price = stop_price * 0.98
 
                 stoploss_order_id = self.exchange.stoploss_limit(
-                        pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price)['id']
-                trade.stoploss_order_id = stoploss_order_id
+                    pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
+                )['id']
+
+                trade.stoploss_order_id = str(stoploss_order_id)
 
             # Or Check if there is a stoploss on exchnage and it is hit
             elif self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
