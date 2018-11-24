@@ -10,7 +10,7 @@ from pandas import DataFrame
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 
 
 def test_import_strategy(caplog):
@@ -44,17 +44,19 @@ def test_search_strategy():
         path.realpath(__file__)), '..', '..', 'strategy'
     )
     assert isinstance(
-        StrategyResolver._search_strategy(
-            default_location,
-            config=default_config,
-            strategy_name='DefaultStrategy'
+        StrategyResolver._search_object(
+            directory=default_location,
+            object_type=IStrategy,
+            kwargs={'config': default_config},
+            object_name='DefaultStrategy'
         ),
         IStrategy
     )
-    assert StrategyResolver._search_strategy(
-        default_location,
-        config=default_config,
-        strategy_name='NotFoundStrategy'
+    assert StrategyResolver._search_object(
+        directory=default_location,
+        object_type=IStrategy,
+        kwargs={'config': default_config},
+        object_name='NotFoundStrategy'
     ) is None
 
 
@@ -77,7 +79,7 @@ def test_load_strategy_invalid_directory(result, caplog):
     resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
     assert (
-        'freqtrade.strategy.resolver',
+        'freqtrade.resolvers.strategyresolver',
         logging.WARNING,
         'Path "{}" does not exist'.format(extra_dir),
     ) in caplog.record_tuples
@@ -128,7 +130,7 @@ def test_strategy_override_minimal_roi(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.minimal_roi[0] == 0.5
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategyresolver',
             logging.INFO,
             "Override strategy 'minimal_roi' with value in config file: {'0': 0.5}."
             ) in caplog.record_tuples
@@ -143,7 +145,7 @@ def test_strategy_override_stoploss(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.stoploss == -0.5
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategyresolver',
             logging.INFO,
             "Override strategy 'stoploss' with value in config file: -0.5."
             ) in caplog.record_tuples
@@ -159,7 +161,7 @@ def test_strategy_override_ticker_interval(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.ticker_interval == 60
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategyresolver',
             logging.INFO,
             "Override strategy 'ticker_interval' with value in config file: 60."
             ) in caplog.record_tuples
@@ -175,7 +177,7 @@ def test_strategy_override_process_only_new_candles(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.process_only_new_candles
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategyresolver',
             logging.INFO,
             "Override process_only_new_candles 'process_only_new_candles' "
             "with value in config file: True."
@@ -201,7 +203,7 @@ def test_strategy_override_order_types(caplog):
     for method in ['buy', 'sell', 'stoploss']:
         assert resolver.strategy.order_types[method] == order_types[method]
 
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategyresolver',
             logging.INFO,
             "Override strategy 'order_types' with value in config file:"
             " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit'}."

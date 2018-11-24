@@ -21,9 +21,9 @@ from freqtrade.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
 
 

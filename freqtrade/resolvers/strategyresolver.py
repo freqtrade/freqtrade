@@ -3,7 +3,6 @@
 """
 This module load custom strategies
 """
-import importlib.util
 import inspect
 import logging
 import os
@@ -11,16 +10,17 @@ import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Optional, Type
+from typing import Dict, Optional
 
 from freqtrade import constants
+from freqtrade.resolvers import IResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
 
 logger = logging.getLogger(__name__)
 
 
-class StrategyResolver(object):
+class StrategyResolver(IResolver):
     """
     This class contains all the logic to load custom strategy class
     """
@@ -103,7 +103,8 @@ class StrategyResolver(object):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        current_path = os.path.dirname(os.path.realpath(__file__))
+        current_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'strategy')
+
         abs_paths = [
             os.path.join(os.getcwd(), 'user_data', 'strategies'),
             current_path,
@@ -131,7 +132,8 @@ class StrategyResolver(object):
 
         for path in abs_paths:
             try:
-                strategy = self._search_strategy(path, strategy_name=strategy_name, config=config)
+                strategy = self._search_object(directory=path, object_type=IStrategy,
+                                               object_name=strategy_name, kwargs={'config': config})
                 if strategy:
                     logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
                     strategy._populate_fun_len = len(
@@ -149,43 +151,3 @@ class StrategyResolver(object):
             "Impossible to load Strategy '{}'. This class does not exist"
             " or contains Python code errors".format(strategy_name)
         )
-
-    @staticmethod
-    def _get_valid_strategies(module_path: str, strategy_name: str) -> Optional[Type[IStrategy]]:
-        """
-        Returns a list of all possible strategies for the given module_path
-        :param module_path: absolute path to the module
-        :param strategy_name: Class name of the strategy
-        :return: Tuple with (name, class) or None
-        """
-
-        # Generate spec based on absolute path
-        spec = importlib.util.spec_from_file_location('unknown', module_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
-
-        valid_strategies_gen = (
-            obj for name, obj in inspect.getmembers(module, inspect.isclass)
-            if strategy_name == name and IStrategy in obj.__bases__
-        )
-        return next(valid_strategies_gen, None)
-
-    @staticmethod
-    def _search_strategy(directory: str, strategy_name: str, config: dict) -> Optional[IStrategy]:
-        """
-        Search for the strategy_name in the given directory
-        :param directory: relative or absolute directory path
-        :return: name of the strategy class
-        """
-        logger.debug('Searching for strategy %s in \'%s\'', strategy_name, directory)
-        for entry in os.listdir(directory):
-            # Only consider python files
-            if not entry.endswith('.py'):
-                logger.debug('Ignoring %s', entry)
-                continue
-            strategy = StrategyResolver._get_valid_strategies(
-                os.path.abspath(os.path.join(directory, entry)), strategy_name
-            )
-            if strategy:
-                return strategy(config)
-        return None
