@@ -673,6 +673,9 @@ class FreqtradeBot(object):
         """
 
         result = False
+
+        # If trade is open and the buy order is fulfilled but there is no stoploss,
+        # then we add a stoploss on exchange
         if trade.is_open and not trade.open_order_id and not trade.stoploss_order_id:
             if self.edge:
                 stoploss = self.edge.stoploss(pair=trade.pair)
@@ -690,7 +693,8 @@ class FreqtradeBot(object):
             )['id']
             trade.stoploss_order_id = str(stoploss_order_id)
 
-        # Or Check if there is a stoploss on exchnage and it is hit
+        # Or there is already a stoploss on exchnage.
+        # so we check if it is hit ...
         elif trade.stoploss_order_id:
             logger.debug('Handling stoploss on exchange %s ...', trade)
             order = self.exchange.get_order(trade.stoploss_order_id, trade.pair)
@@ -830,11 +834,6 @@ class FreqtradeBot(object):
         # First cancelling stoploss on exchange ...
         if self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
             self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
-
-            # Dry-run should consider stoploss is executed at the limit price
-            # So overriding limit in case of dry-run
-            if self.config['dry_run']:
-                limit = trade.stop_loss
 
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),
