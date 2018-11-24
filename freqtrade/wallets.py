@@ -26,11 +26,19 @@ class Wallets(object):
 
     def __init__(self, exchange: Exchange) -> None:
         self.exchange = exchange
-        if self.exchange._conf['dry_run']:
-            self.wallets: Dict[str, Any] = {'BTC': Wallet('Bittrex', 'BTC', 999.99, 100, 1000)}
-        else:
-            self.wallets: Dict[str, Any] = {}
+        self.wallets: Dict[str, Any] = {}
         self.update()
+
+    def get_free(self, currency) -> float:
+
+        if self.exchange._conf['dry_run']:
+            return 999.9
+
+        balance = self.wallets.get(currency)
+        if balance and balance['free']:
+            return balance['free']
+        else:
+            return 0
 
     def update(self) -> None:
         balances = self.exchange.get_balances()

@@ -14,7 +14,6 @@ from telegram import Chat, Message, Update
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge
-from freqtrade.wallets import Wallet
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -46,9 +45,9 @@ def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
     return exchange
 
 
-def patch_wallet(mocker, currency='BTC', free=999.9) -> None:
-    mocker.patch('freqtrade.wallets.Wallet', MagicMock(
-        return_value=Wallet('bittrex', currency, free, 100, 1000)
+def patch_wallet(mocker, free=999.9) -> None:
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
+        return_value=free
     ))
 
 
