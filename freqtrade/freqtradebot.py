@@ -693,7 +693,7 @@ class FreqtradeBot(object):
             )['id']
             trade.stoploss_order_id = str(stoploss_order_id)
 
-        # Or there is already a stoploss on exchnage.
+        # Or there is already a stoploss on exchange.
         # so we check if it is hit ...
         elif trade.stoploss_order_id:
             logger.debug('Handling stoploss on exchange %s ...', trade)
