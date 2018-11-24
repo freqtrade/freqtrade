@@ -666,9 +666,12 @@ class FreqtradeBot(object):
         return False
 
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
-        # Check uf trade is fulfulled in which case the stoploss
-        # on exchange should be added immediately if stoploss on exchnage
-        # is on
+        """
+        Check if trade is fulfilled in which case the stoploss
+        on exchange should be added immediately if stoploss on exchnage
+        is enabled.
+        """
+
         result = False
         if trade.is_open and not trade.open_order_id and not trade.stoploss_order_id:
             if self.edge:
