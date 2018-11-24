@@ -670,7 +670,7 @@ class FreqtradeBot(object):
         # on exchange should be added immediately if stoploss on exchnage
         # is on
         result = False
-        if trade.is_open and trade.open_order_id is None and trade.stoploss_order_id is None:
+        if trade.is_open and not trade.open_order_id and not trade.stoploss_order_id:
             if self.edge:
                 stoploss = self.edge.stoploss(pair=trade.pair)
             else:
