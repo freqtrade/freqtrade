@@ -556,7 +556,7 @@ class FreqtradeBot(object):
                 trade.update(order)
 
             if self.strategy.stoploss_on_exchange:
-                result = self.handle_stoploss_on_exchage(trade)
+                result = self.handle_stoploss_on_exchange(trade)
                 if result:
                     self.wallets.update()
                     return result
@@ -665,7 +665,7 @@ class FreqtradeBot(object):
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
 
-    def handle_stoploss_on_exchage(self, trade: Trade) -> bool:
+    def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
         # Check uf trade is fulfulled in which case the stoploss
         # on exchange should be added immediately if stoploss on exchnage
         # is on
