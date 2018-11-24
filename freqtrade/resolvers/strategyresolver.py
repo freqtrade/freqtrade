@@ -5,7 +5,7 @@ This module load custom strategies
 """
 import inspect
 import logging
-import os
+from os import getcwd, path
 import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
@@ -103,10 +103,10 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        current_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'strategy')
+        current_path = path.join(path.dirname(path.dirname(path.realpath(__file__))), 'strategy')
 
         abs_paths = [
-            os.path.join(os.getcwd(), 'user_data', 'strategies'),
+            path.join(getcwd(), 'user_data', 'strategies'),
             current_path,
         ]
 
@@ -125,14 +125,14 @@ class StrategyResolver(IResolver):
                 temp.joinpath(name).write_text(urlsafe_b64decode(strat[1]).decode('utf-8'))
                 temp.joinpath("__init__.py").touch()
 
-                strategy_name = os.path.splitext(name)[0]
+                strategy_name = path.splitext(name)[0]
 
                 # register temp path with the bot
                 abs_paths.insert(0, str(temp.resolve()))
 
-        for path in abs_paths:
+        for _path in abs_paths:
             try:
-                strategy = self._search_object(directory=path, object_type=IStrategy,
+                strategy = self._search_object(directory=_path, object_type=IStrategy,
                                                object_name=strategy_name, kwargs={'config': config})
                 if strategy:
                     logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)

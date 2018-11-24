@@ -1,17 +1,13 @@
 # pragma pylint: disable=attribute-defined-outside-init
 
 """
-This module load custom hyperopts
+This module load custom objects
 """
 import importlib.util
 import inspect
 import logging
 import os
 from typing import Optional, Dict, Type, Any
-
-from freqtrade.constants import DEFAULT_HYPEROPT
-from freqtrade.optimize.hyperopt_interface import IHyperOpt
-
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +47,7 @@ class IResolver(object):
         return next(valid_objects_gen, None)
 
     @staticmethod
-    def _search_object(directory: str, object_type, object_name: str, 
+    def _search_object(directory: str, object_type, object_name: str,
                        kwargs: dict) -> Optional[Any]:
         """
         Search for the objectname in the given directory
