@@ -91,6 +91,7 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('whitelist', self._whitelist),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -439,6 +440,25 @@ class Telegram(RPC):
             self._send_msg(str(e), bot=bot)
 
     @authorized_only
+    def _whitelist(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /whitelist
+        Shows the currently active whitelist
+        """
+        try:
+            whitelist = self._rpc_whitelist()
+            if whitelist['method'] == 'static':
+                message = f"Using static whitelist with `{len(whitelist['whitelist'])}` pairs \n"
+            else:
+                message = f"Dynamic whitelist with `{whitelist['method']}` pairs\n"
+            message += f"`{', '.join(whitelist['whitelist'])}`"
+
+            logger.debug(message)
+            self._send_msg(message)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+    @authorized_only
     def _help(self, bot: Bot, update: Update) -> None:
         """
         Handler for /help.
@@ -460,6 +480,7 @@ class Telegram(RPC):
                   "\n" \
                   "*/balance:* `Show account balance per currency`\n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
+                  "*/whitelist:* `Show current whitelist` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 

@@ -20,6 +20,7 @@ from pandas import DataFrame
 from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
+from freqtrade.optimize.default_hyperopt import DefaultHyperOpts  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

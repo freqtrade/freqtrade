@@ -44,11 +44,11 @@ optional arguments:
 
 ### How to use a different config file?
 
-The bot allows you to select which config file you want to use. Per 
+The bot allows you to select which config file you want to use. Per
 default, the bot will load the file `./config.json`
 
 ```bash
-python3 ./freqtrade/main.py -c path/far/far/away/config.json 
+python3 ./freqtrade/main.py -c path/far/far/away/config.json
 ```
 
 ### How to use --strategy?
@@ -61,7 +61,7 @@ The bot will search your strategy file within `user_data/strategies` and `freqtr
 
 To load a strategy, simply pass the class name (e.g.: `CustomStrategy`) in this parameter.
 
-**Example:**  
+**Example:**
 In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
 a strategy class called `AwesomeStrategy` to load it:
 
@@ -69,7 +69,7 @@ a strategy class called `AwesomeStrategy` to load it:
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
-If the bot does not find your strategy file, it will display in an error 
+If the bot does not find your strategy file, it will display in an error
 message the reason (File not found, or errors in your code).
 
 Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
@@ -84,37 +84,37 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/fol
 
 #### How to install a strategy?
 
-This is very simple. Copy paste your strategy file into the folder 
+This is very simple. Copy paste your strategy file into the folder
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
 
 ### How to use --dynamic-whitelist?
 
-Per default `--dynamic-whitelist` will retrieve the 20 currencies based 
+Per default `--dynamic-whitelist` will retrieve the 20 currencies based
 on BaseVolume. This value can be changed when you run the script.
 
-**By Default**  
-Get the 20 currencies based on BaseVolume.  
+**By Default**
+Get the 20 currencies based on BaseVolume.
 
 ```bash
 python3 ./freqtrade/main.py --dynamic-whitelist
 ```
 
-**Customize the number of currencies to retrieve**  
-Get the 30 currencies based on BaseVolume.  
+**Customize the number of currencies to retrieve**
+Get the 30 currencies based on BaseVolume.
 
 ```bash
 python3 ./freqtrade/main.py --dynamic-whitelist 30
 ```
 
-**Exception**  
+**Exception**
 `--dynamic-whitelist` must be greater than 0. If you enter 0 or a
 negative value (e.g -2), `--dynamic-whitelist` will use the default
 value (20).
 
 ### How to use --db-url?
 
-When you run the bot in Dry-run mode, per default no transactions are 
-stored in a database. If you want to store your bot actions in a DB 
+When you run the bot in Dry-run mode, per default no transactions are
+stored in a database. If you want to store your bot actions in a DB
 using `--db-url`. This can also be used to specify a custom database
 in production mode. Example command:
 
@@ -170,15 +170,15 @@ optional arguments:
 
 ### How to use --refresh-pairs-cached parameter?
 
-The first time your run Backtesting, it will take the pairs you have 
-set in your config file and download data from Bittrex. 
+The first time your run Backtesting, it will take the pairs you have
+set in your config file and download data from Bittrex.
 
-If for any reason you want to update your data set, you use 
-`--refresh-pairs-cached` to force Backtesting to update the data it has. 
+If for any reason you want to update your data set, you use
+`--refresh-pairs-cached` to force Backtesting to update the data it has.
 **Use it only if you want to update your data set. You will not be able
 to come back to the previous version.**
 
-To test your strategy with latest data, we recommend continuing using 
+To test your strategy with latest data, we recommend continuing using
 the parameter `-l` or `--live`.
 
 ## Hyperopt commands
@@ -204,11 +204,38 @@ optional arguments:
                         number)
   --timerange TIMERANGE
                         specify what timerange of data to use.
+  --hyperopt PATH       specify hyperopt file (default:
+                        freqtrade/optimize/default_hyperopt.py)
   -e INT, --epochs INT  specify number of epochs (default: 100)
   -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space separate
                         list. Default: all
 
+```
+
+## Edge commands
+
+To know your trade expectacny and winrate against historical data, you can use Edge.
+
+```
+usage: main.py edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE] [-r]
+                    [--stoplosses STOPLOSS_RANGE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+  --timerange TIMERANGE
+                        specify what timerange of data to use.
+  -r, --refresh-pairs-cached
+                        refresh the pairs files in tests/testdata with the
+                        latest data from the exchange. Use it if you want to
+                        run your edge with up-to-date data.
+  --stoplosses STOPLOSS_RANGE
+                        defines a range of stoploss against which edge will
+                        assess the strategythe format is "min,max,step"
+                        (without any space).example:
+                        --stoplosses=-0.01,-0.1,-0.001
 ```
 
 ## A parameter missing in the configuration?
@@ -218,5 +245,5 @@ in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.
 
 ## Next step
 
-The optimal strategy of the bot will change with time depending of the market trends. The next step is to 
+The optimal strategy of the bot will change with time depending of the market trends. The next step is to
 [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).

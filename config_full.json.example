@@ -33,6 +33,11 @@
         "order_book_min": 1,
         "order_book_max": 9
     },
+    "order_types": {
+        "buy": "limit",
+        "sell": "limit",
+        "stoploss": "market"
+    },
     "exchange": {
         "name": "bittrex",
         "key": "your_exchange_key",
@@ -58,6 +63,20 @@
             "DOGE/BTC"
         ],
         "outdated_offset": 5
+    },
+    "edge": {
+        "enabled": false,
+        "process_throttle_secs": 3600,
+        "calculate_since_number_of_days": 2,
+        "allowed_risk": 0.01,
+        "stoploss_range_min": -0.01,
+        "stoploss_range_max": -0.1,
+        "stoploss_range_step": -0.01,
+        "minimum_winrate": 0.60,
+        "minimum_expectancy": 0.20,
+        "min_trade_number": 10,
+        "max_trade_duration_minute": 1440,
+        "remove_pumps": false
     },
     "experimental": {
         "use_sell_signal": false,

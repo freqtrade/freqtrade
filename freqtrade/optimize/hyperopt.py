@@ -9,22 +9,21 @@ import multiprocessing
 import os
 import sys
 from argparse import Namespace
-from functools import reduce
 from math import exp
 from operator import itemgetter
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
-import talib.abstract as ta
 from pandas import DataFrame
-from sklearn.externals.joblib import Parallel, delayed, dump, load
+from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects
 from skopt import Optimizer
-from skopt.space import Categorical, Dimension, Integer, Real
+from skopt.space import Dimension
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.optimize.hyperopt_resolver import HyperOptResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +41,9 @@ class Hyperopt(Backtesting):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__(config)
+        self.config = config
+        self.custom_hyperopt = HyperOptResolver(self.config).hyperopt
+
         # set TARGET_TRADES to suit your number concurrent trades so its realistic
         # to the number of days
         self.target_trades = 600
@@ -74,24 +76,6 @@ class Hyperopt(Backtesting):
         arg_dict = {dim.name: value for dim, value in zip(dimensions, params)}
         return arg_dict
 
-    @staticmethod
-    def populate_indicators(dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe['adx'] = ta.ADX(dataframe)
-        macd = ta.MACD(dataframe)
-        dataframe['macd'] = macd['macd']
-        dataframe['macdsignal'] = macd['macdsignal']
-        dataframe['mfi'] = ta.MFI(dataframe)
-        dataframe['rsi'] = ta.RSI(dataframe)
-        stoch_fast = ta.STOCHF(dataframe)
-        dataframe['fastd'] = stoch_fast['fastd']
-        dataframe['minus_di'] = ta.MINUS_DI(dataframe)
-        # Bollinger bands
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['sar'] = ta.SAR(dataframe)
-
-        return dataframe
-
     def save_trials(self) -> None:
         """
         Save hyperopt trials to file
@@ -121,7 +105,8 @@ class Hyperopt(Backtesting):
             best_result['params']
         )
         if 'roi_t1' in best_result['params']:
-            logger.info('ROI table:\n%s', self.generate_roi_table(best_result['params']))
+            logger.info('ROI table:\n%s',
+                        self.custom_hyperopt.generate_roi_table(best_result['params']))
 
     def log_results(self, results) -> None:
         """
@@ -149,59 +134,6 @@ class Hyperopt(Backtesting):
         result = trade_loss + profit_loss + duration_loss
         return result
 
-    @staticmethod
-    def generate_roi_table(params: Dict) -> Dict[int, float]:
-        """
-        Generate the ROI table that will be used by Hyperopt
-        """
-        roi_table = {}
-        roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3']
-        roi_table[params['roi_t3']] = params['roi_p1'] + params['roi_p2']
-        roi_table[params['roi_t3'] + params['roi_t2']] = params['roi_p1']
-        roi_table[params['roi_t3'] + params['roi_t2'] + params['roi_t1']] = 0
-
-        return roi_table
-
-    @staticmethod
-    def roi_space() -> List[Dimension]:
-        """
-        Values to search for each ROI steps
-        """
-        return [
-            Integer(10, 120, name='roi_t1'),
-            Integer(10, 60, name='roi_t2'),
-            Integer(10, 40, name='roi_t3'),
-            Real(0.01, 0.04, name='roi_p1'),
-            Real(0.01, 0.07, name='roi_p2'),
-            Real(0.01, 0.20, name='roi_p3'),
-        ]
-
-    @staticmethod
-    def stoploss_space() -> List[Dimension]:
-        """
-        Stoploss search space
-        """
-        return [
-            Real(-0.5, -0.02, name='stoploss'),
-        ]
-
-    @staticmethod
-    def indicator_space() -> List[Dimension]:
-        """
-        Define your Hyperopt space for searching strategy parameters
-        """
-        return [
-            Integer(10, 25, name='mfi-value'),
-            Integer(15, 45, name='fastd-value'),
-            Integer(20, 50, name='adx-value'),
-            Integer(20, 40, name='rsi-value'),
-            Categorical([True, False], name='mfi-enabled'),
-            Categorical([True, False], name='fastd-enabled'),
-            Categorical([True, False], name='adx-enabled'),
-            Categorical([True, False], name='rsi-enabled'),
-            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
-        ]
-
     def has_space(self, space: str) -> bool:
         """
         Tell if a space value is contained in the configuration
@@ -216,61 +148,20 @@ class Hyperopt(Backtesting):
         """
         spaces: List[Dimension] = []
         if self.has_space('buy'):
-            spaces += Hyperopt.indicator_space()
+            spaces += self.custom_hyperopt.indicator_space()
         if self.has_space('roi'):
-            spaces += Hyperopt.roi_space()
+            spaces += self.custom_hyperopt.roi_space()
         if self.has_space('stoploss'):
-            spaces += Hyperopt.stoploss_space()
+            spaces += self.custom_hyperopt.stoploss_space()
         return spaces
 
-    @staticmethod
-    def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
-        """
-        Define the buy strategy parameters to be used by hyperopt
-        """
-        def populate_buy_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
-            """
-            Buy strategy Hyperopt will build and use
-            """
-            conditions = []
-            # GUARDS AND TRENDS
-            if 'mfi-enabled' in params and params['mfi-enabled']:
-                conditions.append(dataframe['mfi'] < params['mfi-value'])
-            if 'fastd-enabled' in params and params['fastd-enabled']:
-                conditions.append(dataframe['fastd'] < params['fastd-value'])
-            if 'adx-enabled' in params and params['adx-enabled']:
-                conditions.append(dataframe['adx'] > params['adx-value'])
-            if 'rsi-enabled' in params and params['rsi-enabled']:
-                conditions.append(dataframe['rsi'] < params['rsi-value'])
-
-            # TRIGGERS
-            if params['trigger'] == 'bb_lower':
-                conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
-            if params['trigger'] == 'macd_cross_signal':
-                conditions.append(qtpylib.crossed_above(
-                    dataframe['macd'], dataframe['macdsignal']
-                ))
-            if params['trigger'] == 'sar_reversal':
-                conditions.append(qtpylib.crossed_above(
-                    dataframe['close'], dataframe['sar']
-                ))
-
-            dataframe.loc[
-                reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
-
-            return dataframe
-
-        return populate_buy_trend
-
-    def generate_optimizer(self, _params) -> Dict:
+    def generate_optimizer(self, _params: Dict) -> Dict:
         params = self.get_args(_params)
-
         if self.has_space('roi'):
-            self.strategy.minimal_roi = self.generate_roi_table(params)
+            self.strategy.minimal_roi = self.custom_hyperopt.generate_roi_table(params)
 
         if self.has_space('buy'):
-            self.advise_buy = self.buy_strategy_generator(params)
+            self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
@@ -332,7 +223,8 @@ class Hyperopt(Backtesting):
         )
 
     def run_optimizer_parallel(self, parallel, asked) -> List:
-        return parallel(delayed(self.generate_optimizer)(v) for v in asked)
+        return parallel(delayed(
+                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
 
     def load_previous_results(self):
         """ read trials file if we have one """
@@ -354,7 +246,8 @@ class Hyperopt(Backtesting):
         )
 
         if self.has_space('buy'):
-            self.strategy.advise_indicators = Hyperopt.populate_indicators  # type: ignore
+            self.strategy.advise_indicators = \
+                self.custom_hyperopt.populate_indicators  # type: ignore
         dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
         self.exchange = None  # type: ignore
         self.load_previous_results()

@@ -645,3 +645,28 @@ def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'Forcebuy not enabled.'):
         rpc._rpc_forcebuy(pair, None)
+
+
+def test_rpc_whitelist(mocker, default_conf) -> None:
+    patch_coinmarketcap(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+
+    freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    ret = rpc._rpc_whitelist()
+    assert ret['method'] == 'static'
+    assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
+
+
+def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
+    patch_coinmarketcap(mocker)
+    patch_exchange(mocker)
+    default_conf['dynamic_whitelist'] = 4
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+
+    freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    ret = rpc._rpc_whitelist()
+    assert ret['method'] == 4
+    assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']

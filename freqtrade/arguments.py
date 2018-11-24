@@ -105,6 +105,14 @@ class Arguments(object):
             metavar='PATH',
         )
         self.parser.add_argument(
+            '--customhyperopt',
+            help='specify hyperopt class name (default: %(default)s)',
+            dest='hyperopt',
+            default=constants.DEFAULT_HYPEROPT,
+            type=str,
+            metavar='NAME',
+        )
+        self.parser.add_argument(
             '--dynamic-whitelist',
             help='dynamically generate and update whitelist'
                  ' based on 24h BaseVolume (default: %(const)s)',
@@ -128,6 +136,22 @@ class Arguments(object):
         """
         Parses given arguments for Backtesting scripts.
         """
+        parser.add_argument(
+            '--eps', '--enable-position-stacking',
+            help='Allow buying the same pair multiple times (position stacking)',
+            action='store_true',
+            dest='position_stacking',
+            default=False
+        )
+
+        parser.add_argument(
+            '--dmmp', '--disable-max-market-positions',
+            help='Disable applying `max_open_trades` during backtest '
+                 '(same as setting `max_open_trades` to a very high number)',
+            action='store_false',
+            dest='use_max_market_positions',
+            default=True
+        )
         parser.add_argument(
             '-l', '--live',
             help='using live data',
@@ -172,6 +196,27 @@ class Arguments(object):
         )
 
     @staticmethod
+    def edge_options(parser: argparse.ArgumentParser) -> None:
+        """
+        Parses given arguments for Backtesting scripts.
+        """
+        parser.add_argument(
+            '-r', '--refresh-pairs-cached',
+            help='refresh the pairs files in tests/testdata with the latest data from the '
+                 'exchange. Use it if you want to run your edge with up-to-date data.',
+            action='store_true',
+            dest='refresh_pairs',
+        )
+        parser.add_argument(
+            '--stoplosses',
+            help='defines a range of stoploss against which edge will assess the strategy '
+                 'the format is "min,max,step" (without any space).'
+                 'example: --stoplosses=-0.01,-0.1,-0.001',
+            type=str,
+            dest='stoploss_range',
+        )
+
+    @staticmethod
     def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
         """
         Parses given common arguments for Backtesting and Hyperopt scripts.
@@ -184,6 +229,20 @@ class Arguments(object):
             dest='ticker_interval',
             type=str,
         )
+
+        parser.add_argument(
+            '--timerange',
+            help='specify what timerange of data to use.',
+            default=None,
+            type=str,
+            dest='timerange',
+        )
+
+    @staticmethod
+    def hyperopt_options(parser: argparse.ArgumentParser) -> None:
+        """
+        Parses given arguments for Hyperopt scripts.
+        """
         parser.add_argument(
             '--eps', '--enable-position-stacking',
             help='Allow buying the same pair multiple times (position stacking)',
@@ -200,20 +259,6 @@ class Arguments(object):
             dest='use_max_market_positions',
             default=True
         )
-
-        parser.add_argument(
-            '--timerange',
-            help='specify what timerange of data to use.',
-            default=None,
-            type=str,
-            dest='timerange',
-        )
-
-    @staticmethod
-    def hyperopt_options(parser: argparse.ArgumentParser) -> None:
-        """
-        Parses given arguments for Hyperopt scripts.
-        """
         parser.add_argument(
             '-e', '--epochs',
             help='specify number of epochs (default: %(default)d)',
@@ -237,7 +282,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import backtesting, hyperopt
+        from freqtrade.optimize import backtesting, hyperopt, edge_cli
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -246,6 +291,12 @@ class Arguments(object):
         backtesting_cmd.set_defaults(func=backtesting.start)
         self.optimizer_shared_options(backtesting_cmd)
         self.backtesting_options(backtesting_cmd)
+
+        # Add edge subcommand
+        edge_cmd = subparsers.add_parser('edge', help='edge module')
+        edge_cmd.set_defaults(func=edge_cli.start)
+        self.optimizer_shared_options(edge_cmd)
+        self.edge_options(edge_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')

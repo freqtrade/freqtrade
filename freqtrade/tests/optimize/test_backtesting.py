@@ -638,6 +638,7 @@ def test_backtest_only_sell(mocker, default_conf):
 
 def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch('freqtrade.optimize.backtesting.file_dump_json', MagicMock())
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, pair='UNITTEST/BTC')
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}

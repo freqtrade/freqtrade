@@ -176,7 +176,7 @@ def test_roi_table_generation(hyperopt) -> None:
         'roi_p3': 3,
     }
 
-    assert hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
+    assert hyperopt.custom_hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
 def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
@@ -244,7 +244,8 @@ def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
-    dataframe = hyperopt.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
+    dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
+                                                             {'pair': 'UNITTEST/BTC'})
 
     # Check if some indicators are generated. We will not test all of them
     assert 'adx' in dataframe
@@ -256,9 +257,10 @@ def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': tick}
     dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
-    dataframe = hyperopt.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
+    dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
+                                                             {'pair': 'UNITTEST/BTC'})
 
-    populate_buy_trend = hyperopt.buy_strategy_generator(
+    populate_buy_trend = hyperopt.custom_hyperopt.buy_strategy_generator(
         {
             'adx-value': 20,
             'fastd-value': 20,

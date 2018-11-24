@@ -9,9 +9,12 @@ TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
+DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
+REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
+ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 
 
 TICKER_INTERVAL_MINUTES = {
@@ -37,13 +40,13 @@ SUPPORTED_FIAT = [
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
     "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
-    ]
+]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer', 'minimum': 0},
+        'max_open_trades': {'type': 'integer', 'minimum': -1},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
@@ -101,7 +104,17 @@ CONF_SCHEMA = {
                 'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
             }
         },
+        'order_types': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES}
+            },
+            'required': ['buy', 'sell', 'stoploss']
+        },
         'exchange': {'$ref': '#/definitions/exchange'},
+        'edge': {'$ref': '#/definitions/edge'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -170,6 +183,23 @@ CONF_SCHEMA = {
                 'ccxt_async_config': {'type': 'object'}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
+        },
+        'edge': {
+            'type': 'object',
+            'properties': {
+                "enabled": {'type': 'boolean'},
+                "process_throttle_secs": {'type': 'integer', 'minimum': 600},
+                "calculate_since_number_of_days": {'type': 'integer'},
+                "allowed_risk": {'type': 'number'},
+                "stoploss_range_min": {'type': 'number'},
+                "stoploss_range_max": {'type': 'number'},
+                "stoploss_range_step": {'type': 'number'},
+                "minimum_winrate": {'type': 'number'},
+                "minimum_expectancy": {'type': 'number'},
+                "min_trade_number": {'type': 'number'},
+                "max_trade_duration_minute": {'type': 'integer'},
+                "remove_pumps": {'type': 'boolean'}
+            }
         }
     },
     'anyOf': [

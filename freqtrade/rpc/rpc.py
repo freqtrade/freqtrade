@@ -410,7 +410,7 @@ class RPC(object):
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
         # gen stake amount
-        stakeamount = self._freqtrade._get_trade_stake_amount()
+        stakeamount = self._freqtrade._get_trade_stake_amount(pair)
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
@@ -443,3 +443,10 @@ class RPC(object):
             raise RPCException('trader is not running')
 
         return Trade.query.filter(Trade.is_open.is_(True)).all()
+
+    def _rpc_whitelist(self) -> Dict:
+        """ Returns the currently active whitelist"""
+        res = {'method': self._freqtrade.config.get('dynamic_whitelist', 0) or 'static',
+               'whitelist': self._freqtrade.active_pair_whitelist
+               }
+        return res
