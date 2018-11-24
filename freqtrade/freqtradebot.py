@@ -54,10 +54,13 @@ class FreqtradeBot(object):
         # Init objects
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
+        self.check_strategy_config_consistency(config, self.strategy)
+
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
+
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -65,6 +68,16 @@ class FreqtradeBot(object):
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
+
+    def check_strategy_config_consistency(self, config, strategy: IStrategy) -> None:
+        """
+        checks if config is compatible with the given strategy
+        """
+
+        # Stoploss on exchange is only implemented for binance
+        if strategy.stoploss_on_exchange and config.get('exchange') is not 'binance':
+            raise OperationalException(
+                'Stoploss limit orders are implemented only for binance as of now.')
 
     def _init_modules(self) -> None:
         """
