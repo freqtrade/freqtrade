@@ -77,7 +77,7 @@ class FreqtradeBot(object):
         # Stoploss on exchange is only implemented for binance
         if strategy.stoploss_on_exchange and config.get('exchange') is not 'binance':
             raise OperationalException(
-                'Stoploss limit orders are implemented only for binance as of now.')
+                'On exchange stoploss is not supported for %s.' % config.get('exchange'))
 
     def _init_modules(self) -> None:
         """
