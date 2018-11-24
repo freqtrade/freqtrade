@@ -155,6 +155,9 @@ The below is the default which is used if this is not configured in either Strat
     },
 ```
 
+**NOTE**: Not all exchanges support "market" orders.
+The following message will be shown if your exchange does not support market orders: `"Exchange <yourexchange>  does not support market orders."`
+
 ### What values for exchange.name?
 
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115 cryptocurrency
