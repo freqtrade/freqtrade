@@ -181,11 +181,7 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
     assert result == default_conf['stake_amount']
 
 
-def test_get_trade_stake_amount_no_stake_amount(default_conf,
-                                                ticker,
-                                                limit_buy_order,
-                                                fee,
-                                                mocker) -> None:
+def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_wallet(mocker, free=default_conf['stake_amount'] * 0.5)
