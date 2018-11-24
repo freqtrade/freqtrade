@@ -1218,16 +1218,7 @@ def test_stoploss_limit_order(default_conf, mocker):
 
 def test_stoploss_limit_order_dry_run(default_conf, mocker):
     api_mock = MagicMock()
-    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
-    order_type = 'stop_loss'
-
-    api_mock.create_order = MagicMock(return_value={
-        'id': order_id,
-        'info': {
-            'foo': 'bar'
-        }
-    })
-
+    order_type = 'stop_loss_limit'
     default_conf['dry_run'] = True
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
@@ -1243,10 +1234,8 @@ def test_stoploss_limit_order_dry_run(default_conf, mocker):
 
     assert 'id' in order
     assert 'info' in order
-    assert order['id'] == order_id
-    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
-    assert api_mock.create_order.call_args[0][1] == order_type
-    assert api_mock.create_order.call_args[0][2] == 'sell'
-    assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][4] == 200
-    assert api_mock.create_order.call_args[0][5] == {'stopPrice': 220}
+    assert 'type' in order
+
+    assert order['type'] == order_type
+    assert order['price'] == 220
+    assert order['amount'] == 1

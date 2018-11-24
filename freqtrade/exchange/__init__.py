@@ -349,6 +349,23 @@ class Exchange(object):
             raise OperationalException(
                 'In stoploss limit order, stop price should be more than limit price')
 
+        if self._conf['dry_run']:
+            order_id = f'dry_run_buy_{randint(0, 10**6)}'
+            self._dry_run_open_orders[order_id] = {
+                'info': {},
+                'id': order_id,
+                'pair': pair,
+                'price': stop_price,
+                'amount': amount,
+                'type': 'stop_loss_limit',
+                'side': 'sell',
+                'remaining': amount,
+                'datetime': arrow.utcnow().isoformat(),
+                'status': 'open',
+                'fee': None
+            }
+            return self._dry_run_open_orders[order_id]
+
         return self._api.create_order(pair, 'stop_loss', 'sell',
                                       amount, rate, {'stopPrice': stop_price})
 
