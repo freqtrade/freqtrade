@@ -2,6 +2,7 @@
 import logging
 from base64 import urlsafe_b64encode
 from os import path
+from pathlib import Path
 import warnings
 
 import pytest
@@ -40,9 +41,7 @@ def test_import_strategy(caplog):
 
 def test_search_strategy():
     default_config = {}
-    default_location = path.join(path.dirname(
-        path.realpath(__file__)), '..', '..', 'strategy'
-    )
+    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
     assert isinstance(
         StrategyResolver._search_object(
             directory=default_location,

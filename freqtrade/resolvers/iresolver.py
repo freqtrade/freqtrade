@@ -6,7 +6,7 @@ This module load custom objects
 import importlib.util
 import inspect
 import logging
-import os
+from pathlib import Path
 from typing import Optional, Dict, Type, Any
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class IResolver(object):
         config = config or {}
 
     @staticmethod
-    def _get_valid_objects(object_type, module_path: str,
+    def _get_valid_objects(object_type, module_path: Path,
                            object_name: str) -> Optional[Type[Any]]:
         """
         Returns a list of all possible objects for the given module_path of type oject_type
@@ -36,7 +36,7 @@ class IResolver(object):
         """
 
         # Generate spec based on absolute path
-        spec = importlib.util.spec_from_file_location('unknown', module_path)
+        spec = importlib.util.spec_from_file_location('unknown', str(module_path))
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
 
@@ -47,7 +47,7 @@ class IResolver(object):
         return next(valid_objects_gen, None)
 
     @staticmethod
-    def _search_object(directory: str, object_type, object_name: str,
+    def _search_object(directory: Path, object_type, object_name: str,
                        kwargs: dict = {}) -> Optional[Any]:
         """
         Search for the objectname in the given directory
@@ -55,13 +55,13 @@ class IResolver(object):
         :return: object instance
         """
         logger.debug('Searching for %s %s in \'%s\'', object_type.__name__,  object_name, directory)
-        for entry in os.listdir(directory):
+        for entry in directory.iterdir():
             # Only consider python files
-            if not entry.endswith('.py'):
+            if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
             obj = IResolver._get_valid_objects(
-                object_type, os.path.abspath(os.path.join(directory, entry)), object_name
+                object_type, Path.resolve(directory.joinpath(entry)), object_name
             )
             if obj:
                 return obj(**kwargs)

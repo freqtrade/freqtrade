@@ -4,7 +4,7 @@
 This module load custom hyperopts
 """
 import logging
-from os import path
+from pathlib import Path
 from typing import Optional, Dict
 
 from freqtrade.constants import DEFAULT_HYPEROPT
@@ -40,16 +40,16 @@ class HyperOptResolver(IResolver):
         :param extra_dir: additional directory to search for the given hyperopt
         :return: HyperOpt instance or None
         """
-        current_path = path.join(path.dirname(path.dirname(path.realpath(__file__))), 'optimize')
+        current_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
 
         abs_paths = [
-            path.join(current_path, '..', '..', 'user_data', 'hyperopts'),
+            current_path.parent.parent.joinpath('user_data/hyperopts'),
             current_path,
         ]
 
         if extra_dir:
             # Add extra hyperopt directory on top of search paths
-            abs_paths.insert(0, extra_dir)
+            abs_paths.insert(0, Path(extra_dir))
 
         for _path in abs_paths:
             hyperopt = self._search_object(directory=_path, object_type=IHyperOpt,

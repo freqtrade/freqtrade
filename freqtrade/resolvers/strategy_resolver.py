@@ -5,7 +5,6 @@ This module load custom strategies
 """
 import inspect
 import logging
-from os import getcwd, path
 import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
@@ -103,16 +102,16 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        current_path = path.join(path.dirname(path.dirname(path.realpath(__file__))), 'strategy')
+        current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
 
         abs_paths = [
-            path.join(getcwd(), 'user_data', 'strategies'),
+            Path.cwd().joinpath('user_data/strategies'),
             current_path,
         ]
 
         if extra_dir:
             # Add extra strategy directory on top of search paths
-            abs_paths.insert(0, extra_dir)
+            abs_paths.insert(0, Path(extra_dir).resolve())
 
         if ":" in strategy_name:
             logger.info("loading base64 endocded strategy")
@@ -125,17 +124,17 @@ class StrategyResolver(IResolver):
                 temp.joinpath(name).write_text(urlsafe_b64decode(strat[1]).decode('utf-8'))
                 temp.joinpath("__init__.py").touch()
 
-                strategy_name = path.splitext(name)[0]
+                strategy_name = strat[0]
 
                 # register temp path with the bot
-                abs_paths.insert(0, str(temp.resolve()))
+                abs_paths.insert(0, temp.resolve())
 
         for _path in abs_paths:
             try:
                 strategy = self._search_object(directory=_path, object_type=IStrategy,
                                                object_name=strategy_name, kwargs={'config': config})
                 if strategy:
-                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, _path)
                     strategy._populate_fun_len = len(
                         inspect.getfullargspec(strategy.populate_indicators).args)
                     strategy._buy_fun_len = len(
@@ -145,7 +144,7 @@ class StrategyResolver(IResolver):
 
                     return import_strategy(strategy, config=config)
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', _path)
+                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
 
         raise ImportError(
             "Impossible to load Strategy '{}'. This class does not exist"
