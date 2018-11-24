@@ -48,7 +48,7 @@ class IResolver(object):
 
     @staticmethod
     def _search_object(directory: str, object_type, object_name: str,
-                       kwargs: dict) -> Optional[Any]:
+                       kwargs: dict = {}) -> Optional[Any]:
         """
         Search for the objectname in the given directory
         :param directory: relative or absolute directory path

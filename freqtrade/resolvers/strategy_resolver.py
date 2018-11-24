@@ -145,7 +145,7 @@ class StrategyResolver(IResolver):
 
                     return import_strategy(strategy, config=config)
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', path)
+                logger.warning('Path "%s" does not exist', _path)
 
         raise ImportError(
             "Impossible to load Strategy '{}'. This class does not exist"
