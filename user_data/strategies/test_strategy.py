@@ -56,7 +56,7 @@ class TestStrategy(IStrategy):
     }
 
     # Optional order time in force
-    order_types = {
+    order_time_in_force = {
         'buy': 'gtc',
         'sell': 'gtc'
     }
