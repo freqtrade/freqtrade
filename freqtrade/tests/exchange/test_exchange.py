@@ -875,64 +875,8 @@ def make_fetch_ohlcv_mock(data):
     return fetch_ohlcv_mock
 
 
-def test_get_candle_history(default_conf, mocker):
-    api_mock = MagicMock()
-    tick = [
-        [
-            1511686200000,  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ]
-    ]
-    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
-    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-
-    # retrieve original ticker
-    ticks = exchange.get_candle_history('ETH/BTC', default_conf['ticker_interval'])
-    assert ticks[0][0] == 1511686200000
-    assert ticks[0][1] == 1
-    assert ticks[0][2] == 2
-    assert ticks[0][3] == 3
-    assert ticks[0][4] == 4
-    assert ticks[0][5] == 5
-
-    # change ticker and ensure tick changes
-    new_tick = [
-        [
-            1511686210000,  # unix timestamp ms
-            6,  # open
-            7,  # high
-            8,  # low
-            9,  # close
-            10,  # volume (in quote currency)
-        ]
-    ]
-    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(new_tick))
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-
-    ticks = exchange.get_candle_history('ETH/BTC', default_conf['ticker_interval'])
-    assert ticks[0][0] == 1511686210000
-    assert ticks[0][1] == 6
-    assert ticks[0][2] == 7
-    assert ticks[0][3] == 8
-    assert ticks[0][4] == 9
-    assert ticks[0][5] == 10
-
-    ccxt_exceptionhandlers(mocker, default_conf, api_mock,
-                           "get_candle_history", "fetch_ohlcv",
-                           pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
-
-    with pytest.raises(OperationalException, match=r'Exchange .* does not support.*'):
-        api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.get_candle_history(pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
-
-
-def test_get_candle_history_sort(default_conf, mocker):
+@pytest.mark.asyncio
+async def test___async_get_candle_history_sort(default_conf, mocker):
     api_mock = MagicMock()
 
     # GDAX use-case (real data from GDAX)
@@ -949,13 +893,14 @@ def test_get_candle_history_sort(default_conf, mocker):
         [1527830700000, 0.07652, 0.07652, 0.07651, 0.07652, 10.04822687],
         [1527830400000, 0.07649, 0.07651, 0.07649, 0.07651, 2.5734867]
     ]
-    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
-
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
     # Test the ticker history sort
-    ticks = exchange.get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    assert res[0] == 'ETH/BTC'
+    ticks = res[1]
     assert ticks[0][0] == 1527830400000
     assert ticks[0][1] == 0.07649
     assert ticks[0][2] == 0.07651
@@ -984,11 +929,12 @@ def test_get_candle_history_sort(default_conf, mocker):
         [1527830100000, 0.076695, 0.07671, 0.07624171, 0.07671, 1.80689244],
         [1527830400000, 0.07671, 0.07674399, 0.07629216, 0.07655213, 2.31452783]
     ]
-    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
-    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
     # Test the ticker history sort
-    ticks = exchange.get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
+    assert res[0] == 'ETH/BTC'
+    ticks = res[1]
+
     assert ticks[0][0] == 1527827700000
     assert ticks[0][1] == 0.07659999
     assert ticks[0][2] == 0.0766
