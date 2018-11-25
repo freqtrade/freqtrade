@@ -478,7 +478,9 @@ class Exchange(object):
             # Because some exchange sort Tickers ASC and other DESC.
             # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
             # when GDAX returns a list of tickers DESC (newest first, oldest last)
-            data = sorted(data, key=lambda x: x[0])
+            # Only sort if necessary to save computing time
+            if data and data[0][0] > data[-1][0]:
+                data = sorted(data, key=lambda x: x[0])
 
             # keeping last candle time as last refreshed time of the pair
             if data:

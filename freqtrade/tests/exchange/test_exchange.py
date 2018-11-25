@@ -877,7 +877,8 @@ def make_fetch_ohlcv_mock(data):
 
 @pytest.mark.asyncio
 async def test___async_get_candle_history_sort(default_conf, mocker):
-    api_mock = MagicMock()
+    def sort_data(data, key):
+        return sorted(data, key=key)
 
     # GDAX use-case (real data from GDAX)
     # This ticker history is ordered DESC (newest first, oldest last)
@@ -893,14 +894,15 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
         [1527830700000, 0.07652, 0.07652, 0.07651, 0.07652, 10.04822687],
         [1527830400000, 0.07649, 0.07651, 0.07649, 0.07651, 2.5734867]
     ]
-    api_mock.fetch_ohlcv = MagicMock(side_effect=make_fetch_ohlcv_mock(tick))
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
-
+    sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
     ticks = res[1]
+
+    assert sort_mock.call_count == 1
     assert ticks[0][0] == 1527830400000
     assert ticks[0][1] == 0.07649
     assert ticks[0][2] == 0.07651
@@ -930,11 +932,14 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
         [1527830400000, 0.07671, 0.07674399, 0.07629216, 0.07655213, 2.31452783]
     ]
     exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
+    # Reset sort mock
+    sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
     ticks = res[1]
-
+    # Sorted not called again - data is already in order
+    assert sort_mock.call_count == 0
     assert ticks[0][0] == 1527827700000
     assert ticks[0][1] == 0.07659999
     assert ticks[0][2] == 0.0766
