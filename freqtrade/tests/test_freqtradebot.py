@@ -1445,7 +1445,7 @@ def test_execute_sell_down_live(default_conf, ticker, fee, ticker_sell_down, mar
         'freqtrade.exchange.Exchange',
         get_ticker=ticker_sell_down
     )
-
+    default_conf['dry_run'] = False
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
                            sell_reason=SellType.STOP_LOSS)
 
