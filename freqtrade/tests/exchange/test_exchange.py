@@ -375,7 +375,7 @@ def test_validate_order_types(default_conf, mocker):
     type(api_mock).has = PropertyMock(return_value={'createMarketOrder': False})
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
 
-    default_conf['order_types'] = {'buy': 'limit', 'sell': 'limit', 'stoploss': 'market'}
+    default_conf['order_types'] = {'buy': 'limit', 'sell': 'limit', 'stoploss': 'market', 'stoploss_on_exchange': 'false'}
 
     with pytest.raises(OperationalException,
                        match=r'Exchange .* does not support market orders.'):

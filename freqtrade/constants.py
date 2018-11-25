@@ -112,7 +112,7 @@ CONF_SCHEMA = {
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'}
             },
-            'required': ['buy', 'sell', 'stoploss']
+            'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},

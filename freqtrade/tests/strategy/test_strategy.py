@@ -188,7 +188,8 @@ def test_strategy_override_order_types(caplog):
     order_types = {
         'buy': 'market',
         'sell': 'limit',
-        'stoploss': 'limit'
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True,
     }
 
     config = {
@@ -198,13 +199,13 @@ def test_strategy_override_order_types(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.order_types
-    for method in ['buy', 'sell', 'stoploss']:
+    for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
         assert resolver.strategy.order_types[method] == order_types[method]
 
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
             "Override strategy 'order_types' with value in config file:"
-            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit'}."
+            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit', 'stoploss_on_exchange': True}."
             ) in caplog.record_tuples
 
     config = {
@@ -262,13 +263,13 @@ def test_call_deprecated_function(result, monkeypatch):
     assert resolver.strategy._sell_fun_len == 2
 
     indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
-    assert type(indicator_df) is DataFrame
+    assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
     buydf = resolver.strategy.advise_buy(result, metadata=metadata)
-    assert type(buydf) is DataFrame
+    assert isinstance(buydf, DataFrame)
     assert 'buy' in buydf.columns
 
     selldf = resolver.strategy.advise_sell(result, metadata=metadata)
-    assert type(selldf) is DataFrame
+    assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
