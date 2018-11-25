@@ -155,6 +155,9 @@ class RPC(object):
         """ Returns cumulative profit statistics """
         trades = Trade.query.order_by(Trade.id).all()
 
+        if not trades:
+            raise RPCException('No trades found')
+
         profit_all_coin = []
         profit_all_percent = []
         profit_closed_coin = []
