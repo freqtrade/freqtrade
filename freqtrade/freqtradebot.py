@@ -61,7 +61,6 @@ class FreqtradeBot(object):
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
 
-
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
@@ -73,11 +72,11 @@ class FreqtradeBot(object):
         """
         checks if config is compatible with the given strategy
         """
-
         # Stoploss on exchange is only implemented for binance
         if strategy.stoploss_on_exchange and config.get('exchange') is not 'binance':
             raise OperationalException(
-                'On exchange stoploss is not supported for %s.' % config.get('exchange'))
+                'On exchange stoploss is not supported for %s.' % config['exchange']['name']
+            )
 
     def _init_modules(self) -> None:
         """

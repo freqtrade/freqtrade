@@ -2516,3 +2516,9 @@ def test_startup_messages(default_conf, mocker):
     default_conf['dynamic_whitelist'] = 20
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING
+
+
+def test_check_consistency(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.freqtradebot.IStrategy.stoploss_on_exchange', True)
+    with pytest.raises(OperationalException):
+        FreqtradeBot(default_conf)
