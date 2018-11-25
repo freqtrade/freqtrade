@@ -268,7 +268,7 @@ class Exchange(object):
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
-    def buy(self, pair: str, ordertype: str, amount: float, rate: float) -> Dict:
+    def buy(self, pair: str, ordertype: str, amount: float, rate: float, time_in_force='gtc') -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
@@ -289,7 +289,12 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            return self._api.create_order(pair, ordertype, 'buy', amount, rate)
+            if time_in_force == 'gtc':
+                return self._api.create_order(pair, ordertype, 'buy', amount, rate)
+            else:
+                return self._api.create_order(pair, ordertype, 'buy',
+                                              amount, rate, {'timeInForce': time_in_force})
+
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create limit buy order on market {pair}.'
@@ -306,7 +311,8 @@ class Exchange(object):
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
-    def sell(self, pair: str, ordertype: str, amount: float, rate: float) -> Dict:
+    def sell(self, pair: str, ordertype: str, amount: float,
+             rate: float, time_in_force='gtc') -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_sell_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
@@ -326,7 +332,12 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            return self._api.create_order(pair, ordertype, 'sell', amount, rate)
+            if time_in_force == 'gtc':
+                return self._api.create_order(pair, ordertype, 'sell', amount, rate)
+            else:
+                return self._api.create_order(pair, ordertype, 'sell',
+                                              amount, rate, {'timeInForce': time_in_force})
+
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
                 f'Insufficient funds to create limit sell order on market {pair}.'
