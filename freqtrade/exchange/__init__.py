@@ -103,6 +103,7 @@ class Exchange(object):
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
+        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
         if config.get('ticker_interval'):
             # Check if timeframe is available
             self.validate_timeframes(config['ticker_interval'])
@@ -226,6 +227,15 @@ class Exchange(object):
             if not self.exchange_has('createMarketOrder'):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+
+    def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
+        """
+        Checks if order time in force configured in strategy/config are supported
+        """
+        if any(v != 'gtc' for k, v in order_time_in_force.items()):
+            if not self.name == 'Binance':
+                raise OperationalException(
+                    f'Time in force policies are not supporetd for  {self.name} yet.')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
