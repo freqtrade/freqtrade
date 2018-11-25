@@ -14,15 +14,8 @@ logger = logging.getLogger(__name__)
 
 class IResolver(object):
     """
-    This class contains all the logic to load custom hyperopt class
+    This class contains all the logic to load custom classes
     """
-
-    def __init__(self, object_type, config: Optional[Dict] = None) -> None:
-        """
-        Load the custom class from config parameter
-        :param config: configuration dictionary or None
-        """
-        config = config or {}
 
     @staticmethod
     def _get_valid_objects(object_type, module_path: Path,
@@ -54,7 +47,7 @@ class IResolver(object):
         :param directory: relative or absolute directory path
         :return: object instance
         """
-        logger.debug('Searching for %s %s in \'%s\'', object_type.__name__,  object_name, directory)
+        logger.debug('Searching for %s %s in \'%s\'', object_type.__name__, object_name, directory)
         for entry in directory.iterdir():
             # Only consider python files
             if not str(entry).endswith('.py'):
