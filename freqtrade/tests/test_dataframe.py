@@ -3,7 +3,7 @@
 import pandas
 
 from freqtrade.optimize import load_data
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 
 _pairs = ['ETH/BTC']
 

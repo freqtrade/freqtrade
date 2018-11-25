@@ -12,7 +12,7 @@ from freqtrade.edge import Edge
 from freqtrade.configuration import Configuration
 from freqtrade.arguments import Arguments
 from freqtrade.exchange import Exchange
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
 

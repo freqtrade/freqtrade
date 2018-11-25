@@ -44,7 +44,7 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
