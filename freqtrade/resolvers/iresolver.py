@@ -7,7 +7,7 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Type, Any
+from typing import Optional, Type, Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +18,14 @@ class IResolver(object):
     """
 
     @staticmethod
-    def _get_valid_objects(object_type, module_path: Path,
-                           object_name: str) -> Optional[Type[Any]]:
+    def _get_valid_object(object_type, module_path: Path,
+                          object_name: str) -> Optional[Type[Any]]:
         """
-        Returns a list of all possible objects for the given module_path of type oject_type
+        Returns the first object with matching object_type and object_name in the path given.
         :param object_type: object_type (class)
         :param module_path: absolute path to the module
         :param object_name: Class name of the object
-        :return: Tuple with (name, class) or None
+        :return: class or None
         """
 
         # Generate spec based on absolute path
@@ -53,7 +53,7 @@ class IResolver(object):
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
-            obj = IResolver._get_valid_objects(
+            obj = IResolver._get_valid_object(
                 object_type, Path.resolve(directory.joinpath(entry)), object_name
             )
             if obj:
