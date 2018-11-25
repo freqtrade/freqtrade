@@ -38,6 +38,10 @@
         "sell": "limit",
         "stoploss": "market"
     },
+    "order_time_in_force": {
+        "buy": "gtc",
+        "sell": "gtc",
+    },
     "exchange": {
         "name": "bittrex",
         "key": "your_exchange_key",

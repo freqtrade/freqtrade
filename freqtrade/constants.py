@@ -15,6 +15,7 @@ DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
+ORDERTIF_POSSIBILITIES = ['gtc', 'aon', 'fok', 'ioc']
 
 
 TICKER_INTERVAL_MINUTES = {
@@ -112,6 +113,14 @@ CONF_SCHEMA = {
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES}
             },
             'required': ['buy', 'sell', 'stoploss']
+        },
+        'order_time_in_force': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES},
+                'sell': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES}
+            },
+            'required': ['buy', 'sell']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
