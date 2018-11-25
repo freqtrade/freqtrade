@@ -227,6 +227,12 @@ class Exchange(object):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
 
+        if order_types.get('stoploss_on_exchange', False):
+            if self.name is not 'Binance':
+                raise OperationalException(
+                    'On exchange stoploss is not supported for %s.' % self.name
+                )
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.

@@ -68,11 +68,6 @@ class IStrategy(ABC):
     # associated stoploss
     stoploss: float
 
-    # if the stoploss should be on exchange.
-    # if this is True then a stoploss order will be placed
-    # immediately after a successful buy order.
-    stoploss_on_exchange: bool = False
-
     # associated ticker interval
     ticker_interval: str
 
@@ -80,7 +75,8 @@ class IStrategy(ABC):
     order_types: Dict = {
         'buy': 'limit',
         'sell': 'limit',
-        'stoploss': 'limit'
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
     }
 
     # run "populate_indicators" only for new candle
@@ -228,7 +224,7 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
-        if self.stoploss_on_exchange:
+        if self.order_types.get('stoploss_on_exchange'):
             stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
         else:
             stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,

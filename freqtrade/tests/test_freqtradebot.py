@@ -893,7 +893,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None
     mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
 
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade.strategy.stoploss_on_exchange = True
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
     trade = MagicMock()
     trade.open_order_id = None
@@ -1595,7 +1595,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf,
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order)
 
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade.strategy.stoploss_on_exchange = True
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     patch_get_signal(freqtrade)
 
     # Create some test data
@@ -1647,7 +1647,7 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
 
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade.strategy.stoploss_on_exchange = True
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     patch_get_signal(freqtrade)
 
     # Create some test data
@@ -2516,9 +2516,3 @@ def test_startup_messages(default_conf, mocker):
     default_conf['dynamic_whitelist'] = 20
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING
-
-
-def test_check_consistency(default_conf, mocker, caplog):
-    mocker.patch('freqtrade.freqtradebot.IStrategy.stoploss_on_exchange', True)
-    with pytest.raises(OperationalException):
-        FreqtradeBot(default_conf)

@@ -54,7 +54,6 @@ class FreqtradeBot(object):
         # Init objects
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
-        self.check_strategy_config_consistency(config, self.strategy)
 
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
@@ -67,16 +66,6 @@ class FreqtradeBot(object):
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
-
-    def check_strategy_config_consistency(self, config, strategy: IStrategy) -> None:
-        """
-        checks if config is compatible with the given strategy
-        """
-        # Stoploss on exchange is only implemented for binance
-        if strategy.stoploss_on_exchange and config.get('exchange') is not 'binance':
-            raise OperationalException(
-                'On exchange stoploss is not supported for %s.' % config['exchange']['name']
-            )
 
     def _init_modules(self) -> None:
         """
@@ -567,7 +556,7 @@ class FreqtradeBot(object):
 
                 trade.update(order)
 
-            if self.strategy.stoploss_on_exchange:
+            if self.strategy.order_types.get('stoploss_on_exchange'):
                 result = self.handle_stoploss_on_exchange(trade)
                 if result:
                     self.wallets.update()
@@ -844,7 +833,7 @@ class FreqtradeBot(object):
             sell_type = 'stoploss'
 
         # First cancelling stoploss on exchange ...
-        if self.strategy.stoploss_on_exchange and trade.stoploss_order_id:
+        if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
             self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
 
         # Execute sell and update trade record
