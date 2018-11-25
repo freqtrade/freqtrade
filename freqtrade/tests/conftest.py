@@ -45,6 +45,12 @@ def get_patched_exchange(mocker, config, api_mock=None) -> Exchange:
     return exchange
 
 
+def patch_wallet(mocker, free=999.9) -> None:
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
+        return_value=free
+    ))
+
+
 def patch_edge(mocker) -> None:
     # "ETH/BTC",
     # "LTC/BTC",

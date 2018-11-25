@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 
 def test_sync_wallet_at_boot(mocker, default_conf):
+    default_conf['dry_run'] = False
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value={
@@ -58,6 +59,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
 
 
 def test_sync_wallet_missing_data(mocker, default_conf):
+    default_conf['dry_run'] = False
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value={

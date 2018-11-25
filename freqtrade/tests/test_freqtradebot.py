@@ -18,7 +18,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, SellCheckTuple
-from freqtrade.tests.conftest import log_has, patch_exchange, patch_edge
+from freqtrade.tests.conftest import log_has, patch_exchange, patch_edge, patch_wallet
 
 
 # Functions for recurrent object patching
@@ -181,17 +181,10 @@ def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mock
     assert result == default_conf['stake_amount']
 
 
-def test_get_trade_stake_amount_no_stake_amount(default_conf,
-                                                ticker,
-                                                limit_buy_order,
-                                                fee,
-                                                mocker) -> None:
+def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5)
-    )
+    patch_wallet(mocker, free=default_conf['stake_amount'] * 0.5)
     freqtrade = FreqtradeBot(default_conf)
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
@@ -206,12 +199,12 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf,
                                                  mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    patch_wallet(mocker, free=default_conf['stake_amount'])
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         validate_pairs=MagicMock(),
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_balance=MagicMock(return_value=default_conf['stake_amount']),
         get_fee=fee,
         get_markets=markets
     )
@@ -521,11 +514,11 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
                                       fee, markets, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    patch_wallet(mocker, free=default_conf['stake_amount'] * 0.5)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 0.5),
         get_fee=fee,
         get_markets=markets
     )

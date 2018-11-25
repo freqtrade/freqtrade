@@ -29,6 +29,17 @@ class Wallets(object):
         self.wallets: Dict[str, Any] = {}
         self.update()
 
+    def get_free(self, currency) -> float:
+
+        if self.exchange._conf['dry_run']:
+            return 999.9
+
+        balance = self.wallets.get(currency)
+        if balance and balance['free']:
+            return balance['free']
+        else:
+            return 0
+
     def update(self) -> None:
         balances = self.exchange.get_balances()
 
