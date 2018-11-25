@@ -334,10 +334,10 @@ class Exchange(object):
             raise OperationalException(e)
 
     def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
-        # Only binance is supported
-        if not self.name == 'Binance':
-            raise NotImplementedError(
-                'Stoploss limit orders are implemented only for binance as of now.')
+        """
+        creates a stoploss limit order.
+        NOTICE: it is not supported by all exchanges. only binance is tested for now.
+        """
 
         # Set the precision for amount and price(rate) as accepted by the exchange
         amount = self.symbol_amount_prec(pair, amount)
