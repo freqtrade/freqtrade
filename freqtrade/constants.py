@@ -13,7 +13,7 @@ DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
-REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
+REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 
 
