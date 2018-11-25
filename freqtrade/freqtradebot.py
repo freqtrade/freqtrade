@@ -781,6 +781,10 @@ class FreqtradeBot(object):
         sell_type = 'sell'
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
+
+        if self.config.get('dry_run', False) and sell_type == 'stoploss':
+            limit = trade.stop_loss
+
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),
                                       ordertype=self.strategy.order_types[sell_type],
