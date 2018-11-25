@@ -1422,7 +1422,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
     } == last_msg
 
 
-def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
+def test_execute_sell_down_live(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1463,6 +1463,57 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
         'profit_percent': -0.05478342,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+    } == last_msg
+
+
+def test_execute_sell_down_dry_run(default_conf, ticker, fee, ticker_sell_down, markets, mocker) -> None:
+    rpc_mock = patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
+        get_ticker=ticker,
+        get_fee=fee,
+        get_markets=markets
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    assert trade
+
+    # Decrease the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker_sell_down
+    )
+
+    default_conf['dry_run'] = True
+
+    # Setting trade stoploss to 0.01
+    trade.stop_loss = 0.00001099 * 0.99
+
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
+                           sell_reason=SellType.STOP_LOSS)
+
+    assert rpc_mock.call_count == 2
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'type': RPCMessageType.SELL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': 'loss',
+        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
+        'limit': 1.08801e-05,
+        'amount': 90.99181073703367,
+        'open_rate': 1.099e-05,
+        'current_rate': 1.044e-05,
+        'profit_amount': -1.498e-05,
+        'profit_percent': -0.01493766,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
