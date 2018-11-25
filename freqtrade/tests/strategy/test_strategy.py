@@ -205,7 +205,8 @@ def test_strategy_override_order_types(caplog):
     assert ('freqtrade.strategy.resolver',
             logging.INFO,
             "Override strategy 'order_types' with value in config file:"
-            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit', 'stoploss_on_exchange': True}."
+            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
+            " 'stoploss_on_exchange': True}."
             ) in caplog.record_tuples
 
     config = {
