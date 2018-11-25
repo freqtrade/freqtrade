@@ -16,11 +16,11 @@ app = Flask(__name__)
 
 class ApiServer(RPC):
     """
-    This class is for REST calls across api server
     This class runs api server and provides rpc.rpc functionality to it
 
-    This class starts a none blocking thread the api server runs within\
-     """
+    This class starts a none blocking thread the api server runs within
+    """
+
     def __init__(self, freqtrade) -> None:
         """
         Init the api server, and init the super class RPC

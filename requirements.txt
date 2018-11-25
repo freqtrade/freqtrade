@@ -1,4 +1,4 @@
-ccxt==1.14.256
+ccxt==1.14.257
 SQLAlchemy==1.2.8
 python-telegram-bot==10.1.0
 arrow==0.12.1
@@ -23,3 +23,7 @@ coinmarketcap==5.0.3
 
 # Required for plotting data
 #plotly==2.7.0
+
+#Added for local rest client
+Flask==1.0.2
+flask-restful==0.3.6
