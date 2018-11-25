@@ -26,7 +26,6 @@ The table below will list all configuration parameters.
 | `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. Can be set either in Configuration or in the strategy.
 | `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file.
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file.
-| `stoploss_on_exchange` | false | No | Only for binance users for now: If this parameter is on then stoploss limit order is executed immediately after buy order is done on binance.
 | `trailing_stop` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file).
 | `trailing_stop_positve` | 0 | No | Changes stop-loss once profit has been reached.
 | `trailing_stop_positve_offset` | 0 | No | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive.
