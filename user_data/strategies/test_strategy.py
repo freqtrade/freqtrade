@@ -7,7 +7,7 @@ from pandas import DataFrame
 # Add your lib to import here
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-import numpy # noqa
+import numpy  # noqa
 
 
 # This class is a sample. Feel free to customize it.
@@ -53,6 +53,12 @@ class TestStrategy(IStrategy):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'market'
+    }
+
+    # Optional order time in force
+    order_types = {
+        'buy': 'gtc',
+        'sell': 'gtc'
     }
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

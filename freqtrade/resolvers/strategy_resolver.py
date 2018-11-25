@@ -83,9 +83,22 @@ class StrategyResolver(IResolver):
         else:
             config['order_types'] = self.strategy.order_types
 
+        if 'order_time_in_force' in config:
+            self.strategy.order_time_in_force = config['order_time_in_force']
+            logger.info(
+                "Override strategy 'order_time_in_force' with value in config file: %s.",
+                config['order_time_in_force']
+            )
+        else:
+            config['order_time_in_force'] = self.strategy.order_time_in_force
+
         if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
+
+        if not all(k in self.strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
+            raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
+                              f"Order-time-in-force mapping is incomplete.")
 
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(

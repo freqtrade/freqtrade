@@ -14,6 +14,7 @@ DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
+REQUIRED_ORDERTIF = ['buy', 'sell']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'aon', 'fok', 'ioc']
 

@@ -77,6 +77,12 @@ class IStrategy(ABC):
         'stoploss': 'limit'
     }
 
+    # Optional time in force
+    order_time_in_force: Dict = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
+
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
