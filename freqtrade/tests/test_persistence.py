@@ -472,6 +472,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.sell_reason is None
     assert trade.strategy is None
     assert trade.ticker_interval is None
+    assert trade.stoploss_order_id is None
     assert log_has("trying trades_bak1", caplog.record_tuples)
     assert log_has("trying trades_bak2", caplog.record_tuples)
     assert log_has("Running database migration - backup available as trades_bak2",
