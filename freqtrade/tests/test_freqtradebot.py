@@ -1685,7 +1685,7 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
     print(trade.sell_reason)
-    assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHNAGE.value
+    assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 1
 
 

@@ -700,7 +700,7 @@ class FreqtradeBot(object):
             logger.debug('Handling stoploss on exchange %s ...', trade)
             order = self.exchange.get_order(trade.stoploss_order_id, trade.pair)
             if order['status'] == 'closed':
-                trade.sell_reason = SellType.STOPLOSS_ON_EXCHNAGE.value
+                trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
                 trade.update(order)
                 result = True
             else:
