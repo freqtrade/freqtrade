@@ -374,7 +374,7 @@ class Exchange(object):
 
         try:
             return self._api.create_order(pair, 'stop_loss', 'sell',
-                                      amount, rate, {'stopPrice': stop_price})
+                                          amount, rate, {'stopPrice': stop_price})
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
