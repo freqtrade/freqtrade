@@ -9,6 +9,7 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 import freqtrade.optimize as optimize
+from freqtrade import constants, OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
@@ -53,7 +54,15 @@ class Edge():
         self.edge_config = self.config.get('edge', {})
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
 
-        self._total_capital: float = self.config['stake_amount']
+        # checking max_open_trades. it should be -1 as with Edge
+        # the number of trades is determined by position size
+        if self.config['max_open_trades'] != -1:
+            logger.critical('max_open_trades should be -1 in config !')
+
+        if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:
+            raise OperationalException('Edge works only with unlimited stake amount')
+
+        self._capital_percentage: float = self.edge_config.get('capital_available_percentage')
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
@@ -150,9 +159,10 @@ class Edge():
 
         return True
 
-    def stake_amount(self, pair: str) -> float:
+    def stake_amount(self, pair: str, capital: float) -> float:
         stoploss = self._cached_pairs[pair].stoploss
-        allowed_capital_at_risk = round(self._total_capital * self._allowed_risk, 5)
+        available_capital = capital * self._capital_percentage
+        allowed_capital_at_risk = round(available_capital * self._allowed_risk, 5)
         position_size = abs(round((allowed_capital_at_risk / stoploss), 5))
         return position_size
 

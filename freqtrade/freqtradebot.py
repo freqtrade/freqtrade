@@ -333,7 +333,9 @@ class FreqtradeBot(object):
         :return: float: Stake Amount
         """
         if self.edge:
-            stake_amount = self.edge.stake_amount(pair)
+            stake_amount = self.edge.stake_amount(
+                pair, self.wallets.get_free(self.config['stake_currency'])
+            )
         else:
             stake_amount = self.config['stake_amount']
 
