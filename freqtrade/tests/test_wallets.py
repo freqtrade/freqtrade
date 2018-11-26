@@ -30,6 +30,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     assert freqtrade.wallets.wallets['GAS'].free == 0.260739
     assert freqtrade.wallets.wallets['GAS'].used == 0.0
     assert freqtrade.wallets.wallets['GAS'].total == 0.260739
+    assert freqtrade.wallets.get_free('BNT') == 1.0
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -56,6 +57,7 @@ def test_sync_wallet_at_boot(mocker, default_conf):
     assert freqtrade.wallets.wallets['GAS'].free == 0.270739
     assert freqtrade.wallets.wallets['GAS'].used == 0.1
     assert freqtrade.wallets.wallets['GAS'].total == 0.260439
+    assert freqtrade.wallets.get_free('GAS') == 0.270739
 
 
 def test_sync_wallet_missing_data(mocker, default_conf):
@@ -84,3 +86,4 @@ def test_sync_wallet_missing_data(mocker, default_conf):
     assert freqtrade.wallets.wallets['GAS'].free == 0.260739
     assert freqtrade.wallets.wallets['GAS'].used is None
     assert freqtrade.wallets.wallets['GAS'].total == 0.260739
+    assert freqtrade.wallets.get_free('GAS') == 0.260739
