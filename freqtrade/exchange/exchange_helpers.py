@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
     Analyses the trend for the given ticker history
-    :param ticker: See exchange.get_candle_history
+    :param ticker: ticker list, as returned by exchange.async_get_candle_history
     :return: DataFrame
     """
     cols = ['date', 'open', 'high', 'low', 'close', 'volume']
