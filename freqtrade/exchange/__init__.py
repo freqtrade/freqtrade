@@ -372,8 +372,25 @@ class Exchange(object):
             }
             return self._dry_run_open_orders[order_id]
 
-        return self._api.create_order(pair, 'stop_loss', 'sell',
+        try:
+            return self._api.create_order(pair, 'stop_loss', 'sell',
                                       amount, rate, {'stopPrice': stop_price})
+
+        except ccxt.InsufficientFunds as e:
+            raise DependencyException(
+                f'Insufficient funds to place stoploss limit order on market {pair}.'
+                f'Tried to put a stoploss amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Message: {e}')
+        except ccxt.InvalidOrder as e:
+            raise DependencyException(
+                f'Could not place stoploss limit order on market {pair}.'
+                f'Tried to place stoploss amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Message: {e}')
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not place stoploss limit order due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
 
     @retrier
     def get_balance(self, currency: str) -> float:

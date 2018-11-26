@@ -426,6 +426,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 max_rate FLOAT,
                                 sell_reason VARCHAR,
                                 strategy VARCHAR,
+                                ticker_interval INTEGER,
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
