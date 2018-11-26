@@ -292,7 +292,7 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, 
     freqtrade = FreqtradeBot(edge_conf)
     freqtrade.active_pair_whitelist = ['NEO/BTC']
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trade()
     trade = Trade.query.first()
     trade.update(limit_buy_order)
@@ -332,7 +332,7 @@ def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
     freqtrade = FreqtradeBot(edge_conf)
     freqtrade.active_pair_whitelist = ['NEO/BTC']
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trade()
     trade = Trade.query.first()
     trade.update(limit_buy_order)
@@ -1010,7 +1010,7 @@ def test_handle_overlpapping_signals(default_conf, ticker, limit_buy_order,
 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade, value=(True, True))
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.create_trade()
 
@@ -1066,7 +1066,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order,
 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade, value=(True, False))
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.create_trade()
 
@@ -1099,7 +1099,7 @@ def test_handle_trade_experimental(
 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trade()
 
     trade = Trade.query.first()
@@ -1580,7 +1580,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order,
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.create_trade()
 
@@ -1612,7 +1612,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order,
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trade()
 
     trade = Trade.query.first()
@@ -1674,7 +1674,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, fee, marke
 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.create_trade()
 
@@ -1704,7 +1704,7 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, fee, markets, m
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.create_trade()
 
@@ -1736,7 +1736,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
     default_conf['trailing_stop'] = True
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.create_trade()
 
@@ -1771,7 +1771,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
     default_conf['trailing_stop_positive'] = 0.01
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trade()
 
     trade = Trade.query.first()
@@ -1831,7 +1831,7 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
     default_conf['trailing_stop_positive_offset'] = 0.011
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: False
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.create_trade()
 
     trade = Trade.query.first()
@@ -1890,7 +1890,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = lambda trade, current_profit, current_time: True
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.create_trade()
 
