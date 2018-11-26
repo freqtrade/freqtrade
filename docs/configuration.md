@@ -152,7 +152,7 @@ The below is the default which is used if this is not configured in either Strat
         "buy": "limit",
         "sell": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": "false"
+        "stoploss_on_exchange": False
     },
 ```
 
