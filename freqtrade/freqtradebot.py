@@ -21,9 +21,9 @@ from freqtrade.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
 
 
@@ -338,9 +338,7 @@ class FreqtradeBot(object):
         else:
             stake_amount = self.config['stake_amount']
 
-        # TODO: should come from the wallet
-        avaliable_amount = self.exchange.get_balance(self.config['stake_currency'])
-        # avaliable_amount = self.wallets.wallets[self.config['stake_currency']].free
+        avaliable_amount = self.wallets.get_free(self.config['stake_currency'])
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())

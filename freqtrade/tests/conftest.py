@@ -4,7 +4,6 @@ import logging
 from datetime import datetime
 from functools import reduce
 from typing import Dict, Optional
-from collections import namedtuple
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -13,7 +12,7 @@ from telegram import Chat, Message, Update
 
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
-from freqtrade.edge import Edge
+from freqtrade.edge import Edge, PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -46,18 +45,22 @@ def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchang
     return exchange
 
 
+def patch_wallet(mocker, free=999.9) -> None:
+    mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(
+        return_value=free
+    ))
+
+
 def patch_edge(mocker) -> None:
     # "ETH/BTC",
     # "LTC/BTC",
     # "XRP/BTC",
     # "NEO/BTC"
-    pair_info = namedtuple(
-        'pair_info',
-        'stoploss, winrate, risk_reward_ratio, required_risk_reward, expectancy')
+
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'NEO/BTC': pair_info(-0.20, 0.66, 3.71, 0.50, 1.71),
-            'LTC/BTC': pair_info(-0.21, 0.66, 3.71, 0.50, 1.71),
+            'NEO/BTC': PairInfo(-0.20, 0.66, 3.71, 0.50, 1.71, 10, 25),
+            'LTC/BTC': PairInfo(-0.21, 0.66, 3.71, 0.50, 1.71, 11, 20),
         }
     ))
     mocker.patch('freqtrade.edge.Edge.stoploss', MagicMock(return_value=-0.20))

@@ -20,8 +20,8 @@ from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
-from freqtrade.strategy.interface import SellType
-from freqtrade.strategy.resolver import IStrategy, StrategyResolver
+from freqtrade.resolvers import StrategyResolver
+from freqtrade.strategy.interface import SellType, IStrategy
 
 logger = logging.getLogger(__name__)
 

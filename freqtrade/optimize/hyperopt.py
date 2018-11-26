@@ -22,7 +22,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.optimize import load_data
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.optimize.hyperopt_resolver import HyperOptResolver
+from freqtrade.resolvers import HyperOptResolver
 
 
 logger = logging.getLogger(__name__)

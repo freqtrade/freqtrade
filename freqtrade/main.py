@@ -45,7 +45,7 @@ def main(sysargv: List[str]) -> None:
         freqtrade = FreqtradeBot(config)
 
         state = None
-        while 1:
+        while True:
             state = freqtrade.worker(old_state=state)
             if state == State.RELOAD_CONF:
                 freqtrade = reconfigure(freqtrade, args)
