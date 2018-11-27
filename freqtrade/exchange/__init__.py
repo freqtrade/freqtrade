@@ -373,7 +373,7 @@ class Exchange(object):
             return self._dry_run_open_orders[order_id]
 
         try:
-            return self._api.create_order(pair, 'stop_loss', 'sell',
+            return self._api.create_order(pair, 'stop_loss_limit', 'sell',
                                           amount, rate, {'stopPrice': stop_price})
 
         except ccxt.InsufficientFunds as e:
