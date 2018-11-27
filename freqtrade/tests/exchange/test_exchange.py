@@ -1150,7 +1150,7 @@ def test_get_fee(default_conf, mocker):
 def test_stoploss_limit_order(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
-    order_type = 'stop_loss'
+    order_type = 'stop_loss_limit'
 
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
