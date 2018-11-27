@@ -10,6 +10,7 @@ import arrow
 import pytest
 from telegram import Chat, Message, Update
 
+from freqtrade import constants
 from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
@@ -787,10 +788,13 @@ def buy_order_fee():
 
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
+    default_conf['max_open_trades'] = -1
+    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
     default_conf['edge'] = {
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
+        "capital_available_percentage": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,

@@ -123,9 +123,9 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
         assert res.close_time == _get_frame_time_from_offset(trade.close_tick)
 
 
-def test_adjust(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+def test_adjust(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
@@ -138,9 +138,9 @@ def test_adjust(mocker, default_conf):
     assert(edge.adjust(pairs) == ['E/F', 'C/D'])
 
 
-def test_stoploss(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+def test_stoploss(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
@@ -234,12 +234,12 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
     return pairdata
 
 
-def test_edge_process_downloaded_data(mocker, default_conf):
-    default_conf['datadir'] = None
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+def test_edge_process_downloaded_data(mocker, edge_conf):
+    edge_conf['datadir'] = None
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
     assert edge.calculate()
     assert len(edge._cached_pairs) == 2

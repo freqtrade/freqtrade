@@ -162,8 +162,8 @@ class Edge():
     def stake_amount(self, pair: str, capital: float) -> float:
         stoploss = self._cached_pairs[pair].stoploss
         available_capital = capital * self._capital_percentage
-        allowed_capital_at_risk = round(available_capital * self._allowed_risk, 5)
-        position_size = abs(round((allowed_capital_at_risk / stoploss), 5))
+        allowed_capital_at_risk = round(available_capital * self._allowed_risk, 15)
+        position_size = abs(round((allowed_capital_at_risk / stoploss), 15))
         return position_size
 
     def stoploss(self, pair: str) -> float:
@@ -207,7 +207,7 @@ class Edge():
         # 0.05% is 0.0005
         # fee = 0.001
 
-        stake = self.config.get('stake_amount')
+        stake = 0.015
         fee = self.fee
 
         open_fee = fee / 2

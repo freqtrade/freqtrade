@@ -336,6 +336,7 @@ class FreqtradeBot(object):
             stake_amount = self.edge.stake_amount(
                 pair, self.wallets.get_free(self.config['stake_currency'])
             )
+            return stake_amount
         else:
             stake_amount = self.config['stake_amount']
 
@@ -781,9 +782,6 @@ class FreqtradeBot(object):
         sell_type = 'sell'
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
-
-        if self.config.get('dry_run', False) and sell_type == 'stoploss':
-            limit = trade.stop_loss
 
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),

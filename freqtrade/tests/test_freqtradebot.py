@@ -260,8 +260,8 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_edge(mocker)
     freqtrade = FreqtradeBot(edge_conf)
 
-    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (0.001 * 0.01) / 0.20
-    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (0.001 * 0.01) / 0.20
+    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
+    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (999.9 * 0.5 * 0.01) / 0.21
 
 
 def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, edge_conf) -> None:
