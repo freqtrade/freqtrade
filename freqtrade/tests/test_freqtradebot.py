@@ -957,7 +957,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     stoploss_order_hit = MagicMock(return_value={
         'status': 'closed',
         'type': 'stop_loss_limit',
-        'price': 2
+        'price': 3,
+        'average': 2
     })
     mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True

@@ -378,13 +378,15 @@ class Exchange(object):
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
-                f'Insufficient funds to place stoploss limit order on market {pair}.'
-                f'Tried to put a stoploss amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Insufficient funds to place stoploss limit order on market {pair}. '
+                f'Tried to put a stoploss amount {amount} with '
+                f'stop {stop_price} and limit {rate} (total {rate*amount}).'
                 f'Message: {e}')
         except ccxt.InvalidOrder as e:
             raise DependencyException(
                 f'Could not place stoploss limit order on market {pair}.'
-                f'Tried to place stoploss amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Tried to place stoploss amount {amount} with '
+                f'stop {stop_price} and limit {rate} (total {rate*amount}).'
                 f'Message: {e}')
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
