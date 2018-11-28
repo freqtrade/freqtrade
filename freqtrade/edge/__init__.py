@@ -159,11 +159,16 @@ class Edge():
 
         return True
 
-    def stake_amount(self, pair: str, capital: float) -> float:
+    def stake_amount(self, pair: str, free_capital: float, total_capital: float) -> float:
         stoploss = self._cached_pairs[pair].stoploss
-        available_capital = capital * self._capital_percentage
+        available_capital = total_capital * self._capital_percentage
         allowed_capital_at_risk = round(available_capital * self._allowed_risk, 15)
-        position_size = abs(round((allowed_capital_at_risk / stoploss), 15))
+        max_position_size = abs(round((allowed_capital_at_risk / stoploss), 15))
+        position_size = min(max_position_size, free_capital)
+        logger.info(
+            'position size is %s for pair %s, stoploss %s and available capital of %s.',
+            position_size, pair, stoploss, available_capital
+        )
         return position_size
 
     def stoploss(self, pair: str) -> float:
