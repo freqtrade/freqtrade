@@ -554,7 +554,7 @@ class FreqtradeBot(object):
 
                 trade.update(order)
 
-            if self.strategy.order_types.get('stoploss_on_exchange'):
+            if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
                 result = self.handle_stoploss_on_exchange(trade)
                 if result:
                     self.wallets.update()
@@ -675,7 +675,7 @@ class FreqtradeBot(object):
 
         # If trade is open and the buy order is fulfilled but there is no stoploss,
         # then we add a stoploss on exchange
-        if trade.is_open and not trade.open_order_id and not trade.stoploss_order_id:
+        if not trade.open_order_id and not trade.stoploss_order_id:
             if self.edge:
                 stoploss = self.edge.stoploss(pair=trade.pair)
             else:
@@ -692,7 +692,7 @@ class FreqtradeBot(object):
             )['id']
             trade.stoploss_order_id = str(stoploss_order_id)
 
-        # Or there is already a stoploss on exchange.
+        # Or the trade open and there is already a stoploss on exchange.
         # so we check if it is hit ...
         elif trade.stoploss_order_id:
             logger.debug('Handling stoploss on exchange %s ...', trade)
