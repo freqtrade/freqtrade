@@ -899,7 +899,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None
     assert trade.is_open is True
 
 
-def test_handle_stoploss_on_exchange(mocker, default_conf, fee,
+def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
                                      markets, limit_buy_order, limit_sell_order) -> None:
     stoploss_limit = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
@@ -961,6 +961,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee,
     })
     mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
+    assert log_has('STOP_LOSS_LIMIT is hit for {}.'.format(trade), caplog.record_tuples)
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
 

@@ -255,6 +255,7 @@ class Trade(_DECL_BASE):
             self.close(order['price'])
         elif order_type == 'stop_loss_limit':
             self.stoploss_order_id = None
+            logger.info('STOP_LOSS_LIMIT is hit for %s.', self)
             self.close(order['price'])
         else:
             raise ValueError(f'Unknown order type: {order_type}')
