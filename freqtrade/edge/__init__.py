@@ -167,7 +167,10 @@ class Edge():
         max_position_size = abs(round((allowed_capital_at_risk / stoploss), 15))
         position_size = min(max_position_size, free_capital)
         logger.info(
-            'position size is %s for pair %s, stoploss %s and available capital of %s.',
+            'winrate: %s, expectancy: %s, position size: %s, pair: %s,'
+            ' stoploss: %s, available capital: %s.',
+            self._cached_pairs[pair].winrate,
+            self._cached_pairs[pair].expectancy,
             position_size, pair, stoploss, available_capital
         )
         return position_size
