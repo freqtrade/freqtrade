@@ -47,7 +47,7 @@
             "XRP/BTC"
         ],
         "pair_blacklist": [
-            "DOGE/BTC"
+            "BNB/BTC"
         ]
     },
     "experimental": {
