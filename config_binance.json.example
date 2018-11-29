@@ -1,0 +1,83 @@
+{
+    "max_open_trades": 3,
+    "stake_currency": "BTC",
+    "stake_amount": 0.05,
+    "fiat_display_currency": "USD",
+    "ticker_interval" : "5m",
+    "dry_run": true,
+    "trailing_stop": false,
+    "unfilledtimeout": {
+        "buy": 10,
+        "sell": 30
+    },
+    "bid_strategy": {
+        "ask_last_balance": 0.0,
+        "use_order_book": false,
+        "order_book_top": 1,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "ask_strategy":{
+        "use_order_book": false,
+        "order_book_min": 1,
+        "order_book_max": 9
+    },
+    "exchange": {
+        "name": "binance",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_secret",
+        "ccxt_config": {"enableRateLimit": true},
+        "ccxt_async_config": {
+            "enableRateLimit": false
+        },
+        "pair_whitelist": [
+            "AST/BTC",
+            "ETC/BTC",
+            "ETH/BTC",
+            "EOS/BTC",
+            "IOTA/BTC",
+            "LTC/BTC",
+            "MTH/BTC",
+            "NCASH/BTC",
+            "TNT/BTC",
+            "XMR/BTC",
+            "XLM/BTC",
+            "XRP/BTC"
+        ],
+        "pair_blacklist": [
+            "DOGE/BTC"
+        ]
+    },
+    "experimental": {
+        "use_sell_signal": false,
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
+    },
+    "edge": {
+        "enabled": false,
+        "process_throttle_secs": 3600,
+        "calculate_since_number_of_days": 7,
+        "total_capital_in_stake_currency": 0.5,
+        "allowed_risk": 0.01,
+        "stoploss_range_min": -0.01,
+        "stoploss_range_max": -0.1,
+        "stoploss_range_step": -0.01,
+        "minimum_winrate": 0.60,
+        "minimum_expectancy": 0.20,
+        "min_trade_number": 10,
+        "max_trade_duration_minute": 1440,
+        "remove_pumps": false
+    },
+    "telegram": {
+        "enabled": false,
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id"
+    },
+    "initial_state": "running",
+    "forcebuy_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}
