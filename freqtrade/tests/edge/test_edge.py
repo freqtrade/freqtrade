@@ -163,6 +163,7 @@ def test_nonexisting_stoploss(mocker, default_conf):
 
     assert edge.stoploss('N/O') == -0.1
 
+
 def _validate_ohlc(buy_ohlc_sell_matrice):
     for index, ohlc in enumerate(buy_ohlc_sell_matrice):
         # if not high < open < low or not high < close < low

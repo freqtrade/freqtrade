@@ -164,7 +164,6 @@ class Edge():
                            'strategy stoploss is returned instead.')
             return self.strategy.stoploss
 
-
     def adjust(self, pairs) -> list:
         """
         Filters out and sorts "pairs" according to Edge calculated pairs
