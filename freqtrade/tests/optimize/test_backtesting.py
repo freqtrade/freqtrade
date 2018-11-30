@@ -13,6 +13,7 @@ from arrow import Arrow
 
 from freqtrade import DependencyException, constants, optimize
 from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -86,17 +87,21 @@ def load_data_test(what):
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
     patch_exchange(mocker)
+    config['ticker_interval'] = '1m'
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = get_timeframe(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         {
             'stake_amount': config['stake_amount'],
             'processed': processed,
             'max_open_trades': 1,
-            'position_stacking': False
+            'position_stacking': False,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
@@ -123,12 +128,16 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = get_timeframe(processed)
     return {
         'stake_amount': conf['stake_amount'],
-        'processed': backtesting.strategy.tickerdata_to_dataframe(data),
+        'processed': processed,
         'max_open_trades': 10,
         'position_stacking': False,
-        'record': record
+        'record': record,
+        'start_date': min_date,
+        'end_date': max_date,
     }
 
 
@@ -449,7 +458,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     )
 
     default_conf['exchange']['pair_whitelist'] = ['UNITTEST/BTC']
-    default_conf['ticker_interval'] = "1m"
+    default_conf['ticker_interval'] = '1m'
     default_conf['live'] = False
     default_conf['datadir'] = None
     default_conf['export'] = None
@@ -505,12 +514,15 @@ def test_backtest(default_conf, fee, mocker) -> None:
     data = optimize.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = get_timeframe(data_processed)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
             'processed': data_processed,
             'max_open_trades': 10,
-            'position_stacking': False
+            'position_stacking': False,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     assert not results.empty
@@ -554,12 +566,16 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     data = trim_dictlist(data, -200)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = get_timeframe(processed)
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.strategy.tickerdata_to_dataframe(data),
+            'processed': processed,
             'max_open_trades': 1,
-            'position_stacking': False
+            'position_stacking': False,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     assert not results.empty
@@ -583,23 +599,11 @@ def test_processed(default_conf, mocker) -> None:
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     tests = [['raise', 18], ['lower', 0], ['sine', 19]]
+    # We need to enable sell-signal - otherwise it sells on ROI!!
+    default_conf['experimental'] = {"use_sell_signal": True}
+
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres, mocker)
-
-
-# Test backtest using offline data (testdata directory)
-def test_backtest_ticks(default_conf, fee, mocker):
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    patch_exchange(mocker)
-    ticks = [1, 5]
-    fun = Backtesting(default_conf).advise_buy
-    for _ in ticks:
-        backtest_conf = _make_backtest_conf(mocker, conf=default_conf)
-        backtesting = Backtesting(default_conf)
-        backtesting.advise_buy = fun  # Override
-        backtesting.advise_sell = fun  # Override
-        results = backtesting.backtest(backtest_conf)
-        assert not results.empty
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf):
@@ -636,14 +640,92 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch('freqtrade.optimize.backtesting.file_dump_json', MagicMock())
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, pair='UNITTEST/BTC')
+    # We need to enable sell-signal - otherwise it sells on ROI!!
+    default_conf['experimental'] = {"use_sell_signal": True}
+    default_conf['ticker_interval'] = '1m'
     backtesting = Backtesting(default_conf)
     backtesting.advise_buy = _trend_alternate  # Override
     backtesting.advise_sell = _trend_alternate  # Override
     results = backtesting.backtest(backtest_conf)
     backtesting._store_backtest_result("test_.json", results)
-    assert len(results) == 4
+    # 200 candles in backtest data
+    # won't buy on first (shifted by 1)
+    # 100 buys signals
+    assert len(results) == 99
     # One trade was force-closed at the end
-    assert len(results.loc[results.open_at_end]) == 1
+    assert len(results.loc[results.open_at_end]) == 0
+
+
+def test_backtest_multi_pair(default_conf, fee, mocker):
+
+    def evaluate_result_multi(results, freq, max_open_trades):
+            # Find overlapping trades by expanding each trade once per period
+            # and then counting overlaps
+        dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
+                 for row in results[['open_time', 'close_time']].iterrows()]
+        deltas = [len(x) for x in dates]
+        dates = pd.Series(pd.concat(dates).values, name='date')
+        df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
+
+        df2 = df2.astype(dtype={"open_time": "datetime64", "close_time": "datetime64"})
+        df2 = pd.concat([dates, df2], axis=1)
+        df2 = df2.set_index('date')
+        df_final = df2.resample(freq)[['pair']].count()
+        return df_final[df_final['pair'] > max_open_trades]
+
+    def _trend_alternate_hold(dataframe=None, metadata=None):
+        """
+        Buy every 8th candle - sell every other 8th -2 (hold on to pairs a bit)
+        """
+        multi = 8
+        dataframe['buy'] = np.where(dataframe.index % multi == 0, 1, 0)
+        dataframe['sell'] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
+        if metadata['pair'] in('ETH/BTC', 'LTC/BTC'):
+            dataframe['buy'] = dataframe['buy'].shift(-4)
+            dataframe['sell'] = dataframe['sell'].shift(-4)
+        return dataframe
+
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    patch_exchange(mocker)
+    pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
+    data = optimize.load_data(None, ticker_interval='5m', pairs=pairs)
+    data = trim_dictlist(data, -500)
+    # We need to enable sell-signal - otherwise it sells on ROI!!
+    default_conf['experimental'] = {"use_sell_signal": True}
+    default_conf['ticker_interval'] = '5m'
+
+    backtesting = Backtesting(default_conf)
+    backtesting.advise_buy = _trend_alternate_hold  # Override
+    backtesting.advise_sell = _trend_alternate_hold  # Override
+
+    data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    min_date, max_date = get_timeframe(data_processed)
+    backtest_conf = {
+        'stake_amount': default_conf['stake_amount'],
+        'processed': data_processed,
+        'max_open_trades': 3,
+        'position_stacking': False,
+        'start_date': min_date,
+        'end_date': max_date,
+    }
+
+    results = backtesting.backtest(backtest_conf)
+
+    # Make sure we have parallel trades
+    assert len(evaluate_result_multi(results, '5min', 2)) > 0
+    # make sure we don't have trades with more than configured max_open_trades
+    assert len(evaluate_result_multi(results, '5min', 3)) == 0
+
+    backtest_conf = {
+        'stake_amount': default_conf['stake_amount'],
+        'processed': data_processed,
+        'max_open_trades': 1,
+        'position_stacking': False,
+        'start_date': min_date,
+        'end_date': max_date,
+    }
+    results = backtesting.backtest(backtest_conf)
+    assert len(evaluate_result_multi(results, '5min', 1)) == 0
 
 
 def test_backtest_record(default_conf, fee, mocker):

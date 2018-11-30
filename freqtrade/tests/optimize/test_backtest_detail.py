@@ -6,10 +6,11 @@ from pandas import DataFrame
 import pytest
 
 
+from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
-                                      _get_frame_time_from_offset)
+                                      _get_frame_time_from_offset, tests_ticker_interval)
 from freqtrade.tests.conftest import patch_exchange
 
 
@@ -147,6 +148,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = {"0": data.roi}
+    default_conf['ticker_interval'] = tests_ticker_interval
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
@@ -158,29 +160,21 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     pair = 'UNITTEST/BTC'
     # Dummy data as we mock the analyze functions
     data_processed = {pair: DataFrame()}
+    min_date, max_date = get_timeframe({pair: frame})
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
             'processed': data_processed,
             'max_open_trades': 10,
+            'start_date': min_date,
+            'end_date': max_date,
         }
     )
     print(results.T)
 
     assert len(results) == len(data.trades)
     assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
-    # if data.sell_r == SellType.STOP_LOSS:
-    #     assert log_has("Stop loss hit.", caplog.record_tuples)
-    # else:
-    #     assert not log_has("Stop loss hit.", caplog.record_tuples)
-    # log_test = (f'Force_selling still open trade UNITTEST/BTC with '
-    #             f'{results.iloc[-1].profit_percent} perc - {results.iloc[-1].profit_abs}')
-    # if data.sell_r == SellType.FORCE_SELL:
-    #     assert log_has(log_test,
-    #                    caplog.record_tuples)
-    # else:
-    #     assert not log_has(log_test,
-    #                        caplog.record_tuples)
+
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.sell_reason == trade.sell_reason
