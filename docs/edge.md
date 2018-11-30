@@ -97,7 +97,7 @@ Let's say the stake currency is ETH and you have 10 ETH on the exchange, your **
 Edge has following configurations:
 
 #### enabled
-If true, then Edge will run periodically<br/>
+If true, then Edge will run periodically.<br/>
 (default to false)
 
 #### process_throttle_secs
@@ -106,24 +106,24 @@ How often should Edge run in seconds? <br/>
 
 #### calculate_since_number_of_days
 Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy
-Note that it downloads historical data so increasing this number would lead to slowing down the bot<br/>
+Note that it downloads historical data so increasing this number would lead to slowing down the bot.<br/>
 (default to 7)
 
 #### capital_available_percentage
 This is the percentage of the total capital on exchange in stake currency. <br/>
-As an example if you have 100 USDT available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 50 USDT for trading and considers it as available capital.
+As an example if you have 100 USDT available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 50 USDT for trading and considers it as available capital.<br/>
 (default to 0.5)
 
 #### allowed_risk
-Percentage of allowed risk per trade<br/>
+Percentage of allowed risk per trade.<br/>
 (default to 0.01 [1%])
 
 #### stoploss_range_min
-Minimum stoploss <br/>
+Minimum stoploss.<br/>
 (default to -0.01)
 
 #### stoploss_range_max
-Maximum stoploss <br/>
+Maximum stoploss.<br/>
 (default to -0.10)
 
 #### stoploss_range_step
