@@ -652,7 +652,7 @@ class FreqtradeBot(object):
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
-        logger.info('Found no sell signal for %s.' % Trade)
+        logger.info('Found no sell signal for %s.' % trade)
         return False
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
