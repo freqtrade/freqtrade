@@ -31,22 +31,21 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
-    freqtradebot.pairlists.validate_whitelist(
-        whitelist_conf['exchange']['pair_whitelist'] + ['XXX/BTC']
-    )
+    freqtradebot.pairlists.refresh_whitelist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
     assert whitelist == freqtradebot.pairlists.whitelist
+    # Ensure config dict hasn't been changed
+    assert (whitelist_conf['exchange']['pair_whitelist'] ==
+            freqtradebot.config['exchange']['pair_whitelist'])
 
 
 def test_refresh_whitelist(mocker, markets, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
-    freqtradebot.pairlists.validate_whitelist(
-        whitelist_conf['exchange']['pair_whitelist'])
-
+    freqtradebot.pairlists.refresh_whitelist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed

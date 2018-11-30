@@ -28,13 +28,13 @@ class StaticList(object):
     def blacklist(self) -> List[str]:
         return self._blacklist
 
-    def refresh_whitelist(self) -> bool:
+    def refresh_whitelist(self) -> None:
         """
         Refreshes whitelist.
         """
-        return self.validate_whitelist(self._config['exchange']['pair_whitelist'])
+        self._whitelist = self.validate_whitelist(self._config['exchange']['pair_whitelist'])
 
-    def validate_whitelist(self, whitelist: List[str]) -> bool:
+    def validate_whitelist(self, whitelist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
@@ -65,6 +65,4 @@ class StaticList(object):
                 )
 
         # We need to remove pairs that are unknown
-        self._whitelist = [x for x in sanitized_whitelist if x in known_pairs]
-
-        return True
+        return [x for x in sanitized_whitelist if x in known_pairs]
