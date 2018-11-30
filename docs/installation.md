@@ -109,7 +109,25 @@ Dry-Run
 touch tradesv3.dryrun.sqlite
 ```
 
-### 2. Build the Docker image
+### 2. Download or build the docker image
+
+Either use the prebuilt image from docker hub - or build the image yourself if you would like more control on which version is used.
+
+Branches / tags available can be checked out on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
+
+#### 2.1. Download the docker image
+
+Pull the image from docker hub and (optionally) change the name of the image
+
+```bash
+docker pull freqtradeorg/freqtrade:develop
+# Optionally tag the repository so the run-commands remain shorter
+docker tag freqtradeorg/freqtrade:develop freqtrade
+```
+
+To update the image, simply run the above commands again and restart your running container.
+
+#### 2.2. Build the Docker image
 
 ```bash
 cd freqtrade
