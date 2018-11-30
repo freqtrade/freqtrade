@@ -164,7 +164,7 @@ class Edge():
         if pair not in self._cached_pairs:
             logger.warning("cannot find %s in calculated pairs, "
                            "stake_amount of strategy is used instead.", pair)
-            return self.strategy.stake_amount
+            return self.config['stake_amount']
 
         stoploss = self._cached_pairs[pair].stoploss
         available_capital = total_capital * self._capital_percentage

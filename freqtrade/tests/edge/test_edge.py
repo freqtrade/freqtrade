@@ -5,6 +5,7 @@ import pytest
 import logging
 from freqtrade.tests.conftest import get_patched_freqtradebot
 from freqtrade.edge import Edge, PairInfo
+from freqtrade import constants
 from pandas import DataFrame, to_datetime
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
@@ -152,9 +153,9 @@ def test_stoploss(mocker, edge_conf):
     assert edge.stoploss('E/F') == -0.01
 
 
-def test_nonexisting_stoploss(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+def test_nonexisting_stoploss(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
@@ -162,6 +163,39 @@ def test_nonexisting_stoploss(mocker, default_conf):
     ))
 
     assert edge.stoploss('N/O') == -0.1
+
+
+def test_stake_amount(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'E/F': PairInfo(-0.02, 0.66, 3.71, 0.50, 1.71, 10, 60),
+        }
+    ))
+    free = 100
+    total = 100
+    assert edge.stake_amount('E/F', free, total) == 25
+
+    free = 20
+    total = 100
+    assert edge.stake_amount('E/F', free, total) == 20
+
+    free = 0
+    total = 100
+    assert edge.stake_amount('E/F', free, total) == 0
+
+
+def test_nonexisting_stake_amount(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+        }
+    ))
+
+    assert edge.stake_amount('N/O', 1, 2) == constants.UNLIMITED_STAKE_AMOUNT
 
 
 def _validate_ohlc(buy_ohlc_sell_matrice):
