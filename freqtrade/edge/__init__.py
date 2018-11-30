@@ -181,7 +181,12 @@ class Edge():
         return position_size
 
     def stoploss(self, pair: str) -> float:
-        return self._cached_pairs[pair].stoploss
+        if pair in self._cached_pairs:
+            return self._cached_pairs[pair].stoploss
+        else:
+            logger.warning('tried to access stoploss of a non-existing pair, '
+                           'strategy stoploss is returned instead.')
+            return self.strategy.stoploss
 
     def adjust(self, pairs) -> list:
         """
