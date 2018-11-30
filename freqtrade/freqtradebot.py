@@ -25,6 +25,7 @@ from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
+from freqtrade.pairlist.StaticList import StaticList
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
+        self.pairlists = StaticList(self, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -148,11 +150,13 @@ class FreqtradeBot(object):
         try:
             nb_assets = self.config.get('dynamic_whitelist', None)
             # Refresh whitelist based on wallet maintenance
-            sanitized_list = self._refresh_whitelist(
-                self._gen_pair_whitelist(
-                    self.config['stake_currency']
-                ) if nb_assets else self.config['exchange']['pair_whitelist']
-            )
+            self.pairlists.refresh_whitelist()
+            sanitized_list = self.pairlists.whitelist
+            # sanitized_list = self._refresh_whitelist(
+            #     self._gen_pair_whitelist(
+            #         self.config['stake_currency']
+            #     ) if nb_assets else self.lists.get_whitelist()
+            # )
 
             # Keep only the subsets of pairs wanted (up to nb_assets)
             self.active_pair_whitelist = sanitized_list[:nb_assets] if nb_assets else sanitized_list
@@ -226,39 +230,6 @@ class FreqtradeBot(object):
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
         pairs = [s['symbol'] for s in sorted_tickers]
         return pairs
-
-    def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
-        """
-        Check available markets and remove pair from whitelist if necessary
-        :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
-        trade
-        :return: the list of pairs the user wants to trade without the one unavailable or
-        black_listed
-        """
-        sanitized_whitelist = whitelist
-        markets = self.exchange.get_markets()
-
-        markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
-        known_pairs = set()
-        for market in markets:
-            pair = market['symbol']
-            # pair is not int the generated dynamic market, or in the blacklist ... ignore it
-            if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
-                continue
-            # else the pair is valid
-            known_pairs.add(pair)
-            # Market is not active
-            if not market['active']:
-                sanitized_whitelist.remove(pair)
-                logger.info(
-                    'Ignoring %s from whitelist. Market is not active.',
-                    pair
-                )
-
-        # We need to remove pairs that are unknown
-        final_list = [x for x in sanitized_whitelist if x in known_pairs]
-
-        return final_list
 
     def get_target_bid(self, pair: str, ticker: Dict[str, float]) -> float:
         """
