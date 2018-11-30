@@ -1182,6 +1182,27 @@ def test_stoploss_limit_order(default_conf, mocker):
     assert api_mock.create_order.call_args[0][4] == 200
     assert api_mock.create_order.call_args[0][5] == {'stopPrice': 220}
 
+    # test exception handling
+    with pytest.raises(DependencyException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    with pytest.raises(DependencyException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    with pytest.raises(TemporaryError):
+        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    with pytest.raises(OperationalException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
 
 def test_stoploss_limit_order_dry_run(default_conf, mocker):
     api_mock = MagicMock()
