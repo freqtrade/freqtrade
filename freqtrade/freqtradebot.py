@@ -107,7 +107,7 @@ class FreqtradeBot(object):
             })
             logger.info('Changing state to: %s', state.name)
             if state == State.RUNNING:
-                self._startup_messages()
+                self.rpc.startup_messages(self.config)
 
         if state == State.STOPPED:
             time.sleep(1)
@@ -120,38 +120,6 @@ class FreqtradeBot(object):
             self._throttle(func=self._process,
                            min_secs=min_secs)
         return state
-
-    def _startup_messages(self) -> None:
-        if self.config.get('dry_run', False):
-            self.rpc.send_msg({
-                'type': RPCMessageType.WARNING_NOTIFICATION,
-                'status': 'Dry run is enabled. All trades are simulated.'
-            })
-        stake_currency = self.config['stake_currency']
-        stake_amount = self.config['stake_amount']
-        minimal_roi = self.config['minimal_roi']
-        ticker_interval = self.config['ticker_interval']
-        exchange_name = self.config['exchange']['name']
-        strategy_name = self.config.get('strategy', '')
-        self.rpc.send_msg({
-            'type': RPCMessageType.CUSTOM_NOTIFICATION,
-            'status': f'*Exchange:* `{exchange_name}`\n'
-                      f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
-                      f'*Minimum ROI:* `{minimal_roi}`\n'
-                      f'*Ticker Interval:* `{ticker_interval}`\n'
-                      f'*Strategy:* `{strategy_name}`'
-        })
-        if self.config.get('dynamic_whitelist', False):
-            top_pairs = 'top volume ' + str(self.config.get('dynamic_whitelist', 20))
-            specific_pairs = ''
-        else:
-            top_pairs = 'whitelisted'
-            specific_pairs = '\n' + ', '.join(self.config['exchange'].get('pair_whitelist', ''))
-        self.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': f'Searching for {top_pairs} {stake_currency} pairs to buy and sell...'
-                      f'{specific_pairs}'
-        })
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
         """
