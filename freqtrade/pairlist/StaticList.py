@@ -17,7 +17,7 @@ class StaticList(object):
         self._config = config
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
-        self.refresh_whitelist()
+        # self.refresh_whitelist()
 
     @property
     def whitelist(self) -> List[str]:
