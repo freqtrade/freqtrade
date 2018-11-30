@@ -876,6 +876,7 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
 
 def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None:
     patch_RPCManager(mocker)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
     mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
