@@ -6,7 +6,7 @@ from freqtrade.tests.conftest import get_patched_freqtradebot
 
 import pytest
 
-# whitelist, blacklist,
+# whitelist, blacklist
 
 
 @pytest.fixture(scope="function")
@@ -41,7 +41,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, whitelist_conf):
             freqtradebot.config['exchange']['pair_whitelist'])
 
 
-def test_refresh_whitelist(mocker, markets, whitelist_conf):
+def test_refresh_pairlists(mocker, markets, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
@@ -50,6 +50,7 @@ def test_refresh_whitelist(mocker, markets, whitelist_conf):
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
     assert whitelist == freqtradebot.pairlists.whitelist
+    assert whitelist_conf['exchange']['pair_blacklist'] == freqtradebot.pairlists.blacklist
 
 
 def test_refresh_whitelist_dynamic(mocker, markets, tickers, whitelist_conf):

@@ -30,7 +30,7 @@ class StaticList(object):
 
     def refresh_whitelist(self) -> None:
         """
-        Refreshes whitelist.
+        Refreshes whitelist and assigns it to self._whitelist
         """
         self._whitelist = self.validate_whitelist(self._config['exchange']['pair_whitelist'])
 
