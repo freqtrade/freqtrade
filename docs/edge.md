@@ -82,9 +82,7 @@ Edge dictates the stake amount for each trade to the bot according to the follow
 
 Allowed capital at risk is calculated as follows:
 
-**allowed capital at risk** = **total capital** X **allowed risk per trade**
-
-**total capital** is your stake amount.
+**allowed capital at risk** = **capital_available_percentage** X **allowed risk per trade**
 
 **Stoploss** is calculated as described above against historical data.
 
@@ -93,7 +91,7 @@ Your position size then will be:
 **position size** = **allowed capital at risk** / **stoploss**
 
 Example:
-Let's say your stake amount is 3 ETH, you would allow 1% of risk for each trade. thus your allowed capital at risk would be **3 x 0.01 = 0.03 ETH**. Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.03 / 0.02= 1.5ETH**.<br/>
+Let's say the stake currency is ETH and you have 10 ETH on the exchange, your **capital_available_percentage** is 50% and you would allow 1% of risk for each trade. thus your available capital for trading is **10 x 0.5 = 5 ETH** and allowed capital at risk would be **5 x 0.01 = 0.05 ETH**. Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.05 / 0.02= 2.5ETH**.<br/>
 
 ## Configurations
 Edge has following configurations:
@@ -110,6 +108,11 @@ How often should Edge run in seconds? <br/>
 Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy
 Note that it downloads historical data so increasing this number would lead to slowing down the bot<br/>
 (default to 7)
+
+#### capital_available_percentage
+This is the percentage of the total capital on exchange in stake currency. <br/>
+As an example if you have 100 USDT available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 50 USDT for trading and considers it as available capital.
+(default to 0.5)
 
 #### allowed_risk
 Percentage of allowed risk per trade<br/>
