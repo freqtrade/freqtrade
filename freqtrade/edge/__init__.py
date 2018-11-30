@@ -161,6 +161,11 @@ class Edge():
         return True
 
     def stake_amount(self, pair: str, free_capital: float, total_capital: float) -> float:
+        if pair not in self._cached_pairs:
+            logger.warning("cannot find %s in calculated pairs, "
+                           "stake_amount of strategy is used instead.", pair)
+            return self.strategy.stake_amount
+
         stoploss = self._cached_pairs[pair].stoploss
         available_capital = total_capital * self._capital_percentage
         allowed_capital_at_risk = round(available_capital * self._allowed_risk, 15)
