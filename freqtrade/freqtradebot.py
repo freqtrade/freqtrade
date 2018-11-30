@@ -648,7 +648,7 @@ class FreqtradeBot(object):
                     return True
                     break
         else:
-            logger.info('checking sell')
+            logger.debug('checking sell')
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
