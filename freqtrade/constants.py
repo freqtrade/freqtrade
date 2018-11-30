@@ -191,6 +191,7 @@ CONF_SCHEMA = {
                 "process_throttle_secs": {'type': 'integer', 'minimum': 600},
                 "calculate_since_number_of_days": {'type': 'integer'},
                 "allowed_risk": {'type': 'number'},
+                "capital_available_percentage": {'type': 'number'},
                 "stoploss_range_min": {'type': 'number'},
                 "stoploss_range_max": {'type': 'number'},
                 "stoploss_range_step": {'type': 'number'},
