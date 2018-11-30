@@ -12,8 +12,6 @@ from typing import Any, Callable, Dict, List, Optional
 import arrow
 from requests.exceptions import RequestException
 
-from cachetools import TTLCache, cached
-
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
@@ -25,7 +23,8 @@ from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
-from freqtrade.pairlist.StaticList import StaticList
+from freqtrade.pairlist.StaticPairList import StaticPairList
+from freqtrade.pairlist.VolumePairList import VolumePairList
 
 
 logger = logging.getLogger(__name__)
@@ -60,7 +59,11 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
-        self.pairlists = StaticList(self, self.config)
+        if self.config.get('dynamic_whitelist', None):
+            self.pairlists = VolumePairList(self, self.config)
+
+        else:
+            self.pairlists = StaticPairList(self, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -148,18 +151,9 @@ class FreqtradeBot(object):
         """
         state_changed = False
         try:
-            nb_assets = self.config.get('dynamic_whitelist', None)
-            # Refresh whitelist based on wallet maintenance
+            # Refresh whitelist
             self.pairlists.refresh_whitelist()
-            sanitized_list = self.pairlists.whitelist
-            # sanitized_list = self._refresh_whitelist(
-            #     self._gen_pair_whitelist(
-            #         self.config['stake_currency']
-            #     ) if nb_assets else self.lists.get_whitelist()
-            # )
-
-            # Keep only the subsets of pairs wanted (up to nb_assets)
-            self.active_pair_whitelist = sanitized_list[:nb_assets] if nb_assets else sanitized_list
+            self.active_pair_whitelist = self.pairlists.whitelist
 
             # Calculating Edge positiong
             # Should be called before refresh_tickers
@@ -206,30 +200,6 @@ class FreqtradeBot(object):
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
         return state_changed
-
-    @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str = 'quoteVolume') -> List[str]:
-        """
-        Updates the whitelist with with a dynamically generated list
-        :param base_currency: base currency as str
-        :param key: sort key (defaults to 'quoteVolume')
-        :return: List of pairs
-        """
-
-        if not self.exchange.exchange_has('fetchTickers'):
-            raise OperationalException(
-                'Exchange does not support dynamic whitelist.'
-                'Please edit your config and restart the bot'
-            )
-
-        tickers = self.exchange.get_tickers()
-        # check length so that we make sure that '/' is actually in the string
-        tickers = [v for k, v in tickers.items()
-                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
-
-        sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
-        pairs = [s['symbol'] for s in sorted_tickers]
-        return pairs
 
     def get_target_bid(self, pair: str, ticker: Dict[str, float]) -> float:
         """

@@ -10,7 +10,7 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 
-class StaticList(object):
+class StaticPairList(object):
 
     def __init__(self, freqtrade, config: dict) -> None:
         self._freqtrade = freqtrade
@@ -32,9 +32,9 @@ class StaticList(object):
         """
         Refreshes whitelist and assigns it to self._whitelist
         """
-        self._whitelist = self.validate_whitelist(self._config['exchange']['pair_whitelist'])
+        self._whitelist = self._validate_whitelist(self._config['exchange']['pair_whitelist'])
 
-    def validate_whitelist(self, whitelist: List[str]) -> List[str]:
+    def _validate_whitelist(self, whitelist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
         :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
