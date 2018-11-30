@@ -207,7 +207,8 @@ class Exchange(object):
                     f'Pair {pair} not compatible with stake_currency: {stake_cur}')
             if self.markets and pair not in self.markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available at {self.name}')
+                    f'Pair {pair} is not available at {self.name}'
+                    f'Please remove {pair} from your whitelist.')
 
     def validate_timeframes(self, timeframe: List[str]) -> None:
         """
@@ -478,7 +479,9 @@ class Exchange(object):
             # Because some exchange sort Tickers ASC and other DESC.
             # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
             # when GDAX returns a list of tickers DESC (newest first, oldest last)
-            data = sorted(data, key=lambda x: x[0])
+            # Only sort if necessary to save computing time
+            if data and data[0][0] > data[-1][0]:
+                data = sorted(data, key=lambda x: x[0])
 
             # keeping last candle time as last refreshed time of the pair
             if data:
@@ -490,51 +493,6 @@ class Exchange(object):
             logger.debug("done fetching %s ...", pair)
             return pair, data
 
-        except ccxt.NotSupported as e:
-            raise OperationalException(
-                f'Exchange {self._api.name} does not support fetching historical candlestick data.'
-                f'Message: {e}')
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not load ticker history due to {e.__class__.__name__}. Message: {e}')
-        except ccxt.BaseError as e:
-            raise OperationalException(f'Could not fetch ticker data. Msg: {e}')
-
-    @retrier
-    def get_candle_history(self, pair: str, tick_interval: str,
-                           since_ms: Optional[int] = None) -> List[Dict]:
-        try:
-            # last item should be in the time interval [now - tick_interval, now]
-            till_time_ms = arrow.utcnow().shift(
-                            minutes=-constants.TICKER_INTERVAL_MINUTES[tick_interval]
-                        ).timestamp * 1000
-            # it looks as if some exchanges return cached data
-            # and they update it one in several minute, so 10 mins interval
-            # is necessary to skeep downloading of an empty array when all
-            # chached data was already downloaded
-            till_time_ms = min(till_time_ms, arrow.utcnow().shift(minutes=-10).timestamp * 1000)
-
-            data: List[Dict[Any, Any]] = []
-            while not since_ms or since_ms < till_time_ms:
-                data_part = self._api.fetch_ohlcv(pair, timeframe=tick_interval, since=since_ms)
-
-                # Because some exchange sort Tickers ASC and other DESC.
-                # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
-                # when GDAX returns a list of tickers DESC (newest first, oldest last)
-                data_part = sorted(data_part, key=lambda x: x[0])
-
-                if not data_part:
-                    break
-
-                logger.debug('Downloaded data for %s time range [%s, %s]',
-                             pair,
-                             arrow.get(data_part[0][0] / 1000).format(),
-                             arrow.get(data_part[-1][0] / 1000).format())
-
-                data.extend(data_part)
-                since_ms = data[-1][0] + 1
-
-            return data
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching historical candlestick data.'
