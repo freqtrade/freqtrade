@@ -191,11 +191,10 @@ def test_nonexisting_stake_amount(mocker, edge_conf):
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
-            'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+            'E/F': PairInfo(-0.11, 0.66, 3.71, 0.50, 1.71, 10, 60),
         }
     ))
-
-    assert edge.stake_amount('N/O', 1, 2) == constants.UNLIMITED_STAKE_AMOUNT
+    assert edge.stake_amount('N/O', 1, 2) == 0.1
 
 
 def _validate_ohlc(buy_ohlc_sell_matrice):
