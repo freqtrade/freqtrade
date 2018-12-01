@@ -5,7 +5,6 @@ import pytest
 import logging
 from freqtrade.tests.conftest import get_patched_freqtradebot
 from freqtrade.edge import Edge, PairInfo
-from freqtrade import constants
 from pandas import DataFrame, to_datetime
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
