@@ -97,7 +97,7 @@ Bot takes a position of 2.5ETH on XLM/ETH (call it trade 1). Up next, you receiv
 Note that available capital for trading didn’t change for trade 2 even if you had already trade 1. The available capital doesn’t mean the free amount on your wallet.<br/>
 Now you have two trades open. The Bot receives yet another buy signal for another market: **ADA/ETH**. This time the stoploss is calculated at 1%. So your position size is **0.05 / 0.01 = 5ETH**. But there are already 4ETH blocked in two previous trades. So the position size for this third trade would be 1ETH.<br/>
 Available capital doesn’t change before a position is sold. Let’s assume that trade 1 receives a sell signal and it is sold with a profit of 1ETH. Your total capital on exchange would be 11 ETH and the available capital for trading becomes 5.5ETH. <br/>
-So the Bot receives another buy signal for trade 4 with a stoploss at 2% then your position size would be 0.055 / 0.02 = 2.75
+So the Bot receives another buy signal for trade 4 with a stoploss at 2% then your position size would be **0.055 / 0.02 = 2.75**.
 
 ## Configurations
 Edge has following configurations:
