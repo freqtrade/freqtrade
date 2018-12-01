@@ -874,6 +874,100 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert call_args['amount'] == stake_amount / fix_price
 
 
+def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
+                 return_value=limit_buy_order['amount'])
+
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    trade = MagicMock()
+    trade.open_order_id = None
+    trade.stoploss_order_id = None
+    trade.is_open = True
+
+    freqtrade.process_maybe_execute_sell(trade)
+    assert trade.stoploss_order_id == '13434334'
+    assert stoploss_limit.call_count == 1
+    assert trade.is_open is True
+
+
+def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
+                                     markets, limit_buy_order, limit_sell_order) -> None:
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # First case: when stoploss is not yet set but the order is open
+    # should get the stoploss order id immediately
+    # and should return false as no trade actually happened
+    trade = MagicMock()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = None
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss_limit.call_count == 1
+    assert trade.stoploss_order_id == "13434334"
+
+    # Second case: when stoploss is set but it is not yet hit
+    # should do nothing and return false
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    hanging_stoploss_order = MagicMock(return_value={'status': 'open'})
+    mocker.patch('freqtrade.exchange.Exchange.get_order', hanging_stoploss_order)
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert trade.stoploss_order_id == 100
+
+    # Third case: when stoploss is set and it is hit
+    # should unset stoploss_order_id and return true
+    # as a trade actually happened
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+    assert trade
+
+    stoploss_order_hit = MagicMock(return_value={
+        'status': 'closed',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2
+    })
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
+    assert freqtrade.handle_stoploss_on_exchange(trade) is True
+    assert log_has('STOP_LOSS_LIMIT is hit for {}.'.format(trade), caplog.record_tuples)
+    assert trade.stoploss_order_id is None
+    assert trade.is_open is False
+
+
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
@@ -1466,6 +1560,129 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
     } == last_msg
+
+
+def test_execute_sell_with_stoploss_on_exchange(default_conf,
+                                                ticker, fee, ticker_sell_up,
+                                                markets, mocker) -> None:
+
+    default_conf['exchange']['name'] = 'binance'
+    rpc_mock = patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
+        get_ticker=ticker,
+        get_fee=fee,
+        get_markets=markets
+    )
+
+    stoploss_limit = MagicMock(return_value={
+        'id': 123,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+
+    cancel_order = MagicMock(return_value=True)
+
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    assert trade
+
+    freqtrade.process_maybe_execute_sell(trade)
+
+    # Increase the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker_sell_up
+    )
+
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'],
+                           sell_reason=SellType.SELL_SIGNAL)
+
+    trade = Trade.query.first()
+    assert trade
+    assert cancel_order.call_count == 1
+    assert rpc_mock.call_count == 2
+
+
+def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf,
+                                                         ticker, fee,
+                                                         limit_buy_order,
+                                                         markets, mocker) -> None:
+    default_conf['exchange']['name'] = 'binance'
+    rpc_mock = patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
+        get_ticker=ticker,
+        get_fee=fee,
+        get_markets=markets
+    )
+
+    stoploss_limit = MagicMock(return_value={
+        'id': 123,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+    patch_get_signal(freqtrade)
+
+    # Create some test data
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    freqtrade.process_maybe_execute_sell(trade)
+    assert trade
+    assert trade.stoploss_order_id == '123'
+    assert trade.open_order_id is None
+
+    # Assuming stoploss on exchnage is hit
+    # stoploss_order_id should become None
+    # and trade should be sold at the price of stoploss
+    stoploss_limit_executed = MagicMock(return_value={
+        "id": "123",
+        "timestamp": 1542707426845,
+        "datetime": "2018-11-20T09:50:26.845Z",
+        "lastTradeTimestamp": None,
+        "symbol": "BTC/USDT",
+        "type": "stop_loss_limit",
+        "side": "sell",
+        "price": 1.08801,
+        "amount": 90.99181074,
+        "cost": 99.0000000032274,
+        "average": 1.08801,
+        "filled": 90.99181074,
+        "remaining": 0.0,
+        "status": "closed",
+        "fee": None,
+        "trades": None
+    })
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_limit_executed)
+
+    freqtrade.process_maybe_execute_sell(trade)
+    assert trade.stoploss_order_id is None
+    assert trade.is_open is False
+    print(trade.sell_reason)
+    assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
+    assert rpc_mock.call_count == 1
 
 
 def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,

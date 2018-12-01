@@ -13,7 +13,7 @@ DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
-REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss']
+REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 
 
@@ -109,9 +109,10 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES}
+                'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'stoploss_on_exchange': {'type': 'boolean'}
             },
-            'required': ['buy', 'sell', 'stoploss']
+            'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},

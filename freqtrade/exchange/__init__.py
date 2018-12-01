@@ -228,6 +228,12 @@ class Exchange(object):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
 
+        if order_types.get('stoploss_on_exchange'):
+            if self.name is not 'Binance':
+                raise OperationalException(
+                    'On exchange stoploss is not supported for %s.' % self.name
+                )
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.
@@ -331,6 +337,61 @@ class Exchange(object):
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
+
+    def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
+        """
+        creates a stoploss limit order.
+        NOTICE: it is not supported by all exchanges. only binance is tested for now.
+        """
+
+        # Set the precision for amount and price(rate) as accepted by the exchange
+        amount = self.symbol_amount_prec(pair, amount)
+        rate = self.symbol_price_prec(pair, rate)
+        stop_price = self.symbol_price_prec(pair, stop_price)
+
+        # Ensure rate is less than stop price
+        if stop_price <= rate:
+            raise OperationalException(
+                'In stoploss limit order, stop price should be more than limit price')
+
+        if self._conf['dry_run']:
+            order_id = f'dry_run_buy_{randint(0, 10**6)}'
+            self._dry_run_open_orders[order_id] = {
+                'info': {},
+                'id': order_id,
+                'pair': pair,
+                'price': stop_price,
+                'amount': amount,
+                'type': 'stop_loss_limit',
+                'side': 'sell',
+                'remaining': amount,
+                'datetime': arrow.utcnow().isoformat(),
+                'status': 'open',
+                'fee': None
+            }
+            return self._dry_run_open_orders[order_id]
+
+        try:
+            return self._api.create_order(pair, 'stop_loss_limit', 'sell',
+                                          amount, rate, {'stopPrice': stop_price})
+
+        except ccxt.InsufficientFunds as e:
+            raise DependencyException(
+                f'Insufficient funds to place stoploss limit order on market {pair}. '
+                f'Tried to put a stoploss amount {amount} with '
+                f'stop {stop_price} and limit {rate} (total {rate*amount}).'
+                f'Message: {e}')
+        except ccxt.InvalidOrder as e:
+            raise DependencyException(
+                f'Could not place stoploss limit order on market {pair}.'
+                f'Tried to place stoploss amount {amount} with '
+                f'stop {stop_price} and limit {rate} (total {rate*amount}).'
+                f'Message: {e}')
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not place stoploss limit order due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
