@@ -53,7 +53,7 @@ class Edge():
 
         self.edge_config = self.config.get('edge', {})
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
-        self._final: list = []
+        self._final_pairs: list = []
 
         # checking max_open_trades. it should be -1 as with Edge
         # the number of trades is determined by position size
@@ -199,14 +199,14 @@ class Edge():
                     pair in pairs:
                 final.append(pair)
 
-        if self._final != final:
-            self._final = final
-            if self._final:
-                logger.info('Edge validated only %s', self._final)
+        if self._final_pairs != final:
+            self._final_pairs = final
+            if self._final_pairs:
+                logger.info('Edge validated only %s', self._final_pairs)
             else:
                 logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
 
-        return self._final
+        return self._final_pairs
 
     def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
         """
