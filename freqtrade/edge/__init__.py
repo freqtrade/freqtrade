@@ -161,23 +161,19 @@ class Edge():
         return True
 
     def stake_amount(self, pair: str, free_capital: float, total_capital: float) -> float:
-        if pair not in self._cached_pairs:
-            logger.warning("cannot find %s in calculated pairs, "
-                           "stake_amount of strategy is used instead.", pair)
-            return self.config['stake_amount']
-
-        stoploss = self._cached_pairs[pair].stoploss
+        stoploss = self.stoploss(pair)
         available_capital = total_capital * self._capital_percentage
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
         position_size = min(max_position_size, free_capital)
-        logger.info(
-            'winrate: %s, expectancy: %s, position size: %s, pair: %s,'
-            ' stoploss: %s, available capital: %s.',
-            self._cached_pairs[pair].winrate,
-            self._cached_pairs[pair].expectancy,
-            position_size, pair, stoploss, available_capital
-        )
+        if pair in self._cached_pairs:
+            logger.info(
+                'winrate: %s, expectancy: %s, position size: %s, pair: %s,'
+                ' stoploss: %s, available capital: %s.',
+                self._cached_pairs[pair].winrate,
+                self._cached_pairs[pair].expectancy,
+                position_size, pair, stoploss, available_capital
+            )
         return round(position_size, 15)
 
     def stoploss(self, pair: str) -> float:
