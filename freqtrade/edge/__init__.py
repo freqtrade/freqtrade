@@ -168,8 +168,8 @@ class Edge():
 
         stoploss = self._cached_pairs[pair].stoploss
         available_capital = total_capital * self._capital_percentage
-        allowed_capital_at_risk = round(available_capital * self._allowed_risk, 15)
-        max_position_size = abs(round((allowed_capital_at_risk / stoploss), 15))
+        allowed_capital_at_risk = available_capital * self._allowed_risk
+        max_position_size = abs(allowed_capital_at_risk / stoploss)
         position_size = min(max_position_size, free_capital)
         logger.info(
             'winrate: %s, expectancy: %s, position size: %s, pair: %s,'
@@ -178,7 +178,7 @@ class Edge():
             self._cached_pairs[pair].expectancy,
             position_size, pair, stoploss, available_capital
         )
-        return position_size
+        return round(position_size, 15)
 
     def stoploss(self, pair: str) -> float:
         if pair in self._cached_pairs:
