@@ -629,7 +629,7 @@ class FreqtradeBot(object):
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
-        logger.info('Found no sell signals for whitelisted currencies. Trying again..')
+        logger.debug('Found no sell signal for %s.', trade)
         return False
 
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
