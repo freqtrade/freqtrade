@@ -200,7 +200,8 @@ CONF_SCHEMA = {
                 "min_trade_number": {'type': 'number'},
                 "max_trade_duration_minute": {'type': 'integer'},
                 "remove_pumps": {'type': 'boolean'}
-            }
+            },
+            'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
     },
     'anyOf': [
