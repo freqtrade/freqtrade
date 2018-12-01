@@ -798,8 +798,11 @@ class FreqtradeBot(object):
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
 
-        if self.config.get('dry_run', False) and sell_type == 'stoploss' and self.strategy.order_types['stoploss_on_exchange']:
-            limit = trade.stop_loss
+        # if stoploss is on exchange and we are on dry_run mode,
+        # we consider the sell price stop price
+        if self.config.get('dry_run', False) and sell_type == 'stoploss' \
+           and self.strategy.order_types['stoploss_on_exchange']:
+                limit = trade.stop_loss
 
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:

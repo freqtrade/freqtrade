@@ -1516,8 +1516,9 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
     } == last_msg
 
 
-def test_execute_sell_down_live(default_conf, ticker, fee,
-                                ticker_sell_down, markets, mocker) -> None:
+def test_execute_sell_down(default_conf, ticker, fee,
+                           ticker_sell_down, markets, mocker) -> None:
+
     rpc_mock = patch_RPCManager(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1540,7 +1541,7 @@ def test_execute_sell_down_live(default_conf, ticker, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker_sell_down
     )
-    default_conf['dry_run'] = False
+
     freqtrade.execute_sell(trade=trade, limit=ticker_sell_down()['bid'],
                            sell_reason=SellType.STOP_LOSS)
 
