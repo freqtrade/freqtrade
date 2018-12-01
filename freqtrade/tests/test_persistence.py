@@ -426,6 +426,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 max_rate FLOAT,
                                 sell_reason VARCHAR,
                                 strategy VARCHAR,
+                                ticker_interval INTEGER,
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
@@ -471,6 +472,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.sell_reason is None
     assert trade.strategy is None
     assert trade.ticker_interval is None
+    assert trade.stoploss_order_id is None
     assert log_has("trying trades_bak1", caplog.record_tuples)
     assert log_has("trying trades_bak2", caplog.record_tuples)
     assert log_has("Running database migration - backup available as trades_bak2",

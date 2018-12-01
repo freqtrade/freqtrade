@@ -20,7 +20,7 @@ from skopt.space import Dimension
 
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.optimize import load_data
+from freqtrade.optimize import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers import HyperOptResolver
 
@@ -167,11 +167,14 @@ class Hyperopt(Backtesting):
             self.strategy.stoploss = params['stoploss']
 
         processed = load(TICKERDATA_PICKLE)
+        min_date, max_date = get_timeframe(processed)
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
                 'processed': processed,
                 'position_stacking': self.config.get('position_stacking', True),
+                'start_date': min_date,
+                'end_date': max_date,
             }
         )
         result_explanation = self.format_results(results)

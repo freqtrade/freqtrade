@@ -362,16 +362,39 @@ def test_validate_order_types(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    default_conf['order_types'] = {'buy': 'limit', 'sell': 'limit', 'stoploss': 'market'}
+    mocker.patch('freqtrade.exchange.Exchange.name', 'Bittrex')
+    default_conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False
+    }
+
     Exchange(default_conf)
 
     type(api_mock).has = PropertyMock(return_value={'createMarketOrder': False})
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
 
-    default_conf['order_types'] = {'buy': 'limit', 'sell': 'limit', 'stoploss': 'market'}
+    default_conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': 'false'
+    }
 
     with pytest.raises(OperationalException,
                        match=r'Exchange .* does not support market orders.'):
+        Exchange(default_conf)
+
+    default_conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True
+    }
+
+    with pytest.raises(OperationalException,
+                       match=r'On exchange stoploss is not supported for .*'):
         Exchange(default_conf)
 
 
@@ -1122,3 +1145,85 @@ def test_get_fee(default_conf, mocker):
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock,
                            'get_fee', 'calculate_fee')
+
+
+def test_stoploss_limit_order(default_conf, mocker):
+    api_mock = MagicMock()
+    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_type = 'stop_loss_limit'
+
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+
+    default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
+
+    with pytest.raises(OperationalException):
+        order = exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=190, rate=200)
+
+    api_mock.create_order.reset_mock()
+
+    order = exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
+    assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'sell'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] == 200
+    assert api_mock.create_order.call_args[0][5] == {'stopPrice': 220}
+
+    # test exception handling
+    with pytest.raises(DependencyException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    with pytest.raises(DependencyException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    with pytest.raises(TemporaryError):
+        api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    with pytest.raises(OperationalException):
+        api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+
+def test_stoploss_limit_order_dry_run(default_conf, mocker):
+    api_mock = MagicMock()
+    order_type = 'stop_loss_limit'
+    default_conf['dry_run'] = True
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
+
+    with pytest.raises(OperationalException):
+        order = exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=190, rate=200)
+
+    api_mock.create_order.reset_mock()
+
+    order = exchange.stoploss_limit(pair='ETH/BTC', amount=1, stop_price=220, rate=200)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert 'type' in order
+
+    assert order['type'] == order_type
+    assert order['price'] == 220
+    assert order['amount'] == 1

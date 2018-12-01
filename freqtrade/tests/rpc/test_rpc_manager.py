@@ -113,3 +113,23 @@ def test_init_webhook_enabled(mocker, default_conf, caplog) -> None:
     assert log_has('Enabling rpc.webhook ...', caplog.record_tuples)
     assert len(rpc_manager.registered_modules) == 1
     assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
+
+
+def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
+    telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc_manager = RPCManager(freqtradebot)
+    rpc_manager.startup_messages(default_conf)
+
+    assert telegram_mock.call_count == 3
+    assert "*Exchange:* `bittrex`" in telegram_mock.call_args_list[1][0][0]['status']
+
+    telegram_mock.reset_mock()
+    default_conf['dry_run'] = True
+    default_conf['dynamic_whitelist'] = 20
+
+    rpc_manager.startup_messages(default_conf)
+    assert telegram_mock.call_count == 3
+    assert "Dry run is enabled." in telegram_mock.call_args_list[0][0][0]['status']
