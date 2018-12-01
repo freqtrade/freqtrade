@@ -54,6 +54,7 @@ class FreqtradeBot(object):
         # Init objects
         self.config = config
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
+
         self.rpc: RPCManager = RPCManager(self)
         self.persistence = None
         self.exchange = Exchange(self.config)
@@ -455,6 +456,7 @@ class FreqtradeBot(object):
             'stake_currency': stake_currency,
             'fiat_currency': fiat_currency
         })
+
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
@@ -471,6 +473,7 @@ class FreqtradeBot(object):
             strategy=self.strategy.get_strategy_name(),
             ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
+
         Trade.session.add(trade)
         Trade.session.flush()
 
@@ -518,6 +521,12 @@ class FreqtradeBot(object):
                     logger.warning("could not update trade amount: %s", exception)
 
                 trade.update(order)
+
+            if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
+                result = self.handle_stoploss_on_exchange(trade)
+                if result:
+                    self.wallets.update()
+                    return result
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
@@ -622,6 +631,47 @@ class FreqtradeBot(object):
 
         logger.info('Found no sell signals for whitelisted currencies. Trying again..')
         return False
+
+    def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
+        """
+        Check if trade is fulfilled in which case the stoploss
+        on exchange should be added immediately if stoploss on exchnage
+        is enabled.
+        """
+
+        result = False
+
+        # If trade is open and the buy order is fulfilled but there is no stoploss,
+        # then we add a stoploss on exchange
+        if not trade.open_order_id and not trade.stoploss_order_id:
+            if self.edge:
+                stoploss = self.edge.stoploss(pair=trade.pair)
+            else:
+                stoploss = self.strategy.stoploss
+
+            stop_price = trade.open_rate * (1 + stoploss)
+
+            # limit price should be less than stop price.
+            # 0.98 is arbitrary here.
+            limit_price = stop_price * 0.98
+
+            stoploss_order_id = self.exchange.stoploss_limit(
+                pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
+            )['id']
+            trade.stoploss_order_id = str(stoploss_order_id)
+
+        # Or the trade open and there is already a stoploss on exchange.
+        # so we check if it is hit ...
+        elif trade.stoploss_order_id:
+            logger.debug('Handling stoploss on exchange %s ...', trade)
+            order = self.exchange.get_order(trade.stoploss_order_id, trade.pair)
+            if order['status'] == 'closed':
+                trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+                trade.update(order)
+                result = True
+            else:
+                result = False
+        return result
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:
@@ -747,6 +797,11 @@ class FreqtradeBot(object):
         sell_type = 'sell'
         if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
+
+        # First cancelling stoploss on exchange ...
+        if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
+            self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),
                                       ordertype=self.strategy.order_types[sell_type],
