@@ -223,9 +223,13 @@ class Edge():
         # 0.05% is 0.0005
         # fee = 0.001
 
+        # we set stake amount to an arbitraty amount.
+        # as it doesn't change the calculation.
+        # all returned values are relative. they are percentages.
         stake = 0.015
-        fee = self.fee
 
+
+        fee = self.fee
         open_fee = fee / 2
         close_fee = fee / 2
 
