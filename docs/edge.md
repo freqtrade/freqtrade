@@ -117,7 +117,7 @@ Note that it downloads historical data so increasing this number would lead to s
 
 #### capital_available_percentage
 This is the percentage of the total capital on exchange in stake currency. <br/>
-As an example if you have 100 USDT available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 50 USDT for trading and considers it as available capital.<br/>
+As an example if you have 10 ETH available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers it as available capital.<br/>
 (default to 0.5)
 
 #### allowed_risk
