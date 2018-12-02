@@ -28,6 +28,16 @@ function updateenv () {
     pip3 install --quiet --upgrade pip
     pip3 install --quiet -r requirements.txt --upgrade
     pip3 install --quiet -r requirements.txt
+
+    read -p "Do you want to install dependencies for dev [Y/N]? "
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        pip3 install --quiet -r requirements-dev.txt --upgrade
+        pip3 install --quiet -r requirements-dev.txt
+    else
+        echo "Dev dependencies ignored."
+    fi
+
     pip3 install --quiet -e .
     echo "pip3 install completed"
     echo

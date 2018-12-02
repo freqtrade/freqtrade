@@ -13,18 +13,11 @@ scipy==1.1.0
 jsonschema==2.6.0
 numpy==1.15.4
 TA-Lib==0.4.17
-pytest==4.0.2
-pytest-mock==1.10.0
-pytest-asyncio==0.9.0
-pytest-cov==2.6.0
 tabulate==0.8.2
 coinmarketcap==5.0.3
 
 # Required for hyperopt
 scikit-optimize==0.5.2
-
-# Required for plotting data
-#plotly==3.1.1
 
 # find first, C search in arrays
 py_find_1st==1.1.3
