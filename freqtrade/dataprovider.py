@@ -5,6 +5,7 @@ including Klines, tickers, historic data
 Common Interface for bot and strategy to access data.
 """
 import logging
+from typing import List, Dict
 
 from pandas import DataFrame
 
@@ -19,13 +20,13 @@ class DataProvider(object):
         self._config = config
         self._exchange = exchange
 
-    def refresh() -> None:
+    def refresh(self, pairlist: List[str]) -> None:
         """
         Refresh data, called with each cycle
         """
-        pass
+        self._exchange.refresh_tickers(pairlist, self._config['ticker_interval'])
 
-    def ohlcv(self, pair: str) -> DataFrame:
+    def ohlcv(self, pair: str) -> List[str]:
         """
         get ohlcv data for the given pair as DataFrame
         """
