@@ -6,6 +6,8 @@ Common Interface for bot and strategy to access data.
 """
 import logging
 
+from pandas import DataFrame
+
 from freqtrade.exchange import Exchange
 
 logger = logging.getLogger(__name__)
@@ -13,8 +15,9 @@ logger = logging.getLogger(__name__)
 
 class DataProvider(object):
 
-    def __init__(self, exchange: Exchange) -> None:
-        pass
+    def __init__(self, config: dict, exchange: Exchange) -> None:
+        self._config = config
+        self._exchange = exchange
 
     def refresh() -> None:
         """
@@ -22,24 +25,31 @@ class DataProvider(object):
         """
         pass
 
-    def kline(pair: str):
+    def ohlcv(self, pair: str) -> DataFrame:
         """
-        get ohlcv data for the given pair
+        get ohlcv data for the given pair as DataFrame
         """
-        pass
+        # TODO: Should not be stored in exchange but in this class
+        return self._exchange.klines.get(pair)
 
-    def historic_kline(pair: str):
+    def historic_ohlcv(self, pair: str) -> DataFrame:
         """
         get historic ohlcv data stored for backtesting
         """
         pass
 
-    def ticker(pair: str):
+    def ticker(self, pair: str):
+        """
+        Return last ticker data
+        """
         pass
 
-    def orderbook(pair: str, max: int):
+    def orderbook(self, pair: str, max: int):
+        """
+        return latest orderbook data
+        """
         pass
 
-    def balance(pair):
+    def balance(self, pair):
         # TODO: maybe use wallet directly??
         pass
