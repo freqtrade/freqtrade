@@ -31,6 +31,7 @@ class DataProvider(object):
         get ohlcv data for the given pair as DataFrame
         """
         # TODO: Should not be stored in exchange but in this class
+        # TODO: should return dataframe, not list
         return self._exchange.klines.get(pair)
 
     def historic_ohlcv(self, pair: str) -> DataFrame:
@@ -54,3 +55,11 @@ class DataProvider(object):
     def balance(self, pair):
         # TODO: maybe use wallet directly??
         pass
+
+    @property
+    def runmode(self) -> str:
+        """
+        Get runmode of the bot
+        can be "live", "dry-run", "backtest", "edgecli", "hyperopt".
+        """
+        return self._config.get['runmode']
