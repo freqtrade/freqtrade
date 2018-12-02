@@ -179,6 +179,10 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     strategy.process_only_new_candles = True
 
     ret = strategy.analyze_ticker(ticker_history, {'pair': 'ETH/BTC'})
+    assert 'high' in ret.columns
+    assert 'low' in ret.columns
+    assert 'close' in ret.columns
+    assert isinstance(ret, DataFrame)
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
@@ -193,8 +197,8 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
     # only skipped analyze adds buy and sell columns, otherwise it's all mocked
-    assert 'buy' in ret
-    assert 'sell' in ret
+    assert 'buy' in ret.columns
+    assert 'sell' in ret.columns
     assert ret['buy'].sum() == 0
     assert ret['sell'].sum() == 0
     assert not log_has('TA Analysis Launched', caplog.record_tuples)
