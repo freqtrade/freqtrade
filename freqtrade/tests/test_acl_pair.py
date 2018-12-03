@@ -50,7 +50,7 @@ def test_refresh_pairlists(mocker, markets, whitelist_conf):
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
-    assert set(whitelist)== set(freqtradebot.pairlists.whitelist)
+    assert set(whitelist) == set(freqtradebot.pairlists.whitelist)
     assert whitelist_conf['exchange']['pair_blacklist'] == freqtradebot.pairlists.blacklist
 
 

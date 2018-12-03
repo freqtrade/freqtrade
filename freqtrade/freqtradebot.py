@@ -60,10 +60,10 @@ class FreqtradeBot(object):
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
         if self.config.get('dynamic_whitelist', None):
-            self.pairlists = VolumePairList(self, self.config)
+            self.pairlists: StaticPairList = VolumePairList(self, self.config)
 
         else:
-            self.pairlists = StaticPairList(self, self.config)
+            self.pairlists: StaticPairList = StaticPairList(self, self.config)
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
