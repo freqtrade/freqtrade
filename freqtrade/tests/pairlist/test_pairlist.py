@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock
 
 from freqtrade import OperationalException
+from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.tests.conftest import get_patched_freqtradebot
 import pytest
 
@@ -22,6 +23,9 @@ def whitelist_conf(default_conf):
     default_conf['exchange']['pair_blacklist'] = [
         'BLK/BTC'
     ]
+    default_conf['whitelist'] = {'method': 'StaticPairList',
+                                 'config': {'number_assets': 3}
+                                 }
 
     return default_conf
 
@@ -118,3 +122,11 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
 
     with pytest.raises(OperationalException):
         get_patched_freqtradebot(mocker, default_conf)
+
+
+@pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
+def test_pairlist_class(mocker, whitelist_conf, pairlist):
+    whitelist_conf['whitelist']['method'] = pairlist
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    assert freqtrade.pairlists.name == pairlist
+    # TODO: add more tests
