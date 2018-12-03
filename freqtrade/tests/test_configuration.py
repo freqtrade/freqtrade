@@ -119,7 +119,8 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('dynamic_whitelist') == 10
+    assert validated_conf.get('whitelist', {}).get('method') == 'VolumePairList'
+    assert validated_conf.get('whitelist', {}).get('config').get('number_assets') == 10
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
@@ -194,8 +195,9 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     configuration.get_config()
 
     assert log_has(
-        'Parameter --dynamic-whitelist detected. '
-        'Using dynamically generated whitelist. '
+        'Parameter --dynamic-whitelist has been deprecated, '
+        'and will be completely replaced by the whitelist dict in the future. '
+        'For now: using dynamically generated whitelist based on VolumePairList. '
         '(not applicable with Backtesting and Hyperopt)',
         caplog.record_tuples
     )

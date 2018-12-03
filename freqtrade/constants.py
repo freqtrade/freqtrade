@@ -124,6 +124,14 @@ CONF_SCHEMA = {
                 'ignore_roi_if_buy_signal_true': {'type': 'boolean'}
             }
         },
+        'whitelist': {
+            'type': 'object',
+            'properties': {
+                'method': {'type': 'string'},
+                'config': {'type': 'object'}
+            },
+            'required': ['method']
+        },
         'telegram': {
             'type': 'object',
             'properties': {

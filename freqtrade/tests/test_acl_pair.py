@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from freqtrade import OperationalException
 from freqtrade.tests.conftest import get_patched_freqtradebot
-
 import pytest
 
 # whitelist, blacklist
@@ -109,9 +108,11 @@ def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    default_conf['whitelist'] = {'method': 'VolumePairList',
+                                 'config': {'number_assets': 10}
+                                 }
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=False))
 
     with pytest.raises(OperationalException):
-        freqtrade._gen_pair_whitelist(base_currency='BTC')
+        get_patched_freqtradebot(mocker, default_conf)
