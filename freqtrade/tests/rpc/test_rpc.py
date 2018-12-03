@@ -655,7 +655,7 @@ def test_rpc_whitelist(mocker, default_conf) -> None:
     freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_whitelist()
-    assert ret['method'] == 'static'
+    assert ret['method'] == 'StaticPairList'
     assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
 
 

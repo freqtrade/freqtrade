@@ -217,7 +217,7 @@ def test_edge_called_in_process(mocker, edge_conf) -> None:
 
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(edge_conf)
-    freqtrade._refresh_whitelist = _refresh_whitelist
+    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     patch_get_signal(freqtrade)
     freqtrade._process()
     assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']

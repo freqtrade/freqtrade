@@ -1021,7 +1021,7 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
 
     telegram._whitelist(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert ('Using static whitelist with `4` pairs \n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
+    assert ('Using whitelist `StaticPairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
             in msg_mock.call_args_list[0][0][0])
 
 
@@ -1043,7 +1043,7 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
 
     telegram._whitelist(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
-    assert ('Dynamic whitelist with `4` pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
+    assert ('Using whitelist `VolumePairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
             in msg_mock.call_args_list[0][0][0])
 
 
