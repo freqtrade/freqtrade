@@ -54,14 +54,16 @@ def test_refresh_pairlists(mocker, markets, whitelist_conf):
 
 
 def test_refresh_whitelist_dynamic(mocker, markets, tickers, whitelist_conf):
-    whitelist_conf['dynamic_whitelist'] = 5
-    freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
+    whitelist_conf['whitelist'] = {'method': 'VolumePairList',
+                                   'config': {'number_assets': 5}
+                                   }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_markets=markets,
         get_tickers=tickers,
         exchange_has=MagicMock(return_value=True)
     )
+    freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = ['ETH/BTC', 'TKN/BTC']

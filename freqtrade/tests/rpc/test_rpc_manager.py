@@ -128,7 +128,9 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
 
     telegram_mock.reset_mock()
     default_conf['dry_run'] = True
-    default_conf['dynamic_whitelist'] = 20
+    default_conf['whitelist'] = {'method': 'VolumePairList',
+                                 'config': {'number_assets': 20}
+                                 }
 
     rpc_manager.startup_messages(default_conf)
     assert telegram_mock.call_count == 3

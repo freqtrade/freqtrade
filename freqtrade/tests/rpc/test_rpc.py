@@ -662,12 +662,15 @@ def test_rpc_whitelist(mocker, default_conf) -> None:
 def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     patch_coinmarketcap(mocker)
     patch_exchange(mocker)
-    default_conf['dynamic_whitelist'] = 4
+    default_conf['whitelist'] = {'method': 'VolumePairList',
+                                 'config': {'number_assets': 4}
+                                 }
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_whitelist()
-    assert ret['method'] == 4
+    assert ret['method'] == 'VolumePairList'
+    assert ret['length'] == 4
     assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']

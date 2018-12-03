@@ -52,7 +52,7 @@ class RPCManager(object):
             logger.debug('Forwarding message to rpc.%s', mod.name)
             mod.send_msg(msg)
 
-    def startup_messages(self, config) -> None:
+    def startup_messages(self, config, pairlist) -> None:
         if config.get('dry_run', False):
             self.send_msg({
                 'type': RPCMessageType.WARNING_NOTIFICATION,
@@ -72,14 +72,8 @@ class RPCManager(object):
                       f'*Ticker Interval:* `{ticker_interval}`\n'
                       f'*Strategy:* `{strategy_name}`'
         })
-        if config.get('dynamic_whitelist', False):
-            top_pairs = 'top volume ' + str(config.get('dynamic_whitelist', 20))
-            specific_pairs = ''
-        else:
-            top_pairs = 'whitelisted'
-            specific_pairs = '\n' + ', '.join(config['exchange'].get('pair_whitelist', ''))
         self.send_msg({
             'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': f'Searching for {top_pairs} {stake_currency} pairs to buy and sell...'
-                      f'{specific_pairs}'
+            'status': f'Searching for {stake_currency} pairs to buy and sell '
+                      f'based on {pairlist.short_desc()}'
         })

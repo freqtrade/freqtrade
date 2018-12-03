@@ -446,7 +446,8 @@ class RPC(object):
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
-        res = {'method': self._freqtrade.config.get('dynamic_whitelist', 0) or 'static',
+        res = {'method': self._freqtrade.pairlists.name,
+               'length': len(self._freqtrade.pairlists.whitelist),
                'whitelist': self._freqtrade.active_pair_whitelist
                }
         return res

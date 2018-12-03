@@ -21,7 +21,7 @@ class VolumePairList(StaticPairList):
         self._whitelistconf = self._config.get('whitelist', {}).get('config')
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
-        self._number_pairs = self._whitelistconf.get('number_assets')
+        self._number_pairs = self._whitelistconf['number_assets']
         if not self._freqtrade.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
                 'Exchange does not support dynamic whitelist.'
@@ -29,14 +29,12 @@ class VolumePairList(StaticPairList):
             )
         # self.refresh_whitelist()
 
-    @property
-    def whitelist(self) -> List[str]:
-        """ Contains the current whitelist """
-        return self._whitelist
-
-    @property
-    def blacklist(self) -> List[str]:
-        return self._blacklist
+    def short_desc(self) -> str:
+        """
+        Short whitelist method description - used for startup-messages
+        -> Please overwrite in subclasses
+        """
+        return f"{self.name} - top {self._whitelistconf['number_assets']} volume pairs."
 
     def refresh_whitelist(self) -> None:
         """

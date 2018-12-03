@@ -447,10 +447,8 @@ class Telegram(RPC):
         """
         try:
             whitelist = self._rpc_whitelist()
-            if whitelist['method'] == 'static':
-                message = f"Using static whitelist with `{len(whitelist['whitelist'])}` pairs \n"
-            else:
-                message = f"Dynamic whitelist with `{whitelist['method']}` pairs\n"
+
+            message = f"Using whitelist `{whitelist['method']}` with {whitelist['length']} pairs\n"
             message += f"`{', '.join(whitelist['whitelist'])}`"
 
             logger.debug(message)

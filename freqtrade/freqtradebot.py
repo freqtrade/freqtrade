@@ -112,7 +112,7 @@ class FreqtradeBot(object):
             })
             logger.info('Changing state to: %s', state.name)
             if state == State.RUNNING:
-                self.rpc.startup_messages(self.config)
+                self.rpc.startup_messages(self.config, self.pairlists)
 
         if state == State.STOPPED:
             time.sleep(1)

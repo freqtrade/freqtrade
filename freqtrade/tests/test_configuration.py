@@ -102,7 +102,7 @@ def test_load_config(default_conf, mocker) -> None:
 
     assert validated_conf.get('strategy') == 'DefaultStrategy'
     assert validated_conf.get('strategy_path') is None
-    assert 'dynamic_whitelist' not in validated_conf
+    assert 'edge' not in validated_conf
 
 
 def test_load_config_with_params(default_conf, mocker) -> None:
@@ -133,7 +133,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     ))
 
     arglist = [
-        '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -152,7 +151,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     ))
 
     arglist = [
-        '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]

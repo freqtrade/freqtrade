@@ -20,13 +20,35 @@ class StaticPairList(object):
         # self.refresh_whitelist()
 
     @property
+    def name(self) -> str:
+        """
+        Gets name of the class
+        -> no need to overwrite in subclasses
+        """
+        return self.__class__.__name__
+
+    @property
     def whitelist(self) -> List[str]:
-        """ Contains the current whitelist """
+        """
+        Has the current whitelist
+        -> no need to overwrite in subclasses
+        """
         return self._whitelist
 
     @property
     def blacklist(self) -> List[str]:
+        """
+        Has the current blacklist
+        -> no need to overwrite in subclasses
+        """
         return self._blacklist
+
+    def short_desc(self) -> str:
+        """
+        Short whitelist method description - used for startup-messages
+        -> Please overwrite in subclasses
+        """
+        return f"{self.name}: {self.whitelist}"
 
     def refresh_whitelist(self) -> None:
         """

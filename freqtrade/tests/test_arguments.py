@@ -17,7 +17,8 @@ def test_parse_args_none() -> None:
 def test_parse_args_defaults() -> None:
     args = Arguments([], '').get_parsed_arg()
     assert args.config == 'config.json'
-    assert args.dynamic_whitelist is None
+    assert args.strategy_path is None
+    assert args.datadir is None
     assert args.loglevel == 0
 
 
