@@ -1513,6 +1513,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, markets, moc
         'profit_percent': 0.0611052,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
+        'sell_reason': SellType.ROI.value
     } == last_msg
 
 
@@ -1559,6 +1560,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, markets,
         'profit_percent': -0.05478342,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
+        'sell_reason': SellType.STOP_LOSS.value
     } == last_msg
 
 
@@ -1613,6 +1615,8 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
         'profit_percent': -0.01493766,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
+        'sell_reason': SellType.STOP_LOSS.value
+
     } == last_msg
 
 
@@ -1781,6 +1785,8 @@ def test_execute_sell_without_conf_sell_up(default_conf, ticker, fee,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
         'profit_percent': 0.0611052,
+        'sell_reason': SellType.ROI.value
+
     } == last_msg
 
 
@@ -1827,6 +1833,7 @@ def test_execute_sell_without_conf_sell_down(default_conf, ticker, fee,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
         'profit_percent': -0.05478342,
+        'sell_reason': SellType.STOP_LOSS.value
     } == last_msg
 
 
