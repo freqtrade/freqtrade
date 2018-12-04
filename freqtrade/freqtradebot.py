@@ -305,7 +305,7 @@ class FreqtradeBot(object):
             return self.edge.stake_amount(
                 pair,
                 self.wallets.get_free(self.config['stake_currency']),
-                self.wallets.get_total(self.config['stake_currency']) +
+                self.wallets.get_total(self.config['stake_currency']),
                 Trade.total_open_trades_stakes()
             )
         else:
