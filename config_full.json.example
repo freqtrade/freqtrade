@@ -39,6 +39,12 @@
         "stoploss": "market",
         "stoploss_on_exchange": "false"
     },
+    "whitelist": {
+        "method": "VolumePairList",
+        "config": {
+            "number_assets": 20
+        }
+    },
     "exchange": {
         "name": "bittrex",
         "key": "your_exchange_key",
