@@ -834,6 +834,7 @@ class FreqtradeBot(object):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_percent': profit_percent,
+            'sell_reason': sell_reason.value
         }
 
         # For regular case, when the configuration exists
