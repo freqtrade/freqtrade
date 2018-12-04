@@ -56,7 +56,7 @@ class VolumePairList(StaticPairList):
         self._whitelist = self._validate_whitelist(pairs)[:self._number_pairs]
 
     @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str = 'quoteVolume') -> List[str]:
+    def _gen_pair_whitelist(self, base_currency: str, key: str) -> List[str]:
         """
         Updates the whitelist with with a dynamically generated list
         :param base_currency: base currency as str
