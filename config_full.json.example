@@ -42,7 +42,8 @@
     "whitelist": {
         "method": "VolumePairList",
         "config": {
-            "number_assets": 20
+            "number_assets": 20,
+            "sort_key": "quoteVolume"
         }
     },
     "exchange": {

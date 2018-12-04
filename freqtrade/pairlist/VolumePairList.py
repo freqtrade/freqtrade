@@ -12,6 +12,8 @@ from freqtrade.pairlist.StaticPairList import StaticPairList
 from freqtrade import OperationalException
 logger = logging.getLogger(__name__)
 
+SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
+
 
 class VolumePairList(StaticPairList):
 
@@ -22,12 +24,20 @@ class VolumePairList(StaticPairList):
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
         self._number_pairs = self._whitelistconf['number_assets']
+        self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
+
         if not self._freqtrade.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
                 'Exchange does not support dynamic whitelist.'
                 'Please edit your config and restart the bot'
             )
+        if not self.validate_keys(self._sort_key):
+            raise OperationalException(
+                f'key {self._sort_key} not in {SORT_VALUES}')
         # self.refresh_whitelist()
+
+    def validate_keys(self, key):
+        return key in SORT_VALUES
 
     def short_desc(self) -> str:
         """
@@ -41,7 +51,7 @@ class VolumePairList(StaticPairList):
         Refreshes whitelist and assigns it to self._whitelist
         """
         # Generate dynamic whitelist
-        pairs = self._gen_pair_whitelist(self._config['stake_currency'])
+        pairs = self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
         # Validate whitelist to only have active market pairs
         self._whitelist = self._validate_whitelist(pairs)[:self._number_pairs]
 
