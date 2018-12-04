@@ -23,9 +23,9 @@ def whitelist_conf(default_conf):
     default_conf['exchange']['pair_blacklist'] = [
         'BLK/BTC'
     ]
-    default_conf['whitelist'] = {'method': 'StaticPairList',
-                                 'config': {'number_assets': 3}
-                                 }
+    default_conf['pairlist'] = {'method': 'StaticPairList',
+                                'config': {'number_assets': 3}
+                                }
 
     return default_conf
 
@@ -58,9 +58,9 @@ def test_refresh_pairlists(mocker, markets, whitelist_conf):
 
 
 def test_refresh_whitelist_dynamic(mocker, markets, tickers, whitelist_conf):
-    whitelist_conf['whitelist'] = {'method': 'VolumePairList',
-                                   'config': {'number_assets': 5}
-                                   }
+    whitelist_conf['pairlist'] = {'method': 'VolumePairList',
+                                  'config': {'number_assets': 5}
+                                  }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_markets=markets,
@@ -90,7 +90,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
 
 
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) -> None:
-    whitelist_conf['whitelist']['method'] = 'VolumePairList'
+    whitelist_conf['pairlist']['method'] = 'VolumePairList'
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
@@ -114,9 +114,9 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) 
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
-    default_conf['whitelist'] = {'method': 'VolumePairList',
-                                 'config': {'number_assets': 10}
-                                 }
+    default_conf['pairlist'] = {'method': 'VolumePairList',
+                                'config': {'number_assets': 10}
+                                }
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=False))
 
@@ -126,7 +126,7 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
 
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
-    whitelist_conf['whitelist']['method'] = pairlist
+    whitelist_conf['pairlist']['method'] = pairlist
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)

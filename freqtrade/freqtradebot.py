@@ -59,7 +59,7 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
-        if self.config.get('whitelist', {}).get('method') == 'VolumePairList':
+        if self.config.get('pairlist', {}).get('method') == 'VolumePairList':
             self.pairlists: StaticPairList = VolumePairList(self, self.config)
         else:
             self.pairlists: StaticPairList = StaticPairList(self, self.config)

@@ -1034,9 +1034,9 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
         _send_msg=msg_mock
     )
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    default_conf['whitelist'] = {'method': 'VolumePairList',
-                                 'config': {'number_assets': 4}
-                                 }
+    default_conf['pairlist'] = {'method': 'VolumePairList',
+                                'config': {'number_assets': 4}
+                                }
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
     telegram = Telegram(freqtradebot)

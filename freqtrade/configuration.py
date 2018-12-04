@@ -111,9 +111,9 @@ class Configuration(object):
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
             # Update to volumePairList (the previous default)
-            config['whitelist'] = {'method': 'VolumePairList',
-                                   'config': {'number_assets': self.args.dynamic_whitelist}
-                                   }
+            config['pairlist'] = {'method': 'VolumePairList',
+                                  'config': {'number_assets': self.args.dynamic_whitelist}
+                                  }
             logger.warning(
                 'Parameter --dynamic-whitelist has been deprecated, '
                 'and will be completely replaced by the whitelist dict in the future. '

@@ -39,7 +39,7 @@
         "stoploss": "market",
         "stoploss_on_exchange": "false"
     },
-    "whitelist": {
+    "pairlist": {
         "method": "VolumePairList",
         "config": {
             "number_assets": 20,

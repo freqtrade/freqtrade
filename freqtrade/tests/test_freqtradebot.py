@@ -2532,9 +2532,9 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
 
 def test_startup_messages(default_conf, mocker):
-    default_conf['whitelist'] = {'method': 'VolumePairList',
-                                 'config': {'number_assets': 20}
-                                 }
+    default_conf['pairlist'] = {'method': 'VolumePairList',
+                                'config': {'number_assets': 20}
+                                }
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING

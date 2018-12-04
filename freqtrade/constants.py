@@ -124,7 +124,7 @@ CONF_SCHEMA = {
                 'ignore_roi_if_buy_signal_true': {'type': 'boolean'}
             }
         },
-        'whitelist': {
+        'pairlist': {
             'type': 'object',
             'properties': {
                 'method': {'type': 'string',  'enum': AVAILABLE_PAIRLISTS},

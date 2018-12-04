@@ -119,8 +119,8 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('whitelist', {}).get('method') == 'VolumePairList'
-    assert validated_conf.get('whitelist', {}).get('config').get('number_assets') == 10
+    assert validated_conf.get('pairlist', {}).get('method') == 'VolumePairList'
+    assert validated_conf.get('pairlist', {}).get('config').get('number_assets') == 10
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'

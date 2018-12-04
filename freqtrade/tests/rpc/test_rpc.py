@@ -662,9 +662,9 @@ def test_rpc_whitelist(mocker, default_conf) -> None:
 def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     patch_coinmarketcap(mocker)
     patch_exchange(mocker)
-    default_conf['whitelist'] = {'method': 'VolumePairList',
-                                 'config': {'number_assets': 4}
-                                 }
+    default_conf['pairlist'] = {'method': 'VolumePairList',
+                                'config': {'number_assets': 4}
+                                }
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
