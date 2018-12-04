@@ -16,7 +16,7 @@ UNLIMITED_STAKE_AMOUNT = 'unlimited'
 REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
-ORDERTIF_POSSIBILITIES = ['gtc', 'aon', 'fok', 'ioc']
+ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 
 
 TICKER_INTERVAL_MINUTES = {
