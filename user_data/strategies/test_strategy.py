@@ -52,7 +52,8 @@ class TestStrategy(IStrategy):
     order_types = {
         'buy': 'limit',
         'sell': 'limit',
-        'stoploss': 'market'
+        'stoploss': 'market',
+        'stoploss_on_exchange': False
     }
 
     # Optional order time in force

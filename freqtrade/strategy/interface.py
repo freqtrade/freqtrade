@@ -33,6 +33,7 @@ class SellType(Enum):
     """
     ROI = "roi"
     STOP_LOSS = "stop_loss"
+    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
@@ -74,7 +75,8 @@ class IStrategy(ABC):
     order_types: Dict = {
         'buy': 'limit',
         'sell': 'limit',
-        'stoploss': 'limit'
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
     }
 
     # Optional time in force
@@ -227,11 +229,17 @@ class IStrategy(ABC):
         # Set current rate to low for backtesting sell
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=date, current_profit=current_profit,
-                                              force_stoploss=force_stoploss)
+
+        if self.order_types.get('stoploss_on_exchange'):
+            stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        else:
+            stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                                  current_time=date, current_profit=current_profit,
+                                                  force_stoploss=force_stoploss)
+
         if stoplossflag.sell_flag:
             return stoplossflag
+
         # Set current rate to low for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_percent(current_rate)

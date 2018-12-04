@@ -1,11 +1,12 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+from datetime import datetime
 import os
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
-from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.optimize import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -292,6 +293,10 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.backtest',
         MagicMock(return_value=backtest_result)
+    )
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.hyperopt.load', MagicMock())

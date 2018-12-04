@@ -39,7 +39,7 @@ The table below will list all configuration parameters.
 | `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`).
+| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`).
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
@@ -141,17 +141,18 @@ end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
-`order_types` contains a dict mapping order-types to market-types. This allows to buy using limit orders, sell using limit-orders, and create stoploss orders using market.
+`order_types` contains a dict mapping order-types to market-types as well as stoploss on or off exchange type. This allows to buy using limit orders, sell using limit-orders, and create stoploss orders using market. It also allows to set the stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled.
 This can be set in the configuration or in the strategy. Configuration overwrites strategy configurations.
 
-If this is configured, all 3 values (`"buy"`, `"sell"` and `"stoploss"`) need to be present, otherwise the bot warn about it and will fail to start.
+If this is configured, all 4 values (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`) need to be present, otherwise the bot warn about it and will fail to start.
 The below is the default which is used if this is not configured in either Strategy or configuration.
 
 ``` json
     "order_types": {
         "buy": "limit",
         "sell": "limit",
-        "stoploss": "market"
+        "stoploss": "market",
+        "stoploss_on_exchange": False
     },
 ```
 

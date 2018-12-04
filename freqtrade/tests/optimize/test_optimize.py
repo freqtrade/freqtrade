@@ -57,7 +57,8 @@ def test_load_data_30min_ticker(ticker_history, mocker, caplog, default_conf) ->
     mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-30m.json')
     _backup_file(file, copy_file=True)
-    optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
+    ld = optimize.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
+    assert isinstance(ld, dict)
     assert os.path.isfile(file) is True
     assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 30m', caplog.record_tuples)
     _clean_test_file(file)
