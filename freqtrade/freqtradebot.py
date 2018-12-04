@@ -447,11 +447,11 @@ class FreqtradeBot(object):
                                      amount=amount, rate=buy_limit,
                                     time_in_force=self.strategy.order_time_in_force['buy'])
         order_id = order['id']
-        order_info = order['info']
+        order_info = order.get('info', {})
 
         # check if order is expired (in case of FOC or IOC orders)
         # or rejected by the exchange.
-        if order_info['status'] == 'EXPIRED' or order_info['status'] == 'REJECTED':
+        if order_info.get('status', '') == 'EXPIRED' or order_info.get('status', '') == 'REJECTED':
             order_type = self.strategy.order_types['buy']
             order_tif = self.strategy.order_time_in_force['buy']
             status = order_info['status']
