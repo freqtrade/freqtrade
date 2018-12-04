@@ -174,15 +174,18 @@ def test_stake_amount(mocker, edge_conf):
     ))
     free = 100
     total = 100
-    assert edge.stake_amount('E/F', free, total) == 25
+    in_trade = 25
+    assert edge.stake_amount('E/F', free, total, in_trade) == 31.25
 
     free = 20
     total = 100
-    assert edge.stake_amount('E/F', free, total) == 20
+    in_trade = 25
+    assert edge.stake_amount('E/F', free, total, in_trade) == 20
 
     free = 0
     total = 100
-    assert edge.stake_amount('E/F', free, total) == 0
+    in_trade = 25
+    assert edge.stake_amount('E/F', free, total, in_trade) == 0
 
 
 def test_nonexisting_stake_amount(mocker, edge_conf):
@@ -193,7 +196,8 @@ def test_nonexisting_stake_amount(mocker, edge_conf):
             'E/F': PairInfo(-0.11, 0.66, 3.71, 0.50, 1.71, 10, 60),
         }
     ))
-    assert edge.stake_amount('N/O', 1, 2) == 0.1
+    # should use strategy stoploss
+    assert edge.stake_amount('N/O', 1, 2, 1) == 0.15
 
 
 def _validate_ohlc(buy_ohlc_sell_matrice):
