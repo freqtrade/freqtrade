@@ -444,21 +444,21 @@ class FreqtradeBot(object):
         amount = stake_amount / buy_limit
 
         order = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
-                                     amount=amount, rate=buy_limit,
-                                    time_in_force=self.strategy.order_time_in_force['buy'])
+                                  amount=amount, rate=buy_limit,
+                                  time_in_force=self.strategy.order_time_in_force['buy'])
         order_id = order['id']
         order_info = order.get('info', {})
 
         # check if order is expired (in case of FOC or IOC orders)
         # or rejected by the exchange.
-        if order_info.get('status', '') == 'EXPIRED' or order_info.get('status', '') == 'REJECTED':
+        order_status = order_info.get('status', '')
+        if order_status == 'EXPIRED' or order_status == 'REJECTED':
             order_type = self.strategy.order_types['buy']
             order_tif = self.strategy.order_time_in_force['buy']
             status = order_info['status']
             logger.warning('Buy %s order with time in force %s for %s is %s by %s.',
                            order_tif, order_type, pair_s, status, self.exchange.name)
             return False
-
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
