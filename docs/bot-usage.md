@@ -36,7 +36,7 @@ optional arguments:
   --strategy-path PATH  specify additional strategy lookup path
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20)
+                        BaseVolume (default: 20) DEPRECATED
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
                         sqlite:///tradesv3.sqlite)
@@ -88,6 +88,8 @@ This is very simple. Copy paste your strategy file into the folder
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
 
 ### How to use --dynamic-whitelist?
+
+> Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](docs/configuration.md#Dynamic-Pairlists)
 
 Per default `--dynamic-whitelist` will retrieve the 20 currencies based
 on BaseVolume. This value can be changed when you run the script.
