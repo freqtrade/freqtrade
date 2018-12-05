@@ -66,6 +66,7 @@ Possible parameters are:
 * profit_fiat
 * stake_currency
 * fiat_currency
+* sell_reason
 
 ### Webhookstatus
 

@@ -7,6 +7,7 @@ from requests import RequestException
 
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.webhook import Webhook
+from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
 
 
@@ -80,6 +81,7 @@ def test_send_msg(default_conf, mocker):
         'profit_amount': 0.001,
         'profit_percent': 0.20,
         'stake_currency': 'BTC',
+        'sell_reason': SellType.STOP_LOSS.value
     }
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
