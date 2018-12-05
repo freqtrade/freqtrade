@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from freqtrade import OperationalException
 from freqtrade.constants import AVAILABLE_PAIRLISTS
+from freqtrade.resolvers import PairListResolver
 from freqtrade.tests.conftest import get_patched_freqtradebot
 import pytest
 
@@ -30,12 +31,21 @@ def whitelist_conf(default_conf):
     return default_conf
 
 
+def test_load_pairlist_noexist(mocker, markets, default_conf):
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Pairlist 'NonexistingPairList'."
+                             r" This class does not exist or contains Python code errors"):
+        PairListResolver('NonexistingPairList', freqtradebot, default_conf).pairlist
+
+
 def test_refresh_market_pair_not_in_whitelist(mocker, markets, whitelist_conf):
 
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
-    freqtradebot.pairlists.refresh_whitelist()
+    freqtradebot.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
@@ -49,7 +59,7 @@ def test_refresh_pairlists(mocker, markets, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
-    freqtradebot.pairlists.refresh_whitelist()
+    freqtradebot.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
     # Ensure all except those in whitelist are removed
@@ -57,7 +67,7 @@ def test_refresh_pairlists(mocker, markets, whitelist_conf):
     assert whitelist_conf['exchange']['pair_blacklist'] == freqtradebot.pairlists.blacklist
 
 
-def test_refresh_whitelist_dynamic(mocker, markets, tickers, whitelist_conf):
+def test_refresh_pairlist_dynamic(mocker, markets, tickers, whitelist_conf):
     whitelist_conf['pairlist'] = {'method': 'VolumePairList',
                                   'config': {'number_assets': 5}
                                   }
@@ -71,7 +81,7 @@ def test_refresh_whitelist_dynamic(mocker, markets, tickers, whitelist_conf):
 
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = ['ETH/BTC', 'TKN/BTC']
-    freqtradebot.pairlists.refresh_whitelist()
+    freqtradebot.pairlists.refresh_pairlist()
 
     assert whitelist == freqtradebot.pairlists.whitelist
 
@@ -83,7 +93,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = []
     whitelist_conf['exchange']['pair_whitelist'] = []
-    freqtradebot.pairlists.refresh_whitelist()
+    freqtradebot.pairlists.refresh_pairlist()
     pairslist = whitelist_conf['exchange']['pair_whitelist']
 
     assert set(whitelist) == set(pairslist)
