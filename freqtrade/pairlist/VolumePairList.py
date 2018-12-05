@@ -8,21 +8,18 @@ import logging
 from typing import List
 from cachetools import TTLCache, cached
 
-from freqtrade.pairlist.StaticPairList import StaticPairList
+from freqtrade.pairlist.IPairList import IPairList
 from freqtrade import OperationalException
 logger = logging.getLogger(__name__)
 
 SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
 
 
-class VolumePairList(StaticPairList):
+class VolumePairList(IPairList):
 
     def __init__(self, freqtrade, config: dict) -> None:
-        self._freqtrade = freqtrade
-        self._config = config
+        super().__init__(freqtrade, config)
         self._whitelistconf = self._config.get('pairlist', {}).get('config')
-        self._whitelist = self._config['exchange']['pair_whitelist']
-        self._blacklist = self._config['exchange'].get('pair_blacklist', [])
         self._number_pairs = self._whitelistconf['number_assets']
         self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
 
@@ -34,7 +31,6 @@ class VolumePairList(StaticPairList):
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
-        # self.refresh_whitelist()
 
     def _validate_keys(self, key):
         return key in SORT_VALUES
@@ -46,9 +42,10 @@ class VolumePairList(StaticPairList):
         """
         return f"{self.name} - top {self._whitelistconf['number_assets']} volume pairs."
 
-    def refresh_whitelist(self) -> None:
+    def refresh_pairlist(self) -> None:
         """
-        Refreshes whitelist and assigns it to self._whitelist
+        Refreshes pairlists and assigns them to self._whitelist and self._blacklist respectively
+        -> Please overwrite in subclasses
         """
         # Generate dynamic whitelist
         pairs = self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
@@ -72,4 +69,3 @@ class VolumePairList(StaticPairList):
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
         pairs = [s['symbol'] for s in sorted_tickers]
         return pairs
-

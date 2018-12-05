@@ -19,12 +19,10 @@ from freqtrade.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import StrategyResolver, PairListResolver
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
-from freqtrade.pairlist.StaticPairList import StaticPairList
-from freqtrade.pairlist.VolumePairList import VolumePairList
 
 
 logger = logging.getLogger(__name__)
@@ -59,10 +57,8 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
-        if self.config.get('pairlist', {}).get('method') == 'VolumePairList':
-            self.pairlists: StaticPairList = VolumePairList(self, self.config)
-        else:
-            self.pairlists: StaticPairList = StaticPairList(self, self.config)
+        pairlistname = self.config.get('pairlist', {}).get('method', 'StaticPairList')
+        self.pairlists = PairListResolver(pairlistname, self, self.config).pairlist
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -151,7 +147,7 @@ class FreqtradeBot(object):
         state_changed = False
         try:
             # Refresh whitelist
-            self.pairlists.refresh_whitelist()
+            self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist
 
             # Calculating Edge positiong

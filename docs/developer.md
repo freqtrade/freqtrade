@@ -20,6 +20,16 @@ This is a simple provider, which however serves as a good example on how to star
 
 Next, modify the classname of the provider (ideally align this with the Filename).
 
+The base-class provides the an instance of the bot (`self._freqtrade`), as well as the configuration (`self._config`), and initiates both `_blacklist` and `_whitelist`.
+
+```python
+        self._freqtrade = freqtrade
+        self._config = config
+        self._whitelist = self._config['exchange']['pair_whitelist']
+        self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+```
+
+
 Now, let's step through the methods which require actions:
 
 #### configuration
@@ -35,7 +45,7 @@ Additional elements can be configured as needed. `VolumePairList` uses `"sort_ke
 Returns a description used for Telegram messages.
 This should coutain the name of the Provider, as well as a short description containing the number of assets. Please follow the format `"PairlistName - top/bottom X pairs"`.
 
-#### refresh_whitelist
+#### refresh_pairlist
 
 Override this method and run all calculations needed in this method.
 This is called with each iteration of the bot - so consider implementing caching for compute/network heavy calculations.
@@ -47,7 +57,7 @@ Please also run `self._validate_whitelist(pairs)` and to check and remove pairs 
 ##### sample
 
 ``` python
-    def refresh_whitelist(self) -> None:
+    def refresh_pairlist(self) -> None:
         # Generate dynamic whitelist
         pairs = self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
         # Validate whitelist to only have active market pairs
