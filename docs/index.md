@@ -35,4 +35,5 @@ Pull-request. Do not hesitate to reach us on
 	- [Run tests & Check PEP8 compliance](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 - [FAQ](https://github.com/freqtrade/freqtrade/blob/develop/docs/faq.md)
     - [SQL cheatsheet](https://github.com/freqtrade/freqtrade/blob/develop/docs/sql_cheatsheet.md)
-- [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md))
+- [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md)
+- [Developer Docs](https://github.com/freqtrade/freqtrade/blob/develop/docs/developer.md)
