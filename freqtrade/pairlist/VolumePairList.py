@@ -31,12 +31,12 @@ class VolumePairList(StaticPairList):
                 'Exchange does not support dynamic whitelist.'
                 'Please edit your config and restart the bot'
             )
-        if not self.validate_keys(self._sort_key):
+        if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
         # self.refresh_whitelist()
 
-    def validate_keys(self, key):
+    def _validate_keys(self, key):
         return key in SORT_VALUES
 
     def short_desc(self) -> str:
@@ -73,35 +73,3 @@ class VolumePairList(StaticPairList):
         pairs = [s['symbol'] for s in sorted_tickers]
         return pairs
 
-    def _validate_whitelist(self, whitelist: List[str]) -> List[str]:
-        """
-        Check available markets and remove pair from whitelist if necessary
-        :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
-        trade
-        :return: the list of pairs the user wants to trade without the one unavailable or
-        black_listed
-        """
-        sanitized_whitelist = whitelist
-        markets = self._freqtrade.exchange.get_markets()
-
-        # Filter to markets in stake currency
-        markets = [m for m in markets if m['quote'] == self._config['stake_currency']]
-        known_pairs = set()
-
-        for market in markets:
-            pair = market['symbol']
-            # pair is not int the generated dynamic market, or in the blacklist ... ignore it
-            if pair not in whitelist or pair in self.blacklist:
-                continue
-            # else the pair is valid
-            known_pairs.add(pair)
-            # Market is not active
-            if not market['active']:
-                sanitized_whitelist.remove(pair)
-                logger.info(
-                    'Ignoring %s from whitelist. Market is not active.',
-                    pair
-                )
-
-        # We need to remove pairs that are unknown
-        return [x for x in sanitized_whitelist if x in known_pairs]
