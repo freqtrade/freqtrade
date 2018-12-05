@@ -52,11 +52,14 @@ class HyperOptResolver(IResolver):
             abs_paths.insert(0, Path(extra_dir))
 
         for _path in abs_paths:
-            hyperopt = self._search_object(directory=_path, object_type=IHyperOpt,
-                                           object_name=hyperopt_name)
-            if hyperopt:
-                logger.info('Using resolved hyperopt %s from \'%s\'', hyperopt_name, _path)
-                return hyperopt
+            try:
+                hyperopt = self._search_object(directory=_path, object_type=IHyperOpt,
+                                               object_name=hyperopt_name)
+                if hyperopt:
+                    logger.info('Using resolved hyperopt %s from \'%s\'', hyperopt_name, _path)
+                    return hyperopt
+            except FileNotFoundError:
+                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
 
         raise ImportError(
             "Impossible to load Hyperopt '{}'. This class does not exist"
