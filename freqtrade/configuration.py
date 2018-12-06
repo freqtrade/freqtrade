@@ -275,7 +275,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, constants.CONF_SCHEMA)
+            validate(conf, constants.CONF_SCHEMA, Draft4Validator)
             return conf
         except ValidationError as exception:
             logger.critical(

@@ -6,7 +6,7 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import validate, ValidationError
+from jsonschema import validate, ValidationError, Draft4Validator
 
 from freqtrade import constants
 from freqtrade import OperationalException
@@ -486,4 +486,4 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
 
 
 def test_validate_default_conf(default_conf) -> None:
-    validate(default_conf, constants.CONF_SCHEMA)
+    validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
