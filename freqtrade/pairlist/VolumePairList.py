@@ -20,6 +20,10 @@ class VolumePairList(IPairList):
     def __init__(self, freqtrade, config: dict) -> None:
         super().__init__(freqtrade, config)
         self._whitelistconf = self._config.get('pairlist', {}).get('config')
+        if 'number_assets' not in self._whitelistconf:
+            raise OperationalException(
+                f'`number_assets` not specified. Please check your configuration '
+                'for "pairlist.config.number_assets"')
         self._number_pairs = self._whitelistconf['number_assets']
         self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
 

@@ -43,7 +43,7 @@ Additional elements can be configured as needed. `VolumePairList` uses `"sort_ke
 #### short_desc
 
 Returns a description used for Telegram messages.
-This should coutain the name of the Provider, as well as a short description containing the number of assets. Please follow the format `"PairlistName - top/bottom X pairs"`.
+This should contain the name of the Provider, as well as a short description containing the number of assets. Please follow the format `"PairlistName - top/bottom X pairs"`.
 
 #### refresh_pairlist
 

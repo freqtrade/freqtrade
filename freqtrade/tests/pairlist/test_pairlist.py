@@ -85,6 +85,14 @@ def test_refresh_pairlist_dynamic(mocker, markets, tickers, whitelist_conf):
 
     assert whitelist == freqtradebot.pairlists.whitelist
 
+    whitelist_conf['pairlist'] = {'method': 'VolumePairList',
+                                  'config': {}
+                                  }
+    with pytest.raises(OperationalException,
+                       match=r'`number_assets` not specified. Please check your configuration '
+                             r'for "pairlist.config.number_assets"'):
+        PairListResolver('VolumePairList', freqtradebot, whitelist_conf).pairlist
+
 
 def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
