@@ -215,8 +215,8 @@ production mode.
 
 ### Dynamic Pairlists
 
-Dynamic pairlists allow configuration of the pair-selection. 
-Basically, the bot runs against all pairs (with that stake) on the exchange, and a number of assets (`number_assets`) is selected based on different criteria.
+Dynamic pairlists select pairs for you based on the logic configured. 
+The bot runs against all pairs (with that stake) on the exchange, and a number of assets (`number_assets`) is selected based on the selected criteria.
 
 By *default*, a Static Pairlist is used (configured as `"pair_whitelist"` under the `"exchange"` section of this configuration).
 
