@@ -14,6 +14,7 @@ from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy import func
 from sqlalchemy.pool import StaticPool
 
 from freqtrade import OperationalException
@@ -349,3 +350,14 @@ class Trade(_DECL_BASE):
         )
         profit_percent = (close_trade_price / open_trade_price) - 1
         return float(f"{profit_percent:.8f}")
+
+    @staticmethod
+    def total_open_trades_stakes() -> float:
+        """
+        Calculates total invested amount in open trades
+        in stake currency
+        """
+        total_open_stake_amount = Trade.session.query(func.sum(Trade.stake_amount))\
+            .filter(Trade.is_open.is_(True))\
+            .scalar()
+        return total_open_stake_amount or 0

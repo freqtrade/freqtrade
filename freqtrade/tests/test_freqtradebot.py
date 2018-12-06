@@ -260,8 +260,8 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     patch_edge(mocker)
     freqtrade = FreqtradeBot(edge_conf)
 
-    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (0.001 * 0.01) / 0.20
-    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (0.001 * 0.01) / 0.20
+    assert freqtrade._get_trade_stake_amount('NEO/BTC') == (999.9 * 0.5 * 0.01) / 0.20
+    assert freqtrade._get_trade_stake_amount('LTC/BTC') == (999.9 * 0.5 * 0.01) / 0.21
 
 
 def test_edge_overrides_stoploss(limit_buy_order, fee, markets, caplog, mocker, edge_conf) -> None:
@@ -340,6 +340,39 @@ def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee, markets,
 
     # stoploss shoud not be hit
     assert freqtrade.handle_trade(trade) is False
+
+
+def test_total_open_trades_stakes(mocker, default_conf, ticker,
+                                  limit_buy_order, fee, markets) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf['stake_amount'] = 0.0000098751
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        get_markets=markets
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+
+    assert trade is not None
+    assert trade.stake_amount == 0.0000098751
+    assert trade.is_open
+    assert trade.open_date is not None
+
+    freqtrade.create_trade()
+    trade = Trade.query.order_by(Trade.id.desc()).first()
+
+    assert trade is not None
+    assert trade.stake_amount == 0.0000098751
+    assert trade.is_open
+    assert trade.open_date is not None
+
+    assert Trade.total_open_trades_stakes() == 1.97502e-05
 
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:

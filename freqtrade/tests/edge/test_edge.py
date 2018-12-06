@@ -123,9 +123,9 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
         assert res.close_time == _get_frame_time_from_offset(trade.close_tick)
 
 
-def test_adjust(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+def test_adjust(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
@@ -138,9 +138,9 @@ def test_adjust(mocker, default_conf):
     assert(edge.adjust(pairs) == ['E/F', 'C/D'])
 
 
-def test_stoploss(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+def test_stoploss(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
@@ -152,9 +152,9 @@ def test_stoploss(mocker, default_conf):
     assert edge.stoploss('E/F') == -0.01
 
 
-def test_nonexisting_stoploss(mocker, default_conf):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+def test_nonexisting_stoploss(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
@@ -162,6 +162,42 @@ def test_nonexisting_stoploss(mocker, default_conf):
     ))
 
     assert edge.stoploss('N/O') == -0.1
+
+
+def test_stake_amount(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'E/F': PairInfo(-0.02, 0.66, 3.71, 0.50, 1.71, 10, 60),
+        }
+    ))
+    free = 100
+    total = 100
+    in_trade = 25
+    assert edge.stake_amount('E/F', free, total, in_trade) == 31.25
+
+    free = 20
+    total = 100
+    in_trade = 25
+    assert edge.stake_amount('E/F', free, total, in_trade) == 20
+
+    free = 0
+    total = 100
+    in_trade = 25
+    assert edge.stake_amount('E/F', free, total, in_trade) == 0
+
+
+def test_nonexisting_stake_amount(mocker, edge_conf):
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'E/F': PairInfo(-0.11, 0.66, 3.71, 0.50, 1.71, 10, 60),
+        }
+    ))
+    # should use strategy stoploss
+    assert edge.stake_amount('N/O', 1, 2, 1) == 0.15
 
 
 def _validate_ohlc(buy_ohlc_sell_matrice):
@@ -246,12 +282,12 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
     return pairdata
 
 
-def test_edge_process_downloaded_data(mocker, default_conf):
-    default_conf['datadir'] = None
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+def test_edge_process_downloaded_data(mocker, edge_conf):
+    edge_conf['datadir'] = None
+    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
     mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
-    edge = Edge(default_conf, freqtrade.exchange, freqtrade.strategy)
+    edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
     assert edge.calculate()
     assert len(edge._cached_pairs) == 2

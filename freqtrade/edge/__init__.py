@@ -9,6 +9,7 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 import freqtrade.optimize as optimize
+from freqtrade import constants, OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.strategy.interface import SellType
@@ -52,8 +53,17 @@ class Edge():
 
         self.edge_config = self.config.get('edge', {})
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
+        self._final_pairs: list = []
 
-        self._total_capital: float = self.config['stake_amount']
+        # checking max_open_trades. it should be -1 as with Edge
+        # the number of trades is determined by position size
+        if self.config['max_open_trades'] != -1:
+            logger.critical('max_open_trades should be -1 in config !')
+
+        if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:
+            raise OperationalException('Edge works only with unlimited stake amount')
+
+        self._capital_percentage: float = self.edge_config.get('capital_available_percentage')
         self._allowed_risk: float = self.edge_config.get('allowed_risk')
         self._since_number_of_days: int = self.edge_config.get('calculate_since_number_of_days', 14)
         self._last_updated: int = 0  # Timestamp of pairs last updated time
@@ -150,11 +160,25 @@ class Edge():
 
         return True
 
-    def stake_amount(self, pair: str) -> float:
-        stoploss = self._cached_pairs[pair].stoploss
-        allowed_capital_at_risk = round(self._total_capital * self._allowed_risk, 5)
-        position_size = abs(round((allowed_capital_at_risk / stoploss), 5))
-        return position_size
+    def stake_amount(self, pair: str, free_capital: float,
+                     total_capital: float, capital_in_trade: float) -> float:
+        stoploss = self.stoploss(pair)
+        available_capital = (total_capital + capital_in_trade) * self._capital_percentage
+        allowed_capital_at_risk = available_capital * self._allowed_risk
+        max_position_size = abs(allowed_capital_at_risk / stoploss)
+        position_size = min(max_position_size, free_capital)
+        if pair in self._cached_pairs:
+            logger.info(
+                'winrate: %s, expectancy: %s, position size: %s, pair: %s,'
+                ' capital in trade: %s, free capital: %s, total capital: %s,'
+                ' stoploss: %s, available capital: %s.',
+                self._cached_pairs[pair].winrate,
+                self._cached_pairs[pair].expectancy,
+                position_size, pair,
+                capital_in_trade, free_capital, total_capital,
+                stoploss, available_capital
+            )
+        return round(position_size, 15)
 
     def stoploss(self, pair: str) -> float:
         if pair in self._cached_pairs:
@@ -168,7 +192,6 @@ class Edge():
         """
         Filters out and sorts "pairs" according to Edge calculated pairs
         """
-
         final = []
         for pair, info in self._cached_pairs.items():
             if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
@@ -176,12 +199,14 @@ class Edge():
                     pair in pairs:
                 final.append(pair)
 
-        if final:
-            logger.info('Edge validated only %s', final)
-        else:
-            logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
+        if self._final_pairs != final:
+            self._final_pairs = final
+            if self._final_pairs:
+                logger.info('Edge validated only %s', self._final_pairs)
+            else:
+                logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
 
-        return final
+        return self._final_pairs
 
     def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
         """
@@ -202,9 +227,11 @@ class Edge():
         # 0.05% is 0.0005
         # fee = 0.001
 
-        stake = self.config.get('stake_amount')
+        # we set stake amount to an arbitrary amount.
+        # as it doesn't change the calculation.
+        # all returned values are relative. they are percentages.
+        stake = 0.015
         fee = self.fee
-
         open_fee = fee / 2
         close_fee = fee / 2
 
