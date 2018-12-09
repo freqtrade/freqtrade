@@ -276,7 +276,7 @@ class Exchange(object):
         return price
 
     def buy(self, pair: str, ordertype: str, amount: float,
-            rate: float, time_in_force='gtc') -> Dict:
+            rate: float, time_in_force) -> Dict:
         if self._conf['dry_run']:
             order_id = f'dry_run_buy_{randint(0, 10**6)}'
             self._dry_run_open_orders[order_id] = {
