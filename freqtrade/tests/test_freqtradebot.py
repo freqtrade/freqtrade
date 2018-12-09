@@ -136,37 +136,6 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
     assert result == -1
 
 
-def test_gen_pair_whitelist(mocker, default_conf, tickers) -> None:
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-
-    # Test to retrieved BTC sorted on quoteVolume (default)
-    whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC')
-    assert whitelist == ['ETH/BTC', 'TKN/BTC', 'BLK/BTC', 'LTC/BTC']
-
-    # Test to retrieve BTC sorted on bidVolume
-    whitelist = freqtrade._gen_pair_whitelist(base_currency='BTC', key='bidVolume')
-    assert whitelist == ['LTC/BTC', 'TKN/BTC', 'ETH/BTC', 'BLK/BTC']
-
-    # Test with USDT sorted on quoteVolume (default)
-    whitelist = freqtrade._gen_pair_whitelist(base_currency='USDT')
-    assert whitelist == ['TKN/USDT', 'ETH/USDT', 'LTC/USDT', 'BLK/USDT']
-
-    # Test with ETH (our fixture does not have ETH, so result should be empty)
-    whitelist = freqtrade._gen_pair_whitelist(base_currency='ETH')
-    assert whitelist == []
-
-
-def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
-    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=False))
-
-    with pytest.raises(OperationalException):
-        freqtrade._gen_pair_whitelist(base_currency='BTC')
-
-
 def test_get_trade_stake_amount(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -248,7 +217,7 @@ def test_edge_called_in_process(mocker, edge_conf) -> None:
 
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(edge_conf)
-    freqtrade._refresh_whitelist = _refresh_whitelist
+    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     patch_get_signal(freqtrade)
     freqtrade._process()
     assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']
@@ -2603,6 +2572,9 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
 
 
 def test_startup_messages(default_conf, mocker):
-    default_conf['dynamic_whitelist'] = 20
+    default_conf['pairlist'] = {'method': 'VolumePairList',
+                                'config': {'number_assets': 20}
+                                }
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING

@@ -15,7 +15,7 @@ DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
-
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -123,6 +123,14 @@ CONF_SCHEMA = {
                 'sell_profit_only': {'type': 'boolean'},
                 'ignore_roi_if_buy_signal_true': {'type': 'boolean'}
             }
+        },
+        'pairlist': {
+            'type': 'object',
+            'properties': {
+                'method': {'type': 'string',  'enum': AVAILABLE_PAIRLISTS},
+                'config': {'type': 'object'}
+            },
+            'required': ['method']
         },
         'telegram': {
             'type': 'object',

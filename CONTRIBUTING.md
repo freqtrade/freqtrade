@@ -72,6 +72,10 @@ pip3.6 install mypy
 mypy freqtrade
 ```
 
+## Getting started
+
+Best start by reading the [documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md) to get a feel for what is possible with the bot, or head straight to the [Developer-documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/developer.md) (WIP) which should help you getting started.
+
 ## (Core)-Committer Guide
 
 ### Process: Pull Requests

@@ -12,8 +12,6 @@ from typing import Any, Callable, Dict, List, Optional
 import arrow
 from requests.exceptions import RequestException
 
-from cachetools import TTLCache, cached
-
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.exchange import Exchange
@@ -21,7 +19,7 @@ from freqtrade.wallets import Wallets
 from freqtrade.edge import Edge
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import StrategyResolver, PairListResolver
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.exchange.exchange_helpers import order_book_to_dataframe
@@ -59,6 +57,8 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
+        pairlistname = self.config.get('pairlist', {}).get('method', 'StaticPairList')
+        self.pairlists = PairListResolver(pairlistname, self, self.config).pairlist
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -108,7 +108,7 @@ class FreqtradeBot(object):
             })
             logger.info('Changing state to: %s', state.name)
             if state == State.RUNNING:
-                self.rpc.startup_messages(self.config)
+                self.rpc.startup_messages(self.config, self.pairlists)
 
         if state == State.STOPPED:
             time.sleep(1)
@@ -146,16 +146,9 @@ class FreqtradeBot(object):
         """
         state_changed = False
         try:
-            nb_assets = self.config.get('dynamic_whitelist', None)
-            # Refresh whitelist based on wallet maintenance
-            sanitized_list = self._refresh_whitelist(
-                self._gen_pair_whitelist(
-                    self.config['stake_currency']
-                ) if nb_assets else self.config['exchange']['pair_whitelist']
-            )
-
-            # Keep only the subsets of pairs wanted (up to nb_assets)
-            self.active_pair_whitelist = sanitized_list[:nb_assets] if nb_assets else sanitized_list
+            # Refresh whitelist
+            self.pairlists.refresh_pairlist()
+            self.active_pair_whitelist = self.pairlists.whitelist
 
             # Calculating Edge positiong
             # Should be called before refresh_tickers
@@ -202,63 +195,6 @@ class FreqtradeBot(object):
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
         return state_changed
-
-    @cached(TTLCache(maxsize=1, ttl=1800))
-    def _gen_pair_whitelist(self, base_currency: str, key: str = 'quoteVolume') -> List[str]:
-        """
-        Updates the whitelist with with a dynamically generated list
-        :param base_currency: base currency as str
-        :param key: sort key (defaults to 'quoteVolume')
-        :return: List of pairs
-        """
-
-        if not self.exchange.exchange_has('fetchTickers'):
-            raise OperationalException(
-                'Exchange does not support dynamic whitelist.'
-                'Please edit your config and restart the bot'
-            )
-
-        tickers = self.exchange.get_tickers()
-        # check length so that we make sure that '/' is actually in the string
-        tickers = [v for k, v in tickers.items()
-                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
-
-        sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
-        pairs = [s['symbol'] for s in sorted_tickers]
-        return pairs
-
-    def _refresh_whitelist(self, whitelist: List[str]) -> List[str]:
-        """
-        Check available markets and remove pair from whitelist if necessary
-        :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
-        trade
-        :return: the list of pairs the user wants to trade without the one unavailable or
-        black_listed
-        """
-        sanitized_whitelist = whitelist
-        markets = self.exchange.get_markets()
-
-        markets = [m for m in markets if m['quote'] == self.config['stake_currency']]
-        known_pairs = set()
-        for market in markets:
-            pair = market['symbol']
-            # pair is not int the generated dynamic market, or in the blacklist ... ignore it
-            if pair not in whitelist or pair in self.config['exchange'].get('pair_blacklist', []):
-                continue
-            # else the pair is valid
-            known_pairs.add(pair)
-            # Market is not active
-            if not market['active']:
-                sanitized_whitelist.remove(pair)
-                logger.info(
-                    'Ignoring %s from whitelist. Market is not active.',
-                    pair
-                )
-
-        # We need to remove pairs that are unknown
-        final_list = [x for x in sanitized_whitelist if x in known_pairs]
-
-        return final_list
 
     def get_target_bid(self, pair: str, ticker: Dict[str, float]) -> float:
         """

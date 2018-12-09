@@ -34,8 +34,8 @@ The table below will list all configuration parameters.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
 | `bid_strategy.use_order_book` | false | No | Allows buying of pair using the rates in Order Book Bids.
 | `bid_strategy.order_book_top` | 0 | No | Bot will use the top N rate in Order Book Bids. Ie. a value of 2 will allow the bot to pick the 2nd bid rate in Order Book Bids.
-| `bid_strategy.check_depth_of_market.enabled` | false | No | Does not buy if the % difference of buy orders and sell orders is met in Order Book.
-| `bid_strategy.check_depth_of_market.bids_to_ask_delta` | 0 | No | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
+| `bid_strategy. check_depth_of_market.enabled` | false | No | Does not buy if the % difference of buy orders and sell orders is met in Order Book.
+| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | 0 | No | The % difference of buy orders and sell orders found in Order Book. A value lesser than 1 means sell orders is greater, while value greater than 1 means buy orders is higher.
 | `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
@@ -52,6 +52,8 @@ The table below will list all configuration parameters.
 | `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
 | `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
 | `experimental.ignore_roi_if_buy_signal` | false | No | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`
+| `pairlist.method` | StaticPairList | No | Use Static whitelist. [More information below](#dynamic-pairlists).
+| `pairlist.config` | None | No | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
 | `telegram.token` | token | No | Your Telegram bot token. Only required if `telegram.enabled` is `true`.
 | `telegram.chat_id` | chat_id | No | Your personal Telegram account id. Only required if `telegram.enabled` is `true`.
@@ -147,7 +149,7 @@ This can be set in the configuration or in the strategy. Configuration overwrite
 If this is configured, all 4 values (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`) need to be present, otherwise the bot warn about it and will fail to start.
 The below is the default which is used if this is not configured in either Strategy or configuration.
 
-``` json
+``` python
     "order_types": {
         "buy": "limit",
         "sell": "limit",
@@ -211,13 +213,38 @@ creating trades.
 Once you will be happy with your bot performance, you can switch it to
 production mode.
 
+### Dynamic Pairlists
+
+Dynamic pairlists select pairs for you based on the logic configured. 
+The bot runs against all pairs (with that stake) on the exchange, and a number of assets (`number_assets`) is selected based on the selected criteria.
+
+By *default*, a Static Pairlist is used (configured as `"pair_whitelist"` under the `"exchange"` section of this configuration).
+
+#### Available Pairlist methods
+
+* `"StaticPairList"`
+  * uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`
+* `"VolumePairList"`
+  * Formerly available as `--dynamic-whitelist [<number_assets>]`
+  * Selects `number_assets` top pairs based on `sort_key`, which can be one of `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
+
+```json
+"pairlist": {
+        "method": "VolumePairList",
+        "config": {
+            "number_assets": 20,
+            "sort_key": "quoteVolume"
+        }
+    },
+```
+
 ## Switch to production mode
 
 In production mode, the bot will engage your money. Be careful a wrong
 strategy can lose all your money. Be aware of what you are doing when
 you run it in production mode.
 
-### To switch your bot in production mode:
+### To switch your bot in production mode
 
 1. Edit your `config.json`  file
 

@@ -115,7 +115,8 @@ class Arguments(object):
         self.parser.add_argument(
             '--dynamic-whitelist',
             help='dynamically generate and update whitelist'
-                 ' based on 24h BaseVolume (default: %(const)s)',
+                 ' based on 24h BaseVolume (default: %(const)s)'
+                 ' DEPRECATED.',
             dest='dynamic_whitelist',
             const=constants.DYNAMIC_WHITELIST,
             type=int,
