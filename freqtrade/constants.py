@@ -17,7 +17,7 @@ REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
-
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -134,6 +134,14 @@ CONF_SCHEMA = {
                 'ignore_roi_if_buy_signal_true': {'type': 'boolean'}
             }
         },
+        'pairlist': {
+            'type': 'object',
+            'properties': {
+                'method': {'type': 'string',  'enum': AVAILABLE_PAIRLISTS},
+                'config': {'type': 'object'}
+            },
+            'required': ['method']
+        },
         'telegram': {
             'type': 'object',
             'properties': {
@@ -202,6 +210,7 @@ CONF_SCHEMA = {
                 "process_throttle_secs": {'type': 'integer', 'minimum': 600},
                 "calculate_since_number_of_days": {'type': 'integer'},
                 "allowed_risk": {'type': 'number'},
+                "capital_available_percentage": {'type': 'number'},
                 "stoploss_range_min": {'type': 'number'},
                 "stoploss_range_max": {'type': 'number'},
                 "stoploss_range_step": {'type': 'number'},
@@ -210,7 +219,8 @@ CONF_SCHEMA = {
                 "min_trade_number": {'type': 'number'},
                 "max_trade_duration_minute": {'type': 'integer'},
                 "remove_pumps": {'type': 'boolean'}
-            }
+            },
+            'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
     },
     'anyOf': [

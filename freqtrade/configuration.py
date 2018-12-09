@@ -110,10 +110,14 @@ class Configuration(object):
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
-            config.update({'dynamic_whitelist': self.args.dynamic_whitelist})
-            logger.info(
-                'Parameter --dynamic-whitelist detected. '
-                'Using dynamically generated whitelist. '
+            # Update to volumePairList (the previous default)
+            config['pairlist'] = {'method': 'VolumePairList',
+                                  'config': {'number_assets': self.args.dynamic_whitelist}
+                                  }
+            logger.warning(
+                'Parameter --dynamic-whitelist has been deprecated, '
+                'and will be completely replaced by the whitelist dict in the future. '
+                'For now: using dynamically generated whitelist based on VolumePairList. '
                 '(not applicable with Backtesting and Hyperopt)'
             )
 
@@ -275,7 +279,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, constants.CONF_SCHEMA)
+            validate(conf, constants.CONF_SCHEMA, Draft4Validator)
             return conf
         except ValidationError as exception:
             logger.critical(

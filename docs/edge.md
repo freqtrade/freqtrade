@@ -82,9 +82,7 @@ Edge dictates the stake amount for each trade to the bot according to the follow
 
 Allowed capital at risk is calculated as follows:
 
-**allowed capital at risk** = **total capital** X **allowed risk per trade**
-
-**total capital** is your stake amount.
+**allowed capital at risk** = **capital_available_percentage** X **allowed risk per trade**
 
 **Stoploss** is calculated as described above against historical data.
 
@@ -92,14 +90,20 @@ Your position size then will be:
 
 **position size** = **allowed capital at risk** / **stoploss**
 
-Example:
-Let's say your stake amount is 3 ETH, you would allow 1% of risk for each trade. thus your allowed capital at risk would be **3 x 0.01 = 0.03 ETH**. Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.03 / 0.02= 1.5ETH**.<br/>
+Example:<br/>
+Let's say the stake currency is ETH and you have 10 ETH on the exchange, your **capital_available_percentage** is 50% and you would allow 1% of risk for each trade. thus your available capital for trading is **10 x 0.5 = 5 ETH** and allowed capital at risk would be **5 x 0.01 = 0.05 ETH**. <br/>
+Let's assume Edge has calculated that for **XLM/ETH** market your stoploss should be at 2%. So your position size will be **0.05 / 0.02 = 2.5ETH**.<br/>
+Bot takes a position of 2.5ETH on XLM/ETH (call it trade 1). Up next, you receive another buy signal while trade 1 is still open. This time on BTC/ETH market. Edge calculated stoploss for this market at 4%. So your position size would be 0.05 / 0.04 = 1.25ETH (call it trade 2).<br/>
+Note that available capital for trading didn’t change for trade 2 even if you had already trade 1. The available capital doesn’t mean the free amount on your wallet.<br/>
+Now you have two trades open. The Bot receives yet another buy signal for another market: **ADA/ETH**. This time the stoploss is calculated at 1%. So your position size is **0.05 / 0.01 = 5ETH**. But there are already 4ETH blocked in two previous trades. So the position size for this third trade would be 1ETH.<br/>
+Available capital doesn’t change before a position is sold. Let’s assume that trade 1 receives a sell signal and it is sold with a profit of 1ETH. Your total capital on exchange would be 11 ETH and the available capital for trading becomes 5.5ETH. <br/>
+So the Bot receives another buy signal for trade 4 with a stoploss at 2% then your position size would be **0.055 / 0.02 = 2.75**.
 
 ## Configurations
 Edge has following configurations:
 
 #### enabled
-If true, then Edge will run periodically<br/>
+If true, then Edge will run periodically.<br/>
 (default to false)
 
 #### process_throttle_secs
@@ -108,19 +112,24 @@ How often should Edge run in seconds? <br/>
 
 #### calculate_since_number_of_days
 Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy
-Note that it downloads historical data so increasing this number would lead to slowing down the bot<br/>
+Note that it downloads historical data so increasing this number would lead to slowing down the bot.<br/>
 (default to 7)
 
+#### capital_available_percentage
+This is the percentage of the total capital on exchange in stake currency. <br/>
+As an example if you have 10 ETH available in your wallet on the exchange and this value is 0.5 (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers it as available capital.<br/>
+(default to 0.5)
+
 #### allowed_risk
-Percentage of allowed risk per trade<br/>
+Percentage of allowed risk per trade.<br/>
 (default to 0.01 [1%])
 
 #### stoploss_range_min
-Minimum stoploss <br/>
+Minimum stoploss.<br/>
 (default to -0.01)
 
 #### stoploss_range_max
-Maximum stoploss <br/>
+Maximum stoploss.<br/>
 (default to -0.10)
 
 #### stoploss_range_step

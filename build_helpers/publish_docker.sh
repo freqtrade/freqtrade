@@ -4,6 +4,9 @@
 TAG=$(echo "${TRAVIS_BRANCH}" | sed -e "s/\//_/")
 
 
+# Add commit and commit_message to docker container
+echo "${TRAVIS_COMMIT} ${TRAVIS_COMMIT_MESSAGE}" > freqtrade_commit
+
 if [ "${TRAVIS_EVENT_TYPE}" = "cron" ]; then
     echo "event ${TRAVIS_EVENT_TYPE}: full rebuild - skipping cache"
     docker build -t freqtrade:${TAG} .

@@ -43,6 +43,13 @@
         "buy": "gtc",
         "sell": "gtc",
     },
+    "pairlist": {
+        "method": "VolumePairList",
+        "config": {
+            "number_assets": 20,
+            "sort_key": "quoteVolume"
+        }
+    },
     "exchange": {
         "name": "bittrex",
         "key": "your_exchange_key",
@@ -72,7 +79,8 @@
     "edge": {
         "enabled": false,
         "process_throttle_secs": 3600,
-        "calculate_since_number_of_days": 2,
+        "calculate_since_number_of_days": 7,
+        "capital_available_percentage": 0.5,
         "allowed_risk": 0.01,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,

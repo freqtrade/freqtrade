@@ -40,6 +40,28 @@ class Wallets(object):
         else:
             return 0
 
+    def get_used(self, currency) -> float:
+
+        if self.exchange._conf['dry_run']:
+            return 999.9
+
+        balance = self.wallets.get(currency)
+        if balance and balance.used:
+            return balance.used
+        else:
+            return 0
+
+    def get_total(self, currency) -> float:
+
+        if self.exchange._conf['dry_run']:
+            return 999.9
+
+        balance = self.wallets.get(currency)
+        if balance and balance.total:
+            return balance.total
+        else:
+            return 0
+
     def update(self) -> None:
         balances = self.exchange.get_balances()
 
