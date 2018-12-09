@@ -55,7 +55,7 @@ class EdgeCli(object):
                    'average duration (min)']
 
         for result in results.items():
-            if result[1].nb_trades > 0 and result[1].winrate > 0.60:
+            if result[1].nb_trades > 0:
                 tabular_data.append([
                     result[0],
                     result[1].stoploss,
