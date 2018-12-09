@@ -426,7 +426,8 @@ def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf)
 
-    order = exchange.buy(pair='ETH/BTC', ordertype='limit', amount=1, rate=200)
+    order = exchange.buy(pair='ETH/BTC', ordertype='limit',
+                         amount=1, rate=200, time_in_force='gtc')
     assert 'id' in order
     assert 'dry_run_buy_' in order['id']
 
@@ -435,6 +436,7 @@ def test_buy_prod(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'market'
+    time_in_force = 'gtc'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -446,7 +448,9 @@ def test_buy_prod(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
-    order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+    order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                         amount=1, rate=200, time_in_force=time_in_force)
+
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
@@ -458,7 +462,12 @@ def test_buy_prod(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
     order_type = 'limit'
-    order = exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+    order = exchange.buy(
+        pair='ETH/BTC',
+        ordertype=order_type,
+        amount=1,
+        rate=200,
+        time_in_force=time_in_force)
     assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'buy'
@@ -469,22 +478,26 @@ def test_buy_prod(default_conf, mocker):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                     amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                     amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                     amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
         exchange = get_patched_exchange(mocker, default_conf, api_mock)
-        exchange.buy(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+        exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                     amount=1, rate=200, time_in_force=time_in_force)
 
 
 def test_sell_dry_run(default_conf, mocker):

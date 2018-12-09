@@ -403,13 +403,13 @@ class FreqtradeBot(object):
                                ' zero amount is fulfilled.',
                                order_tif, order_type, pair_s, order_status, self.exchange.name)
                 return False
-            else: # the order is partially fulfilled
+            else:  # the order is partially fulfilled
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' %s amount fulfilled out of %s (%s remaining which is canceled).',
                                order_tif, order_type, pair_s, order_status, self.exchange.name,
                                order['filled'], order['amount'], order['remaining']
                                )
-
+                return False
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
