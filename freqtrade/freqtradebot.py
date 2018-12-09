@@ -367,6 +367,7 @@ class FreqtradeBot(object):
         pair_url = self.exchange.get_pair_detail_url(pair)
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
+        time_in_force = self.strategy.order_time_in_force['buy']
 
         if price:
             buy_limit = price
@@ -386,20 +387,29 @@ class FreqtradeBot(object):
 
         order = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
                                   amount=amount, rate=buy_limit,
-                                  time_in_force=self.strategy.order_time_in_force['buy'])
+                                  time_in_force=time_in_force)
         order_id = order['id']
-        order_info = order.get('info', {})
+        order_status = order.get('status', None)
 
-        # check if order is expired (in case of FOC or IOC orders)
-        # or rejected by the exchange.
-        order_status = order_info.get('status', '')
-        if order_status == 'EXPIRED' or order_status == 'REJECTED':
+        # in case of FOK or IOC orders we can check immediately
+        # if the order is fulfilled fully or partially
+        if order_status == 'expired' or order_status == 'rejected':
             order_type = self.strategy.order_types['buy']
             order_tif = self.strategy.order_time_in_force['buy']
-            status = order_info['status']
-            logger.warning('Buy %s order with time in force %s for %s is %s by %s.',
-                           order_tif, order_type, pair_s, status, self.exchange.name)
-            return False
+
+            # return false is order is not filled
+            if float(order['filled']) == 0:
+                logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
+                               ' zero amount is fulfilled.',
+                               order_tif, order_type, pair_s, order_status, self.exchange.name)
+                return False
+            else: # the order is partially fulfilled
+                logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
+                               ' %s amount fulfilled out of %s (%s remaining which is canceled).',
+                               order_tif, order_type, pair_s, order_status, self.exchange.name,
+                               order['filled'], order['amount'], order['remaining']
+                               )
+
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
