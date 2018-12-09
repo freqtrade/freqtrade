@@ -100,6 +100,9 @@ def check_migrate(engine) -> None:
 
         # Schema migration necessary
         engine.execute(f"alter table trades rename to {table_back_name}")
+        # drop indexes on backup table
+        for index in inspector.get_indexes(table_back_name):
+            engine.execute(f"drop index {index['name']}")
         # let SQLAlchemy create the schema as required
         _DECL_BASE.metadata.create_all(engine)
 
