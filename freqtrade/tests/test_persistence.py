@@ -446,6 +446,8 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     # Create table using the old format
     engine.execute(create_table_old)
+    engine.execute("create index ix_trades_is_open on trades(is_open)")
+    engine.execute("create index ix_trades_pair on trades(pair)")
     engine.execute(insert_table_old)
 
     # fake previous backup
