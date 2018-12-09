@@ -240,7 +240,7 @@ class Exchange(object):
         Checks if order time in force configured in strategy/config are supported
         """
         if any(v != 'gtc' for k, v in order_time_in_force.items()):
-            if not self.name == 'Binance':
+            if self.name is not 'Binance':
                 raise OperationalException(
                     f'Time in force policies are not supporetd for  {self.name} yet.')
 
