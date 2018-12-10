@@ -221,6 +221,41 @@ def test_strategy_override_order_types(caplog):
         StrategyResolver(config)
 
 
+def test_strategy_override_order_tif(caplog):
+    caplog.set_level(logging.INFO)
+
+    order_time_in_force = {
+        'buy': 'fok',
+        'sell': 'gtc',
+    }
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_time_in_force': order_time_in_force
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.order_time_in_force
+    for method in ['buy', 'sell']:
+        assert resolver.strategy.order_time_in_force[method] == order_time_in_force[method]
+
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'order_time_in_force' with value in config file:"
+            " {'buy': 'fok', 'sell': 'gtc'}."
+            ) in caplog.record_tuples
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_time_in_force': {'buy': 'fok'}
+    }
+    # Raise error for invalid configuration
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"Order-time-in-force mapping is incomplete."):
+        StrategyResolver(config)
+
+
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
