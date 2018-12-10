@@ -370,12 +370,12 @@ class FreqtradeBot(object):
         time_in_force = self.strategy.order_time_in_force['buy']
 
         if price:
-            buy_limit = price
+            buy_limit_requested = price
         else:
             # Calculate amount
-            buy_limit = self.get_target_bid(pair, self.exchange.get_ticker(pair))
+            buy_limit_requested = self.get_target_bid(pair, self.exchange.get_ticker(pair))
 
-        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit)
+        min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
                 f'Can\'t open a new trade for {pair_s}: stake amount'
@@ -383,16 +383,17 @@ class FreqtradeBot(object):
             )
             return False
 
-        amount = stake_amount / buy_limit
+        amount = stake_amount / buy_limit_requested
 
         order = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
-                                  amount=amount, rate=buy_limit,
+                                  amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
         order_id = order['id']
         order_status = order.get('status', None)
 
-        # in case of FOK or IOC orders we can check immediately
-        # if the order is fulfilled fully or partially
+        # we assume the order is executed at the price requested
+        buy_limit_filled_price = buy_limit_requested
+
         if order_status == 'expired' or order_status == 'rejected':
             order_type = self.strategy.order_types['buy']
             order_tif = self.strategy.order_time_in_force['buy']
@@ -403,20 +404,33 @@ class FreqtradeBot(object):
                                ' zero amount is fulfilled.',
                                order_tif, order_type, pair_s, order_status, self.exchange.name)
                 return False
-            else:  # the order is partially fulfilled
+            else:
+                # the order is partially fulfilled
+                # in case of IOC orders we can check immediately
+                # if the order is fulfilled fully or partially
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' %s amount fulfilled out of %s (%s remaining which is canceled).',
                                order_tif, order_type, pair_s, order_status, self.exchange.name,
                                order['filled'], order['amount'], order['remaining']
                                )
-                return False
+                stake_amount = order['price']
+                amount = order['amount']
+                buy_limit_filled_price = order['average']
+                order_id = None
+
+        # in case of FOK the order may be filled immediately and fully
+        elif order_status == 'filled':
+            stake_amount = order['price']
+            amount = order['amount']
+            buy_limit_filled_price = order['average']
+            order_id = None
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': pair_s,
             'market_url': pair_url,
-            'limit': buy_limit,
+            'limit': buy_limit_requested,
             'stake_amount': stake_amount,
             'stake_currency': stake_currency,
             'fiat_currency': fiat_currency
@@ -430,8 +444,8 @@ class FreqtradeBot(object):
             amount=amount,
             fee_open=fee,
             fee_close=fee,
-            open_rate=buy_limit,
-            open_rate_requested=buy_limit,
+            open_rate=buy_limit_filled_price,
+            open_rate_requested=buy_limit_requested,
             open_date=datetime.utcnow(),
             exchange=self.exchange.id,
             open_order_id=order_id,
