@@ -64,13 +64,7 @@ def retrier(f):
 
 class Exchange(object):
 
-    # Current selected exchange
-    _api: ccxt.Exchange = None
-    _api_async: ccxt_async.Exchange = None
     _conf: Dict = {}
-
-    # Holds all open sell orders for dry_run
-    _dry_run_open_orders: Dict[str, Any] = {}
 
     def __init__(self, config: dict) -> None:
         """
@@ -89,13 +83,17 @@ class Exchange(object):
         # Holds candles
         self.klines: Dict[str, Any] = {}
 
+        # Holds all open sell orders for dry_run
+        self._dry_run_open_orders: Dict[str, Any] = {}
+
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
 
         exchange_config = config['exchange']
-        self._api = self._init_ccxt(exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
-        self._api_async = self._init_ccxt(exchange_config, ccxt_async,
-                                          ccxt_kwargs=exchange_config.get('ccxt_async_config'))
+        self._api: ccxt.Exchange = self._init_ccxt(
+            exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
+        self._api_async: ccxt_async.Exchange = self._init_ccxt(
+            exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
 
         logger.info('Using Exchange "%s"', self.name)
 
