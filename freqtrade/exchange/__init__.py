@@ -489,9 +489,9 @@ class Exchange(object):
 
         # Combine tickers
         data: List = []
-        for tick in tickers:
-            if tick[0] == pair:
-                data.extend(tick[1])
+        for p, ticker in tickers:
+            if p == pair:
+                data.extend(ticker)
         # Sort data again after extending the result - above calls return in "async order" order
         data = sorted(data, key=lambda x: x[0])
         logger.info("downloaded %s with length %s.", pair, len(data))
@@ -502,8 +502,15 @@ class Exchange(object):
         Refresh tickers asyncronously and return the result.
         """
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
-        asyncio.get_event_loop().run_until_complete(
+        ticklist = asyncio.get_event_loop().run_until_complete(
             self.async_get_candles_history(pair_list, ticker_interval))
+
+        for pair, ticks in ticklist:
+            # keeping last candle time as last refreshed time of the pair
+            if ticks:
+                self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
+            # keeping candles in cache
+            self.klines[pair] = ticks
 
     async def async_get_candles_history(self, pairs: List[str],
                                         tick_interval: str) -> List[Tuple[str, List]]:
@@ -528,7 +535,7 @@ class Exchange(object):
             # so we fetch it from local cache
             if (not since_ms and
                     self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
-                    arrow.utcnow().timestamp):
+                    arrow.utcnow().timestamp and pair in self.klines):
                 data = self.klines[pair]
                 logger.debug("Using cached klines data for %s ...", pair)
             else:
@@ -541,13 +548,6 @@ class Exchange(object):
             # Only sort if necessary to save computing time
             if data and data[0][0] > data[-1][0]:
                 data = sorted(data, key=lambda x: x[0])
-
-            # keeping last candle time as last refreshed time of the pair
-            if data:
-                self._pairs_last_refresh_time[pair] = data[-1][0] // 1000
-
-            # keeping candles in cache
-            self.klines[pair] = data
 
             logger.debug("done fetching %s ...", pair)
             return pair, data
