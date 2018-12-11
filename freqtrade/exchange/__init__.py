@@ -159,7 +159,7 @@ class Exchange(object):
 
     def klines(self, pair: str) -> DataFrame:
         if pair in self._klines:
-            return self._klines.get(pair).copy()
+            return self._klines[pair].copy()
         else:
             return None
 
