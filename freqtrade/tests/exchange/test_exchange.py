@@ -737,7 +737,7 @@ def test_get_history(default_conf, mocker, caplog):
 def test_refresh_tickers(mocker, default_conf, caplog) -> None:
     tick = [
         [
-            1511686200000,  # unix timestamp ms
+            arrow.utcnow().timestamp * 1000,  # unix timestamp ms
             1,  # open
             2,  # high
             3,  # low
@@ -757,8 +757,15 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
 
     assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
     assert exchange.klines
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
     for pair in pairs:
         assert exchange.klines[pair]
+
+    # test caching
+    exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
+
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert log_has(f"Using cached klines data for {pairs[0]} ...", caplog.record_tuples)
 
 
 @pytest.mark.asyncio
@@ -788,10 +795,6 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     assert res[1] == tick
     assert exchange._api_async.fetch_ohlcv.call_count == 1
     assert not log_has(f"Using cached klines data for {pair} ...", caplog.record_tuples)
-    # test caching
-    res = await exchange._async_get_candle_history(pair, "5m")
-    assert exchange._api_async.fetch_ohlcv.call_count == 1
-    assert log_has(f"Using cached klines data for {pair} ...", caplog.record_tuples)
 
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
