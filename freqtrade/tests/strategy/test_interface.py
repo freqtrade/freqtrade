@@ -16,62 +16,64 @@ from freqtrade.strategy.default_strategy import DefaultStrategy
 _STRATEGY = DefaultStrategy(config={})
 
 
-def test_returns_latest_buy_signal(mocker, default_conf):
+def test_returns_latest_buy_signal(mocker, default_conf, ticker_history):
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
         return_value=DataFrame([{'buy': 1, 'sell': 0, 'date': arrow.utcnow()}])
     )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', MagicMock()) == (True, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (True, False)
 
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
         return_value=DataFrame([{'buy': 0, 'sell': 1, 'date': arrow.utcnow()}])
     )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', MagicMock()) == (False, True)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (False, True)
 
 
-def test_returns_latest_sell_signal(mocker, default_conf):
+def test_returns_latest_sell_signal(mocker, default_conf, ticker_history):
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
         return_value=DataFrame([{'sell': 1, 'buy': 0, 'date': arrow.utcnow()}])
     )
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', MagicMock()) == (False, True)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (False, True)
 
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
         return_value=DataFrame([{'sell': 0, 'buy': 1, 'date': arrow.utcnow()}])
     )
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', MagicMock()) == (True, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', ticker_history) == (True, False)
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
-                                                  None)
+                                                  DataFrame())
     assert log_has('Empty ticker history for pair foo', caplog.record_tuples)
 
 
-def test_get_signal_exception_valueerror(default_conf, mocker, caplog):
+def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
         side_effect=ValueError('xyz')
     )
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'], 1)
+    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
+                                                  ticker_history)
     assert log_has('Unable to analyze ticker for pair foo: xyz', caplog.record_tuples)
 
 
-def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
+def test_get_signal_empty_dataframe(default_conf, mocker, caplog, ticker_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(
         _STRATEGY, 'analyze_ticker',
         return_value=DataFrame([])
     )
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'], 1)
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+                                                  ticker_history)
     assert log_has('Empty dataframe for pair xyz', caplog.record_tuples)
 
 
-def test_get_signal_old_dataframe(default_conf, mocker, caplog):
+def test_get_signal_old_dataframe(default_conf, mocker, caplog, ticker_history):
     caplog.set_level(logging.INFO)
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
@@ -81,7 +83,8 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
         _STRATEGY, 'analyze_ticker',
         return_value=DataFrame(ticks)
     )
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'], 1)
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['ticker_interval'],
+                                                  ticker_history)
     assert log_has(
         'Outdated history for pair xyz. Last tick is 16 minutes old',
         caplog.record_tuples

@@ -9,6 +9,7 @@ from unittest.mock import Mock, MagicMock, PropertyMock
 import arrow
 import ccxt
 import pytest
+from pandas import DataFrame
 
 from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.exchange import API_RETRY_COUNT, Exchange
@@ -737,11 +738,19 @@ def test_get_history(default_conf, mocker, caplog):
 def test_refresh_tickers(mocker, default_conf, caplog) -> None:
     tick = [
         [
-            arrow.utcnow().timestamp * 1000,  # unix timestamp ms
+            (arrow.utcnow().timestamp - 1) * 1000,  # unix timestamp ms
             1,  # open
             2,  # high
             3,  # low
             4,  # close
+            5,  # volume (in quote currency)
+        ],
+        [
+            arrow.utcnow().timestamp * 1000,  # unix timestamp ms
+            3,  # open
+            1,  # high
+            4,  # low
+            6,  # close
             5,  # volume (in quote currency)
         ]
     ]
@@ -752,14 +761,15 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
 
     pairs = ['IOTA/ETH', 'XRP/ETH']
     # empty dicts
-    assert not exchange.klines
+    assert not exchange._klines
     exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
 
     assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
-    assert exchange.klines
+    assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     for pair in pairs:
-        assert exchange.klines[pair]
+        assert isinstance(exchange.klines(pair), DataFrame)
+        assert len(exchange.klines(pair)) > 0
 
     # test caching
     exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
