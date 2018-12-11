@@ -7,12 +7,14 @@ from typing import List, Dict, Tuple, Any, Optional
 from datetime import datetime
 from math import floor, ceil
 
+import arrow
 import asyncio
 import ccxt
 import ccxt.async_support as ccxt_async
-import arrow
+from pandas import DataFrame
 
 from freqtrade import constants, OperationalException, DependencyException, TemporaryError
+from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,7 @@ class Exchange(object):
         self._pairs_last_refresh_time: Dict[str, int] = {}
 
         # Holds candles
-        self.klines: Dict[str, Any] = {}
+        self._klines: Dict[str, DataFrame] = {}
 
         # Holds all open sell orders for dry_run
         self._dry_run_open_orders: Dict[str, Any] = {}
@@ -154,6 +156,12 @@ class Exchange(object):
     def id(self) -> str:
         """exchange ccxt id"""
         return self._api.id
+
+    def klines(self, pair: str) -> DataFrame:
+        if pair in self._klines:
+            return self._klines.get(pair).copy()
+        else:
+            return None
 
     def set_sandbox(self, api, exchange_config: dict, name: str):
         if exchange_config.get('sandbox'):
@@ -499,7 +507,7 @@ class Exchange(object):
 
     def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> None:
         """
-        Refresh tickers asyncronously and set `klines` of this object with the result
+        Refresh tickers asyncronously and set `_klines` of this object with the result
         """
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
         asyncio.get_event_loop().run_until_complete(
@@ -515,7 +523,7 @@ class Exchange(object):
         # Gather corotines to run
         for pair in pairs:
             if not (self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
-                    arrow.utcnow().timestamp and pair in self.klines):
+                    arrow.utcnow().timestamp and pair in self._klines):
                 input_coroutines.append(self._async_get_candle_history(pair, tick_interval))
             else:
                 logger.debug("Using cached klines data for %s ...", pair)
@@ -528,7 +536,7 @@ class Exchange(object):
             if ticks:
                 self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self.klines[pair] = ticks
+            self._klines[pair] = parse_ticker_dataframe(ticks)
         return tickers
 
     @retrier_async

@@ -14,6 +14,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     :param ticker: ticker list, as returned by exchange.async_get_candle_history
     :return: DataFrame
     """
+    logger.debug("Parsing tickerlist to dataframe")
     cols = ['date', 'open', 'high', 'low', 'close', 'volume']
     frame = DataFrame(ticker, columns=cols)
 
