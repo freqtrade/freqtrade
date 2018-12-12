@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 
-from freqtrade.data.convert import parse_ticker_dataframe
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.tests.conftest import log_has
 
 

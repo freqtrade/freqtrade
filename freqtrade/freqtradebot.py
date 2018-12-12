@@ -14,7 +14,7 @@ from requests.exceptions import RequestException
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
-from freqtrade.data.convert import order_book_to_dataframe
+from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.edge import Edge
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
