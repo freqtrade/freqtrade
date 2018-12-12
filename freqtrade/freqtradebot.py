@@ -398,7 +398,7 @@ class FreqtradeBot(object):
             order_type = self.strategy.order_types['buy']
             order_tif = self.strategy.order_time_in_force['buy']
 
-            # return false is order is not filled
+            # return false if the order is not filled
             if float(order['filled']) == 0:
                 logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
                                ' zero amount is fulfilled.',
@@ -430,7 +430,7 @@ class FreqtradeBot(object):
             'exchange': self.exchange.name.capitalize(),
             'pair': pair_s,
             'market_url': pair_url,
-            'limit': buy_limit_requested,
+            'limit': buy_limit_filled_price,
             'stake_amount': stake_amount,
             'stake_currency': stake_currency,
             'fiat_currency': fiat_currency
