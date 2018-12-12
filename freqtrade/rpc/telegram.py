@@ -12,8 +12,8 @@ from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater
 
 from freqtrade.__init__ import __version__
-from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
 logger = logging.getLogger(__name__)
 
