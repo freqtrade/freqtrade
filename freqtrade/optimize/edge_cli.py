@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, too-many-arguments
 
 """
-This module contains the backtesting logic
+This module contains the edge backtesting interface
 """
 import logging
 from argparse import Namespace
@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 class EdgeCli(object):
     """
-    Backtesting class, this class contains all the logic to run a backtest
+    EdgeCli class, this class contains all the logic to run edge backtesting
 
-    To run a backtest:
-    backtesting = Backtesting(config)
-    backtesting.start()
+    To run a edge backtest:
+    edge = EdgeCli(config)
+    edge.start()
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:
@@ -77,7 +77,7 @@ class EdgeCli(object):
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
     """
-    Prepare the configuration for the backtesting
+    Prepare the configuration for edge backtesting
     :param args: Cli args from Arguments()
     :return: Configuration
     """
