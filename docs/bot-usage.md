@@ -240,6 +240,8 @@ optional arguments:
                         --stoplosses=-0.01,-0.1,-0.001
 ```
 
+To understand edge and how to read the results, please read the [edge documentation](edge.md).
+
 ## A parameter missing in the configuration?
 
 All parameters for `main.py`, `backtesting`, `hyperopt` are referenced
