@@ -413,16 +413,16 @@ class FreqtradeBot(object):
                                order_tif, order_type, pair_s, order_status, self.exchange.name,
                                order['filled'], order['amount'], order['remaining']
                                )
-                stake_amount = order['price']
+                stake_amount = order['cost']
                 amount = order['amount']
-                buy_limit_filled_price = order['average']
+                buy_limit_filled_price = order['price']
                 order_id = None
 
         # in case of FOK the order may be filled immediately and fully
-        elif order_status == 'filled':
-            stake_amount = order['price']
+        elif order_status == 'closed':
+            stake_amount = order['cost']
             amount = order['amount']
-            buy_limit_filled_price = order['average']
+            buy_limit_filled_price = order['price']
             order_id = None
 
         self.rpc.send_msg({
