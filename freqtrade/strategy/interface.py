@@ -13,7 +13,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
-from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
+from freqtrade.data.convert import parse_ticker_dataframe
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
