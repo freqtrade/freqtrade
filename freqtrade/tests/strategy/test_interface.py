@@ -49,6 +49,11 @@ def test_get_signal_empty(default_conf, mocker, caplog):
     assert (False, False) == _STRATEGY.get_signal('foo', default_conf['ticker_interval'],
                                                   DataFrame())
     assert log_has('Empty ticker history for pair foo', caplog.record_tuples)
+    caplog.clear()
+
+    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['ticker_interval'],
+                                                  [])
+    assert log_has('Empty ticker history for pair bar', caplog.record_tuples)
 
 
 def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ticker_history):

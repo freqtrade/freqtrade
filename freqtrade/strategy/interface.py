@@ -161,7 +161,7 @@ class IStrategy(ABC):
         :param dataframe: Dataframe to analyze
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        if isinstance(dataframe, DataFrame) and dataframe.empty:
+        if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
