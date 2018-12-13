@@ -13,7 +13,6 @@ import os
 from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
-from pandas import DataFrame
 
 from freqtrade import misc, constants, OperationalException
 from freqtrade.exchange import Exchange

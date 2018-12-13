@@ -2,14 +2,12 @@
 
 import logging
 from datetime import datetime
-from typing import List, Dict, Tuple
+from typing import Dict, Tuple
 import operator
 
 import arrow
 from pandas import DataFrame
 
-
-from freqtrade.arguments import TimeRange
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts  # noqa: F401
 
 logger = logging.getLogger(__name__)
