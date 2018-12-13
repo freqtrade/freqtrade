@@ -1,19 +1,21 @@
 # pragma pylint: disable=missing-docstring, C0103, C0330
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
-import pytest
 import logging
-from freqtrade.tests.conftest import get_patched_freqtradebot
-from freqtrade.edge import Edge, PairInfo
-from pandas import DataFrame, to_datetime
-from freqtrade.strategy.interface import SellType
-from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
-                                      _get_frame_time_from_offset)
+import math
+from unittest.mock import MagicMock
+
 import arrow
 import numpy as np
-import math
+import pytest
+from pandas import DataFrame, to_datetime
 
-from unittest.mock import MagicMock
+from freqtrade.edge import Edge, PairInfo
+from freqtrade.strategy.interface import SellType
+from freqtrade.tests.conftest import get_patched_freqtradebot
+from freqtrade.tests.optimize import (BTContainer, BTrade,
+                                      _build_backtest_dataframe,
+                                      _get_frame_time_from_offset)
 
 # Cases to be tested:
 # 1) Open trade should be removed from the end
