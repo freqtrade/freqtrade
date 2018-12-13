@@ -481,7 +481,7 @@ def order_book_l2():
 
 
 @pytest.fixture
-def ticker_history():
+def ticker_history_list():
     return [
         [
             1511686200000,  # unix timestamp ms
@@ -508,6 +508,11 @@ def ticker_history():
             0.7039405
         ]
     ]
+
+
+@pytest.fixture
+def ticker_history(ticker_history_list):
+    return parse_ticker_dataframe(ticker_history_list)
 
 
 @pytest.fixture

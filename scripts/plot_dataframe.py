@@ -139,7 +139,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     if args.live:
         logger.info('Downloading pair.')
         exchange.refresh_tickers([pair], tick_interval)
-        tickers[pair] = exchange.klines[pair]
+        tickers[pair] = exchange.klines(pair)
     else:
         tickers = optimize.load_data(
             datadir=_CONF.get("datadir"),
