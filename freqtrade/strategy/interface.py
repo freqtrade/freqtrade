@@ -132,7 +132,7 @@ class IStrategy(ABC):
         pair = str(metadata.get('pair'))
 
         # Test if seen this pair and last candle before.
-        # always run if process_only_new_candles is set to true
+        # always run if process_only_new_candles is set to false
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
