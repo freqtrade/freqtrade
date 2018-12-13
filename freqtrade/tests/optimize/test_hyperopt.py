@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from freqtrade.optimize import load_tickerdata_file
+from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.tests.conftest import log_has, patch_exchange

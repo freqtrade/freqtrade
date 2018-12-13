@@ -7,7 +7,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.arguments import TimeRange
-from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.data.history import load_tickerdata_file
 from freqtrade.persistence import Trade
 from freqtrade.tests.conftest import get_patched_exchange, log_has
 from freqtrade.strategy.default_strategy import DefaultStrategy
