@@ -9,7 +9,7 @@ import arrow
 from freqtrade import arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
-from freqtrade.optimize import download_backtesting_testdata
+from freqtrade.data.history import download_backtesting_testdata
 from freqtrade.configuration import set_loggers
 
 import logging

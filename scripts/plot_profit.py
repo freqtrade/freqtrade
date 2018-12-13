@@ -27,8 +27,8 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade import constants
+from freqtrade.data as history
 from freqtrade.resolvers import StrategyResolver
-import freqtrade.optimize as optimize
 import freqtrade.misc as misc
 
 
@@ -120,7 +120,7 @@ def plot_profit(args: Namespace) -> None:
         pairs = list(set(pairs) & set(filter_pairs))
         logger.info('Filter, keep pairs %s' % pairs)
 
-    tickers = optimize.load_data(
+    tickers = history.load_data(
         datadir=config.get('datadir'),
         pairs=pairs,
         ticker_interval=tick_interval,
