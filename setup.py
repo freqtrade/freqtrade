@@ -6,7 +6,14 @@ if version_info.major == 3 and version_info.minor < 6 or \
     print('Your Python interpreter must be 3.6 or greater!')
     exit(1)
 
-from freqtrade import __version__
+from pathlib import Path  # noqa: E402
+from freqtrade import __version__  # noqa: E402
+
+
+readme_file = Path(__file__).parent / "README.md"
+readme_long = "Crypto Trading Bot"
+if readme_file.is_file():
+    readme_long = (Path(__file__).parent / "README.md").read_text()
 
 # Requirements used for submodules
 api = ['flask']
@@ -36,6 +43,8 @@ all_extra = api + plot + develop + jupyter
 setup(name='freqtrade',
       version=__version__,
       description='Crypto Trading Bot',
+      long_description=readme_long,
+      long_description_content_type="text/markdown",
       url='https://github.com/freqtrade/freqtrade',
       author='gcarq and contributors',
       author_email='michael.egger@tsn.at',
