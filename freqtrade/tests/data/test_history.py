@@ -7,6 +7,7 @@ import uuid
 from shutil import copyfile
 
 import arrow
+from pandas import DataFrame
 
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
@@ -54,26 +55,19 @@ def _clean_test_file(file: str) -> None:
         os.rename(file_swp, file)
 
 
-def test_load_data_30min_ticker(ticker_history, mocker, caplog, default_conf) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-30m.json')
-    _backup_file(file, copy_file=True)
-    ld = history.load_data(datadir=None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
-    assert isinstance(ld, dict)
-    assert os.path.isfile(file) is True
+def test_load_data_30min_ticker(mocker, caplog, default_conf) -> None:
+    ld = history.load_pair_history(pair='UNITTEST/BTC', ticker_interval='30m', datadir=None)
+    assert isinstance(ld, DataFrame)
     assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 30m', caplog.record_tuples)
-    _clean_test_file(file)
 
 
-def test_load_data_5min_ticker(ticker_history, mocker, caplog, default_conf) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
-
-    file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-5m.json')
-    _backup_file(file, copy_file=True)
-    history.load_data(datadir=None, pairs=['UNITTEST/BTC'], ticker_interval='5m')
-    assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 5m', caplog.record_tuples)
-    _clean_test_file(file)
+def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
+    ld = history.load_pair_history(pair='UNITTEST/BTC', ticker_interval='7m', datadir=None)
+    assert not isinstance(ld, DataFrame)
+    assert ld is None
+    assert log_has(
+        'No data for pair: "UNITTEST/BTC", Interval: 7m. '
+        'Use --refresh-pairs-cached to download the data', caplog.record_tuples)
 
 
 def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:

@@ -95,6 +95,31 @@ def load_tickerdata_file(
     return pairdata
 
 
+def load_pair_history(pair: str,
+                      ticker_interval: str,
+                      datadir: Optional[Path],
+                      timerange: TimeRange = TimeRange(None, None, 0, 0)) -> DataFrame:
+    """
+    Loads cached ticker history for the given pair.
+    """
+
+    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+    if pairdata:
+        if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
+            logger.warning('Missing data at start for pair %s, data starts at %s',
+                           pair, arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+        if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
+            logger.warning('Missing data at end for pair %s, data ends at %s',
+                           pair,
+                           arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
+        return parse_ticker_dataframe(pairdata)
+    else:
+        logger.warning('No data for pair: "%s", Interval: %s. '
+                       'Use --refresh-pairs-cached to download the data',
+                       pair, ticker_interval)
+        return None
+
+
 def load_data(datadir: Optional[Path],
               ticker_interval: str,
               pairs: List[str],
@@ -116,22 +141,10 @@ def load_data(datadir: Optional[Path],
         download_pairs(datadir, exchange, pairs, ticker_interval, timerange=timerange)
 
     for pair in pairs:
-        pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
-        if pairdata:
-            if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
-                logger.warning('Missing data at start for pair %s, data starts at %s',
-                               pair,
-                               arrow.get(pairdata[0][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-            if timerange.stoptype == 'date' and pairdata[-1][0] < timerange.stopts * 1000:
-                logger.warning('Missing data at end for pair %s, data ends at %s',
-                               pair,
-                               arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-            result[pair] = parse_ticker_dataframe(pairdata)
-        else:
-            logger.warning('No data for pair: "%s", Interval: %s. '
-                           'Use --refresh-pairs-cached to download the data',
-                           pair, ticker_interval)
-
+        hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
+                                 datadir=datadir, timerange=timerange)
+        if hist is not None:
+            result[pair] = hist
     return result
 
 
