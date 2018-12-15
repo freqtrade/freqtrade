@@ -14,6 +14,7 @@ from arrow import Arrow
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
@@ -35,22 +36,13 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what):
     timerange = TimeRange(None, 'line', 0, -101)
-    data = history.load_data(None, ticker_interval='1m',
-                             pairs=['UNITTEST/BTC'], timerange=timerange)
-    pair = data['UNITTEST/BTC']
+    pair = history.load_tickerdata_file(None, ticker_interval='1m',
+                                        pair='UNITTEST/BTC', timerange=timerange)
     datalen = len(pair)
-    # Depending on the what parameter we now adjust the
-    # loaded data looks:
-    # pair :: [[    1509836520000,   unix timestamp in ms
-    #               0.00162008,      open
-    #               0.00162008,      high
-    #               0.00162008,      low
-    #               0.00162008,      close
-    #               108.14853839     base volume
-    #           ]]
+
     base = 0.001
     if what == 'raise':
-        return {'UNITTEST/BTC': [
+        data = [
             [
                 pair[x][0],  # Keep old dates
                 x * base,  # But replace O,H,L,C
@@ -59,9 +51,9 @@ def load_data_test(what):
                 x * base,
                 pair[x][5],  # Keep old volume
             ] for x in range(0, datalen)
-        ]}
+        ]
     if what == 'lower':
-        return {'UNITTEST/BTC': [
+        data = [
             [
                 pair[x][0],  # Keep old dates
                 1 - x * base,  # But replace O,H,L,C
@@ -70,10 +62,10 @@ def load_data_test(what):
                 1 - x * base,
                 pair[x][5]  # Keep old volume
             ] for x in range(0, datalen)
-        ]}
+        ]
     if what == 'sine':
         hz = 0.1  # frequency
-        return {'UNITTEST/BTC': [
+        data = [
             [
                 pair[x][0],  # Keep old dates
                 math.sin(x * hz) / 1000 + base,  # But replace O,H,L,C
@@ -82,8 +74,8 @@ def load_data_test(what):
                 math.sin(x * hz) / 1000 + base,
                 pair[x][5]  # Keep old volume
             ] for x in range(0, datalen)
-        ]}
-    return data
+        ]
+    return {'UNITTEST/BTC': parse_ticker_dataframe(data)}
 
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
@@ -112,15 +104,15 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
                      timerange=None, exchange=None):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    pairdata = {'UNITTEST/BTC': tickerdata}
+    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata)}
     return pairdata
 
 
 # use for mock ccxt.fetch_ohlvc'
 def _load_pair_as_ticks(pair, tickfreq):
-    ticks = history.load_data(None, ticker_interval=tickfreq, pairs=[pair])
-    ticks = trim_dictlist(ticks, -201)
-    return ticks[pair]
+    ticks = history.load_tickerdata_file(None, ticker_interval=tickfreq, pair=pair)
+    ticks = ticks[-201:]
+    return ticks
 
 
 # FIX: fixturize this?
@@ -334,7 +326,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
     tick = history.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': tick}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
 
     backtesting = Backtesting(default_conf)
     data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
@@ -512,8 +504,9 @@ def test_backtest(default_conf, fee, mocker) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
-    data = history.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'])
-    data = trim_dictlist(data, -200)
+    timerange = TimeRange(None, 'line', 0, -201)
+    data = history.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(data_processed)
     results = backtesting.backtest(
@@ -537,8 +530,8 @@ def test_backtest(default_conf, fee, mocker) -> None:
                        Arrow(2018, 1, 30, 3, 30, 0).datetime],
          'close_time': [Arrow(2018, 1, 29, 22, 35, 0).datetime,
                         Arrow(2018, 1, 30, 4, 15, 0).datetime],
-         'open_index': [77, 183],
-         'close_index': [124, 192],
+         'open_index': [78, 184],
+         'close_index': [125, 193],
          'trade_duration': [235, 45],
          'open_at_end': [False, False],
          'open_rate': [0.104445, 0.10302485],
@@ -564,9 +557,10 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
-    # Run a backtesting for an exiting 5min ticker_interval
-    data = history.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
-    data = trim_dictlist(data, -200)
+    # Run a backtesting for an exiting 1min ticker_interval
+    timerange = TimeRange(None, 'line', 0, -200)
+    data = history.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(processed)
     results = backtesting.backtest(
@@ -652,7 +646,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     # 200 candles in backtest data
     # won't buy on first (shifted by 1)
     # 100 buys signals
-    assert len(results) == 99
+    assert len(results) == 100
     # One trade was force-closed at the end
     assert len(results.loc[results.open_at_end]) == 0
 
@@ -841,7 +835,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
-        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:57:00+00:00 (0 days)..',
+        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
     ]
 
@@ -900,7 +894,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Downloading data for all pairs in whitelist ...',
-        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:57:00+00:00 (0 days)..',
+        'Measuring data from 2017-11-14T19:31:00+00:00 up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategy',
