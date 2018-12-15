@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
+from pandas import DataFrame
 
 from freqtrade import misc, constants, OperationalException
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
@@ -69,7 +71,7 @@ def load_tickerdata_file(
         timerange: Optional[TimeRange] = None) -> Optional[List[Dict]]:
     """
     Load a pair from file,
-    :return dict OR empty if unsuccesful
+    :return dict(<pair>:<tickerlist>) or None if unsuccesful
     """
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
@@ -99,7 +101,7 @@ def load_data(datadir: Optional[Path],
               pairs: List[str],
               refresh_pairs: Optional[bool] = False,
               exchange: Optional[Exchange] = None,
-              timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, List]:
+              timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for the given parameters
     :return: dict
@@ -125,7 +127,7 @@ def load_data(datadir: Optional[Path],
                 logger.warning('Missing data at end for pair %s, data ends at %s',
                                pair,
                                arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-            result[pair] = pairdata
+            result[pair] = parse_ticker_dataframe(pairdata)
         else:
             logger.warning(
                 'No data for pair: "%s", Interval: %s. '

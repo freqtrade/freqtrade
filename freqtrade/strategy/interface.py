@@ -13,7 +13,6 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
-from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -326,7 +325,7 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), {'pair': pair})
+        return {pair: self.advise_indicators(pair_data, {'pair': pair})
                 for pair, pair_data in tickerdata.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
