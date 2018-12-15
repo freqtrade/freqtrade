@@ -81,11 +81,11 @@ def load_tickerdata_file(
     if gzipfile.is_file():
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
-            pairdata = json.load(tickerdata)
+            pairdata = json_load(tickerdata)
     elif file.is_file():
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            pairdata = json.load(tickerdata)
+            pairdata = json_load(tickerdata)
     else:
         return None
 
