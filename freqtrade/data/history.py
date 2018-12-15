@@ -64,7 +64,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
 
 
 def load_tickerdata_file(
-        datadir: Path, pair: str,
+        datadir: Optional[Path], pair: str,
         ticker_interval: str,
         timerange: Optional[TimeRange] = None) -> Optional[List[Dict]]:
     """

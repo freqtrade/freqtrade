@@ -2,6 +2,7 @@
 
 import json
 import os
+from pathlib import Path
 import uuid
 from shutil import copyfile
 
@@ -116,7 +117,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
 
 
 def test_testdata_path() -> None:
-    assert os.path.join('freqtrade', 'tests', 'testdata') in make_testdata_path(None)
+    assert str(Path('freqtrade') / 'tests' / 'testdata') in str(make_testdata_path(None))
 
 
 def test_download_pairs(ticker_history_list, mocker, default_conf) -> None:
@@ -160,10 +161,10 @@ def test_download_pairs(ticker_history_list, mocker, default_conf) -> None:
 
 
 def test_load_cached_data_for_updating(mocker) -> None:
-    datadir = os.path.join(os.path.dirname(__file__), '..', 'testdata')
+    datadir = Path(__file__).parent.parent.joinpath('testdata')
 
     test_data = None
-    test_filename = os.path.join(datadir, 'UNITTEST_BTC-1m.json')
+    test_filename = datadir.joinpath('UNITTEST_BTC-1m.json')
     with open(test_filename, "rt") as file:
         test_data = json.load(file)
 
@@ -238,7 +239,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
-    data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
+    data, start_ts = load_cached_data_for_updating(test_filename.with_name('unexist'),
                                                    '1m',
                                                    timerange)
     assert data == []
@@ -247,7 +248,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
     # same with 'line' timeframe
     num_lines = 30
     timerange = TimeRange(None, 'line', 0, -num_lines)
-    data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
+    data, start_ts = load_cached_data_for_updating(test_filename.with_name('unexist'),
                                                    '1m',
                                                    timerange)
     assert data == []
@@ -255,7 +256,7 @@ def test_load_cached_data_for_updating(mocker) -> None:
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None
-    data, start_ts = load_cached_data_for_updating(test_filename + 'unexist',
+    data, start_ts = load_cached_data_for_updating(test_filename.with_name('unexist'),
                                                    '1m',
                                                    None)
     assert data == []

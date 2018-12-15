@@ -100,7 +100,7 @@ class Edge():
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
         data = history.load_data(
-            Path(self.config.get('datadir')) if self.config.get('datadir') else None,
+            Path(self.config['datadir']) if self.config.get('datadir') else None,
             pairs=pairs,
             ticker_interval=self.ticker_interval,
             refresh_pairs=self._refresh_pairs,
