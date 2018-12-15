@@ -34,7 +34,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [x] **Dry-run**: Run the bot without playing money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
 - [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
-- [x] **Risk Reward calculation based trading**: Builtin win rate and risk reward ratio using [edge](https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md).
+- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md)
 - [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
 - [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram
