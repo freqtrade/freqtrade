@@ -339,7 +339,7 @@ def test_load_partial_missing(caplog) -> None:
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(tickerdata['UNITTEST/BTC'])
-    start_real = arrow.get(tickerdata['UNITTEST/BTC'][0][0] / 1000)
+    start_real = tickerdata['UNITTEST/BTC'].iloc[0, 0]
     assert log_has(f'Missing data at start for pair '
                    f'UNITTEST/BTC, data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog.record_tuples)
@@ -354,7 +354,8 @@ def test_load_partial_missing(caplog) -> None:
     # timedifference in 5 minutes
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(tickerdata['UNITTEST/BTC'])
-    end_real = arrow.get(tickerdata['UNITTEST/BTC'][-1][0] / 1000)
+    # Shift endtime with +5 - as last candle is dropped (partial candle)
+    end_real = arrow.get(tickerdata['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
     assert log_has(f'Missing data at end for pair '
                    f'UNITTEST/BTC, data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog.record_tuples)

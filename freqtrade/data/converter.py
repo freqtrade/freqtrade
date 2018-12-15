@@ -32,6 +32,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
         'volume': 'max',
     })
     frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
+    logger.debug('Droppling last candle')
     return frame
 
 

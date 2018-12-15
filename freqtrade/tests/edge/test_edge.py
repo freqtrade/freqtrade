@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from pandas import DataFrame, to_datetime
 
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import get_patched_freqtradebot
@@ -280,7 +281,8 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': ETHBTC, 'LTC/BTC': LTCBTC}
+    pairdata = {'NEO/BTC': parse_ticker_dataframe(ETHBTC),
+                'LTC/BTC': parse_ticker_dataframe(LTCBTC)}
     return pairdata
 
 
