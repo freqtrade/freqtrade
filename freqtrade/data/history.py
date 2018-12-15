@@ -74,7 +74,7 @@ def load_tickerdata_file(
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
     file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
-    gzipfile = file.with_suffix('.gz')
+    gzipfile = file.with_suffix(file.suffix + '.gz')
 
     # If the file does not exist we download it when None is returned.
     # If file exists, read the file, load the json
@@ -94,7 +94,7 @@ def load_tickerdata_file(
     return pairdata
 
 
-def load_data(datadir: Path,
+def load_data(datadir: Optional[Path],
               ticker_interval: str,
               pairs: List[str],
               refresh_pairs: Optional[bool] = False,

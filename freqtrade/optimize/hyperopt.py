@@ -5,11 +5,12 @@ This module contains the hyperopt logic
 """
 
 import logging
-import multiprocessing
+from argparse import Namespace
 import os
 import sys
-from argparse import Namespace
+from pathlib import Path
 from math import exp
+import multiprocessing
 from operator import itemgetter
 from typing import Any, Dict, List
 
@@ -240,7 +241,7 @@ class Hyperopt(Backtesting):
         timerange = Arguments.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
         data = load_data(
-            datadir=str(self.config.get('datadir')),
+            datadir=Path(self.config.get('datadir')) if self.config.get('datadir') else None,
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.ticker_interval,
             timerange=timerange

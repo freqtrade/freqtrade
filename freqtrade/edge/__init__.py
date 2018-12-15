@@ -1,9 +1,10 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
+from pathlib import Path
 from typing import Any, Dict, NamedTuple
-import arrow
 
+import arrow
 import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
@@ -99,7 +100,7 @@ class Edge():
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
         data = history.load_data(
-            self.config['datadir'],
+            Path(self.config.get('datadir')) if self.config.get('datadir') else None,
             pairs=pairs,
             ticker_interval=self.ticker_interval,
             refresh_pairs=self._refresh_pairs,
