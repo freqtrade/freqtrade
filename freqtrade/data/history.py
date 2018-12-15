@@ -9,7 +9,7 @@ except ImportError:
     import json  # type: ignore
     _UJSON = False
 import logging
-import os
+from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
@@ -64,7 +64,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
 
 
 def load_tickerdata_file(
-        datadir: str, pair: str,
+        datadir: Path, pair: str,
         ticker_interval: str,
         timerange: Optional[TimeRange] = None) -> Optional[List[Dict]]:
     """
@@ -73,16 +73,16 @@ def load_tickerdata_file(
     """
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
-    file = os.path.join(path, f'{pair_s}-{ticker_interval}.json')
-    gzipfile = file + '.gz'
+    file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
+    gzipfile = file.with_suffix('.gz')
 
     # If the file does not exist we download it when None is returned.
     # If file exists, read the file, load the json
-    if os.path.isfile(gzipfile):
+    if gzipfile.is_file():
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
             pairdata = json.load(tickerdata)
-    elif os.path.isfile(file):
+    elif file.is_file():
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
             pairdata = json.load(tickerdata)
@@ -94,7 +94,7 @@ def load_tickerdata_file(
     return pairdata
 
 
-def load_data(datadir: str,
+def load_data(datadir: Path,
               ticker_interval: str,
               pairs: List[str],
               refresh_pairs: Optional[bool] = False,
@@ -137,13 +137,9 @@ def load_data(datadir: str,
     return result
 
 
-def make_testdata_path(datadir: str) -> str:
+def make_testdata_path(datadir: Optional[Path]) -> Path:
     """Return the path where testdata files are stored"""
-    return datadir or os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__), '..', 'tests', 'testdata'
-        )
-    )
+    return datadir or (Path(__file__).parent.parent / "tests" / "testdata").resolve()
 
 
 def download_pairs(datadir, exchange: Exchange, pairs: List[str],
@@ -167,7 +163,7 @@ def download_pairs(datadir, exchange: Exchange, pairs: List[str],
     return True
 
 
-def load_cached_data_for_updating(filename: str,
+def load_cached_data_for_updating(filename: Path,
                                   tick_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[
         List[Any],
@@ -187,7 +183,7 @@ def load_cached_data_for_updating(filename: str,
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
-    if os.path.isfile(filename):
+    if filename.is_file():
         with open(filename, "rt") as file:
             data = json_load(file)
             # remove the last item, because we are not sure if it is correct
@@ -210,7 +206,7 @@ def load_cached_data_for_updating(filename: str,
     return (data, since_ms)
 
 
-def download_backtesting_testdata(datadir: str,
+def download_backtesting_testdata(datadir: Path,
                                   exchange: Exchange,
                                   pair: str,
                                   tick_interval: str = '5m',
@@ -230,7 +226,7 @@ def download_backtesting_testdata(datadir: str,
     """
     path = make_testdata_path(datadir)
     filepair = pair.replace("/", "_")
-    filename = os.path.join(path, f'{filepair}-{tick_interval}.json')
+    filename = path.joinpath(f'{filepair}-{tick_interval}.json')
 
     logger.info(
         'Download the pair: "%s", Interval: %s',

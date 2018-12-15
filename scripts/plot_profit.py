@@ -13,10 +13,10 @@ Optional Cli parameters
 --export-filename: Specify where the backtest export is located.
 """
 import logging
-import os
 import sys
 import json
 from argparse import Namespace
+from pathlib import Path
 from typing import List, Optional
 import numpy as np
 
@@ -27,7 +27,7 @@ import plotly.graph_objs as go
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade import constants
-from freqtrade.data as history
+from freqtrade.data import history
 from freqtrade.resolvers import StrategyResolver
 import freqtrade.misc as misc
 
@@ -121,7 +121,7 @@ def plot_profit(args: Namespace) -> None:
         logger.info('Filter, keep pairs %s' % pairs)
 
     tickers = history.load_data(
-        datadir=config.get('datadir'),
+        datadir=Path(config.get('datadir')),
         pairs=pairs,
         ticker_interval=tick_interval,
         refresh_pairs=False,
@@ -187,7 +187,7 @@ def plot_profit(args: Namespace) -> None:
         )
         fig.append_trace(pair_profit, 3, 1)
 
-    plot(fig, filename=os.path.join('user_data', 'freqtrade-profit-plot.html'))
+    plot(fig, filename=str(Path('user_data').joinpath('freqtrade-profit-plot.html')))
 
 
 def define_index(min_date: int, max_date: int, interval: str) -> int:

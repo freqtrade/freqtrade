@@ -142,7 +142,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         tickers[pair] = exchange.klines(pair)
     else:
         tickers = history.load_data(
-            datadir=_CONF.get("datadir"),
+            datadir=Path(_CONF.get("datadir")),
             pairs=[pair],
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
