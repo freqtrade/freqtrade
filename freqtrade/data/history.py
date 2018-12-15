@@ -70,7 +70,7 @@ def load_tickerdata_file(
         ticker_interval: str,
         timerange: Optional[TimeRange] = None) -> Optional[List[Dict]]:
     """
-    Load a pair from file,
+    Load a pair from file, either .json.gz or .json
     :return dict(<pair>:<tickerlist>) or None if unsuccesful
     """
     path = make_testdata_path(datadir)
@@ -78,8 +78,7 @@ def load_tickerdata_file(
     file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
     gzipfile = file.with_suffix(file.suffix + '.gz')
 
-    # If the file does not exist we download it when None is returned.
-    # If file exists, read the file, load the json
+    # Try gzip file first, otherwise regular json file.
     if gzipfile.is_file():
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
@@ -129,12 +128,9 @@ def load_data(datadir: Optional[Path],
                                arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
             result[pair] = parse_ticker_dataframe(pairdata)
         else:
-            logger.warning(
-                'No data for pair: "%s", Interval: %s. '
-                'Use --refresh-pairs-cached to download the data',
-                pair,
-                ticker_interval
-            )
+            logger.warning('No data for pair: "%s", Interval: %s. '
+                           'Use --refresh-pairs-cached to download the data',
+                           pair, ticker_interval)
 
     return result
 
@@ -156,20 +152,15 @@ def download_pairs(datadir, exchange: Exchange, pairs: List[str],
                                           tick_interval=ticker_interval,
                                           timerange=timerange)
         except BaseException:
-            logger.info(
-                'Failed to download the pair: "%s", Interval: %s',
-                pair,
-                ticker_interval
-            )
+            logger.info('Failed to download the pair: "%s", Interval: %s',
+                        pair, ticker_interval)
             return False
     return True
 
 
-def load_cached_data_for_updating(filename: Path,
-                                  tick_interval: str,
-                                  timerange: Optional[TimeRange]) -> Tuple[
-        List[Any],
-        Optional[int]]:
+def load_cached_data_for_updating(filename: Path, tick_interval: str,
+                                  timerange: Optional[TimeRange]) -> Tuple[List[Any],
+                                                                           Optional[int]]:
     """
     Load cached data and choose what part of the data should be updated
     """
@@ -188,8 +179,7 @@ def load_cached_data_for_updating(filename: Path,
     if filename.is_file():
         with open(filename, "rt") as file:
             data = json_load(file)
-            # remove the last item, because we are not sure if it is correct
-            # it could be fetched when the candle was incompleted
+            # remove the last item, could be incomplete candle
             if data:
                 data.pop()
     else:
@@ -197,12 +187,10 @@ def load_cached_data_for_updating(filename: Path,
 
     if data:
         if since_ms and since_ms < data[0][0]:
-            # the data is requested for earlier period than the cache has
-            # so fully redownload all the data
+            # Earlier data than existing data requested, redownload all
             data = []
         else:
-            # a part of the data was already downloaded, so
-            # download unexist data only
+            # a part of the data was already downloaded, so download unexist data only
             since_ms = data[-1][0] + 1
 
     return (data, since_ms)
@@ -230,11 +218,7 @@ def download_backtesting_testdata(datadir: Path,
     filepair = pair.replace("/", "_")
     filename = path.joinpath(f'{filepair}-{tick_interval}.json')
 
-    logger.info(
-        'Download the pair: "%s", Interval: %s',
-        pair,
-        tick_interval
-    )
+    logger.info('Download the pair: "%s", Interval: %s', pair, tick_interval)
 
     data, since_ms = load_cached_data_for_updating(filename, tick_interval, timerange)
 
