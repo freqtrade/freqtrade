@@ -62,7 +62,7 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [Requirements](#requirements)
   - [Min hardware required](#min-hardware-required)
   - [Software requirements](#software-requirements)
-- [Wanna help?]
+- [Wanna help?](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
  
 
 ## Quick start
