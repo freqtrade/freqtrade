@@ -117,7 +117,7 @@ def _load_pair_as_ticks(pair, tickfreq):
 
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
-    data = history.load_data(None, ticker_interval='1m', pairs=[pair])
+    data = history.load_data(datadir=None, ticker_interval='1m', pairs=[pair])
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
@@ -505,7 +505,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
     timerange = TimeRange(None, 'line', 0, -201)
-    data = history.load_data(None, ticker_interval='5m', pairs=['UNITTEST/BTC'],
+    data = history.load_data(datadir=None, ticker_interval='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(data_processed)
@@ -559,7 +559,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
 
     # Run a backtesting for an exiting 1min ticker_interval
     timerange = TimeRange(None, 'line', 0, -200)
-    data = history.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'],
+    data = history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     processed = backtesting.strategy.tickerdata_to_dataframe(data)
     min_date, max_date = get_timeframe(processed)
@@ -683,7 +683,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker):
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
-    data = history.load_data(None, ticker_interval='5m', pairs=pairs)
+    data = history.load_data(datadir=None, ticker_interval='5m', pairs=pairs)
     data = trim_dictlist(data, -500)
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}

@@ -12,7 +12,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
 
     data = strategy.tickerdata_to_dataframe(
         history.load_data(
-            None,
+            datadir=None,
             ticker_interval='1m',
             pairs=['UNITTEST/BTC']
         )
@@ -28,7 +28,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
 
     data = strategy.tickerdata_to_dataframe(
         history.load_data(
-            None,
+            datadir=None,
             ticker_interval='1m',
             pairs=['UNITTEST/BTC']
         )
@@ -50,7 +50,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
     timerange = TimeRange('index', 'index', 200, 250)
     data = strategy.tickerdata_to_dataframe(
         history.load_data(
-            None,
+            datadir=None,
             ticker_interval='5m',
             pairs=['UNITTEST/BTC'],
             timerange=timerange

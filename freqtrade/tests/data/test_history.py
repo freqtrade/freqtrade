@@ -58,7 +58,7 @@ def test_load_data_30min_ticker(ticker_history, mocker, caplog, default_conf) ->
     mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-30m.json')
     _backup_file(file, copy_file=True)
-    ld = history.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
+    ld = history.load_data(datadir=None, pairs=['UNITTEST/BTC'], ticker_interval='30m')
     assert isinstance(ld, dict)
     assert os.path.isfile(file) is True
     assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 30m', caplog.record_tuples)
@@ -70,7 +70,7 @@ def test_load_data_5min_ticker(ticker_history, mocker, caplog, default_conf) -> 
 
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-5m.json')
     _backup_file(file, copy_file=True)
-    history.load_data(None, pairs=['UNITTEST/BTC'], ticker_interval='5m')
+    history.load_data(datadir=None, pairs=['UNITTEST/BTC'], ticker_interval='5m')
     assert os.path.isfile(file) is True
     assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 5m', caplog.record_tuples)
     _clean_test_file(file)
@@ -80,7 +80,7 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'UNITTEST_BTC-1m.json')
     _backup_file(file, copy_file=True)
-    history.load_data(None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
+    history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     assert os.path.isfile(file) is True
     assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 1m', caplog.record_tuples)
     _clean_test_file(file)
@@ -96,7 +96,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
 
     _backup_file(file)
     # do not download a new pair if refresh_pairs isn't set
-    history.load_data(None,
+    history.load_data(datadir=None,
                       ticker_interval='1m',
                       refresh_pairs=False,
                       pairs=['MEME/BTC'])
@@ -106,7 +106,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
                    caplog.record_tuples)
 
     # download a new pair if refresh_pairs is set
-    history.load_data(None,
+    history.load_data(datadir=None,
                       ticker_interval='1m',
                       refresh_pairs=True,
                       exchange=exchange,
@@ -347,8 +347,8 @@ def test_load_partial_missing(caplog) -> None:
     caplog.clear()
     start = arrow.get('2018-01-10T00:00:00')
     end = arrow.get('2018-02-20T00:00:00')
-    tickerdata = history.load_data(None, '5m', ['UNITTEST/BTC'],
-                                   refresh_pairs=False,
+    tickerdata = history.load_data(datadir=None, ticker_interval='5m',
+                                   pairs=['UNITTEST/BTC'], refresh_pairs=False,
                                    timerange=TimeRange('date', 'date',
                                                        start.timestamp, end.timestamp))
     # timedifference in 5 minutes
@@ -364,7 +364,7 @@ def test_load_partial_missing(caplog) -> None:
 def test_init(default_conf, mocker) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     assert {} == history.load_data(
-        '',
+        datadir='',
         exchange=exchange,
         pairs=[],
         refresh_pairs=True,
