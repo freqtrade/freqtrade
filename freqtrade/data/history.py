@@ -164,24 +164,6 @@ def make_testdata_path(datadir: Optional[Path]) -> Path:
     return datadir or (Path(__file__).parent.parent / "tests" / "testdata").resolve()
 
 
-def download_pairs(datadir, exchange: Exchange, pairs: List[str],
-                   ticker_interval: str,
-                   timerange: TimeRange = TimeRange(None, None, 0, 0)) -> bool:
-    """For each pairs passed in parameters, download the ticker intervals"""
-    for pair in pairs:
-        try:
-            download_backtesting_testdata(datadir=datadir,
-                                          exchange=exchange,
-                                          pair=pair,
-                                          tick_interval=ticker_interval,
-                                          timerange=timerange)
-        except BaseException:
-            logger.info('Failed to download the pair: "%s", Interval: %s',
-                        pair, ticker_interval)
-            return False
-    return True
-
-
 def load_cached_data_for_updating(filename: Path, tick_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
@@ -220,11 +202,11 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
     return (data, since_ms)
 
 
-def download_backtesting_testdata(datadir: Path,
+def download_backtesting_testdata(datadir: Optional[Path],
                                   exchange: Exchange,
                                   pair: str,
                                   tick_interval: str = '5m',
-                                  timerange: Optional[TimeRange] = None) -> None:
+                                  timerange: Optional[TimeRange] = None) -> bool:
     """
     Download the latest ticker intervals from the exchange for the pair passed in parameters
     The data is downloaded starting from the last correct ticker interval data that
@@ -238,25 +220,31 @@ def download_backtesting_testdata(datadir: Path,
     :return: None
 
     """
-    path = make_testdata_path(datadir)
-    filepair = pair.replace("/", "_")
-    filename = path.joinpath(f'{filepair}-{tick_interval}.json')
+    try:
+        path = make_testdata_path(datadir)
+        filepair = pair.replace("/", "_")
+        filename = path.joinpath(f'{filepair}-{tick_interval}.json')
 
-    logger.info('Download the pair: "%s", Interval: %s', pair, tick_interval)
+        logger.info('Download the pair: "%s", Interval: %s', pair, tick_interval)
 
-    data, since_ms = load_cached_data_for_updating(filename, tick_interval, timerange)
+        data, since_ms = load_cached_data_for_updating(filename, tick_interval, timerange)
 
-    logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
-    logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
+        logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
+        logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
-    # Default since_ms to 30 days if nothing is given
-    new_data = exchange.get_history(pair=pair, tick_interval=tick_interval,
-                                    since_ms=since_ms if since_ms
-                                    else
-                                    int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000)
-    data.extend(new_data)
+        # Default since_ms to 30 days if nothing is given
+        new_data = exchange.get_history(pair=pair, tick_interval=tick_interval,
+                                        since_ms=since_ms if since_ms
+                                        else
+                                        int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000)
+        data.extend(new_data)
 
-    logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
-    logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
+        logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))
+        logger.debug("New End: %s", misc.format_ms_time(data[-1][0]))
 
-    misc.file_dump_json(filename, data)
+        misc.file_dump_json(filename, data)
+        return True
+    except BaseException:
+            logger.info('Failed to download the pair: "%s", Interval: %s',
+                        pair, tick_interval)
+            return False
