@@ -172,7 +172,7 @@ It means if the order is not executed immediately AND fully then it is canceled 
 It is the same as FOK (above) except it can be partially fulfilled. The remaining part is automatically cancelled by the exchange.
 <br/>
 `order_time_in_force` contains a dict buy and sell time in force policy. This can be set in the configuration or in the strategy. Configuration overwrites strategy configurations.<br/>
-possible values are: `gtc` (defaul), `fok` or `ioc`.<br/>
+possible values are: `gtc` (default), `fok` or `ioc`.<br/>
 ``` python
     "order_time_in_force": {
         "buy": "gtc",
