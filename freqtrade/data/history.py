@@ -115,11 +115,11 @@ def load_pair_history(pair: str,
                                        "calling load_data with refresh_pairs=True")
 
         logger.info('Download data for all pairs and store them in %s', datadir)
-        download_backtesting_testdata(datadir=datadir,
-                                      exchange=exchange,
-                                      pair=pair,
-                                      tick_interval=ticker_interval,
-                                      timerange=timerange)
+        download_pair_history(datadir=datadir,
+                              exchange=exchange,
+                              pair=pair,
+                              tick_interval=ticker_interval,
+                              timerange=timerange)
 
     if pairdata:
         if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
@@ -202,11 +202,11 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
     return (data, since_ms)
 
 
-def download_backtesting_testdata(datadir: Optional[Path],
-                                  exchange: Exchange,
-                                  pair: str,
-                                  tick_interval: str = '5m',
-                                  timerange: Optional[TimeRange] = None) -> bool:
+def download_pair_history(datadir: Optional[Path],
+                          exchange: Exchange,
+                          pair: str,
+                          tick_interval: str = '5m',
+                          timerange: Optional[TimeRange] = None) -> bool:
     """
     Download the latest ticker intervals from the exchange for the pair passed in parameters
     The data is downloaded starting from the last correct ticker interval data that
