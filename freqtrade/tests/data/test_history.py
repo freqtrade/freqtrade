@@ -450,6 +450,19 @@ def test_trim_tickerlist() -> None:
 
     assert ticker_list_len == ticker_len
 
+    # Test invalid timerange (start after stop)
+    timerange = TimeRange('index', 'index', 10, 5)
+    with pytest.raises(ValueError, match=r'The timerange .* is incorrect'):
+        trim_tickerlist(ticker_list, timerange)
+
+    assert ticker_list_len == ticker_len
+
+    # passing empty list
+    timerange = TimeRange(None, None, None, 5)
+    ticker = trim_tickerlist([], timerange)
+    assert 0 == len(ticker)
+    assert not ticker
+
 
 def test_file_dump_json() -> None:
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata',
