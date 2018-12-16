@@ -82,7 +82,7 @@ for pair in PAIRS:
             dl_file.unlink()
 
         print(f'downloading pair {pair}, interval {tick_interval}')
-        download_backtesting_testdata(dl_path, exchange=exchange,
+        download_backtesting_testdata(datadir=dl_path, exchange=exchange,
                                       pair=pair,
                                       tick_interval=tick_interval,
                                       timerange=timerange)

@@ -8,7 +8,9 @@ from shutil import copyfile
 
 import arrow
 from pandas import DataFrame
+import pytest
 
+from freqtrade import OperationalException
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import (download_backtesting_testdata,
@@ -82,7 +84,7 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
 
 def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, default_conf) -> None:
     """
-    Test load_data() with 1 min ticker
+    Test load_pair_history() with 1 min ticker
     """
     mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -90,23 +92,29 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
 
     _backup_file(file)
     # do not download a new pair if refresh_pairs isn't set
-    history.load_data(datadir=None,
-                      ticker_interval='1m',
-                      refresh_pairs=False,
-                      pairs=['MEME/BTC'])
+    history.load_pair_history(datadir=None,
+                              ticker_interval='1m',
+                              refresh_pairs=False,
+                              pair='MEME/BTC')
     assert os.path.isfile(file) is False
     assert log_has('No data for pair: "MEME/BTC", Interval: 1m. '
                    'Use --refresh-pairs-cached to download the data',
                    caplog.record_tuples)
 
     # download a new pair if refresh_pairs is set
-    history.load_data(datadir=None,
-                      ticker_interval='1m',
-                      refresh_pairs=True,
-                      exchange=exchange,
-                      pairs=['MEME/BTC'])
+    history.load_pair_history(datadir=None,
+                              ticker_interval='1m',
+                              refresh_pairs=True,
+                              exchange=exchange,
+                              pair='MEME/BTC')
     assert os.path.isfile(file) is True
     assert log_has('Download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
+    with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
+        history.load_pair_history(datadir=None,
+                                  ticker_interval='1m',
+                                  refresh_pairs=True,
+                                  exchange=None,
+                                  pair='MEME/BTC')
     _clean_test_file(file)
 
 

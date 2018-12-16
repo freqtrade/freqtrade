@@ -99,12 +99,28 @@ def load_tickerdata_file(
 def load_pair_history(pair: str,
                       ticker_interval: str,
                       datadir: Optional[Path],
-                      timerange: TimeRange = TimeRange(None, None, 0, 0)) -> DataFrame:
+                      timerange: TimeRange = TimeRange(None, None, 0, 0),
+                      refresh_pairs: bool = False,
+                      exchange: Optional[Exchange] = None,
+                      ) -> DataFrame:
     """
     Loads cached ticker history for the given pair.
     """
 
     pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+    # If the user force the refresh of pairs
+    if refresh_pairs:
+        if not exchange:
+            raise OperationalException("Exchange needs to be initialized when "
+                                       "calling load_data with refresh_pairs=True")
+
+        logger.info('Download data for all pairs and store them in %s', datadir)
+        download_backtesting_testdata(datadir=datadir,
+                                      exchange=exchange,
+                                      pair=pair,
+                                      tick_interval=ticker_interval,
+                                      timerange=timerange)
+
     if pairdata:
         if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
             logger.warning('Missing data at start for pair %s, data starts at %s',
@@ -124,26 +140,20 @@ def load_pair_history(pair: str,
 def load_data(datadir: Optional[Path],
               ticker_interval: str,
               pairs: List[str],
-              refresh_pairs: Optional[bool] = False,
+              refresh_pairs: bool = False,
               exchange: Optional[Exchange] = None,
               timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, DataFrame]:
     """
-    Loads ticker history data for the given parameters
+    Loads ticker history data for a list of pairs the given parameters
     :return: dict
     """
     result = {}
 
-    # If the user force the refresh of pairs
-    if refresh_pairs:
-        logger.info('Download data for all pairs and store them in %s', datadir)
-        if not exchange:
-            raise OperationalException("Exchange needs to be initialized when "
-                                       "calling load_data with refresh_pairs=True")
-        download_pairs(datadir, exchange, pairs, ticker_interval, timerange=timerange)
-
     for pair in pairs:
         hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
-                                 datadir=datadir, timerange=timerange)
+                                 datadir=datadir, timerange=timerange,
+                                 refresh_pairs=refresh_pairs,
+                                 exchange=exchange)
         if hist is not None:
             result[pair] = hist
     return result
@@ -160,7 +170,7 @@ def download_pairs(datadir, exchange: Exchange, pairs: List[str],
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
-            download_backtesting_testdata(datadir,
+            download_backtesting_testdata(datadir=datadir,
                                           exchange=exchange,
                                           pair=pair,
                                           tick_interval=ticker_interval,
