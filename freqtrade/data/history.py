@@ -69,10 +69,10 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
 def load_tickerdata_file(
         datadir: Optional[Path], pair: str,
         ticker_interval: str,
-        timerange: Optional[TimeRange] = None) -> Optional[List[Dict]]:
+        timerange: Optional[TimeRange] = None) -> Optional[list]:
     """
     Load a pair from file, either .json.gz or .json
-    :return dict(<pair>:<tickerlist>) or None if unsuccesful
+    :return tickerlist or None if unsuccesful
     """
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
@@ -105,6 +105,7 @@ def load_pair_history(pair: str,
                       ) -> DataFrame:
     """
     Loads cached ticker history for the given pair.
+    :return: DataFrame with ohlcv data
     """
 
     pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
@@ -145,7 +146,7 @@ def load_data(datadir: Optional[Path],
               timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for a list of pairs the given parameters
-    :return: dict
+    :return: dict(<pair>:<tickerlist>)
     """
     result = {}
 
@@ -185,9 +186,9 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
     if filename.is_file():
         with open(filename, "rt") as file:
             data = json_load(file)
-            # remove the last item, could be incomplete candle
-            if data:
-                data.pop()
+        # remove the last item, could be incomplete candle
+        if data:
+            data.pop()
     else:
         data = []
 
@@ -217,7 +218,7 @@ def download_pair_history(datadir: Optional[Path],
     :param pair: pair to download
     :param tick_interval: ticker interval
     :param timerange: range of time to download
-    :return: None
+    :return: bool with success state
 
     """
     try:
