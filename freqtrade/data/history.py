@@ -6,19 +6,14 @@ includes:
 """
 
 import gzip
-try:
-    import ujson as json
-    _UJSON = True
-except ImportError:
-    # see mypy/issues/1153
-    import json  # type: ignore
-    _UJSON = False
+
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
 from pandas import DataFrame
+import ujson
 
 from freqtrade import misc, constants, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -29,11 +24,12 @@ logger = logging.getLogger(__name__)
 
 
 def json_load(data):
-    """Try to load data with ujson"""
-    if _UJSON:
-        return json.load(data, precise_float=True)
-    else:
-        return json.load(data)
+    """
+    load data with ujson
+    Use this to have a consistent experience,
+    otherwise "precise_float" needs to be passed to all load operations
+    """
+    return ujson.load(data, precise_float=True)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
