@@ -34,12 +34,14 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [x] **Dry-run**: Run the bot without playing money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
 - [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
-- [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade.
+- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md)
+- [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
 - [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram
 - [x] **Display profit/loss in fiat**: Display your profit/loss in 33 fiat.
 - [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
 - [x] **Performance status report**: Provide a performance status of your current trades.
+
 
 ## Table of Contents
 
@@ -51,6 +53,7 @@ hesitate to read the source code and understand the mechanism of this bot.
   - [Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
   - [Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
   - [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md)
+  - [Edge](https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md)
 - [Basic Usage](#basic-usage)
   - [Bot commands](#bot-commands)
   - [Telegram RPC commands](#telegram-rpc-commands)
@@ -62,7 +65,8 @@ hesitate to read the source code and understand the mechanism of this bot.
 - [Requirements](#requirements)
   - [Min hardware required](#min-hardware-required)
   - [Software requirements](#software-requirements)
-- [Wanna help?]
+- [Wanna help?](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
+  - [Dev - getting started](https://github.com/freqtrade/freqtrade/blob/develop/docs/developer.md) (WIP)
  
 
 ## Quick start
