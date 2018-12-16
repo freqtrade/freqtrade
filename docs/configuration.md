@@ -164,11 +164,11 @@ The following message will be shown if your exchange does not support market ord
 
 ### Understand order_time_in_force
 Order time in force defines the policy by which the order is executed on the exchange. Three commonly used time in force are:<br/>
-`GTC (Goog Till Canceled):`
+**GTC (Goog Till Canceled):**
 This is most of the time the default time in force. It means the order will remain on exchange till it is canceled by user. It can be fully or partially fulfilled. If partially fulfilled, the remaining will stay on the exchange till cancelled.<br/>
-`FOK (Full Or Kill):`
+**FOK (Full Or Kill):**
 It means if the order is not executed immediately AND fully then it is canceled by the exchange.<br/>
-`IOC (Immediate Or Canceled):`
+**IOC (Immediate Or Canceled):**
 It is the same as FOK (above) except it can be partially fulfilled. The remaining part is automatically cancelled by the exchange.
 <br/>
 `order_time_in_force` contains a dict buy and sell time in force policy. This can be set in the configuration or in the strategy. Configuration overwrites strategy configurations.<br/>
