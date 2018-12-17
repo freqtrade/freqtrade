@@ -1,17 +1,19 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
+from pathlib import Path
 from typing import Any, Dict, NamedTuple
-import arrow
 
+import arrow
 import numpy as np
 import utils_find_1st as utf1st
 from pandas import DataFrame
 
-import freqtrade.optimize as optimize
 from freqtrade import constants, OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
+from freqtrade.data import history
+from freqtrade.optimize import get_timeframe
 from freqtrade.strategy.interface import SellType
 
 
@@ -47,7 +49,7 @@ class Edge():
         self.strategy = strategy
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.get_timeframe = optimize.get_timeframe
+        self.get_timeframe = get_timeframe
         self.advise_sell = self.strategy.advise_sell
         self.advise_buy = self.strategy.advise_buy
 
@@ -97,8 +99,8 @@ class Edge():
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
-        data = optimize.load_data(
-            self.config['datadir'],
+        data = history.load_data(
+            datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
             pairs=pairs,
             ticker_interval=self.ticker_interval,
             refresh_pairs=self._refresh_pairs,

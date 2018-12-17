@@ -9,7 +9,7 @@ import arrow
 from freqtrade import arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
-from freqtrade.optimize import download_backtesting_testdata
+from freqtrade.data.history import download_pair_history
 from freqtrade.configuration import set_loggers
 
 import logging
@@ -82,10 +82,10 @@ for pair in PAIRS:
             dl_file.unlink()
 
         print(f'downloading pair {pair}, interval {tick_interval}')
-        download_backtesting_testdata(str(dl_path), exchange=exchange,
-                                      pair=pair,
-                                      tick_interval=tick_interval,
-                                      timerange=timerange)
+        download_pair_history(datadir=dl_path, exchange=exchange,
+                              pair=pair,
+                              tick_interval=tick_interval,
+                              timerange=timerange)
 
 
 if pairs_not_available:

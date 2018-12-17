@@ -1,19 +1,22 @@
 # pragma pylint: disable=missing-docstring, C0103, C0330
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
-import pytest
 import logging
-from freqtrade.tests.conftest import get_patched_freqtradebot
-from freqtrade.edge import Edge, PairInfo
-from pandas import DataFrame, to_datetime
-from freqtrade.strategy.interface import SellType
-from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
-                                      _get_frame_time_from_offset)
+import math
+from unittest.mock import MagicMock
+
 import arrow
 import numpy as np
-import math
+import pytest
+from pandas import DataFrame, to_datetime
 
-from unittest.mock import MagicMock
+from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.edge import Edge, PairInfo
+from freqtrade.strategy.interface import SellType
+from freqtrade.tests.conftest import get_patched_freqtradebot
+from freqtrade.tests.optimize import (BTContainer, BTrade,
+                                      _build_backtest_dataframe,
+                                      _get_frame_time_from_offset)
 
 # Cases to be tested:
 # 1) Open trade should be removed from the end
@@ -278,7 +281,8 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': ETHBTC, 'LTC/BTC': LTCBTC}
+    pairdata = {'NEO/BTC': parse_ticker_dataframe(ETHBTC),
+                'LTC/BTC': parse_ticker_dataframe(LTCBTC)}
     return pairdata
 
 
@@ -286,7 +290,7 @@ def test_edge_process_downloaded_data(mocker, edge_conf):
     edge_conf['datadir'] = None
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.001))
-    mocker.patch('freqtrade.optimize.load_data', mocked_load_data)
+    mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     edge = Edge(edge_conf, freqtrade.exchange, freqtrade.strategy)
 
     assert edge.calculate()

@@ -18,6 +18,7 @@ from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
+from freqtrade.data import history
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
@@ -368,8 +369,8 @@ class Backtesting(object):
 
             timerange = Arguments.parse_timerange(None if self.config.get(
                 'timerange') is None else str(self.config.get('timerange')))
-            data = optimize.load_data(
-                self.config['datadir'],
+            data = history.load_data(
+                datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
                 pairs=pairs,
                 ticker_interval=self.ticker_interval,
                 refresh_pairs=self.config.get('refresh_pairs', False),

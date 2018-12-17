@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from freqtrade.optimize import load_tickerdata_file
+from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -242,7 +243,7 @@ def test_has_space(hyperopt):
 
 def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': tick}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
     dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
@@ -255,7 +256,7 @@ def test_populate_indicators(hyperopt) -> None:
 
 def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': tick}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
     dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})

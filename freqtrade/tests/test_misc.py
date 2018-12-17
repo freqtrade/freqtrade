@@ -3,10 +3,10 @@
 import datetime
 from unittest.mock import MagicMock
 
-from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
                             file_dump_json, format_ms_time, shorten_date)
-from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.data.history import load_tickerdata_file
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
@@ -34,7 +34,7 @@ def test_datesarray_to_datetimearray(ticker_history_list):
 def test_common_datearray(default_conf) -> None:
     strategy = DefaultStrategy(default_conf)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': tick}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
     dataframes = strategy.tickerdata_to_dataframe(tickerlist)
 
     dates = common_datearray(dataframes)

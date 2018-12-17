@@ -1,5 +1,5 @@
 """
-Functions to analyze ticker data with indicators and produce buy and sell signals
+Functions to convert data from one format to another
 """
 import logging
 import pandas as pd
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
-    Analyses the trend for the given ticker history
+    Converts a ticker-list (format ccxt.fetch_ohlcv) to a Dataframe
     :param ticker: ticker list, as returned by exchange.async_get_candle_history
     :return: DataFrame
     """
@@ -32,6 +32,7 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
         'volume': 'max',
     })
     frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
+    logger.debug('Dropping last candle')
     return frame
 
 

@@ -38,9 +38,9 @@ import pytz
 from plotly import tools
 from plotly.offline import plot
 
-import freqtrade.optimize as optimize
 from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.data import history
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
@@ -141,8 +141,8 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         exchange.refresh_tickers([pair], tick_interval)
         tickers[pair] = exchange.klines(pair)
     else:
-        tickers = optimize.load_data(
-            datadir=_CONF.get("datadir"),
+        tickers = history.load_data(
+            datadir=Path(_CONF.get("datadir")),
             pairs=[pair],
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
