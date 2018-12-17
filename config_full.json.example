@@ -39,6 +39,10 @@
         "stoploss": "market",
         "stoploss_on_exchange": "false"
     },
+    "order_time_in_force": {
+        "buy": "gtc",
+        "sell": "gtc",
+    },
     "pairlist": {
         "method": "VolumePairList",
         "config": {

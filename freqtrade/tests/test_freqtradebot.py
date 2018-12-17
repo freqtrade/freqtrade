@@ -863,6 +863,13 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert call_args['rate'] == bid
     assert call_args['amount'] == stake_amount / bid
 
+    # Should create an open trade with an open order id
+    # As the order is not fulfilled yet
+    trade = Trade.query.first()
+    assert trade
+    assert trade.is_open is True
+    assert trade.open_order_id == limit_buy_order['id']
+
     # Test calling with price
     fix_price = 0.06
     assert freqtrade.execute_buy(pair, stake_amount, fix_price)
@@ -874,6 +881,43 @@ def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> Non
     assert call_args['pair'] == pair
     assert call_args['rate'] == fix_price
     assert call_args['amount'] == stake_amount / fix_price
+
+    # In case of closed order
+    limit_buy_order['status'] = 'closed'
+    limit_buy_order['price'] = 10
+    limit_buy_order['cost'] = 100
+    mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[2]
+    assert trade
+    assert trade.open_order_id is None
+    assert trade.open_rate == 10
+    assert trade.stake_amount == 100
+
+    # In case of rejected or expired order and partially filled
+    limit_buy_order['status'] = 'expired'
+    limit_buy_order['amount'] = 90.99181073
+    limit_buy_order['filled'] = 80.99181073
+    limit_buy_order['remaining'] = 10.00
+    limit_buy_order['price'] = 0.5
+    limit_buy_order['cost'] = 40.495905365
+    mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[3]
+    assert trade
+    assert trade.open_order_id is None
+    assert trade.open_rate == 0.5
+    assert trade.stake_amount == 40.495905365
+
+    # In case of the order is rejected and not filled at all
+    limit_buy_order['status'] = 'rejected'
+    limit_buy_order['amount'] = 90.99181073
+    limit_buy_order['filled'] = 0.0
+    limit_buy_order['remaining'] = 90.99181073
+    limit_buy_order['price'] = 0.5
+    limit_buy_order['cost'] = 0.0
+    mocker.patch('freqtrade.exchange.Exchange.buy', MagicMock(return_value=limit_buy_order))
+    assert not freqtrade.execute_buy(pair, stake_amount)
 
 
 def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None:

@@ -56,6 +56,12 @@ class TestStrategy(IStrategy):
         'stoploss_on_exchange': False
     }
 
+    # Optional order time in force
+    order_time_in_force = {
+        'buy': 'gtc',
+        'sell': 'gtc'
+    }
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
