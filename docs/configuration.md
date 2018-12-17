@@ -39,7 +39,7 @@ The table below will list all configuration parameters.
 | `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`).
+| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types).
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
@@ -215,7 +215,7 @@ production mode.
 
 ### Dynamic Pairlists
 
-Dynamic pairlists select pairs for you based on the logic configured. 
+Dynamic pairlists select pairs for you based on the logic configured.
 The bot runs against all pairs (with that stake) on the exchange, and a number of assets (`number_assets`) is selected based on the selected criteria.
 
 By *default*, a Static Pairlist is used (configured as `"pair_whitelist"` under the `"exchange"` section of this configuration).
