@@ -1,4 +1,4 @@
-FROM freqtrade:latest
+FROM freqtradeorg/freqtrade:develop
 
 # Install dependencies
 COPY requirements-dev.txt /freqtrade/
