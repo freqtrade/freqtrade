@@ -15,8 +15,8 @@ from requests.exceptions import RequestException
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.dataprovider import DataProvider
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType

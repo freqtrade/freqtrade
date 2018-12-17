@@ -32,7 +32,7 @@ class DataProvider(object):
         """
         # TODO: Should not be stored in exchange but in this class
         # TODO: should return dataframe, not list
-        return self._exchange.klines.get(pair)
+        return self._exchange.klines(pair)
 
     def historic_ohlcv(self, pair: str) -> DataFrame:
         """
