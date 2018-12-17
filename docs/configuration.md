@@ -39,7 +39,7 @@ The table below will list all configuration parameters.
 | `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`).
+| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types).
 | `order_time_in_force` | None | No | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force).
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.

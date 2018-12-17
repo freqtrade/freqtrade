@@ -82,7 +82,6 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :param config: Config to pass to the bot
     :return: None
     """
-    # mocker.patch('freqtrade.fiat_convert.Market', {'price_usd': 12345.0})
     patch_coinmarketcap(mocker, {'price_usd': 12345.0})
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
@@ -107,7 +106,7 @@ def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> Non
                                                  'website_slug': 'ethereum'}
                                                 ]})
     mocker.patch.multiple(
-        'freqtrade.fiat_convert.Market',
+        'freqtrade.rpc.fiat_convert.Market',
         ticker=tickermock,
         listings=listmock,
 
@@ -482,7 +481,7 @@ def order_book_l2():
 
 
 @pytest.fixture
-def ticker_history():
+def ticker_history_list():
     return [
         [
             1511686200000,  # unix timestamp ms
@@ -509,6 +508,11 @@ def ticker_history():
             0.7039405
         ]
     ]
+
+
+@pytest.fixture
+def ticker_history(ticker_history_list):
+    return parse_ticker_dataframe(ticker_history_list)
 
 
 @pytest.fixture

@@ -8,10 +8,10 @@ import pytest
 from numpy import isnan
 
 from freqtrade import TemporaryError, DependencyException
-from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.tests.test_freqtradebot import patch_get_signal
 from freqtrade.tests.conftest import patch_coinmarketcap, patch_exchange
@@ -171,7 +171,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
 def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
                               limit_buy_order, limit_sell_order, markets, mocker) -> None:
     mocker.patch.multiple(
-        'freqtrade.fiat_convert.Market',
+        'freqtrade.rpc.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
     patch_coinmarketcap(mocker)
@@ -260,10 +260,11 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
                                      ticker_sell_up, limit_buy_order, limit_sell_order):
     patch_exchange(mocker)
     mocker.patch.multiple(
-        'freqtrade.fiat_convert.Market',
+        'freqtrade.rpc.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=15000.0)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -328,7 +329,7 @@ def test_rpc_balance_handle(default_conf, mocker):
     # ETH will be skipped due to mocked Error below
 
     mocker.patch.multiple(
-        'freqtrade.fiat_convert.Market',
+        'freqtrade.rpc.fiat_convert.Market',
         ticker=MagicMock(return_value={'price_usd': 15000.0}),
     )
     patch_coinmarketcap(mocker)

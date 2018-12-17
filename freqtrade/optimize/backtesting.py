@@ -362,7 +362,7 @@ class Backtesting(object):
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
             self.exchange.refresh_tickers(pairs, self.ticker_interval)
-            data = self.exchange.klines
+            data = self.exchange._klines
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 

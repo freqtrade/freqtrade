@@ -16,8 +16,8 @@ def test_shorten_date() -> None:
     assert shorten_date(str_data) == str_shorten_data
 
 
-def test_datesarray_to_datetimearray(ticker_history):
-    dataframes = parse_ticker_dataframe(ticker_history)
+def test_datesarray_to_datetimearray(ticker_history_list):
+    dataframes = parse_ticker_dataframe(ticker_history_list)
     dates = datesarray_to_datetimearray(dataframes['date'])
 
     assert isinstance(dates[0], datetime.datetime)

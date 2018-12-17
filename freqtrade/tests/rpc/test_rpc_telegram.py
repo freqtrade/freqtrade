@@ -737,7 +737,8 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
 def test_forcesell_down_handle(default_conf, update, ticker, fee,
                                ticker_sell_down, markets, mocker) -> None:
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     mocker.patch.multiple(
@@ -791,7 +792,8 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
 def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
     patch_exchange(mocker)
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.get_pair_detail_url', MagicMock())
@@ -836,7 +838,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
 
 def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     patch_coinmarketcap(mocker, value={'price_usd': 15000.0})
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=15000.0)
     msg_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.rpc.telegram.Telegram',

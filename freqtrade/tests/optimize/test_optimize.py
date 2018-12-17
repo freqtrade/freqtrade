@@ -85,11 +85,11 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     _clean_test_file(file)
 
 
-def test_load_data_with_new_pair_1min(ticker_history, mocker, caplog, default_conf) -> None:
+def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, default_conf) -> None:
     """
     Test load_data() with 1 min ticker
     """
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
+    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
 
@@ -119,8 +119,8 @@ def test_testdata_path() -> None:
     assert os.path.join('freqtrade', 'tests', 'testdata') in make_testdata_path(None)
 
 
-def test_download_pairs(ticker_history, mocker, default_conf) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
+def test_download_pairs(ticker_history_list, mocker, default_conf) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     file1_1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-1m.json')
     file1_5 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'MEME_BTC-5m.json')
@@ -280,16 +280,18 @@ def test_download_pairs_exception(ticker_history, mocker, caplog, default_conf) 
     assert log_has('Failed to download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
 
 
-def test_download_backtesting_testdata(ticker_history, mocker, default_conf) -> None:
-    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history)
+def test_download_backtesting_testdata(ticker_history_list, mocker, default_conf) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=ticker_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
-
+    # Tst that pairs-cached is not touched.
+    assert not exchange._pairs_last_refresh_time
     # Download a 1 min ticker file
     file1 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'XEL_BTC-1m.json')
     _backup_file(file1)
     download_backtesting_testdata(None, exchange, pair="XEL/BTC", tick_interval='1m')
     assert os.path.isfile(file1) is True
     _clean_test_file(file1)
+    assert not exchange._pairs_last_refresh_time
 
     # Download a 5 min ticker file
     file2 = os.path.join(os.path.dirname(__file__), '..', 'testdata', 'STORJ_BTC-5m.json')
@@ -298,6 +300,7 @@ def test_download_backtesting_testdata(ticker_history, mocker, default_conf) -> 
     download_backtesting_testdata(None, exchange, pair="STORJ/BTC", tick_interval='5m')
     assert os.path.isfile(file2) is True
     _clean_test_file(file2)
+    assert not exchange._pairs_last_refresh_time
 
 
 def test_download_backtesting_testdata2(mocker, default_conf) -> None:

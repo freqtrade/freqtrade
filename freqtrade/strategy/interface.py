@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 import warnings
 
 import arrow
@@ -128,19 +128,17 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def analyze_ticker(self, ticker_history: List[Dict], metadata: dict) -> DataFrame:
+    def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
 
-        dataframe = parse_ticker_dataframe(ticker_history)
-
         pair = str(metadata.get('pair'))
 
         # Test if seen this pair and last candle before.
-        # always run if process_only_new_candles is set to true
+        # always run if process_only_new_candles is set to false
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
@@ -161,19 +159,20 @@ class IStrategy(ABC):
         return dataframe
 
     def get_signal(self, pair: str, interval: str,
-                   ticker_hist: Optional[List[Dict]]) -> Tuple[bool, bool]:
+                   dataframe: DataFrame) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
+        :param dataframe: Dataframe to analyze
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        if not ticker_hist:
+        if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist, {'pair': pair})
+            dataframe = self.analyze_ticker(dataframe, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
