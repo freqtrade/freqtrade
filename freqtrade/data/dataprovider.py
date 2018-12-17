@@ -5,11 +5,13 @@ including Klines, tickers, historic data
 Common Interface for bot and strategy to access data.
 """
 import logging
+from pathlib import Path
 from typing import List, Dict
 
 from pandas import DataFrame
 
 from freqtrade.exchange import Exchange
+from freqtrade.data.history import load_pair_history
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +33,18 @@ class DataProvider(object):
         get ohlcv data for the given pair as DataFrame
         """
         # TODO: Should not be stored in exchange but in this class
-        # TODO: should return dataframe, not list
         return self._exchange.klines(pair)
 
-    def historic_ohlcv(self, pair: str) -> DataFrame:
+    def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
         """
         get historic ohlcv data stored for backtesting
         """
-        pass
+        return load_pair_history(pair=pair,
+                                 ticker_interval=ticker_interval,
+                                 refresh_pairs=False,
+                                 datadir=Path(self.config['datadir']) if self.config.get(
+                                     'datadir') else None
+                                 )
 
     def ticker(self, pair: str):
         """
@@ -62,4 +68,5 @@ class DataProvider(object):
         Get runmode of the bot
         can be "live", "dry-run", "backtest", "edgecli", "hyperopt".
         """
+        # TODO: this needs to be set somewhere ...
         return self._config.get['runmode']
