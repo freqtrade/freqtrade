@@ -134,6 +134,12 @@ cd freqtrade
 docker build -t freqtrade .
 ```
 
+If you are developing using Docker, use `Dockerfile.develop` to build a dev Docker image, which will also set up develop dependencies:
+
+```bash
+docker build -f ./Dockerfile.develop -t freqtrade-dev .
+```
+
 For security reasons, your configuration file will not be included in the image, you will need to bind mount it. It is also advised to bind mount an SQLite database file (see the "5. Run a restartable docker image" section) to keep it between  updates.
 
 ### 3. Verify the Docker image
