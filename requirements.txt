@@ -9,7 +9,7 @@ wrapt==1.10.11
 pandas==0.23.4
 scikit-learn==0.20.1
 joblib==0.13.0
-scipy==1.1.0
+scipy==1.2.0
 jsonschema==2.6.0
 numpy==1.15.4
 TA-Lib==0.4.17
