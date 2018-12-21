@@ -164,7 +164,6 @@ class Exchange(object):
         else:
             return None
 
-
     def set_sandbox(self, api, exchange_config: dict, name: str):
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):

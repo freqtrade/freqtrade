@@ -814,9 +814,6 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
         assert isinstance(exchange.klines(pair), DataFrame)
         assert len(exchange.klines(pair)) > 0
 
-    # test last kline close price
-    assert exchange.last_kline_close('XRP/ETH') == 4
-
     # test caching
     exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
 
