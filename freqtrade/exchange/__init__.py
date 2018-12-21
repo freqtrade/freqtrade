@@ -158,17 +158,12 @@ class Exchange(object):
         """exchange ccxt id"""
         return self._api.id
 
-    def klines(self, pair: str) -> DataFrame:
+    def klines(self, pair: str, copy=True) -> DataFrame:
         if pair in self._klines:
             return self._klines[pair].copy()
         else:
             return None
 
-    def last_kline_close(self, pair: str):
-        if pair in self._klines:
-            return self._klines[pair].iloc[-1]['close']
-        else:
-            return None
 
     def set_sandbox(self, api, exchange_config: dict, name: str):
         if exchange_config.get('sandbox'):
