@@ -814,6 +814,13 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
         assert isinstance(exchange.klines(pair), DataFrame)
         assert len(exchange.klines(pair)) > 0
 
+        # klines function should return a different object on each call
+        # if copy is "True"
+        assert exchange.klines(pair) is not exchange.klines(pair)
+        assert exchange.klines(pair) is not exchange.klines(pair, copy=True)
+        assert exchange.klines(pair, copy=True) is not exchange.klines(pair, copy=True)
+        assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
+
     # test caching
     exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
 
