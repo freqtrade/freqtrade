@@ -158,9 +158,9 @@ class Exchange(object):
         """exchange ccxt id"""
         return self._api.id
 
-    def klines(self, pair: str) -> DataFrame:
+    def klines(self, pair: str, copy=True) -> DataFrame:
         if pair in self._klines:
-            return self._klines[pair].copy()
+            return self._klines[pair].copy() if copy else self._klines[pair]
         else:
             return None
 
