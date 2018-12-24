@@ -694,7 +694,7 @@ class FreqtradeBot(object):
             ordertime = arrow.get(order['datetime']).datetime
 
             # Check if trade is still actually open
-            if int(order['remaining']) == 0:
+            if float(order['remaining']) == 0.0:
                 self.wallets.update()
                 continue
 
