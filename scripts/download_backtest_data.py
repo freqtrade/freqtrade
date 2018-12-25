@@ -54,12 +54,12 @@ print(f'About to download pairs: {PAIRS} to {dl_path}')
 
 
 # Init exchange
-exchange = Exchange({'key': '',
-                     'secret': '',
-                     'stake_currency': '',
+exchange = Exchange({'stake_currency': '',
                      'dry_run': True,
                      'exchange': {
                          'name': args.exchange,
+                         'key': '',
+                         'secret': '',
                          'pair_whitelist': [],
                          'ccxt_async_config': {
                              "enableRateLimit": False
