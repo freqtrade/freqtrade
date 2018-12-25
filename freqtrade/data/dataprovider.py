@@ -28,12 +28,15 @@ class DataProvider(object):
         """
         self._exchange.refresh_tickers(pairlist, self._config['ticker_interval'])
 
-    def ohlcv(self, pair: str) -> List[str]:
+    def ohlcv(self, pair: str, copy: bool = True) -> List[str]:
         """
         get ohlcv data for the given pair as DataFrame
+        :param pair: pair to get the data for
+        :param copy: copy dataframe before returning.
+                     Use false only for RO operations (where the dataframe is not modified)
         """
         # TODO: Should not be stored in exchange but in this class
-        return self._exchange.klines(pair)
+        return self._exchange.klines(pair, copy)
 
     def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
         """
