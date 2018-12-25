@@ -42,7 +42,7 @@ class DataProvider(object):
         return load_pair_history(pair=pair,
                                  ticker_interval=ticker_interval,
                                  refresh_pairs=False,
-                                 datadir=Path(self.config['datadir']) if self.config.get(
+                                 datadir=Path(self._config['datadir']) if self._config.get(
                                      'datadir') else None
                                  )
 
@@ -69,4 +69,4 @@ class DataProvider(object):
         can be "live", "dry-run", "backtest", "edgecli", "hyperopt".
         """
         # TODO: this needs to be set somewhere ...
-        return self._config.get['runmode']
+        return str(self._config.get('runmode'))
