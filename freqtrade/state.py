@@ -3,13 +3,13 @@
 """
 Bot state constant
 """
-import enum
+from enum import Enum
 
 
-class State(enum.Enum):
+class State(Enum):
     """
     Bot application states
     """
-    RUNNING = 0
-    STOPPED = 1
-    RELOAD_CONF = 2
+    RUNNING = 1
+    STOPPED = 2
+    RELOAD_CONF = 3
