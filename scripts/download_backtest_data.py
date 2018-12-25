@@ -10,7 +10,7 @@ from freqtrade import arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.data.history import download_pair_history
-from freqtrade.configuration import set_loggers
+from freqtrade.configuration import Configuration, set_loggers
 
 import logging
 logging.basicConfig(
@@ -27,7 +27,29 @@ args = arguments.parse_args()
 
 timeframes = args.timeframes
 
-dl_path = Path(DEFAULT_DL_PATH).joinpath(args.exchange)
+if args.config:
+    configuration = Configuration(args)
+    config = configuration._load_config_file(args.config)
+
+    # Ensure we do not use Exchange credentials
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
+else:
+    config = {'stake_currency': '',
+              'dry_run': True,
+              'exchange': {
+                  'name': args.exchange,
+                  'key': '',
+                  'secret': '',
+                  'pair_whitelist': [],
+                  'ccxt_async_config': {
+                      "enableRateLimit": False
+                  }
+              }
+              }
+
+
+dl_path = Path(DEFAULT_DL_PATH).joinpath(config['exchange']['name'])
 if args.export:
     dl_path = Path(args.export)
 
@@ -52,20 +74,8 @@ if args.days:
 
 print(f'About to download pairs: {PAIRS} to {dl_path}')
 
-
 # Init exchange
-exchange = Exchange({'stake_currency': '',
-                     'dry_run': True,
-                     'exchange': {
-                         'name': args.exchange,
-                         'key': '',
-                         'secret': '',
-                         'pair_whitelist': [],
-                         'ccxt_async_config': {
-                             "enableRateLimit": False
-                         }
-                     }
-                     })
+exchange = Exchange(config)
 pairs_not_available = []
 
 for pair in PAIRS:

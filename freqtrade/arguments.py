@@ -379,6 +379,15 @@ class Arguments(object):
         )
 
         self.parser.add_argument(
+            '-c', '--config',
+            help='specify configuration file, used for additional exchange parameters',
+            dest='config',
+            default=None,
+            type=str,
+            metavar='PATH',
+        )
+
+        self.parser.add_argument(
             '--days',
             help='Download data for number of days',
             dest='days',
@@ -389,7 +398,7 @@ class Arguments(object):
 
         self.parser.add_argument(
             '--exchange',
-            help='Exchange name (default: %(default)s)',
+            help='Exchange name (default: %(default)s). Only valid if no config is provided',
             dest='exchange',
             type=str,
             default='bittrex'
