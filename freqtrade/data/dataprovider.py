@@ -6,12 +6,13 @@ Common Interface for bot and strategy to access data.
 """
 import logging
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 
 from pandas import DataFrame
 
-from freqtrade.exchange import Exchange
 from freqtrade.data.history import load_pair_history
+from freqtrade.exchange import Exchange
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,9 @@ class DataProvider(object):
         pass
 
     @property
-    def runmode(self) -> str:
+    def runmode(self) -> RunMode:
         """
         Get runmode of the bot
         can be "live", "dry-run", "backtest", "edgecli", "hyperopt".
         """
-        # TODO: this needs to be set somewhere ...
-        return str(self._config.get('runmode'))
+        return self._config.get('runmode')

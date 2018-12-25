@@ -22,6 +22,7 @@ from freqtrade.data import history
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 
 logger = logging.getLogger(__name__)
@@ -452,7 +453,7 @@ def setup_configuration(args: Namespace) -> Dict[str, Any]:
     :param args: Cli args from Arguments()
     :return: Configuration
     """
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.BACKTEST)
     config = configuration.get_config()
 
     # Ensure we do not use Exchange credentials

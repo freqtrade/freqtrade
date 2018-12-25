@@ -1,10 +1,9 @@
-from unittest.mock import Mock, MagicMock, PropertyMock
+from unittest.mock import MagicMock
 
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exchange import Exchange
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.tests.conftest import get_patched_exchange
 
 
 def test_ohlcv(mocker, default_conf, ticker_history):
@@ -31,6 +30,5 @@ def test_historic_ohlcv(mocker, default_conf, ticker_history):
     assert isinstance(data, DataFrame)
     assert historymock.call_count == 1
     assert historymock.call_args_list[0][1]['datadir'] is None
-    assert historymock.call_args_list[0][1]['refresh_pairs'] == False
+    assert historymock.call_args_list[0][1]['refresh_pairs'] is False
     assert historymock.call_args_list[0][1]['ticker_interval'] == '5m'
-

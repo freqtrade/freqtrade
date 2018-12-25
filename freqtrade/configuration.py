@@ -12,6 +12,7 @@ from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
+from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
@@ -34,9 +35,10 @@ class Configuration(object):
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: Namespace, runmode: RunMode = None) -> None:
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
+        self.runmode = runmode
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -67,6 +69,13 @@ class Configuration(object):
 
         # Load Hyperopt
         config = self._load_hyperopt_config(config)
+
+        # Set runmode
+        if not self.runmode:
+            # Handle real mode, infer dry/live from config
+            self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
+
+        config.update({'runmode': self.runmode})
 
         return config
 

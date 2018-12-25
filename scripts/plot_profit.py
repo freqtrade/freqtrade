@@ -29,6 +29,7 @@ from freqtrade.configuration import Configuration
 from freqtrade import constants
 from freqtrade.data import history
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 import freqtrade.misc as misc
 
 
@@ -82,7 +83,7 @@ def plot_profit(args: Namespace) -> None:
     # to match the tickerdata against the profits-results
     timerange = Arguments.parse_timerange(args.timerange)
 
-    config = Configuration(args).get_config()
+    config = Configuration(args, RunMode.OTHER).get_config()
 
     # Init strategy
     try:
