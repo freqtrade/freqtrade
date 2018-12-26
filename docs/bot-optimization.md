@@ -7,7 +7,18 @@ indicators.
 
 - [Install a custom strategy file](#install-a-custom-strategy-file)
 - [Customize your strategy](#change-your-strategy)
-- [Add more Indicator](#add-more-indicator)
+  - [Anatomy of a strategy](#anatomy-of-a-strategy)
+  - [Customize indicators](#customize-indicators)
+  - [Buy signal rules](#buy-signal-rules])
+  - [Sell signal rules](#sell-signal-rules)
+  - [Minimal ROI](#minimal-roi)
+  - [Stoploss](#stoploss)
+  - [Ticker interval](#ticker-interval)
+  - [Metadata dict](#metadata-dict)
+  - [Where is the default strategy](#where-is-the-default-strategy)
+  - [Specify custom strategy location](#specify-custom-strategy-location)
+  - [Further strategy ideas](#further-strategy-ideas)
+
 - [Where is the default strategy](#where-is-the-default-strategy)
 
 Since the version `0.16.0` the bot allows using custom strategy file.
@@ -103,6 +114,11 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     dataframe['minus_di'] = ta.MINUS_DI(dataframe)
     return dataframe
 ```
+
+#### Want more indicator examples
+
+Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).
+Then uncomment indicators you need.
 
 ### Buy signal rules
 
@@ -223,11 +239,6 @@ Please note that the same buy/sell signals may work with one interval, but not t
 
 The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
-
-### Want more indicator examples
-
-Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).
-Then uncomment indicators you need.
 
 ### Where is the default strategy?
 
