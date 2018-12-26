@@ -33,8 +33,14 @@ use your own file to not have to lose your parameters every time the default
 strategy file will be updated on Github. Put your custom strategy file
 into the folder `user_data/strategies`.
 
+Best copy the test-strategy and modify this copy to avoid having bot-updates override your changes.
+`cp  user_data/strategies/test_strategy.py user_data/strategies/awesome-strategy.py`
+
+### Anatomy of a strategy
+
 A strategy file contains all the information needed to build a good strategy:
 
+- Indicators
 - Buy strategy rules
 - Sell strategy rules
 - Minimal ROI recommended
@@ -47,61 +53,13 @@ You can test it with the parameter: `--strategy TestStrategy`
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
-### Buy strategy rules
+### Customize Indicators
 
-Edit the method `populate_buy_trend()` into your strategy file to update your buy strategy.
-
-Sample from `user_data/strategies/test_strategy.py`:
-
-```python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-    """
-    Based on TA indicators, populates the buy signal for the given dataframe
-    :param dataframe: DataFrame populated with indicators
-    :param metadata: Additional information, like the currently traded pair
-    :return: DataFrame with buy column
-    """
-    dataframe.loc[
-        (
-            (dataframe['adx'] > 30) &
-            (dataframe['tema'] <= dataframe['bb_middleband']) &
-            (dataframe['tema'] > dataframe['tema'].shift(1))
-        ),
-        'buy'] = 1
-
-    return dataframe
-```
-
-### Sell strategy rules
-
-Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
-Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
-
-Sample from `user_data/strategies/test_strategy.py`:
-
-```python
-def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-    """
-    Based on TA indicators, populates the sell signal for the given dataframe
-    :param dataframe: DataFrame populated with indicators
-    :param metadata: Additional information, like the currently traded pair
-    :return: DataFrame with buy column
-    """
-    dataframe.loc[
-        (
-            (dataframe['adx'] > 70) &
-            (dataframe['tema'] > dataframe['bb_middleband']) &
-            (dataframe['tema'] < dataframe['tema'].shift(1))
-        ),
-        'sell'] = 1
-    return dataframe
-```
-
-## Add more Indicators
-
-As you have seen, buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
+Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
 
 You should only add the indicators used in either `populate_buy_trend()`, `populate_sell_trend()`, or to populate another indicator, otherwise performance may suffer.
+
+It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
 Sample:
 
@@ -145,6 +103,121 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     dataframe['minus_di'] = ta.MINUS_DI(dataframe)
     return dataframe
 ```
+
+### Buy signal rules
+
+Edit the method `populate_buy_trend()` in your strategy file to update your buy strategy.
+
+It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
+
+This will method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
+
+Sample from `user_data/strategies/test_strategy.py`:
+
+```python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    """
+    Based on TA indicators, populates the buy signal for the given dataframe
+    :param dataframe: DataFrame populated with indicators
+    :param metadata: Additional information, like the currently traded pair
+    :return: DataFrame with buy column
+    """
+    dataframe.loc[
+        (
+            (dataframe['adx'] > 30) &
+            (dataframe['tema'] <= dataframe['bb_middleband']) &
+            (dataframe['tema'] > dataframe['tema'].shift(1))
+        ),
+        'buy'] = 1
+
+    return dataframe
+```
+
+### Sell signal rules
+
+Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
+Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
+
+It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
+
+This will method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
+
+Sample from `user_data/strategies/test_strategy.py`:
+
+```python
+def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    """
+    Based on TA indicators, populates the sell signal for the given dataframe
+    :param dataframe: DataFrame populated with indicators
+    :param metadata: Additional information, like the currently traded pair
+    :return: DataFrame with buy column
+    """
+    dataframe.loc[
+        (
+            (dataframe['adx'] > 70) &
+            (dataframe['tema'] > dataframe['bb_middleband']) &
+            (dataframe['tema'] < dataframe['tema'].shift(1))
+        ),
+        'sell'] = 1
+    return dataframe
+```
+
+### Minimal ROI
+
+This dict defines the minimal Return On Investment (ROI) a trade should reach before selling, independent from the sell signal.
+
+It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.
+
+```python 
+minimal_roi = {
+    "40": 0.0,
+    "30": 0.01,
+    "20": 0.02,
+    "0": 0.04
+}
+```
+
+The above configuration would therefore mean:
+
+- Sell whenever 4% profit was reached
+- Sell after 20 minutes when 2% profit was reached
+- Sell after 20 minutes when 2% profit was reached
+- Sell after 30 minutes when 1% profit was reached
+- Sell after 40 minutes when the trade is non-loosing (no profit)
+
+The calculation does include fees.
+
+To disable ROI completely, set it to an insanely high number:
+
+```python
+minimal_roi = {
+    "0": 100
+}
+```
+
+While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
+
+### Stoploss
+
+Setting a stoploss is highly recommended to protect your capital from strong moves against you.
+
+Sample:
+
+``` python
+stoploss = -0.10
+```
+
+This would signify a stoploss of -10%.
+If your exchange supports it, it's recommendet to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems). 
+
+For more information on order_types please look [here](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md#understand-order_types).
+
+### Ticker interval
+
+This is the set of candles the bot should download and use for the analysis.
+Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
+
+Please note that the same buy/sell signals may work with one interval, but not the other.
 
 ### Metadata dict
 
