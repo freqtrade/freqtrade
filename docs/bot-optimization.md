@@ -38,7 +38,7 @@ A strategy file contains all the information needed to build a good strategy:
 - Buy strategy rules
 - Sell strategy rules
 - Minimal ROI recommended
-- Stoploss recommended
+- Stoploss strongly recommended
 
 The bot also include a sample strategy called `TestStrategy` you can update: `user_data/strategies/test_strategy.py`.
 You can test it with the parameter: `--strategy TestStrategy`
@@ -47,18 +47,7 @@ You can test it with the parameter: `--strategy TestStrategy`
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
-### Specify custom strategy location
-
-If you want to use a strategy from a different folder you can pass `--strategy-path`
-
-```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
-```
-
-**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
-file as reference.**
-
-### Buy strategy
+### Buy strategy rules
 
 Edit the method `populate_buy_trend()` into your strategy file to update your buy strategy.
 
@@ -83,7 +72,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     return dataframe
 ```
 
-### Sell strategy
+### Sell strategy rules
 
 Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
 Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
@@ -171,6 +160,17 @@ Then uncomment indicators you need.
 
 The default buy strategy is located in the file
 [freqtrade/default_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/strategy/default_strategy.py).
+
+### Specify custom strategy location
+
+If you want to use a strategy from a different folder you can pass `--strategy-path`
+
+```bash
+python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
+```
+
+**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+file as reference.**
 
 ### Further strategy ideas
 
