@@ -37,9 +37,9 @@ class FreqtradeBot(object):
 
     def __init__(self, config: Dict[str, Any])-> None:
         """
-        Init all variables and object the bot need to work
-        :param config: configuration dict, you can use the Configuration.get_config()
-        method to get the config dict.
+        Init all variables and objects the bot needs to work
+        :param config: configuration dict, you can use Configuration.get_config()
+        to get the config dict.
         """
 
         logger.info(
@@ -55,7 +55,6 @@ class FreqtradeBot(object):
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         self.rpc: RPCManager = RPCManager(self)
-        self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
         self.dataprovider = DataProvider(self.config, self.exchange)
