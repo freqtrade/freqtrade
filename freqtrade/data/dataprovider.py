@@ -62,16 +62,14 @@ class DataProvider(object):
         """
         Return last ticker data
         """
+        # TODO: Implement me
         pass
 
     def orderbook(self, pair: str, max: int):
         """
         return latest orderbook data
         """
-        pass
-
-    def balance(self, pair):
-        # TODO: maybe use wallet directly??
+        # TODO: Implement me
         pass
 
     @property
