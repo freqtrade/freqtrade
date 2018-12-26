@@ -29,6 +29,14 @@ class DataProvider(object):
         """
         self._exchange.refresh_tickers(pairlist, self._config['ticker_interval'])
 
+    @property
+    def available_pairs(self) -> List[str]:
+        """
+        Return a list of pairs for which data is currently cached.
+        Should be whitelist + open trades.
+        """
+        return list(self._exchange._klines.keys())
+
     def ohlcv(self, pair: str, copy: bool = True) -> List[str]:
         """
         get ohlcv data for the given pair as DataFrame
