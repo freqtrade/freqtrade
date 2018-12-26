@@ -13,7 +13,9 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.persistence import Trade
+from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +97,12 @@ class IStrategy(ABC):
 
     # Dict to determine if analysis is necessary
     _last_candle_seen_per_pair: Dict[str, datetime] = {}
+
+    # Class level variables (intentional) containing
+    # the dataprovider (dp) (access to other candles, historic data, ...)
+    # and wallets - access to the current balance.
+    dp: DataProvider
+    wallets: Wallets
 
     def __init__(self, config: dict) -> None:
         self.config = config

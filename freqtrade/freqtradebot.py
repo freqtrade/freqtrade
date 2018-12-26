@@ -58,8 +58,13 @@ class FreqtradeBot(object):
         self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
-
         self.dataprovider = DataProvider(self.config, self.exchange)
+
+        # Attach Dataprovider to Strategy baseclass
+        IStrategy.dp = self.dataprovider
+        # Attach Wallets to Strategy baseclass
+        IStrategy.wallets = self.wallets
+
         pairlistname = self.config.get('pairlist', {}).get('method', 'StaticPairList')
         self.pairlists = PairListResolver(pairlistname, self, self.config).pairlist
 
