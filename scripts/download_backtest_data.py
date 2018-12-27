@@ -31,6 +31,7 @@ if args.config:
     configuration = Configuration(args)
     config = configuration._load_config_file(args.config)
 
+    config['stake_currency'] = ''
     # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
