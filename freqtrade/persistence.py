@@ -247,16 +247,17 @@ class Trade(_DECL_BASE):
         if order['status'] == 'open' or order['price'] is None:
             return
 
-        logger.info('Updating trade (id=%d) ...', self.id)
+        logger.info('Updating trade (id=%s) ...', self.id)
 
-        if order_type == 'limit' and order['side'] == 'buy':
+        if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
             self.open_rate = Decimal(order['price'])
             self.amount = Decimal(order['amount'])
-            logger.info('LIMIT_BUY has been fulfilled for %s.', self)
+            logger.info('%s_BUY has been fulfilled for %s.', order_type.upper(), self)
             self.open_order_id = None
-        elif order_type == 'limit' and order['side'] == 'sell':
+        elif order_type in ('market', 'limit') and order['side'] == 'sell':
             self.close(order['price'])
+            logger.info('%s_SELL has been fulfilled for %s.', order_type.upper(), self)
         elif order_type == 'stop_loss_limit':
             self.stoploss_order_id = None
             logger.info('STOP_LOSS_LIMIT is hit for %s.', self)
