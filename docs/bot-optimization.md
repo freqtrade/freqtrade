@@ -9,7 +9,7 @@ indicators.
 - [Customize your strategy](#change-your-strategy)
   - [Anatomy of a strategy](#anatomy-of-a-strategy)
   - [Customize indicators](#customize-indicators)
-  - [Buy signal rules](#buy-signal-rules])
+  - [Buy signal rules](#buy-signal-rules)
   - [Sell signal rules](#sell-signal-rules)
   - [Minimal ROI](#minimal-roi)
   - [Stoploss](#stoploss)
