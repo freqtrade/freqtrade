@@ -64,6 +64,9 @@ You can test it with the parameter: `--strategy TestStrategy`
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
+**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
+file as reference.**
+
 ### Customize Indicators
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
@@ -252,9 +255,6 @@ If you want to use a strategy from a different folder you can pass `--strategy-p
 ```bash
 python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
 ```
-
-**For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
-file as reference.**
 
 ### Further strategy ideas
 
