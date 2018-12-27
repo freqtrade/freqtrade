@@ -224,7 +224,7 @@ stoploss = -0.10
 ```
 
 This would signify a stoploss of -10%.
-If your exchange supports it, it's recommendet to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems). 
+If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems). 
 
 For more information on order_types please look [here](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md#understand-order_types).
 
