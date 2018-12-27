@@ -118,6 +118,31 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+def test_update_market_order(market_buy_order, market_sell_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+    )
+
+    trade.open_order_id = 'something'
+    trade.update(market_buy_order)
+    assert trade.open_order_id is None
+    assert trade.open_rate == 0.00004099
+    assert trade.close_profit is None
+    assert trade.close_date is None
+
+    trade.open_order_id = 'something'
+    trade.update(market_sell_order)
+    assert trade.open_order_id is None
+    assert trade.close_rate == 0.00004173
+    assert trade.close_profit == 0.01297561
+    assert trade.close_date is not None
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade = Trade(
         pair='ETH/BTC',
