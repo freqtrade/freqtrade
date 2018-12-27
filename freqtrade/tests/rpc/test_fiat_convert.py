@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from requests.exceptions import RequestException
 
-from freqtrade.fiat_convert import CryptoFiat, CryptoToFiatConverter
+from freqtrade.rpc.fiat_convert import CryptoFiat, CryptoToFiatConverter
 from freqtrade.tests.conftest import log_has, patch_coinmarketcap
 
 
@@ -81,16 +81,18 @@ def test_fiat_convert_find_price(mocker):
 
     assert fiat_convert.get_price(crypto_symbol='XRP', fiat_symbol='USD') == 0.0
 
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=12345.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=12345.0)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 12345.0
     assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 12345.0
 
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=13000.2)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=13000.2)
     assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
 
 
 def test_fiat_convert_unsupported_crypto(mocker, caplog):
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
     patch_coinmarketcap(mocker)
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._find_price(crypto_symbol='CRYPTO_123', fiat_symbol='EUR') == 0.0
@@ -100,7 +102,8 @@ def test_fiat_convert_unsupported_crypto(mocker, caplog):
 def test_fiat_convert_get_price(mocker):
     patch_coinmarketcap(mocker)
 
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
+                 return_value=28000.0)
 
     fiat_convert = CryptoToFiatConverter()
 
@@ -157,7 +160,7 @@ def test_fiat_init_network_exception(mocker):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(side_effect=RequestException)
     mocker.patch.multiple(
-        'freqtrade.fiat_convert.Market',
+        'freqtrade.rpc.fiat_convert.Market',
         listings=listmock,
     )
     # with pytest.raises(RequestEsxception):
@@ -187,7 +190,7 @@ def test_fiat_invalid_response(mocker, caplog):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(return_value="{'novalidjson':DEADBEEFf}")
     mocker.patch.multiple(
-        'freqtrade.fiat_convert.Market',
+        'freqtrade.rpc.fiat_convert.Market',
         listings=listmock,
     )
     # with pytest.raises(RequestEsxception):
@@ -203,7 +206,7 @@ def test_fiat_invalid_response(mocker, caplog):
 
 def test_convert_amount(mocker):
     patch_coinmarketcap(mocker)
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
 
     fiat_convert = CryptoToFiatConverter()
     result = fiat_convert.convert_amount(

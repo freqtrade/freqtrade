@@ -16,10 +16,10 @@ class DefaultStrategy(IStrategy):
 
     # Minimal ROI designed for the strategy
     minimal_roi = {
-        "40":  0.0,
-        "30":  0.01,
-        "20":  0.02,
-        "0":  0.04
+        "40": 0.0,
+        "30": 0.01,
+        "20": 0.02,
+        "0": 0.04
     }
 
     # Optimal stoploss designed for the strategy
@@ -27,6 +27,20 @@ class DefaultStrategy(IStrategy):
 
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'
+
+    # Optional order type mapping
+    order_types = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
+    }
+
+    # Optional time in force for orders
+    order_time_in_force = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """

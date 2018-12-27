@@ -1,9 +1,15 @@
 sudo: true
 os:
 - linux
+dist: trusty
 language: python
 python:
 - 3.6
+services:
+  - docker
+env:
+  global:
+    - IMAGE_NAME=freqtradeorg/freqtrade
 addons:
   apt:
     packages:
@@ -11,24 +17,38 @@ addons:
     - libdw-dev
     - binutils-dev
 install:
-- ./install_ta-lib.sh
+- ./build_helpers/install_ta-lib.sh
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 - pip install --upgrade flake8 coveralls pytest-random-order pytest-asyncio mypy
-- pip install -r requirements.txt
+- pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
   include:
-    - script:
+    - stage: tests
+      script:
       - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
       - coveralls
+      name: pytest
     - script:
       - cp config.json.example config.json
       - python freqtrade/main.py --datadir freqtrade/tests/testdata backtesting
+      name: backtest
     - script:
       - cp config.json.example config.json
       - python freqtrade/main.py --datadir freqtrade/tests/testdata hyperopt -e 5
+      name: hyperopt
     - script: flake8 freqtrade
+      name: flake8
     - script: mypy freqtrade
+      name: mypy
+
+    - stage: docker
+      if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
+      script:
+        - build_helpers/publish_docker.sh
+      name: "Build and test and push docker image"
+
+
 notifications:
   slack:
     secure: bKLXmOrx8e2aPZl7W8DA5BdPAXWGpI5UzST33oc1G/thegXcDVmHBTJrBs4sZak6bgAclQQrdZIsRd2eFYzHLalJEaw6pk7hoAw8SvLnZO0ZurWboz7qg2+aZZXfK4eKl/VUe4sM9M4e/qxjkK+yWG7Marg69c4v1ypF7ezUi1fPYILYw8u0paaiX0N5UX8XNlXy+PBlga2MxDjUY70MuajSZhPsY2pDUvYnMY1D/7XN3cFW0g+3O8zXjF0IF4q1Z/1ASQe+eYjKwPQacE+O8KDD+ZJYoTOFBAPllrtpO1jnOPFjNGf3JIbVMZw4bFjIL0mSQaiSUaUErbU3sFZ5Or79rF93XZ81V7uEZ55vD8KMfR2CB1cQJcZcj0v50BxLo0InkFqa0Y8Nra3sbpV4fV5Oe8pDmomPJrNFJnX6ULQhQ1gTCe0M5beKgVms5SITEpt4/Y0CmLUr6iHDT0CUiyMIRWAXdIgbGh1jfaWOMksybeRevlgDsIsNBjXmYI1Sw2ZZR2Eo2u4R6zyfyjOMLwYJ3vgq9IrACv2w5nmf0+oguMWHf6iWi2hiOqhlAN1W74+3HsYQcqnuM3LGOmuCnPprV1oGBqkPXjIFGpy21gNx4vHfO1noLUyJnMnlu2L7SSuN1CdLsnjJ1hVjpJjPfqB4nn8g12x87TqM1bOm+3Q=

@@ -109,11 +109,35 @@ Dry-Run
 touch tradesv3.dryrun.sqlite
 ```
 
-### 2. Build the Docker image
+### 2. Download or build the docker image
+
+Either use the prebuilt image from docker hub - or build the image yourself if you would like more control on which version is used.
+
+Branches / tags available can be checked out on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
+
+#### 2.1. Download the docker image
+
+Pull the image from docker hub and (optionally) change the name of the image
+
+```bash
+docker pull freqtradeorg/freqtrade:develop
+# Optionally tag the repository so the run-commands remain shorter
+docker tag freqtradeorg/freqtrade:develop freqtrade
+```
+
+To update the image, simply run the above commands again and restart your running container.
+
+#### 2.2. Build the Docker image
 
 ```bash
 cd freqtrade
 docker build -t freqtrade .
+```
+
+If you are developing using Docker, use `Dockerfile.develop` to build a dev Docker image, which will also set up develop dependencies:
+
+```bash
+docker build -f ./Dockerfile.develop -t freqtrade-dev .
 ```
 
 For security reasons, your configuration file will not be included in the image, you will need to bind mount it. It is also advised to bind mount an SQLite database file (see the "5. Run a restartable docker image" section) to keep it between  updates.
@@ -236,22 +260,27 @@ sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential auto
 
 Before installing FreqTrade on a Raspberry Pi running the official Raspbian Image, make sure you have at least Python 3.6 installed. The default image only provides Python 3.5. Probably the easiest way to get a recent version of python is [miniconda](https://repo.continuum.io/miniconda/).
 
-The following assumes that miniconda3 is installed and available in your environment, and is installed.
-It's recommended to use (mini)conda for this as installation/compilation of `scipy` and `pandas` takes a long time.
+The following assumes that miniconda3 is installed and available in your environment. Last miniconda3 installation file use python 3.4, we will update to python 3.6 on this installation.
+It's recommended to use (mini)conda for this as installation/compilation of `numpy`, `scipy` and `pandas` takes a long time.
+If you have installed it from (mini)conda, you can remove `numpy`, `scipy`, and `pandas` from `requirements.txt` before you install it with `pip`.
+
+Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
 
 ``` bash
 conda config --add channels rpi
 conda install python=3.6
 conda create -n freqtrade python=3.6
-conda install scipy pandas
+conda activate freqtrade
+conda install scipy pandas numpy
 
-pip install -r requirements.txt
-pip install -e .
+sudo apt install libffi-dev
+python3 -m pip install -r requirements.txt
+python3 -m pip install -e .
 ```
 
 ### MacOS
 
-#### Install Python 3.6, git, wget and ta-lib
+#### Install Python 3.6, git and wget
 
 ```bash
 brew install python3 git wget
@@ -268,9 +297,9 @@ wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
 tar xvzf ta-lib-0.4.0-src.tar.gz
 cd ta-lib
 sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
-./configure --prefix=/usr
+./configure --prefix=/usr/local
 make
-make install
+sudo make install
 cd ..
 rm -rf ./ta-lib*
 ```

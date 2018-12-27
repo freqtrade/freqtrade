@@ -28,6 +28,16 @@ function updateenv () {
     pip3 install --quiet --upgrade pip
     pip3 install --quiet -r requirements.txt --upgrade
     pip3 install --quiet -r requirements.txt
+
+    read -p "Do you want to install dependencies for dev [Y/N]? "
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        pip3 install --quiet -r requirements-dev.txt --upgrade
+        pip3 install --quiet -r requirements-dev.txt
+    else
+        echo "Dev dependencies ignored."
+    fi
+
     pip3 install --quiet -e .
     echo "pip3 install completed"
     echo
@@ -35,10 +45,13 @@ function updateenv () {
 
 # Install tab lib
 function install_talib () {
-    curl -O -L http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
     tar zxvf ta-lib-0.4.0-src.tar.gz
-    cd ta-lib && ./configure --prefix=/usr && make && sudo make install
-    cd .. && rm -rf ./ta-lib*
+    cd ta-lib
+    sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
+    ./configure --prefix=/usr/local
+    make
+    sudo make install
+    cd .. && rm -rf ./ta-lib/
 }
 
 # Install bot MacOS
@@ -50,8 +63,8 @@ function install_macos () {
         echo "-------------------------"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
-    brew install python3 wget ta-lib
-
+    brew install python3 wget
+    install_talib
     test_and_fix_python_on_mac
 }
 

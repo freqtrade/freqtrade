@@ -28,7 +28,10 @@
         "name": "bittrex",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
-        "ccxt_rate_limit": true,
+        "ccxt_config": {"enableRateLimit": true},
+        "ccxt_async_config": {
+            "enableRateLimit": false
+        },
         "pair_whitelist": [
             "ETH/BTC",
             "LTC/BTC",
@@ -50,12 +53,28 @@
         "sell_profit_only": false,
         "ignore_roi_if_buy_signal": false
     },
+    "edge": {
+        "enabled": false,
+        "process_throttle_secs": 3600,
+        "calculate_since_number_of_days": 7,
+        "capital_available_percentage": 0.5,
+        "allowed_risk": 0.01,
+        "stoploss_range_min": -0.01,
+        "stoploss_range_max": -0.1,
+        "stoploss_range_step": -0.01,
+        "minimum_winrate": 0.60,
+        "minimum_expectancy": 0.20,
+        "min_trade_number": 10,
+        "max_trade_duration_minute": 1440,
+        "remove_pumps": false
+    },
     "telegram": {
         "enabled": true,
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"
     },
     "initial_state": "running",
+    "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
     }

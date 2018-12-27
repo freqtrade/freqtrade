@@ -33,6 +33,7 @@ class Configuration(object):
     Class to read and init the bot configuration
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
+
     def __init__(self, args: Namespace) -> None:
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
@@ -52,11 +53,17 @@ class Configuration(object):
         if self.args.strategy_path:
             config.update({'strategy_path': self.args.strategy_path})
 
+        # Add the hyperopt file to use
+        config.update({'hyperopt': self.args.hyperopt})
+
         # Load Common configuration
         config = self._load_common_config(config)
 
         # Load Backtesting
         config = self._load_backtesting_config(config)
+
+        # Load Edge
+        config = self._load_edge_config(config)
 
         # Load Hyperopt
         config = self._load_hyperopt_config(config)
@@ -103,10 +110,14 @@ class Configuration(object):
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
-            config.update({'dynamic_whitelist': self.args.dynamic_whitelist})
-            logger.info(
-                'Parameter --dynamic-whitelist detected. '
-                'Using dynamically generated whitelist. '
+            # Update to volumePairList (the previous default)
+            config['pairlist'] = {'method': 'VolumePairList',
+                                  'config': {'number_assets': self.args.dynamic_whitelist}
+                                  }
+            logger.warning(
+                'Parameter --dynamic-whitelist has been deprecated, '
+                'and will be completely replaced by the whitelist dict in the future. '
+                'For now: using dynamically generated whitelist based on VolumePairList. '
                 '(not applicable with Backtesting and Hyperopt)'
             )
 
@@ -126,6 +137,13 @@ class Configuration(object):
             if not config.get('db_url', None):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
+
+        if config.get('forcebuy_enable', False):
+            logger.warning('`forcebuy` RPC message enabled.')
+
+        # Setting max_open_trades to infinite if -1
+        if config.get('max_open_trades') == -1:
+            config['max_open_trades'] = float('inf')
 
         logger.info(f'Using DB: "{config["db_url"]}"')
 
@@ -210,6 +228,32 @@ class Configuration(object):
 
         return config
 
+    def _load_edge_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load Edge configuration
+        :return: configuration as dictionary
+        """
+
+        # If --timerange is used we add it to the configuration
+        if 'timerange' in self.args and self.args.timerange:
+            config.update({'timerange': self.args.timerange})
+            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+
+        # If --timerange is used we add it to the configuration
+        if 'stoploss_range' in self.args and self.args.stoploss_range:
+            txt_range = eval(self.args.stoploss_range)
+            config['edge'].update({'stoploss_range_min': txt_range[0]})
+            config['edge'].update({'stoploss_range_max': txt_range[1]})
+            config['edge'].update({'stoploss_range_step': txt_range[2]})
+            logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
+
+        # If -r/--refresh-pairs-cached is used we add it to the configuration
+        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
+            config.update({'refresh_pairs': True})
+            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+
+        return config
+
     def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load Hyperopt configuration
@@ -235,7 +279,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, constants.CONF_SCHEMA)
+            validate(conf, constants.CONF_SCHEMA, Draft4Validator)
             return conf
         except ValidationError as exception:
             logger.critical(
@@ -271,6 +315,11 @@ class Configuration(object):
             raise OperationalException(
                 exception_msg
             )
+        # Depreciation warning
+        if 'ccxt_rate_limit' in config.get('exchange', {}):
+            logger.warning("`ccxt_rate_limit` has been deprecated in favor of "
+                           "`ccxt_config` and `ccxt_async_config` and will be removed "
+                           "in a future version.")
 
         logger.debug('Exchange "%s" supported', exchange)
         return True

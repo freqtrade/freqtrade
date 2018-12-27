@@ -9,10 +9,15 @@ TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
+DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
-
+REQUIRED_ORDERTIF = ['buy', 'sell']
+REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+ORDERTYPE_POSSIBILITIES = ['limit', 'market']
+ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -37,13 +42,13 @@ SUPPORTED_FIAT = [
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
     "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
     "BTC", "XBT", "ETH", "XRP", "LTC", "BCH", "USDT"
-    ]
+]
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer', 'minimum': 0},
+        'max_open_trades': {'type': 'integer', 'minimum': -1},
         'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
@@ -101,7 +106,26 @@ CONF_SCHEMA = {
                 'order_book_max': {'type': 'number', 'minimum': 1, 'maximum': 50}
             }
         },
+        'order_types': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'stoploss_on_exchange': {'type': 'boolean'}
+            },
+            'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+        },
+        'order_time_in_force': {
+            'type': 'object',
+            'properties': {
+                'buy': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES},
+                'sell': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES}
+            },
+            'required': ['buy', 'sell']
+        },
         'exchange': {'$ref': '#/definitions/exchange'},
+        'edge': {'$ref': '#/definitions/edge'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -109,6 +133,14 @@ CONF_SCHEMA = {
                 'sell_profit_only': {'type': 'boolean'},
                 'ignore_roi_if_buy_signal_true': {'type': 'boolean'}
             }
+        },
+        'pairlist': {
+            'type': 'object',
+            'properties': {
+                'method': {'type': 'string',  'enum': AVAILABLE_PAIRLISTS},
+                'config': {'type': 'object'}
+            },
+            'required': ['method']
         },
         'telegram': {
             'type': 'object',
@@ -130,6 +162,7 @@ CONF_SCHEMA = {
         },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
+        'forcebuy_enable': {'type': 'boolean'},
         'internals': {
             'type': 'object',
             'properties': {
@@ -164,9 +197,30 @@ CONF_SCHEMA = {
                     },
                     'uniqueItems': True
                 },
-                'outdated_offset': {'type': 'integer', 'minimum': 1}
+                'outdated_offset': {'type': 'integer', 'minimum': 1},
+                'ccxt_config': {'type': 'object'},
+                'ccxt_async_config': {'type': 'object'}
             },
             'required': ['name', 'key', 'secret', 'pair_whitelist']
+        },
+        'edge': {
+            'type': 'object',
+            'properties': {
+                "enabled": {'type': 'boolean'},
+                "process_throttle_secs": {'type': 'integer', 'minimum': 600},
+                "calculate_since_number_of_days": {'type': 'integer'},
+                "allowed_risk": {'type': 'number'},
+                "capital_available_percentage": {'type': 'number'},
+                "stoploss_range_min": {'type': 'number'},
+                "stoploss_range_max": {'type': 'number'},
+                "stoploss_range_step": {'type': 'number'},
+                "minimum_winrate": {'type': 'number'},
+                "minimum_expectancy": {'type': 'number'},
+                "min_trade_number": {'type': 'number'},
+                "max_trade_duration_minute": {'type': 'integer'},
+                "remove_pumps": {'type': 'boolean'}
+            },
+            'required': ['process_throttle_secs', 'allowed_risk', 'capital_available_percentage']
         }
     },
     'anyOf': [

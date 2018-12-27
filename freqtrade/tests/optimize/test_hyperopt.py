@@ -1,13 +1,15 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+from datetime import datetime
 import os
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
-from freqtrade.optimize.__init__ import load_tickerdata_file
+from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.tests.conftest import log_has, patch_exchange
 from freqtrade.tests.optimize.test_backtesting import get_args
 
@@ -175,7 +177,7 @@ def test_roi_table_generation(hyperopt) -> None:
         'roi_p3': 3,
     }
 
-    assert hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
+    assert hyperopt.custom_hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
 def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
@@ -194,7 +196,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     default_conf.update({'spaces': 'all'})
 
     hyperopt = Hyperopt(default_conf)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
     parallel.assert_called_once()
@@ -241,9 +243,10 @@ def test_has_space(hyperopt):
 
 def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': tick}
-    dataframes = hyperopt.tickerdata_to_dataframe(tickerlist)
-    dataframe = hyperopt.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
+    dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
+                                                             {'pair': 'UNITTEST/BTC'})
 
     # Check if some indicators are generated. We will not test all of them
     assert 'adx' in dataframe
@@ -253,11 +256,12 @@ def test_populate_indicators(hyperopt) -> None:
 
 def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': tick}
-    dataframes = hyperopt.tickerdata_to_dataframe(tickerlist)
-    dataframe = hyperopt.populate_indicators(dataframes['UNITTEST/BTC'], {'pair': 'UNITTEST/BTC'})
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
+    dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
+                                                             {'pair': 'UNITTEST/BTC'})
 
-    populate_buy_trend = hyperopt.buy_strategy_generator(
+    populate_buy_trend = hyperopt.custom_hyperopt.buy_strategy_generator(
         {
             'adx-value': 20,
             'fastd-value': 20,
@@ -290,6 +294,10 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.backtest',
         MagicMock(return_value=backtest_result)
+    )
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
     )
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.hyperopt.load', MagicMock())

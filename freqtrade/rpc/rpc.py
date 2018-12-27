@@ -10,13 +10,13 @@ from typing import Dict, Any, List, Optional
 
 import arrow
 import sqlalchemy as sql
-from numpy import mean, nan_to_num
+from numpy import mean, nan_to_num, NAN
 from pandas import DataFrame
 
-from freqtrade import TemporaryError
-from freqtrade.fiat_convert import CryptoToFiatConverter
+from freqtrade import TemporaryError, DependencyException
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import Trade
+from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 
@@ -84,9 +84,7 @@ class RPC(object):
         """
         # Fetch open trade
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-        elif not trades:
+        if not trades:
             raise RPCException('no active trade')
         else:
             results = []
@@ -95,7 +93,10 @@ class RPC(object):
                 if trade.open_order_id:
                     order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                try:
+                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                except DependencyException:
+                    current_rate = NAN
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
@@ -118,15 +119,16 @@ class RPC(object):
 
     def _rpc_status_table(self) -> DataFrame:
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
-        elif not trades:
+        if not trades:
             raise RPCException('no active order')
         else:
             trades_list = []
             for trade in trades:
                 # calculate profit and send message to user
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                try:
+                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                except DependencyException:
+                    current_rate = NAN
                 trade_perc = (100 * trade.calc_profit_percent(current_rate))
                 trades_list.append([
                     trade.id,
@@ -211,7 +213,10 @@ class RPC(object):
                 profit_closed_percent.append(profit_percent)
             else:
                 # Get current rate
-                current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                try:
+                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                except DependencyException:
+                    current_rate = NAN
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
 
             profit_all_coin.append(
@@ -279,7 +284,7 @@ class RPC(object):
                         rate = 1.0 / self._freqtrade.exchange.get_ticker('BTC/USDT', False)['bid']
                     else:
                         rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
-                except TemporaryError:
+                except (TemporaryError, DependencyException):
                     continue
             est_btc: float = rate * balance['total']
             total = total + est_btc
@@ -363,6 +368,7 @@ class RPC(object):
             # Execute sell for all open orders
             for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
                 _exec_forcesell(trade)
+            Trade.session.flush()
             return
 
         # Query for trade
@@ -379,13 +385,45 @@ class RPC(object):
         _exec_forcesell(trade)
         Trade.session.flush()
 
+    def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
+        """
+        Handler for forcebuy <asset> <price>
+        Buys a pair trade at the given or current price
+        """
+
+        if not self._freqtrade.config.get('forcebuy_enable', False):
+            raise RPCException('Forcebuy not enabled.')
+
+        if self._freqtrade.state != State.RUNNING:
+            raise RPCException('trader is not running')
+
+        # Check pair is in stake currency
+        stake_currency = self._freqtrade.config.get('stake_currency')
+        if not pair.endswith(stake_currency):
+            raise RPCException(
+                f'Wrong pair selected. Please pairs with stake {stake_currency} pairs only')
+        # check if valid pair
+
+        # check if pair already has an open pair
+        trade = Trade.query.filter(Trade.is_open.is_(True)).filter(Trade.pair.is_(pair)).first()
+        if trade:
+            raise RPCException(f'position for {pair} already open - id: {trade.id}')
+
+        # gen stake amount
+        stakeamount = self._freqtrade._get_trade_stake_amount(pair)
+
+        # execute buy
+        if self._freqtrade.execute_buy(pair, stakeamount, price):
+            trade = Trade.query.filter(Trade.is_open.is_(True)).filter(Trade.pair.is_(pair)).first()
+            return trade
+        else:
+            return None
+
     def _rpc_performance(self) -> List[Dict]:
         """
         Handler for performance.
         Shows a performance statistic from finished trades
         """
-        if self._freqtrade.state != State.RUNNING:
-            raise RPCException('trader is not running')
 
         pair_rates = Trade.session.query(Trade.pair,
                                          sql.func.sum(Trade.close_profit).label('profit_sum'),
@@ -405,3 +443,11 @@ class RPC(object):
             raise RPCException('trader is not running')
 
         return Trade.query.filter(Trade.is_open.is_(True)).all()
+
+    def _rpc_whitelist(self) -> Dict:
+        """ Returns the currently active whitelist"""
+        res = {'method': self._freqtrade.pairlists.name,
+               'length': len(self._freqtrade.pairlists.whitelist),
+               'whitelist': self._freqtrade.active_pair_whitelist
+               }
+        return res

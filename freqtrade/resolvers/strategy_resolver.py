@@ -3,24 +3,23 @@
 """
 This module load custom strategies
 """
-import importlib.util
 import inspect
 import logging
-import os
 import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Optional, Type
+from typing import Dict, Optional
 
 from freqtrade import constants
+from freqtrade.resolvers import IResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.interface import IStrategy
 
 logger = logging.getLogger(__name__)
 
 
-class StrategyResolver(object):
+class StrategyResolver(IResolver):
     """
     This class contains all the logic to load custom strategy class
     """
@@ -75,6 +74,32 @@ class StrategyResolver(object):
         else:
             config['process_only_new_candles'] = self.strategy.process_only_new_candles
 
+        if 'order_types' in config:
+            self.strategy.order_types = config['order_types']
+            logger.info(
+                "Override strategy 'order_types' with value in config file: %s.",
+                config['order_types']
+            )
+        else:
+            config['order_types'] = self.strategy.order_types
+
+        if 'order_time_in_force' in config:
+            self.strategy.order_time_in_force = config['order_time_in_force']
+            logger.info(
+                "Override strategy 'order_time_in_force' with value in config file: %s.",
+                config['order_time_in_force']
+            )
+        else:
+            config['order_time_in_force'] = self.strategy.order_time_in_force
+
+        if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
+            raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
+                              f"Order-types mapping is incomplete.")
+
+        if not all(k in self.strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
+            raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
+                              f"Order-time-in-force mapping is incomplete.")
+
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
@@ -90,15 +115,16 @@ class StrategyResolver(object):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        current_path = os.path.dirname(os.path.realpath(__file__))
+        current_path = Path(__file__).parent.parent.joinpath('strategy').resolve()
+
         abs_paths = [
-            os.path.join(os.getcwd(), 'user_data', 'strategies'),
+            Path.cwd().joinpath('user_data/strategies'),
             current_path,
         ]
 
         if extra_dir:
             # Add extra strategy directory on top of search paths
-            abs_paths.insert(0, extra_dir)
+            abs_paths.insert(0, Path(extra_dir).resolve())
 
         if ":" in strategy_name:
             logger.info("loading base64 endocded strategy")
@@ -111,16 +137,17 @@ class StrategyResolver(object):
                 temp.joinpath(name).write_text(urlsafe_b64decode(strat[1]).decode('utf-8'))
                 temp.joinpath("__init__.py").touch()
 
-                strategy_name = os.path.splitext(name)[0]
+                strategy_name = strat[0]
 
                 # register temp path with the bot
-                abs_paths.insert(0, str(temp.resolve()))
+                abs_paths.insert(0, temp.resolve())
 
-        for path in abs_paths:
+        for _path in abs_paths:
             try:
-                strategy = self._search_strategy(path, strategy_name=strategy_name, config=config)
+                strategy = self._search_object(directory=_path, object_type=IStrategy,
+                                               object_name=strategy_name, kwargs={'config': config})
                 if strategy:
-                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, path)
+                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, _path)
                     strategy._populate_fun_len = len(
                         inspect.getfullargspec(strategy.populate_indicators).args)
                     strategy._buy_fun_len = len(
@@ -130,49 +157,9 @@ class StrategyResolver(object):
 
                     return import_strategy(strategy, config=config)
             except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', path)
+                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
 
         raise ImportError(
             "Impossible to load Strategy '{}'. This class does not exist"
             " or contains Python code errors".format(strategy_name)
         )
-
-    @staticmethod
-    def _get_valid_strategies(module_path: str, strategy_name: str) -> Optional[Type[IStrategy]]:
-        """
-        Returns a list of all possible strategies for the given module_path
-        :param module_path: absolute path to the module
-        :param strategy_name: Class name of the strategy
-        :return: Tuple with (name, class) or None
-        """
-
-        # Generate spec based on absolute path
-        spec = importlib.util.spec_from_file_location('unknown', module_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
-
-        valid_strategies_gen = (
-            obj for name, obj in inspect.getmembers(module, inspect.isclass)
-            if strategy_name == name and IStrategy in obj.__bases__
-        )
-        return next(valid_strategies_gen, None)
-
-    @staticmethod
-    def _search_strategy(directory: str, strategy_name: str, config: dict) -> Optional[IStrategy]:
-        """
-        Search for the strategy_name in the given directory
-        :param directory: relative or absolute directory path
-        :return: name of the strategy class
-        """
-        logger.debug('Searching for strategy %s in \'%s\'', strategy_name, directory)
-        for entry in os.listdir(directory):
-            # Only consider python files
-            if not entry.endswith('.py'):
-                logger.debug('Ignoring %s', entry)
-                continue
-            strategy = StrategyResolver._get_valid_strategies(
-                os.path.abspath(os.path.join(directory, entry)), strategy_name
-            )
-            if strategy:
-                return strategy(config)
-        return None

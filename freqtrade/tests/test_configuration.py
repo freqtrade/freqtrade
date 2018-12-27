@@ -6,7 +6,7 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import validate, ValidationError
+from jsonschema import validate, ValidationError, Draft4Validator
 
 from freqtrade import constants
 from freqtrade import OperationalException
@@ -64,6 +64,22 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
+def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> None:
+    default_conf['max_open_trades'] = -1
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+
+    args = Arguments([], '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    print(validated_conf)
+
+    assert validated_conf['max_open_trades'] > 999999999
+    assert validated_conf['max_open_trades'] == float('inf')
+    assert log_has('Validating configuration ...', caplog.record_tuples)
+
+
 def test_load_config_file_exception(mocker) -> None:
     mocker.patch(
         'freqtrade.configuration.open',
@@ -86,7 +102,7 @@ def test_load_config(default_conf, mocker) -> None:
 
     assert validated_conf.get('strategy') == 'DefaultStrategy'
     assert validated_conf.get('strategy_path') is None
-    assert 'dynamic_whitelist' not in validated_conf
+    assert 'edge' not in validated_conf
 
 
 def test_load_config_with_params(default_conf, mocker) -> None:
@@ -103,7 +119,8 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('dynamic_whitelist') == 10
+    assert validated_conf.get('pairlist', {}).get('method') == 'VolumePairList'
+    assert validated_conf.get('pairlist', {}).get('config').get('number_assets') == 10
     assert validated_conf.get('strategy') == 'TestStrategy'
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
@@ -116,7 +133,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     ))
 
     arglist = [
-        '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -135,7 +151,6 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     ))
 
     arglist = [
-        '--dynamic-whitelist', '10',
         '--strategy', 'TestStrategy',
         '--strategy-path', '/some/path'
     ]
@@ -178,8 +193,9 @@ def test_show_info(default_conf, mocker, caplog) -> None:
     configuration.get_config()
 
     assert log_has(
-        'Parameter --dynamic-whitelist detected. '
-        'Using dynamically generated whitelist. '
+        'Parameter --dynamic-whitelist has been deprecated, '
+        'and will be completely replaced by the whitelist dict in the future. '
+        'For now: using dynamically generated whitelist based on VolumePairList. '
         '(not applicable with Backtesting and Hyperopt)',
         caplog.record_tuples
     )
@@ -371,7 +387,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
 
 
-def test_check_exchange(default_conf) -> None:
+def test_check_exchange(default_conf, caplog) -> None:
     configuration = Configuration(Namespace())
 
     # Test a valid exchange
@@ -391,6 +407,15 @@ def test_check_exchange(default_conf) -> None:
         match=r'.*Exchange "unknown_exchange" not supported.*'
     ):
         configuration.check_exchange(default_conf)
+
+    # Test ccxt_rate_limit depreciation
+    default_conf.get('exchange').update({'name': 'binance'})
+    default_conf['exchange']['ccxt_rate_limit'] = True
+    configuration.check_exchange(default_conf)
+    assert log_has("`ccxt_rate_limit` has been deprecated in favor of "
+                   "`ccxt_config` and `ccxt_async_config` and will be removed "
+                   "in a future version.",
+                   caplog.record_tuples)
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
@@ -446,5 +471,19 @@ def test_set_loggers() -> None:
     assert logging.getLogger('telegram').level is logging.INFO
 
 
+def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
+    default_conf['forcebuy_enable'] = True
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+
+    args = Arguments([], '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf.get('forcebuy_enable')
+    assert log_has('`forcebuy` RPC message enabled.', caplog.record_tuples)
+
+
 def test_validate_default_conf(default_conf) -> None:
-    validate(default_conf, constants.CONF_SCHEMA)
+    validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)

@@ -62,7 +62,7 @@ def test_init_dryrun_db(default_conf, mocker):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
+def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
     """
     On this test we will buy and sell a crypto currency.
 
@@ -91,6 +91,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     """
 
     trade = Trade(
+        id=2,
         pair='ETH/BTC',
         stake_amount=0.001,
         fee_open=fee.return_value,
@@ -108,13 +109,53 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee):
     assert trade.open_rate == 0.00001099
     assert trade.close_profit is None
     assert trade.close_date is None
+    assert log_has("LIMIT_BUY has been fulfilled for Trade(id=2, "
+                   "pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=closed).",
+                   caplog.record_tuples)
 
+    caplog.clear()
     trade.open_order_id = 'something'
     trade.update(limit_sell_order)
     assert trade.open_order_id is None
     assert trade.close_rate == 0.00001173
-    assert trade.close_profit == 0.06201057
+    assert trade.close_profit == 0.06201058
     assert trade.close_date is not None
+    assert log_has("LIMIT_SELL has been fulfilled for Trade(id=2, "
+                   "pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=closed).",
+                   caplog.record_tuples)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
+    trade = Trade(
+        id=1,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+    )
+
+    trade.open_order_id = 'something'
+    trade.update(market_buy_order)
+    assert trade.open_order_id is None
+    assert trade.open_rate == 0.00004099
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert log_has("MARKET_BUY has been fulfilled for Trade(id=1, "
+                   "pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=closed).",
+                   caplog.record_tuples)
+
+    caplog.clear()
+    trade.open_order_id = 'something'
+    trade.update(market_sell_order)
+    assert trade.open_order_id is None
+    assert trade.close_rate == 0.00004173
+    assert trade.close_profit == 0.01297561
+    assert trade.close_date is not None
+    assert log_has("MARKET_SELL has been fulfilled for Trade(id=1, "
+                   "pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=closed).",
+                   caplog.record_tuples)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -129,16 +170,16 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
     trade.open_order_id = 'something'
     trade.update(limit_buy_order)
-    assert trade.calc_open_trade_price() == 0.001002500
+    assert trade.calc_open_trade_price() == 0.0010024999999225068
 
     trade.update(limit_sell_order)
-    assert trade.calc_close_trade_price() == 0.0010646656
+    assert trade.calc_close_trade_price() == 0.0010646656050132426
 
     # Profit in BTC
     assert trade.calc_profit() == 0.00006217
 
     # Profit in percent
-    assert trade.calc_profit_percent() == 0.06201057
+    assert trade.calc_profit_percent() == 0.06201058
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -207,10 +248,10 @@ def test_calc_open_trade_price(limit_buy_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get the open rate price with the standard fee rate
-    assert trade.calc_open_trade_price() == 0.001002500
+    assert trade.calc_open_trade_price() == 0.0010024999999225068
 
     # Get the open rate price with a custom fee rate
-    assert trade.calc_open_trade_price(fee=0.003) == 0.001003000
+    assert trade.calc_open_trade_price(fee=0.003) == 0.001002999999922468
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -226,14 +267,14 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get the close rate price with a custom close rate and a regular fee rate
-    assert trade.calc_close_trade_price(rate=0.00001234) == 0.0011200318
+    assert trade.calc_close_trade_price(rate=0.00001234) == 0.0011200318470471794
 
     # Get the close rate price with a custom close rate and a custom fee rate
-    assert trade.calc_close_trade_price(rate=0.00001234, fee=0.003) == 0.0011194704
+    assert trade.calc_close_trade_price(rate=0.00001234, fee=0.003) == 0.0011194704275749754
 
     # Test when we apply a Sell order, and ask price with a custom fee rate
     trade.update(limit_sell_order)
-    assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972
+    assert trade.calc_close_trade_price(fee=0.005) == 0.0010619972701635854
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -281,17 +322,17 @@ def test_calc_profit_percent(limit_buy_order, limit_sell_order, fee):
     trade.update(limit_buy_order)  # Buy @ 0.00001099
 
     # Get percent of profit with a custom rate (Higher than open rate)
-    assert trade.calc_profit_percent(rate=0.00001234) == 0.1172387
+    assert trade.calc_profit_percent(rate=0.00001234) == 0.11723875
 
     # Get percent of profit with a custom rate (Lower than open rate)
-    assert trade.calc_profit_percent(rate=0.00000123) == -0.88863827
+    assert trade.calc_profit_percent(rate=0.00000123) == -0.88863828
 
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(limit_sell_order)
-    assert trade.calc_profit_percent() == 0.06201057
+    assert trade.calc_profit_percent() == 0.06201058
 
     # Test with a custom fee rate on the close trade
-    assert trade.calc_profit_percent(fee=0.003) == 0.0614782
+    assert trade.calc_profit_percent(fee=0.003) == 0.06147824
 
 
 def test_clean_dry_run_db(default_conf, fee):
@@ -426,6 +467,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 max_rate FLOAT,
                                 sell_reason VARCHAR,
                                 strategy VARCHAR,
+                                ticker_interval INTEGER,
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
@@ -445,6 +487,8 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     # Create table using the old format
     engine.execute(create_table_old)
+    engine.execute("create index ix_trades_is_open on trades(is_open)")
+    engine.execute("create index ix_trades_pair on trades(pair)")
     engine.execute(insert_table_old)
 
     # fake previous backup
@@ -471,6 +515,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.sell_reason is None
     assert trade.strategy is None
     assert trade.ticker_interval is None
+    assert trade.stoploss_order_id is None
     assert log_has("trying trades_bak1", caplog.record_tuples)
     assert log_has("trying trades_bak2", caplog.record_tuples)
     assert log_has("Running database migration - backup available as trades_bak2",

@@ -6,14 +6,13 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 import warnings
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
-from freqtrade.exchange.exchange_helpers import parse_ticker_dataframe
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -33,6 +32,7 @@ class SellType(Enum):
     """
     ROI = "roi"
     STOP_LOSS = "stop_loss"
+    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
@@ -69,6 +69,20 @@ class IStrategy(ABC):
 
     # associated ticker interval
     ticker_interval: str
+
+    # Optional order types
+    order_types: Dict = {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
+    }
+
+    # Optional time in force
+    order_time_in_force: Dict = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
 
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
@@ -113,19 +127,17 @@ class IStrategy(ABC):
         """
         return self.__class__.__name__
 
-    def analyze_ticker(self, ticker_history: List[Dict], metadata: dict) -> DataFrame:
+    def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
         :return DataFrame with ticker data and indicator data
         """
 
-        dataframe = parse_ticker_dataframe(ticker_history)
-
         pair = str(metadata.get('pair'))
 
         # Test if seen this pair and last candle before.
-        # always run if process_only_new_candles is set to true
+        # always run if process_only_new_candles is set to false
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
@@ -146,19 +158,20 @@ class IStrategy(ABC):
         return dataframe
 
     def get_signal(self, pair: str, interval: str,
-                   ticker_hist: Optional[List[Dict]]) -> Tuple[bool, bool]:
+                   dataframe: DataFrame) -> Tuple[bool, bool]:
         """
         Calculates current signal based several technical analysis indicators
         :param pair: pair in format ANT/BTC
         :param interval: Interval to use (in min)
+        :param dataframe: Dataframe to analyze
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
-        if not ticker_hist:
+        if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty ticker history for pair %s', pair)
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(ticker_hist, {'pair': pair})
+            dataframe = self.analyze_ticker(dataframe, {'pair': pair})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -203,18 +216,31 @@ class IStrategy(ABC):
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool) -> SellCheckTuple:
+                    sell: bool, low: float = None, high: float = None,
+                    force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
         :return: True if trade should be sold, False otherwise
         """
-        current_profit = trade.calc_profit_percent(rate)
-        stoplossflag = self.stop_loss_reached(current_rate=rate, trade=trade, current_time=date,
-                                              current_profit=current_profit)
+
+        # Set current rate to low for backtesting sell
+        current_rate = low or rate
+        current_profit = trade.calc_profit_percent(current_rate)
+
+        if self.order_types.get('stoploss_on_exchange'):
+            stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        else:
+            stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                                  current_time=date, current_profit=current_profit,
+                                                  force_stoploss=force_stoploss)
+
         if stoplossflag.sell_flag:
             return stoplossflag
 
+        # Set current rate to low for backtesting sell
+        current_rate = high or rate
+        current_profit = trade.calc_profit_percent(current_rate)
         experimental = self.config.get('experimental', {})
 
         if buy and experimental.get('ignore_roi_if_buy_signal', False):
@@ -237,7 +263,7 @@ class IStrategy(ABC):
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float) -> SellCheckTuple:
+                          current_profit: float, force_stoploss: float) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -246,7 +272,8 @@ class IStrategy(ABC):
 
         trailing_stop = self.config.get('trailing_stop', False)
 
-        trade.adjust_stop_loss(trade.open_rate, self.stoploss, initial=True)
+        trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
+                               else self.stoploss, initial=True)
 
         # evaluate if the stoploss was hit
         if self.stoploss is not None and trade.stop_loss >= current_rate:
@@ -304,7 +331,7 @@ class IStrategy(ABC):
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.advise_indicators(parse_ticker_dataframe(pair_data), {'pair': pair})
+        return {pair: self.advise_indicators(pair_data, {'pair': pair})
                 for pair, pair_data in tickerdata.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

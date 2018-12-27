@@ -2,6 +2,7 @@
 import logging
 from base64 import urlsafe_b64encode
 from os import path
+from pathlib import Path
 import warnings
 
 import pytest
@@ -10,7 +11,7 @@ from pandas import DataFrame
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.strategy.resolver import StrategyResolver
+from freqtrade.resolvers import StrategyResolver
 
 
 def test_import_strategy(caplog):
@@ -40,21 +41,21 @@ def test_import_strategy(caplog):
 
 def test_search_strategy():
     default_config = {}
-    default_location = path.join(path.dirname(
-        path.realpath(__file__)), '..', '..', 'strategy'
-    )
+    default_location = Path(__file__).parent.parent.joinpath('strategy').resolve()
     assert isinstance(
-        StrategyResolver._search_strategy(
-            default_location,
-            config=default_config,
-            strategy_name='DefaultStrategy'
+        StrategyResolver._search_object(
+            directory=default_location,
+            object_type=IStrategy,
+            kwargs={'config': default_config},
+            object_name='DefaultStrategy'
         ),
         IStrategy
     )
-    assert StrategyResolver._search_strategy(
-        default_location,
-        config=default_config,
-        strategy_name='NotFoundStrategy'
+    assert StrategyResolver._search_object(
+        directory=default_location,
+        object_type=IStrategy,
+        kwargs={'config': default_config},
+        object_name='NotFoundStrategy'
     ) is None
 
 
@@ -77,7 +78,7 @@ def test_load_strategy_invalid_directory(result, caplog):
     resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
     assert (
-        'freqtrade.strategy.resolver',
+        'freqtrade.resolvers.strategy_resolver',
         logging.WARNING,
         'Path "{}" does not exist'.format(extra_dir),
     ) in caplog.record_tuples
@@ -88,8 +89,8 @@ def test_load_strategy_invalid_directory(result, caplog):
 def test_load_not_found_strategy():
     strategy = StrategyResolver()
     with pytest.raises(ImportError,
-                       match=r'Impossible to load Strategy \'NotFoundStrategy\'.'
-                             r' This class does not exist or contains Python code errors'):
+                       match=r"Impossible to load Strategy 'NotFoundStrategy'."
+                             r" This class does not exist or contains Python code errors"):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
 
 
@@ -128,7 +129,7 @@ def test_strategy_override_minimal_roi(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.minimal_roi[0] == 0.5
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override strategy 'minimal_roi' with value in config file: {'0': 0.5}."
             ) in caplog.record_tuples
@@ -143,7 +144,7 @@ def test_strategy_override_stoploss(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.stoploss == -0.5
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override strategy 'stoploss' with value in config file: -0.5."
             ) in caplog.record_tuples
@@ -159,7 +160,7 @@ def test_strategy_override_ticker_interval(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.ticker_interval == 60
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override strategy 'ticker_interval' with value in config file: 60."
             ) in caplog.record_tuples
@@ -175,11 +176,84 @@ def test_strategy_override_process_only_new_candles(caplog):
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.process_only_new_candles
-    assert ('freqtrade.strategy.resolver',
+    assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override process_only_new_candles 'process_only_new_candles' "
             "with value in config file: True."
             ) in caplog.record_tuples
+
+
+def test_strategy_override_order_types(caplog):
+    caplog.set_level(logging.INFO)
+
+    order_types = {
+        'buy': 'market',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True,
+    }
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': order_types
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.order_types
+    for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
+        assert resolver.strategy.order_types[method] == order_types[method]
+
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'order_types' with value in config file:"
+            " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
+            " 'stoploss_on_exchange': True}."
+            ) in caplog.record_tuples
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_types': {'buy': 'market'}
+    }
+    # Raise error for invalid configuration
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"Order-types mapping is incomplete."):
+        StrategyResolver(config)
+
+
+def test_strategy_override_order_tif(caplog):
+    caplog.set_level(logging.INFO)
+
+    order_time_in_force = {
+        'buy': 'fok',
+        'sell': 'gtc',
+    }
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_time_in_force': order_time_in_force
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.order_time_in_force
+    for method in ['buy', 'sell']:
+        assert resolver.strategy.order_time_in_force[method] == order_time_in_force[method]
+
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'order_time_in_force' with value in config file:"
+            " {'buy': 'fok', 'sell': 'gtc'}."
+            ) in caplog.record_tuples
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'order_time_in_force': {'buy': 'fok'}
+    }
+    # Raise error for invalid configuration
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                             r"Order-time-in-force mapping is incomplete."):
+        StrategyResolver(config)
 
 
 def test_deprecate_populate_indicators(result):
@@ -226,13 +300,13 @@ def test_call_deprecated_function(result, monkeypatch):
     assert resolver.strategy._sell_fun_len == 2
 
     indicator_df = resolver.strategy.advise_indicators(result, metadata=metadata)
-    assert type(indicator_df) is DataFrame
+    assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
     buydf = resolver.strategy.advise_buy(result, metadata=metadata)
-    assert type(buydf) is DataFrame
+    assert isinstance(buydf, DataFrame)
     assert 'buy' in buydf.columns
 
     selldf = resolver.strategy.advise_sell(result, metadata=metadata)
-    assert type(selldf) is DataFrame
+    assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
