@@ -68,3 +68,38 @@ Please also run `self._validate_whitelist(pairs)` and to check and remove pairs 
 
 This is a simple method used by `VolumePairList` - however serves as a good example.
 It implements caching (`@cached(TTLCache(maxsize=1, ttl=1800))`) as well as a configuration option to allow different (but similar) strategies to work with the same PairListProvider.
+
+## Creating a release
+
+This part of the documentation is aimed at maintainers, and shows how to create a release.
+
+### create release branch
+
+``` bash
+# make sure you're in develop branch
+git checkout develop
+
+# create new branch
+git checkout -b new_release
+```
+
+* edit `freqtrade/__init__.py` and add the desired version (for example `0.18.0`)
+* Commit this part
+* push that branch to the remote and create a PR
+
+### create changelog from git commits
+
+``` bash
+# Needs to be done before merging / pulling that branch.
+git log --oneline --no-decorate --no-merges master..develop
+```
+
+### Create github release / tag
+
+* Use the version-number specified as tag. 
+* Use "master" as reference (this step comes after the above PR is merged).
+* use the above changelog as release comment (as codeblock)
+
+### After-release
+
+* update version in develop to next valid version and postfix that with `-dev` (`0.18.0 -> 0.18.1-dev`)
