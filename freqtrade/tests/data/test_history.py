@@ -450,7 +450,7 @@ def test_trim_tickerlist() -> None:
     assert not ticker
 
 
-def test_file_dump_json() -> None:
+def test_file_dump_json_tofile() -> None:
     file = os.path.join(os.path.dirname(__file__), '..', 'testdata',
                         'test_{id}.json'.format(id=str(uuid.uuid4())))
     data = {'bar': 'foo'}
