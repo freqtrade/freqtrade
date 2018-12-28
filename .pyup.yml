@@ -21,6 +21,7 @@ search: False
 requirements:
   - requirements.txt
   - requirements-dev.txt
+  - requirements-plot.txt
 
 
 # configure the branch prefix the bot is using
