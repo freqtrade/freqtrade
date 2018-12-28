@@ -1,4 +1,4 @@
-# freqtrade documentation
+# Introduction
 
 Welcome to freqtrade documentation. Please feel free to contribute to
 this documentation if you see it became outdated by sending us a

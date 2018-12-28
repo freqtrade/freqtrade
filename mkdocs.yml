@@ -1,0 +1,13 @@
+site_name: Freqtrade
+theme:
+  name: material
+  logo: 'images/logo.png'
+  palette:
+    primary: 'blue grey'
+    accent: 'tear'
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: false
