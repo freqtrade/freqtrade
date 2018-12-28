@@ -3,7 +3,6 @@ Various tool function for Freqtrade and scripts
 """
 
 import gzip
-import json
 import logging
 import re
 from datetime import datetime
@@ -11,6 +10,7 @@ from typing import Dict
 
 import numpy as np
 from pandas import DataFrame
+import rapidjson
 
 logger = logging.getLogger(__name__)
 
@@ -77,10 +77,10 @@ def file_dump_json(filename, data, is_zip=False) -> None:
         if not filename.endswith('.gz'):
             filename = filename + '.gz'
         with gzip.open(filename, 'w') as fp:
-            json.dump(data, fp, default=str)
+            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
         with open(filename, 'w') as fp:
-            json.dump(data, fp, default=str)
+            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
 
 def format_ms_time(date: int) -> str:

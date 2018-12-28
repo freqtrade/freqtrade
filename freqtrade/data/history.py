@@ -13,7 +13,7 @@ from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
 from pandas import DataFrame
-import ujson
+import rapidjson
 
 from freqtrade import misc, constants, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 def json_load(data):
     """
-    load data with ujson
+    load data with rapidjson
     Use this to have a consistent experience,
-    otherwise "precise_float" needs to be passed to all load operations
+    sete number_mode to "NM_NATIVE" for greatest speed
     """
-    return ujson.load(data, precise_float=True)
+    return rapidjson.load(data, number_mode=rapidjson.NM_NATIVE)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
