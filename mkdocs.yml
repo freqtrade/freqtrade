@@ -4,7 +4,7 @@ theme:
   logo: 'images/logo.png'
   palette:
     primary: 'blue grey'
-    accent: 'deep orange'
+    accent: 'tear'
 markdown_extensions:
   - admonition
   - codehilite:
