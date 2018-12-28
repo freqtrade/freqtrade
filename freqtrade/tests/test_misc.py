@@ -2,7 +2,6 @@
 
 import datetime
 from unittest.mock import MagicMock
-from pathlib import Path
 
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,

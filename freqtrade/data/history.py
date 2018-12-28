@@ -5,8 +5,6 @@ includes:
 * download data from exchange and store to disk
 """
 
-import gzip
-
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
