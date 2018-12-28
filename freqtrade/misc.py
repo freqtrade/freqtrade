@@ -71,7 +71,7 @@ def file_dump_json(filename, data, is_zip=False) -> None:
     :param data: JSON Data to save
     :return:
     """
-    print(f'dumping json to "{filename}"')
+    logger.info(f'dumping json to "{filename}"')
 
     if is_zip:
         if not filename.endswith('.gz'):
@@ -81,6 +81,8 @@ def file_dump_json(filename, data, is_zip=False) -> None:
     else:
         with open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
+
+    logger.debug(f'done json to "{filename}"')
 
 
 def json_load(datafile):
