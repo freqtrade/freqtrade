@@ -4,10 +4,10 @@ theme:
   logo: 'images/logo.png'
   palette:
     primary: 'blue grey'
-    accent: 'cyan'
+    accent: 'deep orange'
 markdown_extensions:
   - admonition
   - codehilite:
       guess_lang: false
   - toc:
-      permalink: true
+      permalink: false
