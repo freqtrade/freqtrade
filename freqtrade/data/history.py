@@ -13,7 +13,6 @@ from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
 from pandas import DataFrame
-import rapidjson
 
 from freqtrade import misc, constants, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -21,15 +20,6 @@ from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
 logger = logging.getLogger(__name__)
-
-
-def json_load(data):
-    """
-    load data with rapidjson
-    Use this to have a consistent experience,
-    sete number_mode to "NM_NATIVE" for greatest speed
-    """
-    return rapidjson.load(data, number_mode=rapidjson.NM_NATIVE)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
@@ -83,11 +73,11 @@ def load_tickerdata_file(
     if gzipfile.is_file():
         logger.debug('Loading ticker data from file %s', gzipfile)
         with gzip.open(gzipfile) as tickerdata:
-            pairdata = json_load(tickerdata)
+            pairdata = misc.json_load(tickerdata)
     elif file.is_file():
         logger.debug('Loading ticker data from file %s', file)
         with open(file) as tickerdata:
-            pairdata = json_load(tickerdata)
+            pairdata = misc.json_load(tickerdata)
     else:
         return None
 
@@ -185,7 +175,7 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
     # read the cached file
     if filename.is_file():
         with open(filename, "rt") as file:
-            data = json_load(file)
+            data = misc.json_load(file)
         # remove the last item, could be incomplete candle
         if data:
             data.pop()

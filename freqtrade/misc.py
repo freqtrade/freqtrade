@@ -83,6 +83,15 @@ def file_dump_json(filename, data, is_zip=False) -> None:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
 
+def json_load(data):
+    """
+    load data with rapidjson
+    Use this to have a consistent experience,
+    sete number_mode to "NM_NATIVE" for greatest speed
+    """
+    return rapidjson.load(data, number_mode=rapidjson.NM_NATIVE)
+
+
 def format_ms_time(date: int) -> str:
     """
     convert MS date to readable format.
