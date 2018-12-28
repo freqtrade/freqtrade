@@ -1,2 +1,13 @@
 site_name: Freqtrade
-theme: material
+theme:
+  name: material
+  logo: 'images/logo.png'
+  palette:
+    primary: 'blue grey'
+    accent: 'cyan'
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
