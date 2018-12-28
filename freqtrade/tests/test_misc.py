@@ -2,11 +2,12 @@
 
 import datetime
 from unittest.mock import MagicMock
+from pathlib import Path
 
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
-                            file_dump_json, format_ms_time, shorten_date)
-from freqtrade.data.history import load_tickerdata_file
+                            file_dump_json, file_load_json, format_ms_time, shorten_date)
+from freqtrade.data.history import load_tickerdata_file, make_testdata_path
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
@@ -55,6 +56,19 @@ def test_file_dump_json(mocker) -> None:
     file_dump_json('somefile', [1, 2, 3], True)
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
+
+
+def test_file_load_json(mocker) -> None:
+
+    # 7m .json does not exist
+    ret = file_load_json(make_testdata_path(None).joinpath('UNITTEST_BTC-7m.json'))
+    assert not ret
+    # 1m json exists (but no .gz exists)
+    ret = file_load_json(make_testdata_path(None).joinpath('UNITTEST_BTC-1m.json'))
+    assert ret
+    # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
+    ret = file_load_json(make_testdata_path(None).joinpath('UNITTEST_BTC-8m.json'))
+    assert ret
 
 
 def test_format_ms_time() -> None:

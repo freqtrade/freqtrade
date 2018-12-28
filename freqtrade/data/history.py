@@ -67,18 +67,10 @@ def load_tickerdata_file(
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
     file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
-    gzipfile = file.with_suffix(file.suffix + '.gz')
 
-    # Try gzip file first, otherwise regular json file.
-    if gzipfile.is_file():
-        logger.debug('Loading ticker data from file %s', gzipfile)
-        with gzip.open(gzipfile) as tickerdata:
-            pairdata = misc.json_load(tickerdata)
-    elif file.is_file():
-        logger.debug('Loading ticker data from file %s', file)
-        with open(file) as tickerdata:
-            pairdata = misc.json_load(tickerdata)
-    else:
+    pairdata = misc.file_load_json(file)
+
+    if not pairdata:
         return None
 
     if timerange:

@@ -83,13 +83,31 @@ def file_dump_json(filename, data, is_zip=False) -> None:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
 
-def json_load(data):
+def json_load(datafile):
     """
     load data with rapidjson
     Use this to have a consistent experience,
     sete number_mode to "NM_NATIVE" for greatest speed
     """
-    return rapidjson.load(data, number_mode=rapidjson.NM_NATIVE)
+    return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
+
+
+def file_load_json(file):
+
+    gzipfile = file.with_suffix(file.suffix + '.gz')
+
+    # Try gzip file first, otherwise regular json file.
+    if gzipfile.is_file():
+        logger.debug('Loading ticker data from file %s', gzipfile)
+        with gzip.open(gzipfile) as tickerdata:
+            pairdata = json_load(tickerdata)
+    elif file.is_file():
+        logger.debug('Loading ticker data from file %s', file)
+        with open(file) as tickerdata:
+            pairdata = json_load(tickerdata)
+    else:
+        return None
+    return pairdata
 
 
 def format_ms_time(date: int) -> str:
