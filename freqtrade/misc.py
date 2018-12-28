@@ -3,7 +3,6 @@ Various tool function for Freqtrade and scripts
 """
 
 import gzip
-import json
 import logging
 import re
 from datetime import datetime
@@ -11,6 +10,7 @@ from typing import Dict
 
 import numpy as np
 from pandas import DataFrame
+import rapidjson
 
 logger = logging.getLogger(__name__)
 
@@ -71,16 +71,45 @@ def file_dump_json(filename, data, is_zip=False) -> None:
     :param data: JSON Data to save
     :return:
     """
-    print(f'dumping json to "{filename}"')
+    logger.info(f'dumping json to "{filename}"')
 
     if is_zip:
         if not filename.endswith('.gz'):
             filename = filename + '.gz'
         with gzip.open(filename, 'w') as fp:
-            json.dump(data, fp, default=str)
+            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
         with open(filename, 'w') as fp:
-            json.dump(data, fp, default=str)
+            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
+
+    logger.debug(f'done json to "{filename}"')
+
+
+def json_load(datafile):
+    """
+    load data with rapidjson
+    Use this to have a consistent experience,
+    sete number_mode to "NM_NATIVE" for greatest speed
+    """
+    return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
+
+
+def file_load_json(file):
+
+    gzipfile = file.with_suffix(file.suffix + '.gz')
+
+    # Try gzip file first, otherwise regular json file.
+    if gzipfile.is_file():
+        logger.debug('Loading ticker data from file %s', gzipfile)
+        with gzip.open(gzipfile) as tickerdata:
+            pairdata = json_load(tickerdata)
+    elif file.is_file():
+        logger.debug('Loading ticker data from file %s', file)
+        with open(file) as tickerdata:
+            pairdata = json_load(tickerdata)
+    else:
+        return None
+    return pairdata
 
 
 def format_ms_time(date: int) -> str:

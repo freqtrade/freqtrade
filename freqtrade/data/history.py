@@ -5,15 +5,12 @@ includes:
 * download data from exchange and store to disk
 """
 
-import gzip
-
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
 from pandas import DataFrame
-import ujson
 
 from freqtrade import misc, constants, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -21,15 +18,6 @@ from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
 logger = logging.getLogger(__name__)
-
-
-def json_load(data):
-    """
-    load data with ujson
-    Use this to have a consistent experience,
-    otherwise "precise_float" needs to be passed to all load operations
-    """
-    return ujson.load(data, precise_float=True)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
@@ -77,18 +65,10 @@ def load_tickerdata_file(
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
     file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
-    gzipfile = file.with_suffix(file.suffix + '.gz')
 
-    # Try gzip file first, otherwise regular json file.
-    if gzipfile.is_file():
-        logger.debug('Loading ticker data from file %s', gzipfile)
-        with gzip.open(gzipfile) as tickerdata:
-            pairdata = json_load(tickerdata)
-    elif file.is_file():
-        logger.debug('Loading ticker data from file %s', file)
-        with open(file) as tickerdata:
-            pairdata = json_load(tickerdata)
-    else:
+    pairdata = misc.file_load_json(file)
+
+    if not pairdata:
         return None
 
     if timerange:
@@ -185,7 +165,7 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
     # read the cached file
     if filename.is_file():
         with open(filename, "rt") as file:
-            data = json_load(file)
+            data = misc.json_load(file)
         # remove the last item, could be incomplete candle
         if data:
             data.pop()
