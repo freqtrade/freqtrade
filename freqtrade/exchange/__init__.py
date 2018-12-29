@@ -522,7 +522,7 @@ class Exchange(object):
 
         # Combine tickers
         data: List = []
-        for p, ticker in tickers:
+        for p, ticker_interval, ticker in tickers:
             if p == pair:
                 data.extend(ticker)
         # Sort data again after extending the result - above calls return in "async order"
@@ -558,7 +558,8 @@ class Exchange(object):
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
             pair = res[0]
-            ticks = res[1]
+            tick_interval[1]
+            ticks = res[2]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
                 self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
@@ -568,7 +569,11 @@ class Exchange(object):
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
-                                        since_ms: Optional[int] = None) -> Tuple[str, List]:
+                                        since_ms: Optional[int] = None) -> Tuple[str, str, List]:
+        """
+        Asyncronously gets candle histories using fetch_ohlcv
+        returns tuple: (pair, tick_interval, ohlcv_list)
+        """
         try:
             # fetch ohlcv asynchronously
             logger.debug("fetching %s since %s ...", pair, since_ms)
@@ -587,7 +592,7 @@ class Exchange(object):
                 logger.exception("Error loading %s. Result was %s.", pair, data)
                 return pair, []
             logger.debug("done fetching %s ...", pair)
-            return pair, data
+            return pair, tick_interval, data
 
         except ccxt.NotSupported as e:
             raise OperationalException(
