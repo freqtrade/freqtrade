@@ -43,7 +43,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :return: None
     """
     freqtrade.strategy.get_signal = lambda e, s, t: value
-    freqtrade.exchange.refresh_tickers = lambda p, i: None
+    freqtrade.exchange.refresh_latest_ohlcv = lambda p, i: None
 
 
 def patch_RPCManager(mocker) -> MagicMock:

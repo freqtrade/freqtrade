@@ -27,7 +27,7 @@ class DataProvider(object):
         """
         Refresh data, called with each cycle
         """
-        self._exchange.refresh_tickers(pairlist, self._config['ticker_interval'])
+        self._exchange.refresh_latest_ohlcv(pairlist, self._config['ticker_interval'])
 
     @property
     def available_pairs(self) -> List[str]:

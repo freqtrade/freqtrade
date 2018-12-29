@@ -158,9 +158,9 @@ class FreqtradeBot(object):
             self.active_pair_whitelist = self.pairlists.whitelist
 
             # Calculating Edge positiong
-            # Should be called before refresh_tickers
+            # Should be called before refresh_latest_ohlcv
             # Otherwise it will override cached klines in exchange
-            # with delta value (klines only from last refresh_pairs)
+            # with delta value (klines only from last refresh_latest_ohlcv)
             if self.edge:
                 self.edge.calculate()
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)

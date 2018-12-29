@@ -778,7 +778,7 @@ def test_get_history(default_conf, mocker, caplog):
     assert len(ret) == 2
 
 
-def test_refresh_tickers(mocker, default_conf, caplog) -> None:
+def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     tick = [
         [
             (arrow.utcnow().timestamp - 1) * 1000,  # unix timestamp ms
@@ -805,7 +805,7 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
     pairs = ['IOTA/ETH', 'XRP/ETH']
     # empty dicts
     assert not exchange._klines
-    exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
+    exchange.refresh_latest_ohlcv(['IOTA/ETH', 'XRP/ETH'], '5m')
 
     assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
     assert exchange._klines
@@ -822,7 +822,7 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
+    exchange.refresh_latest_ohlcv(['IOTA/ETH', 'XRP/ETH'], '5m')
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert log_has(f"Using cached klines data for {pairs[0]} ...", caplog.record_tuples)

@@ -530,9 +530,10 @@ class Exchange(object):
         logger.info("downloaded %s with length %s.", pair, len(data))
         return data
 
-    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> List[Tuple[str, List]]:
+    def refresh_latest_ohlcv(self, pair_list: List[str],
+                             ticker_interval: str) -> List[Tuple[str, List]]:
         """
-        Refresh ohlcv asyncronously and set `_klines`  with the result
+        Refresh in-memory ohlcv asyncronously and set `_klines`  with the result
         """
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
 

@@ -138,7 +138,7 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     tickers = {}
     if args.live:
         logger.info('Downloading pair.')
-        exchange.refresh_tickers([pair], tick_interval)
+        exchange.refresh_latest_ohlcv([pair], tick_interval)
         tickers[pair] = exchange.klines(pair)
     else:
         tickers = history.load_data(
