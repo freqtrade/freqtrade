@@ -162,7 +162,7 @@ class Exchange(object):
         if pair in self._klines:
             return self._klines[pair].copy() if copy else self._klines[pair]
         else:
-            return None
+            return DataFrame()
 
     def set_sandbox(self, api, exchange_config: dict, name: str):
         if exchange_config.get('sandbox'):

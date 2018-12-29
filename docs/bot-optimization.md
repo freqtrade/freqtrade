@@ -247,7 +247,7 @@ All methods return `None` in case of failure (do not raise an exception).
 #### Possible options for DataProvider
 
 - `available_pairs` - Property containing cached pairs
-- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist
+- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist, returns DataFrame or empty DataFrame
 - `historic_ohlcv(pair, ticker_interval)` - Data stored on disk
 - `runmode` - Property containing the current runmode.
 

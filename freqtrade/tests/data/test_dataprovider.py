@@ -18,7 +18,8 @@ def test_ohlcv(mocker, default_conf, ticker_history):
     assert isinstance(dp.ohlcv('UNITTEST/BTC'), DataFrame)
     assert dp.ohlcv('UNITTEST/BTC') is not ticker_history
     assert dp.ohlcv('UNITTEST/BTC', copy=False) is ticker_history
-    assert dp.ohlcv('NONESENSE/AAA') is None
+    assert not dp.ohlcv('UNITTEST/BTC').empty
+    assert dp.ohlcv('NONESENSE/AAA').empty
 
     default_conf['runmode'] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
@@ -28,7 +29,7 @@ def test_ohlcv(mocker, default_conf, ticker_history):
     default_conf['runmode'] = RunMode.BACKTEST
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.BACKTEST
-    assert dp.ohlcv('UNITTEST/BTC') is None
+    assert dp.ohlcv('UNITTEST/BTC').empty
 
 
 def test_historic_ohlcv(mocker, default_conf, ticker_history):

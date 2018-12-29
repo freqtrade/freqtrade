@@ -37,7 +37,7 @@ class DataProvider(object):
         """
         return list(self._exchange._klines.keys())
 
-    def ohlcv(self, pair: str, copy: bool = True) -> List[str]:
+    def ohlcv(self, pair: str, copy: bool = True) -> DataFrame:
         """
         get ohlcv data for the given pair as DataFrame
         Please check `available_pairs` to verify which pairs are currently cached.
@@ -49,7 +49,7 @@ class DataProvider(object):
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             return self._exchange.klines(pair, copy)
         else:
-            return None
+            return DataFrame()
 
     def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
         """
