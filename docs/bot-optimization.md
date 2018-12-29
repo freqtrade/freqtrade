@@ -222,6 +222,57 @@ Please note that the same buy/sell signals may work with one interval, but not t
 The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
+### Additional data (DataProvider)
+
+The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
+
+**NOTE**: The DataProvier is currently not available during backtesting / hyperopt.
+
+Please always check if the `DataProvider` is available to avoid failures during backtesting.
+
+``` python
+if self.dp:
+    if dp.runmode == 'live':
+        if 'ETH/BTC' in self.dp.available_pairs:
+            data_eth = self.dp.ohlcv(pair='ETH/BTC',
+                                ticker_interval=ticker_interval)
+    else:
+        # Get historic ohlcv data (cached on disk).
+        history_eth = self.dp.historic_ohlcv(pair='ETH/BTC',
+                            ticker_interval='1h')
+```
+
+All methods return `None` in case of failure (do not raise an exception).
+
+#### Possible options for DataProvider
+
+- `available_pairs` - Property containing cached pairs
+- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist
+- `historic_ohlcv(pair, ticker_interval)` - Data stored on disk
+- `runmode` - Property containing the current runmode.
+
+### Additional data - Wallets
+
+The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
+
+**NOTE**: Wallets is not available during backtesting / hyperopt.
+
+Please always check if `Wallets` is available to avoid failures during backtesting.
+
+``` python
+if self.wallets:
+    free_eth = self.wallets.get_free('ETH')
+    used_eth = self.wallets.get_used('ETH')
+    total_eth = self.wallets.get_total('ETH')
+```
+
+#### Possible options for Wallets
+
+- `get_free(asset)` - currently available balance to trade
+- `get_used(asset)` - currently tied up balance (open orders)
+- `get_total(asset)` - total available balance - sum of the 2 above
+
+
 ### Where is the default strategy?
 
 The default buy strategy is located in the file
