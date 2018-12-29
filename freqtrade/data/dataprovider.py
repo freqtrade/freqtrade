@@ -46,7 +46,10 @@ class DataProvider(object):
                      Use false only for RO operations (where the dataframe is not modified)
         """
         # TODO: Should not be stored in exchange but in this class
-        return self._exchange.klines(pair, copy)
+        if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
+            return self._exchange.klines(pair, copy)
+        else:
+            return None
 
     def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
         """
@@ -77,6 +80,6 @@ class DataProvider(object):
     def runmode(self) -> RunMode:
         """
         Get runmode of the bot
-        can be "live", "dry-run", "backtest", "edgecli", "hyperopt".
+        can be "live", "dry-run", "backtest", "edgecli", "hyperopt" or "other".
         """
         return RunMode(self._config.get('runmode', RunMode.OTHER))

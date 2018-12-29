@@ -3,20 +3,32 @@ from unittest.mock import MagicMock
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.state import RunMode
 from freqtrade.tests.conftest import get_patched_exchange
 
 
 def test_ohlcv(mocker, default_conf, ticker_history):
-
+    default_conf['runmode'] = RunMode.DRY_RUN
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._klines['XRP/BTC'] = ticker_history
     exchange._klines['UNITTEST/BTC'] = ticker_history
     dp = DataProvider(default_conf, exchange)
+    assert dp.runmode == RunMode.DRY_RUN
     assert ticker_history.equals(dp.ohlcv('UNITTEST/BTC'))
     assert isinstance(dp.ohlcv('UNITTEST/BTC'), DataFrame)
     assert dp.ohlcv('UNITTEST/BTC') is not ticker_history
     assert dp.ohlcv('UNITTEST/BTC', copy=False) is ticker_history
     assert dp.ohlcv('NONESENSE/AAA') is None
+
+    default_conf['runmode'] = RunMode.LIVE
+    dp = DataProvider(default_conf, exchange)
+    assert dp.runmode == RunMode.LIVE
+    assert isinstance(dp.ohlcv('UNITTEST/BTC'), DataFrame)
+
+    default_conf['runmode'] = RunMode.BACKTEST
+    dp = DataProvider(default_conf, exchange)
+    assert dp.runmode == RunMode.BACKTEST
+    assert dp.ohlcv('UNITTEST/BTC') is None
 
 
 def test_historic_ohlcv(mocker, default_conf, ticker_history):
