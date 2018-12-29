@@ -525,7 +525,7 @@ class Exchange(object):
         for p, ticker in tickers:
             if p == pair:
                 data.extend(ticker)
-        # Sort data again after extending the result - above calls return in "async order" order
+        # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
         logger.info("downloaded %s with length %s.", pair, len(data))
         return data
@@ -535,7 +535,7 @@ class Exchange(object):
         """
         Refresh in-memory ohlcv asyncronously and set `_klines`  with the result
         """
-        logger.debug("Refreshing klines for %d pairs", len(pair_list))
+        logger.debug("Refreshing ohlcv data for %d pairs", len(pair_list))
 
         # Calculating ticker interval in second
         interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
@@ -547,7 +547,7 @@ class Exchange(object):
                     arrow.utcnow().timestamp and pair in self._klines):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
-                logger.debug("Using cached klines data for %s ...", pair)
+                logger.debug("Using cached ohlcv data for %s ...", pair)
 
         tickers = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))

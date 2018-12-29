@@ -807,7 +807,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     assert not exchange._klines
     exchange.refresh_latest_ohlcv(['IOTA/ETH', 'XRP/ETH'], '5m')
 
-    assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
+    assert log_has(f'Refreshing ohlcv data for {len(pairs)} pairs', caplog.record_tuples)
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     for pair in pairs:
@@ -825,7 +825,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange.refresh_latest_ohlcv(['IOTA/ETH', 'XRP/ETH'], '5m')
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached klines data for {pairs[0]} ...", caplog.record_tuples)
+    assert log_has(f"Using cached ohlcv data for {pairs[0]} ...", caplog.record_tuples)
 
 
 @pytest.mark.asyncio
@@ -854,7 +854,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     assert res[0] == pair
     assert res[1] == tick
     assert exchange._api_async.fetch_ohlcv.call_count == 1
-    assert not log_has(f"Using cached klines data for {pair} ...", caplog.record_tuples)
+    assert not log_has(f"Using cached ohlcv data for {pair} ...", caplog.record_tuples)
 
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
