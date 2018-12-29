@@ -530,30 +530,26 @@ class Exchange(object):
         logger.info("downloaded %s with length %s.", pair, len(data))
         return data
 
-    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> None:
+    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> List[Tuple[str, List]]:
         """
-        Refresh tickers asyncronously and set `_klines` of this object with the result
+        Refresh ohlcv asyncronously and set `_klines`  with the result
         """
         logger.debug("Refreshing klines for %d pairs", len(pair_list))
-        asyncio.get_event_loop().run_until_complete(
-            self.async_get_candles_history(pair_list, ticker_interval))
 
-    async def async_get_candles_history(self, pairs: List[str],
-                                        tick_interval: str) -> List[Tuple[str, List]]:
-        """Download ohlcv history for pair-list asyncronously """
         # Calculating ticker interval in second
-        interval_in_sec = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
+        interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
         input_coroutines = []
 
         # Gather corotines to run
-        for pair in pairs:
+        for pair in pair_list:
             if not (self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
                     arrow.utcnow().timestamp and pair in self._klines):
-                input_coroutines.append(self._async_get_candle_history(pair, tick_interval))
+                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
                 logger.debug("Using cached klines data for %s ...", pair)
 
-        tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
+        tickers = asyncio.get_event_loop().run_until_complete(
+            asyncio.gather(*input_coroutines, return_exceptions=True))
 
         # handle caching
         for res in tickers:
