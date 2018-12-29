@@ -765,7 +765,7 @@ def test_get_history(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
 
     async def mock_candle_hist(pair, tick_interval, since_ms):
-        return pair, tick
+        return pair, tick_interval, tick
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -850,9 +850,10 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
     assert type(res) is tuple
-    assert len(res) == 2
+    assert len(res) == 3
     assert res[0] == pair
-    assert res[1] == tick
+    assert res[1] == "5m"
+    assert res[2] == tick
     assert exchange._api_async.fetch_ohlcv.call_count == 1
     assert not log_has(f"Using cached ohlcv data for {pair} ...", caplog.record_tuples)
 
@@ -883,9 +884,10 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
     assert type(res) is tuple
-    assert len(res) == 2
+    assert len(res) == 3
     assert res[0] == pair
-    assert res[1] == tick
+    assert res[1] == "5m"
+    assert res[2] == tick
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
@@ -1010,7 +1012,7 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
-    ticks = res[1]
+    ticks = res[2]
 
     assert sort_mock.call_count == 1
     assert ticks[0][0] == 1527830400000
@@ -1047,7 +1049,8 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
-    ticks = res[1]
+    assert res[1] == default_conf['ticker_interval']
+    ticks = res[2]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0
     assert ticks[0][0] == 1527827700000
