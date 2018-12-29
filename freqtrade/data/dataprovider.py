@@ -40,6 +40,7 @@ class DataProvider(object):
     def ohlcv(self, pair: str, copy: bool = True) -> List[str]:
         """
         get ohlcv data for the given pair as DataFrame
+        Please check `available_pairs` to verify which pairs are currently cached.
         :param pair: pair to get the data for
         :param copy: copy dataframe before returning.
                      Use false only for RO operations (where the dataframe is not modified)
