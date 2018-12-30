@@ -1,6 +1,6 @@
 site_name: Freqtrade
 nav:
-    - About: about.md
+    - About: index.md
     - Installation: pre-requisite.md
     - Configuration: configuration.md
     - Start the bot: bot-usage.md

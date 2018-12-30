@@ -1,39 +1,31 @@
-# Introduction
+# Freqtrade
+## Introduction
+Freqtrade is a cryptocurrency trading bot written in Python.
 
-Welcome to freqtrade documentation. Please feel free to contribute to
-this documentation if you see it became outdated by sending us a
-Pull-request. Do not hesitate to reach us on
-[Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE)
- if you do not find the answer to your questions.
+!!! Danger "DISCLAIMER"
+    This software is for educational purposes only. Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
-## Table of Contents
+    Always start by running a trading bot in Dry-run and do not engage money before you understand how it works and what profit/loss you should expect.
 
-- [Pre-requisite](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md)
-	- [Setup your Bittrex account](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md#setup-your-bittrex-account)
-	- [Setup your Telegram bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md#setup-your-telegram-bot)
-- [Bot Installation](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md)
-    - [Install with Docker (all platforms)](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md#docker)
-    - [Install on Linux Ubuntu](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md#21-linux---ubuntu-1604)
-    - [Install on MacOS](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md#23-macos-installation)
-    - [Install on Windows](https://github.com/freqtrade/freqtrade/blob/develop/docs/installation.md#windows)
-- [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md)
-- [Bot usage (Start your bot)](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md)
-    - [Bot commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#bot-commands)
-    - [Backtesting commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#backtesting-commands)
-    - [Hyperopt commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#hyperopt-commands)
-    - [Edge commands](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md#edge-commands)
-- [Bot Optimization](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md)
-	- [Change your strategy](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#change-your-strategy)
-    - [Add more Indicator](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md#add-more-indicator)
-    - [Test your strategy with Backtesting](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md)
-    - [Edge positioning](https://github.com/freqtrade/freqtrade/blob/develop/docs/edge.md)
-    - [Find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
-- [Control the bot with telegram](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md)
-- [Receive notifications via webhook](https://github.com/freqtrade/freqtrade/blob/develop/docs/webhook-config.md)
-- [Contribute to the project](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
-	- [How to contribute](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
-	- [Run tests & Check PEP8 compliance](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
-- [FAQ](https://github.com/freqtrade/freqtrade/blob/develop/docs/faq.md)
-    - [SQL cheatsheet](https://github.com/freqtrade/freqtrade/blob/develop/docs/sql_cheatsheet.md)
-- [Sandbox Testing](https://github.com/freqtrade/freqtrade/blob/develop/docs/sandbox-testing.md)
-- [Developer Docs](https://github.com/freqtrade/freqtrade/blob/develop/docs/developer.md)
+    We strongly recommend you to have coding and Python knowledge. Do not hesitate to read the source code and understand the mechanism of this bot.
+
+
+## Features
+ - Based on Python 3.6+: For botting on any operating system - Windows, macOS and Linux
+ - Persistence: Persistence is achieved through sqlite
+ - Dry-run: Run the bot without playing money.
+ - Backtesting: Run a simulation of your buy/sell strategy.
+ - Strategy Optimization by machine learning: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
+ - Edge position sizing Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. Learn more
+ - Whitelist crypto-currencies: Select which crypto-currency you want to trade or use dynamic whitelists.
+ - Blacklist crypto-currencies: Select which crypto-currency you want to avoid.
+ - Manageable via Telegram: Manage the bot with Telegram
+ - Display profit/loss in fiat: Display your profit/loss in 33 fiat.
+ - Daily summary of profit/loss: Provide a daily summary of your profit/loss.
+ - Performance status report: Provide a performance status of your current trades.
+
+## Support
+Help / Slack
+For any questions not covered by the documentation or for further information about the bot, we encourage you to join our slack channel.
+
+Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) to join Slack channel.
