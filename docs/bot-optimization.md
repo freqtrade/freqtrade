@@ -228,12 +228,23 @@ The strategy provides access to the `DataProvider`. This allows you to get addit
 
 **NOTE**: The DataProvier is currently not available during backtesting / hyperopt.
 
+All methods return `None` in case of failure (do not raise an exception).
+
 Please always check if the `DataProvider` is available to avoid failures during backtesting.
+
+#### Possible options for DataProvider
+
+- `available_pairs` - Property with tuples listing cached pairs with their intervals. (pair, interval)
+- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist, returns DataFrame or empty DataFrame
+- `historic_ohlcv(pair, ticker_interval)` - Data stored on disk
+- `runmode` - Property containing the current runmode.
+
+#### ohlcv / historic_ohlcv
 
 ``` python
 if self.dp:
     if dp.runmode == 'live':
-        if 'ETH/BTC' in self.dp.available_pairs:
+        if ('ETH/BTC', ticker_interval) in self.dp.available_pairs:
             data_eth = self.dp.ohlcv(pair='ETH/BTC',
                                      ticker_interval=ticker_interval)
     else:
@@ -242,14 +253,13 @@ if self.dp:
                                              ticker_interval='1h')
 ```
 
-All methods return `None` in case of failure (do not raise an exception).
+#### Available Pairs
 
-#### Possible options for DataProvider
-
-- `available_pairs` - Property containing cached pairs
-- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist, returns DataFrame or empty DataFrame
-- `historic_ohlcv(pair, ticker_interval)` - Data stored on disk
-- `runmode` - Property containing the current runmode.
+``` python
+if self.dp:
+    for pair, ticker in self.dp.available_pairs:
+        print(f"available {pair}, {ticker}")
+```
 
 ### Additional data - Wallets
 

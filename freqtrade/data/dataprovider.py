@@ -46,7 +46,6 @@ class DataProvider(object):
         :param copy: copy dataframe before returning.
                      Use false only for RO operations (where the dataframe is not modified)
         """
-        # TODO: Should not be stored in exchange but in this class
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             if tick_interval:
                 pairtick = (pair, tick_interval)
