@@ -7,9 +7,15 @@ nav:
     - Optimization: bot-optimization.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Telegram usage: telegram-usage.md
+    - Stoploss: stoploss.md
+    - Telegram: telegrame-usage.md
     - Plotting: plotting.md
     - Edge positioning: edge.md
+    - Web Hook: webhook-config.md
+    - FAQ: faq.md
+    - Contributors guide: developer.md
+    - SQL Cheatsheeet: sql_cheatsheet.md
+    - Sanbox testing: sandbox-testing.md
 theme:
   name: material
   logo: 'images/logo.png'
