@@ -4,7 +4,7 @@ nav:
     - Installation: pre-requisite.md
     - Configuratioon: configuration.md
     - Start the bot: bot-usage.md
-    - Bot optimization: bot-optimization.md
+    - Optimization: bot-optimization.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Plotting: plotting.md

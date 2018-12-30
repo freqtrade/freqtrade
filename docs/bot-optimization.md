@@ -1,27 +1,7 @@
-# Bot Optimization
+# Optimization
 
 This page explains where to customize your strategies, and add new
 indicators.
-
-## Table of Contents
-
-- [Install a custom strategy file](#install-a-custom-strategy-file)
-- [Customize your strategy](#change-your-strategy)
-  - [Anatomy of a strategy](#anatomy-of-a-strategy)
-  - [Customize indicators](#customize-indicators)
-  - [Buy signal rules](#buy-signal-rules)
-  - [Sell signal rules](#sell-signal-rules)
-  - [Minimal ROI](#minimal-roi)
-  - [Stoploss](#stoploss)
-  - [Ticker interval](#ticker-interval)
-  - [Metadata dict](#metadata-dict)
-  - [Where is the default strategy](#where-is-the-default-strategy)
-  - [Specify custom strategy location](#specify-custom-strategy-location)
-  - [Further strategy ideas](#further-strategy-ideas)
-
-- [Where is the default strategy](#where-is-the-default-strategy)
-
-Since the version `0.16.0` the bot allows using custom strategy file.
 
 ## Install a custom strategy file
 
@@ -60,7 +40,7 @@ A strategy file contains all the information needed to build a good strategy:
 The bot also include a sample strategy called `TestStrategy` you can update: `user_data/strategies/test_strategy.py`.
 You can test it with the parameter: `--strategy TestStrategy`
 
-``` bash
+```bash
 python3 ./freqtrade/main.py --strategy AwesomeStrategy
 ```
 
@@ -118,10 +98,10 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     return dataframe
 ```
 
-#### Want more indicator examples
 
-Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).
-Then uncomment indicators you need.
+!!! Note "Want more indicator examples?"
+    Look into the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py).<br/>
+    Then uncomment indicators you need.
 
 ### Buy signal rules
 
@@ -187,7 +167,7 @@ This dict defines the minimal Return On Investment (ROI) a trade should reach be
 
 It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.
 
-```python 
+```python
 minimal_roi = {
     "40": 0.0,
     "30": 0.01,
@@ -227,7 +207,7 @@ stoploss = -0.10
 ```
 
 This would signify a stoploss of -10%.
-If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems). 
+If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems).
 
 For more information on order_types please look [here](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md#understand-order_types).
 
