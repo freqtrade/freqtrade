@@ -8,7 +8,7 @@ nav:
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Stoploss: stoploss.md
-    - Telegram: telegrame-usage.md
+    - Telegram: telegram-usage.md
     - Plotting: plotting.md
     - Edge positioning: edge.md
     - Web Hook: webhook-config.md
