@@ -2,7 +2,7 @@ site_name: Freqtrade
 nav:
     - About: about.md
     - Installation: pre-requisite.md
-    - Configuratioon: configuration.md
+    - Configuration: configuration.md
     - Start the bot: bot-usage.md
     - Optimization: bot-optimization.md
     - Backtesting: backtesting.md
