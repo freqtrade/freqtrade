@@ -1,10 +1,6 @@
 # Plotting
 This page explains how to plot prices, indicator, profits.
 
-## Table of Contents
-- [Plot price and indicators](#plot-price-and-indicators)
-- [Plot profit](#plot-profit)
-
 ## Installation
 
 Plotting scripts use Plotly library. Install/upgrade it with:
@@ -48,7 +44,7 @@ To plot trades stored in a database use `--db-url` argument:
 python scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH
 ```
 
-To plot a test strategy the strategy should have first be backtested. 
+To plot a test strategy the strategy should have first be backtested.
 The results may then be plotted with the -s argument:
 ```
 python scripts/plot_dataframe.py -s Strategy_Name -p BTC/ETH --datadir user_data/data/<exchange_name>/
