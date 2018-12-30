@@ -802,10 +802,10 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
-    pairs = ['IOTA/ETH', 'XRP/ETH']
+    pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
-    exchange.refresh_latest_ohlcv(['IOTA/ETH', 'XRP/ETH'], '5m')
+    exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert log_has(f'Refreshing ohlcv data for {len(pairs)} pairs', caplog.record_tuples)
     assert exchange._klines
@@ -822,10 +822,11 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    exchange.refresh_latest_ohlcv(['IOTA/ETH', 'XRP/ETH'], '5m')
+    exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached ohlcv data for {pairs[0]} ...", caplog.record_tuples)
+    assert log_has(f"Using cached ohlcv data for {pairs[0][0]}, {pairs[0][1]} ...",
+                   caplog.record_tuples)
 
 
 @pytest.mark.asyncio

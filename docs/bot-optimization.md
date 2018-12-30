@@ -235,11 +235,11 @@ if self.dp:
     if dp.runmode == 'live':
         if 'ETH/BTC' in self.dp.available_pairs:
             data_eth = self.dp.ohlcv(pair='ETH/BTC',
-                                ticker_interval=ticker_interval)
+                                     ticker_interval=ticker_interval)
     else:
         # Get historic ohlcv data (cached on disk).
         history_eth = self.dp.historic_ohlcv(pair='ETH/BTC',
-                            ticker_interval='1h')
+                                             ticker_interval='1h')
 ```
 
 All methods return `None` in case of failure (do not raise an exception).
