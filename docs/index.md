@@ -24,6 +24,27 @@ Freqtrade is a cryptocurrency trading bot written in Python.
  - Daily summary of profit/loss: Provide a daily summary of your profit/loss.
  - Performance status report: Provide a performance status of your current trades.
 
+
+## Requirements
+### Uptodate clock
+The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
+
+### Hardware requirements
+To run this bot we recommend you a cloud instance with a minimum of:
+
+- 2GB RAM
+- 1GB disk space
+- 2vCPU
+
+### Software requirements
+- Python 3.6.x
+- pip
+- git
+- TA-Lib
+- virtualenv (Recommended)
+- Docker (Recommended)
+
+
 ## Support
 Help / Slack
 For any questions not covered by the documentation or for further information about the bot, we encourage you to join our slack channel.
