@@ -19,6 +19,7 @@ nav:
 theme:
   name: material
   logo: 'images/logo.png'
+  custom_dir: 'docs'
   palette:
     primary: 'blue grey'
     accent: 'tear'
