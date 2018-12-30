@@ -170,8 +170,11 @@ class FreqtradeBot(object):
             self.active_pair_whitelist.extend([trade.pair for trade in trades
                                                if trade.pair not in self.active_pair_whitelist])
 
+            # Create pair-whitelist tuple with (pair, ticker_interval)
+            pair_whitelist = [(pair, self.config['ticker_interval'])
+                              for pair in self.active_pair_whitelist]
             # Refreshing candles
-            self.dataprovider.refresh(self.active_pair_whitelist)
+            self.dataprovider.refresh(pair_whitelist)
 
             # First process current opened trades
             for trade in trades:
@@ -321,7 +324,9 @@ class FreqtradeBot(object):
 
         # running get_signal on historical data fetched
         for _pair in whitelist:
-            (buy, sell) = self.strategy.get_signal(_pair, interval, self.dataprovider.ohlcv(_pair))
+            (buy, sell) = self.strategy.get_signal(
+                _pair, interval, self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
+
             if buy and not sell:
                 stake_amount = self._get_trade_stake_amount(_pair)
                 if not stake_amount:
@@ -582,8 +587,9 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
-                                                   self.dataprovider.ohlcv(trade.pair))
+            (buy, sell) = self.strategy.get_signal(
+                trade.pair, self.strategy.ticker_interval,
+                self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         config_ask_strategy = self.config.get('ask_strategy', {})
         if config_ask_strategy.get('use_order_book', False):

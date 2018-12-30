@@ -368,8 +368,9 @@ class Backtesting(object):
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
-            self.exchange.refresh_latest_ohlcv(pairs, self.ticker_interval)
-            data = self.exchange._klines
+            self.exchange.refresh_latest_ohlcv([(pair, self.ticker_interval) for pair in pairs])
+            data = {key[0]: value for key, value in self.exchange._klines.items()}
+
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 

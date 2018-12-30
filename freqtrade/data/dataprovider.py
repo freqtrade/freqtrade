@@ -6,7 +6,7 @@ Common Interface for bot and strategy to access data.
 """
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from pandas import DataFrame
 
@@ -23,11 +23,11 @@ class DataProvider(object):
         self._config = config
         self._exchange = exchange
 
-    def refresh(self, pairlist: List[str]) -> None:
+    def refresh(self, pairlist: List[Tuple[str, str]]) -> None:
         """
         Refresh data, called with each cycle
         """
-        self._exchange.refresh_latest_ohlcv(pairlist, self._config['ticker_interval'])
+        self._exchange.refresh_latest_ohlcv(pairlist)
 
     @property
     def available_pairs(self) -> List[str]:
@@ -37,23 +37,31 @@ class DataProvider(object):
         """
         return list(self._exchange._klines.keys())
 
-    def ohlcv(self, pair: str, copy: bool = True) -> DataFrame:
+    def ohlcv(self, pair: str, tick_interval: str = None, copy: bool = True) -> DataFrame:
         """
         get ohlcv data for the given pair as DataFrame
         Please check `available_pairs` to verify which pairs are currently cached.
         :param pair: pair to get the data for
+        :param tick_interval: ticker_interval to get pair for
         :param copy: copy dataframe before returning.
                      Use false only for RO operations (where the dataframe is not modified)
         """
         # TODO: Should not be stored in exchange but in this class
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            return self._exchange.klines(pair, copy)
+            if tick_interval:
+                pairtick = (pair, tick_interval)
+            else:
+                pairtick = (pair, self._config['ticker_interval'])
+
+            return self._exchange.klines(pairtick, copy=copy)
         else:
             return DataFrame()
 
     def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
         """
         get historic ohlcv data stored for backtesting
+        :param pair: pair to get the data for
+        :param tick_interval: ticker_interval to get pair for
         """
         return load_pair_history(pair=pair,
                                  ticker_interval=ticker_interval,
