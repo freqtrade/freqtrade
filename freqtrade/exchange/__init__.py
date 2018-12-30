@@ -579,7 +579,7 @@ class Exchange(object):
         """
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s since %s ...", pair, since_ms)
+            logger.debug("fetching %s, %s since %s ...", pair, tick_interval, since_ms)
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
                                                      since=since_ms)

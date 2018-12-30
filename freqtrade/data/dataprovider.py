@@ -32,7 +32,7 @@ class DataProvider(object):
     @property
     def available_pairs(self) -> List[str]:
         """
-        Return a list of pairs for which data is currently cached.
+        Return a list of tuples containing pair, tick_interval for which data is currently cached.
         Should be whitelist + open trades.
         """
         return list(self._exchange._klines.keys())
