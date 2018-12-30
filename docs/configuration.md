@@ -2,12 +2,6 @@
 
 This page explains how to configure your `config.json` file.
 
-## Table of Contents
-
-- [Bot commands](#bot-commands)
-- [Backtesting commands](#backtesting-commands)
-- [Hyperopt commands](#hyperopt-commands)
-
 ## Setup config.json
 
 We recommend to copy and use the `config.json.example` as a template
@@ -209,8 +203,6 @@ behave and how is the performance of your strategy. In Dry-run mode the
 bot does not engage your money. It only runs a live simulation without
 creating trades.
 
-### To switch your bot in Dry-run mode:
-
 1. Edit your `config.json`  file
 2. Switch dry-run to true and specify db_url for a persistent db
 
@@ -240,7 +232,7 @@ The bot runs against all pairs (with that stake) on the exchange, and a number o
 
 By *default*, a Static Pairlist is used (configured as `"pair_whitelist"` under the `"exchange"` section of this configuration).
 
-#### Available Pairlist methods
+** Available Pairlist methods **
 
 * `"StaticPairList"`
   * uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`

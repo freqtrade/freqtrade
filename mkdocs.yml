@@ -1,4 +1,14 @@
 site_name: Freqtrade
+nav:
+    - About: about.md
+    - Installation: pre-requisite.md
+    - Configuratioon: configuration.md
+    - Start the bot: bot-usage.md
+    - Bot optimization: bot-optimization.md
+    - Backtesting: backtesting.md
+    - Hyperopt: hyperopt.md
+    - Plotting: plotting.md
+    - Telegram usage: telegram-usage.md
 theme:
   name: material
   logo: 'images/logo.png'
