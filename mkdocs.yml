@@ -7,8 +7,9 @@ nav:
     - Optimization: bot-optimization.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Plotting: plotting.md
     - Telegram usage: telegram-usage.md
+    - Plotting: plotting.md
+    - Edge positioning: edge.md
 theme:
   name: material
   logo: 'images/logo.png'
