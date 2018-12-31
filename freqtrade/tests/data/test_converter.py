@@ -7,21 +7,16 @@ from freqtrade.optimize import validate_backtest_data, get_timeframe
 from freqtrade.tests.conftest import log_has
 
 
-def test_dataframe_correct_length(result):
-    dataframe = parse_ticker_dataframe(result)
-    assert len(result.index) - 1 == len(dataframe.index)    # last partial candle removed
-
-
 def test_dataframe_correct_columns(result):
     assert result.columns.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
-def test_parse_ticker_dataframe(ticker_history, caplog):
+def test_parse_ticker_dataframe(ticker_history_list, caplog):
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
     caplog.set_level(logging.DEBUG)
     # Test file with BV data
-    dataframe = parse_ticker_dataframe(ticker_history)
+    dataframe = parse_ticker_dataframe(ticker_history_list, '5m', fill_missing=True)
     assert dataframe.columns.tolist() == columns
     assert log_has('Parsing tickerlist to dataframe', caplog.record_tuples)
 
@@ -30,7 +25,8 @@ def test_ohlcv_fill_up_missing_data(caplog):
     data = load_pair_history(datadir=None,
                              ticker_interval='1m',
                              refresh_pairs=False,
-                             pair='UNITTEST/BTC')
+                             pair='UNITTEST/BTC',
+                             fill_up_missing=False)
     caplog.set_level(logging.DEBUG)
     data2 = ohlcv_fill_up_missing_data(data, '1m')
     assert len(data2) > len(data)

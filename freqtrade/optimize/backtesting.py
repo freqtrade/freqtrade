@@ -19,7 +19,6 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.data import history
-from freqtrade.data.converter import ohlcv_fill_up_missing_data
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
@@ -395,7 +394,7 @@ class Backtesting(object):
             self._set_strategy(strat)
 
             min_date, max_date = optimize.get_timeframe(data)
-            # Validate dataframe for missing values
+            # Validate dataframe for missing values (mainly at start and end, as fillup is called)
             optimize.validate_backtest_data(data, min_date, max_date,
                                             constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
             logger.info(

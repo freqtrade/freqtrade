@@ -17,7 +17,7 @@ def test_shorten_date() -> None:
 
 
 def test_datesarray_to_datetimearray(ticker_history_list):
-    dataframes = parse_ticker_dataframe(ticker_history_list)
+    dataframes = parse_ticker_dataframe(ticker_history_list, "5m", fill_missing=True)
     dates = datesarray_to_datetimearray(dataframes['date'])
 
     assert isinstance(dates[0], datetime.datetime)
@@ -34,7 +34,7 @@ def test_datesarray_to_datetimearray(ticker_history_list):
 def test_common_datearray(default_conf) -> None:
     strategy = DefaultStrategy(default_conf)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, "1m", fill_missing=True)}
     dataframes = strategy.tickerdata_to_dataframe(tickerlist)
 
     dates = common_datearray(dataframes)

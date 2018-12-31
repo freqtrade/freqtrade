@@ -111,9 +111,9 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
 
     timerange = TimeRange(None, 'line', 0, -100)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', True)}
     data = strategy.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed
+    assert len(data['UNITTEST/BTC']) == 102       # partial candle was removed
 
 
 def test_min_roi_reached(default_conf, fee) -> None:
