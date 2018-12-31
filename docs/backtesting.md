@@ -200,7 +200,7 @@ A backtesting result will look like that:
 
 The 1st table will contain all trades the bot made.
 
-The 2nd table will contain all trades the bot had to `forcesell` at the end of the backtest period to prsent a full picture.
+The 2nd table will contain all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
 These trades are also included in the first table, but are extracted separately for clarity.
 
 The last line will give you the overall performance of your strategy,

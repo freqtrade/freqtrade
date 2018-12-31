@@ -250,4 +250,4 @@ in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.
 ## Next step
 
 The optimal strategy of the bot will change with time depending of the market trends. The next step is to
-[optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
+[optimize your bot](bot-optimization.md).
