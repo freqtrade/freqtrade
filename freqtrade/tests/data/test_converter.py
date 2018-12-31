@@ -40,3 +40,60 @@ def test_ohlcv_fill_up_missing_data(caplog):
     min_date, max_date = get_timeframe({'UNITTEST/BTC': data})
     assert validate_backtest_data({'UNITTEST/BTC': data}, min_date, max_date, 1)
     assert not validate_backtest_data({'UNITTEST/BTC': data2}, min_date, max_date, 1)
+
+
+def test_ohlcv_fill_up_missing_data2(caplog):
+    ticker_interval = '5m'
+    ticks = [[
+            1511686200000,  # 8:50:00
+            8.794e-05,  # open
+            8.948e-05,  # high
+            8.794e-05,  # low
+            8.88e-05,  # close
+            2255,  # volume (in quote currency)
+        ],
+        [
+            1511686500000,  # 8:55:00
+            8.88e-05,
+            8.942e-05,
+            8.88e-05,
+            8.893e-05,
+            9911,
+        ],
+        [
+            1511687100000,  # 9:05:00
+            8.891e-05,
+            8.893e-05,
+            8.875e-05,
+            8.877e-05,
+            2251
+        ],
+        [
+            1511687400000,  # 9:10:00
+            8.877e-05,
+            8.883e-05,
+            8.895e-05,
+            8.817e-05,
+            123551
+    ]
+    ]
+
+    # Generate test-data without filling missing
+    data = parse_ticker_dataframe(ticks, ticker_interval, fill_missing=False)
+    assert len(data) == 3
+    caplog.set_level(logging.DEBUG)
+    data2 = ohlcv_fill_up_missing_data(data, ticker_interval)
+    assert len(data2) == 4
+    # 3rd candle has been filled
+    row = data2.loc[2, :]
+    assert row['volume'] == 0
+    # close shoult match close of previous candle
+    assert row['close'] == data.loc[1, 'close']
+    assert row['open'] == row['close']
+    assert row['high'] == row['close']
+    assert row['low'] == row['close']
+    # Column names should not change
+    assert (data.columns == data2.columns).all()
+
+    assert log_has(f"Missing data fillup: before: {len(data)} - after: {len(data2)}",
+                   caplog.record_tuples)
