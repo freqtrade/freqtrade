@@ -82,6 +82,7 @@ def load_pair_history(pair: str,
                       timerange: TimeRange = TimeRange(None, None, 0, 0),
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
+                      fill_up_missing: bool = True
                       ) -> DataFrame:
     """
     Loads cached ticker history for the given pair.
@@ -110,7 +111,7 @@ def load_pair_history(pair: str,
             logger.warning('Missing data at end for pair %s, data ends at %s',
                            pair,
                            arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        return parse_ticker_dataframe(pairdata)
+        return parse_ticker_dataframe(pairdata, ticker_interval, fill_up_missing)
     else:
         logger.warning('No data for pair: "%s", Interval: %s. '
                        'Use --refresh-pairs-cached to download the data',
@@ -123,7 +124,8 @@ def load_data(datadir: Optional[Path],
               pairs: List[str],
               refresh_pairs: bool = False,
               exchange: Optional[Exchange] = None,
-              timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, DataFrame]:
+              timerange: TimeRange = TimeRange(None, None, 0, 0),
+              fill_up_missing: bool = True) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for a list of pairs the given parameters
     :return: dict(<pair>:<tickerlist>)
@@ -134,7 +136,8 @@ def load_data(datadir: Optional[Path],
         hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
                                  datadir=datadir, timerange=timerange,
                                  refresh_pairs=refresh_pairs,
-                                 exchange=exchange)
+                                 exchange=exchange,
+                                 fill_up_missing=fill_up_missing)
         if hist is not None:
             result[pair] = hist
     return result

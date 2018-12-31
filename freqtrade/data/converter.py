@@ -10,10 +10,13 @@ from freqtrade.constants import TICKER_INTERVAL_MINUTES
 logger = logging.getLogger(__name__)
 
 
-def parse_ticker_dataframe(ticker: list) -> DataFrame:
+def parse_ticker_dataframe(ticker: list, ticker_interval: str,
+                           fill_missing: bool = False) -> DataFrame:
     """
     Converts a ticker-list (format ccxt.fetch_ohlcv) to a Dataframe
     :param ticker: ticker list, as returned by exchange.async_get_candle_history
+    :param ticker_interval: ticker_interval (e.g. 5m). Used to fill up eventual missing data
+    :param fill_missing: boolean
     :return: DataFrame
     """
     logger.debug("Parsing tickerlist to dataframe")
@@ -35,7 +38,11 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     })
     frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
     logger.debug('Dropping last candle')
-    return frame
+
+    if fill_missing:
+        return ohlcv_fill_up_missing_data(frame, ticker_interval)
+    else:
+        return frame
 
 
 def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str) -> DataFrame:
