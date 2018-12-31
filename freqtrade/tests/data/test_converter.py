@@ -3,6 +3,7 @@ import logging
 
 from freqtrade.data.converter import parse_ticker_dataframe, ohlcv_fill_up_missing_data
 from freqtrade.data.history import load_pair_history
+from freqtrade.optimize import validate_backtest_data, get_timeframe
 from freqtrade.tests.conftest import log_has
 
 
@@ -38,3 +39,8 @@ def test_ohlcv_fill_up_missing_data(caplog):
 
     assert log_has(f"Missing data fillup: before: {len(data)} - after: {len(data2)}",
                    caplog.record_tuples)
+
+    # Test fillup actually fixes invalid backtest data
+    min_date, max_date = get_timeframe({'UNITTEST/BTC': data})
+    assert validate_backtest_data({'UNITTEST/BTC': data}, min_date, max_date, 1)
+    assert not validate_backtest_data({'UNITTEST/BTC': data2}, min_date, max_date, 1)
