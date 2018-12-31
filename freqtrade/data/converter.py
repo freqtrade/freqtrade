@@ -64,6 +64,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str) -> Da
                'low': df['close'],
                })
     df.reset_index(inplace=True)
+    logger.debug(f"Missing data fillup: before: {len(dataframe)} - after: {len(df)}")
     return df
 
 

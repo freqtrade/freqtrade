@@ -1,7 +1,8 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 
-from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.converter import parse_ticker_dataframe, ohlcv_fill_up_missing_data
+from freqtrade.data.history import load_pair_history
 from freqtrade.tests.conftest import log_has
 
 
@@ -11,8 +12,7 @@ def test_dataframe_correct_length(result):
 
 
 def test_dataframe_correct_columns(result):
-    assert result.columns.tolist() == \
-        ['date', 'open', 'high', 'low', 'close', 'volume']
+    assert result.columns.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
 def test_parse_ticker_dataframe(ticker_history, caplog):
@@ -23,3 +23,18 @@ def test_parse_ticker_dataframe(ticker_history, caplog):
     dataframe = parse_ticker_dataframe(ticker_history)
     assert dataframe.columns.tolist() == columns
     assert log_has('Parsing tickerlist to dataframe', caplog.record_tuples)
+
+
+def test_ohlcv_fill_up_missing_data(caplog):
+    data = load_pair_history(datadir=None,
+                             ticker_interval='1m',
+                             refresh_pairs=False,
+                             pair='UNITTEST/BTC')
+    caplog.set_level(logging.DEBUG)
+    data2 = ohlcv_fill_up_missing_data(data, '1m')
+    assert len(data2) > len(data)
+    # Column names should not change
+    assert (data.columns == data2.columns).all()
+
+    assert log_has(f"Missing data fillup: before: {len(data)} - after: {len(data2)}",
+                   caplog.record_tuples)
