@@ -242,4 +242,4 @@ Dry/live runs will **NOT** use position stacking - therefore it does make sense 
 ## Next Step
 
 Now you have a perfect bot and want to control it from Telegram. Your
-next step is to learn the [Telegram usage](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md).
+next step is to learn the [Telegram usage](/telegram-usage).

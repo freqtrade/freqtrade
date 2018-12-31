@@ -64,4 +64,4 @@ For any questions not covered by the documentation or for further information ab
 Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) to join Slack channel.
 
 ## Ready to try?
-Begin by reading our installation guide [here](pre-requisite).
+Begin by reading our installation guide [here](/installation).

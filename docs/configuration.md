@@ -344,4 +344,4 @@ Please ensure that 'NameOfStrategy' is identical to the strategy name!
 
 ## Next step
 
-Now you have configured your config.json, the next step is to [start your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md).
+Now you have configured your config.json, the next step is to [start your bot](/bot-usage).

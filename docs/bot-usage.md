@@ -89,7 +89,7 @@ This is very simple. Copy paste your strategy file into the folder
 ### How to use **--dynamic-whitelist**?
 
 !!! danger "DEPRECATED"
-    Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](docs/configuration.md#Dynamic-Pairlists)
+    Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](/configuration/#dynamic-pairlists)
 
 Per default `--dynamic-whitelist` will retrieve the 20 currencies based
 on BaseVolume. This value can be changed when you run the script.
