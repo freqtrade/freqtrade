@@ -12,7 +12,7 @@ and still take a long time.
 ## Prepare Hyperopting
 
 Before we start digging in Hyperopt, we recommend you to take a look at
-an example hyperopt file located into [user_data/hyperopts/](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
+an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
 
 ### 1. Install a Custom Hyperopt File
 This is very simple. Put your hyperopt file into the folder

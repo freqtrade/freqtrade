@@ -62,7 +62,7 @@ git checkout develop
 ./setup.sh --install
 ```
 !!! Note
-    Windows installation is explained [here](/#windows).
+    Windows installation is explained [here](#windows).
 <hr/>
 ## Easy Installation - Linux Script
 
@@ -137,7 +137,7 @@ cd freqtrade
 cp -n config.json.example config.json
 ```
 
-> To edit the config please refer to the [Bot Configuration](/configuration.md) page.
+> To edit the config please refer to the [Bot Configuration](configuration.md) page.
 
 **1.5. Create your database file *(optional - the bot will create it if it is missing)**
 
@@ -271,7 +271,7 @@ docker run -d \
   freqtrade --strategy AwsomelyProfitableStrategy backtesting
 ```
 
-Head over to the [Backtesting Documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md) for more details.
+Head over to the [Backtesting Documentation](backtesting.md) for more details.
 
 !!! Note
     Additional parameters can be appended after the image name (`freqtrade` in the above example).
@@ -386,7 +386,7 @@ cd freqtrade
 cp config.json.example config.json
 ```
 
-> *To edit the config please refer to [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md).*
+> *To edit the config please refer to [Bot Configuration](configuration.md).*
 
 #### 5. Install python dependencies
 
