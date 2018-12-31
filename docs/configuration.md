@@ -344,4 +344,4 @@ Please ensure that 'NameOfStrategy' is identical to the strategy name!
 
 ## Next step
 
-Now you have configured your config.json, the next step is to [start your bot](bot-usage).
+Now you have configured your config.json, the next step is to [start your bot](bot-usage.md).

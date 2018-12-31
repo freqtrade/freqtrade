@@ -247,4 +247,4 @@ We also got a *strategy-sharing* channel in our [Slack community](https://join.s
 ## Next step
 
 Now you have a perfect strategy you probably want to backtest it.
-Your next step is to learn [How to use the Backtesting](backtesting).
+Your next step is to learn [How to use the Backtesting](backtesting.md).
