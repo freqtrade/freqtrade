@@ -19,6 +19,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.data import history
+from freqtrade.data.converter import ohlcv_fill_up_missing_data
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
@@ -393,12 +394,9 @@ class Backtesting(object):
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
-            # need to reprocess data every time to populate signals
-            preprocessed = self.strategy.tickerdata_to_dataframe(data)
-
-            min_date, max_date = optimize.get_timeframe(preprocessed)
+            min_date, max_date = optimize.get_timeframe(data)
             # Validate dataframe for missing values
-            optimize.validate_backtest_data(preprocessed, min_date, max_date,
+            optimize.validate_backtest_data(data, min_date, max_date,
                                             constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
             logger.info(
                 'Measuring data from %s up to %s (%s days)..',
@@ -406,6 +404,8 @@ class Backtesting(object):
                 max_date.isoformat(),
                 (max_date - min_date).days
             )
+            # need to reprocess data every time to populate signals
+            preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
