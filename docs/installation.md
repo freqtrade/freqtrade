@@ -475,4 +475,4 @@ The easiest way is to download install Microsoft Visual Studio Community [here](
 ---
 
 Now you have an environment ready, the next step is
-[Bot Configuration](/configuration).
+[Bot Configuration](configuration).

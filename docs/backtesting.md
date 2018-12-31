@@ -262,4 +262,4 @@ Detailed output for all strategies one after the other will be available, so mak
 
 Great, your strategy is profitable. What if the bot can give your the
 optimal parameters to use for your strategy?
-Your next step is to learn [how to find optimal parameters with Hyperopt](/hyperopt)
+Your next step is to learn [how to find optimal parameters with Hyperopt](hyperopt)
