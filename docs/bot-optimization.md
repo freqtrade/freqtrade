@@ -179,10 +179,9 @@ minimal_roi = {
 The above configuration would therefore mean:
 
 - Sell whenever 4% profit was reached
-- Sell after 20 minutes when 2% profit was reached
-- Sell after 20 minutes when 2% profit was reached
-- Sell after 30 minutes when 1% profit was reached
-- Sell after 40 minutes when the trade is non-loosing (no profit)
+- Sell when 2% profit was reached (in effect after 20 minutes)
+- Sell when 1% profit was reached (in effect after 30 minutes)
+- Sell when trade is non-loosing (in effect after 40 minutes)
 
 The calculation does include fees.
 
