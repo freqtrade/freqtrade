@@ -117,26 +117,30 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
 
 
 def test_min_roi_reached(default_conf, fee) -> None:
-    strategy = DefaultStrategy(default_conf)
-    strategy.minimal_roi = {0: 0.1, 20: 0.05, 55: 0.01}
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='bittrex',
-        open_rate=1,
-    )
 
-    assert not strategy.min_roi_reached(trade, 0.01, arrow.utcnow().shift(minutes=-55).datetime)
-    assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-55).datetime)
+    min_roi_list = [{20: 0.05, 55: 0.01, 0: 0.1},
+                    {0: 0.1, 20: 0.05, 55: 0.01}]
+    for roi in min_roi_list:
+        strategy = DefaultStrategy(default_conf)
+        strategy.minimal_roi = roi
+        trade = Trade(
+            pair='ETH/BTC',
+            stake_amount=0.001,
+            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            exchange='bittrex',
+            open_rate=1,
+        )
 
-    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-55).datetime)
+        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-55).datetime)
 
-    assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
-    assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+
+        assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
+        assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
 
 
 def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
