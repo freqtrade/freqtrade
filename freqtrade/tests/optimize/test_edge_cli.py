@@ -46,10 +46,11 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'stoploss_range' not in config
 
 
-def test_setup_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
+def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(edge_conf)
     ))
+    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
 
     args = [
         '--config', 'config.json',

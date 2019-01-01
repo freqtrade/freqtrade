@@ -202,10 +202,11 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'export' not in config
 
 
-def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
+def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
+    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
 
     args = [
         '--config', 'config.json',

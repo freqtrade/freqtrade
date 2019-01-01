@@ -152,13 +152,16 @@ class Configuration(object):
 
         return config
 
-    def _create_default_datadir(self, config: Dict[str, Any]) -> str:
-        exchange_name = config.get('exchange', {}).get('name').lower()
-        default_path = os.path.join('user_data', 'data', exchange_name)
-        if not os.path.isdir(default_path):
-            os.makedirs(default_path)
-            logger.info(f'Created data directory: {default_path}')
-        return default_path
+    def _create_datadir(self, config: Dict[str, Any], datadir: Optional[str] = None) -> str:
+        if not datadir:
+            # set datadir
+            exchange_name = config.get('exchange', {}).get('name').lower()
+            datadir = os.path.join('user_data', 'data', exchange_name)
+
+        if not os.path.isdir(datadir):
+            os.makedirs(datadir)
+            logger.info(f'Created data directory: {datadir}')
+        return datadir
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -198,9 +201,9 @@ class Configuration(object):
 
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self.args.datadir})
+            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
         else:
-            config.update({'datadir': self._create_default_datadir(config)})
+            config.update({'datadir': self._create_datadir(config, None)})
         logger.info('Using data folder: %s ...', config.get('datadir'))
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration
