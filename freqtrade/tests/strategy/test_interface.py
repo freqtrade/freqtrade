@@ -133,8 +133,8 @@ def test_min_roi_reached(default_conf, fee) -> None:
             open_rate=1,
         )
 
-        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-55).datetime)
-        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-55).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
+        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
 
         assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
         assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
