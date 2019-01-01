@@ -219,8 +219,9 @@ class Backtesting(object):
                     # Set close_rate to stoploss
                     closerate = trade.stop_loss
                 elif sell.sell_type == (SellType.ROI):
-                    # get entry in min_roi >= to trade duration
-                    roi_entry = max(list(filter(lambda x: trade_dur >= x,
+                    # get next entry in min_roi > to trade duration
+                    # Interface.py skips on trade_duration <= duration
+                    roi_entry = max(list(filter(lambda x: trade_dur > x,
                                                 self.strategy.minimal_roi.keys())))
                     roi = self.strategy.minimal_roi[roi_entry]
 
