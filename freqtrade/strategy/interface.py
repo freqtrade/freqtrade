@@ -321,7 +321,7 @@ class IStrategy(ABC):
         time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
         for duration, threshold in self.minimal_roi.items():
             if time_diff <= duration:
-                return False
+                continue
             if current_profit > threshold:
                 return True
 
