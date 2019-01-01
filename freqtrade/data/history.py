@@ -88,19 +88,20 @@ def load_pair_history(pair: str,
     :return: DataFrame with ohlcv data
     """
 
-    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
     # If the user force the refresh of pairs
     if refresh_pairs:
         if not exchange:
             raise OperationalException("Exchange needs to be initialized when "
                                        "calling load_data with refresh_pairs=True")
 
-        logger.info('Download data for all pairs and store them in %s', datadir)
+        logger.info('Download data for pair and store them in %s', datadir)
         download_pair_history(datadir=datadir,
                               exchange=exchange,
                               pair=pair,
                               tick_interval=ticker_interval,
                               timerange=timerange)
+
+    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
 
     if pairdata:
         if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
