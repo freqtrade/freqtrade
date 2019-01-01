@@ -2,12 +2,6 @@
 
 This page explains how to configure your `config.json` file.
 
-## Table of Contents
-
-- [Bot commands](#bot-commands)
-- [Backtesting commands](#backtesting-commands)
-- [Hyperopt commands](#hyperopt-commands)
-
 ## Setup config.json
 
 We recommend to copy and use the `config.json.example` as a template
@@ -16,7 +10,7 @@ for your bot configuration.
 The table below will list all configuration parameters.
 
 |  Command | Default | Mandatory | Description |
-|----------|---------|----------|-------------|
+|----------|---------|-----------|-------------|
 | `max_open_trades` | 3 | Yes | Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
@@ -63,7 +57,7 @@ The table below will list all configuration parameters.
 | `webhook.webhookbuy` | false | No | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
 | `webhook.webhooksell` | false | No | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
 | `webhook.webhookstatus` | false | No | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentationV](webhook-config.md) for more details.
-| `db_url` | `sqlite:///tradesv3.sqlite` | No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
+| `db_url` | `sqlite:///tradesv3.sqlite`| No | Declares database URL to use. NOTE: This defaults to `sqlite://` if `dry_run` is `True`.
 | `initial_state` | running | No | Defines the initial application state. More information below.
 | `forcebuy_enable` | false | No | Enables the RPC Commands to force a buy. More information below.
 | `strategy` | DefaultStrategy | No | Defines Strategy class to use.
@@ -77,8 +71,14 @@ The definition of each config parameters is in [misc.py](https://github.com/freq
 `stake_amount` is an amount of crypto-currency your bot will use for each trade.
 The minimal value is 0.0005. If there is not enough crypto-currency in
 the account an exception is generated.
-To allow the bot to trade all the avaliable `stake_currency` in your account set `stake_amount` = `unlimited`.
-In this case a trade amount is calclulated as `currency_balanse / (max_open_trades - current_open_trades)`.
+To allow the bot to trade all the avaliable `stake_currency` in your account set<br/>
+```json
+"stake_amount" : "unlimited",
+```
+In this case a trade amount is calclulated as: <br/>
+```python
+currency_balanse / (max_open_trades - current_open_trades)
+```
 
 ### Understand minimal_roi
 
@@ -86,7 +86,7 @@ In this case a trade amount is calclulated as `currency_balanse / (max_open_trad
 in minutes and the value is the minimum ROI in percent.
 See the example below:
 
-```
+```json
 "minimal_roi": {
     "40": 0.0,    # Sell after 40 minutes if the profit is not negative
     "30": 0.01,   # Sell after 30 minutes if there is at least 1% profit
@@ -150,20 +150,21 @@ This can be set in the configuration or in the strategy. Configuration overwrite
 If this is configured, all 4 values (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`) need to be present, otherwise the bot warn about it and will fail to start.
 The below is the default which is used if this is not configured in either Strategy or configuration.
 
-``` python
-    "order_types": {
-        "buy": "limit",
-        "sell": "limit",
-        "stoploss": "market",
-        "stoploss_on_exchange": False
-    },
+```python
+"order_types": {
+    "buy": "limit",
+    "sell": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": False
+},
 ```
 
-**NOTE**: Not all exchanges support "market" orders.
-The following message will be shown if your exchange does not support market orders: `"Exchange <yourexchange>  does not support market orders."`
+!!! Note
+    Not all exchanges support "market" orders.
+    The following message will be shown if your exchange does not support market orders: `"Exchange <yourexchange>  does not support market orders."`
 
 ### Understand order_time_in_force
-Order time in force defines the policy by which the order is executed on the exchange. Three commonly used time in force are:<br/>
+`order_time_in_force` defines the policy by which the order is executed on the exchange. Three commonly used time in force are:<br/>
 **GTC (Goog Till Canceled):**
 This is most of the time the default time in force. It means the order will remain on exchange till it is canceled by user. It can be fully or partially fulfilled. If partially fulfilled, the remaining will stay on the exchange till cancelled.<br/>
 **FOK (Full Or Kill):**
@@ -174,12 +175,14 @@ It is the same as FOK (above) except it can be partially fulfilled. The remainin
 `order_time_in_force` contains a dict buy and sell time in force policy. This can be set in the configuration or in the strategy. Configuration overwrites strategy configurations.<br/>
 possible values are: `gtc` (default), `fok` or `ioc`.<br/>
 ``` python
-    "order_time_in_force": {
-        "buy": "gtc",
-        "sell": "gtc"
-    },
+"order_time_in_force": {
+    "buy": "gtc",
+    "sell": "gtc"
+},
 ```
-**NOTE**: This is an ongoing work. For now it is supported only for binance and only for buy orders. Please don't change the default value unless you know what you are doing.<br/>
+
+!!! Warning
+    This is an ongoing work. For now it is supported only for binance and only for buy orders. Please don't change the default value unless you know what you are doing.
 
 ### What values for exchange.name?
 
@@ -198,9 +201,15 @@ Feel free to test other exchanges and submit your PR to improve the bot.
 ### What values for fiat_display_currency?
 
 `fiat_display_currency` set the base currency to use for the conversion from coin to fiat in Telegram.
-The valid values are: "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD".
-In addition to central bank currencies, a range of cryto currencies are supported.
-The valid values are: "BTC", "ETH", "XRP", "LTC", "BCH", "USDT".
+The valid values are:<br/>
+```json
+"AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD"
+```
+In addition to FIAT currencies, a range of cryto currencies are supported.
+The valid values are:
+```json
+"BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
+```
 
 ## Switch to dry-run mode
 
@@ -208,8 +217,6 @@ We recommend starting the bot in dry-run mode to see how your bot will
 behave and how is the performance of your strategy. In Dry-run mode the
 bot does not engage your money. It only runs a live simulation without
 creating trades.
-
-### To switch your bot in Dry-run mode:
 
 1. Edit your `config.json`  file
 2. Switch dry-run to true and specify db_url for a persistent db
@@ -238,9 +245,9 @@ production mode.
 Dynamic pairlists select pairs for you based on the logic configured.
 The bot runs against all pairs (with that stake) on the exchange, and a number of assets (`number_assets`) is selected based on the selected criteria.
 
-By *default*, a Static Pairlist is used (configured as `"pair_whitelist"` under the `"exchange"` section of this configuration).
+By default, a Static Pairlist is used (configured as `"pair_whitelist"` under the `"exchange"` section of this configuration).
 
-#### Available Pairlist methods
+**Available Pairlist methods:**
 
 * `"StaticPairList"`
   * uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`
@@ -266,15 +273,15 @@ you run it in production mode.
 
 ### To switch your bot in production mode
 
-1. Edit your `config.json`  file
+**Edit your `config.json`  file.**
 
-2. Switch dry-run to false and don't forget to adapt your database URL if set
+**Switch dry-run to false and don't forget to adapt your database URL if set:**
 
 ```json
 "dry_run": false,
 ```
 
-3. Insert your Exchange API key (change them by fake api keys)
+**Insert your Exchange API key (change them by fake api keys):**
 
 ```json
 "exchange": {
@@ -285,8 +292,8 @@ you run it in production mode.
 }
 
 ```
-
-If you have not your Bittrex API key yet, [see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
+!!! Note
+    If you have an exchange API key yet, [see our tutorial](/pre-requisite).
 
 ### Using proxy with FreqTrade
 
@@ -337,4 +344,4 @@ Please ensure that 'NameOfStrategy' is identical to the strategy name!
 
 ## Next step
 
-Now you have configured your config.json, the next step is to [start your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md).
+Now you have configured your config.json, the next step is to [start your bot](bot-usage.md).

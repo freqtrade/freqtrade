@@ -1,64 +1,56 @@
 # Hyperopt
 
-This page explains how to tune your strategy by finding the optimal 
-parameters, a process called hyperparameter optimization. The bot uses several 
+This page explains how to tune your strategy by finding the optimal
+parameters, a process called hyperparameter optimization. The bot uses several
 algorithms included in the `scikit-optimize` package to accomplish this. The
 search will burn all your CPU cores, make your laptop sound like a fighter jet
 and still take a long time.
 
-*Note:* Hyperopt will crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
-
-## Table of Contents
-
-- [Prepare your Hyperopt](#prepare-hyperopt)
-- [Configure your Guards and Triggers](#configure-your-guards-and-triggers)
-- [Solving a Mystery](#solving-a-mystery)
-- [Adding New Indicators](#adding-new-indicators)
-- [Execute Hyperopt](#execute-hyperopt)
-- [Understand the hyperopt result](#understand-the-hyperopt-result)
+!!! Bug
+    Hyperopt will crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
 
 ## Prepare Hyperopting
 
-Before we start digging in Hyperopt, we recommend you to take a look at 
-an example hyperopt file located into [user_data/hyperopts/](https://github.com/gcarq/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
+Before we start digging in Hyperopt, we recommend you to take a look at
+an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
 
 ### 1. Install a Custom Hyperopt File
-This is very simple. Put your hyperopt file into the folder 
+This is very simple. Put your hyperopt file into the folder
 `user_data/hyperopts`.
 
-Let assume you want a hyperopt file `awesome_hyperopt.py`:
-1. Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
+Let assume you want a hyperopt file `awesome_hyperopt.py`:<br/>
+Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
 
- 
+
 ### 2. Configure your Guards and Triggers
-There are two places you need to change in your hyperopt file to add a 
+There are two places you need to change in your hyperopt file to add a
 new buy hyperopt for testing:
 - Inside [populate_buy_trend()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L230-L251).
 - Inside [indicator_space()](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py#L207-L223).
 
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
-1. Guards are conditions like "never buy if ADX < 10", or never buy if 
+1. Guards are conditions like "never buy if ADX < 10", or never buy if
 current price is over EMA10.
-2. Triggers are ones that actually trigger buy in specific moment, like 
-"buy when EMA5 crosses over EMA10" or "buy when close price touches lower 
+2. Triggers are ones that actually trigger buy in specific moment, like
+"buy when EMA5 crosses over EMA10" or "buy when close price touches lower
 bollinger band".
 
-Hyperoptimization will, for each eval round, pick one trigger and possibly 
-multiple guards. The constructed strategy will be something like 
-"*buy exactly when close price touches lower bollinger band, BUT only if 
+Hyperoptimization will, for each eval round, pick one trigger and possibly
+multiple guards. The constructed strategy will be something like
+"*buy exactly when close price touches lower bollinger band, BUT only if
 ADX > 10*".
 
 If you have updated the buy strategy, ie. changed the contents of
-`populate_buy_trend()` method you have to update the `guards` and 
+`populate_buy_trend()` method you have to update the `guards` and
 `triggers` hyperopts must use.
 
 ## Solving a Mystery
 
-Let's say you are curious: should you use MACD crossings or lower Bollinger 
-Bands to trigger your buys. And you also wonder should you use RSI or ADX to 
-help with those buy decisions. If you decide to use RSI or ADX, which values 
-should I use for them? So let's use hyperparameter optimization to solve this 
+Let's say you are curious: should you use MACD crossings or lower Bollinger
+Bands to trigger your buys. And you also wonder should you use RSI or ADX to
+help with those buy decisions. If you decide to use RSI or ADX, which values
+should I use for them? So let's use hyperparameter optimization to solve this
 mystery.
 
 We will start by defining a search space:
@@ -77,8 +69,8 @@ We will start by defining a search space:
         ]
 ```
 
-Above definition says: I have five parameters I want you to randomly combine 
-to find the best combination. Two of them are integer values (`adx-value` 
+Above definition says: I have five parameters I want you to randomly combine
+to find the best combination. Two of them are integer values (`adx-value`
 and `rsi-value`) and I want you test in the range of values 20 to 40.
 Then we have three category variables. First two are either `True` or `False`.
 We use these to either enable or disable the ADX and RSI guards. The last
@@ -117,12 +109,12 @@ with different value combinations. It will then use the given historical data an
 buys based on the buy signals generated with the above function and based on the results
 it will end with telling you which paramter combination produced the best profits.
 
-The search for best parameters starts with a few random combinations and then uses a 
+The search for best parameters starts with a few random combinations and then uses a
 regressor algorithm (currently ExtraTreesRegressor) to quickly find a parameter combination
 that minimizes the value of the objective function `calculate_loss` in `hyperopt.py`.
 
 The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
-When you want to test an indicator that isn't used by the bot currently, remember to 
+When you want to test an indicator that isn't used by the bot currently, remember to
 add it to the `populate_indicators()` method in `hyperopt.py`.
 
 ## Execute Hyperopt
@@ -136,7 +128,7 @@ We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 python3 ./freqtrade/main.py -s <strategyname> --hyperopt <hyperoptname> -c config.json hyperopt -e 5000
 ```
 
-Use `<strategyname>` and `<hyperoptname>` as the names of the custom strategy 
+Use `<strategyname>` and `<hyperoptname>` as the names of the custom strategy
 (only required for generating sells) and the custom hyperopt used.
 
 The `-e` flag will set how many evaluations hyperopt will do. We recommend
@@ -161,9 +153,9 @@ python3 ./freqtrade/main.py hyperopt --timerange -200
 ### Running Hyperopt with Smaller Search Space
 
 Use the `--spaces` argument to limit the search space used by hyperopt.
-Letting Hyperopt optimize everything is a huuuuge search space. Often it 
-might make more sense to start by just searching for initial buy algorithm. 
-Or maybe you just want to optimize your stoploss or roi table for that awesome 
+Letting Hyperopt optimize everything is a huuuuge search space. Often it
+might make more sense to start by just searching for initial buy algorithm.
+Or maybe you just want to optimize your stoploss or roi table for that awesome
 new buy strategy you have.
 
 Legal values are:
@@ -189,19 +181,19 @@ with values:
 You should understand this result like:
 
 - The buy trigger that worked best was `bb_lower`.
-- You should not use ADX because `adx-enabled: False`) 
+- You should not use ADX because `adx-enabled: False`)
 - You should **consider** using the RSI indicator (`rsi-enabled: True` and the best value is `29.0` (`rsi-value: 29.0`)
 
-You have to look inside your strategy file into `buy_strategy_generator()` 
+You have to look inside your strategy file into `buy_strategy_generator()`
 method, what those values match to.
-  
+
 So for example you had `rsi-value: 29.0` so we would look at `rsi`-block, that translates to the following code block:
 
 ```
 (dataframe['rsi'] < 29.0)
 ```
-  
-Translating your whole hyperopt result as the new buy-signal 
+
+Translating your whole hyperopt result as the new buy-signal
 would then look like:
 
 ```python
@@ -245,9 +237,9 @@ Once the optimized strategy has been implemented into your strategy, you should 
 To archive the same results (number of trades, ...) than during hyperopt, please use the command line flag `--disable-max-market-positions`.
 This setting is the default for hyperopt for speed reasons. You can overwrite this in the configuration by setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L283).
 
-Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality. 
+Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
 
 ## Next Step
 
 Now you have a perfect bot and want to control it from Telegram. Your
-next step is to learn the [Telegram usage](https://github.com/freqtrade/freqtrade/blob/develop/docs/telegram-usage.md).
+next step is to learn the [Telegram usage](telegram-usage.md).

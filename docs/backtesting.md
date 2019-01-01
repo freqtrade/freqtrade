@@ -1,24 +1,19 @@
 # Backtesting
 
-This page explains how to validate your strategy performance by using 
+This page explains how to validate your strategy performance by using
 Backtesting.
-
-## Table of Contents
-
-- [Test your strategy with Backtesting](#test-your-strategy-with-backtesting)
-- [Understand the backtesting result](#understand-the-backtesting-result)
 
 ## Test your strategy with Backtesting
 
 Now you have good Buy and Sell strategies, you want to test it against
-real data. This is what we call 
+real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pair) from your config file
-and load static tickers located in 
-[/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).  
-If the 5 min and 1 min ticker for the crypto-currencies to test is not 
-already in the `testdata` folder, backtesting will download them 
+and load static tickers located in
+[/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).
+If the 5 min and 1 min ticker for the crypto-currencies to test is not
+already in the `testdata` folder, backtesting will download them
 automatically. Testdata files will not be updated until you specify it.
 
 The result of backtesting will confirm you if your bot has better odds of making a profit than a loss.
@@ -205,7 +200,7 @@ A backtesting result will look like that:
 
 The 1st table will contain all trades the bot made.
 
-The 2nd table will contain all trades the bot had to `forcesell` at the end of the backtest period to prsent a full picture.
+The 2nd table will contain all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
 These trades are also included in the first table, but are extracted separately for clarity.
 
 The last line will give you the overall performance of your strategy,
@@ -216,15 +211,15 @@ TOTAL             419           -0.41         -0.00348593            52.9
 ```
 
 We understand the bot has made `419` trades for an average duration of
-`52.9` min, with a performance of `-0.41%` (loss), that means it has 
+`52.9` min, with a performance of `-0.41%` (loss), that means it has
 lost a total of `-0.00348593 BTC`.
- 
-As you will see your strategy performance will be influenced by your buy 
-strategy, your sell strategy, and also by the `minimal_roi` and 
-`stop_loss` you have set. 
+
+As you will see your strategy performance will be influenced by your buy
+strategy, your sell strategy, and also by the `minimal_roi` and
+`stop_loss` you have set.
 
 As for an example if your minimal_roi is only `"0":  0.01`. You cannot
-expect the bot to make more profit than 1% (because it will sell every 
+expect the bot to make more profit than 1% (because it will sell every
 time a trade will reach 1%).
 
 ```json
@@ -234,21 +229,21 @@ time a trade will reach 1%).
 ```
 
 On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
-(55%), there is a lot of chance that the bot will never reach this 
-profit. Hence, keep in mind that your performance is a mix of your 
+(55%), there is a lot of chance that the bot will never reach this
+profit. Hence, keep in mind that your performance is a mix of your
 strategies, your configuration, and the crypto-currency you have set up.
 
 ## Backtesting multiple strategies
 
 To backtest multiple strategies, a list of Strategies can be provided.
 
-This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple 
+This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this should give a nice runtime boost.
 
 All listed Strategies need to be in the same folder.
 
 ``` bash
-freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades 
+freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades
 ```
 
 This will save the results to `user_data/backtest_data/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.
@@ -266,5 +261,5 @@ Detailed output for all strategies one after the other will be available, so mak
 ## Next step
 
 Great, your strategy is profitable. What if the bot can give your the
-optimal parameters to use for your strategy?  
-Your next step is to learn [how to find optimal parameters with Hyperopt](https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md)
+optimal parameters to use for your strategy?
+Your next step is to learn [how to find optimal parameters with Hyperopt](hyperopt.md)
