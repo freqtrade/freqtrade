@@ -5,7 +5,7 @@
 [![Documentation](https://readthedocs.org/projects/freqtrade/badge/)](https://www.freqtrade.io)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
 
-Simple High frequency trading bot for crypto currencies designed to support multi exchanges and be controlled via Telegram.
+Freqtrade is a free and open source crypto trading bot written in Python. It is designed to support multiple exchanges and be controlled via Telegram.
 
 ![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
 
