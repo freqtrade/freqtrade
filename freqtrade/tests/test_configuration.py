@@ -247,6 +247,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
+    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
 
     arglist = [
         '--config', 'config.json',
@@ -487,3 +488,13 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
 
 def test_validate_default_conf(default_conf) -> None:
     validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
+
+
+def test__create_datadir(mocker, default_conf, caplog) -> None:
+    mocker.patch('os.path.isdir', MagicMock(return_value=False))
+    md = MagicMock()
+    mocker.patch('os.makedirs', md)
+    cfg = Configuration(Namespace())
+    cfg._create_datadir(default_conf, '/foo/bar')
+    assert md.call_args[0][0] == "/foo/bar"
+    assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
