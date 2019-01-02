@@ -1,4 +1,4 @@
-# freqtrade
+# Freqtrade
 
 [![Build Status](https://travis-ci.org/freqtrade/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
@@ -11,15 +11,15 @@ Simple High frequency trading bot for crypto currencies designed to support mult
 
 ## Disclaimer
 
-This software is for educational purposes only. Do not risk money which 
-you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS 
-AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS. 
+This software is for educational purposes only. Do not risk money which
+you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS
+AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
 Always start by running a trading bot in Dry-run and do not engage money
 before you understand how it works and what profit/loss you should
 expect.
 
-We strongly recommend you to have coding and Python knowledge. Do not 
+We strongly recommend you to have coding and Python knowledge. Do not
 hesitate to read the source code and understand the mechanism of this bot.
 
 ## Exchange marketplaces supported
@@ -68,7 +68,7 @@ hesitate to read the source code and understand the mechanism of this bot.
   - [Software requirements](#software-requirements)
 - [Wanna help?](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
   - [Dev - getting started](https://github.com/freqtrade/freqtrade/blob/develop/docs/developer.md) (WIP)
- 
+
 
 ## Quick start
 
@@ -177,29 +177,29 @@ information about the bot, we encourage you to join our slack channel.
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
-If you discover a bug in the bot, please 
-[search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue) 
-first. If it hasn't been reported, please 
-[create a new issue](https://github.com/freqtrade/freqtrade/issues/new) and 
-ensure you follow the template guide so that our team can assist you as 
+If you discover a bug in the bot, please
+[search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
+first. If it hasn't been reported, please
+[create a new issue](https://github.com/freqtrade/freqtrade/issues/new) and
+ensure you follow the template guide so that our team can assist you as
 quickly as possible.
 
 ### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
 
 Have you a great idea to improve the bot you want to share? Please,
 first search if this feature was not [already discussed](https://github.com/freqtrade/freqtrade/labels/enhancement).
-If it hasn't been requested, please 
-[create a new request](https://github.com/freqtrade/freqtrade/issues/new) 
-and ensure you follow the template guide so that it does not get lost 
+If it hasn't been requested, please
+[create a new request](https://github.com/freqtrade/freqtrade/issues/new)
+and ensure you follow the template guide so that it does not get lost
 in the bug reports.
 
 ### [Pull Requests](https://github.com/freqtrade/freqtrade/pulls)
 
 Feel like our bot is missing a feature? We welcome your pull requests!
 
-Please read our 
+Please read our
 [Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
-to understand the requirements before sending your pull-requests. 
+to understand the requirements before sending your pull-requests.
 
 Coding is not a neccessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
@@ -222,10 +222,9 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ### Software requirements
 
-- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/) 
+- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
 - [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)
-
