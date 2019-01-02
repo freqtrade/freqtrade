@@ -2066,6 +2066,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    trade.max_rate = trade.open_rate * 1.003
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
