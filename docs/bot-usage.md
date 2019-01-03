@@ -11,7 +11,7 @@ usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
                [--dynamic-whitelist [INT]] [--db-url PATH]
                {backtesting,edge,hyperopt} ...
 
-Simple High Frequency Trading Bot for crypto currencies
+Free, open source crypto trading bot
 
 positional arguments:
   {backtesting,edge,hyperopt}

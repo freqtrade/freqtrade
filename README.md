@@ -22,9 +22,32 @@ expect.
 We strongly recommend you to have coding and Python knowledge. Do not
 hesitate to read the source code and understand the mechanism of this bot.
 
+## Exchange marketplaces supported
+
+- [X] [Bittrex](https://bittrex.com/)
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](#a-note-on-binance))
+- [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+
 ## Documentation
 
+We invite you to read the bot documentation to ensure you understand how the bot is working.
+
 Please find the complete documentation on our [website](https://www.freqtrade.io).
+
+## Features
+
+- [x] **Based on Python 3.6+**: For botting on any operating system - Windows, macOS and Linux.
+- [x] **Persistence**: Persistence is achieved through sqlite.
+- [x] **Dry-run**: Run the bot without playing money.
+- [x] **Backtesting**: Run a simulation of your buy/sell strategy.
+- [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
+- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/latest/edge/).
+- [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
+- [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
+- [x] **Manageable via Telegram**: Manage the bot with Telegram.
+- [x] **Display profit/loss in fiat**: Display your profit/loss in 33 fiat.
+- [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
+- [x] **Performance status report**: Provide a performance status of your current trades.
 
 ## Quick start
 
@@ -42,39 +65,60 @@ For any other type of installation please refer to [Installation doc](https://ww
 
 ## Basic Usage
 
+### Bot commands
 
-```bash
+```
 usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-               [--strategy-path PATH] [--dynamic-whitelist [INT]]
-               [--dry-run-db]
-               {backtesting,hyperopt} ...
+               [--strategy-path PATH] [--customhyperopt NAME]
+               [--dynamic-whitelist [INT]] [--db-url PATH]
+               {backtesting,edge,hyperopt} ...
 
-Simple High Frequency Trading Bot for crypto currencies
+Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,hyperopt}
+  {backtesting,edge,hyperopt}
     backtesting         backtesting module
+    edge                edge module
     hyperopt            hyperopt module
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         be verbose
-  --version             show program's version number and exit
+  -v, --verbose         verbose mode (-vv for more, -vvv to get all messages)
+  --version             show program\'s version number and exit
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
   -d PATH, --datadir PATH
-                        path to backtest data (default:
-                        freqtrade/tests/testdata
+                        path to backtest data
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
   --strategy-path PATH  specify additional strategy lookup path
+  --customhyperopt NAME
+                        specify hyperopt class name (default:
+                        DefaultHyperOpts)
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
-                        BaseVolume (Default 20 currencies)
-  --dry-run-db          Force dry run to use a local DB
-                        "tradesv3.dry_run.sqlite" instead of memory DB. Work
-                        only if dry_run is enabled.
+                        BaseVolume (default: 20) DEPRECATED.
+  --db-url PATH         Override trades database URL, this is useful if
+                        dry_run is enabled or in custom deployments (default:
+                        None)
 ```
+
+### Telegram RPC commands
+
+Telegram is not mandatory. However, this is a great way to control your bot. More details on our [documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md)
+
+- `/start`: Starts the trader
+- `/stop`: Stops the trader
+- `/status [table]`: Lists all open trades
+- `/count`: Displays number of open trades
+- `/profit`: Lists cumulative profit from all finished trades
+- `/forcesell <trade_id>|all`: Instantly sells the given trade (Ignoring `minimum_roi`).
+- `/performance`: Show performance of each finished trade grouped by pair
+- `/balance`: Show account balance per currency
+- `/daily <n>`: Shows profit or loss per day, over the last n days
+- `/help`: Show help message
+- `/version`: Show version
+
 
 ## Development branches
 

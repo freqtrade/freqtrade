@@ -25,7 +25,7 @@ def main(sysargv: List[str]) -> None:
     """
     arguments = Arguments(
         sysargv,
-        'Simple High Frequency Trading Bot for crypto currencies'
+        'Free, open source crypto trading bot'
     )
     args = arguments.get_parsed_arg()
 
@@ -45,7 +45,7 @@ def main(sysargv: List[str]) -> None:
         freqtrade = FreqtradeBot(config)
 
         state = None
-        while 1:
+        while True:
             state = freqtrade.worker(old_state=state)
             if state == State.RELOAD_CONF:
                 freqtrade = reconfigure(freqtrade, args)
