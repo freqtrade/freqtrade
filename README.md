@@ -105,7 +105,7 @@ optional arguments:
 
 ### Telegram RPC commands
 
-Telegram is not mandatory. However, this is a great way to control your bot. More details on our [documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md)
+Telegram is not mandatory. However, this is a great way to control your bot. More details on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
 
 - `/start`: Starts the trader
 - `/stop`: Stops the trader
