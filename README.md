@@ -175,3 +175,24 @@ Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/
 **Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
 **Important:** Always create your PR against the `develop` branch, not `master`.
+
+## Requirements
+
+### Uptodate clock
+
+The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
+
+### Min hardware required
+
+To run this bot we recommend you a cloud instance with a minimum of:
+
+- Minimal (advised) system requirements: 2GB RAM, 1GB disk space, 2vCPU
+
+### Software requirements
+
+- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
+- [pip](https://pip.pypa.io/en/stable/installing/)
+- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
+- [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+- [Docker](https://www.docker.com/products/docker) (Recommended)
