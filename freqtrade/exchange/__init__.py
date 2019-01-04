@@ -558,7 +558,7 @@ class Exchange(object):
             if ticks:
                 self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self._klines[pair] = parse_ticker_dataframe(ticks)
+            self._klines[pair] = parse_ticker_dataframe(ticks, tick_interval, fill_missing=True)
         return tickers
 
     @retrier_async

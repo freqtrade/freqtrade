@@ -75,7 +75,7 @@ def load_data_test(what):
                 pair[x][5]  # Keep old volume
             ] for x in range(0, datalen)
         ]
-    return {'UNITTEST/BTC': parse_ticker_dataframe(data)}
+    return {'UNITTEST/BTC': parse_ticker_dataframe(data, '1m', fill_missing=True)}
 
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
@@ -104,7 +104,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
                      timerange=None, exchange=None):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata)}
+    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', fill_missing=True)}
     return pairdata
 
 
@@ -323,15 +323,15 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert backtesting.fee == 0.5
 
 
-def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
+def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
     tick = history.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', fill_missing=True)}
 
     backtesting = Backtesting(default_conf)
     data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 99
+    assert len(data['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
     strategy = DefaultStrategy(default_conf)
@@ -594,7 +594,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 18], ['lower', 0], ['sine', 19]]
+    tests = [['raise', 19], ['lower', 0], ['sine', 18]]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
 

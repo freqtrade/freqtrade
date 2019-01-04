@@ -5,13 +5,19 @@ import logging
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
+from freqtrade.constants import TICKER_INTERVAL_MINUTES
+
 logger = logging.getLogger(__name__)
 
 
-def parse_ticker_dataframe(ticker: list) -> DataFrame:
+def parse_ticker_dataframe(ticker: list, ticker_interval: str,
+                           fill_missing: bool = True) -> DataFrame:
     """
     Converts a ticker-list (format ccxt.fetch_ohlcv) to a Dataframe
     :param ticker: ticker list, as returned by exchange.async_get_candle_history
+    :param ticker_interval: ticker_interval (e.g. 5m). Used to fill up eventual missing data
+    :param fill_missing: fill up missing candles with 0 candles
+                         (see ohlcv_fill_up_missing_data for details)
     :return: DataFrame
     """
     logger.debug("Parsing tickerlist to dataframe")
@@ -33,7 +39,41 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     })
     frame.drop(frame.tail(1).index, inplace=True)     # eliminate partial candle
     logger.debug('Dropping last candle')
-    return frame
+
+    if fill_missing:
+        return ohlcv_fill_up_missing_data(frame, ticker_interval)
+    else:
+        return frame
+
+
+def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str) -> DataFrame:
+    """
+    Fills up missing data with 0 volume rows,
+    using the previous close as price for "open", "high" "low" and "close", volume is set to 0
+
+    """
+    ohlc_dict = {
+        'open': 'first',
+        'high': 'max',
+        'low': 'min',
+        'close': 'last',
+        'volume': 'sum'
+    }
+    tick_mins = TICKER_INTERVAL_MINUTES[ticker_interval]
+    # Resample to create "NAN" values
+    df = dataframe.resample(f'{tick_mins}min', on='date').agg(ohlc_dict)
+
+    # Forwardfill close for missing columns
+    df['close'] = df['close'].fillna(method='ffill')
+    # Use close for "open, high, low"
+    df.loc[:, ['open', 'high', 'low']] = df[['open', 'high', 'low']].fillna(
+        value={'open': df['close'],
+               'high': df['close'],
+               'low': df['close'],
+               })
+    df.reset_index(inplace=True)
+    logger.debug(f"Missing data fillup: before: {len(dataframe)} - after: {len(df)}")
+    return df
 
 
 def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
