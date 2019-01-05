@@ -42,6 +42,11 @@ class TestStrategy(IStrategy):
     # This attribute will be overridden if the config file contains "stoploss"
     stoploss = -0.10
 
+    # trailing stoploss
+    trailing_stop = False
+    trailing_stop_positive = 0.01
+    trailing_stop_positive_offset = None  # Disabled / not configured
+
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'
 
