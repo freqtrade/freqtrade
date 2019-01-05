@@ -30,9 +30,9 @@ function updateenv() {
     echo "-------------------------"
     source .env/bin/activate
     echo "pip3 install in-progress. Please wait..."
-    pip3 install --quiet --upgrade pip
+    # Install numpy first to have py_find_1st install clean
+    pip3 install --quiet --upgrade pip numpy
     pip3 install --quiet --upgrade -r requirements.txt
-    pip3 install --quiet -r requirements.txt
 
     read -p "Do you want to install dependencies for dev [Y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
