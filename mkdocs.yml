@@ -4,18 +4,18 @@ nav:
     - Installation: installation.md
     - Configuration: configuration.md
     - Start the bot: bot-usage.md
-    - Optimization: bot-optimization.md
+    - Stoploss: stoploss.md
+    - Custom Strategy: bot-optimization.md
+    - Telegram: telegram-usage.md
+    - Web Hook: webhook-config.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Stoploss: stoploss.md
-    - Telegram: telegram-usage.md
-    - Plotting: plotting.md
     - Edge positioning: edge.md
-    - Web Hook: webhook-config.md
+    - Plotting: plotting.md
     - FAQ: faq.md
-    - Contributors guide: developer.md
-    - SQL Cheatsheeet: sql_cheatsheet.md
+    - SQL Cheatsheet: sql_cheatsheet.md
     - Sanbox testing: sandbox-testing.md
+    - Contributors guide: developer.md
 theme:
   name: material
   logo: 'images/logo.png'
