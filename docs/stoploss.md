@@ -6,6 +6,9 @@ At this stage the bot contains the following stoploss support modes:
 2. trailing stop loss, defined in the configuration
 3. trailing stop loss, custom positive loss, defined in configuration
 
+!!! Note
+    All stoploss properties can be configured in eihter Strategy or configuration. Configuration values override strategy values.
+
 ## Static Stop Loss
 
 This is very simple, basically you define a stop loss of x in your strategy file or alternative in the configuration, which

@@ -58,8 +58,6 @@ class StrategyResolver(IResolver):
             if attribute in config:
                 logger.info("Strategy using %s: %s", attribute, config[attribute])
 
-
-
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
             {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
