@@ -40,15 +40,19 @@ class StrategyResolver(IResolver):
                                                        extra_dir=config.get('strategy_path'))
         # Set attributes
         # Check if we need to override configuration
-        self._override_attribute_helper(config, "minimal_roi")
-        self._override_attribute_helper(config, "ticker_interval")
-        self._override_attribute_helper(config, "stoploss")
-        self._override_attribute_helper(config, "trailing_stop")
-        self._override_attribute_helper(config, "trailing_stop_positive")
-        self._override_attribute_helper(config, "trailing_stop_positive_offset")
-        self._override_attribute_helper(config, "process_only_new_candles")
-        self._override_attribute_helper(config, "order_types")
-        self._override_attribute_helper(config, "order_time_in_force")
+        attributes = ["minimal_roi",
+                      "ticker_interval",
+                      "stoploss",
+                      "trailing_stop",
+                      "trailing_stop_positive",
+                      "trailing_stop_positive_offset",
+                      "process_only_new_candles",
+                      "order_types",
+                      "order_time_in_force"
+                      ]
+        for attribute in attributes:
+            self._override_attribute_helper(config, attribute)
+
 
         # Sort and apply type conversions
         self.strategy.minimal_roi = OrderedDict(sorted(
