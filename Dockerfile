@@ -1,4 +1,4 @@
-FROM python:3.7.0-slim-stretch
+FROM python:3.7.2-slim-stretch
 
 RUN apt-get update \
     && apt-get -y install curl build-essential \
