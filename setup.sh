@@ -50,6 +50,11 @@ function updateenv () {
 
 # Install tab lib
 function install_talib () {
+    if [ -f /usr/local/lib/libta_lib.a ]; then
+        echo "ta-lib already installed, skipping"
+        return
+    fi
+
     cd build_helpers
     tar zxvf ta-lib-0.4.0-src.tar.gz
     cd ta-lib
