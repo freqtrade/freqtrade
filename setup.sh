@@ -31,7 +31,7 @@ function updateenv () {
     source .env/bin/activate
     echo "pip3 install in-progress. Please wait..."
     pip3 install --quiet --upgrade pip
-    pip3 install --quiet -r requirements.txt --upgrade
+    pip3 install --quiet --upgrade -r requirements.txt
     pip3 install --quiet -r requirements.txt
 
     read -p "Do you want to install dependencies for dev [Y/N]? "
