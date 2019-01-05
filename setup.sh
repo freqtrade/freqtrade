@@ -24,7 +24,7 @@ function check_installed_python() {
 
 }
 
-function updateenv () {
+function updateenv() {
     echo "-------------------------"
     echo "Update your virtual env"
     echo "-------------------------"
@@ -49,7 +49,7 @@ function updateenv () {
 }
 
 # Install tab lib
-function install_talib () {
+function install_talib() {
     if [ -f /usr/local/lib/libta_lib.a ]; then
         echo "ta-lib already installed, skipping"
         return
@@ -67,7 +67,7 @@ function install_talib () {
 }
 
 # Install bot MacOS
-function install_macos () {
+function install_macos() {
     if [ ! -x "$(command -v brew)" ]
     then
         echo "-------------------------"
@@ -81,7 +81,7 @@ function install_macos () {
 }
 
 # Install bot Debian_ubuntu
-function install_debian () {
+function install_debian() {
     sudo add-apt-repository ppa:jonathonf/python-3.6
     sudo apt-get update
     sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
@@ -89,13 +89,13 @@ function install_debian () {
 }
 
 # Upgrade the bot
-function update () {
+function update() {
     git pull
     updateenv
 }
 
 # Reset Develop or Master branch
-function reset () {
+function reset() {
     echo "----------------------------"
     echo "Reset branch and virtual env"
     echo "----------------------------"
@@ -139,7 +139,7 @@ function test_and_fix_python_on_mac() {
     fi
 }
 
-function config_generator () {
+function config_generator() {
 
     echo "Starting to generate config.json"
     echo
@@ -185,7 +185,7 @@ function config_generator () {
 
 }
 
-function config () {
+function config() {
 
     echo "-------------------------"
     echo "Config file generator"
@@ -211,7 +211,7 @@ function config () {
     echo
 }
 
-function install () {
+function install() {
     echo "-------------------------"
     echo "Install mandatory dependencies"
     echo "-------------------------"
@@ -239,7 +239,7 @@ function install () {
     echo "You can now use the bot by executing 'source .env/bin/activate; python freqtrade/main.py'."
 }
 
-function plot () {
+function plot() {
 echo "
 -----------------------------------------
 Install dependencies for Plotting scripts
@@ -248,7 +248,7 @@ Install dependencies for Plotting scripts
 pip install plotly --upgrade
 }
 
-function help () {
+function help() {
     echo "usage:"
     echo "	-i,--install    Install freqtrade from scratch"
     echo "	-u,--update     Command git pull to update."
