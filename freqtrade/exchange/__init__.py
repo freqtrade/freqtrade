@@ -80,7 +80,7 @@ class Exchange(object):
         self._cached_ticker: Dict[str, Any] = {}
 
         # Holds last candle refreshed time of each pair
-        self._pairs_last_refresh_time: Dict[str, int] = {}
+        self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -545,7 +545,7 @@ class Exchange(object):
             # Calculating ticker interval in second
             interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
-            if not (self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
+            if not (self._pairs_last_refresh_time.get((pair, ticker_interval), 0) + interval_in_sec >=
                     arrow.utcnow().timestamp and (pair, ticker_interval) in self._klines):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
@@ -564,7 +564,7 @@ class Exchange(object):
             ticks = res[2]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
-                self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
+                self._pairs_last_refresh_time[(pair, tick_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             self._klines[(pair, tick_interval)] = parse_ticker_dataframe(
                 ticks, tick_interval, fill_missing=True)
