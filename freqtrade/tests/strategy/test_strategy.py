@@ -217,8 +217,7 @@ def test_strategy_override_process_only_new_candles(caplog):
     assert resolver.strategy.process_only_new_candles
     assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
-            "Override process_only_new_candles 'process_only_new_candles' "
-            "with value in config file: True."
+            "Override strategy 'process_only_new_candles' with value in config file: True."
             ) in caplog.record_tuples
 
 

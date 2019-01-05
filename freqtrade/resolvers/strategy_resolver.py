@@ -38,87 +38,35 @@ class StrategyResolver(IResolver):
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))
-
         # Set attributes
         # Check if we need to override configuration
-        if 'minimal_roi' in config:
-            self.strategy.minimal_roi = config['minimal_roi']
-            logger.info("Override strategy 'minimal_roi' with value in config file: %s.",
-                        config['minimal_roi'])
-        else:
-            config['minimal_roi'] = self.strategy.minimal_roi
+        self._override_attribute_helper(config, "minimal_roi")
+        self._override_attribute_helper(config, "ticker_interval")
+        self._override_attribute_helper(config, "stoploss")
+        self._override_attribute_helper(config, "trailing_stop")
+        self._override_attribute_helper(config, "trailing_stop_positive")
+        self._override_attribute_helper(config, "trailing_stop_positive_offset")
+        self._override_attribute_helper(config, "process_only_new_candles")
+        self._override_attribute_helper(config, "order_types")
+        self._override_attribute_helper(config, "order_time_in_force")
 
-        if 'stoploss' in config:
-            self.strategy.stoploss = config['stoploss']
-            logger.info(
-                "Override strategy 'stoploss' with value in config file: %s.", config['stoploss']
-            )
-        else:
-            config['stoploss'] = self.strategy.stoploss
+        # Sort and apply type conversions
+        self.strategy.minimal_roi = OrderedDict(sorted(
+            {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
+            key=lambda t: t[0]))
+        self.strategy.stoploss = float(self.strategy.stoploss)
 
-        if 'trailing_stop' in config:
-            self.strategy.trailing_stop = config['trailing_stop']
-            logger.info(
-                "Override strategy 'trailing_stop' with value in config file: %s.",
-                config['trailing_stop']
-            )
-        elif hasattr(self.strategy, "trailing_stop"):
-            config['trailing_stop'] = self.strategy.trailing_stop
+        self._strategy_sanity_validations()
 
-        if 'trailing_stop_positive' in config:
-            self.strategy.trailing_stop_positive = config['trailing_stop_positive']
-            logger.info(
-                "Override strategy 'trailing_stop_positive' with value in config file: %s.",
-                config['trailing_stop_positive']
-            )
-        elif hasattr(self.strategy, "trailing_stop_positive"):
-            config['trailing_stop_positive'] = self.strategy.trailing_stop_positive
+    def _override_attribute_helper(self, config, attribute: str):
+        if attribute in config:
+            setattr(self.strategy, attribute, config[attribute])
+            logger.info("Override strategy '%s' with value in config file: %s.",
+                        attribute, config[attribute])
+        elif hasattr(self.strategy, attribute):
+            config[attribute] = getattr(self.strategy, attribute)
 
-        if 'trailing_stop_positive_offset' in config:
-            self.strategy.trailing_stop_positive_offset = config['trailing_stop_positive_offset']
-            logger.info(
-                "Override strategy 'trailing_stop_positive_offset' with value in config file: %s.",
-                config['trailing_stop_positive_offset']
-            )
-        elif hasattr(self.strategy, "trailing_stop_positive_offset"):
-            config['trailing_stop_positive_offset'] = self.strategy.trailing_stop_positive_offset
-
-        if 'ticker_interval' in config:
-            self.strategy.ticker_interval = config['ticker_interval']
-            logger.info(
-                "Override strategy 'ticker_interval' with value in config file: %s.",
-                config['ticker_interval']
-            )
-        else:
-            config['ticker_interval'] = self.strategy.ticker_interval
-
-        if 'process_only_new_candles' in config:
-            self.strategy.process_only_new_candles = config['process_only_new_candles']
-            logger.info(
-                "Override process_only_new_candles 'process_only_new_candles' "
-                "with value in config file: %s.", config['process_only_new_candles']
-            )
-        else:
-            config['process_only_new_candles'] = self.strategy.process_only_new_candles
-
-        if 'order_types' in config:
-            self.strategy.order_types = config['order_types']
-            logger.info(
-                "Override strategy 'order_types' with value in config file: %s.",
-                config['order_types']
-            )
-        else:
-            config['order_types'] = self.strategy.order_types
-
-        if 'order_time_in_force' in config:
-            self.strategy.order_time_in_force = config['order_time_in_force']
-            logger.info(
-                "Override strategy 'order_time_in_force' with value in config file: %s.",
-                config['order_time_in_force']
-            )
-        else:
-            config['order_time_in_force'] = self.strategy.order_time_in_force
-
+    def _strategy_sanity_validations(self):
         if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
@@ -126,12 +74,6 @@ class StrategyResolver(IResolver):
         if not all(k in self.strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
-
-        # Sort and apply type conversions
-        self.strategy.minimal_roi = OrderedDict(sorted(
-            {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
-            key=lambda t: t[0]))
-        self.strategy.stoploss = float(self.strategy.stoploss)
 
     def _load_strategy(
             self, strategy_name: str, config: dict, extra_dir: Optional[str] = None) -> IStrategy:
