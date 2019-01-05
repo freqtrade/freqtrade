@@ -56,6 +56,33 @@ class StrategyResolver(IResolver):
         else:
             config['stoploss'] = self.strategy.stoploss
 
+        if 'trailing_stop' in config:
+            self.strategy.trailing_stop = config['trailing_stop']
+            logger.info(
+                "Override strategy 'trailing_stop' with value in config file: %s.",
+                config['trailing_stop']
+            )
+        elif hasattr(self.strategy, "trailing_stop"):
+            config['trailing_stop'] = self.strategy.trailing_stop
+
+        if 'trailing_stop_positive' in config:
+            self.strategy.trailing_stop_positive = config['trailing_stop_positive']
+            logger.info(
+                "Override strategy 'trailing_stop_positive' with value in config file: %s.",
+                config['trailing_stop_positive']
+            )
+        elif hasattr(self.strategy, "trailing_stop_positive"):
+            config['trailing_stop_positive'] = self.strategy.trailing_stop_positive
+
+        if 'trailing_stop_positive_offset' in config:
+            self.strategy.trailing_stop_positive_offset = config['trailing_stop_positive_offset']
+            logger.info(
+                "Override strategy 'trailing_stop_positive_offset' with value in config file: %s.",
+                config['trailing_stop_positive_offset']
+            )
+        elif hasattr(self.strategy, "trailing_stop_positive_offset"):
+            config['trailing_stop_positive_offset'] = self.strategy.trailing_stop_positive_offset
+
         if 'ticker_interval' in config:
             self.strategy.ticker_interval = config['ticker_interval']
             logger.info(

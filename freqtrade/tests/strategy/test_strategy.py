@@ -150,6 +150,45 @@ def test_strategy_override_stoploss(caplog):
             ) in caplog.record_tuples
 
 
+def test_strategy_override_trailing_stop(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+        'trailing_stop': True
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.trailing_stop
+    assert isinstance(resolver.strategy.trailing_stop, bool)
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'trailing_stop' with value in config file: True."
+            ) in caplog.record_tuples
+
+
+def test_strategy_override_trailing_stop_positive(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+        'trailing_stop_positive': -0.1,
+        'trailing_stop_positive_offset': -0.2
+
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.trailing_stop_positive == -0.1
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'trailing_stop_positive' with value in config file: -0.1."
+            ) in caplog.record_tuples
+
+    assert resolver.strategy.trailing_stop_positive_offset == -0.2
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'trailing_stop_positive' with value in config file: -0.1."
+            ) in caplog.record_tuples
+
+
 def test_strategy_override_ticker_interval(caplog):
     caplog.set_level(logging.INFO)
 

@@ -67,6 +67,11 @@ class IStrategy(ABC):
     # associated stoploss
     stoploss: float
 
+    # trailing stoploss
+    trailing_stop: bool = False
+    trailing_stop_positive: float
+    trailing_stop_positive_offset: float
+
     # associated ticker interval
     ticker_interval: str
 
