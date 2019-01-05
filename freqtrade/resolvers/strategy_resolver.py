@@ -52,6 +52,9 @@ class StrategyResolver(IResolver):
                       ]
         for attribute in attributes:
             self._override_attribute_helper(config, attribute)
+
+        # Loop this list again to have output combined
+        for attribute in attributes:
             if attribute in config:
                 logger.info("Strategy using %s: %s", attribute, config[attribute])
 
