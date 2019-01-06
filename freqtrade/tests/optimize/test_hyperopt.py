@@ -201,7 +201,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     hyperopt.start()
     parallel.assert_called_once()
 
-    assert 'Best result:\nfoo result\nwith values:\n{}' in caplog.text
+    assert 'Best result:\nfoo result\nwith values:\n\n' in caplog.text
     assert dumper.called
 
 
