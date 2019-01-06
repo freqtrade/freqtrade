@@ -151,6 +151,9 @@ class Hyperopt(Backtesting):
         spaces: List[Dimension] = []
         if self.has_space('buy'):
             spaces += self.custom_hyperopt.indicator_space()
+        if self.has_space('sell'):
+            spaces += self.custom_hyperopt.sell_indicator_space()
+            self.config['experimental']['use_sell_signal'] = True
         if self.has_space('roi'):
             spaces += self.custom_hyperopt.roi_space()
         if self.has_space('stoploss'):
@@ -164,6 +167,9 @@ class Hyperopt(Backtesting):
 
         if self.has_space('buy'):
             self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
+
+        if self.has_space('sell'):
+            self.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
@@ -247,7 +253,7 @@ class Hyperopt(Backtesting):
             timerange=timerange
         )
 
-        if self.has_space('buy'):
+        if self.has_space('buy') or self.has_space('sell'):
             self.strategy.advise_indicators = \
                 self.custom_hyperopt.populate_indicators  # type: ignore
         dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)

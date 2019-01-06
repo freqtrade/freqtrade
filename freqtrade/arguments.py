@@ -272,7 +272,7 @@ class Arguments(object):
             '-s', '--spaces',
             help='Specify which parameters to hyperopt. Space separate list. \
                   Default: %(default)s',
-            choices=['all', 'buy', 'roi', 'stoploss'],
+            choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
             default='all',
             nargs='+',
             dest='spaces',

@@ -94,6 +94,67 @@ class DefaultHyperOpts(IHyperOpt):
         ]
 
     @staticmethod
+    def sell_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Define the sell strategy parameters to be used by hyperopt
+        """
+        def populate_sell_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
+            """
+            Sell strategy Hyperopt will build and use
+            """
+            # print(params)
+            conditions = []
+            # GUARDS AND TRENDS
+            if 'sell-mfi-enabled' in params and params['sell-mfi-enabled']:
+                conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
+            if 'sell-fastd-enabled' in params and params['sell-fastd-enabled']:
+                conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
+            if 'sell-adx-enabled' in params and params['sell-adx-enabled']:
+                conditions.append(dataframe['adx'] > params['sell-adx-value'])
+            if 'sell-rsi-enabled' in params and params['sell-rsi-enabled']:
+                conditions.append(dataframe['rsi'] > params['sell-rsi-value'])
+
+            # TRIGGERS
+            if 'sell-trigger' in params:
+                if params['sell-trigger'] == 'sell-bb_lower':
+                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                if params['sell-trigger'] == 'sell-macd_cross_signal':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['macd'], dataframe['macdsignal']
+                    ))
+                if params['sell-trigger'] == 'sell-sar_reversal':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['close'], dataframe['sar']
+                    ))
+
+            dataframe.loc[
+                reduce(lambda x, y: x & y, conditions),
+                'sell'] = 1
+
+            return dataframe
+
+        return populate_sell_trend
+
+    @staticmethod
+    def sell_indicator_space() -> List[Dimension]:
+        """
+        Define your Hyperopt space for searching sell strategy parameters
+        """
+        return [
+            Integer(75, 100, name='sell-mfi-value'),
+            Integer(50, 100, name='sell-fastd-value'),
+            Integer(50, 100, name='sell-adx-value'),
+            Integer(60, 100, name='sell-rsi-value'),
+            Categorical([True, False], name='sell-mfi-enabled'),
+            Categorical([True, False], name='sell-fastd-enabled'),
+            Categorical([True, False], name='sell-adx-enabled'),
+            Categorical([True, False], name='sell-rsi-enabled'),
+            Categorical(['sell-bb_lower',
+                         'sell-macd_cross_signal',
+                         'sell-sar_reversal'], name='sell-trigger')
+        ]
+
+    @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
         """
         Generate the ROI table that will be used by Hyperopt
