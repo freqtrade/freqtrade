@@ -102,13 +102,13 @@ class Hyperopt(Backtesting):
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         logger.info(
-            'Best result:\n%s\nwith values:\n%s',
-            best_result['result'],
-            pprint(best_result['params'], indent=4)
+            'Best result:\n%s\nwith values:\n',
+            best_result['result']
         )
+        pprint(best_result['params'], indent=4)
         if 'roi_t1' in best_result['params']:
-            logger.info('ROI table:\n%s',
-                        pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4))
+            logger.info('ROI table:')
+            pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4)
 
     def log_results(self, results) -> None:
         """
@@ -171,12 +171,12 @@ class Hyperopt(Backtesting):
         if self.has_space('buy'):
             self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
         elif hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.advise_buy = self.custom_hyperopt.populate_buy_trend
+            self.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
 
         if self.has_space('sell'):
             self.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
         elif hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.advise_sell = self.custom_hyperopt.populate_sell_trend
+            self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
