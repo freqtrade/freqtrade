@@ -98,12 +98,13 @@ So let's write the buy strategy using these values:
                 conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
-            if params['trigger'] == 'bb_lower':
-                conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
-            if params['trigger'] == 'macd_cross_signal':
-                conditions.append(qtpylib.crossed_above(
-                    dataframe['macd'], dataframe['macdsignal']
-                ))
+            if 'trigger' in params:
+                if params['trigger'] == 'bb_lower':
+                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                if params['trigger'] == 'macd_cross_signal':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['macd'], dataframe['macdsignal']
+                    ))
 
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),

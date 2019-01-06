@@ -66,16 +66,17 @@ class SampleHyperOpts(IHyperOpt):
                 conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
-            if params['trigger'] == 'bb_lower':
-                conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
-            if params['trigger'] == 'macd_cross_signal':
-                conditions.append(qtpylib.crossed_above(
-                    dataframe['macd'], dataframe['macdsignal']
-                ))
-            if params['trigger'] == 'sar_reversal':
-                conditions.append(qtpylib.crossed_above(
-                    dataframe['close'], dataframe['sar']
-                ))
+            if 'trigger' in params:
+                if params['trigger'] == 'bb_lower':
+                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                if params['trigger'] == 'macd_cross_signal':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['macd'], dataframe['macdsignal']
+                    ))
+                if params['trigger'] == 'sar_reversal':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['close'], dataframe['sar']
+                    ))
 
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
