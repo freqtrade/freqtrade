@@ -26,7 +26,7 @@ function check_installed_python() {
 
 function updateenv() {
     echo "-------------------------"
-    echo "Update your virtual env"
+    echo "Updating your virtual env"
     echo "-------------------------"
     source .env/bin/activate
     echo "pip3 install in-progress. Please wait..."
@@ -34,7 +34,7 @@ function updateenv() {
     pip3 install --upgrade pip numpy
     pip3 install --upgrade -r requirements.txt
 
-    read -p "Do you want to install dependencies for dev [Y/N]? "
+    read -p "Do you want to install dependencies for dev [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         pip3 install --upgrade -r requirements-dev.txt
@@ -70,7 +70,7 @@ function install_macos() {
     if [ ! -x "$(command -v brew)" ]
     then
         echo "-------------------------"
-        echo "Install Brew"
+        echo "Installing Brew"
         echo "-------------------------"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
@@ -96,7 +96,7 @@ function update() {
 # Reset Develop or Master branch
 function reset() {
     echo "----------------------------"
-    echo "Reset branch and virtual env"
+    echo "Reseting branch and virtual env"
     echo "----------------------------"
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* master") ]
     then
@@ -142,7 +142,7 @@ function config_generator() {
 
     echo "Starting to generate config.json"
     echo
-    echo "General configuration"
+    echo "Generating General configuration"
     echo "-------------------------"
     default_max_trades=3
     read -p "Max open trades: (Default: $default_max_trades) " max_trades
@@ -161,13 +161,13 @@ function config_generator() {
     fiat_currency=${fiat_currency:-$default_fiat_currency}
 
     echo
-    echo "Exchange config generator"
+    echo "Generating exchange config "
     echo "------------------------"
     read -p "Exchange API key: " api_key
     read -p "Exchange API Secret: " api_secret
 
     echo
-    echo "Telegram config generator"
+    echo "Generating Telegram config"
     echo "-------------------------"
     read -p "Telegram Token: " token
     read -p "Telegram Chat_id: " chat_id
@@ -187,11 +187,11 @@ function config_generator() {
 function config() {
 
     echo "-------------------------"
-    echo "Config file generator"
+    echo "Generating config file"
     echo "-------------------------"
     if [ -f config.json ]
     then
-    read -p "A config file already exist, do you want to override it [Y/N]? "
+    read -p "A config file already exist, do you want to override it [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         config_generator
@@ -212,7 +212,7 @@ function config() {
 
 function install() {
     echo "-------------------------"
-    echo "Install mandatory dependencies"
+    echo "Installing mandatory dependencies"
     echo "-------------------------"
 
     if [ "$(uname -s)" == "Darwin" ]
@@ -233,7 +233,7 @@ function install() {
     reset
     config
     echo "-------------------------"
-    echo "Run the bot"
+    echo "Run the bot !"
     echo "-------------------------"
     echo "You can now use the bot by executing 'source .env/bin/activate; python freqtrade/main.py'."
 }
@@ -241,7 +241,7 @@ function install() {
 function plot() {
 echo "
 -----------------------------------------
-Install dependencies for Plotting scripts
+Installing dependencies for Plotting scripts
 -----------------------------------------
 "
 pip install plotly --upgrade
