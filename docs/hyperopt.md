@@ -16,6 +16,22 @@ an example hyperopt file located into [user_data/hyperopts/](https://github.com/
 
 Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar and a lot of code can be copied across from the strategy.
 
+### Checklist on all tasks / possibilities in hyperopt
+
+Depending on the space you want to optimize, only some of the below are required.
+
+* fill `populate_indicators` - probably a copy from your strategy
+* fill `buy_strategy_generator` - for buy signal optimization
+* fill `indicator_space` - for buy signal optimzation
+* fill `sell_strategy_generator` - for sell signal optimization
+* fill `sell_indicator_space` - for sell signal optimzation
+* fill `roi_space` - for ROI optimization
+* fill `generate_roi_table` - for ROI optimization (if you need more than 3 entries)
+* fill `stoploss_space` - stoploss optimization
+* Optional but reccomended
+  * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
+  * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
+
 ### 1. Install a Custom Hyperopt File
 
 Put your hyperopt file into the folder`user_data/hyperopts`.
@@ -49,11 +65,11 @@ If you have updated the buy strategy, ie. changed the contents of
 Similar to the buy-signal above, sell-signals can also be optimized. 
 Place the corresponding settings into the following methods
 
-- Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
-- Inside `populate_sell_trend()` - applying the parameters.
+* Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
+* Inside `populate_sell_trend()` - applying the parameters.
 
 The configuration and rules are the same than for buy signals.
-To avoid naming collisions in the search-space, please prefix all sell-spaces with sell-. 
+To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
 
 ## Solving a Mystery
 
@@ -65,7 +81,7 @@ mystery.
 
 We will start by defining a search space:
 
-```
+```python
     def indicator_space() -> List[Dimension]:
         """
         Define your Hyperopt space for searching strategy parameters
@@ -88,7 +104,7 @@ one we call `trigger` and use it to decide which buy trigger we want to use.
 
 So let's write the buy strategy using these values:
 
-```
+``` python
         def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
             conditions = []
             # GUARDS AND TRENDS
@@ -136,13 +152,18 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 ./freqtrade/main.py --hyperopt <hyperoptname> -c config.json hyperopt -e 5000
+python3 ./freqtrade/main.py --hyperopt <hyperoptname> -c config.json hyperopt -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
 
 The `-e` flag will set how many evaluations hyperopt will do. We recommend
 running at least several thousand evaluations.
+
+The `--spaces all` flag determines that all possible parameters should be optimized. Possibilities are listed below.
+
+!!! Warning
+When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
 
 ### Execute Hyperopt with Different Ticker-Data Source
 
@@ -186,7 +207,11 @@ Given the following result from hyperopt:
 Best result:
    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
 with values:
-{'adx-value': 44, 'rsi-value': 29, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'bb_lower'}
+{    'adx-value': 44,
+     'rsi-value': 29,
+     'adx-enabled': False,
+     'rsi-enabled': True,
+     'trigger': 'bb_lower'}
 ```
 
 You should understand this result like:
@@ -226,9 +251,24 @@ If you are optimizing ROI, you're result will look as follows and include a ROI 
 Best result:
    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins.
 with values:
-{'adx-value': 44, 'rsi-value': 29, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'bb_lower', 'roi_t1': 40, 'roi_t2': 57, 'roi_t3': 21, 'roi_p1': 0.03634636907306948, 'roi_p2': 0.055237357937802885, 'roi_p3': 0.015163796015548354, 'stoploss': -0.37996664668703606}
+{   'adx-value': 44,
+    'rsi-value': 29,
+    'adx-enabled': false,
+    'rsi-enabled': True,
+    'trigger': 'bb_lower',
+    'roi_t1': 40,
+    'roi_t2': 57,
+    'roi_t3': 21,
+    'roi_p1': 0.03634636907306948,
+    'roi_p2': 0.055237357937802885,
+    'roi_p3': 0.015163796015548354,
+    'stoploss': -0.37996664668703606
+}
 ROI table:
-{0: 0.10674752302642071, 21: 0.09158372701087236, 78: 0.03634636907306948, 118: 0}
+{   0: 0.10674752302642071,
+    21: 0.09158372701087236,
+    78: 0.03634636907306948,
+    118: 0}
 ```
 
 This would translate to the following ROI table:
