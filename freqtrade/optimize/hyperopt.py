@@ -153,6 +153,9 @@ class Hyperopt(Backtesting):
             spaces += self.custom_hyperopt.indicator_space()
         if self.has_space('sell'):
             spaces += self.custom_hyperopt.sell_indicator_space()
+            # Make sure experimental is enabled
+            if 'experimental' not in self.config:
+                self.config['experimental'] = {}
             self.config['experimental']['use_sell_signal'] = True
         if self.has_space('roi'):
             spaces += self.custom_hyperopt.roi_space()
