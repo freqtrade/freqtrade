@@ -124,9 +124,6 @@ class Configuration(object):
         if self.args.db_url and self.args.db_url != constants.DEFAULT_DB_PROD_URL:
             config.update({'db_url': self.args.db_url})
             logger.info('Parameter --db-url detected ...')
-        else:
-            # Set default here
-            config.update({'db_url': constants.DEFAULT_DB_PROD_URL})
 
         if config.get('dry_run', False):
             logger.info('Dry run is enabled')

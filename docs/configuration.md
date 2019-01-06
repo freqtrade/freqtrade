@@ -223,7 +223,7 @@ creating trades.
 
 ```json
 "dry_run": true,
-"db_url": "sqlite///tradesv3.dryrun.sqlite",
+"db_url": "sqlite:///tradesv3.dryrun.sqlite",
 ```
 
 3. Remove your Exchange API key (change them by fake api credentials)
