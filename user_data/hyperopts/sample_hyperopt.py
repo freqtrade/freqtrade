@@ -42,6 +42,7 @@ class SampleHyperOpts(IHyperOpt):
         # Bollinger bands
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
+        dataframe['bb_upperband'] = bollinger['upper']
         dataframe['sar'] = ta.SAR(dataframe)
         return dataframe
 
@@ -120,21 +121,21 @@ class SampleHyperOpts(IHyperOpt):
             if 'sell-fastd-enabled' in params and params['sell-fastd-enabled']:
                 conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
             if 'sell-adx-enabled' in params and params['sell-adx-enabled']:
-                conditions.append(dataframe['adx'] > params['sell-adx-value'])
+                conditions.append(dataframe['adx'] < params['sell-adx-value'])
             if 'sell-rsi-enabled' in params and params['sell-rsi-enabled']:
                 conditions.append(dataframe['rsi'] > params['sell-rsi-value'])
 
             # TRIGGERS
             if 'sell-trigger' in params:
-                if params['sell-trigger'] == 'sell-bb_lower':
-                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                if params['sell-trigger'] == 'sell-bb_upper':
+                    conditions.append(dataframe['close'] > dataframe['bb_upperband'])
                 if params['sell-trigger'] == 'sell-macd_cross_signal':
                     conditions.append(qtpylib.crossed_above(
-                        dataframe['macd'], dataframe['macdsignal']
+                        dataframe['macdsignal'], dataframe['macd']
                     ))
                 if params['sell-trigger'] == 'sell-sar_reversal':
                     conditions.append(qtpylib.crossed_above(
-                        dataframe['close'], dataframe['sar']
+                        dataframe['sar'], dataframe['close']
                     ))
 
             dataframe.loc[
@@ -159,7 +160,7 @@ class SampleHyperOpts(IHyperOpt):
             Categorical([True, False], name='sell-fastd-enabled'),
             Categorical([True, False], name='sell-adx-enabled'),
             Categorical([True, False], name='sell-rsi-enabled'),
-            Categorical(['sell-bb_lower',
+            Categorical(['sell-bb_upper',
                          'sell-macd_cross_signal',
                          'sell-sar_reversal'], name='sell-trigger')
         ]
@@ -199,3 +200,36 @@ class SampleHyperOpts(IHyperOpt):
             Real(0.01, 0.07, name='roi_p2'),
             Real(0.01, 0.20, name='roi_p3'),
         ]
+
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators. Should be a copy of from strategy
+        must align to populate_indicators in this file
+        Only used when --spaces does not include buy
+        """
+        dataframe.loc[
+            (
+                (dataframe['close'] < dataframe['bb_lowerband']) &
+                (dataframe['mfi'] < 16) &
+                (dataframe['adx'] > 25) &
+                (dataframe['rsi'] < 21)
+            ),
+            'buy'] = 1
+
+        return dataframe
+
+    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators. Should be a copy of from strategy
+        must align to populate_indicators in this file
+        Only used when --spaces does not include sell
+        """
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(
+                    dataframe['macdsignal'], dataframe['macd']
+                )) &
+                (dataframe['fastd'] > 54)
+            ),
+            'sell'] = 1
+        return dataframe
