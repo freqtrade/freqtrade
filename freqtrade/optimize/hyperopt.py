@@ -170,9 +170,13 @@ class Hyperopt(Backtesting):
 
         if self.has_space('buy'):
             self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
+        elif hasattr(self.custom_hyperopt, 'populate_buy_trend'):
+            self.advise_buy = self.custom_hyperopt.populate_buy_trend
 
         if self.has_space('sell'):
             self.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
+        elif hasattr(self.custom_hyperopt, 'populate_sell_trend'):
+            self.advise_sell = self.custom_hyperopt.populate_sell_trend
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
