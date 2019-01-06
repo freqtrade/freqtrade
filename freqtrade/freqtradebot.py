@@ -648,7 +648,17 @@ class FreqtradeBot(object):
                 trade.update(order)
                 result = True
             else:
-                result = False
+                # check if trailing stoploss is enabled and stoploss value has changed
+                # in which case we cancel stoploss order and put another one with new
+                # value immediately
+                if self.config.get('trailing_stop', False) and trade.stop_loss > order['price']:
+                    if self.exchange.cancel_order(order['id'], trade.pair):
+                        stoploss_order_id = self.exchange.stoploss_limit(
+                            pair=trade.pair, amount=trade.amount,
+                            stop_price=stop_price, rate=limit_price
+                            )['id']
+                        trade.stoploss_order_id = str(stoploss_order_id)
+
         return result
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
