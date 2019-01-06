@@ -5,17 +5,18 @@ This module contains the hyperopt logic
 """
 
 import logging
-from argparse import Namespace
+import multiprocessing
 import os
 import sys
-from pathlib import Path
+from argparse import Namespace
 from math import exp
-import multiprocessing
 from operator import itemgetter
+from pathlib import Path
+from pprint import pprint
 from typing import Any, Dict, List
 
-from pandas import DataFrame
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects
+from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
@@ -25,7 +26,6 @@ from freqtrade.data.history import load_data
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers import HyperOptResolver
-
 
 logger = logging.getLogger(__name__)
 
@@ -104,11 +104,11 @@ class Hyperopt(Backtesting):
         logger.info(
             'Best result:\n%s\nwith values:\n%s',
             best_result['result'],
-            best_result['params']
+            pprint(best_result['params'], indent=4)
         )
         if 'roi_t1' in best_result['params']:
             logger.info('ROI table:\n%s',
-                        self.custom_hyperopt.generate_roi_table(best_result['params']))
+                        pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4))
 
     def log_results(self, results) -> None:
         """
