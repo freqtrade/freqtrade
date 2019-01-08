@@ -17,23 +17,27 @@ function check_installed_python() {
         return
    fi
 
+   if [ -z ${PYTHON} ]; then
+        echo "No usable python found. Please make sure to have python3.6 or python3.7 installed"
+        exit 1
+   fi
+
 }
 
-function updateenv () {
+function updateenv() {
     echo "-------------------------"
-    echo "Update your virtual env"
+    echo "Updating your virtual env"
     echo "-------------------------"
     source .env/bin/activate
     echo "pip3 install in-progress. Please wait..."
-    pip3 install --quiet --upgrade pip
-    pip3 install --quiet -r requirements.txt --upgrade
-    pip3 install --quiet -r requirements.txt
+    # Install numpy first to have py_find_1st install clean
+    pip3 install --upgrade pip numpy
+    pip3 install --upgrade -r requirements.txt
 
-    read -p "Do you want to install dependencies for dev [Y/N]? "
+    read -p "Do you want to install dependencies for dev [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-        pip3 install --quiet -r requirements-dev.txt --upgrade
-        pip3 install --quiet -r requirements-dev.txt
+        pip3 install --upgrade -r requirements-dev.txt
     else
         echo "Dev dependencies ignored."
     fi
@@ -44,7 +48,12 @@ function updateenv () {
 }
 
 # Install tab lib
-function install_talib () {
+function install_talib() {
+    if [ -f /usr/local/lib/libta_lib.a ]; then
+        echo "ta-lib already installed, skipping"
+        return
+    fi
+
     cd build_helpers
     tar zxvf ta-lib-0.4.0-src.tar.gz
     cd ta-lib
@@ -57,11 +66,11 @@ function install_talib () {
 }
 
 # Install bot MacOS
-function install_macos () {
+function install_macos() {
     if [ ! -x "$(command -v brew)" ]
     then
         echo "-------------------------"
-        echo "Install Brew"
+        echo "Installing Brew"
         echo "-------------------------"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
@@ -71,7 +80,7 @@ function install_macos () {
 }
 
 # Install bot Debian_ubuntu
-function install_debian () {
+function install_debian() {
     sudo add-apt-repository ppa:jonathonf/python-3.6
     sudo apt-get update
     sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
@@ -79,15 +88,15 @@ function install_debian () {
 }
 
 # Upgrade the bot
-function update () {
+function update() {
     git pull
     updateenv
 }
 
 # Reset Develop or Master branch
-function reset () {
+function reset() {
     echo "----------------------------"
-    echo "Reset branch and virtual env"
+    echo "Reseting branch and virtual env"
     echo "----------------------------"
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* master") ]
     then
@@ -129,11 +138,11 @@ function test_and_fix_python_on_mac() {
     fi
 }
 
-function config_generator () {
+function config_generator() {
 
     echo "Starting to generate config.json"
     echo
-    echo "General configuration"
+    echo "Generating General configuration"
     echo "-------------------------"
     default_max_trades=3
     read -p "Max open trades: (Default: $default_max_trades) " max_trades
@@ -152,13 +161,13 @@ function config_generator () {
     fiat_currency=${fiat_currency:-$default_fiat_currency}
 
     echo
-    echo "Exchange config generator"
+    echo "Generating exchange config "
     echo "------------------------"
     read -p "Exchange API key: " api_key
     read -p "Exchange API Secret: " api_secret
 
     echo
-    echo "Telegram config generator"
+    echo "Generating Telegram config"
     echo "-------------------------"
     read -p "Telegram Token: " token
     read -p "Telegram Chat_id: " chat_id
@@ -175,14 +184,14 @@ function config_generator () {
 
 }
 
-function config () {
+function config() {
 
     echo "-------------------------"
-    echo "Config file generator"
+    echo "Generating config file"
     echo "-------------------------"
     if [ -f config.json ]
     then
-    read -p "A config file already exist, do you want to override it [Y/N]? "
+    read -p "A config file already exist, do you want to override it [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         config_generator
@@ -201,9 +210,9 @@ function config () {
     echo
 }
 
-function install () {
+function install() {
     echo "-------------------------"
-    echo "Install mandatory dependencies"
+    echo "Installing mandatory dependencies"
     echo "-------------------------"
 
     if [ "$(uname -s)" == "Darwin" ]
@@ -224,21 +233,21 @@ function install () {
     reset
     config
     echo "-------------------------"
-    echo "Run the bot"
+    echo "Run the bot !"
     echo "-------------------------"
     echo "You can now use the bot by executing 'source .env/bin/activate; python freqtrade/main.py'."
 }
 
-function plot () {
+function plot() {
 echo "
 -----------------------------------------
-Install dependencies for Plotting scripts
+Installing dependencies for Plotting scripts
 -----------------------------------------
 "
 pip install plotly --upgrade
 }
 
-function help () {
+function help() {
     echo "usage:"
     echo "	-i,--install    Install freqtrade from scratch"
     echo "	-u,--update     Command git pull to update."

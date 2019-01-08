@@ -59,7 +59,7 @@ class Edge():
 
         # checking max_open_trades. it should be -1 as with Edge
         # the number of trades is determined by position size
-        if self.config['max_open_trades'] != -1:
+        if self.config['max_open_trades'] != float('inf'):
             logger.critical('max_open_trades should be -1 in config !')
 
         if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:

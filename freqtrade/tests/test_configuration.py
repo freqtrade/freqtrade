@@ -73,7 +73,6 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
     args = Arguments([], '').get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
-    print(validated_conf)
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
@@ -125,6 +124,43 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
 
+    # Test conf provided db_url prod
+    conf = default_conf.copy()
+    conf["dry_run"] = False
+    conf["db_url"] = "sqlite:///path/to/db.sqlite"
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    arglist = [
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    assert validated_conf.get('db_url') == "sqlite:///path/to/db.sqlite"
+
+    # Test conf provided db_url dry_run
+    conf = default_conf.copy()
+    conf["dry_run"] = True
+    conf["db_url"] = "sqlite:///path/to/db.sqlite"
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    arglist = [
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    assert validated_conf.get('db_url') == "sqlite:///path/to/db.sqlite"
+
+    # Test args provided db_url prod
     conf = default_conf.copy()
     conf["dry_run"] = False
     del conf["db_url"]
@@ -142,7 +178,7 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     validated_conf = configuration.load_config()
     assert validated_conf.get('db_url') == DEFAULT_DB_PROD_URL
 
-    # Test dry=run with ProdURL
+    # Test args provided db_url dry_run
     conf = default_conf.copy()
     conf["dry_run"] = True
     conf["db_url"] = DEFAULT_DB_PROD_URL
