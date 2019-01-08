@@ -75,7 +75,8 @@ class IStrategy(ABC):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'limit',
-        'stoploss_on_exchange': False
+        'stoploss_on_exchange': False,
+        'stoploss_on_exchange_interval': 60,
     }
 
     # Optional time in force
