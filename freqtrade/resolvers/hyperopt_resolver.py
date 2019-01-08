@@ -32,6 +32,13 @@ class HyperOptResolver(IResolver):
         hyperopt_name = config.get('hyperopt') or DEFAULT_HYPEROPT
         self.hyperopt = self._load_hyperopt(hyperopt_name, extra_dir=config.get('hyperopt_path'))
 
+        if not hasattr(self.hyperopt, 'populate_buy_trend'):
+            logger.warning("Custom Hyperopt does not provide populate_buy_trend. "
+                           "Using populate_buy_trend from DefaultStrategy.")
+        if not hasattr(self.hyperopt, 'populate_sell_trend'):
+            logger.warning("Custom Hyperopt does not provide populate_sell_trend. "
+                           "Using populate_sell_trend from DefaultStrategy.")
+
     def _load_hyperopt(
             self, hyperopt_name: str, extra_dir: Optional[str] = None) -> IHyperOpt:
         """
