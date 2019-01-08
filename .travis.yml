@@ -30,6 +30,9 @@ jobs:
       - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
       - coveralls
       name: pytest
+      python:
+        - 3.6
+        - 3.7
     - script:
       - cp config.json.example config.json
       - python freqtrade/main.py --datadir freqtrade/tests/testdata backtesting
