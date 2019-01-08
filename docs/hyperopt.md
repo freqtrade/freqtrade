@@ -28,7 +28,7 @@ Depending on the space you want to optimize, only some of the below are required
 * fill `roi_space` - for ROI optimization
 * fill `generate_roi_table` - for ROI optimization (if you need more than 3 entries)
 * fill `stoploss_space` - stoploss optimization
-* Optional but reccomended
+* Optional but recommended
   * copy `populate_buy_trend` from your strategy - otherwise default-strategy will be used
   * copy `populate_sell_trend` from your strategy - otherwise default-strategy will be used
 
