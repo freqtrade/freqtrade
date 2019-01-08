@@ -58,4 +58,3 @@ cache:
   pip: True
   directories:
     - ta-lib
-    - /usr/local/lib/
