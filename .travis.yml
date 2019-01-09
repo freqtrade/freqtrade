@@ -55,4 +55,4 @@ notifications:
 cache:
   pip: True
   directories:
-    - build_helpers/ta-lib
+    - /usr/local/lib
