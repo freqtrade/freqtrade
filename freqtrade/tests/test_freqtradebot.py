@@ -1014,6 +1014,72 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert trade.is_open is False
 
 
+def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
+                                              markets, limit_buy_order, limit_sell_order) -> None:
+    # When trailing stoploss is set
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+    default_conf['trailing_stop'] = True
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.stoploss = -0.05
+    patch_get_signal(freqtrade)
+
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    stoploss_order_hanging = MagicMock(return_value={
+        'id': 100,
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'info' : {
+            'stopPrice': 1.113399999
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+
+    # stoploss initially at 5%
+    assert freqtrade.handle_trade(trade) is False
+
+    # price jumped 2x
+    trade.max_rate = trade.open_rate * 2
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    assert trade.stop_loss == (trade.open_rate * 2) * 0.95
+
+    stoploss_order_hit = MagicMock(return_value={
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2
+    })
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert log_has('STOP_LOSS_LIMIT is hit for {}.'.format(trade), caplog.record_tuples)
+    assert trade.stoploss_order_id is None
+    assert trade.is_open is False
+
+
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
