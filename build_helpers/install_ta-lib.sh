@@ -7,7 +7,5 @@ if [ ! -f "/usr/local/lib/libta_lib.a" ]; then
   && which sudo && sudo make install || make install \
   && cd ..
 else
-  echo "TA-lib already installed, skipping download and build."
-  cd ta-lib && sudo make install && cd ..
-
+  echo "TA-lib already installed, skipping installation"
 fi
