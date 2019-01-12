@@ -221,7 +221,7 @@ class Backtesting(object):
                 elif sell.sell_type == (SellType.ROI):
                     # get next entry in min_roi > to trade duration
                     # Interface.py skips on trade_duration <= duration
-                    roi_entry = max(list(filter(lambda x: trade_dur > x,
+                    roi_entry = max(list(filter(lambda x: trade_dur >= x,
                                                 self.strategy.minimal_roi.keys())))
                     roi = self.strategy.minimal_roi[roi_entry]
 
