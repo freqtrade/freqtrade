@@ -1062,7 +1062,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         'type': 'stop_loss_limit',
         'price': 3,
         'average': 2,
-        'info' : {
+        'info': {
             'stopPrice': 0.000011134
         }
     })
