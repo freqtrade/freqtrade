@@ -24,7 +24,7 @@ The answer comes to two factors:
 Means over X trades what is the percentage of winning trades to total number of trades (note that we don't consider how much you gained but only If you won or not).
 
 
-`W = (Number of winning trades) / (Number of losing trades)`
+`W = (Number of winning trades) / (Total number of trades)`
 
 ### Risk Reward Ratio
 Risk Reward Ratio is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose:
