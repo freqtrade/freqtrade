@@ -1082,13 +1082,18 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
     assert freqtrade.handle_trade(trade) is False
     assert trade.stop_loss == 0.00002344 * 0.95
 
-    mocker.patch('freqtrade.exchange.Exchange.cancel_order', MagicMock(return_value={
-        "orderId": 100,
-        "status": "CANCELED",
-    }))
+    cancel_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_order_mock)
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert freqtrade.exchange.cancel_order.call_count == 1
+
+    cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
+    stoploss_order_mock.assert_called_once_with(amount=85.25149190110828,
+                                                pair='ETH/BTC',
+                                                rate=0.00002344 * 0.95 * 0.99,
+                                                stop_price=0.00002344 * 0.95)
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:

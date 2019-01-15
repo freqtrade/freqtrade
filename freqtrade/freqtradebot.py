@@ -657,9 +657,11 @@ class FreqtradeBot(object):
                 # the stoploss on exchange checked previously is not hit but
                 # it is too late and too risky to cancel the previous stoploss
                 if trade.stop_loss > self.exchange.get_ticker(trade.pair)['bid']:
-                    logger.info('stoploss on exchange update: too risky to update stoploss as '
-                                'current best bid price (%s) is higher than stoploss value (%s)',
-                                self.exchange.get_ticker(trade.pair)['bid'], trade.stop_loss)
+                    logger.warning(
+                        'stoploss on exchange update: too risky to update stoploss as '
+                        'current best bid price (%s) is higher than stoploss value (%s).',
+                        self.exchange.get_ticker(trade.pair)['bid'], trade.stop_loss
+                    )
                     return result
 
                 if trade.stop_loss > order['info']['stopPrice']:
