@@ -1033,9 +1033,21 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         get_markets=markets,
         stoploss_limit=stoploss_limit
     )
+
+    # enabling TSL
     default_conf['trailing_stop'] = True
+
+    # disabling ROI
+    default_conf['minimal_roi']['0'] = 999999999
+
     freqtrade = FreqtradeBot(default_conf)
+
+    # setting stoploss
     freqtrade.strategy.stoploss = -0.05
+
+    # setting stoploss_on_exchange_interval
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
@@ -1051,7 +1063,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         'price': 3,
         'average': 2,
         'info' : {
-            'stopPrice': 1.113399999
+            'stopPrice': 0.000011134
         }
     })
 
@@ -1061,23 +1073,22 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
     assert freqtrade.handle_trade(trade) is False
 
     # price jumped 2x
-    trade.max_rate = trade.open_rate * 2
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00002344,
+        'ask': 0.00002346,
+        'last': 0.00002344
+    }))
+
     assert freqtrade.handle_trade(trade) is False
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert trade.stop_loss == 0.00002344 * 0.95
 
-    assert trade.stop_loss == (trade.open_rate * 2) * 0.95
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', MagicMock(return_value={
+        "orderId": 100,
+        "status": "CANCELED",
+    }))
 
-    stoploss_order_hit = MagicMock(return_value={
-        'status': 'open',
-        'type': 'stop_loss_limit',
-        'price': 3,
-        'average': 2
-    })
-    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert log_has('STOP_LOSS_LIMIT is hit for {}.'.format(trade), caplog.record_tuples)
-    assert trade.stoploss_order_id is None
-    assert trade.is_open is False
+    assert freqtrade.exchange.cancel_order.call_count == 1
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:

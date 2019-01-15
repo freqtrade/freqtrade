@@ -662,18 +662,16 @@ class FreqtradeBot(object):
                                 self.exchange.get_ticker(trade.pair)['bid'], trade.stop_loss)
                     return result
 
-                print(trade.stop_loss)
-                print(order['info']['stopPrice'])
                 if trade.stop_loss > order['info']['stopPrice']:
                     # we check also if the update is neccesary
                     update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
-                    if (datetime.now() - trade.stoploss_last_update).total_seconds > update_beat:
+                    if (datetime.now() - trade.stoploss_last_update).total_seconds() > update_beat:
                         # cancelling the current stoploss on exchange first
                         if self.exchange.cancel_order(order['id'], trade.pair):
                             # creating the new one
                             stoploss_order_id = self.exchange.stoploss_limit(
                                 pair=trade.pair, amount=trade.amount,
-                                stop_price=stop_price, rate=limit_price
+                                stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
                                 )['id']
                             trade.stoploss_order_id = str(stoploss_order_id)
 
