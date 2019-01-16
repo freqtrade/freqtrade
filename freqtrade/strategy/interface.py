@@ -234,12 +234,9 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
-        if self.order_types.get('stoploss_on_exchange'):
-            stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
-        else:
-            stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                                  current_time=date, current_profit=current_profit,
-                                                  force_stoploss=force_stoploss)
+        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                              current_time=date, current_profit=current_profit,
+                                              force_stoploss=force_stoploss)
 
         if stoplossflag.sell_flag:
             return stoplossflag
@@ -281,8 +278,11 @@ class IStrategy(ABC):
         trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
                                else self.stoploss, initial=True)
 
-        # evaluate if the stoploss was hit
-        if self.stoploss is not None and trade.stop_loss >= current_rate:
+        # evaluate if the stoploss was hit if stoploss is not on exchange
+        if self.stoploss is not None and \
+           trade.stop_loss >= current_rate and \
+           not self.order_types.get('stoploss_on_exchange'):
+
             selltype = SellType.STOP_LOSS
             # If Trailing stop (and max-rate did move above open rate)
             if trailing_stop and trade.open_rate != trade.max_rate:

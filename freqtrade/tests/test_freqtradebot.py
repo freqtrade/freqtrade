@@ -1042,6 +1042,9 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
 
     freqtrade = FreqtradeBot(default_conf)
 
+    # enabling stoploss on exchange
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
     # setting stoploss
     freqtrade.strategy.stoploss = -0.05
 
