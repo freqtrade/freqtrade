@@ -274,7 +274,6 @@ class IStrategy(ABC):
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
-
         trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
                                else self.stoploss, initial=True)
 
@@ -282,7 +281,6 @@ class IStrategy(ABC):
         if self.stoploss is not None and \
            trade.stop_loss >= current_rate and \
            not self.order_types.get('stoploss_on_exchange'):
-
             selltype = SellType.STOP_LOSS
             # If Trailing stop (and max-rate did move above open rate)
             if trailing_stop and trade.open_rate != trade.max_rate:
@@ -302,7 +300,8 @@ class IStrategy(ABC):
 
             # check if we have a special stop loss for positive condition
             # and if profit is positive
-            stop_loss_value = self.stoploss
+            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
+
             sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
 
             if 'trailing_stop_positive' in self.config and current_profit > sl_offset:

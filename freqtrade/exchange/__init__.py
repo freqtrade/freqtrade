@@ -405,7 +405,7 @@ class Exchange(object):
             order = self._api.create_order(pair, 'stop_loss_limit', 'sell',
                                            amount, rate, {'stopPrice': stop_price})
             logger.info('stoploss limit order added for %s. '
-                        'stop price: %s. limit: %s' % (pair,stop_price,rate))
+                        'stop price: %s. limit: %s' % (pair, stop_price, rate))
             return order
 
         except ccxt.InsufficientFunds as e:
