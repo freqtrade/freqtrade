@@ -13,6 +13,9 @@ Those stoploss modes can be `on exchange` or `off exchange`. If the stoploss is 
 
 In case of stoploss on exchange there is another parameter called `stoploss_on_exchange_interval`. That means the interval in seconds the bot will check the stoploss and update it if necessary. As an example in case of trailing stoploss if the order is on the exchange and the market is going up then the bot automatically cancels the previous stoploss order and put a new one with a stop value higher than previous one. It is clear that the bot cannot do it every 5 seconds otherwise it gets banned. So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 
+!!! Note
+    Stoploss on exchange is only supported for Binance as of now.
+
 
 ## Static Stop Loss
 
