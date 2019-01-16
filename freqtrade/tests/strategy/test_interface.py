@@ -118,6 +118,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
 
 def test_min_roi_reached(default_conf, fee) -> None:
 
+    # Use list to confirm sequence does not matter
     min_roi_list = [{20: 0.05, 55: 0.01, 0: 0.1},
                     {0: 0.1, 20: 0.05, 55: 0.01}]
     for roi in min_roi_list:
@@ -141,6 +142,47 @@ def test_min_roi_reached(default_conf, fee) -> None:
 
         assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
         assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+
+
+def test_min_roi_reached2(default_conf, fee) -> None:
+
+    # test with ROI raising after last interval
+    min_roi_list = [{20: 0.07,
+                     30: 0.05,
+                     55: 0.30,
+                     0: 0.1
+                     },
+                    {0: 0.1,
+                     20: 0.07,
+                     30: 0.05,
+                     55: 0.30
+                     },
+                    ]
+    for roi in min_roi_list:
+        strategy = DefaultStrategy(default_conf)
+        strategy.minimal_roi = roi
+        trade = Trade(
+            pair='ETH/BTC',
+            stake_amount=0.001,
+            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            exchange='bittrex',
+            open_rate=1,
+        )
+
+        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
+        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+
+        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+        assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+
+        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
+        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+
+        # Should not trigger with 20% profit since after 55 minutes only 30% is active.
+        assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
+        assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
 
 
 def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
