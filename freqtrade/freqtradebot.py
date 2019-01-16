@@ -657,6 +657,14 @@ class FreqtradeBot(object):
         return result
 
     def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
+        """
+        Check to see if stoploss on exchange should be updated
+        in case of trailing stoploss on exchange
+        :param Trade: Corresponding Trade
+        :param order: Current on exchange stoploss order
+        :return: None
+        """
+
         if trade.stop_loss > order['info']['stopPrice']:
             # we check if the update is neccesary
             update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
