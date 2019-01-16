@@ -601,7 +601,7 @@ class FreqtradeBot(object):
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
-                    break
+
         else:
             logger.debug('checking sell')
             if self.check_sell(trade, sell_rate, buy, sell):
