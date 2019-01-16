@@ -652,7 +652,7 @@ class FreqtradeBot(object):
                 # if trailing stoploss is enabled we check if stoploss value has changed
                 # in which case we cancel stoploss order and put another one with new
                 # value immediately
-                handle_trailing_stoploss_on_exchange(trade, order)
+                self.handle_trailing_stoploss_on_exchange(trade, order)
 
         return result
 

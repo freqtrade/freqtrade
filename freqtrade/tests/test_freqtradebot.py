@@ -1080,7 +1080,6 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         'last': 0.00002344
     }))
 
-
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
