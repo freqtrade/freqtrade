@@ -665,7 +665,7 @@ class FreqtradeBot(object):
         :return: None
         """
 
-        if trade.stop_loss > order['info']['stopPrice']:
+        if trade.stop_loss > float(order['info']['stopPrice']):
             # we check if the update is neccesary
             update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
