@@ -652,20 +652,23 @@ class FreqtradeBot(object):
                 # if trailing stoploss is enabled we check if stoploss value has changed
                 # in which case we cancel stoploss order and put another one with new
                 # value immediately
-                if trade.stop_loss > order['info']['stopPrice']:
-                    # we check also if the update is neccesary
-                    update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
-                    if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
-                        # cancelling the current stoploss on exchange first
-                        if self.exchange.cancel_order(order['id'], trade.pair):
-                            # creating the new one
-                            stoploss_order_id = self.exchange.stoploss_limit(
-                                pair=trade.pair, amount=trade.amount,
-                                stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
-                                )['id']
-                            trade.stoploss_order_id = str(stoploss_order_id)
+                handle_trailing_stoploss_on_exchange(trade, order)
 
         return result
+
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
+        if trade.stop_loss > order['info']['stopPrice']:
+            # we check if the update is neccesary
+            update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
+            if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
+                # cancelling the current stoploss on exchange first
+                if self.exchange.cancel_order(order['id'], trade.pair):
+                    # creating the new one
+                    stoploss_order_id = self.exchange.stoploss_limit(
+                        pair=trade.pair, amount=trade.amount,
+                        stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
+                    )['id']
+                    trade.stoploss_order_id = str(stoploss_order_id)
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:
