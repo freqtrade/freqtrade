@@ -652,18 +652,6 @@ class FreqtradeBot(object):
                 # if trailing stoploss is enabled we check if stoploss value has changed
                 # in which case we cancel stoploss order and put another one with new
                 # value immediately
-
-                # This is a guard: there is a situation where market is going doing down fast
-                # the stoploss on exchange checked previously is not hit but
-                # it is too late and too risky to cancel the previous stoploss
-                if trade.stop_loss > self.exchange.get_ticker(trade.pair)['bid']:
-                    logger.warning(
-                        'stoploss on exchange update: too risky to update stoploss as '
-                        'current best bid price (%s) is higher than stoploss value (%s).',
-                        self.exchange.get_ticker(trade.pair)['bid'], trade.stop_loss
-                    )
-                    return result
-
                 if trade.stop_loss > order['info']['stopPrice']:
                     # we check also if the update is neccesary
                     update_beat = self.strategy.order_types['stoploss_on_exchange_interval']

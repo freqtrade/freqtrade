@@ -1071,6 +1071,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
 
     # stoploss initially at 5%
     assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     # price jumped 2x
     mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
