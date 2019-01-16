@@ -165,7 +165,7 @@ The below is the default which is used if this is not configured in either Strat
     The following message will be shown if your exchange does not support market orders: `"Exchange <yourexchange>  does not support market orders."`
 
 !!! Note
-    stoploss on exchange interval is not mandatory. Do not change it's value if you are unsure of what you are doing.
+    stoploss on exchange interval is not mandatory. Do not change it's value if you are unsure of what you are doing. For more information about how stoploss works please read [the stoploss documentation](stoploss.md).
 
 ### Understand order_time_in_force
 `order_time_in_force` defines the policy by which the order is executed on the exchange. Three commonly used time in force are:<br/>
