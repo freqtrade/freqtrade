@@ -39,9 +39,23 @@ class IHyperOpt(ABC):
 
     @staticmethod
     @abstractmethod
+    def sell_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Create a sell strategy generator
+        """
+
+    @staticmethod
+    @abstractmethod
     def indicator_space() -> List[Dimension]:
         """
         Create an indicator space
+        """
+
+    @staticmethod
+    @abstractmethod
+    def sell_indicator_space() -> List[Dimension]:
+        """
+        Create a sell indicator space
         """
 
     @staticmethod

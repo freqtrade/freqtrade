@@ -13,7 +13,7 @@ if [ "${TRAVIS_EVENT_TYPE}" = "cron" ]; then
 else
     echo "event ${TRAVIS_EVENT_TYPE}: building with cache"
     # Pull last build to avoid rebuilding the whole image
-    docker pull ${REPO}:${TAG}
+    docker pull ${IMAGE_NAME}:${TAG}
     docker build --cache-from ${IMAGE_NAME}:${TAG} -t freqtrade:${TAG} .
 fi
 
