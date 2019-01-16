@@ -112,7 +112,8 @@ CONF_SCHEMA = {
                 'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'stoploss_on_exchange': {'type': 'boolean'}
+                'stoploss_on_exchange': {'type': 'boolean'},
+                'stoploss_on_exchange_interval': {'type': 'boolean'}
             },
             'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
         },
@@ -137,7 +138,7 @@ CONF_SCHEMA = {
         'pairlist': {
             'type': 'object',
             'properties': {
-                'method': {'type': 'string',  'enum': AVAILABLE_PAIRLISTS},
+                'method': {'type': 'string', 'enum': AVAILABLE_PAIRLISTS},
                 'config': {'type': 'object'}
             },
             'required': ['method']
