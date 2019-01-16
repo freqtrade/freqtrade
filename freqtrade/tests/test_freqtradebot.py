@@ -1045,8 +1045,8 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
     # setting stoploss
     freqtrade.strategy.stoploss = -0.05
 
-    # setting stoploss_on_exchange_interval
-    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+    # setting stoploss_on_exchange_interval to 60 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
 
     patch_get_signal(freqtrade)
 
@@ -1080,13 +1080,23 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
         'last': 0.00002344
     }))
 
-    assert freqtrade.handle_trade(trade) is False
-    assert trade.stop_loss == 0.00002344 * 0.95
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
     mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_order_mock)
+
+    # stoploss should not be updated as the interval is 60 seconds
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    cancel_order_mock.assert_not_called()
+    stoploss_order_mock.assert_not_called()
+
+    assert freqtrade.handle_trade(trade) is False
+    assert trade.stop_loss == 0.00002344 * 0.95
+
+    # setting stoploss_on_exchange_interval to 0 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 

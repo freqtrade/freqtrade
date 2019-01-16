@@ -655,7 +655,7 @@ class FreqtradeBot(object):
                 if trade.stop_loss > order['info']['stopPrice']:
                     # we check also if the update is neccesary
                     update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
-                    if (datetime.now() - trade.stoploss_last_update).total_seconds() > update_beat:
+                    if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
                         # cancelling the current stoploss on exchange first
                         if self.exchange.cancel_order(order['id'], trade.pair):
                             # creating the new one
