@@ -6,3 +6,5 @@ pytest==4.1.1
 pytest-mock==1.10.0
 pytest-asyncio==0.10.0
 pytest-cov==2.6.1
+coveralls==1.5.1
+mypy==0.650
