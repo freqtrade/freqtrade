@@ -67,7 +67,9 @@ class EdgeCli(object):
                     round(result[1].avg_trade_duration)
                 ])
 
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def start(self) -> None:
         self.edge.calculate()

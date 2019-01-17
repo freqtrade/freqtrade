@@ -134,7 +134,9 @@ class Backtesting(object):
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
@@ -168,7 +170,9 @@ class Backtesting(object):
                 len(results[results.profit_abs > 0]),
                 len(results[results.profit_abs < 0])
             ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def _store_backtest_result(self, recordfilename: str, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
