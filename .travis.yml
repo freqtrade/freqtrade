@@ -19,7 +19,7 @@ addons:
 install:
 - cd build_helpers && ./install_ta-lib.sh; cd ..
 - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-- pip install --upgrade flake8 coveralls pytest-random-order pytest-asyncio mypy
+- pip install --upgrade pytest-random-order
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
