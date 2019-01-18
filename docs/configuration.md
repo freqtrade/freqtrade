@@ -144,7 +144,7 @@ end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
-`order_types` contains a dict mapping order-types to market-types as well as stoploss on or off exchange type and stoploss on exchange update interval in seconds. This allows to buy using limit orders, sell using limit-orders, and create stoploss orders using market. It also allows to set the stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled. In case stoploss on exchange is set then the bot will use `stoploss_on_exchange_interval` to check it periodically and update it if necessary (e.x. in case of trailing stoploss).
+`order_types` contains a dict mapping order-types to market-types as well as stoploss on or off exchange type and stoploss on exchange update interval in seconds. This allows to buy using limit orders, sell using limit-orders, and create stoploss orders using market. It also allows to set the stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled. In case stoploss on exchange and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check it periodically and update it if necessary (e.x. in case of trailing stoploss).
 This can be set in the configuration or in the strategy. Configuration overwrites strategy configurations.
 
 If this is configured, all 4 values (`"buy"`, `"sell"`, `"stoploss"` and `"stoploss_on_exchange"`) need to be present, otherwise the bot warn about it and will fail to start.
