@@ -667,7 +667,7 @@ class FreqtradeBot(object):
 
         if trade.stop_loss > float(order['info']['stopPrice']):
             # we check if the update is neccesary
-            update_beat = self.strategy.order_types['stoploss_on_exchange_interval']
+            update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
                 # cancelling the current stoploss on exchange first
                 logger.info('Trailing stoploss: cancelling current stoploss on exchange '
