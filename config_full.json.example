@@ -37,7 +37,8 @@
         "buy": "limit",
         "sell": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": "false"
+        "stoploss_on_exchange": "false",
+        "stoploss_on_exchange_interval": 60
     },
     "order_time_in_force": {
         "buy": "gtc",

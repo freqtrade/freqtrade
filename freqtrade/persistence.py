@@ -83,7 +83,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'stoploss_order_id'):
+    if not has_column(cols, 'stoploss_last_update'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -93,6 +93,7 @@ def check_migrate(engine) -> None:
         stop_loss = get_column_def(cols, 'stop_loss', '0.0')
         initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
         stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
+        stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
         max_rate = get_column_def(cols, 'max_rate', '0.0')
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
@@ -111,7 +112,8 @@ def check_migrate(engine) -> None:
                 (id, exchange, pair, is_open, fee_open, fee_close, open_rate,
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
-                stop_loss, initial_stop_loss, stoploss_order_id, max_rate, sell_reason, strategy,
+                stop_loss, initial_stop_loss, stoploss_order_id, stoploss_last_update,
+                max_rate, sell_reason, strategy,
                 ticker_interval
                 )
             select id, lower(exchange),
@@ -127,9 +129,9 @@ def check_migrate(engine) -> None:
                 {close_rate_requested} close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
                 {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
-                {stoploss_order_id} stoploss_order_id, {max_rate} max_rate,
-                {sell_reason} sell_reason, {strategy} strategy,
-                {ticker_interval} ticker_interval
+                {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
+                {max_rate} max_rate, {sell_reason} sell_reason,
+                {strategy} strategy, {ticker_interval} ticker_interval
                 from {table_back_name}
              """)
 
@@ -185,6 +187,8 @@ class Trade(_DECL_BASE):
     initial_stop_loss = Column(Float, nullable=True, default=0.0)
     # stoploss order id which is on exchange
     stoploss_order_id = Column(String, nullable=True, index=True)
+    # last update time of the stoploss order on exchange
+    stoploss_last_update = Column(DateTime, nullable=True)
     # absolute value of the highest reached price
     max_rate = Column(Float, nullable=True, default=0.0)
     sell_reason = Column(String, nullable=True)
@@ -218,11 +222,13 @@ class Trade(_DECL_BASE):
             logger.debug("assigning new stop loss")
             self.stop_loss = new_loss
             self.initial_stop_loss = new_loss
+            self.stoploss_last_update = datetime.utcnow()
 
         # evaluate if the stop loss needs to be updated
         else:
             if new_loss > self.stop_loss:  # stop losses only walk up, never down!
                 self.stop_loss = new_loss
+                self.stoploss_last_update = datetime.utcnow()
                 logger.debug("adjusted stop loss")
             else:
                 logger.debug("keeping current stop loss")

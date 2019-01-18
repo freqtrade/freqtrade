@@ -613,7 +613,7 @@ class FreqtradeBot(object):
     def handle_stoploss_on_exchange(self, trade: Trade) -> bool:
         """
         Check if trade is fulfilled in which case the stoploss
-        on exchange should be added immediately if stoploss on exchnage
+        on exchange should be added immediately if stoploss on exchange
         is enabled.
         """
 
@@ -630,13 +630,14 @@ class FreqtradeBot(object):
             stop_price = trade.open_rate * (1 + stoploss)
 
             # limit price should be less than stop price.
-            # 0.98 is arbitrary here.
-            limit_price = stop_price * 0.98
+            # 0.99 is arbitrary here.
+            limit_price = stop_price * 0.99
 
             stoploss_order_id = self.exchange.stoploss_limit(
                 pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
             )['id']
             trade.stoploss_order_id = str(stoploss_order_id)
+            trade.stoploss_last_update = datetime.now()
 
         # Or the trade open and there is already a stoploss on exchange.
         # so we check if it is hit ...
@@ -647,9 +648,37 @@ class FreqtradeBot(object):
                 trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
                 trade.update(order)
                 result = True
-            else:
-                result = False
+            elif self.config.get('trailing_stop', False):
+                # if trailing stoploss is enabled we check if stoploss value has changed
+                # in which case we cancel stoploss order and put another one with new
+                # value immediately
+                self.handle_trailing_stoploss_on_exchange(trade, order)
+
         return result
+
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
+        """
+        Check to see if stoploss on exchange should be updated
+        in case of trailing stoploss on exchange
+        :param Trade: Corresponding Trade
+        :param order: Current on exchange stoploss order
+        :return: None
+        """
+
+        if trade.stop_loss > float(order['info']['stopPrice']):
+            # we check if the update is neccesary
+            update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
+            if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
+                # cancelling the current stoploss on exchange first
+                logger.info('Trailing stoploss: cancelling current stoploss on exchange '
+                            'in order to add another one ...')
+                if self.exchange.cancel_order(order['id'], trade.pair):
+                    # creating the new one
+                    stoploss_order_id = self.exchange.stoploss_limit(
+                        pair=trade.pair, amount=trade.amount,
+                        stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
+                    )['id']
+                    trade.stoploss_order_id = str(stoploss_order_id)
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:

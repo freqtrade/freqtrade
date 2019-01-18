@@ -80,7 +80,8 @@ class IStrategy(ABC):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'limit',
-        'stoploss_on_exchange': False
+        'stoploss_on_exchange': False,
+        'stoploss_on_exchange_interval': 60,
     }
 
     # Optional time in force
@@ -233,12 +234,9 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
-        if self.order_types.get('stoploss_on_exchange'):
-            stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
-        else:
-            stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                                  current_time=date, current_profit=current_profit,
-                                                  force_stoploss=force_stoploss)
+        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                              current_time=date, current_profit=current_profit,
+                                              force_stoploss=force_stoploss)
 
         if stoplossflag.sell_flag:
             return stoplossflag
@@ -276,12 +274,13 @@ class IStrategy(ABC):
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
-
         trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
                                else self.stoploss, initial=True)
 
-        # evaluate if the stoploss was hit
-        if self.stoploss is not None and trade.stop_loss >= current_rate:
+        # evaluate if the stoploss was hit if stoploss is not on exchange
+        if ((self.stoploss is not None) and
+           (trade.stop_loss >= current_rate) and
+           (not self.order_types.get('stoploss_on_exchange'))):
             selltype = SellType.STOP_LOSS
             # If Trailing stop (and max-rate did move above open rate)
             if trailing_stop and trade.open_rate != trade.max_rate:
@@ -301,7 +300,8 @@ class IStrategy(ABC):
 
             # check if we have a special stop loss for positive condition
             # and if profit is positive
-            stop_loss_value = self.stoploss
+            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
+
             sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
 
             if 'trailing_stop_positive' in self.config and current_profit > sl_offset:

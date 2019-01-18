@@ -402,8 +402,11 @@ class Exchange(object):
             return self._dry_run_open_orders[order_id]
 
         try:
-            return self._api.create_order(pair, 'stop_loss_limit', 'sell',
-                                          amount, rate, {'stopPrice': stop_price})
+            order = self._api.create_order(pair, 'stop_loss_limit', 'sell',
+                                           amount, rate, {'stopPrice': stop_price})
+            logger.info('stoploss limit order added for %s. '
+                        'stop price: %s. limit: %s' % (pair, stop_price, rate))
+            return order
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
