@@ -5,7 +5,7 @@ arrow==0.13.0
 cachetools==3.0.0
 requests==2.21.0
 urllib3==1.24.1
-wrapt==1.11.0
+wrapt==1.11.1
 pandas==0.23.4
 scikit-learn==0.20.2
 joblib==0.13.1
