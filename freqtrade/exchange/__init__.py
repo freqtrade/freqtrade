@@ -556,12 +556,17 @@ class Exchange(object):
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # handle caching
-        for pair, ticks in tickers:
+        for res in tickers:
+            if isinstance(res, Exception):
+                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                continue
+            pair = res[0]
+            ticks = res[1]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
                 self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
-            # keeping parsed dataframe in cache
-            self._klines[pair] = parse_ticker_dataframe(ticks, tick_interval, fill_missing=True)
+                # keeping parsed dataframe in cache
+                self._klines[pair] = parse_ticker_dataframe(ticks, tick_interval, fill_missing=True)
         return tickers
 
     @retrier_async
@@ -578,9 +583,12 @@ class Exchange(object):
             # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
             # when GDAX returns a list of tickers DESC (newest first, oldest last)
             # Only sort if necessary to save computing time
-            if data and data[0][0] > data[-1][0]:
-                data = sorted(data, key=lambda x: x[0])
-
+            try:
+                if data and data[0][0] > data[-1][0]:
+                    data = sorted(data, key=lambda x: x[0])
+            except IndexError:
+                logger.exception("Error loading %s. Result was %s.", pair, data)
+                return pair, None
             logger.debug("done fetching %s ...", pair)
             return pair, data
 
