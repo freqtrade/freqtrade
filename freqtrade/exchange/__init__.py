@@ -588,7 +588,7 @@ class Exchange(object):
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, None
+                return pair, []
             logger.debug("done fetching %s ...", pair)
             return pair, data
 
