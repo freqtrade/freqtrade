@@ -171,10 +171,10 @@ class FreqtradeBot(object):
                                                if trade.pair not in self.active_pair_whitelist])
 
             # Create pair-whitelist tuple with (pair, ticker_interval)
-            pair_whitelist = [(pair, self.config['ticker_interval'])
-                              for pair in self.active_pair_whitelist]
+            pair_whitelist_tuple = [(pair, self.config['ticker_interval'])
+                                    for pair in self.active_pair_whitelist]
             # Refreshing candles
-            self.dataprovider.refresh(pair_whitelist)
+            self.dataprovider.refresh(pair_whitelist_tuple)
 
             # First process current opened trades
             for trade in trades:
