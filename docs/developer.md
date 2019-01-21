@@ -4,8 +4,20 @@ This page is intended for developers of FreqTrade, people who want to contribute
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel in [slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) where you can ask questions.
 
+## Documentation
 
-## Module 
+Documentation is available at [https://freqtrade.io](https://www.freqtrade.io/) and needs to be provided with every new feature PR.
+
+Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/extensions/admonition/).
+
+## Developer setup
+
+To configure a development environment, use best use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
+Alternatively (if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -r requirements-dev.txt`.
+
+This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+
+## Modules
 
 ### Dynamic Pairlist
 
