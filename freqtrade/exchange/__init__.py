@@ -541,7 +541,7 @@ class Exchange(object):
         input_coroutines = []
 
         # Gather corotines to run
-        for pair, ticker_interval in pair_list:
+        for pair, ticker_interval in set(pair_list):
             # Calculating ticker interval in second
             interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
