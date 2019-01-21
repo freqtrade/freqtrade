@@ -232,7 +232,8 @@ Currently this is `pair`, which can be accessed using `metadata['pair']` - and w
 
 The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
 
-**NOTE**: The DataProvier is currently not available during backtesting / hyperopt.
+!!!Note:
+    The DataProvier is currently not available during backtesting / hyperopt, but this is planned for the future.
 
 All methods return `None` in case of failure (do not raise an exception).
 
@@ -259,6 +260,10 @@ if self.dp:
                                              ticker_interval='1h')
 ```
 
+!!! Warning: Warning about backtesting
+    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` provides the full time-range in one go,
+    so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
+
 #### Available Pairs
 
 ``` python
@@ -267,11 +272,35 @@ if self.dp:
         print(f"available {pair}, {ticker}")
 ```
 
+#### Get data for non-tradeable pairs
+
+Data for additional pairs (reference pairs) can be beneficial for some strategies.
+Ohlcv data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via `DataProvider` just as other pairs (see above).
+These parts will **not** be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.
+
+The pairs need to be specified as tuples in the format `("pair", "interval")`, with pair as the first and time interval as the second argument.
+
+Sample:
+
+``` python
+def additional_pairs(self):
+    return [("ETH/USDT", "5m"),
+            ("BTC/TUSD", "15m"),
+            ]
+```
+
+!!! Warning:
+    As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
+    All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
+    It is however better to use resampling to longer time-intervals when possible
+    to avoid hammering the exchange with too many requests and risk beeing blocked.
+
 ### Additional data - Wallets
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
 
-**NOTE**: Wallets is not available during backtesting / hyperopt.
+!!!NOTE:
+    Wallets is not available during backtesting / hyperopt.
 
 Please always check if `Wallets` is available to avoid failures during backtesting.
 
