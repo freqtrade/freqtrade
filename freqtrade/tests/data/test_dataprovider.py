@@ -60,4 +60,4 @@ def test_available_pairs(mocker, default_conf, ticker_history):
     dp = DataProvider(default_conf, exchange)
 
     assert len(dp.available_pairs) == 2
-    assert dp.available_pairs == ['XRP/BTC', 'UNITTEST/BTC']
+    assert dp.available_pairs == [('XRP/BTC', tick_interval), ('UNITTEST/BTC', tick_interval)]

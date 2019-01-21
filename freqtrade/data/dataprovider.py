@@ -30,7 +30,7 @@ class DataProvider(object):
         self._exchange.refresh_latest_ohlcv(pairlist)
 
     @property
-    def available_pairs(self) -> List[str]:
+    def available_pairs(self) -> List[Tuple[str, str]]:
         """
         Return a list of tuples containing pair, tick_interval for which data is currently cached.
         Should be whitelist + open trades.
