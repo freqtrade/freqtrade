@@ -47,6 +47,12 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
 file as reference.**
 
+!!! Note: Strategies and Backtesting
+    To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
+    that during backtesting the full time-interval is passed to the `populate_*()` methods at once.
+    It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
+    avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
+
 ### Customize Indicators
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
