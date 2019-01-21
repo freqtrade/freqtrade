@@ -95,9 +95,6 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    # Dict to determine if analysis is necessary
-    _last_candle_seen_per_pair: Dict[str, datetime] = {}
-
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
@@ -106,7 +103,8 @@ class IStrategy(ABC):
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self._last_candle_seen_per_pair = {}
+        # Dict to determine if analysis is necessary
+        self._last_candle_seen_per_pair: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
