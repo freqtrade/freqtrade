@@ -912,8 +912,9 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
 
     assert type(res) is list
     assert len(res) == 2
-    assert type(res[0]) is tuple
-    assert type(res[1]) is TypeError
+    # Test that each is in list at least once as order is not guaranteed
+    assert type(res[0]) is tuple or type(res[1]) is tuple
+    assert type(res[0]) is TypeError or type(res[1]) is TypeError
     assert log_has("Error loading ETH/BTC. Result was [[]].", caplog.record_tuples)
     assert log_has("Async code raised an exception: TypeError", caplog.record_tuples)
 
