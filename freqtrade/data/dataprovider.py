@@ -23,11 +23,16 @@ class DataProvider(object):
         self._config = config
         self._exchange = exchange
 
-    def refresh(self, pairlist: List[Tuple[str, str]]) -> None:
+    def refresh(self,
+                pairlist: List[Tuple[str, str]],
+                helping_pairs: List[Tuple[str, str]] = None) -> None:
         """
         Refresh data, called with each cycle
         """
-        self._exchange.refresh_latest_ohlcv(pairlist)
+        if helping_pairs:
+            self._exchange.refresh_latest_ohlcv(pairlist + helping_pairs)
+        else:
+            self._exchange.refresh_latest_ohlcv(pairlist)
 
     @property
     def available_pairs(self) -> List[Tuple[str, str]]:

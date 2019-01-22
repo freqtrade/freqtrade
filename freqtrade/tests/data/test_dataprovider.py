@@ -61,3 +61,33 @@ def test_available_pairs(mocker, default_conf, ticker_history):
 
     assert len(dp.available_pairs) == 2
     assert dp.available_pairs == [('XRP/BTC', tick_interval), ('UNITTEST/BTC', tick_interval)]
+
+
+def test_refresh(mocker, default_conf, ticker_history):
+    refresh_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', refresh_mock)
+
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    tick_interval = default_conf['ticker_interval']
+    pairs = [('XRP/BTC', tick_interval),
+             ('UNITTEST/BTC', tick_interval),
+             ]
+
+    pairs_non_trad = [('ETH/USDT', tick_interval),
+                      ('BTC/TUSD', "1h"),
+                      ]
+
+    dp = DataProvider(default_conf, exchange)
+    dp.refresh(pairs)
+
+    assert refresh_mock.call_count == 1
+    assert len(refresh_mock.call_args[0]) == 1
+    assert len(refresh_mock.call_args[0][0]) == len(pairs)
+    assert refresh_mock.call_args[0][0] == pairs
+
+    refresh_mock.reset_mock()
+    dp.refresh(pairs, pairs_non_trad)
+    assert refresh_mock.call_count == 1
+    assert len(refresh_mock.call_args[0]) == 1
+    assert len(refresh_mock.call_args[0][0]) == len(pairs) + len(pairs_non_trad)
+    assert refresh_mock.call_args[0][0] == pairs + pairs_non_trad
