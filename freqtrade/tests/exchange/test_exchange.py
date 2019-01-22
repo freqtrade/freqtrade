@@ -805,7 +805,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
-    exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
+    exchange.refresh_latest_ohlcv(pairs)
 
     assert log_has(f'Refreshing ohlcv data for {len(pairs)} pairs', caplog.record_tuples)
     assert exchange._klines
@@ -892,42 +892,7 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
-@pytest.mark.asyncio
-async def test_async_get_candles_history(default_conf, mocker):
-    tick = [
-        [
-            1511686200000,  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ]
-    ]
-
-    async def mock_get_candle_hist(pair, tick_interval, since_ms=None):
-        return (pair, tick)
-
-    exchange = get_patched_exchange(mocker, default_conf)
-    # Monkey-patch async function
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
-
-    exchange._async_get_candle_history = Mock(wraps=mock_get_candle_hist)
-
-    pairs = ['ETH/BTC', 'XRP/BTC']
-    res = await exchange.async_get_candles_history(pairs, "5m")
-    assert type(res) is list
-    assert len(res) == 2
-    assert type(res[0]) is tuple
-    assert res[0][0] == pairs[0]
-    assert res[0][1] == tick
-    assert res[1][0] == pairs[1]
-    assert res[1][1] == tick
-    assert exchange._async_get_candle_history.call_count == 2
-
-
-@pytest.mark.asyncio
-async def test_async_get_candles_history_inv_result(default_conf, mocker, caplog):
+def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
 
     async def mock_get_candle_hist(pair, *args, **kwargs):
         if pair == 'ETH/BTC':
@@ -940,8 +905,11 @@ async def test_async_get_candles_history_inv_result(default_conf, mocker, caplog
     # Monkey-patch async function with empty result
     exchange._api_async.fetch_ohlcv = MagicMock(side_effect=mock_get_candle_hist)
 
-    pairs = ['ETH/BTC', 'XRP/BTC']
-    res = await exchange.async_get_candles_history(pairs, "5m")
+    pairs = [("ETH/BTC", "5m"), ("XRP/BTC", "5m")]
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._klines
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+
     assert type(res) is list
     assert len(res) == 2
     assert type(res[0]) is tuple
