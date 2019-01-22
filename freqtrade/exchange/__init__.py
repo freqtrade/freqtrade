@@ -595,7 +595,7 @@ class Exchange(object):
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
                 return pair, tick_interval, []
-            logger.debug("done fetching %s ...", pair)
+            logger.debug("done fetching %s, %s ...", pair, tick_interval)
             return pair, tick_interval, data
 
         except ccxt.NotSupported as e:
