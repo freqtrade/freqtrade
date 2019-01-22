@@ -545,8 +545,9 @@ class Exchange(object):
             # Calculating ticker interval in second
             interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
-            if not (self._pairs_last_refresh_time.get((pair, ticker_interval), 0) + interval_in_sec >=
-                    arrow.utcnow().timestamp and (pair, ticker_interval) in self._klines):
+            if not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+                    + interval_in_sec) >= arrow.utcnow().timestamp
+                    and (pair, ticker_interval) in self._klines):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
                 logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)
