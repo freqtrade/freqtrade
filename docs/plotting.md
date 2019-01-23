@@ -15,7 +15,7 @@ At least version 2.3.0 is required.
 Usage for the price plotter:
 
 ```
-script/plot_dataframe.py [-h] [-p pair] [--live]
+script/plot_dataframe.py [-h] [-p pairs] [--live]
 ```
 
 Example
@@ -23,10 +23,15 @@ Example
 python scripts/plot_dataframe.py -p BTC/ETH
 ```
 
-The `-p` pair argument, can be used to specify what
-pair you would like to plot.
+The `-p` pairs argument, can be used to specify
+pairs you would like to plot.
 
 **Advanced use**
+
+To plot multiple pairs, separate them with a comma:
+```
+python scripts/plot_dataframe.py -p BTC/ETH,XRP/ETH
+```
 
 To plot the current live price use the `--live` flag:
 ```
