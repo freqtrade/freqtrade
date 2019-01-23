@@ -14,6 +14,10 @@ Few pointers for contributions:
 If you are unsure, discuss the feature on our [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE)
 or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
 
+## Getting started
+
+Best start by reading the [documentation](https://www.freqtrade.io/) to get a feel for what is possible with the bot, or head straight to the [Developer-documentation](https://www.freqtrade.io/en/latest/developer/) (WIP) which should help you getting started.
+
 ## Before sending the PR:
 
 ### 1. Run unit tests
@@ -41,12 +45,6 @@ pytest freqtrade/tests/test_<file_name>.py::test_<method_name>
 
 ### 2. Test if your code is PEP8 compliant
 
-#### Install packages
-
-```bash
-pip3.6 install flake8 coveralls
-```
-
 #### Run Flake8
 
 ```bash
@@ -60,21 +58,11 @@ Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using
 
 ### 3. Test if all type-hints are correct
 
-#### Install packages 
-
-``` bash
-pip3.6 install mypy
-```
-
 #### Run mypy
 
 ``` bash
 mypy freqtrade
 ```
-
-## Getting started
-
-Best start by reading the [documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/index.md) to get a feel for what is possible with the bot, or head straight to the [Developer-documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/developer.md) (WIP) which should help you getting started.
 
 ## (Core)-Committer Guide
 

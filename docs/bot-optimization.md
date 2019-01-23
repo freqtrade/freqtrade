@@ -222,11 +222,39 @@ This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
 
 Please note that the same buy/sell signals may work with one interval, but not the other.
+This setting is accessible within the strategy by using `self.ticker_interval`.
 
 ### Metadata dict
 
 The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
+
+The Metadata-dict should not be modified and does not persist information across multiple calls.
+Instead, have a look at the section [Storing information](#Storing-information)
+
+### Storing information
+
+Storing information can be accomplished by crating a new dictionary within the strategy class.
+
+The name of the variable can be choosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+
+```python
+class Awesomestrategy(IStrategy):
+    # Create custom dictionary
+    cust_info = {}
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # Check if the entry already exists
+        if "crosstime" in self.cust_info[metadata["pair"]:
+            self.cust_info[metadata["pair"]["crosstime"] += 1
+        else:
+            self.cust_info[metadata["pair"]["crosstime"] = 1
+```
+
+!!! Warning:
+  The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note:
+  If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ### Additional data (DataProvider)
 
@@ -316,7 +344,6 @@ if self.wallets:
 - `get_free(asset)` - currently available balance to trade
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
-
 
 ### Where is the default strategy?
 

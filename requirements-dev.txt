@@ -2,6 +2,8 @@
 -r requirements.txt
 
 flake8==3.6.0
+flake8-type-annotations==0.1.0
+flake8-tidy-imports==1.1.0
 pytest==4.1.1
 pytest-mock==1.10.0
 pytest-asyncio==0.10.0
