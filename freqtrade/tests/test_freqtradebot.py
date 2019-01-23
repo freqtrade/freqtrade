@@ -1014,6 +1014,211 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert trade.is_open is False
 
 
+def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
+                                              markets, limit_buy_order, limit_sell_order) -> None:
+    # When trailing stoploss is set
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+
+    # enabling TSL
+    default_conf['trailing_stop'] = True
+
+    # disabling ROI
+    default_conf['minimal_roi']['0'] = 999999999
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    # enabling stoploss on exchange
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    # setting stoploss
+    freqtrade.strategy.stoploss = -0.05
+
+    # setting stoploss_on_exchange_interval to 60 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
+
+    patch_get_signal(freqtrade)
+
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    stoploss_order_hanging = MagicMock(return_value={
+        'id': 100,
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'info': {
+            'stopPrice': '0.000011134'
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+
+    # stoploss initially at 5%
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # price jumped 2x
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00002344,
+        'ask': 0.00002346,
+        'last': 0.00002344
+    }))
+
+    cancel_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_order_mock)
+
+    # stoploss should not be updated as the interval is 60 seconds
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    cancel_order_mock.assert_not_called()
+    stoploss_order_mock.assert_not_called()
+
+    assert freqtrade.handle_trade(trade) is False
+    assert trade.stop_loss == 0.00002344 * 0.95
+
+    # setting stoploss_on_exchange_interval to 0 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
+    stoploss_order_mock.assert_called_once_with(amount=85.25149190110828,
+                                                pair='ETH/BTC',
+                                                rate=0.00002344 * 0.95 * 0.99,
+                                                stop_price=0.00002344 * 0.95)
+
+
+def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
+                                              markets, limit_buy_order, limit_sell_order) -> None:
+
+    # When trailing stoploss is set
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+
+    # enabling TSL
+    edge_conf['trailing_stop'] = True
+    edge_conf['trailing_stop_positive'] = 0.01
+    edge_conf['trailing_stop_positive_offset'] = 0.011
+
+    # disabling ROI
+    edge_conf['minimal_roi']['0'] = 999999999
+
+    freqtrade = FreqtradeBot(edge_conf)
+
+    # enabling stoploss on exchange
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    # setting stoploss
+    freqtrade.strategy.stoploss = -0.02
+
+    # setting stoploss_on_exchange_interval to 0 second
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+
+    patch_get_signal(freqtrade)
+
+    freqtrade.active_pair_whitelist = freqtrade.edge.adjust(freqtrade.active_pair_whitelist)
+
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    stoploss_order_hanging = MagicMock(return_value={
+        'id': 100,
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'info': {
+            'stopPrice': '0.000009384'
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+
+    # stoploss initially at 20% as edge dictated it.
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert trade.stop_loss == 0.000009384
+
+    cancel_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_order_mock)
+
+    # price goes down 5%
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00001172 * 0.95,
+        'ask': 0.00001173 * 0.95,
+        'last': 0.00001172 * 0.95
+    }))
+
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # stoploss should remain the same
+    assert trade.stop_loss == 0.000009384
+
+    # stoploss on exchange should not be canceled
+    cancel_order_mock.assert_not_called()
+
+    # price jumped 2x
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00002344,
+        'ask': 0.00002346,
+        'last': 0.00002344
+    }))
+
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # stoploss should be set to 1% as trailing is on
+    assert trade.stop_loss == 0.00002344 * 0.99
+    cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
+    stoploss_order_mock.assert_called_once_with(amount=2131074.168797954,
+                                                pair='NEO/BTC',
+                                                rate=0.00002344 * 0.99 * 0.99,
+                                                stop_price=0.00002344 * 0.99)
+
+
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 

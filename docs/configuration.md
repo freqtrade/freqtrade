@@ -13,7 +13,7 @@ The table below will list all configuration parameters.
 |----------|---------|-----------|-------------|
 | `max_open_trades` | 3 | Yes | Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
-| `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to 'unlimited' to allow the bot to use all avaliable balance.
+| `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all avaliable balance.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
 | `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below.
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode.
@@ -144,10 +144,10 @@ end up paying more then would probably have been necessary.
 
 ### Understand order_types
 
-`order_types` contains a dict mapping order-types to market-types as well as stoploss on or off exchange type. This allows to buy using limit orders, sell using limit-orders, and create stoploss orders using market. It also allows to set the stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled.
+`order_types` contains a dict mapping order-types to market-types as well as stoploss on or off exchange type and stoploss on exchange update interval in seconds. This allows to buy using limit orders, sell using limit-orders, and create stoploss orders using market. It also allows to set the stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled. In case stoploss on exchange and `trailing_stop` are both set, then the bot will use `stoploss_on_exchange_interval` to check it periodically and update it if necessary (e.x. in case of trailing stoploss).
 This can be set in the configuration or in the strategy. Configuration overwrites strategy configurations.
 
-If this is configured, all 4 values (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`) need to be present, otherwise the bot warn about it and will fail to start.
+If this is configured, all 4 values (`"buy"`, `"sell"`, `"stoploss"` and `"stoploss_on_exchange"`) need to be present, otherwise the bot warn about it and will fail to start.
 The below is the default which is used if this is not configured in either Strategy or configuration.
 
 ```python
@@ -155,13 +155,17 @@ The below is the default which is used if this is not configured in either Strat
     "buy": "limit",
     "sell": "limit",
     "stoploss": "market",
-    "stoploss_on_exchange": False
+    "stoploss_on_exchange": False,
+    "stoploss_on_exchange_interval": 60
 },
 ```
 
 !!! Note
     Not all exchanges support "market" orders.
     The following message will be shown if your exchange does not support market orders: `"Exchange <yourexchange>  does not support market orders."`
+
+!!! Note
+    stoploss on exchange interval is not mandatory. Do not change it's value if you are unsure of what you are doing. For more information about how stoploss works please read [the stoploss documentation](stoploss.md).
 
 ### Understand order_time_in_force
 `order_time_in_force` defines the policy by which the order is executed on the exchange. Three commonly used time in force are:<br/>

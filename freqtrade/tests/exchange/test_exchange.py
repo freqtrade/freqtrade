@@ -923,6 +923,30 @@ async def test_async_get_candles_history(default_conf, mocker):
     assert exchange._async_get_candle_history.call_count == 2
 
 
+@pytest.mark.asyncio
+async def test_async_get_candles_history_inv_result(default_conf, mocker, caplog):
+
+    async def mock_get_candle_hist(pair, *args, **kwargs):
+        if pair == 'ETH/BTC':
+            return [[]]
+        else:
+            raise TypeError()
+
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    # Monkey-patch async function with empty result
+    exchange._api_async.fetch_ohlcv = MagicMock(side_effect=mock_get_candle_hist)
+
+    pairs = ['ETH/BTC', 'XRP/BTC']
+    res = await exchange.async_get_candles_history(pairs, "5m")
+    assert type(res) is list
+    assert len(res) == 2
+    assert type(res[0]) is tuple
+    assert type(res[1]) is TypeError
+    assert log_has("Error loading ETH/BTC. Result was [[]].", caplog.record_tuples)
+    assert log_has("Async code raised an exception: TypeError", caplog.record_tuples)
+
+
 def test_get_order_book(default_conf, mocker, order_book_l2):
     default_conf['exchange']['name'] = 'binance'
     api_mock = MagicMock()

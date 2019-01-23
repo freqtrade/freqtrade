@@ -13,7 +13,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-import freqtrade.optimize as optimize
+from freqtrade import optimize
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
@@ -134,7 +134,9 @@ class Backtesting(object):
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
@@ -168,7 +170,9 @@ class Backtesting(object):
                 len(results[results.profit_abs > 0]),
                 len(results[results.profit_abs < 0])
             ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def _store_backtest_result(self, recordfilename: str, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
@@ -221,7 +225,7 @@ class Backtesting(object):
                 elif sell.sell_type == (SellType.ROI):
                     # get next entry in min_roi > to trade duration
                     # Interface.py skips on trade_duration <= duration
-                    roi_entry = max(list(filter(lambda x: trade_dur > x,
+                    roi_entry = max(list(filter(lambda x: trade_dur >= x,
                                                 self.strategy.minimal_roi.keys())))
                     roi = self.strategy.minimal_roi[roi_entry]
 
