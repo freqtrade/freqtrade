@@ -17,12 +17,12 @@ The table below will list all configuration parameters.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | No | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes
 | `fiat_display_currency` | USD | Yes | Fiat currency used to show your profits. More information below.
 | `dry_run` | true | Yes | Define if the bot must be in Dry-run or production mode.
-| `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. Can be set either in Configuration or in the strategy.
-| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file.
-| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. More details in the [stoploss documentation](stoploss.md).
-| `trailing_stop` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md).
-| `trailing_stop_positive` | 0 | No | Changes stop-loss once profit has been reached. More details in the [stoploss documentation](stoploss.md).
-| `trailing_stop_positive_offset` | 0 | No | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md).
+| `process_only_new_candles` | false | No | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-strategy).
+| `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. [Strategy Override](#parameters-in-strategy).
+| `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
+| `trailing_stop` | false | No | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
+| `trailing_stop_positive` | 0 | No | Changes stop-loss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
+| `trailing_stop_positive_offset` | 0 | No | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. More information below.
@@ -33,8 +33,8 @@ The table below will list all configuration parameters.
 | `ask_strategy.use_order_book` | false | No | Allows selling of open traded pair using the rates in Order Book Asks.
 | `ask_strategy.order_book_min` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `ask_strategy.order_book_max` | 0 | No | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
-| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types).
-| `order_time_in_force` | None | No | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force).
+| `order_types` | None | No | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-strategy).
+| `order_time_in_force` | None | No | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-strategy).
 | `exchange.name` | bittrex | Yes | Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.key` | key | No | API key to use for the exchange. Only required when you are in production mode.
 | `exchange.secret` | secret | No | API secret to use for the exchange. Only required when you are in production mode.
@@ -44,9 +44,9 @@ The table below will list all configuration parameters.
 | `exchange.ccxt_config` | None | No | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | No | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `edge` | false | No | Please refer to [edge configuration document](edge.md) for detailed explanation.
-| `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`.
-| `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision.
-| `experimental.ignore_roi_if_buy_signal` | false | No | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`
+| `experimental.use_sell_signal` | false | No | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-strategy).
+| `experimental.sell_profit_only` | false | No | waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-strategy).
+| `experimental.ignore_roi_if_buy_signal` | false | No | Does not sell if the buy-signal is still active. Takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-strategy).
 | `pairlist.method` | StaticPairList | No | Use Static whitelist. [More information below](#dynamic-pairlists).
 | `pairlist.config` | None | No | Additional configuration for dynamic pairlists. [More information below](#dynamic-pairlists).
 | `telegram.enabled` | true | Yes | Enable or not the usage of Telegram.
@@ -64,18 +64,37 @@ The table below will list all configuration parameters.
 | `strategy_path` | null | No | Adds an additional strategy lookup path (must be a folder).
 | `internals.process_throttle_secs` | 5 | Yes | Set the process throttle. Value in second.
 
-The definition of each config parameters is in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.py#L205).
+### Parameters in strategy
+
+The following parameters can be set in either configuration or strategy.
+Values in the configuration are always overwriting values set in the strategy.
+
+* `minimal_roi`
+* `ticker_interval`
+* `stoploss`
+* `trailing_stop`
+* `trailing_stop_positive`
+* `trailing_stop_positive_offset`
+* `process_only_new_candles`
+* `order_types`
+* `order_time_in_force`
+* `use_sell_signal` (experimental)
+* `sell_profit_only` (experimental)
+* `ignore_roi_if_buy_signal` (experimental)
 
 ### Understand stake_amount
 
 `stake_amount` is an amount of crypto-currency your bot will use for each trade.
 The minimal value is 0.0005. If there is not enough crypto-currency in
 the account an exception is generated.
-To allow the bot to trade all the avaliable `stake_currency` in your account set<br/>
+To allow the bot to trade all the avaliable `stake_currency` in your account set
+
 ```json
 "stake_amount" : "unlimited",
 ```
-In this case a trade amount is calclulated as: <br/>
+
+In this case a trade amount is calclulated as: 
+
 ```python
 currency_balanse / (max_open_trades - current_open_trades)
 ```
