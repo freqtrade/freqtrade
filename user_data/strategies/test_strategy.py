@@ -53,6 +53,11 @@ class TestStrategy(IStrategy):
     # run "populate_indicators" only for new candle
     ta_on_candle = False
 
+    # Experimental settings (configuration will overide these if set)
+    use_sell_signal = False
+    use_profit_only = False
+    ignore_roi_if_buy_signal = False
+
     # Optional order type mapping
     order_types = {
         'buy': 'limit',
