@@ -56,8 +56,8 @@ class StrategyResolver(IResolver):
                       ("order_types",                   None, False),
                       ("order_time_in_force",           None, False),
                       ("use_sell_signal",               False, True),
-                      ("sell_profit_only",              None, True),
-                      ("ignore_roi_if_buy_signal",      None, True),
+                      ("sell_profit_only",              False, True),
+                      ("ignore_roi_if_buy_signal",      False, True),
                       ]
         for attribute, default, experimental in attributes:
             if experimental:
