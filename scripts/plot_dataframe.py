@@ -389,7 +389,7 @@ def plot_parse_args(args: List[str]) -> Namespace:
         help='Set indicators from your strategy you want in the third row of the graph. Separate '
              'them with a coma. E.g: fastd,fastk (default: %(default)s)',
         type=str,
-        default='macd',
+        default='macd,macdsignal',
         dest='indicators2',
     )
     arguments.parser.add_argument(
