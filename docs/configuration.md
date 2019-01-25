@@ -89,7 +89,7 @@ Values in the configuration are always overwriting values set in the strategy.
 `stake_amount` is an amount of crypto-currency your bot will use for each trade.
 The minimal value is 0.0005. If there is not enough crypto-currency in
 the account an exception is generated.
-To allow the bot to trade all the avaliable `stake_currency` in your account set
+To allow the bot to trade all the available `stake_currency` in your account set
 
 ```json
 "stake_amount" : "unlimited",
