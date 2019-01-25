@@ -405,7 +405,7 @@ def plot_parse_args(args: List[str]) -> Namespace:
 
 def analyse_and_plot_pairs(args: Namespace):
     """
-    From arguments provided in cli: 
+    From arguments provided in cli:
     -Initialise backtest env
     -Get tickers data
     -Generate Dafaframes populated with indicators and signals
