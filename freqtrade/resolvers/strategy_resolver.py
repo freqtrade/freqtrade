@@ -45,19 +45,19 @@ class StrategyResolver(IResolver):
 
         # Set attributes
         # Check if we need to override configuration
-        # (Attribute name,                           default, experimental)
-        attributes = [("minimal_roi",                   None, False),
-                      ("ticker_interval",               None, False),
-                      ("stoploss",                      None, False),
-                      ("trailing_stop",                 None, False),
-                      ("trailing_stop_positive",        None, False),
-                      ("trailing_stop_positive_offset", 0.0, False),
-                      ("process_only_new_candles",      None, False),
-                      ("order_types",                   None, False),
-                      ("order_time_in_force",           None, False),
-                      ("use_sell_signal",               False, True),
-                      ("sell_profit_only",              False, True),
-                      ("ignore_roi_if_buy_signal",      False, True),
+        # (Attribute name,                              default, experimental)
+        attributes = [("minimal_roi",                   None,    False),
+                      ("ticker_interval",               None,    False),
+                      ("stoploss",                      None,    False),
+                      ("trailing_stop",                 None,    False),
+                      ("trailing_stop_positive",        None,    False),
+                      ("trailing_stop_positive_offset", 0.0,     False),
+                      ("process_only_new_candles",      None,    False),
+                      ("order_types",                   None,    False),
+                      ("order_time_in_force",           None,    False),
+                      ("use_sell_signal",               False,   True),
+                      ("sell_profit_only",              False,   True),
+                      ("ignore_roi_if_buy_signal",      False,   True),
                       ]
         for attribute, default, experimental in attributes:
             if experimental:
