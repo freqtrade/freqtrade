@@ -21,13 +21,12 @@ Row 1: sma, ema3, ema5, ema10, ema50
 Row 3: macd, rsi, fisher_rsi, mfi, slowd, slowk, fastd, fastk
 
 Example of usage:
-> python3 scripts/plot_dataframe.py --pairs BTC/EUR,XRP/BTC -d user_data/data/ --indicators1 sma,ema3
---indicators2 fastk,fastd
+> python3 scripts/plot_dataframe.py --pairs BTC/EUR,XRP/BTC -d user_data/data/
+  --indicators1 sma,ema3 --indicators2 fastk,fastd
 """
 import json
 import logging
 import sys
-import os
 from argparse import Namespace
 from pathlib import Path
 from typing import Dict, List, Any
