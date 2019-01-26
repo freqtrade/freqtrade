@@ -108,8 +108,8 @@ def plot_profit(args: Namespace) -> None:
         exit(1)
 
     # Take pairs from the cli otherwise switch to the pair in the config file
-    if args.pair:
-        filter_pairs = args.pair
+    if args.pairs:
+        filter_pairs = args.pairs
         filter_pairs = filter_pairs.split(',')
     else:
         filter_pairs = config['exchange']['pair_whitelist']

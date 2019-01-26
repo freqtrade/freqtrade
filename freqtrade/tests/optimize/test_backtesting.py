@@ -346,6 +346,7 @@ def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
 
 def test_generate_text_table(default_conf, mocker):
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
 
     results = pd.DataFrame(
@@ -361,13 +362,13 @@ def test_generate_text_table(default_conf, mocker):
 
     result_str = (
         '| pair    |   buy count |   avg profit % |   cum profit % |   '
-        'total profit BTC | avg duration   |   profit |   loss |\n'
+        'tot profit BTC |   tot profit % | avg duration   |   profit |   loss |\n'
         '|:--------|------------:|---------------:|---------------:|'
-        '-------------------:|:---------------|---------:|-------:|\n'
-        '| ETH/BTC |           2 |          15.00 |          30.00 |         '
-        '0.60000000 | 0:20:00        |        2 |      0 |\n'
-        '| TOTAL   |           2 |          15.00 |          30.00 |         '
-        '0.60000000 | 0:20:00        |        2 |      0 |'
+        '-----------------:|---------------:|:---------------|---------:|-------:|\n'
+        '| ETH/BTC |           2 |          15.00 |          30.00 |       '
+        '0.60000000 |          15.00 | 0:20:00        |        2 |      0 |\n'
+        '| TOTAL   |           2 |          15.00 |          30.00 |       '
+        '0.60000000 |          15.00 | 0:20:00        |        2 |      0 |'
     )
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
@@ -403,6 +404,7 @@ def test_generate_text_table_strategyn(default_conf, mocker):
     Test Backtesting.generate_text_table_sell_reason() method
     """
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
     results = {}
     results['ETH/BTC'] = pd.DataFrame(
@@ -430,13 +432,13 @@ def test_generate_text_table_strategyn(default_conf, mocker):
 
     result_str = (
         '| Strategy   |   buy count |   avg profit % |   cum profit % '
-        '|   total profit BTC | avg duration   |   profit |   loss |\n'
+        '|   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |\n'
         '|:-----------|------------:|---------------:|---------------:'
-        '|-------------------:|:---------------|---------:|-------:|\n'
+        '|-----------------:|---------------:|:---------------|---------:|-------:|\n'
         '| ETH/BTC    |           3 |          20.00 |          60.00 '
-        '|         1.10000000 | 0:17:00        |        3 |      0 |\n'
+        '|       1.10000000 |          30.00 | 0:17:00        |        3 |      0 |\n'
         '| LTC/BTC    |           3 |          30.00 |          90.00 '
-        '|         1.30000000 | 0:20:00        |        3 |      0 |'
+        '|       1.30000000 |          45.00 | 0:20:00        |        3 |      0 |'
     )
     print(backtesting._generate_text_table_strategy(all_results=results))
     assert backtesting._generate_text_table_strategy(all_results=results) == result_str

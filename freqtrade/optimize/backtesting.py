@@ -101,11 +101,13 @@ class Backtesting(object):
         :return: pretty printed table with tabulate as str
         """
         stake_currency = str(self.config.get('stake_currency'))
+        max_open_trades = self.config.get('max_open_trades')
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
-                   'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
+                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
+                   'profit', 'loss']
         for pair in data:
             result = results[results.pair == pair]
             if skip_nan and result.profit_abs.isnull().all():
@@ -117,6 +119,7 @@ class Backtesting(object):
                 result.profit_percent.mean() * 100.0,
                 result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
+                result.profit_percent.sum() * 100.0 / max_open_trades,
                 str(timedelta(
                     minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
                 len(result[result.profit_abs > 0]),
@@ -130,6 +133,7 @@ class Backtesting(object):
             results.profit_percent.mean() * 100.0,
             results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
+            results.profit_percent.sum() * 100.0 / max_open_trades,
             str(timedelta(
                 minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
             len(results[results.profit_abs > 0]),
@@ -154,11 +158,13 @@ class Backtesting(object):
         Generate summary table per strategy
         """
         stake_currency = str(self.config.get('stake_currency'))
+        max_open_trades = self.config.get('max_open_trades')
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
-                   'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
+                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
+                   'profit', 'loss']
         for strategy, results in all_results.items():
             tabular_data.append([
                 strategy,
@@ -166,6 +172,7 @@ class Backtesting(object):
                 results.profit_percent.mean() * 100.0,
                 results.profit_percent.sum() * 100.0,
                 results.profit_abs.sum(),
+                results.profit_percent.sum() * 100.0 / max_open_trades,
                 str(timedelta(
                     minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
                 len(results[results.profit_abs > 0]),
@@ -432,18 +439,18 @@ class Backtesting(object):
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")
-            print(' BACKTESTING REPORT '.center(119, '='))
+            print(' BACKTESTING REPORT '.center(133, '='))
             print(self._generate_text_table(data, results))
 
-            print(' SELL REASON STATS '.center(119, '='))
+            print(' SELL REASON STATS '.center(133, '='))
             print(self._generate_text_table_sell_reason(data, results))
 
-            print(' LEFT OPEN TRADES REPORT '.center(119, '='))
+            print(' LEFT OPEN TRADES REPORT '.center(133, '='))
             print(self._generate_text_table(data, results.loc[results.open_at_end], True))
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            print(' Strategy Summary '.center(119, '='))
+            print(' Strategy Summary '.center(133, '='))
             print(self._generate_text_table_strategy(all_results))
             print('\nFor more details, please look at the detail tables above')
 

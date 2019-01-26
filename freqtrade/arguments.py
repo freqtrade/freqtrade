@@ -352,9 +352,9 @@ class Arguments(object):
         Parses given arguments for scripts.
         """
         self.parser.add_argument(
-            '-p', '--pair',
+            '-p', '--pairs',
             help='Show profits for only this pairs. Pairs are comma-separated.',
-            dest='pair',
+            dest='pairs',
             default=None
         )
 

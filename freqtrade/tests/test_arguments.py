@@ -47,7 +47,7 @@ def test_scripts_options() -> None:
     arguments = Arguments(['-p', 'ETH/BTC'], '')
     arguments.scripts_options()
     args = arguments.get_parsed_arg()
-    assert args.pair == 'ETH/BTC'
+    assert args.pairs == 'ETH/BTC'
 
 
 def test_parse_args_version() -> None:

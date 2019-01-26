@@ -1,4 +1,4 @@
-ccxt==1.18.144
+ccxt==1.18.152
 SQLAlchemy==1.2.16
 python-telegram-bot==11.1.0
 arrow==0.13.0
@@ -13,7 +13,7 @@ scipy==1.2.0
 jsonschema==2.6.0
 numpy==1.16.0
 TA-Lib==0.4.17
-tabulate==0.8.2
+tabulate==0.8.3
 coinmarketcap==5.0.3
 
 # Required for hyperopt
