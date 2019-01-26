@@ -175,7 +175,7 @@ class FreqtradeBot(object):
                                     for pair in self.active_pair_whitelist]
             # Refreshing candles
             self.dataprovider.refresh(pair_whitelist_tuple,
-                                      self.strategy.additional_pairs())
+                                      self.strategy.informative_pairs())
 
             # First process current opened trades
             for trade in trades:

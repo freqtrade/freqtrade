@@ -302,7 +302,7 @@ if self.dp:
 
 #### Get data for non-tradeable pairs
 
-Data for additional pairs (reference pairs) can be beneficial for some strategies.
+Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
 Ohlcv data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via `DataProvider` just as other pairs (see above).
 These parts will **not** be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.
 
@@ -311,7 +311,7 @@ The pairs need to be specified as tuples in the format `("pair", "interval")`, w
 Sample:
 
 ``` python
-def additional_pairs(self):
+def informative_pairs(self):
     return [("ETH/USDT", "5m"),
             ("BTC/TUSD", "15m"),
             ]

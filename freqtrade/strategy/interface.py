@@ -133,9 +133,9 @@ class IStrategy(ABC):
         :return: DataFrame with sell column
         """
 
-    def additional_pairs(self) -> List[Tuple[str, str]]:
+    def informative_pairs(self) -> List[Tuple[str, str]]:
         """
-        Define additional pair/interval combinations to be cached from the exchange.
+        Define additional, informative pair/interval combinations to be cached from the exchange.
         These pair/interval combinations are non-tradeable, unless they are part
         of the whitelist as well.
         For more information, please consult the documentation
