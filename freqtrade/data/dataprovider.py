@@ -63,7 +63,7 @@ class DataProvider(object):
 
     def historic_ohlcv(self, pair: str, ticker_interval: str) -> DataFrame:
         """
-        get historic ohlcv data stored for backtesting
+        get stored historic ohlcv data
         :param pair: pair to get the data for
         :param tick_interval: ticker_interval to get pair for
         """
