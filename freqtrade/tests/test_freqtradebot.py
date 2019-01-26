@@ -807,6 +807,37 @@ def test_process_trade_no_whitelist_pair(
     assert result is True
 
 
+def test_process_informative_pairs_added(default_conf, ticker, markets, mocker) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+
+    def _refresh_whitelist(list):
+        return ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
+
+    refresh_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_markets=markets,
+        buy=MagicMock(side_effect=TemporaryError),
+        refresh_latest_ohlcv=refresh_mock,
+    )
+    inf_pairs = MagicMock(return_value=[("BTC/ETH", '1m'), ("ETH/USDT", "1h")])
+    mocker.patch('time.sleep', return_value=None)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
+    freqtrade.strategy.informative_pairs = inf_pairs
+    # patch_get_signal(freqtrade)
+
+    freqtrade._process()
+    assert inf_pairs.call_count == 1
+    assert refresh_mock.call_count == 1
+    assert ("BTC/ETH", "1m") in refresh_mock.call_args[0][0]
+    assert ("ETH/USDT", "1h") in refresh_mock.call_args[0][0]
+    assert ("ETH/BTC", default_conf["ticker_interval"]) in refresh_mock.call_args[0][0]
+
+
 def test_balance_fully_ask_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 0.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
