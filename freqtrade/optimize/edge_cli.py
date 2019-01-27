@@ -9,10 +9,11 @@ from typing import Dict, Any
 from tabulate import tabulate
 from freqtrade.edge import Edge
 
-from freqtrade.configuration import Configuration
 from freqtrade.arguments import Arguments
+from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ def setup_configuration(args: Namespace) -> Dict[str, Any]:
     :param args: Cli args from Arguments()
     :return: Configuration
     """
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.EDGECLI)
     config = configuration.get_config()
 
     # Ensure we do not use Exchange credentials

@@ -18,6 +18,7 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
+from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -200,6 +201,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
     assert 'timerange' not in config
     assert 'export' not in config
+    assert 'runmode' in config
+    assert config['runmode'] == RunMode.BACKTEST
 
 
 def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
@@ -230,6 +233,8 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
+    assert config['runmode'] == RunMode.BACKTEST
+
     assert log_has(
         'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
@@ -445,7 +450,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
-    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
@@ -480,7 +485,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
     mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
-    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',

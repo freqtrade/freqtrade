@@ -47,6 +47,12 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
 file as reference.**
 
+!!! Note: Strategies and Backtesting
+    To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
+    that during backtesting the full time-interval is passed to the `populate_*()` methods at once.
+    It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
+    avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
+
 ### Customize Indicators
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
@@ -249,6 +255,95 @@ class Awesomestrategy(IStrategy):
 
 !!! Note:
   If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+### Additional data (DataProvider)
+
+The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
+
+!!!Note:
+    The DataProvier is currently not available during backtesting / hyperopt, but this is planned for the future.
+
+All methods return `None` in case of failure (do not raise an exception).
+
+Please always check if the `DataProvider` is available to avoid failures during backtesting.
+
+#### Possible options for DataProvider
+
+- `available_pairs` - Property with tuples listing cached pairs with their intervals. (pair, interval)
+- `ohlcv(pair, ticker_interval)` - Currently cached ticker data for all pairs in the whitelist, returns DataFrame or empty DataFrame
+- `historic_ohlcv(pair, ticker_interval)` - Data stored on disk
+- `runmode` - Property containing the current runmode.
+
+#### ohlcv / historic_ohlcv
+
+``` python
+if self.dp:
+    if dp.runmode == 'live':
+        if ('ETH/BTC', ticker_interval) in self.dp.available_pairs:
+            data_eth = self.dp.ohlcv(pair='ETH/BTC',
+                                     ticker_interval=ticker_interval)
+    else:
+        # Get historic ohlcv data (cached on disk).
+        history_eth = self.dp.historic_ohlcv(pair='ETH/BTC',
+                                             ticker_interval='1h')
+```
+
+!!! Warning: Warning about backtesting
+    Be carefull when using dataprovider in backtesting. `historic_ohlcv()` provides the full time-range in one go,
+    so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
+
+#### Available Pairs
+
+``` python
+if self.dp:
+    for pair, ticker in self.dp.available_pairs:
+        print(f"available {pair}, {ticker}")
+```
+
+#### Get data for non-tradeable pairs
+
+Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
+Ohlcv data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via `DataProvider` just as other pairs (see above).
+These parts will **not** be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.
+
+The pairs need to be specified as tuples in the format `("pair", "interval")`, with pair as the first and time interval as the second argument.
+
+Sample:
+
+``` python
+def informative_pairs(self):
+    return [("ETH/USDT", "5m"),
+            ("BTC/TUSD", "15m"),
+            ]
+```
+
+!!! Warning:
+    As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
+    All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
+    It is however better to use resampling to longer time-intervals when possible
+    to avoid hammering the exchange with too many requests and risk beeing blocked.
+
+### Additional data - Wallets
+
+The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
+
+!!!NOTE:
+    Wallets is not available during backtesting / hyperopt.
+
+Please always check if `Wallets` is available to avoid failures during backtesting.
+
+``` python
+if self.wallets:
+    free_eth = self.wallets.get_free('ETH')
+    used_eth = self.wallets.get_used('ETH')
+    total_eth = self.wallets.get_total('ETH')
+```
+
+#### Possible options for Wallets
+
+- `get_free(asset)` - currently available balance to trade
+- `get_used(asset)` - currently tied up balance (open orders)
+- `get_total(asset)` - total available balance - sum of the 2 above
 
 ### Where is the default strategy?
 

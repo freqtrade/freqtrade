@@ -161,9 +161,9 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
     tickers = {}
     if args.live:
         logger.info('Downloading pairs.')
-        exchange.refresh_tickers(pairs, tick_interval)
+        exchange.refresh_latest_ohlcv([(pair, tick_interval) for pair in pairs])
         for pair in pairs:
-            tickers[pair] = exchange.klines(pair)
+            tickers[pair] = exchange.klines((pair, tick_interval))
     else:
         tickers = history.load_data(
             datadir=Path(_CONF.get("datadir")),

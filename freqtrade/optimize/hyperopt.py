@@ -25,6 +25,7 @@ from freqtrade.configuration import Configuration
 from freqtrade.data.history import load_data
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.state import RunMode
 from freqtrade.resolvers import HyperOptResolver
 
 logger = logging.getLogger(__name__)
@@ -306,7 +307,7 @@ def start(args: Namespace) -> None:
 
     # Initialize configuration
     # Monkey patch the configuration with hyperopt_conf.py
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.HYPEROPT)
     logger.info('Starting freqtrade in Hyperopt mode')
     config = configuration.load_config()
 

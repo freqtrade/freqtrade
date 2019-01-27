@@ -22,6 +22,7 @@ from freqtrade.data import history
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 
 logger = logging.getLogger(__name__)
@@ -374,8 +375,9 @@ class Backtesting(object):
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
-            self.exchange.refresh_tickers(pairs, self.ticker_interval)
-            data = self.exchange._klines
+            self.exchange.refresh_latest_ohlcv([(pair, self.ticker_interval) for pair in pairs])
+            data = {key[0]: value for key, value in self.exchange._klines.items()}
+
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
@@ -459,7 +461,7 @@ def setup_configuration(args: Namespace) -> Dict[str, Any]:
     :param args: Cli args from Arguments()
     :return: Configuration
     """
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.BACKTEST)
     config = configuration.get_config()
 
     # Ensure we do not use Exchange credentials

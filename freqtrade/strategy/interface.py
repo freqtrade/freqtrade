@@ -13,7 +13,9 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.persistence import Trade
+from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 
@@ -93,12 +95,16 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    # Dict to determine if analysis is necessary
-    _last_candle_seen_per_pair: Dict[str, datetime] = {}
+    # Class level variables (intentional) containing
+    # the dataprovider (dp) (access to other candles, historic data, ...)
+    # and wallets - access to the current balance.
+    dp: DataProvider
+    wallets: Wallets
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self._last_candle_seen_per_pair = {}
+        # Dict to determine if analysis is necessary
+        self._last_candle_seen_per_pair: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -126,6 +132,19 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+
+    def informative_pairs(self) -> List[Tuple[str, str]]:
+        """
+        Define additional, informative pair/interval combinations to be cached from the exchange.
+        These pair/interval combinations are non-tradeable, unless they are part
+        of the whitelist as well.
+        For more information, please consult the documentation
+        :return: List of tuples in the format (pair, interval)
+            Sample: return [("ETH/USDT", "5m"),
+                            ("BTC/USDT", "15m"),
+                            ]
+        """
+        return []
 
     def get_strategy_name(self) -> str:
         """

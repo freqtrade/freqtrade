@@ -15,6 +15,7 @@ from requests.exceptions import RequestException
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
@@ -36,9 +37,9 @@ class FreqtradeBot(object):
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Init all variables and object the bot need to work
-        :param config: configuration dict, you can use the Configuration.get_config()
-        method to get the config dict.
+        Init all variables and objects the bot needs to work
+        :param config: configuration dict, you can use Configuration.get_config()
+        to get the config dict.
         """
 
         logger.info(
@@ -54,9 +55,15 @@ class FreqtradeBot(object):
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         self.rpc: RPCManager = RPCManager(self)
-        self.persistence = None
         self.exchange = Exchange(self.config)
         self.wallets = Wallets(self.exchange)
+        self.dataprovider = DataProvider(self.config, self.exchange)
+
+        # Attach Dataprovider to Strategy baseclass
+        IStrategy.dp = self.dataprovider
+        # Attach Wallets to Strategy baseclass
+        IStrategy.wallets = self.wallets
+
         pairlistname = self.config.get('pairlist', {}).get('method', 'StaticPairList')
         self.pairlists = PairListResolver(pairlistname, self, self.config).pairlist
 
@@ -151,9 +158,6 @@ class FreqtradeBot(object):
             self.active_pair_whitelist = self.pairlists.whitelist
 
             # Calculating Edge positiong
-            # Should be called before refresh_tickers
-            # Otherwise it will override cached klines in exchange
-            # with delta value (klines only from last refresh_pairs)
             if self.edge:
                 self.edge.calculate()
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
@@ -166,8 +170,12 @@ class FreqtradeBot(object):
             self.active_pair_whitelist.extend([trade.pair for trade in trades
                                                if trade.pair not in self.active_pair_whitelist])
 
+            # Create pair-whitelist tuple with (pair, ticker_interval)
+            pair_whitelist_tuple = [(pair, self.config['ticker_interval'])
+                                    for pair in self.active_pair_whitelist]
             # Refreshing candles
-            self.exchange.refresh_tickers(self.active_pair_whitelist, self.strategy.ticker_interval)
+            self.dataprovider.refresh(pair_whitelist_tuple,
+                                      self.strategy.informative_pairs())
 
             # First process current opened trades
             for trade in trades:
@@ -317,7 +325,9 @@ class FreqtradeBot(object):
 
         # running get_signal on historical data fetched
         for _pair in whitelist:
-            (buy, sell) = self.strategy.get_signal(_pair, interval, self.exchange.klines(_pair))
+            (buy, sell) = self.strategy.get_signal(
+                _pair, interval, self.dataprovider.ohlcv(_pair, self.strategy.ticker_interval))
+
             if buy and not sell:
                 stake_amount = self._get_trade_stake_amount(_pair)
                 if not stake_amount:
@@ -578,8 +588,9 @@ class FreqtradeBot(object):
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
         if experimental.get('use_sell_signal') or experimental.get('ignore_roi_if_buy_signal'):
-            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.ticker_interval,
-                                                   self.exchange.klines(trade.pair))
+            (buy, sell) = self.strategy.get_signal(
+                trade.pair, self.strategy.ticker_interval,
+                self.dataprovider.ohlcv(trade.pair, self.strategy.ticker_interval))
 
         config_ask_strategy = self.config.get('ask_strategy', {})
         if config_ask_strategy.get('use_order_book', False):

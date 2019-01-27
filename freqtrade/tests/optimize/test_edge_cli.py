@@ -7,6 +7,7 @@ from typing import List
 from freqtrade.edge import PairInfo
 from freqtrade.arguments import Arguments
 from freqtrade.optimize.edge_cli import (EdgeCli, setup_configuration, start)
+from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, patch_exchange
 
 
@@ -26,6 +27,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     ]
 
     config = setup_configuration(get_args(args))
+    assert config['runmode'] == RunMode.EDGECLI
+
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -70,6 +73,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
+    assert config['runmode'] == RunMode.EDGECLI
     assert log_has(
         'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples

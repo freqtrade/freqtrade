@@ -3,11 +3,11 @@
 """
 This module load custom strategies
 """
-import inspect
 import logging
 import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
+from inspect import getfullargspec
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -126,11 +126,9 @@ class StrategyResolver(IResolver):
                 if strategy:
                     logger.info('Using resolved strategy %s from \'%s\'', strategy_name, _path)
                     strategy._populate_fun_len = len(
-                        inspect.getfullargspec(strategy.populate_indicators).args)
-                    strategy._buy_fun_len = len(
-                        inspect.getfullargspec(strategy.populate_buy_trend).args)
-                    strategy._sell_fun_len = len(
-                        inspect.getfullargspec(strategy.populate_sell_trend).args)
+                        getfullargspec(strategy.populate_indicators).args)
+                    strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+                    strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
 
                     return import_strategy(strategy, config=config)
             except FileNotFoundError:
