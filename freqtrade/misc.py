@@ -38,12 +38,7 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     An numpy-array of datetimes
     :return: numpy-array of datetime
     """
-    times = []
-    dates = dates.astype(datetime)
-    for index in range(0, dates.size):
-        date = dates[index].to_pydatetime()
-        times.append(date)
-    return np.array(times)
+    return dates.dt.to_pydatetime()
 
 
 def common_datearray(dfs: Dict[str, DataFrame]) -> np.ndarray:

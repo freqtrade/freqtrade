@@ -41,7 +41,7 @@ def test_common_datearray(default_conf) -> None:
 
     assert dates.size == dataframes['UNITTEST/BTC']['date'].size
     assert dates[0] == dataframes['UNITTEST/BTC']['date'][0]
-    assert dates[-1] == dataframes['UNITTEST/BTC']['date'][-1]
+    assert dates[-1] == dataframes['UNITTEST/BTC']['date'].iloc[-1]
 
 
 def test_file_dump_json(mocker) -> None:
