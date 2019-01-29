@@ -263,7 +263,7 @@ class Edge():
         # Then every value more than (standard deviation + 2*average) is out (pump)
         #
         # Removing Pumps
-        if self.edge_config.get('remove_pumps', False):
+        if self.edge_config.get('remove_pumps', True):
             results = results.groupby(['pair', 'stoploss']).apply(
                 lambda x: x[x['profit_abs'] < 2 * x['profit_abs'].std() + x['profit_abs'].mean()])
         ##########################################################################
