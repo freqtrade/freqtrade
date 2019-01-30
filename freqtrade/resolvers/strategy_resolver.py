@@ -38,24 +38,38 @@ class StrategyResolver(IResolver):
         self.strategy: IStrategy = self._load_strategy(strategy_name,
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))
+
+        # make sure experimental dict is available
+        if 'experimental' not in config:
+            config['experimental'] = {}
+
         # Set attributes
         # Check if we need to override configuration
-        attributes = ["minimal_roi",
-                      "ticker_interval",
-                      "stoploss",
-                      "trailing_stop",
-                      "trailing_stop_positive",
-                      "trailing_stop_positive_offset",
-                      "process_only_new_candles",
-                      "order_types",
-                      "order_time_in_force"
+        # (Attribute name,                              default, experimental)
+        attributes = [("minimal_roi",                   None,    False),
+                      ("ticker_interval",               None,    False),
+                      ("stoploss",                      None,    False),
+                      ("trailing_stop",                 None,    False),
+                      ("trailing_stop_positive",        None,    False),
+                      ("trailing_stop_positive_offset", 0.0,     False),
+                      ("process_only_new_candles",      None,    False),
+                      ("order_types",                   None,    False),
+                      ("order_time_in_force",           None,    False),
+                      ("use_sell_signal",               False,   True),
+                      ("sell_profit_only",              False,   True),
+                      ("ignore_roi_if_buy_signal",      False,   True),
                       ]
-        for attribute in attributes:
-            self._override_attribute_helper(config, attribute)
+        for attribute, default, experimental in attributes:
+            if experimental:
+                self._override_attribute_helper(config['experimental'], attribute, default)
+            else:
+                self._override_attribute_helper(config, attribute, default)
 
         # Loop this list again to have output combined
-        for attribute in attributes:
-            if attribute in config:
+        for attribute, _, exp in attributes:
+            if exp and attribute in config['experimental']:
+                logger.info("Strategy using %s: %s", attribute, config['experimental'][attribute])
+            elif attribute in config:
                 logger.info("Strategy using %s: %s", attribute, config[attribute])
 
         # Sort and apply type conversions
@@ -66,13 +80,24 @@ class StrategyResolver(IResolver):
 
         self._strategy_sanity_validations()
 
-    def _override_attribute_helper(self, config, attribute: str):
+    def _override_attribute_helper(self, config, attribute: str, default):
+        """
+        Override attributes in the strategy.
+        Prevalence:
+        - Configuration
+        - Strategy
+        - default (if not None)
+        """
         if attribute in config:
             setattr(self.strategy, attribute, config[attribute])
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
         elif hasattr(self.strategy, attribute):
             config[attribute] = getattr(self.strategy, attribute)
+        # Explicitly check for None here as other "falsy" values are possible
+        elif default is not None:
+            setattr(self.strategy, attribute, default)
+            config[attribute] = default
 
     def _strategy_sanity_validations(self):
         if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):

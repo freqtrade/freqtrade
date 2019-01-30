@@ -45,13 +45,18 @@ class TestStrategy(IStrategy):
     # trailing stoploss
     trailing_stop = False
     trailing_stop_positive = 0.01
-    trailing_stop_positive_offset = None  # Disabled / not configured
+    trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'
 
     # run "populate_indicators" only for new candle
     ta_on_candle = False
+
+    # Experimental settings (configuration will overide these if set)
+    use_sell_signal = False
+    use_profit_only = False
+    ignore_roi_if_buy_signal = False
 
     # Optional order type mapping
     order_types = {

@@ -321,7 +321,7 @@ class IStrategy(ABC):
             # and if profit is positive
             stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
-            sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
+            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
 
             if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
 

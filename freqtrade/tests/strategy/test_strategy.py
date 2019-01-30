@@ -294,6 +294,62 @@ def test_strategy_override_order_tif(caplog):
         StrategyResolver(config)
 
 
+def test_strategy_override_use_sell_signal(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+    }
+    resolver = StrategyResolver(config)
+    assert not resolver.strategy.use_sell_signal
+    assert isinstance(resolver.strategy.use_sell_signal, bool)
+    # must be inserted to configuration
+    assert 'use_sell_signal' in config['experimental']
+    assert not config['experimental']['use_sell_signal']
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'experimental': {
+            'use_sell_signal': True,
+        },
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.use_sell_signal
+    assert isinstance(resolver.strategy.use_sell_signal, bool)
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'use_sell_signal' with value in config file: True."
+            ) in caplog.record_tuples
+
+
+def test_strategy_override_use_sell_profit_only(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+    }
+    resolver = StrategyResolver(config)
+    assert not resolver.strategy.sell_profit_only
+    assert isinstance(resolver.strategy.sell_profit_only, bool)
+    # must be inserted to configuration
+    assert 'sell_profit_only' in config['experimental']
+    assert not config['experimental']['sell_profit_only']
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'experimental': {
+            'sell_profit_only': True,
+        },
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.sell_profit_only
+    assert isinstance(resolver.strategy.sell_profit_only, bool)
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'sell_profit_only' with value in config file: True."
+            ) in caplog.record_tuples
+
+
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
