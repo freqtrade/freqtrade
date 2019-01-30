@@ -190,9 +190,16 @@ class Edge():
         if self._final_pairs != final:
             self._final_pairs = final
             if self._final_pairs:
-                logger.info('Edge validated only %s', self._final_pairs)
+                logger.info(
+                    'Minimum expectancy and minimum winrate are met only for %s,'
+                    ' so other pairs are filtered out.',
+                    self._final_pairs
+                    )
             else:
-                logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
+                logger.info(
+                    'Edge removed all pairs as no pair with minimum expectancy '
+                    'and minimum winrate was found !'
+                    )
 
         return self._final_pairs
 
