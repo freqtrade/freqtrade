@@ -663,8 +663,8 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
 def test_backtest_multi_pair(default_conf, fee, mocker):
 
     def evaluate_result_multi(results, freq, max_open_trades):
-            # Find overlapping trades by expanding each trade once per period
-            # and then counting overlaps
+        # Find overlapping trades by expanding each trade once per period
+        # and then counting overlaps
         dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
                  for row in results[['open_time', 'close_time']].iterrows()]
         deltas = [len(x) for x in dates]

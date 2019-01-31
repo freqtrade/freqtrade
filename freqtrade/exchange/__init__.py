@@ -237,7 +237,7 @@ class Exchange(object):
                     f'Exchange {self.name} does not support market orders.')
 
         if order_types.get('stoploss_on_exchange'):
-            if self.name is not 'Binance':
+            if self.name != 'Binance':
                 raise OperationalException(
                     'On exchange stoploss is not supported for %s.' % self.name
                 )
@@ -247,7 +247,7 @@ class Exchange(object):
         Checks if order time in force configured in strategy/config are supported
         """
         if any(v != 'gtc' for k, v in order_time_in_force.items()):
-            if self.name is not 'Binance':
+            if self.name != 'Binance':
                 raise OperationalException(
                     f'Time in force policies are not supporetd for  {self.name} yet.')
 

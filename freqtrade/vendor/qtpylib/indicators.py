@@ -236,7 +236,7 @@ def crossed(series1, series2, direction=None):
     if direction is None:
         return above or below
 
-    return above if direction is "above" else below
+    return above if direction == "above" else below
 
 
 def crossed_above(series1, series2):

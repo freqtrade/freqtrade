@@ -820,7 +820,7 @@ class FreqtradeBot(object):
         # we consider the sell price stop price
         if self.config.get('dry_run', False) and sell_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
-                limit = trade.stop_loss
+            limit = trade.stop_loss
 
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:

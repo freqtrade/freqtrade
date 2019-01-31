@@ -364,7 +364,7 @@ def test_deprecate_populate_indicators(result):
             in str(w[-1].message)
 
     with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
+        # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
         resolver.strategy.advise_buy(indicators, 'ETH/BTC')
         assert len(w) == 1

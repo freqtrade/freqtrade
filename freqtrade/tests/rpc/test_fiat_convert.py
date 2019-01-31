@@ -117,7 +117,7 @@ def test_fiat_convert_get_price(mocker):
     assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
     assert fiat_convert._pairs[0].fiat_symbol == 'USD'
     assert fiat_convert._pairs[0].price == 28000.0
-    assert fiat_convert._pairs[0]._expiration is not 0
+    assert fiat_convert._pairs[0]._expiration != 0
     assert len(fiat_convert._pairs) == 1
 
     # Verify the cached is used
