@@ -800,7 +800,7 @@ class FreqtradeBot(object):
                 logger.info('Sell order timeout for %s.', trade)
             else:
                 reason = "on exchange"
-                logger.info('Sell order Cancelled on exchange for %s.', trade)
+                logger.info('Sell order canceled on exchange for %s.', trade)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
