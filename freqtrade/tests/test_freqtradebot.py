@@ -18,7 +18,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, SellCheckTuple
-from freqtrade.tests.conftest import log_has, patch_exchange, patch_edge, patch_wallet
+from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange, patch_edge, patch_wallet
 
 
 # Functions for recurrent object patching
@@ -1592,7 +1592,7 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old,
     trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    # assert log_has("Buy order canceled on Exchange for Trade.*", caplog.record_tuples)
+    assert log_has_re("Buy order canceled on Exchange for Trade.*", caplog.record_tuples)
 
 
 def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old,
@@ -1669,7 +1669,8 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     assert trade_sell.is_open is True
 
 
-def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old, mocker) -> None:
+def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
+                                     mocker, caplog) -> None:
     """ Handle sell order cancelled on exchange"""
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -1704,6 +1705,7 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
+    assert log_has_re("Sell order canceled on exchange for Trade.*", caplog.record_tuples)
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
