@@ -738,8 +738,15 @@ class FreqtradeBot(object):
                 self.wallets.update()
                 continue
 
-            # Check if trade is still actually open
-            if order['status'] == 'open':
+            # Handle cancelled on exchange
+            if order['status'] == 'canceled':
+                if order['side'] == 'buy':
+                    self.handle_buy_order_full_cancel(trade, "canceled on Exchange")
+                elif order['side'] == 'sell':
+                    self.handle_timedout_limit_sell(trade, order)
+                    self.wallets.update()
+            # Check if order is still actually open
+            elif order['status'] == 'open':
                 if order['side'] == 'buy' and ordertime < buy_timeoutthreashold:
                     self.handle_timedout_limit_buy(trade, order)
                     self.wallets.update()
@@ -747,24 +754,24 @@ class FreqtradeBot(object):
                     self.handle_timedout_limit_sell(trade, order)
                     self.wallets.update()
 
-    # FIX: 20180110, why is cancel.order unconditionally here, whereas
-    #                it is conditionally called in the
-    #                handle_timedout_limit_sell()?
+    def handle_buy_order_full_cancel(self, trade: Trade, reason: str) -> None:
+        """Close trade in database and send message"""
+        Trade.session.delete(trade)
+        Trade.session.flush()
+        logger.info('Buy order %s for %s.', reason, trade)
+        self.rpc.send_msg({
+            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'status': f'Unfilled buy order for {trade.pair} {reason}'
+        })
+
     def handle_timedout_limit_buy(self, trade: Trade, order: Dict) -> bool:
         """Buy timeout - cancel order
         :return: True if order was fully cancelled
         """
-        pair_s = trade.pair.replace('_', '/')
         self.exchange.cancel_order(trade.open_order_id, trade.pair)
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just delete the trade
-            Trade.session.delete(trade)
-            Trade.session.flush()
-            logger.info('Buy order timeout for %s.', trade)
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'Unfilled buy order for {pair_s} cancelled due to timeout'
-            })
+            self.handle_buy_order_full_cancel(trade, "cancelled due to timeout")
             return True
 
         # if trade is partially complete, edit the stake details for the trade
@@ -775,20 +782,24 @@ class FreqtradeBot(object):
         logger.info('Partial buy order timeout for %s.', trade)
         self.rpc.send_msg({
             'type': RPCMessageType.STATUS_NOTIFICATION,
-            'status': f'Remaining buy order for {pair_s} cancelled due to timeout'
+            'status': f'Remaining buy order for {trade.pair} cancelled due to timeout'
         })
         return False
 
-    # FIX: 20180110, should cancel_order() be cond. or unconditionally called?
     def handle_timedout_limit_sell(self, trade: Trade, order: Dict) -> bool:
         """
         Sell timeout - cancel order and update trade
         :return: True if order was fully cancelled
         """
-        pair_s = trade.pair.replace('_', '/')
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
-            self.exchange.cancel_order(trade.open_order_id, trade.pair)
+            if order["status"] != "canceled":
+                reason = "due to timeout"
+                self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                logger.info('Sell order timeout for %s.', trade)
+            else:
+                reason = "on exchange"
+                logger.info('Sell order canceled on exchange for %s.', trade)
             trade.close_rate = None
             trade.close_profit = None
             trade.close_date = None
@@ -796,9 +807,9 @@ class FreqtradeBot(object):
             trade.open_order_id = None
             self.rpc.send_msg({
                 'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'Unfilled sell order for {pair_s} cancelled due to timeout'
+                'status': f'Unfilled sell order for {trade.pair} cancelled {reason}'
             })
-            logger.info('Sell order timeout for %s.', trade)
+
             return True
 
         # TODO: figure out how to handle partially complete sell orders

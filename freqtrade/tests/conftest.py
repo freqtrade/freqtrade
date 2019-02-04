@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring
 import json
 import logging
+import re
 from datetime import datetime
 from functools import reduce
 from typing import Dict, Optional
@@ -24,6 +25,12 @@ def log_has(line, logs):
     # and we want to match line against foobar in the tuple
     return reduce(lambda a, b: a or b,
                   filter(lambda x: x[2] == line, logs),
+                  False)
+
+
+def log_has_re(line, logs):
+    return reduce(lambda a, b: a or b,
+                  filter(lambda x: re.match(line, x[2]), logs),
                   False)
 
 
