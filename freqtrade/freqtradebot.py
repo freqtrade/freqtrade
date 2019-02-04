@@ -755,7 +755,7 @@ class FreqtradeBot(object):
                     self.wallets.update()
 
     def handle_buy_order_full_cancel(self, trade: Trade, reason: str) -> None:
-
+        """Close trade in database and send message"""
         Trade.session.delete(trade)
         Trade.session.flush()
         logger.info('Buy order %s for %s.', reason, trade)
@@ -791,7 +791,6 @@ class FreqtradeBot(object):
         Sell timeout - cancel order and update trade
         :return: True if order was fully cancelled
         """
-        pair_s = trade.pair.replace('_', '/')
         if order['remaining'] == order['amount']:
             # if trade is not partially completed, just cancel the trade
             if order["status"] != "canceled":
@@ -808,7 +807,7 @@ class FreqtradeBot(object):
             trade.open_order_id = None
             self.rpc.send_msg({
                 'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'Unfilled sell order for {pair_s} cancelled {reason}'
+                'status': f'Unfilled sell order for {trade.pair} cancelled {reason}'
             })
 
             return True
