@@ -267,8 +267,8 @@ class FreqtradeBot(object):
         # Check if stake_amount is fulfilled
         if avaliable_amount < stake_amount:
             raise DependencyException(
-                f"Available balance({avaliable_amount} {self.config['stake_currency']}) is lower than "
-                f"stake amount({stake_amount} {self.config['stake_currency']})"
+                f"Available balance({avaliable_amount} {self.config['stake_currency']}) is "
+                f"lower than stake amount({stake_amount} {self.config['stake_currency']})"
             )
 
         return stake_amount
@@ -332,7 +332,8 @@ class FreqtradeBot(object):
                 if not stake_amount:
                     return False
 
-                logger.info(f'Buy signal found: about create a new trade with stake_amount: {stake_amount} ...')
+                logger.info(f"Buy signal found: about create a new trade with stake_amount: "
+                            f"{stake_amount} ...")
 
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
