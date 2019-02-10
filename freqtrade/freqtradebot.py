@@ -267,9 +267,8 @@ class FreqtradeBot(object):
         # Check if stake_amount is fulfilled
         if avaliable_amount < stake_amount:
             raise DependencyException(
-                'Available balance(%f %s) is lower than stake amount(%f %s)' % (
-                    avaliable_amount, self.config['stake_currency'],
-                    stake_amount, self.config['stake_currency'])
+                f'Available balance({avaliable_amount} {self.config['stake_currency']}) is lower than '
+                f'stake amount({stake_amount} {self.config['stake_currency']})'
             )
 
         return stake_amount
@@ -333,10 +332,7 @@ class FreqtradeBot(object):
                 if not stake_amount:
                     return False
 
-                logger.info(
-                    'Buy signal found: about create a new trade with stake_amount: %f ...',
-                    stake_amount
-                )
+                logger.info(f'Buy signal found: about create a new trade with stake_amount: {stake_amount} ...')
 
                 bidstrat_check_depth_of_market = self.config.get('bid_strategy', {}).\
                     get('check_depth_of_market', {})
@@ -388,8 +384,8 @@ class FreqtradeBot(object):
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
-                f'Can\'t open a new trade for {pair_s}: stake amount'
-                f' is too small ({stake_amount} < {min_stake_amount})'
+                f'Can\'t open a new trade for {pair_s}: stake amount '
+                f'is too small ({stake_amount} < {min_stake_amount})'
             )
             return False
 
@@ -507,7 +503,7 @@ class FreqtradeBot(object):
                         trade.fee_open = 0
 
                 except OperationalException as exception:
-                    logger.warning("could not update trade amount: %s", exception)
+                    logger.warning("Could not update trade amount: %s", exception)
 
                 trade.update(order)
 
@@ -566,12 +562,12 @@ class FreqtradeBot(object):
                     fee_abs += exectrade['fee']['cost']
 
         if amount != order_amount:
-            logger.warning(f"amount {amount} does not match amount {trade.amount}")
+            logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise OperationalException("Half bought? Amounts don't match")
         real_amount = amount - fee_abs
         if fee_abs != 0:
-            logger.info(f"""Applying fee on amount for {trade} \
-(from {order_amount} to {real_amount}) from Trades""")
+            logger.info(f"Applying fee on amount for {trade} "
+                        f"(from {order_amount} to {real_amount}) from Trades")
         return real_amount
 
     def handle_trade(self, trade: Trade) -> bool:
@@ -580,7 +576,7 @@ class FreqtradeBot(object):
         :return: True if trade has been sold, False otherwise
         """
         if not trade.is_open:
-            raise ValueError(f'attempt to handle closed trade: {trade}')
+            raise ValueError(f'Attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
         sell_rate = self.exchange.get_ticker(trade.pair)['bid']
