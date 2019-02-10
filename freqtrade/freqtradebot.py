@@ -267,8 +267,8 @@ class FreqtradeBot(object):
         # Check if stake_amount is fulfilled
         if avaliable_amount < stake_amount:
             raise DependencyException(
-                f'Available balance({avaliable_amount} {self.config['stake_currency']}) is lower than '
-                f'stake amount({stake_amount} {self.config['stake_currency']})'
+                f"Available balance({avaliable_amount} {self.config['stake_currency']}) is lower than "
+                f"stake amount({stake_amount} {self.config['stake_currency']})"
             )
 
         return stake_amount
