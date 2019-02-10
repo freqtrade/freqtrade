@@ -30,8 +30,9 @@ def parse_ticker_dataframe(ticker: list, ticker_interval: str,
                                 infer_datetime_format=True)
 
     # Some exchanges return int values for volume and even for ohlc.
-    # Convert them since TA-LIB indicators used in the strategy assume floats and fail with exception...
-    frame = frame.astype(dtype={'open': 'float', 'high': 'float', 'low': 'float', 'close': 'float', 
+    # Convert them since TA-LIB indicators used in the strategy assume floats 
+    # and fail with exception...
+    frame = frame.astype(dtype={'open': 'float', 'high': 'float', 'low': 'float', 'close': 'float',
                                 'volume': 'float'})
 
     # group by index and aggregate results to eliminate duplicate ticks
