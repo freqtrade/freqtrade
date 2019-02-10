@@ -691,7 +691,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.amount == 90.99181073703367
 
     assert log_has(
-        'Buy signal found: about create a new trade with stake_amount: 0.001000 ...',
+        'Buy signal found: about create a new trade with stake_amount: 0.001 ...',
         caplog.record_tuples
     )
 
@@ -1318,7 +1318,7 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
         side_effect=OperationalException()
     )
     freqtrade.process_maybe_execute_sell(trade)
-    assert log_has('could not update trade amount: ', caplog.record_tuples)
+    assert log_has('Could not update trade amount: ', caplog.record_tuples)
 
     # Test raise of DependencyException exception
     mocker.patch(
