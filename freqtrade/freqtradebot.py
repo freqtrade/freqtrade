@@ -204,7 +204,7 @@ class FreqtradeBot(object):
             self.state = State.STOPPED
         return state_changed
 
-    def get_target_bid(self, pair: str, test_ticker: Dict[str, float]) -> float:
+    def get_target_bid(self, pair: str, test_ticker: Dict[str, float] = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :param test_ticker: Ticker to use for getting Ask and Last Price; left for tests
