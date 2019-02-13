@@ -204,9 +204,10 @@ class FreqtradeBot(object):
             self.state = State.STOPPED
         return state_changed
 
-    def get_target_bid(self, pair: str) -> float:
+    def get_target_bid(self, pair: str, test_ticker: Dict[str, float]) -> float:
         """
         Calculates bid target between current ask price and last price
+        :param test_ticker: Ticker to use for getting Ask and Last Price; left for tests
         :return: float: Price
         """
         config_bid_strategy = self.config.get('bid_strategy', {})
@@ -222,7 +223,10 @@ class FreqtradeBot(object):
             used_rate = order_book_rate
         else:
             logger.info('Using Last Ask / Last Price')
-            ticker = self.exchange.get_ticker(pair)
+            if test_ticker is not None:
+                ticker = test_ticker
+            else:
+                ticker = self.exchange.get_ticker(pair)
             if ticker['ask'] < ticker['last']:
                 ticker_rate = ticker['ask']
             else:
