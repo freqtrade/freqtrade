@@ -191,7 +191,7 @@ class FreqtradeBot(object):
                 Trade.session.flush()
 
         except TemporaryError as error:
-            logger.warning('%s, retrying in 30 seconds...', error)
+            logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
             time.sleep(constants.RETRY_TIMEOUT)
         except OperationalException:
             tb = traceback.format_exc()
