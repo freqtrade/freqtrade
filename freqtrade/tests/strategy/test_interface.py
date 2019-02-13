@@ -204,7 +204,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 1
 
     assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+    assert not log_has('Skipping TA Analysis for already analyzed candle',
                        caplog.record_tuples)
     caplog.clear()
 
@@ -214,7 +214,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 2
     assert buy_mock.call_count == 2
     assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+    assert not log_has('Skipping TA Analysis for already analyzed candle',
                        caplog.record_tuples)
 
 
@@ -242,7 +242,7 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+    assert not log_has('Skipping TA Analysis for already analyzed candle',
                        caplog.record_tuples)
     caplog.clear()
 
@@ -257,5 +257,5 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     assert ret['buy'].sum() == 0
     assert ret['sell'].sum() == 0
     assert not log_has('TA Analysis Launched', caplog.record_tuples)
-    assert log_has('Skippinig TA Analysis for already analyzed candle',
+    assert log_has('Skipping TA Analysis for already analyzed candle',
                    caplog.record_tuples)

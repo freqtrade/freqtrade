@@ -172,7 +172,7 @@ class IStrategy(ABC):
             dataframe = self.advise_sell(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
         else:
-            logger.debug("Skippinig TA Analysis for already analyzed candle")
+            logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
 
