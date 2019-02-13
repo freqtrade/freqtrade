@@ -577,7 +577,6 @@ class FreqtradeBot(object):
             raise ValueError(f'Attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
-        sell_rate = self.exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
@@ -597,18 +596,15 @@ class FreqtradeBot(object):
 
             for i in range(order_book_min, order_book_max + 1):
                 order_book_rate = order_book['asks'][i - 1][0]
-
-                # if orderbook has higher rate (high profit),
-                # use orderbook, otherwise just use bids rate
                 logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
-                if sell_rate < order_book_rate:
-                    sell_rate = order_book_rate
+                sell_rate = order_book_rate
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
+            sell_rate = self.exchange.get_ticker(trade.pair)['bid']
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
