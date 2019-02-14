@@ -153,6 +153,9 @@ class FreqtradeBot(object):
         """
         state_changed = False
         try:
+            # Reload markets async
+            self.exchange.reload_async_markets()
+
             # Refresh whitelist
             self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist
@@ -274,12 +277,7 @@ class FreqtradeBot(object):
         return stake_amount
 
     def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
-        markets = self.exchange.get_markets()
-        markets = [m for m in markets if m['symbol'] == pair]
-        if not markets:
-            raise ValueError(f'Can\'t get market information for symbol {pair}')
-
-        market = markets[0]
+        market = self.exchange.markets[pair]
 
         if 'limits' not in market:
             return None
