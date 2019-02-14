@@ -99,7 +99,7 @@ class Exchange(object):
 
         logger.info('Using Exchange "%s"', self.name)
 
-        self._load_markets()
+        self.markets = self._load_markets()
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
@@ -188,16 +188,18 @@ class Exchange(object):
     async def _load_async_markets(self, reload=False) -> None:
         self.markets = await self._api_async.load_markets(reload=reload)
 
-    def _load_markets(self) -> None:
+    def _load_markets(self) -> Dict[str, Any]:
         """
         Initialize markets sync for first time.
         Later, reload_async_markets() is to be called periodically if you want
         to be informed of changes in the Exchange markets
         """
         try:
-            self.markets = self._api.load_markets()
+            markets = self._api.load_markets()
+            return markets
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
+        return {}
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
