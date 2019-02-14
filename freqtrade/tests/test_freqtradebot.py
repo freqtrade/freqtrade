@@ -841,22 +841,27 @@ def test_process_informative_pairs_added(default_conf, ticker, markets, mocker) 
 def test_balance_fully_ask_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 0.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={'ask': 20, 'last': 10}))
 
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) == 20
+    assert freqtrade.get_target_bid('ETH/BTC') == 20
 
 
 def test_balance_fully_last_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={'ask': 20, 'last': 10}))
 
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) == 10
+    assert freqtrade.get_target_bid('ETH/BTC') == 10
 
 
 def test_balance_bigger_last_ask(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 5, 'last': 10}) == 5
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={'ask': 5, 'last': 10}))
+    assert freqtrade.get_target_bid('ETH/BTC') == 5
 
 
 def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> None:
@@ -2813,10 +2818,13 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2, markets) 
     instead of the ask rate
     """
     patch_exchange(mocker)
+    ticker_mock = MagicMock(return_value={'ask': 0.045, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_markets=markets,
-        get_order_book=order_book_l2
+        get_order_book=order_book_l2,
+        get_ticker=ticker_mock,
+
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
@@ -2825,7 +2833,8 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2, markets) 
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 0.045, 'last': 0.046}) == 0.043935
+    assert freqtrade.get_target_bid('ETH/BTC') == 0.043935
+    assert ticker_mock.call_count == 0
 
 
 def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) -> None:
@@ -2834,10 +2843,13 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     instead of the order book rate (even if enabled)
     """
     patch_exchange(mocker)
+    ticker_mock = MagicMock(return_value={'ask': 0.042, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_markets=markets,
-        get_order_book=order_book_l2
+        get_order_book=order_book_l2,
+        get_ticker=ticker_mock,
+
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
@@ -2846,29 +2858,7 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 0.042, 'last': 0.046}) == 0.042
-
-
-def test_order_book_bid_strategy3(default_conf, mocker, order_book_l2, markets) -> None:
-    """
-    test if function get_target_bid will return ask rate instead
-    of the order book rate
-    """
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_markets=markets,
-        get_order_book=order_book_l2
-    )
-    default_conf['exchange']['name'] = 'binance'
-    default_conf['bid_strategy']['use_order_book'] = True
-    default_conf['bid_strategy']['order_book_top'] = 1
-    default_conf['bid_strategy']['ask_last_balance'] = 0
-    default_conf['telegram']['enabled'] = False
-
-    freqtrade = FreqtradeBot(default_conf)
-
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 0.03, 'last': 0.029}) == 0.03
+    assert freqtrade.get_target_bid('ETH/BTC', ) == 0.042
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2, markets) -> None:
