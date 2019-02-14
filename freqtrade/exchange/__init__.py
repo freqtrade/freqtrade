@@ -99,7 +99,7 @@ class Exchange(object):
 
         logger.info('Using Exchange "%s"', self.name)
 
-        self.markets = self._load_markets()
+        self._load_markets()
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
@@ -175,24 +175,29 @@ class Exchange(object):
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
-    def _load_async_markets(self) -> None:
+    def reload_async_markets(self) -> None:
+        """ Run it periodically if you want to get updates in the Exchange markets """
         try:
             if self._api_async:
-                asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
+                asyncio.get_event_loop().run_until_complete(self._load_async_markets(reload=True))
 
         except ccxt.BaseError as e:
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
-    def _load_markets(self) -> Dict[str, Any]:
-        """ Initialize markets both sync and async """
+    async def _load_async_markets(self, reload=False) -> None:
+        self.markets = await self._api_async.load_markets(reload=reload)
+
+    def _load_markets(self) -> None:
+        """
+        Initialize markets sync for first time.
+        Later, reload_async_markets() is to be called periodically if you want
+        to be informed of changes in the Exchange markets
+        """
         try:
-            markets = self._api.load_markets()
-            self._load_async_markets()
-            return markets
+            self.markets = self._api.load_markets()
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
-        return {}
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
@@ -201,11 +206,6 @@ class Exchange(object):
         :param pairs: list of pairs
         :return: None
         """
-
-        if not self.markets:
-            logger.warning('Unable to validate pairs (assuming they are correct).')
-        #     return
-
         stake_cur = self._conf['stake_currency']
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
@@ -213,9 +213,9 @@ class Exchange(object):
             if not pair.endswith(stake_cur):
                 raise OperationalException(
                     f'Pair {pair} not compatible with stake_currency: {stake_cur}')
-            if self.markets and pair not in self.markets:
+            if pair not in self.markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available at {self.name}'
+                    f'Pair {pair} is not available at {self.name}. '
                     f'Please remove {pair} from your whitelist.')
 
     def validate_timeframes(self, timeframe: List[str]) -> None:
@@ -265,8 +265,11 @@ class Exchange(object):
         Returns the amount to buy or sell to a precision the Exchange accepts
         Rounded down
         '''
-        if self._api.markets[pair]['precision']['amount']:
-            symbol_prec = self._api.markets[pair]['precision']['amount']
+        if pair not in self.markets:
+            raise DependencyException(f"Pair {pair} not available.")
+
+        if self.markets[pair]['precision']['amount']:
+            symbol_prec = self.markets[pair]['precision']['amount']
             big_amount = amount * pow(10, symbol_prec)
             amount = floor(big_amount) / pow(10, symbol_prec)
         return amount
@@ -276,8 +279,11 @@ class Exchange(object):
         Returns the price buying or selling with to the precision the Exchange accepts
         Rounds up
         '''
-        if self._api.markets[pair]['precision']['price']:
-            symbol_prec = self._api.markets[pair]['precision']['price']
+        if pair not in self.markets:
+            raise DependencyException(f"Pair {pair} not available.")
+
+        if self.markets[pair]['precision']['price']:
+            symbol_prec = self.markets[pair]['precision']['price']
             big_price = price * pow(10, symbol_prec)
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
@@ -478,8 +484,6 @@ class Exchange(object):
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._cached_ticker.keys():
             try:
-                if pair not in self._api.markets:
-                    raise DependencyException(f"Pair {pair} not available")
                 data = self._api.fetch_ticker(pair)
                 try:
                     self._cached_ticker[pair] = {
@@ -709,7 +713,7 @@ class Exchange(object):
             return self._api.fetch_markets()
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not load markets due to {e.__class__.__name__}. Message: {e}')
+                f'Could not fetch markets due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
@@ -717,10 +721,6 @@ class Exchange(object):
     def get_fee(self, symbol='ETH/BTC', type='', side='', amount=1,
                 price=1, taker_or_maker='maker') -> float:
         try:
-            # validate that markets are loaded before trying to get fee
-            if self._api.markets is None or len(self._api.markets) == 0:
-                self._api.load_markets()
-
             return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
