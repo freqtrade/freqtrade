@@ -2858,7 +2858,9 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_target_bid('ETH/BTC', ) == 0.042
+    # ordrebook shall be used even if tickers would be lower.
+    assert freqtrade.get_target_bid('ETH/BTC', ) != 0.042
+    assert ticker_mock.call_count == 0
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2, markets) -> None:
