@@ -3,15 +3,14 @@
 
 # Check which python version is installed
 function check_installed_python() {
-    which python3.7
-    if [ $? -eq 0 ]; then
+    python_v=$(pythonversion=$(python -V 2>&1 | grep -Po '(?<=Python )(.+)') && echo "python"$pythonversion | cut -c1-9)
+    if [ $python_v == "python3.7" ]; then
         echo "using Python 3.7"
         PYTHON=python3.7
         return
     fi
 
-    which python3.6
-    if [ $? -eq 0 ]; then
+    if [ $python_v == "python3.6" ]; then
         echo "using Python 3.6"
         PYTHON=python3.6
         return
@@ -274,6 +273,9 @@ reset
 ;;
 --plot|-p)
 plot
+;;
+--check-installed-python|-t)
+check_installed_python
 ;;
 *)
 help
