@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #encoding=utf8
 function pflag() {
+PYTHON=python3.6
 P3=python3.6
 install
 }
@@ -277,6 +278,7 @@ function help() {
 
 # Verify if 3.6 or 3.7 is installed
 #check_installed_python
+pflag
 
 case $* in
 --install|-i)
