@@ -304,11 +304,14 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            if time_in_force == 'gtc':
-                return self._api.create_order(pair, ordertype, 'buy', amount, rate)
-            else:
-                return self._api.create_order(pair, ordertype, 'buy',
-                                              amount, rate, {'timeInForce': time_in_force})
+            params = {}
+            if time_in_force != 'gtc':
+                params.update({'timeInForce': time_in_force})
+            if self.id == "kraken":
+                params.update({"trading_agreement": "agree"})
+
+            return self._api.create_order(pair, ordertype, 'buy',
+                                          amount, rate, params)
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -347,11 +350,14 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            if time_in_force == 'gtc':
-                return self._api.create_order(pair, ordertype, 'sell', amount, rate)
-            else:
-                return self._api.create_order(pair, ordertype, 'sell',
-                                              amount, rate, {'timeInForce': time_in_force})
+            params = {}
+            if time_in_force != 'gtc':
+                params.update({'timeInForce': time_in_force})
+            if self.id == "kraken":
+                params.update({"trading_agreement": "agree"})
+
+            return self._api.create_order(pair, ordertype, 'sell',
+                                          amount, rate, params)
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -403,8 +409,12 @@ class Exchange(object):
             return self._dry_run_open_orders[order_id]
 
         try:
+            params = {'stopPrice': stop_price}
+            if self.id == "kraken":
+                params.update({"trading_agreement": "agree"})
+
             order = self._api.create_order(pair, 'stop_loss_limit', 'sell',
-                                           amount, rate, {'stopPrice': stop_price})
+                                           amount, rate, params)
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s' % (pair, stop_price, rate))
             return order
@@ -546,7 +556,7 @@ class Exchange(object):
             interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
             if not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
-                    + interval_in_sec) >= arrow.utcnow().timestamp
+                     + interval_in_sec) >= arrow.utcnow().timestamp
                     and (pair, ticker_interval) in self._klines):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
