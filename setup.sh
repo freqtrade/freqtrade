@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 #encoding=utf8
+function pflag() {
+P3=python3.6
+install
+}
+
 
 # Check which python version is installed
+
 function check_installed_python() {
+    #echo $1
+    if [[ $P3 ]]; then
+    PYTHON=python3.6
+    fi
     python_v=$(pythonversion=$(python -V 2>&1 | grep -Po '(?<=Python )(.+)') && echo "python"$pythonversion | cut -c1-9)
     if [ $python_v == "python3.7" ]; then
         echo "using Python 3.7"
@@ -10,7 +20,7 @@ function check_installed_python() {
         return
     fi
 
-    if [ $python_v == "python3.6" ]; then
+    if [ $python_v == "python3.6" ] || [[ $P3 ]]; then
         echo "using Python 3.6"
         PYTHON=python3.6
         return
@@ -65,18 +75,18 @@ function install_talib() {
 }
 
 # Install bot MacOS
-function install_macos() {
-    if [ ! -x "$(command -v brew)" ]
-    then
-        echo "-------------------------"
-        echo "Installing Brew"
-        echo "-------------------------"
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    fi
-    brew install python3 wget
-    install_talib
-    test_and_fix_python_on_mac
-}
+#function install_macos() {
+#    if [ ! -x "$(command -v brew)" ]
+#    then
+#        echo "-------------------------"
+#        echo "Installing Brew"
+#        echo "-------------------------"
+#        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+#    fi
+#    brew install python3 wget
+#    install_talib
+#    test_and_fix_python_on_mac
+#}
 
 # Install bot Debian_ubuntu
 function install_debian() {
@@ -124,18 +134,18 @@ function reset() {
     updateenv
 }
 
-function test_and_fix_python_on_mac() {
-
-    if ! [ -x "$(command -v python3.6)" ]
-    then
-        echo "-------------------------"
-        echo "Fixing Python"
-        echo "-------------------------"
-        echo "Python 3.6 is not linked in your system. Fixing it..."
-        brew link --overwrite python
-        echo
-    fi
-}
+#function test_and_fix_python_on_mac() {
+#
+#    if ! [ -x "$(command -v python3.6)" ]
+#    then
+#        echo "-------------------------"
+#        echo "Fixing Python"
+#        echo "-------------------------"
+#        echo "Python 3.6 is not linked in your system. Fixing it..."
+#        brew link --overwrite python
+#        echo
+#    fi
+#}
 
 function config_generator() {
 
@@ -162,14 +172,24 @@ function config_generator() {
     echo
     echo "Generating exchange config "
     echo "------------------------"
+    default_api_key=$binance_api_secret
     read -p "Exchange API key: " api_key
+    api_key=${api_key:-$default_api_key}
+    
+    default_api_key=$binance_api_secret
     read -p "Exchange API Secret: " api_secret
+    api_secret=${api_secret:-$default_api_secret}
 
     echo
     echo "Generating Telegram config"
     echo "-------------------------"
+    default_telegram_token=$telegram_token
     read -p "Telegram Token: " token
+    token=${token:-$default_telegram_token}
+
+    default_telegram_chat_id=$telegram_chat_id
     read -p "Telegram Chat_id: " chat_id
+    chat_id=${chat_id:-$default_telegram_chat_id}
 
     sed -e "s/\"max_open_trades\": 3,/\"max_open_trades\": $max_trades,/g" \
         -e "s/\"stake_amount\": 0.05,/\"stake_amount\": $stake_amount,/g" \
@@ -256,7 +276,7 @@ function help() {
 }
 
 # Verify if 3.6 or 3.7 is installed
-check_installed_python
+#check_installed_python
 
 case $* in
 --install|-i)
@@ -274,8 +294,8 @@ reset
 --plot|-p)
 plot
 ;;
---check-installed-python|-t)
-check_installed_python
+--pflag|-p3)
+pflag
 ;;
 *)
 help
