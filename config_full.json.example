@@ -4,6 +4,7 @@
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
     "dry_run": false,
+    "compound": false,
     "ticker_interval": "5m",
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,

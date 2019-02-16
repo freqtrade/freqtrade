@@ -43,6 +43,7 @@ class BacktestResult(NamedTuple):
     open_at_end: bool
     open_rate: float
     close_rate: float
+    amount: float
     sell_reason: SellType
 
 
@@ -205,11 +206,16 @@ class Backtesting(object):
 
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
+
+        if args['compound']:
+            stake_amount /= (max_open_trades - (trade_count_lock[buy_row.date] - 1))
+
+        amount = stake_amount / buy_row.open
         trade = Trade(
             open_rate=buy_row.open,
             open_date=buy_row.date,
             stake_amount=stake_amount,
-            amount=stake_amount / buy_row.open,
+            amount=amount,
             fee_open=self.fee,
             fee_close=self.fee
         )
@@ -254,6 +260,7 @@ class Backtesting(object):
                                       open_at_end=False,
                                       open_rate=buy_row.open,
                                       close_rate=closerate,
+                                      amount=amount,
                                       sell_reason=sell.sell_type
                                       )
         if partial_ticker:
@@ -271,6 +278,7 @@ class Backtesting(object):
                                  open_at_end=True,
                                  open_rate=buy_row.open,
                                  close_rate=sell_row.open,
+                                 amount=amount,
                                  sell_reason=SellType.FORCE_SELL
                                  )
             logger.debug('Force_selling still open trade %s with %s perc - %s', btr.pair,
@@ -294,6 +302,7 @@ class Backtesting(object):
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+        compound = args['compound']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
@@ -322,11 +331,25 @@ class Backtesting(object):
             pairs.append(pair)
 
         lock_pair_until: Dict = {}
+        locked_stakes: Dict = {}
         tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
         index = 0
         # Loop timerange and test per pair
         while tmp < end_date:
             # print(f"time: {tmp}")
+
+            if compound:
+                # We need to free locked stakes for all pairs before the main cycle
+                for i, pair in enumerate(ticker):
+                    try:
+                        row = ticker[pair][index]
+                    except IndexError:
+                        continue
+
+                    if pair in locked_stakes and row.date > lock_pair_until[pair]:
+                        args['stake_amount'] += locked_stakes[pair]
+                        del locked_stakes[pair]
+
             for i, pair in enumerate(ticker):
                 try:
                     row = ticker[pair][index]
@@ -353,6 +376,12 @@ class Backtesting(object):
 
                 if trade_entry:
                     lock_pair_until[pair] = trade_entry.close_time
+
+                    if compound:
+                        stake_amount = trade_entry.open_rate * trade_entry.amount
+                        locked_stakes[pair] = stake_amount + trade_entry.profit_abs
+                        args['stake_amount'] -= stake_amount
+
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
@@ -429,6 +458,7 @@ class Backtesting(object):
                     'position_stacking': self.config.get('position_stacking', False),
                     'start_date': min_date,
                     'end_date': max_date,
+                    'compound': self.config.get('compound', False),
                 }
             )
 
