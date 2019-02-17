@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 class Kraken(Exchange):
 
+    _params: Dict = {"trading_agreement": "agree"}
+
     def __init__(self, config: dict) -> None:
         super().__init__(config)
-
-        self._params = {"trading_agreement": "agree"}
 
     def buy(self, pair: str, ordertype: str, amount: float,
             rate: float, time_in_force) -> Dict:
