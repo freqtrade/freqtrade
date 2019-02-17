@@ -60,7 +60,8 @@ class FreqtradeBot(object):
         try:
             self.exchange = ExchangeResolver(exchange_name, self, self.config).exchange
         except ImportError:
-            logger.info(f"No {exchange_name} specific subclass found. Using the generic class instead.")
+            logger.info(
+                f"No {exchange_name} specific subclass found. Using the generic class instead.")
             self.exchange = Exchange(self.config)
 
         self.wallets = Wallets(self.exchange)
