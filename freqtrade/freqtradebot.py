@@ -211,19 +211,11 @@ class FreqtradeBot(object):
             self.state = State.STOPPED
         return state_changed
 
-    def get_target_bid(self, pair: str, ticker: Dict[str, float]) -> float:
+    def get_target_bid(self, pair: str) -> float:
         """
         Calculates bid target between current ask price and last price
-        :param ticker: Ticker to use for getting Ask and Last Price
         :return: float: Price
         """
-        if ticker['ask'] < ticker['last']:
-            ticker_rate = ticker['ask']
-        else:
-            balance = self.config['bid_strategy']['ask_last_balance']
-            ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
-
-        used_rate = ticker_rate
         config_bid_strategy = self.config.get('bid_strategy', {})
         if 'use_order_book' in config_bid_strategy and\
                 config_bid_strategy.get('use_order_book', False):
@@ -233,15 +225,16 @@ class FreqtradeBot(object):
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             order_book_rate = order_book['bids'][order_book_top - 1][0]
-            # if ticker has lower rate, then use ticker ( usefull if down trending )
             logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
-            if ticker_rate < order_book_rate:
-                logger.info('...using ticker rate instead %0.8f', ticker_rate)
-                used_rate = ticker_rate
-            else:
-                used_rate = order_book_rate
+            used_rate = order_book_rate
         else:
             logger.info('Using Last Ask / Last Price')
+            ticker = self.exchange.get_ticker(pair)
+            if ticker['ask'] < ticker['last']:
+                ticker_rate = ticker['ask']
+            else:
+                balance = self.config['bid_strategy']['ask_last_balance']
+                ticker_rate = ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
             used_rate = ticker_rate
 
         return used_rate
@@ -304,7 +297,8 @@ class FreqtradeBot(object):
         if not min_stake_amounts:
             return None
 
-        amount_reserve_percent = 1 - 0.05  # reserve 5% + stoploss
+        # reserve some percent defined in config (5% default) + stoploss
+        amount_reserve_percent = 1.0 - self.config.get('amount_reserve_percent', 0.05)
         if self.strategy.stoploss is not None:
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
@@ -387,7 +381,7 @@ class FreqtradeBot(object):
             buy_limit_requested = price
         else:
             # Calculate amount
-            buy_limit_requested = self.get_target_bid(pair, self.exchange.get_ticker(pair))
+            buy_limit_requested = self.get_target_bid(pair)
 
         min_stake_amount = self._get_min_pair_stake_amount(pair_s, buy_limit_requested)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
@@ -587,7 +581,6 @@ class FreqtradeBot(object):
             raise ValueError(f'Attempt to handle closed trade: {trade}')
 
         logger.debug('Handling %s ...', trade)
-        sell_rate = self.exchange.get_ticker(trade.pair)['bid']
 
         (buy, sell) = (False, False)
         experimental = self.config.get('experimental', {})
@@ -607,18 +600,15 @@ class FreqtradeBot(object):
 
             for i in range(order_book_min, order_book_max + 1):
                 order_book_rate = order_book['asks'][i - 1][0]
-
-                # if orderbook has higher rate (high profit),
-                # use orderbook, otherwise just use bids rate
                 logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
-                if sell_rate < order_book_rate:
-                    sell_rate = order_book_rate
+                sell_rate = order_book_rate
 
                 if self.check_sell(trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
+            sell_rate = self.exchange.get_ticker(trade.pair)['bid']
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
