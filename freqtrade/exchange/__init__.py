@@ -304,7 +304,7 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            if time_in_force != 'gtc':
+            if time_in_force == 'gtc':
                 return self._api.create_order(pair, ordertype, 'buy', amount, rate)
             else:
                 return self._api.create_order(pair, ordertype, 'buy',
@@ -347,7 +347,7 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            if time_in_force != 'gtc':
+            if time_in_force == 'gtc':
                 return self._api.create_order(pair, ordertype, 'sell', amount, rate)
             else:
                 return self._api.create_order(pair, ordertype, 'sell',
