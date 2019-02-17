@@ -42,12 +42,12 @@ class ExchangeResolver(IResolver):
 
         for _path in abs_paths:
             try:
-                pairlist = self._search_object(directory=_path, object_type=Exchange,
+                exchange = self._search_object(directory=_path, object_type=Exchange,
                                                object_name=exchange_name,
                                                kwargs=kwargs)
-                if pairlist:
+                if exchange:
                     logger.info('Using resolved exchange %s from \'%s\'', exchange_name, _path)
-                    return pairlist
+                    return exchange
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
 
