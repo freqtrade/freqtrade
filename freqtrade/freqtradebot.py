@@ -290,7 +290,8 @@ class FreqtradeBot(object):
         if not min_stake_amounts:
             return None
 
-        amount_reserve_percent = 1 - 0.05  # reserve 5% + stoploss
+        # reserve some percent defined in config (5% default) + stoploss
+        amount_reserve_percent = 1.0 - self.config.get('amount_reserve_percent', 0.05)
         if self.strategy.stoploss is not None:
             amount_reserve_percent += self.strategy.stoploss
         # it should not be more than 50%
