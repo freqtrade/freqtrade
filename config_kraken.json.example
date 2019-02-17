@@ -32,7 +32,7 @@
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
             "enableRateLimit": true,
-            "rateLimit": 3000
+            "rateLimit": 1000
         },
         "pair_whitelist": [
             "ETH/EUR",
@@ -40,7 +40,7 @@
             "BCH/EUR"
         ],
         "pair_blacklist": [
-            
+
         ]
     },
     "edge": {
