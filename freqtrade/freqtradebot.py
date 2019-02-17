@@ -20,7 +20,7 @@ from freqtrade.edge import Edge
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.resolvers import StrategyResolver, PairListResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
@@ -55,7 +55,10 @@ class FreqtradeBot(object):
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         self.rpc: RPCManager = RPCManager(self)
-        self.exchange = Exchange(self.config)
+
+        exchange_name = self.config.get('exchange', {}).get('name', 'binance')
+        self.exchange = ExchangeResolver(exchange_name, self, self.config)
+
         self.wallets = Wallets(self.exchange)
         self.dataprovider = DataProvider(self.config, self.exchange)
 
