@@ -55,7 +55,7 @@ class TestStrategy(IStrategy):
 
     # Experimental settings (configuration will overide these if set)
     use_sell_signal = False
-    use_profit_only = False
+    sell_profit_only = False
     ignore_roi_if_buy_signal = False
 
     # Optional order type mapping
@@ -266,7 +266,8 @@ class TestStrategy(IStrategy):
             (
                 (dataframe['adx'] > 30) &
                 (dataframe['tema'] <= dataframe['bb_middleband']) &
-                (dataframe['tema'] > dataframe['tema'].shift(1))
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &
+                (dataframe['volume'] > 1)  # Make sure Volume is not 0
             ),
             'buy'] = 1
 
@@ -283,7 +284,8 @@ class TestStrategy(IStrategy):
             (
                 (dataframe['adx'] > 70) &
                 (dataframe['tema'] > dataframe['bb_middleband']) &
-                (dataframe['tema'] < dataframe['tema'].shift(1))
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &
+                (dataframe['volume'] > 1)  # Make sure Volume is not 0
             ),
             'sell'] = 1
         return dataframe
