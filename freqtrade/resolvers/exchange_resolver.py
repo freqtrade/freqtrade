@@ -22,7 +22,7 @@ class ExchangeResolver(IResolver):
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
-        self.pairlist = self._load_exchange(exchange_name, kwargs={'freqtrade': freqtrade,
+        self.exchange = self._load_exchange(exchange_name, kwargs={'freqtrade': freqtrade,
                                                                    'config': config})
 
     def _load_exchange(
