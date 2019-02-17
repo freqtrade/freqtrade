@@ -16,6 +16,7 @@ Mandatory Parameters are marked as **Required**.
 | `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
 | `stake_currency` | BTC | **Required.** Crypto-currency used for trading.
 | `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
+| `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
 | `ticker_interval` | [1m, 5m, 30m, 1h, 1d] | The ticker interval to use (1min, 5 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-strategy).
 | `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
 | `dry_run` | true | **Required.** Define if the bot must be in Dry-run or production mode.
