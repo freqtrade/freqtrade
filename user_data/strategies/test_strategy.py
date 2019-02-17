@@ -267,7 +267,7 @@ class TestStrategy(IStrategy):
                 (dataframe['adx'] > 30) &
                 (dataframe['tema'] <= dataframe['bb_middleband']) &
                 (dataframe['tema'] > dataframe['tema'].shift(1)) &
-                (dataframe['volume'] > 1)  # Make sure Volume is not 0
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'buy'] = 1
 
@@ -285,7 +285,7 @@ class TestStrategy(IStrategy):
                 (dataframe['adx'] > 70) &
                 (dataframe['tema'] > dataframe['bb_middleband']) &
                 (dataframe['tema'] < dataframe['tema'].shift(1)) &
-                (dataframe['volume'] > 1)  # Make sure Volume is not 0
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1
         return dataframe
