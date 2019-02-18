@@ -17,13 +17,12 @@ class ExchangeResolver(IResolver):
 
     __slots__ = ['exchange']
 
-    def __init__(self, exchange_name: str, freqtrade, config: dict) -> None:
+    def __init__(self, exchange_name: str, config: dict) -> None:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
         """
-        self.exchange = self._load_exchange(exchange_name, kwargs={'freqtrade': freqtrade,
-                                                                   'config': config})
+        self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
 
     def _load_exchange(
             self, exchange_name: str, kwargs: dict) -> Exchange:

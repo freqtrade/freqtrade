@@ -58,7 +58,7 @@ class FreqtradeBot(object):
 
         exchange_name = self.config.get('exchange', {}).get('name', 'bittrex')
         try:
-            self.exchange = ExchangeResolver(exchange_name, self, self.config).exchange
+            self.exchange = ExchangeResolver(exchange_name, self.config).exchange
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
