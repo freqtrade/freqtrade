@@ -16,6 +16,7 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.resolvers import ExchangeResolver
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -49,7 +50,11 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
 
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
     patch_exchange(mocker, api_mock, id)
-    exchange = Exchange(config)
+    config["exchange"]["name"] = id
+    try:
+        exchange = ExchangeResolver(id.title(), config).exchange
+    except ImportError:
+        exchange = Exchange(config)
     return exchange
 
 

@@ -32,23 +32,17 @@ class ExchangeResolver(IResolver):
         :param extra_dir: additional directory to search for the given exchange
         :return: Exchange instance or None
         """
-        current_path = Path(__file__).parent.parent.joinpath('exchange').resolve()
+        abs_path = Path(__file__).parent.parent.joinpath('exchange').resolve()
 
-        abs_paths = [
-            current_path.parent.parent.joinpath('user_data/exchange'),
-            current_path,
-        ]
-
-        for _path in abs_paths:
-            try:
-                exchange = self._search_object(directory=_path, object_type=Exchange,
-                                               object_name=exchange_name,
-                                               kwargs=kwargs)
-                if exchange:
-                    logger.info('Using resolved exchange %s from \'%s\'', exchange_name, _path)
-                    return exchange
-            except FileNotFoundError:
-                logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
+        try:
+            exchange = self._search_object(directory=abs_path, object_type=Exchange,
+                                           object_name=exchange_name,
+                                           kwargs=kwargs)
+            if exchange:
+                logger.info('Using resolved exchange %s from \'%s\'', exchange_name, abs_path)
+                return exchange
+        except FileNotFoundError:
+            logger.warning('Path "%s" does not exist', abs_path.relative_to(Path.cwd()))
 
         raise ImportError(
             "Impossible to load Exchange '{}'. This class does not exist"

@@ -56,7 +56,7 @@ class FreqtradeBot(object):
 
         self.rpc: RPCManager = RPCManager(self)
 
-        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex')
+        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
         try:
             self.exchange = ExchangeResolver(exchange_name, self.config).exchange
         except ImportError:
