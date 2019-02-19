@@ -39,7 +39,7 @@ class ExchangeResolver(IResolver):
                                            object_name=exchange_name,
                                            kwargs=kwargs)
             if exchange:
-                logger.info('Using resolved exchange %s from \'%s\'', exchange_name, abs_path)
+                logger.info("Using resolved exchange %s from '%s'", exchange_name, abs_path)
                 return exchange
         except FileNotFoundError:
             logger.warning('Path "%s" does not exist', abs_path.relative_to(Path.cwd()))
