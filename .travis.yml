@@ -27,7 +27,6 @@ jobs:
     - stage: tests
       script:
       - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
-      - coveralls
       name: pytest
     - script:
       - cp config.json.example config.json
@@ -48,6 +47,8 @@ jobs:
         - build_helpers/publish_docker.sh
       name: "Build and test and push docker image"
 
+after_success:
+  - coveralls
 
 notifications:
   slack:
