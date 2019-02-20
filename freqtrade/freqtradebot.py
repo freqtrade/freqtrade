@@ -163,11 +163,11 @@ class FreqtradeBot(object):
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
 
             # Query trades from persistence layer
-            trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+            trades = self._query_trades()
 
             # Extend active-pair whitelist with pairs from open trades
             # It ensures that tickers are downloaded for open trades
-            self._extend_whitelist_with_trades(self.active_pair_whitelist)
+            self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
 
             # Refreshing candles
             self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
@@ -200,10 +200,11 @@ class FreqtradeBot(object):
             self.state = State.STOPPED
         return state_changed
 
-    def _extend_whitelist_with_trades(self, whitelist: List[str]):
+    def _query_trades(self) -> List[Any]:
         # Query trades from persistence layer
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+        return Trade.query.filter(Trade.is_open.is_(True)).all()
 
+    def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
         # Extend whitelist with pairs from open trades
         whitelist.extend([trade.pair for trade in trades if trade.pair not in whitelist])
 
