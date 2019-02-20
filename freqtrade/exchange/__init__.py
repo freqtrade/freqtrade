@@ -283,21 +283,32 @@ class Exchange(object):
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
 
+    def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
+                      rate: float, params: Dict = {}) -> Dict:
+        order_id = f'dry_run_buy_{randint(0, 10**6)}'
+        dry_order = {
+            "id": order_id,
+            'pair': pair,
+            'price': rate,
+            'amount': amount,
+            'type': ordertype,
+            'side': 'buy',
+            'remaining': 0.0,
+            'datetime': arrow.utcnow().isoformat(),
+            'status': 'closed',
+            'fee': None  # should this be None or skipped?
+        }
+        return order_id, dry_order
+
+    def create_order(self, pair: str, ordertype: str, side: str, amount: float,
+                     rate: float, params: Dict = {}) -> Dict:
+        pass  # TODO: finish this
+
     def buy(self, pair: str, ordertype: str, amount: float,
             rate: float, time_in_force) -> Dict:
         if self._conf['dry_run']:
-            order_id = f'dry_run_buy_{randint(0, 10**6)}'
-            self._dry_run_open_orders[order_id] = {
-                'pair': pair,
-                'price': rate,
-                'amount': amount,
-                'type': ordertype,
-                'side': 'buy',
-                'remaining': 0.0,
-                'datetime': arrow.utcnow().isoformat(),
-                'status': 'closed',
-                'fee': None
-            }
+            order_id, dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
+            self._dry_run_open_orders[order_id] = dry_order
             return {'id': order_id}
 
         try:
@@ -331,17 +342,8 @@ class Exchange(object):
     def sell(self, pair: str, ordertype: str, amount: float,
              rate: float, time_in_force='gtc') -> Dict:
         if self._conf['dry_run']:
-            order_id = f'dry_run_sell_{randint(0, 10**6)}'
-            self._dry_run_open_orders[order_id] = {
-                'pair': pair,
-                'price': rate,
-                'amount': amount,
-                'type': ordertype,
-                'side': 'sell',
-                'remaining': 0.0,
-                'datetime': arrow.utcnow().isoformat(),
-                'status': 'closed'
-            }
+            order_id, dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
+            self._dry_run_open_orders[order_id] = dry_order
             return {'id': order_id}
 
         try:
@@ -389,21 +391,11 @@ class Exchange(object):
                 'In stoploss limit order, stop price should be more than limit price')
 
         if self._conf['dry_run']:
-            order_id = f'dry_run_buy_{randint(0, 10**6)}'
-            self._dry_run_open_orders[order_id] = {
-                'info': {},
-                'id': order_id,
-                'pair': pair,
-                'price': stop_price,
-                'amount': amount,
-                'type': 'stop_loss_limit',
-                'side': 'sell',
-                'remaining': amount,
-                'datetime': arrow.utcnow().isoformat(),
-                'status': 'open',
-                'fee': None
-            }
-            return self._dry_run_open_orders[order_id]
+            order_id, dry_order = self.dry_run_order(
+                pair, "stop_loss_limit", "sell", amount, stop_price, rate)
+            dry_order.update({"info": {}, "remaining": amount, "status": "open"})
+            self._dry_run_open_orders[order_id] = dry_order
+            return dry_order
 
         try:
 
