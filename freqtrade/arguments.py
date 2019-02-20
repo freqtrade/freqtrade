@@ -78,7 +78,8 @@ class Arguments(object):
         )
         self.parser.add_argument(
             '-c', '--config',
-            help='Specify configuration file (default: %(default)s).',
+            help='Specify configuration file (default: %(default)s). '
+                 'Multiple --config options may be used.',
             dest='config',
             action='append',
             type=str,
