@@ -284,9 +284,9 @@ class Exchange(object):
         return price
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                      rate: float, params: Dict = {}) -> Dict:
-        order_id = f'dry_run_buy_{randint(0, 10**6)}'
-        dry_order = {
+                      rate: float, params: Dict = {}) -> Tuple[str, Dict[str, Any]]:
+        order_id = f'dry_run_{side}_{randint(0, 10**6)}'
+        dry_order = {  # TODO: ad additional entry should be added for stoploss limit
             "id": order_id,
             'pair': pair,
             'price': rate,
@@ -302,84 +302,68 @@ class Exchange(object):
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, params: Dict = {}) -> Dict:
-        pass  # TODO: finish this
+        try:
+            return self._api.create_order(pair, ordertype, side,
+                                          amount, rate, params)
+
+        except ccxt.InsufficientFunds as e:
+            raise DependencyException(
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}.'
+                f'Tried to {side} amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Message: {e}')
+        except ccxt.InvalidOrder as e:
+            raise DependencyException(
+                f'Could not create {ordertype} {side} order on market {pair}.'
+                f'Tried to {side} amount {amount} at rate {rate} (total {rate*amount}).'
+                f'Message: {e}')
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}')
+        except ccxt.BaseError as e:
+            raise OperationalException(e)
 
     def buy(self, pair: str, ordertype: str, amount: float,
             rate: float, time_in_force) -> Dict:
+
         if self._conf['dry_run']:
             order_id, dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
             self._dry_run_open_orders[order_id] = dry_order
             return {'id': order_id}
 
-        try:
-            # Set the precision for amount and price(rate) as accepted by the exchange
-            amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+        # Set the precision for amount and price(rate) as accepted by the exchange
+        amount = self.symbol_amount_prec(pair, amount)
+        rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            params = self._params.copy()
-            if time_in_force != 'gtc':
-                params.update({'timeInForce': time_in_force})
+        params = self._params.copy()
+        if time_in_force != 'gtc':
+            params.update({'timeInForce': time_in_force})
 
-            return self._api.create_order(pair, ordertype, 'buy',
-                                          amount, rate, params)
-
-        except ccxt.InsufficientFunds as e:
-            raise DependencyException(
-                f'Insufficient funds to create limit buy order on market {pair}.'
-                f'Tried to buy amount {amount} at rate {rate} (total {rate*amount}).'
-                f'Message: {e}')
-        except ccxt.InvalidOrder as e:
-            raise DependencyException(
-                f'Could not create limit buy order on market {pair}.'
-                f'Tried to buy amount {amount} at rate {rate} (total {rate*amount}).'
-                f'Message: {e}')
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not place buy order due to {e.__class__.__name__}. Message: {e}')
-        except ccxt.BaseError as e:
-            raise OperationalException(e)
+        return self.create_order(pair, ordertype, 'buy', amount, rate, params)
 
     def sell(self, pair: str, ordertype: str, amount: float,
              rate: float, time_in_force='gtc') -> Dict:
+
         if self._conf['dry_run']:
             order_id, dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
             self._dry_run_open_orders[order_id] = dry_order
             return {'id': order_id}
 
-        try:
-            # Set the precision for amount and price(rate) as accepted by the exchange
-            amount = self.symbol_amount_prec(pair, amount)
-            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+        # Set the precision for amount and price(rate) as accepted by the exchange
+        amount = self.symbol_amount_prec(pair, amount)
+        rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            params = self._params.copy()
-            if time_in_force != 'gtc':
-                params.update({'timeInForce': time_in_force})
+        params = self._params.copy()
+        if time_in_force != 'gtc':
+            params.update({'timeInForce': time_in_force})
 
-            return self._api.create_order(pair, ordertype, 'sell',
-                                          amount, rate, params)
-
-        except ccxt.InsufficientFunds as e:
-            raise DependencyException(
-                f'Insufficient funds to create limit sell order on market {pair}.'
-                f'Tried to sell amount {amount} at rate {rate} (total {rate*amount}).'
-                f'Message: {e}')
-        except ccxt.InvalidOrder as e:
-            raise DependencyException(
-                f'Could not create limit sell order on market {pair}.'
-                f'Tried to sell amount {amount} at rate {rate} (total {rate*amount}).'
-                f'Message: {e}')
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not place sell order due to {e.__class__.__name__}. Message: {e}')
-        except ccxt.BaseError as e:
-            raise OperationalException(e)
+        return self.create_order(pair, ordertype, 'sell', amount, rate, params)
 
     def stoploss_limit(self, pair: str, amount: float, stop_price: float, rate: float) -> Dict:
         """
         creates a stoploss limit order.
         NOTICE: it is not supported by all exchanges. only binance is tested for now.
         """
-
+        ordertype = "stop_loss_limit"
         # Set the precision for amount and price(rate) as accepted by the exchange
         amount = self.symbol_amount_prec(pair, amount)
         rate = self.symbol_price_prec(pair, rate)
@@ -392,39 +376,18 @@ class Exchange(object):
 
         if self._conf['dry_run']:
             order_id, dry_order = self.dry_run_order(
-                pair, "stop_loss_limit", "sell", amount, stop_price, rate)
+                pair, ordertype, "sell", amount, stop_price)
             dry_order.update({"info": {}, "remaining": amount, "status": "open"})
             self._dry_run_open_orders[order_id] = dry_order
             return dry_order
 
-        try:
+        params = self._params.copy()
+        params.update({'stopPrice': stop_price})
 
-            params = self._params.copy()
-            params.update({'stopPrice': stop_price})
-
-            order = self._api.create_order(pair, 'stop_loss_limit', 'sell',
-                                           amount, rate, params)
-            logger.info('stoploss limit order added for %s. '
-                        'stop price: %s. limit: %s' % (pair, stop_price, rate))
-            return order
-
-        except ccxt.InsufficientFunds as e:
-            raise DependencyException(
-                f'Insufficient funds to place stoploss limit order on market {pair}. '
-                f'Tried to put a stoploss amount {amount} with '
-                f'stop {stop_price} and limit {rate} (total {rate*amount}).'
-                f'Message: {e}')
-        except ccxt.InvalidOrder as e:
-            raise DependencyException(
-                f'Could not place stoploss limit order on market {pair}.'
-                f'Tried to place stoploss amount {amount} with '
-                f'stop {stop_price} and limit {rate} (total {rate*amount}).'
-                f'Message: {e}')
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not place stoploss limit order due to {e.__class__.__name__}. Message: {e}')
-        except ccxt.BaseError as e:
-            raise OperationalException(e)
+        order = self.create_order(pair, ordertype, 'sell', amount, rate, params)
+        logger.info('stoploss limit order added for %s. '
+                    'stop price: %s. limit: %s' % (pair, stop_price, rate))
+        return order
 
     @retrier
     def get_balance(self, currency: str) -> float:
