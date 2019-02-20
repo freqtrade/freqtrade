@@ -7,7 +7,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
@@ -166,15 +166,11 @@ class FreqtradeBot(object):
             trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
             # Extend active-pair whitelist with pairs from open trades
-            # ensures that tickers are downloaded for open trades
-            self.active_pair_whitelist.extend([trade.pair for trade in trades
-                                               if trade.pair not in self.active_pair_whitelist])
+            # It ensures that tickers are downloaded for open trades
+            self._extend_whitelist_with_trades(self.active_pair_whitelist)
 
-            # Create pair-whitelist tuple with (pair, ticker_interval)
-            pair_whitelist_tuple = [(pair, self.config['ticker_interval'])
-                                    for pair in self.active_pair_whitelist]
             # Refreshing candles
-            self.dataprovider.refresh(pair_whitelist_tuple,
+            self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
                                       self.strategy.informative_pairs())
 
             # First process current opened trades
@@ -203,6 +199,19 @@ class FreqtradeBot(object):
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
         return state_changed
+
+    def _extend_whitelist_with_trades(self, whitelist: List[str]):
+        # Query trades from persistence layer
+        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+
+        # Extend whitelist with pairs from open trades
+        whitelist.extend([trade.pair for trade in trades if trade.pair not in whitelist])
+
+    def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
+        """
+        Create pair-whitelist tuple with (pair, ticker_interval)
+        """
+        return [(pair, self.config['ticker_interval']) for pair in pairs]
 
     def get_target_bid(self, pair: str) -> float:
         """
