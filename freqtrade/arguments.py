@@ -384,10 +384,10 @@ class Arguments(object):
 
         self.parser.add_argument(
             '-c', '--config',
-            help='Specify configuration file, used for additional exchange parameters. '
+            help='Specify configuration file (default: %(default)s). '
                  'Multiple --config options may be used.',
             dest='config',
-            default=None,
+            action='append',
             type=str,
             metavar='PATH',
         )
