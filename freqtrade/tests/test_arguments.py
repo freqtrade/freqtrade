@@ -16,7 +16,7 @@ def test_parse_args_none() -> None:
 
 def test_parse_args_defaults() -> None:
     args = Arguments([], '').get_parsed_arg()
-    assert args.config == 'config.json'
+    assert args.config == ['config.json']
     assert args.strategy_path is None
     assert args.datadir is None
     assert args.loglevel == 0
@@ -24,10 +24,15 @@ def test_parse_args_defaults() -> None:
 
 def test_parse_args_config() -> None:
     args = Arguments(['-c', '/dev/null'], '').get_parsed_arg()
-    assert args.config == '/dev/null'
+    assert args.config == ['/dev/null']
 
     args = Arguments(['--config', '/dev/null'], '').get_parsed_arg()
-    assert args.config == '/dev/null'
+    assert args.config == ['/dev/null']
+
+    args = Arguments(['--config', '/dev/null',
+                      '--config', '/dev/zero'],
+                     '').get_parsed_arg()
+    assert args.config == ['/dev/null', '/dev/zero']
 
 
 def test_parse_args_db_url() -> None:
@@ -139,7 +144,7 @@ def test_parse_args_backtesting_custom() -> None:
         'TestStrategy'
         ]
     call_args = Arguments(args, '').get_parsed_arg()
-    assert call_args.config == 'test_conf.json'
+    assert call_args.config == ['test_conf.json']
     assert call_args.live is True
     assert call_args.loglevel == 0
     assert call_args.subparser == 'backtesting'
@@ -158,7 +163,7 @@ def test_parse_args_hyperopt_custom() -> None:
         '--spaces', 'buy'
     ]
     call_args = Arguments(args, '').get_parsed_arg()
-    assert call_args.config == 'test_conf.json'
+    assert call_args.config == ['test_conf.json']
     assert call_args.epochs == 20
     assert call_args.loglevel == 0
     assert call_args.subparser == 'hyperopt'

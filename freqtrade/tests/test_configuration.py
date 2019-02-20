@@ -50,18 +50,20 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     validated_conf = configuration._load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
-    assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     default_conf['max_open_trades'] = 0
-    file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
-    Configuration(Namespace())._load_config_file('somefile')
-    assert file_mock.call_count == 1
+    args = Arguments([], '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf['max_open_trades'] == 0
+    assert 'internals' in validated_conf
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
