@@ -201,11 +201,15 @@ class FreqtradeBot(object):
         return state_changed
 
     def _query_trades(self) -> List[Any]:
-        # Query trades from persistence layer
+        """
+        Query trades from persistence layer
+        """
         return Trade.query.filter(Trade.is_open.is_(True)).all()
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
-        # Extend whitelist with pairs from open trades
+        """
+        Extend whitelist with pairs from open trades
+        """
         whitelist.extend([trade.pair for trade in trades if trade.pair not in whitelist])
 
     def _create_pair_whitelist(self, pairs: List[str]) -> List[Tuple[str, str]]:
