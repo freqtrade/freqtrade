@@ -540,9 +540,9 @@ class Exchange(object):
 
         input_coroutines = []
 
-        # Gather corotines to run
+        # Gather coroutines to run
         for pair, ticker_interval in set(pair_list):
-            # Calculating ticker interval in second
+            # Calculating ticker interval in seconds
             interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
             if not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
