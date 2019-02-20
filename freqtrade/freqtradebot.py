@@ -157,7 +157,7 @@ class FreqtradeBot(object):
             self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist
 
-            # Calculating Edge positiong
+            # Calculating Edge positioning
             if self.edge:
                 self.edge.calculate()
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
