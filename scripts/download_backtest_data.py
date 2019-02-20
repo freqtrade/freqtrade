@@ -39,8 +39,6 @@ if args.config:
         # Merge config options, overwriting old values
         config = deep_merge_dicts(configuration._load_config_file(path), config)
 
-###    config = configuration._load_config_file(args.config)
-
     config['stake_currency'] = ''
     # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
