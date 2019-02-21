@@ -12,7 +12,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade import DependencyException, OperationalException, TemporaryError
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, Kraken
 from freqtrade.exchange.exchange import API_RETRY_COUNT
 from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
@@ -121,6 +121,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
 
     exchange = ExchangeResolver('Kraken', default_conf).exchange
     assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Kraken)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog.record_tuples)
 

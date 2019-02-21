@@ -2,9 +2,9 @@
 This module loads custom exchanges
 """
 import logging
-from pathlib import Path
 
 from freqtrade.exchange import Exchange
+import freqtrade.exchange as exchanges
 from freqtrade.resolvers import IResolver
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class ExchangeResolver(IResolver):
     def __init__(self, exchange_name: str, config: dict) -> None:
         """
         Load the custom class from config parameter
-        :param config: configuration dictionary or None
+        :param config: configuration dictionary
         """
         try:
             self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
@@ -32,22 +32,22 @@ class ExchangeResolver(IResolver):
     def _load_exchange(
             self, exchange_name: str, kwargs: dict) -> Exchange:
         """
-        Search and loads the specified exchange.
+        Loads the specified exchange.
+        Only checks for exchanges exported in freqtrade.exchanges
         :param exchange_name: name of the module to import
-        :param extra_dir: additional directory to search for the given exchange
         :return: Exchange instance or None
         """
-        abs_path = Path(__file__).parent.parent.joinpath('exchange').resolve()
 
         try:
-            exchange = self._search_object(directory=abs_path, object_type=Exchange,
-                                           object_name=exchange_name,
-                                           kwargs=kwargs)
+            ex_class = getattr(exchanges, exchange_name)
+
+            exchange = ex_class(kwargs['config'])
             if exchange:
-                logger.info("Using resolved exchange %s from '%s'", exchange_name, abs_path)
+                logger.info("Using resolved exchange %s", exchange_name)
                 return exchange
-        except FileNotFoundError:
-            logger.warning('Path "%s" does not exist', abs_path.relative_to(Path.cwd()))
+        except AttributeError:
+            # Pass and raise ImportError instead
+            pass
 
         raise ImportError(
             "Impossible to load Exchange '{}'. This class does not exist"
