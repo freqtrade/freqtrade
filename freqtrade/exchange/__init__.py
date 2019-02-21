@@ -285,7 +285,7 @@ class Exchange(object):
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Tuple[str, Dict[str, Any]]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
-        dry_order = {  # TODO: ad additional entry should be added for stoploss limit
+        dry_order = {  # TODO: additional entry should be added for stoploss limit
             "id": order_id,
             'pair': pair,
             'price': rate,
@@ -295,7 +295,7 @@ class Exchange(object):
             'remaining': 0.0,
             'datetime': arrow.utcnow().isoformat(),
             'status': 'closed',
-            'fee': None  # should this be None or skipped?
+            'fee': None
         }
         return order_id, dry_order
 
