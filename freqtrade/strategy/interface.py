@@ -13,7 +13,9 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade import constants
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.persistence import Trade
+from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,11 @@ class IStrategy(ABC):
     # associated stoploss
     stoploss: float
 
+    # trailing stoploss
+    trailing_stop: bool = False
+    trailing_stop_positive: float
+    trailing_stop_positive_offset: float
+
     # associated ticker interval
     ticker_interval: str
 
@@ -75,7 +82,8 @@ class IStrategy(ABC):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'limit',
-        'stoploss_on_exchange': False
+        'stoploss_on_exchange': False,
+        'stoploss_on_exchange_interval': 60,
     }
 
     # Optional time in force
@@ -87,12 +95,16 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    # Dict to determine if analysis is necessary
-    _last_candle_seen_per_pair: Dict[str, datetime] = {}
+    # Class level variables (intentional) containing
+    # the dataprovider (dp) (access to other candles, historic data, ...)
+    # and wallets - access to the current balance.
+    dp: DataProvider
+    wallets: Wallets
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self._last_candle_seen_per_pair = {}
+        # Dict to determine if analysis is necessary
+        self._last_candle_seen_per_pair: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -121,6 +133,19 @@ class IStrategy(ABC):
         :return: DataFrame with sell column
         """
 
+    def informative_pairs(self) -> List[Tuple[str, str]]:
+        """
+        Define additional, informative pair/interval combinations to be cached from the exchange.
+        These pair/interval combinations are non-tradeable, unless they are part
+        of the whitelist as well.
+        For more information, please consult the documentation
+        :return: List of tuples in the format (pair, interval)
+            Sample: return [("ETH/USDT", "5m"),
+                            ("BTC/USDT", "15m"),
+                            ]
+        """
+        return []
+
     def get_strategy_name(self) -> str:
         """
         Returns strategy class name
@@ -141,19 +166,19 @@ class IStrategy(ABC):
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
             # Defs that only make change on new candle data.
-            logging.debug("TA Analysis Launched")
+            logger.debug("TA Analysis Launched")
             dataframe = self.advise_indicators(dataframe, metadata)
             dataframe = self.advise_buy(dataframe, metadata)
             dataframe = self.advise_sell(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
         else:
-            logging.debug("Skippinig TA Analysis for already analyzed candle")
+            logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
-        logging.debug("Loop Analysis Launched")
+        logger.debug("Loop Analysis Launched")
 
         return dataframe
 
@@ -228,12 +253,9 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
-        if self.order_types.get('stoploss_on_exchange'):
-            stoplossflag = SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
-        else:
-            stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                                  current_time=date, current_profit=current_profit,
-                                                  force_stoploss=force_stoploss)
+        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                              current_time=date, current_profit=current_profit,
+                                              force_stoploss=force_stoploss)
 
         if stoplossflag.sell_flag:
             return stoplossflag
@@ -271,14 +293,16 @@ class IStrategy(ABC):
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
-
         trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
                                else self.stoploss, initial=True)
 
-        # evaluate if the stoploss was hit
-        if self.stoploss is not None and trade.stop_loss >= current_rate:
+        # evaluate if the stoploss was hit if stoploss is not on exchange
+        if ((self.stoploss is not None) and
+           (trade.stop_loss >= current_rate) and
+           (not self.order_types.get('stoploss_on_exchange'))):
             selltype = SellType.STOP_LOSS
-            if trailing_stop:
+            # If Trailing stop (and max-rate did move above open rate)
+            if trailing_stop and trade.open_rate != trade.max_rate:
                 selltype = SellType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"HIT STOP: current price at {current_rate:.6f}, "
@@ -295,8 +319,9 @@ class IStrategy(ABC):
 
             # check if we have a special stop loss for positive condition
             # and if profit is positive
-            stop_loss_value = self.stoploss
-            sl_offset = self.config.get('trailing_stop_positive_offset', 0.0)
+            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
+
+            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
 
             if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
 
@@ -313,17 +338,18 @@ class IStrategy(ABC):
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
-        sell
+        sell. Requires current_profit to be in percent!!
         :return True if bot should sell at current rate
         """
 
         # Check if time matches and current rate is above threshold
-        time_diff = (current_time.timestamp() - trade.open_date.timestamp()) / 60
-        for duration, threshold in self.minimal_roi.items():
-            if time_diff <= duration:
-                return False
-            if current_profit > threshold:
-                return True
+        trade_dur = (current_time.timestamp() - trade.open_date.timestamp()) / 60
+
+        # Get highest entry in ROI dict where key >= trade-duration
+        roi_entry = max(list(filter(lambda x: trade_dur >= x, self.minimal_roi.keys())))
+        threshold = self.minimal_roi[roi_entry]
+        if current_profit > threshold:
+            return True
 
         return False
 

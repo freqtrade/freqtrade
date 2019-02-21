@@ -25,7 +25,7 @@ def main(sysargv: List[str]) -> None:
     """
     arguments = Arguments(
         sysargv,
-        'Simple High Frequency Trading Bot for crypto currencies'
+        'Free, open source crypto trading bot'
     )
     args = arguments.get_parsed_arg()
 
@@ -39,13 +39,13 @@ def main(sysargv: List[str]) -> None:
     return_code = 1
     try:
         # Load and validate configuration
-        config = Configuration(args).get_config()
+        config = Configuration(args, None).get_config()
 
         # Init the bot
         freqtrade = FreqtradeBot(config)
 
         state = None
-        while 1:
+        while True:
             state = freqtrade.worker(old_state=state)
             if state == State.RELOAD_CONF:
                 freqtrade = reconfigure(freqtrade, args)
@@ -76,7 +76,7 @@ def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
     freqtrade.cleanup()
 
     # Create new instance
-    freqtrade = FreqtradeBot(Configuration(args).get_config())
+    freqtrade = FreqtradeBot(Configuration(args, None).get_config())
     freqtrade.rpc.send_msg({
         'type': RPCMessageType.STATUS_NOTIFICATION,
         'status': 'config reloaded'

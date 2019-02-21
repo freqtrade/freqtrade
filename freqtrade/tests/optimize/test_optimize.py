@@ -30,7 +30,8 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
         history.load_data(
             datadir=None,
             ticker_interval='1m',
-            pairs=['UNITTEST/BTC']
+            pairs=['UNITTEST/BTC'],
+            fill_up_missing=False
         )
     )
     min_date, max_date = optimize.get_timeframe(data)

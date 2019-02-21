@@ -13,6 +13,7 @@ from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has
 
 
@@ -73,11 +74,12 @@ def test_load_config_max_open_trades_minus_one(default_conf, mocker, caplog) -> 
     args = Arguments([], '').get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
-    print(validated_conf)
 
     assert validated_conf['max_open_trades'] > 999999999
     assert validated_conf['max_open_trades'] == float('inf')
     assert log_has('Validating configuration ...', caplog.record_tuples)
+    assert "runmode" in validated_conf
+    assert validated_conf['runmode'] == RunMode.DRY_RUN
 
 
 def test_load_config_file_exception(mocker) -> None:
@@ -125,6 +127,43 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     assert validated_conf.get('strategy_path') == '/some/path'
     assert validated_conf.get('db_url') == 'sqlite:///someurl'
 
+    # Test conf provided db_url prod
+    conf = default_conf.copy()
+    conf["dry_run"] = False
+    conf["db_url"] = "sqlite:///path/to/db.sqlite"
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    arglist = [
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    assert validated_conf.get('db_url') == "sqlite:///path/to/db.sqlite"
+
+    # Test conf provided db_url dry_run
+    conf = default_conf.copy()
+    conf["dry_run"] = True
+    conf["db_url"] = "sqlite:///path/to/db.sqlite"
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(conf)
+    ))
+
+    arglist = [
+        '--strategy', 'TestStrategy',
+        '--strategy-path', '/some/path'
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+    assert validated_conf.get('db_url') == "sqlite:///path/to/db.sqlite"
+
+    # Test args provided db_url prod
     conf = default_conf.copy()
     conf["dry_run"] = False
     del conf["db_url"]
@@ -141,8 +180,10 @@ def test_load_config_with_params(default_conf, mocker) -> None:
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
     assert validated_conf.get('db_url') == DEFAULT_DB_PROD_URL
+    assert "runmode" in validated_conf
+    assert validated_conf['runmode'] == RunMode.LIVE
 
-    # Test dry=run with ProdURL
+    # Test args provided db_url dry_run
     conf = default_conf.copy()
     conf["dry_run"] = True
     conf["db_url"] = DEFAULT_DB_PROD_URL
@@ -247,6 +288,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
+    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
 
     arglist = [
         '--config', 'config.json',
@@ -328,8 +370,9 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
 
     args = Arguments(arglist, '').get_parsed_arg()
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.BACKTEST)
     config = configuration.get_config()
+    assert config['runmode'] == RunMode.BACKTEST
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -374,7 +417,7 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     ]
     args = Arguments(arglist, '').get_parsed_arg()
 
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.HYPEROPT)
     config = configuration.get_config()
 
     assert 'epochs' in config
@@ -385,6 +428,8 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
     assert 'spaces' in config
     assert config['spaces'] == ['all']
     assert log_has('Parameter -s/--spaces detected: [\'all\']', caplog.record_tuples)
+    assert "runmode" in config
+    assert config['runmode'] == RunMode.HYPEROPT
 
 
 def test_check_exchange(default_conf, caplog) -> None:
@@ -487,3 +532,13 @@ def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
 
 def test_validate_default_conf(default_conf) -> None:
     validate(default_conf, constants.CONF_SCHEMA, Draft4Validator)
+
+
+def test__create_datadir(mocker, default_conf, caplog) -> None:
+    mocker.patch('os.path.isdir', MagicMock(return_value=False))
+    md = MagicMock()
+    mocker.patch('os.makedirs', md)
+    cfg = Configuration(Namespace())
+    cfg._create_datadir(default_conf, '/foo/bar')
+    assert md.call_args[0][0] == "/foo/bar"
+    assert log_has('Created data directory: /foo/bar', caplog.record_tuples)

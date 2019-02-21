@@ -1,25 +1,69 @@
 # Installation
-
 This page explains how to prepare your environment for running the bot.
 
-To understand how to set up the bot please read the [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md) page.
+## Prerequisite
+Before running your bot in production you will need to setup few
+external API. In production mode, the bot required valid Bittrex API
+credentials and a Telegram bot (optional but recommended).
 
-## Table of Contents
+- [Setup your exchange account](#setup-your-exchange-account)
+- [Backtesting commands](#setup-your-telegram-bot)
 
-* [Table of Contents](#table-of-contents)
-* [Easy Installation - Linux Script](#easy-installation---linux-script)
-* [Automatic Installation - Docker](#automatic-installation---docker)
-* [Custom Linux MacOS Installation](#custom-installation)
-	- [Requirements](#requirements)
-	- [Linux - Ubuntu 16.04](#linux---ubuntu-1604)
-	- [MacOS](#macos)
-	- [Setup Config and virtual env](#setup-config-and-virtual-env)
-* [Windows](#windows)
+### Setup your exchange account
+*To be completed, please feel free to complete this section.*
 
-<!-- /TOC -->
+### Setup your Telegram bot
+The only things you need is a working Telegram bot and its API token.
+Below we explain how to create your Telegram Bot, and how to get your
+Telegram user id.
 
-------
+### 1. Create your Telegram bot
 
+**1.1. Start a chat with https://telegram.me/BotFather**
+
+**1.2. Send the message `/newbot`. ** *BotFather response:*
+```
+Alright, a new bot. How are we going to call it? Please choose a name for your bot.
+```
+
+**1.3. Choose the public name of your bot (e.x. `Freqtrade bot`)**
+*BotFather response:*
+```
+Good. Now let's choose a username for your bot. It must end in `bot`. Like this, for example: TetrisBot or tetris_bot.
+```
+**1.4. Choose the name id of your bot (e.x "`My_own_freqtrade_bot`")**
+
+**1.5. Father bot will return you the token (API key)**<br/>
+Copy it and keep it you will use it for the config parameter `token`.
+*BotFather response:*
+```hl_lines="4"
+Done! Congratulations on your new bot. You will find it at t.me/My_own_freqtrade_bot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+
+Use this token to access the HTTP API:
+521095879:AAEcEZEL7ADJ56FtG_qD0bQJSKETbXCBCi0
+
+For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+```
+**1.6. Don't forget to start the conversation with your bot, by clicking /START button**
+
+### 2. Get your user id
+**2.1. Talk to https://telegram.me/userinfobot**
+
+**2.2. Get your "Id", you will use it for the config parameter
+`chat_id`.**
+<hr/>
+## Quick start
+Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
+
+```bash
+git clone git@github.com:freqtrade/freqtrade.git
+cd freqtrade
+git checkout develop
+./setup.sh --install
+```
+!!! Note
+    Windows installation is explained [here](#windows).
+<hr/>
 ## Easy Installation - Linux Script
 
 If you are on Debian, Ubuntu or MacOS a freqtrade provides a script to Install, Update, Configure, and Reset your bot.
@@ -33,7 +77,7 @@ usage:
 	-c,--config     Easy config generator (Will override your existing file).
 ```
 
-### --install
+** --install **
 
 This script will install everything you need to run the bot:
 
@@ -43,15 +87,15 @@ This script will install everything you need to run the bot:
 
 This script is a combination of `install script` `--reset`, `--config`
 
-### --update
+** --update **
 
 Update parameter will pull the last version of your current branch and update your virtualenv.
 
-### --reset
+** --reset **
 
 Reset parameter will hard reset your branch (only if you are on `master` or `develop`) and recreate your virtualenv.
 
-### --config
+** --config **
 
 Config parameter is a `config.json` configurator. This script will ask you questions to setup your bot and create your `config.json`.
 
@@ -69,33 +113,39 @@ Once you have Docker installed, simply create the config file (e.g. `config.json
 
 ### 1. Prepare the Bot
 
-#### 1.1. Clone the git repository
+**1.1. Clone the git repository**
 
+Linux/Mac/Windows with WSL
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
 ```
 
-#### 1.2. (Optional) Checkout the develop branch
+Windows with docker
+```bash
+git clone --config core.autocrlf=input https://github.com/freqtrade/freqtrade.git
+```
+
+**1.2. (Optional) Checkout the develop branch**
 
 ```bash
 git checkout develop
 ```
 
-#### 1.3. Go into the new directory
+**1.3. Go into the new directory**
 
 ```bash
 cd freqtrade
 ```
 
-#### 1.4. Copy `config.json.example` to `config.json`
+**1.4. Copy `config.json.example` to `config.json`**
 
 ```bash
 cp -n config.json.example config.json
 ```
 
-> To edit the config please refer to the [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md) page.
+> To edit the config please refer to the [Bot Configuration](configuration.md) page.
 
-#### 1.5. Create your database file *(optional - the bot will create it if it is missing)*
+**1.5. Create your database file *(optional - the bot will create it if it is missing)**
 
 Production
 
@@ -115,7 +165,7 @@ Either use the prebuilt image from docker hub - or build the image yourself if y
 
 Branches / tags available can be checked out on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/tags/).
 
-#### 2.1. Download the docker image
+**2.1. Download the docker image**
 
 Pull the image from docker hub and (optionally) change the name of the image
 
@@ -127,7 +177,7 @@ docker tag freqtradeorg/freqtrade:develop freqtrade
 
 To update the image, simply run the above commands again and restart your running container.
 
-#### 2.2. Build the Docker image
+**2.2. Build the Docker image**
 
 ```bash
 cd freqtrade
@@ -164,7 +214,7 @@ There is known issue in OSX Docker versions after 17.09.1, whereby /etc/localtim
 docker run --rm -e TZ=`ls -la /etc/localtime | cut -d/ -f8-9` -v `pwd`/config.json:/freqtrade/config.json -it freqtrade
 ```
 
-More information on this docker issue and work-around can be read [here](https://github.com/docker/for-mac/issues/2396)
+More information on this docker issue and work-around can be read [here](https://github.com/docker/for-mac/issues/2396).
 
 In this example, the database will be created inside the docker instance and will be lost when you will refresh your image.
 
@@ -172,7 +222,7 @@ In this example, the database will be created inside the docker instance and wil
 
 To run a restartable instance in the background (feel free to place your configuration and database files wherever it feels comfortable on your filesystem).
 
-#### 5.1. Move your config file and database
+**5.1. Move your config file and database**
 
 ```bash
 mkdir ~/.freqtrade
@@ -180,7 +230,7 @@ mv config.json ~/.freqtrade
 mv tradesv3.sqlite ~/.freqtrade
 ```
 
-#### 5.2. Run the docker image
+**5.2. Run the docker image**
 
 ```bash
 docker run -d \
@@ -191,8 +241,9 @@ docker run -d \
   freqtrade --db-url sqlite:///tradesv3.sqlite
 ```
 
-*Note*: db-url defaults to `sqlite:///tradesv3.sqlite` but it defaults to `sqlite://` if `dry_run=True` is being used.
-To override this behaviour use a custom db-url value: i.e.: `--db-url sqlite:///tradesv3.dryrun.sqlite`
+!!! Note
+    db-url defaults to `sqlite:///tradesv3.sqlite` but it defaults to `sqlite://` if `dry_run=True` is being used.
+    To override this behaviour use a custom db-url value: i.e.: `--db-url sqlite:///tradesv3.dryrun.sqlite`
 
 ### 6. Monitor your Docker instance
 
@@ -208,14 +259,15 @@ docker start freqtrade
 
 For more information on how to operate Docker, please refer to the [official Docker documentation](https://docs.docker.com/).
 
-*Note*: You do not need to rebuild the image for configuration changes, it will suffice to edit `config.json` and restart the container.
+!!! Note
+    You do not need to rebuild the image for configuration changes, it will suffice to edit `config.json` and restart the container.
 
 ### 7. Backtest with docker
 
 The following assumes that the above steps (1-4) have been completed successfully.
 Also, backtest-data should be available at `~/.freqtrade/user_data/`.
 
-``` bash
+```bash
 docker run -d \
   --name freqtrade \
   -v /etc/localtime:/etc/localtime:ro \
@@ -225,16 +277,17 @@ docker run -d \
   freqtrade --strategy AwsomelyProfitableStrategy backtesting
 ```
 
-Head over to the [Backtesting Documentation](https://github.com/freqtrade/freqtrade/blob/develop/docs/backtesting.md) for more details.
+Head over to the [Backtesting Documentation](backtesting.md) for more details.
 
-*Note*: Additional parameters can be appended after the image name (`freqtrade` in the above example).
+!!! Note
+    Additional parameters can be appended after the image name (`freqtrade` in the above example).
 
 ------
 
 ## Custom Installation
 
 We've included/collected install instructions for Ubuntu 16.04, MacOS, and Windows. These are guidelines and your success may vary with other distros.
-OS Specific steps are listed first, the [common](#common) section below is necessary for all systems.
+OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 ### Requirements
 
@@ -286,7 +339,7 @@ python3 -m pip install -e .
 brew install python3 git wget
 ```
 
-### common
+### Common
 
 #### 1. Install TA-Lib
 
@@ -304,11 +357,13 @@ cd ..
 rm -rf ./ta-lib*
 ```
 
-*Note*: An already downloaded version of ta-lib is included in the repository, as the sourceforge.net source seems to have problems frequently.
+!!! Note
+    An already downloaded version of ta-lib is included in the repository, as the sourceforge.net source seems to have problems frequently.
 
 #### 2. Setup your Python virtual environment (virtualenv)
 
-*Note*: This step is optional but strongly recommended to keep your system organized
+!!! Note
+    This step is optional but strongly recommended to keep your system organized
 
 ```bash
 python3 -m venv .env
@@ -337,7 +392,7 @@ cd freqtrade
 cp config.json.example config.json
 ```
 
-> *To edit the config please refer to [Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md).*
+> *To edit the config please refer to [Bot Configuration](configuration.md).*
 
 #### 5. Install python dependencies
 
@@ -396,7 +451,7 @@ copy paste `config.json` to ``\path\freqtrade-develop\freqtrade`
 
 Install ta-lib according to the [ta-lib documentation](https://github.com/mrjbq7/ta-lib#windows).
 
-As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), there is also a repository of inofficial precompiled windows Wheels [here](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib), which needs to be downloaded and installed using `pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl` (make sure to use the version matching your python version)
+As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), there is also a repository of unofficial precompiled windows Wheels [here](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib), which needs to be downloaded and installed using `pip install TA_Lib‑0.4.17‑cp36‑cp36m‑win32.whl` (make sure to use the version matching your python version)
 
 ```cmd
 >cd \path\freqtrade-develop
@@ -426,4 +481,4 @@ The easiest way is to download install Microsoft Visual Studio Community [here](
 ---
 
 Now you have an environment ready, the next step is
-[Bot Configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md)...
+[Bot Configuration](configuration.md).

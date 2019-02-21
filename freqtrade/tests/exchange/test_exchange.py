@@ -765,7 +765,7 @@ def test_get_history(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
 
     async def mock_candle_hist(pair, tick_interval, since_ms):
-        return pair, tick
+        return pair, tick_interval, tick
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -778,7 +778,7 @@ def test_get_history(default_conf, mocker, caplog):
     assert len(ret) == 2
 
 
-def test_refresh_tickers(mocker, default_conf, caplog) -> None:
+def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     tick = [
         [
             (arrow.utcnow().timestamp - 1) * 1000,  # unix timestamp ms
@@ -802,12 +802,12 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
-    pairs = ['IOTA/ETH', 'XRP/ETH']
+    pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
-    exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
+    exchange.refresh_latest_ohlcv(pairs)
 
-    assert log_has(f'Refreshing klines for {len(pairs)} pairs', caplog.record_tuples)
+    assert log_has(f'Refreshing ohlcv data for {len(pairs)} pairs', caplog.record_tuples)
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     for pair in pairs:
@@ -822,10 +822,11 @@ def test_refresh_tickers(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    exchange.refresh_tickers(['IOTA/ETH', 'XRP/ETH'], '5m')
+    exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached klines data for {pairs[0]} ...", caplog.record_tuples)
+    assert log_has(f"Using cached ohlcv data for {pairs[0][0]}, {pairs[0][1]} ...",
+                   caplog.record_tuples)
 
 
 @pytest.mark.asyncio
@@ -850,11 +851,12 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
     assert type(res) is tuple
-    assert len(res) == 2
+    assert len(res) == 3
     assert res[0] == pair
-    assert res[1] == tick
+    assert res[1] == "5m"
+    assert res[2] == tick
     assert exchange._api_async.fetch_ohlcv.call_count == 1
-    assert not log_has(f"Using cached klines data for {pair} ...", caplog.record_tuples)
+    assert not log_has(f"Using cached ohlcv data for {pair} ...", caplog.record_tuples)
 
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
@@ -883,44 +885,38 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
     assert type(res) is tuple
-    assert len(res) == 2
+    assert len(res) == 3
     assert res[0] == pair
-    assert res[1] == tick
+    assert res[1] == "5m"
+    assert res[2] == tick
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
-@pytest.mark.asyncio
-async def test_async_get_candles_history(default_conf, mocker):
-    tick = [
-        [
-            1511686200000,  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ]
-    ]
+def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
 
-    async def mock_get_candle_hist(pair, tick_interval, since_ms=None):
-        return (pair, tick)
+    async def mock_get_candle_hist(pair, *args, **kwargs):
+        if pair == 'ETH/BTC':
+            return [[]]
+        else:
+            raise TypeError()
 
     exchange = get_patched_exchange(mocker, default_conf)
-    # Monkey-patch async function
-    exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
-    exchange._async_get_candle_history = Mock(wraps=mock_get_candle_hist)
+    # Monkey-patch async function with empty result
+    exchange._api_async.fetch_ohlcv = MagicMock(side_effect=mock_get_candle_hist)
 
-    pairs = ['ETH/BTC', 'XRP/BTC']
-    res = await exchange.async_get_candles_history(pairs, "5m")
+    pairs = [("ETH/BTC", "5m"), ("XRP/BTC", "5m")]
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._klines
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+
     assert type(res) is list
     assert len(res) == 2
-    assert type(res[0]) is tuple
-    assert res[0][0] == pairs[0]
-    assert res[0][1] == tick
-    assert res[1][0] == pairs[1]
-    assert res[1][1] == tick
-    assert exchange._async_get_candle_history.call_count == 2
+    # Test that each is in list at least once as order is not guaranteed
+    assert type(res[0]) is tuple or type(res[1]) is tuple
+    assert type(res[0]) is TypeError or type(res[1]) is TypeError
+    assert log_has("Error loading ETH/BTC. Result was [[]].", caplog.record_tuples)
+    assert log_has("Async code raised an exception: TypeError", caplog.record_tuples)
 
 
 def test_get_order_book(default_conf, mocker, order_book_l2):
@@ -986,7 +982,7 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
-    ticks = res[1]
+    ticks = res[2]
 
     assert sort_mock.call_count == 1
     assert ticks[0][0] == 1527830400000
@@ -1023,7 +1019,8 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
-    ticks = res[1]
+    assert res[1] == default_conf['ticker_interval']
+    ticks = res[2]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0
     assert ticks[0][0] == 1527827700000

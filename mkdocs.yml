@@ -1,0 +1,43 @@
+site_name: Freqtrade
+nav:
+    - About: index.md
+    - Installation: installation.md
+    - Configuration: configuration.md
+    - Start the bot: bot-usage.md
+    - Stoploss: stoploss.md
+    - Custom Strategy: bot-optimization.md
+    - Telegram: telegram-usage.md
+    - Web Hook: webhook-config.md
+    - Backtesting: backtesting.md
+    - Hyperopt: hyperopt.md
+    - Edge positioning: edge.md
+    - Plotting: plotting.md
+    - FAQ: faq.md
+    - SQL Cheatsheet: sql_cheatsheet.md
+    - Sanbox testing: sandbox-testing.md
+    - Contributors guide: developer.md
+theme:
+  name: material
+  logo: 'images/logo.png'
+  custom_dir: 'docs'
+  palette:
+    primary: 'blue grey'
+    accent: 'tear'
+markdown_extensions:
+    - admonition
+    - codehilite:
+        guess_lang: false
+    - toc:
+        permalink: true
+    - pymdownx.arithmatex
+    - pymdownx.caret
+    - pymdownx.critic
+    - pymdownx.details
+    - pymdownx.inlinehilite
+    - pymdownx.magiclink
+    - pymdownx.mark
+    - pymdownx.smartsymbols
+    - pymdownx.superfences
+    - pymdownx.tasklist:
+        custom_checkbox: true
+    - pymdownx.tilde

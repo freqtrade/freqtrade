@@ -1,32 +1,28 @@
-# Bot usage
+# Start the bot
 
-This page explains the difference parameters of the bot and how to run it.
+This page explains the different parameters of the bot and how to run it.
 
-## Table of Contents
-
-- [Bot commands](#bot-commands)
-- [Backtesting commands](#backtesting-commands)
-- [Hyperopt commands](#hyperopt-commands)
 
 ## Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH]
-                 {backtesting,hyperopt} ...
+usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+               [--strategy-path PATH] [--customhyperopt NAME]
+               [--dynamic-whitelist [INT]] [--db-url PATH]
+               {backtesting,edge,hyperopt} ...
 
-Simple High Frequency Trading Bot for crypto currencies
+Free, open source crypto trading bot
 
 positional arguments:
-  {backtesting,hyperopt}
+  {backtesting,edge,hyperopt}
     backtesting         backtesting module
+    edge                edge module
     hyperopt            hyperopt module
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         be verbose
-  --version             show program's version number and exit
+  -v, --verbose         verbose mode (-vv for more, -vvv to get all messages)
+  --version             show program\'s version number and exit
   -c PATH, --config PATH
                         specify configuration file (default: config.json)
   -d PATH, --datadir PATH
@@ -34,12 +30,15 @@ optional arguments:
   -s NAME, --strategy NAME
                         specify strategy class name (default: DefaultStrategy)
   --strategy-path PATH  specify additional strategy lookup path
+  --customhyperopt NAME
+                        specify hyperopt class name (default:
+                        DefaultHyperOpts)
   --dynamic-whitelist [INT]
                         dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20) DEPRECATED
+                        BaseVolume (default: 20) DEPRECATED.
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
-                        sqlite:///tradesv3.sqlite)
+                        None)
 ```
 
 ### How to use a different config file?
@@ -51,7 +50,7 @@ default, the bot will load the file `./config.json`
 python3 ./freqtrade/main.py -c path/far/far/away/config.json
 ```
 
-### How to use --strategy?
+### How to use **--strategy**?
 
 This parameter will allow you to load your custom strategy class.
 Per default without `--strategy` or `-s` the bot will load the
@@ -74,7 +73,7 @@ message the reason (File not found, or errors in your code).
 
 Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
 
-### How to use --strategy-path?
+### How to use **--strategy-path**?
 
 This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a folder!):
@@ -87,9 +86,10 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/fol
 This is very simple. Copy paste your strategy file into the folder
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
 
-### How to use --dynamic-whitelist?
+### How to use **--dynamic-whitelist**?
 
-> Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](docs/configuration.md#Dynamic-Pairlists)
+!!! danger "DEPRECATED"
+    Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](/configuration/#dynamic-pairlists)
 
 Per default `--dynamic-whitelist` will retrieve the 20 currencies based
 on BaseVolume. This value can be changed when you run the script.
@@ -113,7 +113,7 @@ python3 ./freqtrade/main.py --dynamic-whitelist 30
 negative value (e.g -2), `--dynamic-whitelist` will use the default
 value (20).
 
-### How to use --db-url?
+### How to use **--db-url**?
 
 When you run the bot in Dry-run mode, per default no transactions are
 stored in a database. If you want to store your bot actions in a DB
@@ -129,15 +129,17 @@ python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.s
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
-                             [--timerange TIMERANGE] [-l] [-r]
-                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                             [--export EXPORT] [--export-filename PATH]
+usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                           [--eps] [--dmmp] [-l] [-r]
+                           [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                           [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
                         specify ticker interval (1m, 5m, 30m, 1h, 1d)
+  --timerange TIMERANGE
+                        specify what timerange of data to use.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking)
@@ -145,8 +147,6 @@ optional arguments:
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number)
-  --timerange TIMERANGE
-                        specify what timerange of data to use.
   -l, --live            using live data
   -r, --refresh-pairs-cached
                         refresh the pairs files in tests/testdata with the
@@ -167,18 +167,18 @@ optional arguments:
                         filename=user_data/backtest_data/backtest_today.json
                         (default: user_data/backtest_data/backtest-
                         result.json)
-
 ```
 
-### How to use --refresh-pairs-cached parameter?
+### How to use **--refresh-pairs-cached** parameter?
 
 The first time your run Backtesting, it will take the pairs you have
 set in your config file and download data from Bittrex.
 
 If for any reason you want to update your data set, you use
 `--refresh-pairs-cached` to force Backtesting to update the data it has.
-**Use it only if you want to update your data set. You will not be able
-to come back to the previous version.**
+
+!!! Note
+    Use it only if you want to update your data set. You will not be able to come back to the previous version.
 
 To test your strategy with latest data, we recommend continuing using
 the parameter `-l` or `--live`.
@@ -250,4 +250,4 @@ in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.
 ## Next step
 
 The optimal strategy of the bot will change with time depending of the market trends. The next step is to
-[optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
+[optimize your bot](bot-optimization.md).

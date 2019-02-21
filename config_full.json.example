@@ -3,6 +3,7 @@
     "stake_currency": "BTC",
     "stake_amount": 0.05,
     "fiat_display_currency": "USD",
+    "amount_reserve_percent" : 0.05,
     "dry_run": false,
     "ticker_interval": "5m",
     "trailing_stop": false,
@@ -37,7 +38,8 @@
         "buy": "limit",
         "sell": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": "false"
+        "stoploss_on_exchange": "false",
+        "stoploss_on_exchange_interval": 60
     },
     "order_time_in_force": {
         "buy": "gtc",

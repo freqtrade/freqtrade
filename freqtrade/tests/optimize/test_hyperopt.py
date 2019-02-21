@@ -9,7 +9,8 @@ import pytest
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.hyperopt import Hyperopt, start
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
+from freqtrade.resolvers import StrategyResolver, HyperOptResolver
 from freqtrade.tests.conftest import log_has, patch_exchange
 from freqtrade.tests.optimize.test_backtesting import get_args
 
@@ -36,6 +37,28 @@ def create_trials(mocker, hyperopt) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
+
+
+def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
+
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    hyperopts = DefaultHyperOpts
+    delattr(hyperopts, 'populate_buy_trend')
+    delattr(hyperopts, 'populate_sell_trend')
+    mocker.patch(
+        'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver._load_hyperopt',
+        MagicMock(return_value=hyperopts)
+    )
+    x = HyperOptResolver(default_conf, ).hyperopt
+    assert not hasattr(x, 'populate_buy_trend')
+    assert not hasattr(x, 'populate_sell_trend')
+    assert log_has("Custom Hyperopt does not provide populate_sell_trend. "
+                   "Using populate_sell_trend from DefaultStrategy.", caplog.record_tuples)
+    assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
+                   "Using populate_buy_trend from DefaultStrategy.", caplog.record_tuples)
 
 
 def test_start(mocker, default_conf, caplog) -> None:
@@ -201,7 +224,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     hyperopt.start()
     parallel.assert_called_once()
 
-    assert 'Best result:\nfoo result\nwith values:\n{}' in caplog.text
+    assert 'Best result:\nfoo result\nwith values:\n\n' in caplog.text
     assert dumper.called
 
 
@@ -243,7 +266,7 @@ def test_has_space(hyperopt):
 
 def test_populate_indicators(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', fill_missing=True)}
     dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
@@ -256,7 +279,7 @@ def test_populate_indicators(hyperopt) -> None:
 
 def test_buy_strategy_generator(hyperopt) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', fill_missing=True)}
     dataframes = hyperopt.strategy.tickerdata_to_dataframe(tickerlist)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
@@ -312,6 +335,15 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'mfi-enabled': False,
         'rsi-enabled': False,
         'trigger': 'macd_cross_signal',
+        'sell-adx-value': 0,
+        'sell-fastd-value': 75,
+        'sell-mfi-value': 0,
+        'sell-rsi-value': 0,
+        'sell-adx-enabled': False,
+        'sell-fastd-enabled': True,
+        'sell-mfi-enabled': False,
+        'sell-rsi-enabled': False,
+        'sell-trigger': 'macd_cross_signal',
         'roi_t1': 60.0,
         'roi_t2': 30.0,
         'roi_t3': 20.0,

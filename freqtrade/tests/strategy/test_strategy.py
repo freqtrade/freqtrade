@@ -150,6 +150,45 @@ def test_strategy_override_stoploss(caplog):
             ) in caplog.record_tuples
 
 
+def test_strategy_override_trailing_stop(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+        'trailing_stop': True
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.trailing_stop
+    assert isinstance(resolver.strategy.trailing_stop, bool)
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'trailing_stop' with value in config file: True."
+            ) in caplog.record_tuples
+
+
+def test_strategy_override_trailing_stop_positive(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+        'trailing_stop_positive': -0.1,
+        'trailing_stop_positive_offset': -0.2
+
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.trailing_stop_positive == -0.1
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'trailing_stop_positive' with value in config file: -0.1."
+            ) in caplog.record_tuples
+
+    assert resolver.strategy.trailing_stop_positive_offset == -0.2
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'trailing_stop_positive' with value in config file: -0.1."
+            ) in caplog.record_tuples
+
+
 def test_strategy_override_ticker_interval(caplog):
     caplog.set_level(logging.INFO)
 
@@ -178,8 +217,7 @@ def test_strategy_override_process_only_new_candles(caplog):
     assert resolver.strategy.process_only_new_candles
     assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
-            "Override process_only_new_candles 'process_only_new_candles' "
-            "with value in config file: True."
+            "Override strategy 'process_only_new_candles' with value in config file: True."
             ) in caplog.record_tuples
 
 
@@ -256,6 +294,62 @@ def test_strategy_override_order_tif(caplog):
         StrategyResolver(config)
 
 
+def test_strategy_override_use_sell_signal(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+    }
+    resolver = StrategyResolver(config)
+    assert not resolver.strategy.use_sell_signal
+    assert isinstance(resolver.strategy.use_sell_signal, bool)
+    # must be inserted to configuration
+    assert 'use_sell_signal' in config['experimental']
+    assert not config['experimental']['use_sell_signal']
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'experimental': {
+            'use_sell_signal': True,
+        },
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.use_sell_signal
+    assert isinstance(resolver.strategy.use_sell_signal, bool)
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'use_sell_signal' with value in config file: True."
+            ) in caplog.record_tuples
+
+
+def test_strategy_override_use_sell_profit_only(caplog):
+    caplog.set_level(logging.INFO)
+    config = {
+        'strategy': 'DefaultStrategy',
+    }
+    resolver = StrategyResolver(config)
+    assert not resolver.strategy.sell_profit_only
+    assert isinstance(resolver.strategy.sell_profit_only, bool)
+    # must be inserted to configuration
+    assert 'sell_profit_only' in config['experimental']
+    assert not config['experimental']['sell_profit_only']
+
+    config = {
+        'strategy': 'DefaultStrategy',
+        'experimental': {
+            'sell_profit_only': True,
+        },
+    }
+    resolver = StrategyResolver(config)
+
+    assert resolver.strategy.sell_profit_only
+    assert isinstance(resolver.strategy.sell_profit_only, bool)
+    assert ('freqtrade.resolvers.strategy_resolver',
+            logging.INFO,
+            "Override strategy 'sell_profit_only' with value in config file: True."
+            ) in caplog.record_tuples
+
+
 def test_deprecate_populate_indicators(result):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
@@ -270,7 +364,7 @@ def test_deprecate_populate_indicators(result):
             in str(w[-1].message)
 
     with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
+        # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
         resolver.strategy.advise_buy(indicators, 'ETH/BTC')
         assert len(w) == 1

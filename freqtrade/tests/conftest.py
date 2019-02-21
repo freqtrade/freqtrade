@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring
 import json
 import logging
+import re
 from datetime import datetime
 from functools import reduce
 from typing import Dict, Optional
@@ -24,6 +25,12 @@ def log_has(line, logs):
     # and we want to match line against foobar in the tuple
     return reduce(lambda a, b: a or b,
                   filter(lambda x: x[2] == line, logs),
+                  False)
+
+
+def log_has_re(line, logs):
+    return reduce(lambda a, b: a or b,
+                  filter(lambda x: re.match(line, x[2]), logs),
                   False)
 
 
@@ -542,7 +549,7 @@ def ticker_history_list():
 
 @pytest.fixture
 def ticker_history(ticker_history_list):
-    return parse_ticker_dataframe(ticker_history_list)
+    return parse_ticker_dataframe(ticker_history_list, "5m", True)
 
 
 @pytest.fixture
@@ -724,7 +731,7 @@ def tickers():
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file))
+        return parse_ticker_dataframe(json.load(data_file), '1m', True)
 
 # FIX:
 # Create an fixture/function

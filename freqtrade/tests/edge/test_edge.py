@@ -281,8 +281,8 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': parse_ticker_dataframe(ETHBTC),
-                'LTC/BTC': parse_ticker_dataframe(LTCBTC)}
+    pairdata = {'NEO/BTC': parse_ticker_dataframe(ETHBTC, '1h', fill_missing=True),
+                'LTC/BTC': parse_ticker_dataframe(LTCBTC, '1h', fill_missing=True)}
     return pairdata
 
 

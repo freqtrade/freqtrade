@@ -246,14 +246,14 @@ class Telegram(RPC):
                 stake_cur,
                 fiat_disp_cur
             )
-            stats = tabulate(stats,
-                             headers=[
-                                 'Day',
-                                 f'Profit {stake_cur}',
-                                 f'Profit {fiat_disp_cur}'
-                             ],
-                             tablefmt='simple')
-            message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats}</pre>'
+            stats_tab = tabulate(stats,
+                                 headers=[
+                                     'Day',
+                                     f'Profit {stake_cur}',
+                                     f'Profit {fiat_disp_cur}'
+                                 ],
+                                 tablefmt='simple')
+            message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e), bot=bot)

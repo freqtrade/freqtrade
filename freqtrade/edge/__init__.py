@@ -59,7 +59,7 @@ class Edge():
 
         # checking max_open_trades. it should be -1 as with Edge
         # the number of trades is determined by position size
-        if self.config['max_open_trades'] != -1:
+        if self.config['max_open_trades'] != float('inf'):
             logger.critical('max_open_trades should be -1 in config !')
 
         if self.config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT:
@@ -190,9 +190,16 @@ class Edge():
         if self._final_pairs != final:
             self._final_pairs = final
             if self._final_pairs:
-                logger.info('Edge validated only %s', self._final_pairs)
+                logger.info(
+                    'Minimum expectancy and minimum winrate are met only for %s,'
+                    ' so other pairs are filtered out.',
+                    self._final_pairs
+                    )
             else:
-                logger.info('Edge removed all pairs as no pair with minimum expectancy was found !')
+                logger.info(
+                    'Edge removed all pairs as no pair with minimum expectancy '
+                    'and minimum winrate was found !'
+                    )
 
         return self._final_pairs
 

@@ -18,6 +18,7 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
+from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -75,7 +76,7 @@ def load_data_test(what):
                 pair[x][5]  # Keep old volume
             ] for x in range(0, datalen)
         ]
-    return {'UNITTEST/BTC': parse_ticker_dataframe(data)}
+    return {'UNITTEST/BTC': parse_ticker_dataframe(data, '1m', fill_missing=True)}
 
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
@@ -104,7 +105,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
                      timerange=None, exchange=None):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata)}
+    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', fill_missing=True)}
     return pairdata
 
 
@@ -200,12 +201,15 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
 
     assert 'timerange' not in config
     assert 'export' not in config
+    assert 'runmode' in config
+    assert config['runmode'] == RunMode.BACKTEST
 
 
-def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
+def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
+    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
 
     args = [
         '--config', 'config.json',
@@ -229,6 +233,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
+    assert config['runmode'] == RunMode.BACKTEST
+
     assert log_has(
         'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
@@ -322,15 +328,15 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert backtesting.fee == 0.5
 
 
-def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
+def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
     tick = history.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', fill_missing=True)}
 
     backtesting = Backtesting(default_conf)
     data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 99
+    assert len(data['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
     strategy = DefaultStrategy(default_conf)
@@ -340,6 +346,7 @@ def test_tickerdata_to_dataframe(default_conf, mocker) -> None:
 
 def test_generate_text_table(default_conf, mocker):
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
 
     results = pd.DataFrame(
@@ -355,13 +362,13 @@ def test_generate_text_table(default_conf, mocker):
 
     result_str = (
         '| pair    |   buy count |   avg profit % |   cum profit % |   '
-        'total profit BTC | avg duration   |   profit |   loss |\n'
+        'tot profit BTC |   tot profit % | avg duration   |   profit |   loss |\n'
         '|:--------|------------:|---------------:|---------------:|'
-        '-------------------:|:---------------|---------:|-------:|\n'
-        '| ETH/BTC |           2 |          15.00 |          30.00 |         '
-        '0.60000000 | 0:20:00        |        2 |      0 |\n'
-        '| TOTAL   |           2 |          15.00 |          30.00 |         '
-        '0.60000000 | 0:20:00        |        2 |      0 |'
+        '-----------------:|---------------:|:---------------|---------:|-------:|\n'
+        '| ETH/BTC |           2 |          15.00 |          30.00 |       '
+        '0.60000000 |          15.00 | 0:20:00        |        2 |      0 |\n'
+        '| TOTAL   |           2 |          15.00 |          30.00 |       '
+        '0.60000000 |          15.00 | 0:20:00        |        2 |      0 |'
     )
     assert backtesting._generate_text_table(data={'ETH/BTC': {}}, results=results) == result_str
 
@@ -397,6 +404,7 @@ def test_generate_text_table_strategyn(default_conf, mocker):
     Test Backtesting.generate_text_table_sell_reason() method
     """
     patch_exchange(mocker)
+    default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
     results = {}
     results['ETH/BTC'] = pd.DataFrame(
@@ -424,13 +432,13 @@ def test_generate_text_table_strategyn(default_conf, mocker):
 
     result_str = (
         '| Strategy   |   buy count |   avg profit % |   cum profit % '
-        '|   total profit BTC | avg duration   |   profit |   loss |\n'
+        '|   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |\n'
         '|:-----------|------------:|---------------:|---------------:'
-        '|-------------------:|:---------------|---------:|-------:|\n'
+        '|-----------------:|---------------:|:---------------|---------:|-------:|\n'
         '| ETH/BTC    |           3 |          20.00 |          60.00 '
-        '|         1.10000000 | 0:17:00        |        3 |      0 |\n'
+        '|       1.10000000 |          30.00 | 0:17:00        |        3 |      0 |\n'
         '| LTC/BTC    |           3 |          30.00 |          90.00 '
-        '|         1.30000000 | 0:20:00        |        3 |      0 |'
+        '|       1.30000000 |          45.00 | 0:20:00        |        3 |      0 |'
     )
     print(backtesting._generate_text_table_strategy(all_results=results))
     assert backtesting._generate_text_table_strategy(all_results=results) == result_str
@@ -442,7 +450,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
     mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
-    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
@@ -477,7 +485,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
 
     mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
     mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
-    mocker.patch('freqtrade.exchange.Exchange.refresh_tickers', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.optimize.backtesting.Backtesting',
@@ -526,13 +534,14 @@ def test_backtest(default_conf, fee, mocker) -> None:
         {'pair': [pair, pair],
          'profit_percent': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'open_time': [Arrow(2018, 1, 29, 18, 40, 0).datetime,
-                       Arrow(2018, 1, 30, 3, 30, 0).datetime],
-         'close_time': [Arrow(2018, 1, 29, 22, 35, 0).datetime,
-                        Arrow(2018, 1, 30, 4, 15, 0).datetime],
+         'open_time': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
+                                      Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
+                                     ),
+         'close_time': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
+                                       Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
          'open_index': [78, 184],
-         'close_index': [125, 193],
-         'trade_duration': [235, 45],
+         'close_index': [125, 192],
+         'trade_duration': [235, 40],
          'open_at_end': [False, False],
          'open_rate': [0.104445, 0.10302485],
          'close_rate': [0.104969, 0.103541],
@@ -593,7 +602,7 @@ def test_processed(default_conf, mocker) -> None:
 
 def test_backtest_pricecontours(default_conf, fee, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 18], ['lower', 0], ['sine', 19]]
+    tests = [['raise', 19], ['lower', 0], ['sine', 18]]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
 
@@ -654,8 +663,8 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
 def test_backtest_multi_pair(default_conf, fee, mocker):
 
     def evaluate_result_multi(results, freq, max_open_trades):
-            # Find overlapping trades by expanding each trade once per period
-            # and then counting overlaps
+        # Find overlapping trades by expanding each trade once per period
+        # and then counting overlaps
         dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
                  for row in results[['open_time', 'close_time']].iterrows()]
         deltas = [len(x) for x in dates]

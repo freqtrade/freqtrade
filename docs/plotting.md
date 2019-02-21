@@ -1,10 +1,6 @@
 # Plotting
 This page explains how to plot prices, indicator, profits.
 
-## Table of Contents
-- [Plot price and indicators](#plot-price-and-indicators)
-- [Plot profit](#plot-profit)
-
 ## Installation
 
 Plotting scripts use Plotly library. Install/upgrade it with:
@@ -19,7 +15,7 @@ At least version 2.3.0 is required.
 Usage for the price plotter:
 
 ```
-script/plot_dataframe.py [-h] [-p pair] [--live]
+script/plot_dataframe.py [-h] [-p pairs] [--live]
 ```
 
 Example
@@ -27,10 +23,15 @@ Example
 python scripts/plot_dataframe.py -p BTC/ETH
 ```
 
-The `-p` pair argument, can be used to specify what
-pair you would like to plot.
+The `-p` pairs argument, can be used to specify
+pairs you would like to plot.
 
 **Advanced use**
+
+To plot multiple pairs, separate them with a comma:
+```
+python scripts/plot_dataframe.py -p BTC/ETH,XRP/ETH
+```
 
 To plot the current live price use the `--live` flag:
 ```
@@ -48,7 +49,7 @@ To plot trades stored in a database use `--db-url` argument:
 python scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH
 ```
 
-To plot a test strategy the strategy should have first be backtested. 
+To plot a test strategy the strategy should have first be backtested.
 The results may then be plotted with the -s argument:
 ```
 python scripts/plot_dataframe.py -s Strategy_Name -p BTC/ETH --datadir user_data/data/<exchange_name>/

@@ -80,10 +80,10 @@ class Exchange(object):
         self._cached_ticker: Dict[str, Any] = {}
 
         # Holds last candle refreshed time of each pair
-        self._pairs_last_refresh_time: Dict[str, int] = {}
+        self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
 
         # Holds candles
-        self._klines: Dict[str, DataFrame] = {}
+        self._klines: Dict[Tuple[str, str], DataFrame] = {}
 
         # Holds all open sell orders for dry_run
         self._dry_run_open_orders: Dict[str, Any] = {}
@@ -158,11 +158,12 @@ class Exchange(object):
         """exchange ccxt id"""
         return self._api.id
 
-    def klines(self, pair: str, copy=True) -> DataFrame:
-        if pair in self._klines:
-            return self._klines[pair].copy() if copy else self._klines[pair]
+    def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
+        # create key tuple
+        if pair_interval in self._klines:
+            return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
         else:
-            return None
+            return DataFrame()
 
     def set_sandbox(self, api, exchange_config: dict, name: str):
         if exchange_config.get('sandbox'):
@@ -236,7 +237,7 @@ class Exchange(object):
                     f'Exchange {self.name} does not support market orders.')
 
         if order_types.get('stoploss_on_exchange'):
-            if self.name is not 'Binance':
+            if self.name != 'Binance':
                 raise OperationalException(
                     'On exchange stoploss is not supported for %s.' % self.name
                 )
@@ -246,7 +247,7 @@ class Exchange(object):
         Checks if order time in force configured in strategy/config are supported
         """
         if any(v != 'gtc' for k, v in order_time_in_force.items()):
-            if self.name is not 'Binance':
+            if self.name != 'Binance':
                 raise OperationalException(
                     f'Time in force policies are not supporetd for  {self.name} yet.')
 
@@ -402,8 +403,11 @@ class Exchange(object):
             return self._dry_run_open_orders[order_id]
 
         try:
-            return self._api.create_order(pair, 'stop_loss_limit', 'sell',
-                                          amount, rate, {'stopPrice': stop_price})
+            order = self._api.create_order(pair, 'stop_loss_limit', 'sell',
+                                           amount, rate, {'stopPrice': stop_price})
+            logger.info('stoploss limit order added for %s. '
+                        'stop price: %s. limit: %s' % (pair, stop_price, rate))
+            return order
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -515,58 +519,68 @@ class Exchange(object):
         input_coroutines = [self._async_get_candle_history(
             pair, tick_interval, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
+
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
         # Combine tickers
         data: List = []
-        for p, ticker in tickers:
+        for p, ticker_interval, ticker in tickers:
             if p == pair:
                 data.extend(ticker)
-        # Sort data again after extending the result - above calls return in "async order" order
+        # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
         logger.info("downloaded %s with length %s.", pair, len(data))
         return data
 
-    def refresh_tickers(self, pair_list: List[str], ticker_interval: str) -> None:
+    def refresh_latest_ohlcv(self, pair_list: List[Tuple[str, str]]) -> List[Tuple[str, List]]:
         """
-        Refresh tickers asyncronously and set `_klines` of this object with the result
+        Refresh in-memory ohlcv asyncronously and set `_klines` with the result
         """
-        logger.debug("Refreshing klines for %d pairs", len(pair_list))
-        asyncio.get_event_loop().run_until_complete(
-            self.async_get_candles_history(pair_list, ticker_interval))
+        logger.debug("Refreshing ohlcv data for %d pairs", len(pair_list))
 
-    async def async_get_candles_history(self, pairs: List[str],
-                                        tick_interval: str) -> List[Tuple[str, List]]:
-        """Download ohlcv history for pair-list asyncronously """
-        # Calculating ticker interval in second
-        interval_in_sec = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60
         input_coroutines = []
 
         # Gather corotines to run
-        for pair in pairs:
-            if not (self._pairs_last_refresh_time.get(pair, 0) + interval_in_sec >=
-                    arrow.utcnow().timestamp and pair in self._klines):
-                input_coroutines.append(self._async_get_candle_history(pair, tick_interval))
-            else:
-                logger.debug("Using cached klines data for %s ...", pair)
+        for pair, ticker_interval in set(pair_list):
+            # Calculating ticker interval in second
+            interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
-        tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
+            if not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+                    + interval_in_sec) >= arrow.utcnow().timestamp
+                    and (pair, ticker_interval) in self._klines):
+                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
+            else:
+                logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)
+
+        tickers = asyncio.get_event_loop().run_until_complete(
+            asyncio.gather(*input_coroutines, return_exceptions=True))
 
         # handle caching
-        for pair, ticks in tickers:
+        for res in tickers:
+            if isinstance(res, Exception):
+                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                continue
+            pair = res[0]
+            tick_interval = res[1]
+            ticks = res[2]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
-                self._pairs_last_refresh_time[pair] = ticks[-1][0] // 1000
+                self._pairs_last_refresh_time[(pair, tick_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self._klines[pair] = parse_ticker_dataframe(ticks)
+            self._klines[(pair, tick_interval)] = parse_ticker_dataframe(
+                ticks, tick_interval, fill_missing=True)
         return tickers
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
-                                        since_ms: Optional[int] = None) -> Tuple[str, List]:
+                                        since_ms: Optional[int] = None) -> Tuple[str, str, List]:
+        """
+        Asyncronously gets candle histories using fetch_ohlcv
+        returns tuple: (pair, tick_interval, ohlcv_list)
+        """
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s since %s ...", pair, since_ms)
+            logger.debug("fetching %s, %s since %s ...", pair, tick_interval, since_ms)
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
                                                      since=since_ms)
@@ -575,11 +589,14 @@ class Exchange(object):
             # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
             # when GDAX returns a list of tickers DESC (newest first, oldest last)
             # Only sort if necessary to save computing time
-            if data and data[0][0] > data[-1][0]:
-                data = sorted(data, key=lambda x: x[0])
-
-            logger.debug("done fetching %s ...", pair)
-            return pair, data
+            try:
+                if data and data[0][0] > data[-1][0]:
+                    data = sorted(data, key=lambda x: x[0])
+            except IndexError:
+                logger.exception("Error loading %s. Result was %s.", pair, data)
+                return pair, tick_interval, []
+            logger.debug("done fetching %s, %s ...", pair, tick_interval)
+            return pair, tick_interval, data
 
         except ccxt.NotSupported as e:
             raise OperationalException(

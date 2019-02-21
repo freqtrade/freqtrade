@@ -13,7 +13,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-import freqtrade.optimize as optimize
+from freqtrade import optimize
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
@@ -22,6 +22,7 @@ from freqtrade.data import history
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 
 logger = logging.getLogger(__name__)
@@ -100,11 +101,13 @@ class Backtesting(object):
         :return: pretty printed table with tabulate as str
         """
         stake_currency = str(self.config.get('stake_currency'))
+        max_open_trades = self.config.get('max_open_trades')
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['pair', 'buy count', 'avg profit %', 'cum profit %',
-                   'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
+                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
+                   'profit', 'loss']
         for pair in data:
             result = results[results.pair == pair]
             if skip_nan and result.profit_abs.isnull().all():
@@ -116,6 +119,7 @@ class Backtesting(object):
                 result.profit_percent.mean() * 100.0,
                 result.profit_percent.sum() * 100.0,
                 result.profit_abs.sum(),
+                result.profit_percent.sum() * 100.0 / max_open_trades,
                 str(timedelta(
                     minutes=round(result.trade_duration.mean()))) if not result.empty else '0:00',
                 len(result[result.profit_abs > 0]),
@@ -129,12 +133,15 @@ class Backtesting(object):
             results.profit_percent.mean() * 100.0,
             results.profit_percent.sum() * 100.0,
             results.profit_abs.sum(),
+            results.profit_percent.sum() * 100.0 / max_open_trades,
             str(timedelta(
                 minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
             len(results[results.profit_abs > 0]),
             len(results[results.profit_abs < 0])
         ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def _generate_text_table_sell_reason(self, data: Dict[str, Dict], results: DataFrame) -> str:
         """
@@ -151,11 +158,13 @@ class Backtesting(object):
         Generate summary table per strategy
         """
         stake_currency = str(self.config.get('stake_currency'))
+        max_open_trades = self.config.get('max_open_trades')
 
-        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', 'd', '.1f', '.1f')
+        floatfmt = ('s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', '.1f', '.1f')
         tabular_data = []
         headers = ['Strategy', 'buy count', 'avg profit %', 'cum profit %',
-                   'total profit ' + stake_currency, 'avg duration', 'profit', 'loss']
+                   'tot profit ' + stake_currency, 'tot profit %', 'avg duration',
+                   'profit', 'loss']
         for strategy, results in all_results.items():
             tabular_data.append([
                 strategy,
@@ -163,12 +172,15 @@ class Backtesting(object):
                 results.profit_percent.mean() * 100.0,
                 results.profit_percent.sum() * 100.0,
                 results.profit_abs.sum(),
+                results.profit_percent.sum() * 100.0 / max_open_trades,
                 str(timedelta(
                     minutes=round(results.trade_duration.mean()))) if not results.empty else '0:00',
                 len(results[results.profit_abs > 0]),
                 len(results[results.profit_abs < 0])
             ])
-        return tabulate(tabular_data, headers=headers, floatfmt=floatfmt, tablefmt="pipe")
+        # Ignore type as floatfmt does allow tuples but mypy does not know that
+        return tabulate(tabular_data, headers=headers,  # type: ignore
+                        floatfmt=floatfmt, tablefmt="pipe")
 
     def _store_backtest_result(self, recordfilename: str, results: DataFrame,
                                strategyname: Optional[str] = None) -> None:
@@ -219,7 +231,8 @@ class Backtesting(object):
                     # Set close_rate to stoploss
                     closerate = trade.stop_loss
                 elif sell.sell_type == (SellType.ROI):
-                    # get entry in min_roi >= to trade duration
+                    # get next entry in min_roi > to trade duration
+                    # Interface.py skips on trade_duration <= duration
                     roi_entry = max(list(filter(lambda x: trade_dur >= x,
                                                 self.strategy.minimal_roi.keys())))
                     roi = self.strategy.minimal_roi[roi_entry]
@@ -362,8 +375,9 @@ class Backtesting(object):
 
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
-            self.exchange.refresh_tickers(pairs, self.ticker_interval)
-            data = self.exchange._klines
+            self.exchange.refresh_latest_ohlcv([(pair, self.ticker_interval) for pair in pairs])
+            data = {key[0]: value for key, value in self.exchange._klines.items()}
+
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
@@ -393,12 +407,9 @@ class Backtesting(object):
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
-            # need to reprocess data every time to populate signals
-            preprocessed = self.strategy.tickerdata_to_dataframe(data)
-
-            min_date, max_date = optimize.get_timeframe(preprocessed)
-            # Validate dataframe for missing values
-            optimize.validate_backtest_data(preprocessed, min_date, max_date,
+            min_date, max_date = optimize.get_timeframe(data)
+            # Validate dataframe for missing values (mainly at start and end, as fillup is called)
+            optimize.validate_backtest_data(data, min_date, max_date,
                                             constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
             logger.info(
                 'Measuring data from %s up to %s (%s days)..',
@@ -406,6 +417,8 @@ class Backtesting(object):
                 max_date.isoformat(),
                 (max_date - min_date).days
             )
+            # need to reprocess data every time to populate signals
+            preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
@@ -426,18 +439,18 @@ class Backtesting(object):
                                             strategy if len(self.strategylist) > 1 else None)
 
             print(f"Result for strategy {strategy}")
-            print(' BACKTESTING REPORT '.center(119, '='))
+            print(' BACKTESTING REPORT '.center(133, '='))
             print(self._generate_text_table(data, results))
 
-            print(' SELL REASON STATS '.center(119, '='))
+            print(' SELL REASON STATS '.center(133, '='))
             print(self._generate_text_table_sell_reason(data, results))
 
-            print(' LEFT OPEN TRADES REPORT '.center(119, '='))
+            print(' LEFT OPEN TRADES REPORT '.center(133, '='))
             print(self._generate_text_table(data, results.loc[results.open_at_end], True))
             print()
         if len(all_results) > 1:
             # Print Strategy summary table
-            print(' Strategy Summary '.center(119, '='))
+            print(' Strategy Summary '.center(133, '='))
             print(self._generate_text_table_strategy(all_results))
             print('\nFor more details, please look at the detail tables above')
 
@@ -448,7 +461,7 @@ def setup_configuration(args: Namespace) -> Dict[str, Any]:
     :param args: Cli args from Arguments()
     :return: Configuration
     """
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.BACKTEST)
     config = configuration.get_config()
 
     # Ensure we do not use Exchange credentials

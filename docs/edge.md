@@ -2,15 +2,11 @@
 
 This page explains how to use Edge Positioning module in your bot in order to enter into a trade only if the trade has a reasonable win rate and risk reward ratio, and consequently adjust your position size and stoploss.
 
-**NOTICE:** Edge positioning is not compatible with dynamic whitelist. it overrides dynamic whitelist.
-**NOTICE2:** Edge won't consider anything else than buy/sell/stoploss signals. So trailing stoploss, ROI, and everything else will be ignored in its calculation.
+!!! Warning
+    Edge positioning is not compatible with dynamic whitelist. it overrides dynamic whitelist.
 
-## Table of Contents
-
-- [Introduction](#introduction)
-- [How does it work?](#how-does-it-work?)
-- [Configurations](#configurations)
-- [Running Edge independently](#running-edge-independently)
+!!! Note
+    Edge won't consider anything else than buy/sell/stoploss signals. So trailing stoploss, ROI, and everything else will be ignored in its calculation.
 
 ## Introduction
 Trading is all about probability. No one can claim that he has a strategy working all the time. You have to assume that sometimes you lose.<br/><br/>
@@ -28,7 +24,7 @@ The answer comes to two factors:
 Means over X trades what is the percentage of winning trades to total number of trades (note that we don't consider how much you gained but only If you won or not).
 
 
-`W = (Number of winning trades) / (Number of losing trades)`
+`W = (Number of winning trades) / (Total number of trades)`
 
 ### Risk Reward Ratio
 Risk Reward Ratio is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose:

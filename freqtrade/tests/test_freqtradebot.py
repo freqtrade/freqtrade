@@ -18,7 +18,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, SellCheckTuple
-from freqtrade.tests.conftest import log_has, patch_exchange, patch_edge, patch_wallet
+from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange, patch_edge, patch_wallet
 
 
 # Functions for recurrent object patching
@@ -43,7 +43,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :return: None
     """
     freqtrade.strategy.get_signal = lambda e, s, t: value
-    freqtrade.exchange.refresh_tickers = lambda p, i: None
+    freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -691,7 +691,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     assert trade.amount == 90.99181073703367
 
     assert log_has(
-        'Buy signal found: about create a new trade with stake_amount: 0.001000 ...',
+        'Buy signal found: about create a new trade with stake_amount: 0.001 ...',
         caplog.record_tuples
     )
 
@@ -807,25 +807,61 @@ def test_process_trade_no_whitelist_pair(
     assert result is True
 
 
+def test_process_informative_pairs_added(default_conf, ticker, markets, mocker) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+
+    def _refresh_whitelist(list):
+        return ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
+
+    refresh_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_markets=markets,
+        buy=MagicMock(side_effect=TemporaryError),
+        refresh_latest_ohlcv=refresh_mock,
+    )
+    inf_pairs = MagicMock(return_value=[("BTC/ETH", '1m'), ("ETH/USDT", "1h")])
+    mocker.patch('time.sleep', return_value=None)
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
+    freqtrade.strategy.informative_pairs = inf_pairs
+    # patch_get_signal(freqtrade)
+
+    freqtrade._process()
+    assert inf_pairs.call_count == 1
+    assert refresh_mock.call_count == 1
+    assert ("BTC/ETH", "1m") in refresh_mock.call_args[0][0]
+    assert ("ETH/USDT", "1h") in refresh_mock.call_args[0][0]
+    assert ("ETH/BTC", default_conf["ticker_interval"]) in refresh_mock.call_args[0][0]
+
+
 def test_balance_fully_ask_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 0.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={'ask': 20, 'last': 10}))
 
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) == 20
+    assert freqtrade.get_target_bid('ETH/BTC') == 20
 
 
 def test_balance_fully_last_side(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={'ask': 20, 'last': 10}))
 
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 20, 'last': 10}) == 10
+    assert freqtrade.get_target_bid('ETH/BTC') == 10
 
 
 def test_balance_bigger_last_ask(mocker, default_conf) -> None:
     default_conf['bid_strategy']['ask_last_balance'] = 1.0
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 5, 'last': 10}) == 5
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={'ask': 5, 'last': 10}))
+    assert freqtrade.get_target_bid('ETH/BTC') == 5
 
 
 def test_execute_buy(mocker, default_conf, fee, markets, limit_buy_order) -> None:
@@ -1014,6 +1050,211 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert trade.is_open is False
 
 
+def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
+                                              markets, limit_buy_order, limit_sell_order) -> None:
+    # When trailing stoploss is set
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+
+    # enabling TSL
+    default_conf['trailing_stop'] = True
+
+    # disabling ROI
+    default_conf['minimal_roi']['0'] = 999999999
+
+    freqtrade = FreqtradeBot(default_conf)
+
+    # enabling stoploss on exchange
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    # setting stoploss
+    freqtrade.strategy.stoploss = -0.05
+
+    # setting stoploss_on_exchange_interval to 60 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
+
+    patch_get_signal(freqtrade)
+
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    stoploss_order_hanging = MagicMock(return_value={
+        'id': 100,
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'info': {
+            'stopPrice': '0.000011134'
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+
+    # stoploss initially at 5%
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # price jumped 2x
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00002344,
+        'ask': 0.00002346,
+        'last': 0.00002344
+    }))
+
+    cancel_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_order_mock)
+
+    # stoploss should not be updated as the interval is 60 seconds
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    cancel_order_mock.assert_not_called()
+    stoploss_order_mock.assert_not_called()
+
+    assert freqtrade.handle_trade(trade) is False
+    assert trade.stop_loss == 0.00002344 * 0.95
+
+    # setting stoploss_on_exchange_interval to 0 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
+    stoploss_order_mock.assert_called_once_with(amount=85.25149190110828,
+                                                pair='ETH/BTC',
+                                                rate=0.00002344 * 0.95 * 0.99,
+                                                stop_price=0.00002344 * 0.95)
+
+
+def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
+                                              markets, limit_buy_order, limit_sell_order) -> None:
+
+    # When trailing stoploss is set
+    stoploss_limit = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    patch_edge(mocker)
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        get_markets=markets,
+        stoploss_limit=stoploss_limit
+    )
+
+    # enabling TSL
+    edge_conf['trailing_stop'] = True
+    edge_conf['trailing_stop_positive'] = 0.01
+    edge_conf['trailing_stop_positive_offset'] = 0.011
+
+    # disabling ROI
+    edge_conf['minimal_roi']['0'] = 999999999
+
+    freqtrade = FreqtradeBot(edge_conf)
+
+    # enabling stoploss on exchange
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    # setting stoploss
+    freqtrade.strategy.stoploss = -0.02
+
+    # setting stoploss_on_exchange_interval to 0 second
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+
+    patch_get_signal(freqtrade)
+
+    freqtrade.active_pair_whitelist = freqtrade.edge.adjust(freqtrade.active_pair_whitelist)
+
+    freqtrade.create_trade()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    stoploss_order_hanging = MagicMock(return_value={
+        'id': 100,
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'info': {
+            'stopPrice': '0.000009384'
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.get_order', stoploss_order_hanging)
+
+    # stoploss initially at 20% as edge dictated it.
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert trade.stop_loss == 0.000009384
+
+    cancel_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_order_mock)
+
+    # price goes down 5%
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00001172 * 0.95,
+        'ask': 0.00001173 * 0.95,
+        'last': 0.00001172 * 0.95
+    }))
+
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # stoploss should remain the same
+    assert trade.stop_loss == 0.000009384
+
+    # stoploss on exchange should not be canceled
+    cancel_order_mock.assert_not_called()
+
+    # price jumped 2x
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', MagicMock(return_value={
+        'bid': 0.00002344,
+        'ask': 0.00002346,
+        'last': 0.00002344
+    }))
+
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # stoploss should be set to 1% as trailing is on
+    assert trade.stop_loss == 0.00002344 * 0.99
+    cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
+    stoploss_order_mock.assert_called_once_with(amount=2131074.168797954,
+                                                pair='NEO/BTC',
+                                                rate=0.00002344 * 0.99 * 0.99,
+                                                stop_price=0.00002344 * 0.99)
+
+
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
@@ -1082,7 +1323,7 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
         side_effect=OperationalException()
     )
     freqtrade.process_maybe_execute_sell(trade)
-    assert log_has('could not update trade amount: ', caplog.record_tuples)
+    assert log_has('Could not update trade amount: ', caplog.record_tuples)
 
     # Test raise of DependencyException exception
     mocker.patch(
@@ -1318,6 +1559,47 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, fe
     assert nb_trades == 0
 
 
+def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old,
+                                    fee, mocker, caplog) -> None:
+    """ Handle Buy order cancelled on exchange"""
+    rpc_mock = patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock()
+    patch_exchange(mocker)
+    limit_buy_order_old.update({"status": "canceled"})
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_order=MagicMock(return_value=limit_buy_order_old),
+        cancel_order=cancel_order_mock,
+        get_fee=fee
+    )
+    freqtrade = FreqtradeBot(default_conf)
+
+    trade_buy = Trade(
+        pair='ETH/BTC',
+        open_rate=0.00001099,
+        exchange='bittrex',
+        open_order_id='123456789',
+        amount=90.99181073,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=1,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )
+
+    Trade.session.add(trade_buy)
+
+    # check it does cancel buy orders over the time limit
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    assert rpc_mock.call_count == 1
+    trades = Trade.query.filter(Trade.open_order_id.is_(trade_buy.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 0
+    assert log_has_re("Buy order canceled on Exchange for Trade.*", caplog.record_tuples)
+
+
 def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old,
                                              fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -1390,6 +1672,45 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert trade_sell.is_open is True
+
+
+def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
+                                     mocker, caplog) -> None:
+    """ Handle sell order cancelled on exchange"""
+    rpc_mock = patch_RPCManager(mocker)
+    cancel_order_mock = MagicMock()
+    limit_sell_order_old.update({"status": "canceled"})
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=ticker,
+        get_order=MagicMock(return_value=limit_sell_order_old),
+        cancel_order=cancel_order_mock
+    )
+    freqtrade = FreqtradeBot(default_conf)
+
+    trade_sell = Trade(
+        pair='ETH/BTC',
+        open_rate=0.00001099,
+        exchange='bittrex',
+        open_order_id='123456789',
+        amount=90.99181073,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=1,
+        open_date=arrow.utcnow().shift(hours=-5).datetime,
+        close_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=False
+    )
+
+    Trade.session.add(trade_sell)
+
+    # check it does cancel sell orders over the time limit
+    freqtrade.check_handle_timedout()
+    assert cancel_order_mock.call_count == 0
+    assert rpc_mock.call_count == 1
+    assert trade_sell.is_open is True
+    assert log_has_re("Sell order canceled on exchange for Trade.*", caplog.record_tuples)
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
@@ -1508,7 +1829,8 @@ def test_handle_timedout_limit_sell(mocker, default_conf) -> None:
 
     trade = MagicMock()
     order = {'remaining': 1,
-             'amount': 1}
+             'amount': 1,
+             'status': "open"}
     assert freqtrade.handle_timedout_limit_sell(trade, order)
     assert cancel_order_mock.call_count == 1
     order['amount'] = 2
@@ -2066,6 +2388,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
+    trade.max_rate = trade.open_rate * 1.003
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
@@ -2495,10 +2818,13 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2, markets) 
     instead of the ask rate
     """
     patch_exchange(mocker)
+    ticker_mock = MagicMock(return_value={'ask': 0.045, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_markets=markets,
-        get_order_book=order_book_l2
+        get_order_book=order_book_l2,
+        get_ticker=ticker_mock,
+
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
@@ -2507,7 +2833,8 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2, markets) 
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 0.045, 'last': 0.046}) == 0.043935
+    assert freqtrade.get_target_bid('ETH/BTC') == 0.043935
+    assert ticker_mock.call_count == 0
 
 
 def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) -> None:
@@ -2516,10 +2843,13 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     instead of the order book rate (even if enabled)
     """
     patch_exchange(mocker)
+    ticker_mock = MagicMock(return_value={'ask': 0.042, 'last': 0.046})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_markets=markets,
-        get_order_book=order_book_l2
+        get_order_book=order_book_l2,
+        get_ticker=ticker_mock,
+
     )
     default_conf['exchange']['name'] = 'binance'
     default_conf['bid_strategy']['use_order_book'] = True
@@ -2528,29 +2858,9 @@ def test_order_book_bid_strategy2(mocker, default_conf, order_book_l2, markets) 
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 0.042, 'last': 0.046}) == 0.042
-
-
-def test_order_book_bid_strategy3(default_conf, mocker, order_book_l2, markets) -> None:
-    """
-    test if function get_target_bid will return ask rate instead
-    of the order book rate
-    """
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_markets=markets,
-        get_order_book=order_book_l2
-    )
-    default_conf['exchange']['name'] = 'binance'
-    default_conf['bid_strategy']['use_order_book'] = True
-    default_conf['bid_strategy']['order_book_top'] = 1
-    default_conf['bid_strategy']['ask_last_balance'] = 0
-    default_conf['telegram']['enabled'] = False
-
-    freqtrade = FreqtradeBot(default_conf)
-
-    assert freqtrade.get_target_bid('ETH/BTC', {'ask': 0.03, 'last': 0.029}) == 0.03
+    # ordrebook shall be used even if tickers would be lower.
+    assert freqtrade.get_target_bid('ETH/BTC', ) != 0.042
+    assert ticker_mock.call_count == 0
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2, markets) -> None:

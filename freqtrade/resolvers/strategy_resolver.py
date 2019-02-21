@@ -3,11 +3,11 @@
 """
 This module load custom strategies
 """
-import inspect
 import logging
 import tempfile
 from base64 import urlsafe_b64decode
 from collections import OrderedDict
+from inspect import getfullargspec
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -39,59 +39,67 @@ class StrategyResolver(IResolver):
                                                        config=config,
                                                        extra_dir=config.get('strategy_path'))
 
+        # make sure experimental dict is available
+        if 'experimental' not in config:
+            config['experimental'] = {}
+
         # Set attributes
         # Check if we need to override configuration
-        if 'minimal_roi' in config:
-            self.strategy.minimal_roi = config['minimal_roi']
-            logger.info("Override strategy 'minimal_roi' with value in config file: %s.",
-                        config['minimal_roi'])
-        else:
-            config['minimal_roi'] = self.strategy.minimal_roi
+        # (Attribute name,                              default, experimental)
+        attributes = [("minimal_roi",                   None,    False),
+                      ("ticker_interval",               None,    False),
+                      ("stoploss",                      None,    False),
+                      ("trailing_stop",                 None,    False),
+                      ("trailing_stop_positive",        None,    False),
+                      ("trailing_stop_positive_offset", 0.0,     False),
+                      ("process_only_new_candles",      None,    False),
+                      ("order_types",                   None,    False),
+                      ("order_time_in_force",           None,    False),
+                      ("use_sell_signal",               False,   True),
+                      ("sell_profit_only",              False,   True),
+                      ("ignore_roi_if_buy_signal",      False,   True),
+                      ]
+        for attribute, default, experimental in attributes:
+            if experimental:
+                self._override_attribute_helper(config['experimental'], attribute, default)
+            else:
+                self._override_attribute_helper(config, attribute, default)
 
-        if 'stoploss' in config:
-            self.strategy.stoploss = config['stoploss']
-            logger.info(
-                "Override strategy 'stoploss' with value in config file: %s.", config['stoploss']
-            )
-        else:
-            config['stoploss'] = self.strategy.stoploss
+        # Loop this list again to have output combined
+        for attribute, _, exp in attributes:
+            if exp and attribute in config['experimental']:
+                logger.info("Strategy using %s: %s", attribute, config['experimental'][attribute])
+            elif attribute in config:
+                logger.info("Strategy using %s: %s", attribute, config[attribute])
 
-        if 'ticker_interval' in config:
-            self.strategy.ticker_interval = config['ticker_interval']
-            logger.info(
-                "Override strategy 'ticker_interval' with value in config file: %s.",
-                config['ticker_interval']
-            )
-        else:
-            config['ticker_interval'] = self.strategy.ticker_interval
+        # Sort and apply type conversions
+        self.strategy.minimal_roi = OrderedDict(sorted(
+            {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
+            key=lambda t: t[0]))
+        self.strategy.stoploss = float(self.strategy.stoploss)
 
-        if 'process_only_new_candles' in config:
-            self.strategy.process_only_new_candles = config['process_only_new_candles']
-            logger.info(
-                "Override process_only_new_candles 'process_only_new_candles' "
-                "with value in config file: %s.", config['process_only_new_candles']
-            )
-        else:
-            config['process_only_new_candles'] = self.strategy.process_only_new_candles
+        self._strategy_sanity_validations()
 
-        if 'order_types' in config:
-            self.strategy.order_types = config['order_types']
-            logger.info(
-                "Override strategy 'order_types' with value in config file: %s.",
-                config['order_types']
-            )
-        else:
-            config['order_types'] = self.strategy.order_types
+    def _override_attribute_helper(self, config, attribute: str, default):
+        """
+        Override attributes in the strategy.
+        Prevalence:
+        - Configuration
+        - Strategy
+        - default (if not None)
+        """
+        if attribute in config:
+            setattr(self.strategy, attribute, config[attribute])
+            logger.info("Override strategy '%s' with value in config file: %s.",
+                        attribute, config[attribute])
+        elif hasattr(self.strategy, attribute):
+            config[attribute] = getattr(self.strategy, attribute)
+        # Explicitly check for None here as other "falsy" values are possible
+        elif default is not None:
+            setattr(self.strategy, attribute, default)
+            config[attribute] = default
 
-        if 'order_time_in_force' in config:
-            self.strategy.order_time_in_force = config['order_time_in_force']
-            logger.info(
-                "Override strategy 'order_time_in_force' with value in config file: %s.",
-                config['order_time_in_force']
-            )
-        else:
-            config['order_time_in_force'] = self.strategy.order_time_in_force
-
+    def _strategy_sanity_validations(self):
         if not all(k in self.strategy.order_types for k in constants.REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
@@ -99,12 +107,6 @@ class StrategyResolver(IResolver):
         if not all(k in self.strategy.order_time_in_force for k in constants.REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{self.strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
-
-        # Sort and apply type conversions
-        self.strategy.minimal_roi = OrderedDict(sorted(
-            {int(key): value for (key, value) in self.strategy.minimal_roi.items()}.items(),
-            key=lambda t: t[0]))
-        self.strategy.stoploss = float(self.strategy.stoploss)
 
     def _load_strategy(
             self, strategy_name: str, config: dict, extra_dir: Optional[str] = None) -> IStrategy:
@@ -149,11 +151,9 @@ class StrategyResolver(IResolver):
                 if strategy:
                     logger.info('Using resolved strategy %s from \'%s\'', strategy_name, _path)
                     strategy._populate_fun_len = len(
-                        inspect.getfullargspec(strategy.populate_indicators).args)
-                    strategy._buy_fun_len = len(
-                        inspect.getfullargspec(strategy.populate_buy_trend).args)
-                    strategy._sell_fun_len = len(
-                        inspect.getfullargspec(strategy.populate_sell_trend).args)
+                        getfullargspec(strategy.populate_indicators).args)
+                    strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+                    strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
 
                     return import_strategy(strategy, config=config)
             except FileNotFoundError:

@@ -12,6 +12,7 @@ from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
+from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
@@ -34,9 +35,10 @@ class Configuration(object):
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: Namespace, runmode: RunMode = None) -> None:
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
+        self.runmode = runmode
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -67,6 +69,13 @@ class Configuration(object):
 
         # Load Hyperopt
         config = self._load_hyperopt_config(config)
+
+        # Set runmode
+        if not self.runmode:
+            # Handle real mode, infer dry/live from config
+            self.runmode = RunMode.DRY_RUN if config.get('dry_run', True) else RunMode.LIVE
+
+        config.update({'runmode': self.runmode})
 
         return config
 
@@ -124,9 +133,6 @@ class Configuration(object):
         if self.args.db_url and self.args.db_url != constants.DEFAULT_DB_PROD_URL:
             config.update({'db_url': self.args.db_url})
             logger.info('Parameter --db-url detected ...')
-        else:
-            # Set default here
-            config.update({'db_url': constants.DEFAULT_DB_PROD_URL})
 
         if config.get('dry_run', False):
             logger.info('Dry run is enabled')
@@ -152,13 +158,16 @@ class Configuration(object):
 
         return config
 
-    def _create_default_datadir(self, config: Dict[str, Any]) -> str:
-        exchange_name = config.get('exchange', {}).get('name').lower()
-        default_path = os.path.join('user_data', 'data', exchange_name)
-        if not os.path.isdir(default_path):
-            os.makedirs(default_path)
-            logger.info(f'Created data directory: {default_path}')
-        return default_path
+    def _create_datadir(self, config: Dict[str, Any], datadir: Optional[str] = None) -> str:
+        if not datadir:
+            # set datadir
+            exchange_name = config.get('exchange', {}).get('name').lower()
+            datadir = os.path.join('user_data', 'data', exchange_name)
+
+        if not os.path.isdir(datadir):
+            os.makedirs(datadir)
+            logger.info(f'Created data directory: {datadir}')
+        return datadir
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -198,9 +207,9 @@ class Configuration(object):
 
         # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self.args.datadir})
+            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
         else:
-            config.update({'datadir': self._create_default_datadir(config)})
+            config.update({'datadir': self._create_datadir(config, None)})
         logger.info('Using data folder: %s ...', config.get('datadir'))
 
         # If -r/--refresh-pairs-cached is used we add it to the configuration

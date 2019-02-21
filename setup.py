@@ -11,7 +11,7 @@ from freqtrade import __version__
 
 setup(name='freqtrade',
       version=__version__,
-      description='Simple High Frequency Trading Bot for crypto currencies',
+      description='Crypto Trading Bot',
       url='https://github.com/freqtrade/freqtrade',
       author='gcarq and contributors',
       author_email='michael.egger@tsn.at',
@@ -38,7 +38,7 @@ setup(name='freqtrade',
           'cachetools',
           'coinmarketcap',
           'scikit-optimize',
-          'ujson',
+          'python-rapidjson',
           'py_find_1st'
       ],
       include_package_data=True,

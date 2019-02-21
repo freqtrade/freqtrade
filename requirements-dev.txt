@@ -1,8 +1,12 @@
 # Include all requirements to run the bot.
 -r requirements.txt
 
-flake8==3.6.0
-pytest==4.0.2
-pytest-mock==1.10.0
-pytest-asyncio==0.9.0
-pytest-cov==2.6.0
+flake8==3.7.6
+flake8-type-annotations==0.1.0
+flake8-tidy-imports==2.0.0
+pytest==4.3.0
+pytest-mock==1.10.1
+pytest-asyncio==0.10.0
+pytest-cov==2.6.1
+coveralls==1.6.0
+mypy==0.670

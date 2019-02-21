@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
-                            file_dump_json, format_ms_time, shorten_date)
-from freqtrade.data.history import load_tickerdata_file
+                            file_dump_json, file_load_json, format_ms_time, shorten_date)
+from freqtrade.data.history import load_tickerdata_file, make_testdata_path
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
 
@@ -17,7 +17,7 @@ def test_shorten_date() -> None:
 
 
 def test_datesarray_to_datetimearray(ticker_history_list):
-    dataframes = parse_ticker_dataframe(ticker_history_list)
+    dataframes = parse_ticker_dataframe(ticker_history_list, "5m", fill_missing=True)
     dates = datesarray_to_datetimearray(dataframes['date'])
 
     assert isinstance(dates[0], datetime.datetime)
@@ -34,27 +34,40 @@ def test_datesarray_to_datetimearray(ticker_history_list):
 def test_common_datearray(default_conf) -> None:
     strategy = DefaultStrategy(default_conf)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, "1m", fill_missing=True)}
     dataframes = strategy.tickerdata_to_dataframe(tickerlist)
 
     dates = common_datearray(dataframes)
 
     assert dates.size == dataframes['UNITTEST/BTC']['date'].size
     assert dates[0] == dataframes['UNITTEST/BTC']['date'][0]
-    assert dates[-1] == dataframes['UNITTEST/BTC']['date'][-1]
+    assert dates[-1] == dataframes['UNITTEST/BTC']['date'].iloc[-1]
 
 
 def test_file_dump_json(mocker) -> None:
     file_open = mocker.patch('freqtrade.misc.open', MagicMock())
-    json_dump = mocker.patch('json.dump', MagicMock())
+    json_dump = mocker.patch('rapidjson.dump', MagicMock())
     file_dump_json('somefile', [1, 2, 3])
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
     file_open = mocker.patch('freqtrade.misc.gzip.open', MagicMock())
-    json_dump = mocker.patch('json.dump', MagicMock())
+    json_dump = mocker.patch('rapidjson.dump', MagicMock())
     file_dump_json('somefile', [1, 2, 3], True)
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
+
+
+def test_file_load_json(mocker) -> None:
+
+    # 7m .json does not exist
+    ret = file_load_json(make_testdata_path(None).joinpath('UNITTEST_BTC-7m.json'))
+    assert not ret
+    # 1m json exists (but no .gz exists)
+    ret = file_load_json(make_testdata_path(None).joinpath('UNITTEST_BTC-1m.json'))
+    assert ret
+    # 8 .json is empty and will fail if it's loaded. .json.gz is a copy of 1.json
+    ret = file_load_json(make_testdata_path(None).joinpath('UNITTEST_BTC-8m.json'))
+    assert ret
 
 
 def test_format_ms_time() -> None:

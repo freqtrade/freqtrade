@@ -5,17 +5,18 @@ This module contains the hyperopt logic
 """
 
 import logging
-from argparse import Namespace
+import multiprocessing
 import os
 import sys
-from pathlib import Path
+from argparse import Namespace
 from math import exp
-import multiprocessing
 from operator import itemgetter
+from pathlib import Path
+from pprint import pprint
 from typing import Any, Dict, List
 
-from pandas import DataFrame
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects
+from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
@@ -24,8 +25,8 @@ from freqtrade.configuration import Configuration
 from freqtrade.data.history import load_data
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.state import RunMode
 from freqtrade.resolvers import HyperOptResolver
-
 
 logger = logging.getLogger(__name__)
 
@@ -102,13 +103,13 @@ class Hyperopt(Backtesting):
         results = sorted(self.trials, key=itemgetter('loss'))
         best_result = results[0]
         logger.info(
-            'Best result:\n%s\nwith values:\n%s',
-            best_result['result'],
-            best_result['params']
+            'Best result:\n%s\nwith values:\n',
+            best_result['result']
         )
+        pprint(best_result['params'], indent=4)
         if 'roi_t1' in best_result['params']:
-            logger.info('ROI table:\n%s',
-                        self.custom_hyperopt.generate_roi_table(best_result['params']))
+            logger.info('ROI table:')
+            pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4)
 
     def log_results(self, results) -> None:
         """
@@ -151,6 +152,12 @@ class Hyperopt(Backtesting):
         spaces: List[Dimension] = []
         if self.has_space('buy'):
             spaces += self.custom_hyperopt.indicator_space()
+        if self.has_space('sell'):
+            spaces += self.custom_hyperopt.sell_indicator_space()
+            # Make sure experimental is enabled
+            if 'experimental' not in self.config:
+                self.config['experimental'] = {}
+            self.config['experimental']['use_sell_signal'] = True
         if self.has_space('roi'):
             spaces += self.custom_hyperopt.roi_space()
         if self.has_space('stoploss'):
@@ -164,6 +171,13 @@ class Hyperopt(Backtesting):
 
         if self.has_space('buy'):
             self.advise_buy = self.custom_hyperopt.buy_strategy_generator(params)
+        elif hasattr(self.custom_hyperopt, 'populate_buy_trend'):
+            self.advise_buy = self.custom_hyperopt.populate_buy_trend  # type: ignore
+
+        if self.has_space('sell'):
+            self.advise_sell = self.custom_hyperopt.sell_strategy_generator(params)
+        elif hasattr(self.custom_hyperopt, 'populate_sell_trend'):
+            self.advise_sell = self.custom_hyperopt.populate_sell_trend  # type: ignore
 
         if self.has_space('stoploss'):
             self.strategy.stoploss = params['stoploss']
@@ -247,7 +261,7 @@ class Hyperopt(Backtesting):
             timerange=timerange
         )
 
-        if self.has_space('buy'):
+        if self.has_space('buy') or self.has_space('sell'):
             self.strategy.advise_indicators = \
                 self.custom_hyperopt.populate_indicators  # type: ignore
         dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
@@ -293,7 +307,7 @@ def start(args: Namespace) -> None:
 
     # Initialize configuration
     # Monkey patch the configuration with hyperopt_conf.py
-    configuration = Configuration(args)
+    configuration = Configuration(args, RunMode.HYPEROPT)
     logger.info('Starting freqtrade in Hyperopt mode')
     config = configuration.load_config()
 

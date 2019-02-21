@@ -5,15 +5,12 @@ includes:
 * download data from exchange and store to disk
 """
 
-import gzip
-
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
 
 import arrow
 from pandas import DataFrame
-import ujson
 
 from freqtrade import misc, constants, OperationalException
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -21,15 +18,6 @@ from freqtrade.exchange import Exchange
 from freqtrade.arguments import TimeRange
 
 logger = logging.getLogger(__name__)
-
-
-def json_load(data):
-    """
-    load data with ujson
-    Use this to have a consistent experience,
-    otherwise "precise_float" needs to be passed to all load operations
-    """
-    return ujson.load(data, precise_float=True)
 
 
 def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
@@ -77,18 +65,10 @@ def load_tickerdata_file(
     path = make_testdata_path(datadir)
     pair_s = pair.replace('/', '_')
     file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
-    gzipfile = file.with_suffix(file.suffix + '.gz')
 
-    # Try gzip file first, otherwise regular json file.
-    if gzipfile.is_file():
-        logger.debug('Loading ticker data from file %s', gzipfile)
-        with gzip.open(gzipfile) as tickerdata:
-            pairdata = json_load(tickerdata)
-    elif file.is_file():
-        logger.debug('Loading ticker data from file %s', file)
-        with open(file) as tickerdata:
-            pairdata = json_load(tickerdata)
-    else:
+    pairdata = misc.file_load_json(file)
+
+    if not pairdata:
         return None
 
     if timerange:
@@ -102,25 +82,27 @@ def load_pair_history(pair: str,
                       timerange: TimeRange = TimeRange(None, None, 0, 0),
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
+                      fill_up_missing: bool = True
                       ) -> DataFrame:
     """
     Loads cached ticker history for the given pair.
     :return: DataFrame with ohlcv data
     """
 
-    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
     # If the user force the refresh of pairs
     if refresh_pairs:
         if not exchange:
             raise OperationalException("Exchange needs to be initialized when "
                                        "calling load_data with refresh_pairs=True")
 
-        logger.info('Download data for all pairs and store them in %s', datadir)
+        logger.info('Download data for pair and store them in %s', datadir)
         download_pair_history(datadir=datadir,
                               exchange=exchange,
                               pair=pair,
                               tick_interval=ticker_interval,
                               timerange=timerange)
+
+    pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
 
     if pairdata:
         if timerange.starttype == 'date' and pairdata[0][0] > timerange.startts * 1000:
@@ -130,7 +112,7 @@ def load_pair_history(pair: str,
             logger.warning('Missing data at end for pair %s, data ends at %s',
                            pair,
                            arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        return parse_ticker_dataframe(pairdata)
+        return parse_ticker_dataframe(pairdata, ticker_interval, fill_up_missing)
     else:
         logger.warning('No data for pair: "%s", Interval: %s. '
                        'Use --refresh-pairs-cached to download the data',
@@ -143,7 +125,8 @@ def load_data(datadir: Optional[Path],
               pairs: List[str],
               refresh_pairs: bool = False,
               exchange: Optional[Exchange] = None,
-              timerange: TimeRange = TimeRange(None, None, 0, 0)) -> Dict[str, DataFrame]:
+              timerange: TimeRange = TimeRange(None, None, 0, 0),
+              fill_up_missing: bool = True) -> Dict[str, DataFrame]:
     """
     Loads ticker history data for a list of pairs the given parameters
     :return: dict(<pair>:<tickerlist>)
@@ -154,7 +137,8 @@ def load_data(datadir: Optional[Path],
         hist = load_pair_history(pair=pair, ticker_interval=ticker_interval,
                                  datadir=datadir, timerange=timerange,
                                  refresh_pairs=refresh_pairs,
-                                 exchange=exchange)
+                                 exchange=exchange,
+                                 fill_up_missing=fill_up_missing)
         if hist is not None:
             result[pair] = hist
     return result
@@ -185,7 +169,7 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
     # read the cached file
     if filename.is_file():
         with open(filename, "rt") as file:
-            data = json_load(file)
+            data = misc.json_load(file)
         # remove the last item, could be incomplete candle
         if data:
             data.pop()
@@ -246,6 +230,6 @@ def download_pair_history(datadir: Optional[Path],
         misc.file_dump_json(filename, data)
         return True
     except BaseException:
-            logger.info('Failed to download the pair: "%s", Interval: %s',
-                        pair, tick_interval)
-            return False
+        logger.info('Failed to download the pair: "%s", Interval: %s',
+                    pair, tick_interval)
+        return False

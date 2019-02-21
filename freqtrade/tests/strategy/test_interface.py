@@ -111,32 +111,78 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
 
     timerange = TimeRange(None, 'line', 0, -100)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', True)}
     data = strategy.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 99       # partial candle was removed
+    assert len(data['UNITTEST/BTC']) == 102       # partial candle was removed
 
 
 def test_min_roi_reached(default_conf, fee) -> None:
-    strategy = DefaultStrategy(default_conf)
-    strategy.minimal_roi = {0: 0.1, 20: 0.05, 55: 0.01}
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_date=arrow.utcnow().shift(hours=-1).datetime,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='bittrex',
-        open_rate=1,
-    )
 
-    assert not strategy.min_roi_reached(trade, 0.01, arrow.utcnow().shift(minutes=-55).datetime)
-    assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-55).datetime)
+    # Use list to confirm sequence does not matter
+    min_roi_list = [{20: 0.05, 55: 0.01, 0: 0.1},
+                    {0: 0.1, 20: 0.05, 55: 0.01}]
+    for roi in min_roi_list:
+        strategy = DefaultStrategy(default_conf)
+        strategy.minimal_roi = roi
+        trade = Trade(
+            pair='ETH/BTC',
+            stake_amount=0.001,
+            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            exchange='bittrex',
+            open_rate=1,
+        )
 
-    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
-    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
+        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
 
-    assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
-    assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-39).datetime)
+
+        assert not strategy.min_roi_reached(trade, -0.01, arrow.utcnow().shift(minutes=-1).datetime)
+        assert strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-1).datetime)
+
+
+def test_min_roi_reached2(default_conf, fee) -> None:
+
+    # test with ROI raising after last interval
+    min_roi_list = [{20: 0.07,
+                     30: 0.05,
+                     55: 0.30,
+                     0: 0.1
+                     },
+                    {0: 0.1,
+                     20: 0.07,
+                     30: 0.05,
+                     55: 0.30
+                     },
+                    ]
+    for roi in min_roi_list:
+        strategy = DefaultStrategy(default_conf)
+        strategy.minimal_roi = roi
+        trade = Trade(
+            pair='ETH/BTC',
+            stake_amount=0.001,
+            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            exchange='bittrex',
+            open_rate=1,
+        )
+
+        assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
+        assert strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+
+        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+        assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+
+        assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
+        assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+
+        # Should not trigger with 20% profit since after 55 minutes only 30% is active.
+        assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
+        assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
 
 
 def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
@@ -158,7 +204,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 1
 
     assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+    assert not log_has('Skipping TA Analysis for already analyzed candle',
                        caplog.record_tuples)
     caplog.clear()
 
@@ -168,7 +214,7 @@ def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 2
     assert buy_mock.call_count == 2
     assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+    assert not log_has('Skipping TA Analysis for already analyzed candle',
                        caplog.record_tuples)
 
 
@@ -196,7 +242,7 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
     assert log_has('TA Analysis Launched', caplog.record_tuples)
-    assert not log_has('Skippinig TA Analysis for already analyzed candle',
+    assert not log_has('Skipping TA Analysis for already analyzed candle',
                        caplog.record_tuples)
     caplog.clear()
 
@@ -211,5 +257,5 @@ def test_analyze_ticker_skip_analyze(ticker_history, mocker, caplog) -> None:
     assert ret['buy'].sum() == 0
     assert ret['sell'].sum() == 0
     assert not log_has('TA Analysis Launched', caplog.record_tuples)
-    assert log_has('Skippinig TA Analysis for already analyzed candle',
+    assert log_has('Skipping TA Analysis for already analyzed candle',
                    caplog.record_tuples)

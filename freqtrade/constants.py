@@ -13,6 +13,7 @@ DEFAULT_HYPEROPT = 'DefaultHyperOpts'
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite://'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
+DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
 REQUIRED_ORDERTIF = ['buy', 'sell']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
@@ -112,7 +113,8 @@ CONF_SCHEMA = {
                 'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'stoploss_on_exchange': {'type': 'boolean'}
+                'stoploss_on_exchange': {'type': 'boolean'},
+                'stoploss_on_exchange_interval': {'type': 'number'}
             },
             'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
         },
@@ -137,7 +139,7 @@ CONF_SCHEMA = {
         'pairlist': {
             'type': 'object',
             'properties': {
-                'method': {'type': 'string',  'enum': AVAILABLE_PAIRLISTS},
+                'method': {'type': 'string', 'enum': AVAILABLE_PAIRLISTS},
                 'config': {'type': 'object'}
             },
             'required': ['method']
