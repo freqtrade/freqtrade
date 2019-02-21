@@ -63,7 +63,7 @@ class HyperOptResolver(IResolver):
                 hyperopt = self._search_object(directory=_path, object_type=IHyperOpt,
                                                object_name=hyperopt_name)
                 if hyperopt:
-                    logger.info('Using resolved hyperopt %s from \'%s\'', hyperopt_name, _path)
+                    logger.info("Using resolved hyperopt %s from '%s'", hyperopt_name, _path)
                     return hyperopt
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))

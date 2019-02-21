@@ -67,6 +67,7 @@ def retrier(f):
 class Exchange(object):
 
     _conf: Dict = {}
+    _params: Dict = {}
 
     def __init__(self, config: dict) -> None:
         """
@@ -303,11 +304,12 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            if time_in_force == 'gtc':
-                return self._api.create_order(pair, ordertype, 'buy', amount, rate)
-            else:
-                return self._api.create_order(pair, ordertype, 'buy',
-                                              amount, rate, {'timeInForce': time_in_force})
+            params = self._params.copy()
+            if time_in_force != 'gtc':
+                params.update({'timeInForce': time_in_force})
+
+            return self._api.create_order(pair, ordertype, 'buy',
+                                          amount, rate, params)
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -346,11 +348,12 @@ class Exchange(object):
             amount = self.symbol_amount_prec(pair, amount)
             rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
 
-            if time_in_force == 'gtc':
-                return self._api.create_order(pair, ordertype, 'sell', amount, rate)
-            else:
-                return self._api.create_order(pair, ordertype, 'sell',
-                                              amount, rate, {'timeInForce': time_in_force})
+            params = self._params.copy()
+            if time_in_force != 'gtc':
+                params.update({'timeInForce': time_in_force})
+
+            return self._api.create_order(pair, ordertype, 'sell',
+                                          amount, rate, params)
 
         except ccxt.InsufficientFunds as e:
             raise DependencyException(
@@ -402,8 +405,12 @@ class Exchange(object):
             return self._dry_run_open_orders[order_id]
 
         try:
+
+            params = self._params.copy()
+            params.update({'stopPrice': stop_price})
+
             order = self._api.create_order(pair, 'stop_loss_limit', 'sell',
-                                           amount, rate, {'stopPrice': stop_price})
+                                           amount, rate, params)
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s' % (pair, stop_price, rate))
             return order
@@ -541,8 +548,8 @@ class Exchange(object):
 
         # Gather coroutines to run
         for pair, ticker_interval in set(pair_list):
-            if not ((pair, ticker_interval) in self._klines) \
-                    or self._now_is_time_to_refresh(pair, ticker_interval):
+            if (not ((pair, ticker_interval) in self._klines)
+                    or self._now_is_time_to_refresh(pair, ticker_interval)):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
                 logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)

@@ -13,7 +13,8 @@ from pandas import DataFrame
 
 from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.exchange import API_RETRY_COUNT, Exchange
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
+from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
@@ -104,6 +105,23 @@ def test_init_exception(default_conf, mocker):
             match='Exchange {} is not supported'.format(default_conf['exchange']['name'])):
         mocker.patch("ccxt.binance", MagicMock(side_effect=AttributeError))
         Exchange(default_conf)
+
+
+def test_exchange_resolver(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=MagicMock()))
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    exchange = ExchangeResolver('Binance', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    exchange = ExchangeResolver('Kraken', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                          caplog.record_tuples)
 
 
 def test_symbol_amount_prec(default_conf, mocker):
@@ -531,6 +549,67 @@ def test_buy_considers_time_in_force(default_conf, mocker):
     assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'ioc'}
 
 
+def test_buy_kraken_trading_agreement(default_conf, mocker):
+    api_mock = MagicMock()
+    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+    order_type = 'market'
+    time_in_force = 'ioc'
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+    default_conf['dry_run'] = False
+
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
+
+    order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                         amount=1, rate=200, time_in_force=time_in_force)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
+    assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'buy'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] is None
+    assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'ioc',
+                                                     'trading_agreement': 'agree'}
+
+
+def test_sell_kraken_trading_agreement(default_conf, mocker):
+    api_mock = MagicMock()
+    order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
+    order_type = 'market'
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+    default_conf['dry_run'] = False
+
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
+
+    order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
+    assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'sell'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] is None
+    assert api_mock.create_order.call_args[0][5] == {'trading_agreement': 'agree'}
+
+
 def test_sell_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf)
@@ -552,11 +631,12 @@ def test_sell_prod(default_conf, mocker):
     })
     default_conf['dry_run'] = False
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
+
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id

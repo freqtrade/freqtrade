@@ -149,7 +149,7 @@ class StrategyResolver(IResolver):
                 strategy = self._search_object(directory=_path, object_type=IStrategy,
                                                object_name=strategy_name, kwargs={'config': config})
                 if strategy:
-                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, _path)
+                    logger.info("Using resolved strategy %s from '%s'", strategy_name, _path)
                     strategy._populate_fun_len = len(
                         getfullargspec(strategy.populate_indicators).args)
                     strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
