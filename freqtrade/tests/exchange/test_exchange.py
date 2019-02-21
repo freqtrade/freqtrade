@@ -13,7 +13,8 @@ from pandas import DataFrame
 
 from freqtrade import DependencyException, OperationalException, TemporaryError
 from freqtrade.exchange import API_RETRY_COUNT, Exchange
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
+from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
@@ -104,6 +105,23 @@ def test_init_exception(default_conf, mocker):
             match='Exchange {} is not supported'.format(default_conf['exchange']['name'])):
         mocker.patch("ccxt.binance", MagicMock(side_effect=AttributeError))
         Exchange(default_conf)
+
+
+def test_exchange_resolver(default_conf, mocker, caplog):
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=MagicMock()))
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    exchange = ExchangeResolver('Binance', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    exchange = ExchangeResolver('Kraken', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                          caplog.record_tuples)
 
 
 def test_symbol_amount_prec(default_conf, mocker):

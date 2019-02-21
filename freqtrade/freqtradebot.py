@@ -17,7 +17,6 @@ from freqtrade import (DependencyException, OperationalException,
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
@@ -57,12 +56,7 @@ class FreqtradeBot(object):
         self.rpc: RPCManager = RPCManager(self)
 
         exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
-        try:
-            self.exchange = ExchangeResolver(exchange_name, self.config).exchange
-        except ImportError:
-            logger.info(
-                f"No {exchange_name} specific subclass found. Using the generic class instead.")
-            self.exchange = Exchange(self.config)
+        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
 
         self.wallets = Wallets(self.exchange)
         self.dataprovider = DataProvider(self.config, self.exchange)
