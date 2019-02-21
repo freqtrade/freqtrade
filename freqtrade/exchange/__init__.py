@@ -160,7 +160,6 @@ class Exchange(object):
         return self._api.id
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
-        # create key tuple
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
         else:
@@ -547,14 +546,10 @@ class Exchange(object):
 
         input_coroutines = []
 
-        # Gather corotines to run
+        # Gather coroutines to run
         for pair, ticker_interval in set(pair_list):
-            # Calculating ticker interval in second
-            interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
-
-            if not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
-                     + interval_in_sec) >= arrow.utcnow().timestamp
-                    and (pair, ticker_interval) in self._klines):
+            if (not ((pair, ticker_interval) in self._klines)
+                    or self._now_is_time_to_refresh(pair, ticker_interval)):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
                 logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)
@@ -577,6 +572,13 @@ class Exchange(object):
             self._klines[(pair, tick_interval)] = parse_ticker_dataframe(
                 ticks, tick_interval, fill_missing=True)
         return tickers
+
+    def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
+        # Calculating ticker interval in seconds
+        interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
+
+        return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+                    + interval_in_sec) >= arrow.utcnow().timestamp)
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,

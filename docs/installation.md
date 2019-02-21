@@ -115,8 +115,14 @@ Once you have Docker installed, simply create the config file (e.g. `config.json
 
 **1.1. Clone the git repository**
 
+Linux/Mac/Windows with WSL
 ```bash
 git clone https://github.com/freqtrade/freqtrade.git
+```
+
+Windows with docker
+```bash
+git clone --config core.autocrlf=input https://github.com/freqtrade/freqtrade.git
 ```
 
 **1.2. (Optional) Checkout the develop branch**
