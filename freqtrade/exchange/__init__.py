@@ -546,13 +546,23 @@ class Exchange(object):
 
         input_coroutines = []
 
+        logger.info(f"@@@ {self._exchange_internals_options}")
+
         # Gather coroutines to run
         for pair, ticker_interval in set(pair_list):
+            if not ((pair, ticker_interval) in self._klines):
+                logger.info(f"Ohlcv data for ({pair}, {ticker_interval}) not in klines.")
             if (not ((pair, ticker_interval) in self._klines)
                     or self._now_is_time_to_refresh(pair, ticker_interval)):
-                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
+                logger.info(f"Refreshing ohlcv data for ({pair}, {ticker_interval}) ...")
+                _LIMIT = 100
+                limit = self._exchange_internals_options.get('max_api_request_count', _LIMIT)
+                one_call_ms = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60 * (limit - 1) * 1000
+                since_ms = arrow.utcnow().timestamp * 1000 - one_call_ms
+
+                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval, since_ms, limit))
             else:
-                logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)
+                logger.debug(f"Using cached ohlcv data for ({pair}, {ticker_interval}) ...")
 
         tickers = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
@@ -571,18 +581,24 @@ class Exchange(object):
             # keeping parsed dataframe in cache
             self._klines[(pair, tick_interval)] = parse_ticker_dataframe(
                 ticks, tick_interval, fill_missing=True)
+            logger.debug(f"Klines for {pair}, {ticker_interval}: {self._klines}")
         return tickers
 
     def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
         # Calculating ticker interval in seconds
         interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
-        return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
-                    + interval_in_sec) >= arrow.utcnow().timestamp)
+        if self._exchange_internals_options.get('candles_have_close_time', False):
+            return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+                        + 0) >= arrow.utcnow().timestamp)
+        else:
+            return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
+                        + interval_in_sec) >= arrow.utcnow().timestamp)
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
-                                        since_ms: Optional[int] = None) -> Tuple[str, str, List]:
+                                        since_ms: Optional[int] = None,
+                                        count: Optional[int] = None) -> Tuple[str, str, List]:
         """
         Asyncronously gets candle histories using fetch_ohlcv
         returns tuple: (pair, tick_interval, ohlcv_list)
@@ -592,7 +608,7 @@ class Exchange(object):
             logger.debug("fetching %s, %s since %s ...", pair, tick_interval, since_ms)
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
-                                                     since=since_ms)
+                                                     since=since_ms, count=count)
 
             # Because some exchange sort Tickers ASC and other DESC.
             # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
