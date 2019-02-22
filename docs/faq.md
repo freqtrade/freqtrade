@@ -1,4 +1,6 @@
-# freqtrade FAQ
+# Freqtrade FAQ
+
+### Freqtrade commons
 
 #### I have waited 5 minutes, why hasn't the bot made any trades yet?!
 
@@ -34,7 +36,9 @@ perform anymore BUYS?
 
 You can use the `/forcesell all` command from Telegram.
 
-### How many epoch do I need to get a good Hyperopt result?
+### Hyperopt module
+
+#### How many epoch do I need to get a good Hyperopt result?
 Per default Hyperopts without `-e` or `--epochs` parameter will only
 run 100 epochs, means 100 evals of your triggers, guards, .... Too few
 to find a great result (unless if you are very lucky), so you probably
@@ -68,3 +72,18 @@ but it will give the idea. With only these triggers and guards there is
 already 8*10^9*10 evaluations. A roughly total of 80 billion evals.
 Did you run 100 000 evals? Congrats, you've done roughly 1 / 100 000 th
 of the search space.
+
+### Edge module
+
+#### Edge implements interesting approach for controlling position size, is there any theory behind it?
+
+The Edge module is mostly a result of brainstorming of [@mishaker](https://github.com/mishaker) and [@creslinux](https://github.com/creslinux) freqtrade team members.
+
+You can find further info on expectancy, winrate, risk management and position size in the following sources:
+* https://www.tradeciety.com/ultimate-math-guide-for-traders/
+* http://www.vantharp.com/tharp-concepts/expectancy.asp
+* https://samuraitradingacademy.com/trading-expectancy/
+* https://www.learningmarkets.com/determining-expectancy-in-your-trading/
+* http://www.lonestocktrader.com/make-money-trading-positive-expectancy/
+* https://www.babypips.com/trading/trade-expectancy-matter
+
