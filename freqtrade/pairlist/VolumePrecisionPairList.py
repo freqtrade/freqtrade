@@ -3,13 +3,16 @@ Static List provider
 
 Provides lists as configured in config.json
 
- """
+"""
 import logging
 from typing import List
+
 from cachetools import TTLCache, cached
 
 from freqtrade.pairlist.IPairList import IPairList
 from freqtrade import OperationalException
+
+
 logger = logging.getLogger(__name__)
 
 SORT_VALUES = ['askVolume', 'bidVolume', 'quoteVolume']
