@@ -283,7 +283,7 @@ class Exchange(object):
         return price
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                      rate: float, params: Dict = {}) -> Tuple[str, Dict[str, Any]]:
+                      rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{randint(0, 10**6)}'
         dry_order = {  # TODO: additional entry should be added for stoploss limit
             "id": order_id,
@@ -297,11 +297,15 @@ class Exchange(object):
             'status': 'closed',
             'fee': None
         }
-        return order_id, dry_order
+        return dry_order
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, params: Dict = {}) -> Dict:
         try:
+            # Set the precision for amount and price(rate) as accepted by the exchange
+            amount = self.symbol_amount_prec(pair, amount)
+            rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+
             return self._api.create_order(pair, ordertype, side,
                                           amount, rate, params)
 
@@ -325,13 +329,9 @@ class Exchange(object):
             rate: float, time_in_force) -> Dict:
 
         if self._conf['dry_run']:
-            order_id, dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
-            self._dry_run_open_orders[order_id] = dry_order
-            return {'id': order_id}
-
-        # Set the precision for amount and price(rate) as accepted by the exchange
-        amount = self.symbol_amount_prec(pair, amount)
-        rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+            dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
+            self._dry_run_open_orders[dry_order["id"]] = dry_order
+            return {"id": dry_order["id"]}
 
         params = self._params.copy()
         if time_in_force != 'gtc':
@@ -343,13 +343,9 @@ class Exchange(object):
              rate: float, time_in_force='gtc') -> Dict:
 
         if self._conf['dry_run']:
-            order_id, dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
-            self._dry_run_open_orders[order_id] = dry_order
-            return {'id': order_id}
-
-        # Set the precision for amount and price(rate) as accepted by the exchange
-        amount = self.symbol_amount_prec(pair, amount)
-        rate = self.symbol_price_prec(pair, rate) if ordertype != 'market' else None
+            dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
+            self._dry_run_open_orders[dry_order["id"]] = dry_order
+            return {"id": dry_order["id"]}
 
         params = self._params.copy()
         if time_in_force != 'gtc':
@@ -363,9 +359,7 @@ class Exchange(object):
         NOTICE: it is not supported by all exchanges. only binance is tested for now.
         """
         ordertype = "stop_loss_limit"
-        # Set the precision for amount and price(rate) as accepted by the exchange
-        amount = self.symbol_amount_prec(pair, amount)
-        rate = self.symbol_price_prec(pair, rate)
+
         stop_price = self.symbol_price_prec(pair, stop_price)
 
         # Ensure rate is less than stop price
@@ -374,10 +368,10 @@ class Exchange(object):
                 'In stoploss limit order, stop price should be more than limit price')
 
         if self._conf['dry_run']:
-            order_id, dry_order = self.dry_run_order(
+            dry_order = self.dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             dry_order.update({"info": {}, "remaining": amount, "status": "open"})
-            self._dry_run_open_orders[order_id] = dry_order
+            self._dry_run_open_orders[dry_order["id"]] = dry_order
             return dry_order
 
         params = self._params.copy()

@@ -441,6 +441,56 @@ def test_exchange_has(default_conf, mocker):
     assert not exchange.exchange_has("deadbeef")
 
 
+@pytest.mark.parametrize("side", [
+    ("buy"),
+    ("sell")
+])
+def test_dry_run_order(default_conf, mocker, side):
+    default_conf['dry_run'] = True
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    order = exchange.dry_run_order(
+        pair='ETH/BTC', ordertype='limit', side=side, amount=1, rate=200)
+    assert 'id' in order
+    assert f'dry_run_{side}_' in order["id"]
+
+
+@pytest.mark.parametrize("side", [
+    ("buy"),
+    ("sell")
+])
+@pytest.mark.parametrize("ordertype,rate", [
+    ("market", None),
+    ("limit", 200),
+    ("stop_loss_limit", 200)
+])
+def test_create_order(default_conf, mocker, side, ordertype, rate):
+    api_mock = MagicMock()
+    order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        }
+    })
+    default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    order = exchange.create_order(
+        pair='ETH/BTC', ordertype=ordertype, side=side, amount=1, rate=200)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
+    assert api_mock.create_order.call_args[0][1] == ordertype
+    assert api_mock.create_order.call_args[0][2] == side
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] is rate
+
+
 def test_buy_dry_run(default_conf, mocker):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf)
