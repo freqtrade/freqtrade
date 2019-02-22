@@ -331,7 +331,7 @@ class Exchange(object):
         if self._conf['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
             self._dry_run_open_orders[dry_order["id"]] = dry_order
-            return {"id": dry_order["id"]}
+            return dry_order  # {"id": dry_order["id"]}
 
         params = self._params.copy()
         if time_in_force != 'gtc':
@@ -345,7 +345,7 @@ class Exchange(object):
         if self._conf['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
             self._dry_run_open_orders[dry_order["id"]] = dry_order
-            return {"id": dry_order["id"]}
+            return dry_order  # {"id": dry_order["id"]}
 
         params = self._params.copy()
         if time_in_force != 'gtc':
@@ -527,7 +527,7 @@ class Exchange(object):
         interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
 
         return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
-                    + interval_in_sec) >= arrow.utcnow().timestamp)
+                     + interval_in_sec) >= arrow.utcnow().timestamp)
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
