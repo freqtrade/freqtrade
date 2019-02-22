@@ -78,7 +78,7 @@ class VolumePrecisionPairList(IPairList):
                     t["symbol"],
                     self._freqtrade.get_target_bid(
                         t["symbol"], t) * (1 + self._freqtrade.strategy.stoploss)
-                    ) < self._freqtrade.get_target_bid(t["symbol"], t)
+                    ) <= self._freqtrade.get_target_bid(t["symbol"], t)
                 )]
 
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
