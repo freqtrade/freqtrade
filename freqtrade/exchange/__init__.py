@@ -556,11 +556,11 @@ class Exchange(object):
                     or self._now_is_time_to_refresh(pair, ticker_interval)):
                 logger.info(f"Refreshing ohlcv data for ({pair}, {ticker_interval}) ...")
                 _LIMIT = 100
-                limit = self._exchange_internals_options.get('default_api_request_count', _LIMIT)
+                limit = self._exchange_internals_options.get('max_api_request_count', _LIMIT)
                 one_call_ms = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60 * (limit - 1) * 1000
                 since_ms = arrow.utcnow().timestamp * 1000 - one_call_ms
 
-                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval, since_ms))
+                input_coroutines.append(self._async_get_candle_history(pair, ticker_interval, since_ms, limit))
             else:
                 logger.debug(f"Using cached ohlcv data for ({pair}, {ticker_interval}) ...")
 
@@ -597,7 +597,8 @@ class Exchange(object):
 
     @retrier_async
     async def _async_get_candle_history(self, pair: str, tick_interval: str,
-                                        since_ms: Optional[int] = None) -> Tuple[str, str, List]:
+                                        since_ms: Optional[int] = None,
+                                        limit: Optional[int] = None) -> Tuple[str, str, List]:
         """
         Asyncronously gets candle histories using fetch_ohlcv
         returns tuple: (pair, tick_interval, ohlcv_list)
@@ -607,7 +608,7 @@ class Exchange(object):
             logger.debug("fetching %s, %s since %s ...", pair, tick_interval, since_ms)
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
-                                                     since=since_ms)
+                                                     since=since_ms, limit=limit)
 
             # Because some exchange sort Tickers ASC and other DESC.
             # Ex: Bittrex returns a list of tickers ASC (oldest first, newest last)
