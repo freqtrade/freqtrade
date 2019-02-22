@@ -12,7 +12,8 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade import DependencyException, OperationalException, TemporaryError
-from freqtrade.exchange import API_RETRY_COUNT, Exchange
+from freqtrade.exchange import Exchange, Kraken
+from freqtrade.exchange.exchange import API_RETRY_COUNT
 from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 
@@ -120,6 +121,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
 
     exchange = ExchangeResolver('Kraken', default_conf).exchange
     assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Kraken)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog.record_tuples)
 
@@ -1108,7 +1110,7 @@ async def test___async_get_candle_history_sort(default_conf, mocker):
     ]
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
-    sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
+    sort_mock = mocker.patch('freqtrade.exchange.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the ticker history sort
     res = await exchange._async_get_candle_history('ETH/BTC', default_conf['ticker_interval'])
     assert res[0] == 'ETH/BTC'
