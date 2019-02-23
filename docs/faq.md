@@ -69,7 +69,7 @@ be evaluated
 
 The following calculation is still very rough and not very precise
 but it will give the idea. With only these triggers and guards there is
-already 8*10^9*10 evaluations. A roughly total of 80 billion evals.
+already 8\*10^9\*10 evaluations. A roughly total of 80 billion evals.
 Did you run 100 000 evals? Congrats, you've done roughly 1 / 100 000 th
 of the search space.
 
