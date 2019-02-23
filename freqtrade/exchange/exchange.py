@@ -299,10 +299,10 @@ class Exchange(object):
             'fee': None,
             "info": {}
         }
-        self.store_dry_order(dry_order)
+        self._store_dry_order(dry_order)
         return dry_order
 
-    def store_dry_order(self, dry_order: Dict) -> None:
+    def _store_dry_order(self, dry_order: Dict) -> None:
         closed_order = dry_order.copy()
         if closed_order["type"] in ["market", "limit"]:
             closed_order.update({
