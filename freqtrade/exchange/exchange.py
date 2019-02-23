@@ -290,14 +290,27 @@ class Exchange(object):
             'pair': pair,
             'price': rate,
             'amount': amount,
+            "cost": amount * rate,
             'type': ordertype,
             'side': 'buy',
-            'remaining': 0.0,
+            'remaining': amount,
             'datetime': arrow.utcnow().isoformat(),
-            'status': 'closed',
-            'fee': None
+            'status': "open",
+            'fee': None,
+            "info": {}
         }
+        self.store_dry_order(dry_order)
         return dry_order
+
+    def store_dry_order(self, dry_order: Dict) -> None:
+        closed_order = dry_order.copy()
+        if closed_order["type"] in ["market", "limit"]:
+            closed_order.update({
+                "status": "closed",
+                "filled": closed_order["amount"],
+                "remaining": 0
+                })
+        self._dry_run_open_orders[closed_order["id"]] = closed_order
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, params: Dict = {}) -> Dict:
@@ -330,8 +343,7 @@ class Exchange(object):
 
         if self._conf['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
-            self._dry_run_open_orders[dry_order["id"]] = dry_order
-            return dry_order  # {"id": dry_order["id"]}
+            return dry_order
 
         params = self._params.copy()
         if time_in_force != 'gtc':
@@ -344,8 +356,7 @@ class Exchange(object):
 
         if self._conf['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
-            self._dry_run_open_orders[dry_order["id"]] = dry_order
-            return dry_order  # {"id": dry_order["id"]}
+            return dry_order
 
         params = self._params.copy()
         if time_in_force != 'gtc':
@@ -370,8 +381,6 @@ class Exchange(object):
         if self._conf['dry_run']:
             dry_order = self.dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
-            dry_order.update({"info": {}, "remaining": amount, "status": "open"})
-            self._dry_run_open_orders[dry_order["id"]] = dry_order
             return dry_order
 
         params = self._params.copy()
@@ -586,9 +595,6 @@ class Exchange(object):
     def get_order(self, order_id: str, pair: str) -> Dict:
         if self._conf['dry_run']:
             order = self._dry_run_open_orders[order_id]
-            order.update({
-                'id': order_id
-            })
             return order
         try:
             return self._api.fetch_order(order_id, pair)
