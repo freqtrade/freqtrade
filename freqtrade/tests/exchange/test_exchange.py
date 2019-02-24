@@ -12,7 +12,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade import DependencyException, OperationalException, TemporaryError
-from freqtrade.exchange import Exchange, Kraken
+from freqtrade.exchange import Exchange, Kraken, Binance
 from freqtrade.exchange.exchange import API_RETRY_COUNT
 from freqtrade.tests.conftest import get_patched_exchange, log_has, log_has_re
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
@@ -127,6 +127,15 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     exchange = ExchangeResolver('Kraken', default_conf).exchange
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
+    assert not isinstance(exchange, Binance)
+    assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                          caplog.record_tuples)
+
+    exchange = ExchangeResolver('Binance', default_conf).exchange
+    assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Binance)
+    assert not isinstance(exchange, Kraken)
+
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog.record_tuples)
 
@@ -452,9 +461,10 @@ def test_exchange_has(default_conf, mocker):
     ("buy"),
     ("sell")
 ])
-def test_dry_run_order(default_conf, mocker, side):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_dry_run_order(default_conf, mocker, side, exchange_name):
     default_conf['dry_run'] = True
-    exchange = get_patched_exchange(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     order = exchange.dry_run_order(
         pair='ETH/BTC', ordertype='limit', side=side, amount=1, rate=200)
@@ -471,7 +481,8 @@ def test_dry_run_order(default_conf, mocker, side):
     ("limit", 200),
     ("stop_loss_limit", 200)
 ])
-def test_create_order(default_conf, mocker, side, ordertype, rate):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_create_order(default_conf, mocker, side, ordertype, rate, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
     api_mock.create_order = MagicMock(return_value={
@@ -483,7 +494,7 @@ def test_create_order(default_conf, mocker, side, ordertype, rate):
     default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.create_order(
         pair='ETH/BTC', ordertype=ordertype, side=side, amount=1, rate=200)
@@ -508,7 +519,8 @@ def test_buy_dry_run(default_conf, mocker):
     assert 'dry_run_buy_' in order['id']
 
 
-def test_buy_prod(default_conf, mocker):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_buy_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'market'
@@ -522,7 +534,7 @@ def test_buy_prod(default_conf, mocker):
     default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
                          amount=1, rate=200, time_in_force=time_in_force)
@@ -553,25 +565,25 @@ def test_buy_prod(default_conf, mocker):
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.buy(pair='ETH/BTC', ordertype=order_type,
                      amount=1, rate=200, time_in_force=time_in_force)
 
@@ -676,7 +688,8 @@ def test_sell_dry_run(default_conf, mocker):
     assert 'dry_run_sell_' in order['id']
 
 
-def test_sell_prod(default_conf, mocker):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_sell_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
     order_type = 'market'
@@ -690,7 +703,7 @@ def test_sell_prod(default_conf, mocker):
 
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
@@ -715,22 +728,22 @@ def test_sell_prod(default_conf, mocker):
     # test exception handling
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.sell(pair='ETH/BTC', ordertype=order_type, amount=1, rate=200)
 
 
@@ -741,23 +754,24 @@ def test_get_balance_dry_run(default_conf, mocker):
     assert exchange.get_balance(currency='BTC') == 999.9
 
 
-def test_get_balance_prod(default_conf, mocker):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_get_balance_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_balance = MagicMock(return_value={'BTC': {'free': 123.4}})
     default_conf['dry_run'] = False
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     assert exchange.get_balance(currency='BTC') == 123.4
 
     with pytest.raises(OperationalException):
         api_mock.fetch_balance = MagicMock(side_effect=ccxt.BaseError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
         exchange.get_balance(currency='BTC')
 
     with pytest.raises(TemporaryError, match=r'.*balance due to malformed exchange response:.*'):
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
         exchange.get_balance(currency='BTC')
 
@@ -971,7 +985,8 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
 
 
 @pytest.mark.asyncio
-async def test__async_get_candle_history(default_conf, mocker, caplog):
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_name):
     tick = [
         [
             arrow.utcnow().timestamp * 1000,  # unix timestamp ms
@@ -984,11 +999,10 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     ]
 
     caplog.set_level(logging.DEBUG)
-    exchange = get_patched_exchange(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function
     exchange._api_async.fetch_ohlcv = get_mock_coro(tick)
 
-    exchange = Exchange(default_conf)
     pair = 'ETH/BTC'
     res = await exchange._async_get_candle_history(pair, "5m")
     assert type(res) is tuple
@@ -1007,7 +1021,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog):
     api_mock = MagicMock()
     with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError)
-        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         await exchange._async_get_candle_history(pair, "5m",
                                                  (arrow.utcnow().timestamp - 2000) * 1000)
 
