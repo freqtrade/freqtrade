@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class Binance(Exchange):
 
-    _ft_has = {
+    _ft_has: Dict = {
         "stoploss_on_exchange": True,
     }
 
