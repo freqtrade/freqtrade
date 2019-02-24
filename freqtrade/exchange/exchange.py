@@ -24,7 +24,7 @@ API_RETRY_COUNT = 4
 # Urls to exchange markets, insert quote and base with .format()
 _EXCHANGE_URLS = {
     ccxt.bittrex.__name__: '/Market/Index?MarketName={quote}-{base}',
-    ccxt.binance.__name__: '/tradeDetail.html?symbol={base}_{quote}'
+    ccxt.binance.__name__: '/tradeDetail.html?symbol={base}_{quote}',
 }
 
 
@@ -69,11 +69,17 @@ class Exchange(object):
     _conf: Dict = {}
     _params: Dict = {}
 
+    # Dict to specify which options each exchange implements
+    # TODO: this should be merged with attributes from subclasses
+    # To avoid having to copy/paste this to all subclasses.
+    _ft_has = {
+        "stoploss_on_exchange": False,
+    }
+
     def __init__(self, config: dict) -> None:
         """
         Initializes this module with the given config,
-        it does basic validation whether the specified
-        exchange and pairs are valid.
+        it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
         self._conf.update(config)
@@ -236,8 +242,8 @@ class Exchange(object):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
 
-        if order_types.get('stoploss_on_exchange'):
-            if self.name != 'Binance':
+        if (order_types.get("stoploss_on_exchange")
+                and not self._ft_has.get("stoploss_on_exchange", False)):
                 raise OperationalException(
                     'On exchange stoploss is not supported for %s.' % self.name
                 )
@@ -368,6 +374,7 @@ class Exchange(object):
         """
         creates a stoploss limit order.
         NOTICE: it is not supported by all exchanges. only binance is tested for now.
+        TODO: implementation maybe needs to be move to the binance subclass
         """
         ordertype = "stop_loss_limit"
 
@@ -617,15 +624,6 @@ class Exchange(object):
         20180619: binance support limits but only on specific range
         """
         try:
-            if self._api.name == 'Binance':
-                limit_range = [5, 10, 20, 50, 100, 500, 1000]
-                # get next-higher step in the limit_range list
-                limit = min(list(filter(lambda x: limit <= x, limit_range)))
-                # above script works like loop below (but with slightly better performance):
-                #   for limitx in limit_range:
-                #        if limit <= limitx:
-                #           limit = limitx
-                #           break
 
             return self._api.fetch_l2_order_book(pair, limit)
         except ccxt.NotSupported as e:
