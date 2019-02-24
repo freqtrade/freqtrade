@@ -3,6 +3,7 @@
 """
 bot constants
 """
+DEFAULT_CONFIG = 'config.json'
 DYNAMIC_WHITELIST = 20  # pairs
 PROCESS_THROTTLE_SECS = 5  # sec
 TICKER_INTERVAL = 5  # min

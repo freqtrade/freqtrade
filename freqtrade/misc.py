@@ -113,3 +113,21 @@ def format_ms_time(date: int) -> str:
     : epoch-string in ms
     """
     return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def deep_merge_dicts(source, destination):
+    """
+    >>> a = { 'first' : { 'rows' : { 'pass' : 'dog', 'number' : '1' } } }
+    >>> b = { 'first' : { 'rows' : { 'fail' : 'cat', 'number' : '5' } } }
+    >>> merge(b, a) == { 'first' : { 'rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }
+    True
+    """
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            deep_merge_dicts(value, node)
+        else:
+            destination[key] = value
+
+    return destination
