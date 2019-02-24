@@ -113,7 +113,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    exchange = ExchangeResolver('Binance', default_conf).exchange
+    exchange = ExchangeResolver('Bittrex', default_conf).exchange
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                       caplog.record_tuples)
