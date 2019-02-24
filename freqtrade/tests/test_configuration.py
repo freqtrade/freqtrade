@@ -1,15 +1,15 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
 import json
-from argparse import Namespace
 import logging
+from argparse import Namespace
+from copy import deepcopy
 from unittest.mock import MagicMock
 
 import pytest
-from jsonschema import validate, ValidationError, Draft4Validator
+from jsonschema import Draft4Validator, ValidationError, validate
 
-from freqtrade import constants
-from freqtrade import OperationalException
+from freqtrade import OperationalException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
@@ -63,6 +63,35 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     validated_conf = configuration.load_config()
 
     assert validated_conf['max_open_trades'] == 0
+    assert 'internals' in validated_conf
+    assert log_has('Validating configuration ...', caplog.record_tuples)
+
+
+def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
+    conf1 = deepcopy(default_conf)
+    conf2 = deepcopy(default_conf)
+    del conf1['exchange']['key']
+    del conf1['exchange']['secret']
+    del conf2['exchange']['name']
+    conf2['exchange']['pair_whitelist'] += ['NANO/BTC']
+
+    config_files = [conf1, conf2]
+
+    configsmock = MagicMock(side_effect=config_files)
+    mocker.patch('freqtrade.configuration.Configuration._load_config_file', configsmock)
+
+    arg_list = ['-c', 'test_conf.json', '--config', 'test2_conf.json', ]
+    args = Arguments(arg_list, '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    exchange_conf = default_conf['exchange']
+    assert validated_conf['exchange']['name'] == exchange_conf['name']
+    assert validated_conf['exchange']['key'] == exchange_conf['key']
+    assert validated_conf['exchange']['secret'] == exchange_conf['secret']
+    assert validated_conf['exchange']['pair_whitelist'] != conf1['exchange']['pair_whitelist']
+    assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
+
     assert 'internals' in validated_conf
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
