@@ -374,7 +374,7 @@ class Exchange(object):
         """
         creates a stoploss limit order.
         NOTICE: it is not supported by all exchanges. only binance is tested for now.
-        TODO: implementation maybe needs to be move to the binance subclass
+        TODO: implementation maybe needs to be moved to the binance subclass
         """
         ordertype = "stop_loss_limit"
 
