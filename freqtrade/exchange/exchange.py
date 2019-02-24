@@ -244,9 +244,9 @@ class Exchange(object):
 
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
-                raise OperationalException(
-                    'On exchange stoploss is not supported for %s.' % self.name
-                )
+            raise OperationalException(
+                'On exchange stoploss is not supported for %s.' % self.name
+            )
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
         """
@@ -621,7 +621,6 @@ class Exchange(object):
 
         Notes:
         20180619: bittrex doesnt support limits -.-
-        20180619: binance support limits but only on specific range
         """
         try:
 
