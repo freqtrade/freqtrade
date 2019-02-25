@@ -51,7 +51,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
     assert {
         'trade_id': 1,
         'pair': 'ETH/BTC',
-        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
         'date': ANY,
         'open_rate': 1.099e-05,
         'close_rate': None,
@@ -72,7 +71,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
     assert {
         'trade_id': 1,
         'pair': 'ETH/BTC',
-        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
         'date': ANY,
         'open_rate': 1.099e-05,
         'close_rate': None,
