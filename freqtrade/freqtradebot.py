@@ -163,7 +163,7 @@ class FreqtradeBot(object):
                 self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
 
             # Query trades from persistence layer
-            trades = self._query_trades()
+            trades = Trade.get_open_trades()
 
             # Extend active-pair whitelist with pairs from open trades
             # It ensures that tickers are downloaded for open trades
@@ -199,12 +199,6 @@ class FreqtradeBot(object):
             logger.exception('OperationalException. Stopping trader ...')
             self.state = State.STOPPED
         return state_changed
-
-    def _query_trades(self) -> List[Any]:
-        """
-        Query trades from persistence layer
-        """
-        return Trade.query.filter(Trade.is_open.is_(True)).all()
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
         """
@@ -265,7 +259,7 @@ class FreqtradeBot(object):
         avaliable_amount = self.wallets.get_free(self.config['stake_currency'])
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-            open_trades = len(Trade.query.filter(Trade.is_open.is_(True)).all())
+            open_trades = len(Trade.get_open_trades())
             if open_trades >= self.config['max_open_trades']:
                 logger.warning('Can\'t open a new trade: max number of trades is reached')
                 return None
@@ -323,7 +317,7 @@ class FreqtradeBot(object):
         whitelist = copy.deepcopy(self.active_pair_whitelist)
 
         # Remove currently opened and latest pairs from whitelist
-        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+        for trade in Trade.get_open_trades():
             if trade.pair in whitelist:
                 whitelist.remove(trade.pair)
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)

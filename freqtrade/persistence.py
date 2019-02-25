@@ -5,7 +5,7 @@ This module contains the class to persist trades into SQLite
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, Integer, String,
@@ -371,3 +371,10 @@ class Trade(_DECL_BASE):
             .filter(Trade.is_open.is_(True))\
             .scalar()
         return total_open_stake_amount or 0
+
+    @staticmethod
+    def get_open_trades() -> List[Any]:
+        """
+        Query trades from persistence layer
+        """
+        return Trade.query.filter(Trade.is_open.is_(True)).all()
