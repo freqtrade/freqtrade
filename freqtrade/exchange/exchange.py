@@ -654,16 +654,6 @@ class Exchange(object):
         except ccxt.BaseError as e:
             raise OperationalException(e)
 
-    def get_pair_detail_url(self, pair: str) -> str:
-        try:
-            url_base = self._api.urls.get('www')
-            base, quote = pair.split('/')
-
-            return url_base + _EXCHANGE_URLS[self._api.id].format(base=base, quote=quote)
-        except KeyError:
-            logger.warning('Could not get exchange url for %s', self.name)
-            return ""
-
     @retrier
     def get_markets(self) -> List[dict]:
         try:

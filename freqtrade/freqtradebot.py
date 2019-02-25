@@ -376,7 +376,6 @@ class FreqtradeBot(object):
         :return: None
         """
         pair_s = pair.replace('_', '/')
-        pair_url = self.exchange.get_pair_detail_url(pair)
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config.get('fiat_display_currency', None)
         time_in_force = self.strategy.order_time_in_force['buy']
@@ -441,7 +440,6 @@ class FreqtradeBot(object):
             'type': RPCMessageType.BUY_NOTIFICATION,
             'exchange': self.exchange.name.capitalize(),
             'pair': pair_s,
-            'market_url': pair_url,
             'limit': buy_limit_filled_price,
             'stake_amount': stake_amount,
             'stake_currency': stake_currency,
@@ -849,7 +847,6 @@ class FreqtradeBot(object):
         profit_trade = trade.calc_profit(rate=limit)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
         profit_percent = trade.calc_profit_percent(limit)
-        pair_url = self.exchange.get_pair_detail_url(trade.pair)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {
@@ -857,7 +854,6 @@ class FreqtradeBot(object):
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,
-            'market_url': pair_url,
             'limit': limit,
             'amount': trade.amount,
             'open_rate': trade.open_rate,

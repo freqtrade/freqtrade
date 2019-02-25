@@ -103,7 +103,6 @@ class RPC(object):
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
-                    market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
                     date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
