@@ -23,4 +23,4 @@ class Binance(Exchange):
         # get next-higher step in the limit_range list
         limit = min(list(filter(lambda x: limit <= x, limit_range)))
 
-        return super(Binance, self).get_order_book(pair, limit)
+        return super().get_order_book(pair, limit)
