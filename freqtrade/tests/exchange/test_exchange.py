@@ -1260,37 +1260,6 @@ def test_name(default_conf, mocker, exchange_name):
     assert exchange.id == exchange_name
 
 
-def test_get_pair_detail_url(default_conf, mocker, caplog):
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
-    default_conf['exchange']['name'] = 'binance'
-    exchange = Exchange(default_conf)
-
-    url = exchange.get_pair_detail_url('TKN/ETH')
-    assert 'TKN' in url
-    assert 'ETH' in url
-
-    url = exchange.get_pair_detail_url('LOOONG/BTC')
-    assert 'LOOONG' in url
-    assert 'BTC' in url
-
-    default_conf['exchange']['name'] = 'bittrex'
-    exchange = Exchange(default_conf)
-
-    url = exchange.get_pair_detail_url('TKN/ETH')
-    assert 'TKN' in url
-    assert 'ETH' in url
-
-    url = exchange.get_pair_detail_url('LOOONG/BTC')
-    assert 'LOOONG' in url
-    assert 'BTC' in url
-
-    default_conf['exchange']['name'] = 'poloniex'
-    exchange = Exchange(default_conf)
-    url = exchange.get_pair_detail_url('LOOONG/BTC')
-    assert '' == url
-    assert log_has('Could not get exchange url for Poloniex', caplog.record_tuples)
-
-
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name):
     order_id = 'ABCD-ABCD'

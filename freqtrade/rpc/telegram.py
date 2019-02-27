@@ -125,7 +125,7 @@ class Telegram(RPC):
             else:
                 msg['stake_amount_fiat'] = 0
 
-            message = ("*{exchange}:* Buying [{pair}]({market_url})\n"
+            message = ("*{exchange}:* Buying {pair}\n"
                        "with limit `{limit:.8f}\n"
                        "({stake_amount:.6f} {stake_currency}").format(**msg)
 
@@ -137,7 +137,7 @@ class Telegram(RPC):
             msg['amount'] = round(msg['amount'], 8)
             msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
 
-            message = ("*{exchange}:* Selling [{pair}]({market_url})\n"
+            message = ("*{exchange}:* Selling {pair}\n"
                        "*Limit:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
@@ -193,7 +193,7 @@ class Telegram(RPC):
 
             messages = [
                 "*Trade ID:* `{trade_id}`\n"
-                "*Current Pair:* [{pair}]({market_url})\n"
+                "*Current Pair:* {pair}\n"
                 "*Open Since:* `{date}`\n"
                 "*Amount:* `{amount}`\n"
                 "*Open Rate:* `{open_rate:.8f}`\n"
