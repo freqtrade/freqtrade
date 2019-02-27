@@ -351,7 +351,7 @@ class Edge():
         return result
 
     def _detect_next_stop_or_sell_point(self, buy_column, sell_column, date_column,
-                                        ohlc_columns, stoploss, pair, start_point=0):
+                                        ohlc_columns, stoploss, pair):
         """
         Iterate through ohlc_columns recursively in order to find the next trade
         Next trade opens from the first buy signal noticed to
@@ -362,80 +362,80 @@ class Edge():
         """
 
         result: list = []
-        open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
+        start_point = 0
 
-        # return empty if we don't find trade entry (i.e. buy==1) or
-        # we find a buy but at the of array
-        if open_trade_index == -1 or open_trade_index == len(buy_column) - 1:
-            return []
-        else:
-            open_trade_index += 1  # when a buy signal is seen,
-            # trade opens in reality on the next candle
+        while True:
+            open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
 
-        stop_price_percentage = stoploss + 1
-        open_price = ohlc_columns[open_trade_index, 0]
-        stop_price = (open_price * stop_price_percentage)
+            # return empty if we don't find trade entry (i.e. buy==1) or
+            # we find a buy but at the of array
+            if open_trade_index == -1 or open_trade_index == len(buy_column) - 1:
+                break
+            else:
+                open_trade_index += 1  # when a buy signal is seen,
+                # trade opens in reality on the next candle
 
-        # Searching for the index where stoploss is hit
-        stop_index = utf1st.find_1st(
-            ohlc_columns[open_trade_index:, 2], stop_price, utf1st.cmp_smaller)
+            stop_price_percentage = stoploss + 1
+            open_price = ohlc_columns[open_trade_index, 0]
+            stop_price = (open_price * stop_price_percentage)
 
-        # If we don't find it then we assume stop_index will be far in future (infinite number)
-        if stop_index == -1:
-            stop_index = float('inf')
+            # Searching for the index where stoploss is hit
+            stop_index = utf1st.find_1st(
+                ohlc_columns[open_trade_index:, 2], stop_price, utf1st.cmp_smaller)
 
-        # Searching for the index where sell is hit
-        sell_index = utf1st.find_1st(sell_column[open_trade_index:], 1, utf1st.cmp_equal)
+            # If we don't find it then we assume stop_index will be far in future (infinite number)
+            if stop_index == -1:
+                stop_index = float('inf')
 
-        # If we don't find it then we assume sell_index will be far in future (infinite number)
-        if sell_index == -1:
-            sell_index = float('inf')
+            # Searching for the index where sell is hit
+            sell_index = utf1st.find_1st(sell_column[open_trade_index:], 1, utf1st.cmp_equal)
 
-        # Check if we don't find any stop or sell point (in that case trade remains open)
-        # It is not interesting for Edge to consider it so we simply ignore the trade
-        # And stop iterating there is no more entry
-        if stop_index == sell_index == float('inf'):
-            return []
+            # If we don't find it then we assume sell_index will be far in future (infinite number)
+            if sell_index == -1:
+                sell_index = float('inf')
 
-        if stop_index <= sell_index:
-            exit_index = open_trade_index + stop_index
-            exit_type = SellType.STOP_LOSS
-            exit_price = stop_price
-        elif stop_index > sell_index:
-            # if exit is SELL then we exit at the next candle
-            exit_index = open_trade_index + sell_index + 1
+            # Check if we don't find any stop or sell point (in that case trade remains open)
+            # It is not interesting for Edge to consider it so we simply ignore the trade
+            # And stop iterating there is no more entry
+            if stop_index == sell_index == float('inf'):
+                break
 
-            # check if we have the next candle
-            if len(ohlc_columns) - 1 < exit_index:
-                return []
+            if stop_index <= sell_index:
+                exit_index = open_trade_index + stop_index
+                exit_type = SellType.STOP_LOSS
+                exit_price = stop_price
+            elif stop_index > sell_index:
+                # if exit is SELL then we exit at the next candle
+                exit_index = open_trade_index + sell_index + 1
 
-            exit_type = SellType.SELL_SIGNAL
-            exit_price = ohlc_columns[exit_index, 0]
+                # check if we have the next candle
+                if len(ohlc_columns) - 1 < exit_index:
+                    break
 
-        trade = {'pair': pair,
-                 'stoploss': stoploss,
-                 'profit_percent': '',
-                 'profit_abs': '',
-                 'open_time': date_column[open_trade_index],
-                 'close_time': date_column[exit_index],
-                 'open_index': start_point + open_trade_index,
-                 'close_index': start_point + exit_index,
-                 'trade_duration': '',
-                 'open_rate': round(open_price, 15),
-                 'close_rate': round(exit_price, 15),
-                 'exit_type': exit_type
-                 }
+                exit_type = SellType.SELL_SIGNAL
+                exit_price = ohlc_columns[exit_index, 0]
 
-        result.append(trade)
+            trade = {'pair': pair,
+                     'stoploss': stoploss,
+                     'profit_percent': '',
+                     'profit_abs': '',
+                     'open_time': date_column[open_trade_index],
+                     'close_time': date_column[exit_index],
+                     'open_index': start_point + open_trade_index,
+                     'close_index': start_point + exit_index,
+                     'trade_duration': '',
+                     'open_rate': round(open_price, 15),
+                     'close_rate': round(exit_price, 15),
+                     'exit_type': exit_type
+                     }
 
-        # Calling again the same function recursively but giving
-        # it a view of exit_index till the end of array
-        return result + self._detect_next_stop_or_sell_point(
-            buy_column[exit_index:],
-            sell_column[exit_index:],
-            date_column[exit_index:],
-            ohlc_columns[exit_index:],
-            stoploss,
-            pair,
-            (start_point + exit_index)
-        )
+            result.append(trade)
+
+            # giving a view of exit_index till the end of array
+            buy_column = buy_column[exit_index:]
+            sell_column = sell_column[exit_index:]
+            date_column = date_column[exit_index:]
+            ohlc_columns = ohlc_columns[exit_index:]
+            start_point += exit_index
+
+        return result
