@@ -353,11 +353,12 @@ class Edge():
     def _detect_next_stop_or_sell_point(self, buy_column, sell_column, date_column,
                                         ohlc_columns, stoploss, pair):
         """
-        Iterate through ohlc_columns recursively in order to find the next trade
+        Iterate through ohlc_columns in order to find the next trade
         Next trade opens from the first buy signal noticed to
         The sell or stoploss signal after it.
-        It then calls itself cutting OHLC, buy_column, sell_colum and date_column
-        Cut from (the exit trade index) + 1
+        It then cuts OHLC, buy_column, sell_column and date_column.
+        Cut from (the exit trade index) + 1.
+
         Author: https://github.com/mishaker
         """
 
@@ -367,13 +368,14 @@ class Edge():
         while True:
             open_trade_index = utf1st.find_1st(buy_column, 1, utf1st.cmp_equal)
 
-            # return empty if we don't find trade entry (i.e. buy==1) or
-            # we find a buy but at the of array
+            # Return empty if we don't find trade entry (i.e. buy==1) or
+            # we find a buy but at the end of array
             if open_trade_index == -1 or open_trade_index == len(buy_column) - 1:
                 break
             else:
-                open_trade_index += 1  # when a buy signal is seen,
+                # When a buy signal is seen,
                 # trade opens in reality on the next candle
+                open_trade_index += 1
 
             stop_price_percentage = stoploss + 1
             open_price = ohlc_columns[open_trade_index, 0]
@@ -405,10 +407,10 @@ class Edge():
                 exit_type = SellType.STOP_LOSS
                 exit_price = stop_price
             elif stop_index > sell_index:
-                # if exit is SELL then we exit at the next candle
+                # If exit is SELL then we exit at the next candle
                 exit_index = open_trade_index + sell_index + 1
 
-                # check if we have the next candle
+                # Check if we have the next candle
                 if len(ohlc_columns) - 1 < exit_index:
                     break
 
@@ -431,7 +433,7 @@ class Edge():
 
             result.append(trade)
 
-            # giving a view of exit_index till the end of array
+            # Giving a view of exit_index till the end of array
             buy_column = buy_column[exit_index:]
             sell_column = sell_column[exit_index:]
             date_column = date_column[exit_index:]
