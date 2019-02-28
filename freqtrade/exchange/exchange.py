@@ -66,7 +66,7 @@ def retrier(f):
 
 class Exchange(object):
 
-    _conf: Dict = {}
+    _config: Dict = {}
     _params: Dict = {}
 
     # Dict to specify which options each exchange implements
@@ -82,7 +82,7 @@ class Exchange(object):
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
-        self._conf.update(config)
+        self._config.update(config)
 
         self._cached_ticker: Dict[str, Any] = {}
 
@@ -212,7 +212,7 @@ class Exchange(object):
             logger.warning('Unable to validate pairs (assuming they are correct).')
         #     return
 
-        stake_cur = self._conf['stake_currency']
+        stake_cur = self._config['stake_currency']
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
@@ -347,7 +347,7 @@ class Exchange(object):
     def buy(self, pair: str, ordertype: str, amount: float,
             rate: float, time_in_force) -> Dict:
 
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
             return dry_order
 
@@ -360,7 +360,7 @@ class Exchange(object):
     def sell(self, pair: str, ordertype: str, amount: float,
              rate: float, time_in_force='gtc') -> Dict:
 
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
             return dry_order
 
@@ -385,7 +385,7 @@ class Exchange(object):
             raise OperationalException(
                 'In stoploss limit order, stop price should be more than limit price')
 
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             dry_order = self.dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
@@ -400,8 +400,8 @@ class Exchange(object):
 
     @retrier
     def get_balance(self, currency: str) -> float:
-        if self._conf['dry_run']:
-            return 999.9
+        if self._config['dry_run']:
+            return constants.DRY_RUN_WALLET
 
         # ccxt exception is already handled by get_balances
         balances = self.get_balances()
@@ -413,7 +413,7 @@ class Exchange(object):
 
     @retrier
     def get_balances(self) -> dict:
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             return {}
 
         try:
@@ -584,7 +584,7 @@ class Exchange(object):
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> None:
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             return
 
         try:
@@ -600,7 +600,7 @@ class Exchange(object):
 
     @retrier
     def get_order(self, order_id: str, pair: str) -> Dict:
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             order = self._dry_run_open_orders[order_id]
             return order
         try:
@@ -637,7 +637,7 @@ class Exchange(object):
 
     @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
-        if self._conf['dry_run']:
+        if self._config['dry_run']:
             return []
         if not self.exchange_has('fetchMyTrades'):
             return []
