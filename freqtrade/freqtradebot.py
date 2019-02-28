@@ -58,7 +58,7 @@ class FreqtradeBot(object):
         exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
         self.exchange = ExchangeResolver(exchange_name, self.config).exchange
 
-        self.wallets = Wallets(self.exchange)
+        self.wallets = Wallets(self.config, self.exchange)
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         # Attach Dataprovider to Strategy baseclass
