@@ -1,4 +1,4 @@
-ccxt==1.18.304
+ccxt==1.18.309
 SQLAlchemy==1.2.18
 python-telegram-bot==11.1.0
 arrow==0.13.1
@@ -11,7 +11,7 @@ pandas==0.24.1
 scikit-learn==0.20.2
 joblib==0.13.2
 scipy==1.2.1
-jsonschema==3.0.0
+jsonschema==3.0.1
 TA-Lib==0.4.17
 tabulate==0.8.3
 coinmarketcap==5.0.3
