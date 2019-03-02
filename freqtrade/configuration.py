@@ -13,6 +13,8 @@ from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
 from freqtrade.state import RunMode
+from freqtrade.misc import deep_merge_dicts
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,8 +47,18 @@ class Configuration(object):
         Extract information for sys.argv and load the bot configuration
         :return: Configuration dictionary
         """
-        logger.info('Using config: %s ...', self.args.config)
-        config = self._load_config_file(self.args.config)
+        config: Dict[str, Any] = {}
+        # Now expecting a list of config filenames here, not a string
+        for path in self.args.config:
+            logger.info('Using config: %s ...', path)
+            # Merge config options, overwriting old values
+            config = deep_merge_dicts(self._load_config_file(path), config)
+
+        if 'internals' not in config:
+            config['internals'] = {}
+
+        logger.info('Validating configuration ...')
+        self._validate_config(config)
 
         # Set strategy if not specified in config and or if it's non default
         if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
@@ -93,11 +105,7 @@ class Configuration(object):
                 f'Config file "{path}" not found!'
                 ' Please create a config file or check whether it exists.')
 
-        if 'internals' not in conf:
-            conf['internals'] = {}
-        logger.info('Validating configuration ...')
-
-        return self._validate_config(conf)
+        return conf
 
     def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """

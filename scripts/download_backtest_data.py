@@ -5,12 +5,14 @@ import json
 import sys
 from pathlib import Path
 import arrow
+from typing import Any, Dict
 
-from freqtrade import arguments
+from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.data.history import download_pair_history
 from freqtrade.configuration import Configuration, set_loggers
+from freqtrade.misc import deep_merge_dicts
 
 import logging
 logging.basicConfig(
@@ -21,7 +23,7 @@ set_loggers(0)
 
 DEFAULT_DL_PATH = 'user_data/data'
 
-arguments = arguments.Arguments(sys.argv[1:], 'download utility')
+arguments = Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
 args = arguments.parse_args()
 
@@ -29,7 +31,13 @@ timeframes = args.timeframes
 
 if args.config:
     configuration = Configuration(args)
-    config = configuration._load_config_file(args.config)
+
+    config: Dict[str, Any] = {}
+    # Now expecting a list of config filenames here, not a string
+    for path in args.config:
+        print('Using config: %s ...', path)
+        # Merge config options, overwriting old values
+        config = deep_merge_dicts(configuration._load_config_file(path), config)
 
     config['stake_currency'] = ''
     # Ensure we do not use Exchange credentials

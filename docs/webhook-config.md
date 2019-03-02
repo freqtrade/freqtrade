@@ -41,7 +41,6 @@ Possible parameters are:
 
 * exchange
 * pair
-* market_url
 * limit
 * stake_amount
 * stake_amount_fiat
@@ -56,7 +55,6 @@ Possible parameters are:
 * exchange
 * pair
 * gain
-* market_url
 * limit
 * amount
 * open_rate

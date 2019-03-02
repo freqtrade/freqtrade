@@ -83,7 +83,7 @@ class RPC(object):
         a remotely exposed function
         """
         # Fetch open trade
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+        trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
         else:
@@ -103,7 +103,6 @@ class RPC(object):
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
-                    market_url=self._freqtrade.exchange.get_pair_detail_url(trade.pair),
                     date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
@@ -118,7 +117,7 @@ class RPC(object):
             return results
 
     def _rpc_status_table(self) -> DataFrame:
-        trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+        trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active order')
         else:
@@ -366,7 +365,7 @@ class RPC(object):
 
         if trade_id == 'all':
             # Execute sell for all open orders
-            for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+            for trade in Trade.get_open_trades():
                 _exec_forcesell(trade)
             Trade.session.flush()
             return
@@ -442,7 +441,7 @@ class RPC(object):
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        return Trade.query.filter(Trade.is_open.is_(True)).all()
+        return Trade.get_open_trades()
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""

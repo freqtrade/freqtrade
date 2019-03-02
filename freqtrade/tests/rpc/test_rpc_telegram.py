@@ -5,7 +5,7 @@
 import re
 from datetime import datetime
 from random import randint
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock
 
 import arrow
 import pytest
@@ -183,7 +183,6 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
-        get_pair_detail_url=MagicMock(),
         get_fee=fee,
         get_markets=markets
     )
@@ -195,7 +194,6 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
         _rpc_trade_status=MagicMock(return_value=[{
             'trade_id': 1,
             'pair': 'ETH/BTC',
-            'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
             'date': arrow.utcnow(),
             'open_rate': 1.099e-05,
             'close_rate': None,
@@ -270,7 +268,7 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     telegram._status(bot=MagicMock(), update=update)
 
     assert msg_mock.call_count == 1
-    assert '[ETH/BTC]' in msg_mock.call_args_list[0][0][0]
+    assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
 
 
 def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker) -> None:
@@ -721,7 +719,6 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'profit',
-        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
         'limit': 1.172e-05,
         'amount': 90.99181073703367,
         'open_rate': 1.099e-05,
@@ -776,7 +773,6 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
-        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
         'limit': 1.044e-05,
         'amount': 90.99181073703367,
         'open_rate': 1.099e-05,
@@ -796,7 +792,6 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
                  return_value=15000.0)
     rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.get_pair_detail_url', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
@@ -823,7 +818,6 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'gain': 'loss',
-        'market_url': ANY,
         'limit': 1.098e-05,
         'amount': 90.99181073703367,
         'open_rate': 1.099e-05,
@@ -1100,7 +1094,6 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.BUY_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
-        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
         'limit': 1.099e-05,
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
@@ -1108,7 +1101,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'fiat_currency': 'USD'
     })
     assert msg_mock.call_args[0][0] \
-        == '*Bittrex:* Buying [ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n' \
+        == '*Bittrex:* Buying ETH/BTC\n' \
            'with limit `0.00001099\n' \
            '(0.001000 BTC,0.000 USD)`'
 
@@ -1129,7 +1122,6 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'gain': 'loss',
-        'market_url': 'https://www.binance.com/tradeDetail.html?symbol=KEY_ETH',
         'limit': 3.201e-05,
         'amount': 1333.3333333333335,
         'open_rate': 7.5e-05,
@@ -1141,8 +1133,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'sell_reason': SellType.STOP_LOSS.value
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Selling [KEY/ETH]'
-            '(https://www.binance.com/tradeDetail.html?symbol=KEY_ETH)\n'
+        == ('*Binance:* Selling KEY/ETH\n'
             '*Limit:* `0.00003201`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
@@ -1156,7 +1147,6 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'gain': 'loss',
-        'market_url': 'https://www.binance.com/tradeDetail.html?symbol=KEY_ETH',
         'limit': 3.201e-05,
         'amount': 1333.3333333333335,
         'open_rate': 7.5e-05,
@@ -1167,8 +1157,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'sell_reason': SellType.STOP_LOSS.value
     })
     assert msg_mock.call_args[0][0] \
-        == ('*Binance:* Selling [KEY/ETH]'
-            '(https://www.binance.com/tradeDetail.html?symbol=KEY_ETH)\n'
+        == ('*Binance:* Selling KEY/ETH\n'
             '*Limit:* `0.00003201`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
@@ -1256,7 +1245,6 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'type': RPCMessageType.BUY_NOTIFICATION,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
-        'market_url': 'https://bittrex.com/Market/Index?MarketName=BTC-ETH',
         'limit': 1.099e-05,
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
@@ -1264,7 +1252,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'fiat_currency': None
     })
     assert msg_mock.call_args[0][0] \
-        == '*Bittrex:* Buying [ETH/BTC](https://bittrex.com/Market/Index?MarketName=BTC-ETH)\n' \
+        == '*Bittrex:* Buying ETH/BTC\n' \
            'with limit `0.00001099\n' \
            '(0.001000 BTC)`'
 
@@ -1284,7 +1272,6 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'gain': 'loss',
-        'market_url': 'https://www.binance.com/tradeDetail.html?symbol=KEY_ETH',
         'limit': 3.201e-05,
         'amount': 1333.3333333333335,
         'open_rate': 7.5e-05,
@@ -1296,8 +1283,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'sell_reason': SellType.STOP_LOSS.value
     })
     assert msg_mock.call_args[0][0] \
-        == '*Binance:* Selling [KEY/ETH]' \
-           '(https://www.binance.com/tradeDetail.html?symbol=KEY_ETH)\n' \
+        == '*Binance:* Selling KEY/ETH\n' \
            '*Limit:* `0.00003201`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00007500`\n' \
