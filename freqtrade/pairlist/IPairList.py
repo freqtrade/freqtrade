@@ -18,6 +18,7 @@ class IPairList(ABC):
         self._config = config
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        self._markets = self._freqtrade.exchange.markets
 
     @property
     def name(self) -> str:
@@ -66,7 +67,7 @@ class IPairList(ABC):
         black_listed
         """
         sanitized_whitelist = whitelist
-        markets = self._freqtrade.exchange.get_markets()
+        markets = list(self._markets.values())
 
         # Filter to markets in stake currency
         markets = [m for m in markets if m['quote'] == self._config['stake_currency']]
