@@ -1264,7 +1264,7 @@ def test_get_markets(default_conf, mocker, markets):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     ret = exchange.get_markets()
     assert isinstance(ret, list)
-    assert len(ret) == 6
+    assert len(ret) == 9
 
     assert ret[0]["id"] == "ethbtc"
     assert ret[0]["symbol"] == "ETH/BTC"

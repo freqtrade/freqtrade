@@ -375,6 +375,78 @@ def markets():
                 },
             },
             'info': '',
+        },
+        {
+            'id': 'BTTBTC',
+            'symbol': 'BTT/BTC',
+            'base': 'BTT',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': None,
+                    'max': None
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': "",
+        },
+        {
+            'id': 'USDT-ETH',
+            'symbol': 'ETH/USDT',
+            'base': 'ETH',
+            'quote': 'USDT',
+            'precision': {
+                'amount': 8,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.02214286,
+                    'max': None
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': None
+                }
+            },
+            'active': True,
+            'info': ""
+        },
+        {
+            'id': 'USDT-LTC',
+            'symbol': 'LTC/USDT',
+            'base': 'LTC',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'amount': 8,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.06646786,
+                    'max': None
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': None
+                }
+            },
+            'info': ""
         }
     ])
 
@@ -640,6 +712,28 @@ def tickers():
             'average': None,
             'baseVolume': 88620.68,
             'quoteVolume': 1401.65697943,
+            'info': {}
+        },
+        'BTT/BTC': {
+            'symbol': 'BTT/BTC',
+            'timestamp': 1550936557206,
+            'datetime': '2019-02-23T15:42:37.206Z',
+            'high': 0.00000026,
+            'low': 0.00000024,
+            'bid': 0.00000024,
+            'bidVolume': 2446894197.0,
+            'ask': 0.00000025,
+            'askVolume': 2447913837.0,
+            'vwap': 0.00000025,
+            'open': 0.00000026,
+            'close': 0.00000024,
+            'last': 0.00000024,
+            'previousClose': 0.00000026,
+            'change': -0.00000002,
+            'percentage': -7.692,
+            'average': None,
+            'baseVolume': 4886464537.0,
+            'quoteVolume': 1215.14489611,
             'info': {}
         },
         'ETH/USDT': {

@@ -18,7 +18,7 @@ class IPairList(ABC):
         self._config = config
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
-        self._markets = self._freqtrade.exchange.markets
+        self._markets = self._freqtrade.exchange.get_markets()
 
     @property
     def name(self) -> str:
@@ -67,7 +67,7 @@ class IPairList(ABC):
         black_listed
         """
         sanitized_whitelist = whitelist
-        markets = list(self._markets.values())
+        markets = self._freqtrade.exchange.get_markets()
 
         # Filter to markets in stake currency
         markets = [m for m in markets if m['quote'] == self._config['stake_currency']]
@@ -75,7 +75,7 @@ class IPairList(ABC):
 
         for market in markets:
             pair = market['symbol']
-            # pair is not int the generated dynamic market, or in the blacklist ... ignore it
+            # pair is not in the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.blacklist:
                 continue
             # else the pair is valid
