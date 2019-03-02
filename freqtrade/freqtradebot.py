@@ -206,7 +206,7 @@ class FreqtradeBot(object):
             self.state = State.STOPPED
         return state_changed
 
-    def get_target_bid(self, pair: str) -> float:
+    def get_target_bid(self, pair: str, ticker: Dict = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :return: float: Price
@@ -223,8 +223,9 @@ class FreqtradeBot(object):
             logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
             used_rate = order_book_rate
         else:
-            logger.info('Using Last Ask / Last Price')
-            ticker = self.exchange.get_ticker(pair)
+            if not ticker:
+                logger.info('Using Last Ask / Last Price')
+                ticker = self.exchange.get_ticker(pair)
             if ticker['ask'] < ticker['last']:
                 ticker_rate = ticker['ask']
             else:
@@ -269,12 +270,10 @@ class FreqtradeBot(object):
         return stake_amount
 
     def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
-        markets = self.exchange.get_markets()
-        markets = [m for m in markets if m['symbol'] == pair]
-        if not markets:
-            raise ValueError(f'Can\'t get market information for symbol {pair}')
-
-        market = markets[0]
+        try:
+            market = self.exchange.markets[pair]
+        except KeyError:
+            raise ValueError(f"Can't get market information for symbol {pair}")
 
         if 'limits' not in market:
             return None
