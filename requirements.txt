@@ -8,7 +8,7 @@ urllib3==1.24.1
 wrapt==1.11.1
 numpy==1.16.2
 pandas==0.24.1
-scikit-learn==0.20.2
+scikit-learn==0.20.3
 joblib==0.13.2
 scipy==1.2.1
 jsonschema==3.0.1
