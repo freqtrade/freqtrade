@@ -113,6 +113,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) 
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
+    mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, p, r: round(r, 8))
 
     # Test to retrieved BTC sorted on quoteVolume (default)
     whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='quoteVolume')
@@ -131,6 +132,15 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) 
     freqtrade.config['stake_currency'] = 'ETH'
     whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='ETH', key='quoteVolume')
     assert whitelist == []
+
+    freqtrade.pairlists._precision_filter = True
+    freqtrade.config['stake_currency'] = 'BTC'
+    # Retest First 2 test-cases to make sure BTT is not in it (too low priced)
+    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='quoteVolume')
+    assert whitelist == ['ETH/BTC', 'TKN/BTC']
+
+    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='bidVolume')
+    assert whitelist == ['TKN/BTC', 'ETH/BTC']
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:

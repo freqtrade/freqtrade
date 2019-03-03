@@ -667,6 +667,7 @@ def tickers():
             'vwap': 0.01869197,
             'open': 0.018585,
             'close': 0.018573,
+            'last': 0.018799,
             'baseVolume': 81058.66,
             'quoteVolume': 2247.48374509,
         },
