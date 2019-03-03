@@ -96,7 +96,7 @@ To allow the bot to trade all the available `stake_currency` in your account set
 "stake_amount" : "unlimited",
 ```
 
-In this case a trade amount is calclulated as: 
+In this case a trade amount is calclulated as:
 
 ```python
 currency_balanse / (max_open_trades - current_open_trades)
@@ -280,13 +280,15 @@ By default, a Static Pairlist is used (configured as `"pair_whitelist"` under th
 * `"VolumePairList"`
   * Formerly available as `--dynamic-whitelist [<number_assets>]`
   * Selects `number_assets` top pairs based on `sort_key`, which can be one of `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
+  * Possibility to filter low-value coins that would not allow setting a stop loss
 
 ```json
 "pairlist": {
         "method": "VolumePairList",
         "config": {
             "number_assets": 20,
-            "sort_key": "quoteVolume"
+            "sort_key": "quoteVolume",
+            "precision_filter": false
         }
     },
 ```

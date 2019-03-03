@@ -214,7 +214,7 @@ class FreqtradeBot(object):
         """
         return [(pair, self.config['ticker_interval']) for pair in pairs]
 
-    def get_target_bid(self, pair: str) -> float:
+    def get_target_bid(self, pair: str, tick: Dict = None) -> float:
         """
         Calculates bid target between current ask price and last price
         :return: float: Price
@@ -231,8 +231,11 @@ class FreqtradeBot(object):
             logger.info('...top %s order book buy rate %0.8f', order_book_top, order_book_rate)
             used_rate = order_book_rate
         else:
-            logger.info('Using Last Ask / Last Price')
-            ticker = self.exchange.get_ticker(pair)
+            if not tick:
+                logger.info('Using Last Ask / Last Price')
+                ticker = self.exchange.get_ticker(pair)
+            else:
+                ticker = tick
             if ticker['ask'] < ticker['last']:
                 ticker_rate = ticker['ask']
             else:

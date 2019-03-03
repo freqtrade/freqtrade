@@ -74,7 +74,7 @@ class IPairList(ABC):
 
         for market in markets:
             pair = market['symbol']
-            # pair is not int the generated dynamic market, or in the blacklist ... ignore it
+            # pair is not in the generated dynamic market, or in the blacklist ... ignore it
             if pair not in whitelist or pair in self.blacklist:
                 continue
             # else the pair is valid
