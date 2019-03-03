@@ -18,7 +18,6 @@ class IPairList(ABC):
         self._config = config
         self._whitelist = self._config['exchange']['pair_whitelist']
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
-        self._markets = self._freqtrade.exchange.get_markets()
 
     @property
     def name(self) -> str:

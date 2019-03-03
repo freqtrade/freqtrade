@@ -77,9 +77,8 @@ class VolumePairList(IPairList):
 
         if self._freqtrade.strategy.stoploss is not None and self._precision_filter:
 
-            logger.debug(f"Markets: {list(self._markets)}")
             stop_prices = [self._freqtrade.get_target_bid(t["symbol"], t)
-                           * (1 + self._freqtrade.strategy.stoploss) for t in valid_tickers]
+                           * (1 - abs(self._freqtrade.strategy.stoploss)) for t in valid_tickers]
             rates = [sp * 0.99 for sp in stop_prices]
             logger.debug("\n".join([f"{sp} : {r}" for sp, r in zip(stop_prices[:10], rates[:10])]))
             for i, t in enumerate(valid_tickers):
