@@ -19,27 +19,27 @@ Freqtrade is a cryptocurrency trading bot written in Python.
 
     Always start by running a trading bot in Dry-run and do not engage money before you understand how it works and what profit/loss you should expect.
 
-    We strongly recommend you to have coding and Python knowledge. Do not hesitate to read the source code and understand the mechanism of this bot.
+    We strongly recommend you to have basic coding skills and Python knowledge. Do not hesitate to read the source code and understand the mechanisms of this bot, algorithms and techniques implemented in it.
 
 
 ## Features
- - Based on Python 3.6+: For botting on any operating system - Windows, macOS and Linux
- - Persistence: Persistence is achieved through sqlite
- - Dry-run: Run the bot without playing money.
- - Backtesting: Run a simulation of your buy/sell strategy.
+ - Based on Python 3.6+: For botting on any operating system — Windows, macOS and Linux.
+ - Persistence: Persistence is achieved through sqlite database.
+ - Dry-run mode: Run the bot without playing money.
+ - Backtesting: Run a simulation of your buy/sell strategy with historical data.
  - Strategy Optimization by machine learning: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
- - Edge position sizing Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. Learn more
- - Whitelist crypto-currencies: Select which crypto-currency you want to trade or use dynamic whitelists.
+ - Edge position sizing: Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market.
+ - Whitelist crypto-currencies: Select which crypto-currency you want to trade or use dynamic whitelists based on market (pair) trade volume.
  - Blacklist crypto-currencies: Select which crypto-currency you want to avoid.
- - Manageable via Telegram: Manage the bot with Telegram
- - Display profit/loss in fiat: Display your profit/loss in 33 fiat.
- - Daily summary of profit/loss: Provide a daily summary of your profit/loss.
- - Performance status report: Provide a performance status of your current trades.
+ - Manageable via Telegram: Manage the bot with Telegram.
+ - Display profit/loss in fiat: Display your profit/loss in any of 33 fiat currencies supported.
+ - Daily summary of profit/loss: Receive the daily summary of your profit/loss.
+ - Performance status report: Receive the performance status of your current trades.
 
 
 ## Requirements
-### Uptodate clock
-The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
+### Up to date clock
+The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
 ### Hardware requirements
 To run this bot we recommend you a cloud instance with a minimum of:
@@ -50,7 +50,7 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ### Software requirements
 - Python 3.6.x
-- pip
+- pip (pip3)
 - git
 - TA-Lib
 - virtualenv (Recommended)
@@ -59,7 +59,7 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ## Support
 Help / Slack
-For any questions not covered by the documentation or for further information about the bot, we encourage you to join our slack channel.
+For any questions not covered by the documentation or for further information about the bot, we encourage you to join our Slack channel.
 
 Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) to join Slack channel.
 
