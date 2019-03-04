@@ -68,39 +68,38 @@ For any other type of installation please refer to [Installation doc](https://ww
 ### Bot commands
 
 ```
-usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-               [--strategy-path PATH] [--customhyperopt NAME]
-               [--dynamic-whitelist [INT]] [--db-url PATH]
-               {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH]
+                 {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
 
 positional arguments:
   {backtesting,edge,hyperopt}
-    backtesting         backtesting module
-    edge                edge module
-    hyperopt            hyperopt module
+    backtesting         Backtesting module.
+    edge                Edge module.
+    hyperopt            Hyperopt module.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         verbose mode (-vv for more, -vvv to get all messages)
-  --version             show program\'s version number and exit
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --version             show program's version number and exit
   -c PATH, --config PATH
-                        specify configuration file (default: config.json)
+                        Specify configuration file (default: None). Multiple
+                        --config options may be used.
   -d PATH, --datadir PATH
-                        path to backtest data
+                        Path to backtest data.
   -s NAME, --strategy NAME
-                        specify strategy class name (default: DefaultStrategy)
-  --strategy-path PATH  specify additional strategy lookup path
-  --customhyperopt NAME
-                        specify hyperopt class name (default:
-                        DefaultHyperOpts)
+                        Specify strategy class name (default:
+                        DefaultStrategy).
+  --strategy-path PATH  Specify additional strategy lookup path.
   --dynamic-whitelist [INT]
-                        dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20) DEPRECATED.
+                        Dynamically generate and update whitelist based on 24h
+                        BaseVolume (default: 20). DEPRECATED.
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
-                        None)
+                        None).
 ```
 
 ### Telegram RPC commands
