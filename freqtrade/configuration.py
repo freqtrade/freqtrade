@@ -67,9 +67,6 @@ class Configuration(object):
         if self.args.strategy_path:
             config.update({'strategy_path': self.args.strategy_path})
 
-        # Add the hyperopt file to use
-        config.update({'hyperopt': self.args.hyperopt})
-
         # Load Common configuration
         config = self._load_common_config(config)
 
@@ -276,6 +273,11 @@ class Configuration(object):
         Extract information for sys.argv and load Hyperopt configuration
         :return: configuration as dictionary
         """
+
+        if "hyperopt" in self.args:
+            # Add the hyperopt file to use
+            config.update({'hyperopt': self.args.hyperopt})
+
         # If --epochs is used we add it to the configuration
         if 'epochs' in self.args and self.args.epochs:
             config.update({'epochs': self.args.epochs})
