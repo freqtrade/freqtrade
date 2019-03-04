@@ -657,7 +657,7 @@ class Exchange(object):
     @retrier
     def get_markets(self) -> List[dict]:
         try:
-            return self._api.fetch_markets()
+            return list(self.markets.values())
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not load markets due to {e.__class__.__name__}. Message: {e}')
