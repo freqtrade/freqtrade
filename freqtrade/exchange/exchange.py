@@ -106,7 +106,7 @@ class Exchange(object):
 
         logger.info('Using Exchange "%s"', self.name)
 
-        self.markets = self._load_markets()
+        self._load_markets()
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
@@ -164,6 +164,11 @@ class Exchange(object):
     def id(self) -> str:
         """exchange ccxt id"""
         return self._api.id
+
+    @property
+    def markets(self) -> Dict:
+        """exchange ccxt markets"""
+        return self._api.markets
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
         if pair_interval in self._klines:
