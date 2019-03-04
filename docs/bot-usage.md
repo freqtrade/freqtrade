@@ -41,14 +41,44 @@ optional arguments:
                         None)
 ```
 
-### How to use a different config file?
+### How to use a different configuration file?
 
-The bot allows you to select which config file you want to use. Per
+The bot allows you to select which configuration file you want to use. Per
 default, the bot will load the file `./config.json`
 
 ```bash
 python3 ./freqtrade/main.py -c path/far/far/away/config.json
 ```
+
+### How to use multiple configuration files?
+
+The bot allows you to use multiple configuration files by specifying multiple
+`-c/--config` configuration options in the command line. Configuration parameters
+defined in the last configuration file override parameters with the same name
+defined in the previous configuration file specified in the command line.
+
+For example, you can make a separate configuration file with your key and secrete
+for the Exchange you use for trading, specify default configuration file with
+empty key and secrete values while running in the Dry Mode (which does not actually
+require them):
+
+```bash
+python3 ./freqtrade/main.py -c ./config.json
+```
+
+and specify both configuration files when running in the normal Live Trade Mode:
+
+```bash
+python3 ./freqtrade/main.py -c ./config.json -c path/to/secrets/keys.config.json
+```
+
+This could help you hide your private Exchange key and Exchange secrete on you local machine
+by setting appropriate file permissions for the file which contains actual secrets and, additionally,
+prevent unintended disclosure of sensitive private data when you publish examples
+of your configuration in the project issues or in the Internet.
+
+See more details on this technique with examples in the documentation page on
+[configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-configuration.md).
 
 ### How to use **--strategy**?
 
