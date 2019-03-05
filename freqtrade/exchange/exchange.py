@@ -226,7 +226,7 @@ class Exchange(object):
                     f'Pair {pair} not compatible with stake_currency: {stake_cur}')
             if self.markets and pair not in self.markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available at {self.name}'
+                    f'Pair {pair} is not available on {self.name}. '
                     f'Please remove {pair} from your whitelist.')
 
     def validate_timeframes(self, timeframe: List[str]) -> None:
