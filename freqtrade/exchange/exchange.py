@@ -661,13 +661,7 @@ class Exchange(object):
 
     @retrier
     def get_markets(self) -> List[dict]:
-        try:
-            return list(self.markets.values())
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not load markets due to {e.__class__.__name__}. Message: {e}')
-        except ccxt.BaseError as e:
-            raise OperationalException(e)
+        return list(self.markets.values())
 
     @retrier
     def get_fee(self, symbol='ETH/BTC', type='', side='', amount=1,
