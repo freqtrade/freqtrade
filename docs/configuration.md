@@ -207,7 +207,7 @@ The below is the default which is used if this is not configured in either strat
 The `order_time_in_force` configuration parameter defines the policy by which the order
 is executed on the exchange. Three commonly used time in force are:
 
-**GTC (Goog Till Canceled):**
+**GTC (Good Till Canceled):**
 
 This is most of the time the default time in force. It means the order will remain
 on exchange till it is canceled by user. It can be fully or partially fulfilled.
