@@ -65,29 +65,26 @@ class IPairList(ABC):
         :return: the list of pairs the user wants to trade without the one unavailable or
         black_listed
         """
-        sanitized_whitelist = whitelist
         markets = self._freqtrade.exchange.markets
 
         # Filter to markets in stake currency
-        markets = [markets[pair] for pair in markets if
-                   markets[pair]['quote'] == self._config['stake_currency']]
-        known_pairs = set()
+        stake_pairs = [pair for pair in markets if
+                       pair.endswith(self._config['stake_currency'])]
 
-        # TODO: we should loop over whitelist instead of all markets
-        for market in markets:
-            pair = market['symbol']
+        sanitized_whitelist = []
+        for pair in whitelist:
             # pair is not in the generated dynamic market, or in the blacklist ... ignore it
-            if pair not in whitelist or pair in self.blacklist:
+            if pair in self.blacklist or pair not in stake_pairs:
                 continue
-            # else the pair is valid
-            known_pairs.add(pair)
-            # Market is not active
+            # Check if market is active
+            market = markets[pair]
             if not market['active']:
-                sanitized_whitelist.remove(pair)
                 logger.info(
                     'Ignoring %s from whitelist. Market is not active.',
                     pair
                 )
+                continue
+            sanitized_whitelist.append(pair)
 
         # We need to remove pairs that are unknown
-        return [x for x in sanitized_whitelist if x in known_pairs]
+        return sanitized_whitelist
