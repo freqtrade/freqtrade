@@ -200,7 +200,7 @@ class Exchange(object):
         try:
             markets = self._api.load_markets()
             self._load_async_markets()
-            return markets
+            return markets  # prbly not necessary to return anything anymore
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
         return {}
