@@ -280,12 +280,10 @@ class FreqtradeBot(object):
         return stake_amount
 
     def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
-        markets = self.exchange.get_markets()
-        markets = [m for m in markets if m['symbol'] == pair]
-        if not markets:
-            raise ValueError(f'Can\'t get market information for symbol {pair}')
-
-        market = markets[0]
+        try:
+            market = self.exchange.markets[pair]
+        except KeyError:
+            raise ValueError(f"Can't get market information for symbol {pair}")
 
         if 'limits' not in market:
             return None
