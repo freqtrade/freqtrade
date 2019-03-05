@@ -37,10 +37,12 @@ def log_has_re(line, logs):
 
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
+    # mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value={}))
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -225,8 +227,8 @@ def ticker_sell_down():
 
 @pytest.fixture
 def markets():
-    return MagicMock(return_value=[
-        {
+    return {
+        'ETH/BTC': {
             'id': 'ethbtc',
             'symbol': 'ETH/BTC',
             'base': 'ETH',
@@ -251,7 +253,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'TKN/BTC': {
             'id': 'tknbtc',
             'symbol': 'TKN/BTC',
             'base': 'TKN',
@@ -276,7 +278,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'BLK/BTC': {
             'id': 'blkbtc',
             'symbol': 'BLK/BTC',
             'base': 'BLK',
@@ -301,7 +303,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'LTC/BTC': {
             'id': 'ltcbtc',
             'symbol': 'LTC/BTC',
             'base': 'LTC',
@@ -326,7 +328,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'XRP/BTC': {
             'id': 'xrpbtc',
             'symbol': 'XRP/BTC',
             'base': 'XRP',
@@ -351,7 +353,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'NEO/BTC': {
             'id': 'neobtc',
             'symbol': 'NEO/BTC',
             'base': 'NEO',
@@ -376,7 +378,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'BTT/BTC': {
             'id': 'BTTBTC',
             'symbol': 'BTT/BTC',
             'base': 'BTT',
@@ -404,7 +406,7 @@ def markets():
             },
             'info': "",
         },
-        {
+        'ETH/USDT': {
             'id': 'USDT-ETH',
             'symbol': 'ETH/USDT',
             'base': 'ETH',
@@ -426,7 +428,7 @@ def markets():
             'active': True,
             'info': ""
         },
-        {
+        'LTC/USDT': {
             'id': 'USDT-LTC',
             'symbol': 'LTC/USDT',
             'base': 'LTC',
@@ -448,7 +450,7 @@ def markets():
             },
             'info': ""
         }
-    ])
+    }
 
 
 @pytest.fixture
