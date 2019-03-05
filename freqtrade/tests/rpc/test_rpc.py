@@ -2,7 +2,7 @@
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
 
 from datetime import datetime
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock, ANY, PropertyMock
 
 import pytest
 from numpy import isnan
@@ -34,7 +34,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         _load_markets=MagicMock(return_value={}),
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -90,7 +90,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -126,7 +126,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -180,7 +180,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -268,7 +268,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -424,7 +424,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
             }
         ),
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -516,7 +516,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
         get_balances=MagicMock(return_value=ticker),
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -552,7 +552,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee, markets) -> None:
         get_balances=MagicMock(return_value=ticker),
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(return_value=markets)
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -581,7 +581,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, markets, limit_buy_order
         get_balances=MagicMock(return_value=ticker),
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets,
+        markets=PropertyMock(return_value=markets),
         buy=buy_mm
     )
 
