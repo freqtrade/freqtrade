@@ -14,7 +14,7 @@ nav:
     - Plotting: plotting.md
     - FAQ: faq.md
     - SQL Cheatsheet: sql_cheatsheet.md
-    - Sanbox testing: sandbox-testing.md
+    - Sandbox testing: sandbox-testing.md
     - Contributors guide: developer.md
 theme:
   name: material
