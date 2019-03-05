@@ -276,8 +276,8 @@ class Exchange(object):
         Returns the amount to buy or sell to a precision the Exchange accepts
         Rounded down
         '''
-        if self._api.markets[pair]['precision']['amount']:
-            symbol_prec = self._api.markets[pair]['precision']['amount']
+        if self.markets[pair]['precision']['amount']:
+            symbol_prec = self.markets[pair]['precision']['amount']
             big_amount = amount * pow(10, symbol_prec)
             amount = floor(big_amount) / pow(10, symbol_prec)
         return amount
@@ -287,8 +287,8 @@ class Exchange(object):
         Returns the price buying or selling with to the precision the Exchange accepts
         Rounds up
         '''
-        if self._api.markets[pair]['precision']['price']:
-            symbol_prec = self._api.markets[pair]['precision']['price']
+        if self.markets[pair]['precision']['price']:
+            symbol_prec = self.markets[pair]['precision']['price']
             big_price = price * pow(10, symbol_prec)
             price = ceil(big_price) / pow(10, symbol_prec)
         return price
