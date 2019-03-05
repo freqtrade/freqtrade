@@ -6,39 +6,39 @@ This page explains the different parameters of the bot and how to run it.
 ## Bot commands
 
 ```
-usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-               [--strategy-path PATH] [--customhyperopt NAME]
-               [--dynamic-whitelist [INT]] [--db-url PATH]
-               {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
+                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH]
+                 {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
 
 positional arguments:
   {backtesting,edge,hyperopt}
-    backtesting         backtesting module
-    edge                edge module
-    hyperopt            hyperopt module
+    backtesting         Backtesting module.
+    edge                Edge module.
+    hyperopt            Hyperopt module.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         verbose mode (-vv for more, -vvv to get all messages)
-  --version             show program\'s version number and exit
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --version             show program's version number and exit
   -c PATH, --config PATH
-                        specify configuration file (default: config.json)
+                        Specify configuration file (default: None). Multiple
+                        --config options may be used.
   -d PATH, --datadir PATH
-                        path to backtest data
+                        Path to backtest data.
   -s NAME, --strategy NAME
-                        specify strategy class name (default: DefaultStrategy)
-  --strategy-path PATH  specify additional strategy lookup path
-  --customhyperopt NAME
-                        specify hyperopt class name (default:
-                        DefaultHyperOpts)
+                        Specify strategy class name (default:
+                        DefaultStrategy).
+  --strategy-path PATH  Specify additional strategy lookup path.
   --dynamic-whitelist [INT]
-                        dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20) DEPRECATED.
+                        Dynamically generate and update whitelist based on 24h
+                        BaseVolume (default: 20). DEPRECATED.
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
-                        None)
+                        None).
+
 ```
 
 ### How to use a different configuration file?
@@ -159,27 +159,27 @@ python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.s
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                           [--eps] [--dmmp] [-l] [-r]
-                           [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                           [--export EXPORT] [--export-filename PATH]
+usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                             [--eps] [--dmmp] [-l] [-r]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                             [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
-                        specify what timerange of data to use.
+                        Specify what timerange of data to use.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
-                        stacking)
+                        stacking).
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
-                        number)
-  -l, --live            using live data
+                        number).
+  -l, --live            Use live data.
   -r, --refresh-pairs-cached
-                        refresh the pairs files in tests/testdata with the
+                        Refresh the pairs files in tests/testdata with the
                         latest data from the exchange. Use it if you want to
                         run your backtesting with up-to-date data.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
@@ -189,7 +189,7 @@ optional arguments:
                         this together with --export trades, the strategy-name
                         is injected into the filename (so backtest-data.json
                         becomes backtest-data-DefaultStrategy.json
-  --export EXPORT       export backtest results, argument are: trades Example
+  --export EXPORT       Export backtest results, argument are: trades. Example
                         --export=trades
   --export-filename PATH
                         Save backtest results to this filename requires
@@ -219,29 +219,30 @@ To optimize your strategy, you can use hyperopt parameter hyperoptimization
 to find optimal parameter values for your stategy.
 
 ```
-usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
-                          [--timerange TIMERANGE] [-e INT]
-                          [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
+usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                          [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
+                          [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --customhyperopt NAME
+                        Specify hyperopt class name (default:
+                        DefaultHyperOpts).
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
-                        stacking)
+                        stacking).
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
-                        number)
-  --timerange TIMERANGE
-                        specify what timerange of data to use.
-  --hyperopt PATH       specify hyperopt file (default:
-                        freqtrade/optimize/default_hyperopt.py)
-  -e INT, --epochs INT  specify number of epochs (default: 100)
-  -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]
+                        number).
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space separate
-                        list. Default: all
+                        list. Default: all.
 
 ```
 
@@ -250,22 +251,22 @@ optional arguments:
 To know your trade expectacny and winrate against historical data, you can use Edge.
 
 ```
-usage: main.py edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE] [-r]
-                    [--stoplosses STOPLOSS_RANGE]
+usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE] [-r]
+                      [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
-                        specify what timerange of data to use.
+                        Specify what timerange of data to use.
   -r, --refresh-pairs-cached
-                        refresh the pairs files in tests/testdata with the
+                        Refresh the pairs files in tests/testdata with the
                         latest data from the exchange. Use it if you want to
                         run your edge with up-to-date data.
   --stoplosses STOPLOSS_RANGE
-                        defines a range of stoploss against which edge will
-                        assess the strategythe format is "min,max,step"
+                        Defines a range of stoploss against which edge will
+                        assess the strategy the format is "min,max,step"
                         (without any space).example:
                         --stoplosses=-0.01,-0.1,-0.001
 ```

@@ -152,7 +152,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 ./freqtrade/main.py --hyperopt <hyperoptname> -c config.json hyperopt -e 5000 --spaces all
+python3 ./freqtrade/main.py -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
@@ -285,8 +285,13 @@ This would translate to the following ROI table:
 ### Validate backtest result
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
-To archive the same results (number of trades, ...) than during hyperopt, please use the command line flag `--disable-max-market-positions`.
-This setting is the default for hyperopt for speed reasons. You can overwrite this in the configuration by setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L283).
+To archive the same results (number of trades, ...) than during hyperopt, please use the command line flags `--disable-max-market-positions` and `--enable-position-stacking` for backtesting.
+
+This configuration is the default in hyperopt for performance reasons.
+
+You can overwrite position stacking in the configuration by explicitly setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L191).
+
+Enabling the market-position for hyperopt is currently not possible.
 
 !!! Note:
 Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.

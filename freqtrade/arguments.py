@@ -109,14 +109,6 @@ class Arguments(object):
             metavar='PATH',
         )
         self.parser.add_argument(
-            '--customhyperopt',
-            help='Specify hyperopt class name (default: %(default)s).',
-            dest='hyperopt',
-            default=constants.DEFAULT_HYPEROPT,
-            type=str,
-            metavar='NAME',
-        )
-        self.parser.add_argument(
             '--dynamic-whitelist',
             help='Dynamically generate and update whitelist'
                  ' based on 24h BaseVolume (default: %(const)s).'
@@ -248,6 +240,14 @@ class Arguments(object):
         """
         Parses given arguments for Hyperopt scripts.
         """
+        parser.add_argument(
+            '--customhyperopt',
+            help='Specify hyperopt class name (default: %(default)s).',
+            dest='hyperopt',
+            default=constants.DEFAULT_HYPEROPT,
+            type=str,
+            metavar='NAME',
+        )
         parser.add_argument(
             '--eps', '--enable-position-stacking',
             help='Allow buying the same pair multiple times (position stacking).',
