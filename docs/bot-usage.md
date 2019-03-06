@@ -78,7 +78,7 @@ prevent unintended disclosure of sensitive private data when you publish example
 of your configuration in the project issues or in the Internet.
 
 See more details on this technique with examples in the documentation page on
-[configuration](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-configuration.md).
+[configuration](bot-configuration.md).
 
 ### How to use **--strategy**?
 
@@ -101,7 +101,8 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 If the bot does not find your strategy file, it will display in an error
 message the reason (File not found, or errors in your code).
 
-Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
+Learn more about strategy file in
+[optimize your bot](bot-optimization.md).
 
 ### How to use **--strategy-path**?
 
@@ -119,29 +120,13 @@ This is very simple. Copy paste your strategy file into the folder
 ### How to use **--dynamic-whitelist**?
 
 !!! danger "DEPRECATED"
-    Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](/configuration/#dynamic-pairlists)
+    This command line option is deprecated. Please move your configurations using it
+to the configurations that utilize the `StaticPairList` or `VolumePairList` methods set
+in the configuration file
+as outlined [here](configuration/#dynamic-pairlists)
 
-Per default `--dynamic-whitelist` will retrieve the 20 currencies based
-on BaseVolume. This value can be changed when you run the script.
-
-**By Default**
-Get the 20 currencies based on BaseVolume.
-
-```bash
-python3 ./freqtrade/main.py --dynamic-whitelist
-```
-
-**Customize the number of currencies to retrieve**
-Get the 30 currencies based on BaseVolume.
-
-```bash
-python3 ./freqtrade/main.py --dynamic-whitelist 30
-```
-
-**Exception**
-`--dynamic-whitelist` must be greater than 0. If you enter 0 or a
-negative value (e.g -2), `--dynamic-whitelist` will use the default
-value (20).
+Description of this deprecated feature was moved to [here](deprecated.md).
+Please no longer use it.
 
 ### How to use **--db-url**?
 

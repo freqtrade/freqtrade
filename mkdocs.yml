@@ -12,9 +12,10 @@ nav:
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md
     - Plotting: plotting.md
+    - Deprecated features: deprecated.md
     - FAQ: faq.md
     - SQL Cheatsheet: sql_cheatsheet.md
-    - Sanbox testing: sandbox-testing.md
+    - Sandbox testing: sandbox-testing.md
     - Contributors guide: developer.md
 theme:
   name: material
