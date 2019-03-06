@@ -168,6 +168,9 @@ class Exchange(object):
     @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
+        if not self._api.markets:
+            logger.warning("Markets were not loaded. Loading them now..")
+            self._load_markets()
         return self._api.markets
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
