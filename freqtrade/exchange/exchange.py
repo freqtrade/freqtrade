@@ -186,24 +186,23 @@ class Exchange(object):
                                      "Please check your config.json")
                 raise OperationalException(f'Exchange {name} does not provide a sandbox api')
 
-    def _load_async_markets(self) -> None:
+    def _load_async_markets(self, reload=False) -> None:
         try:
             if self._api_async:
-                asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
+                asyncio.get_event_loop().run_until_complete(
+                    self._api_async.load_markets(reload=reload))
 
         except ccxt.BaseError as e:
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
-    def _load_markets(self) -> Dict[str, Any]:
+    def _load_markets(self, reload=False) -> Dict[str, Any]:
         """ Initialize markets both sync and async """
         try:
-            markets = self._api.load_markets()
-            self._load_async_markets()
-            return markets  # prbly not necessary to return anything anymore
+            self._api.load_markets(reload=reload)
+            self._load_async_markets(reload=reload)
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
-        return {}
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
