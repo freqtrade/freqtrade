@@ -199,7 +199,7 @@ class Exchange(object):
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
-    def _load_markets(self, reload=False) -> Dict[str, Any]:
+    def _load_markets(self, reload=False) -> None:
         """ Initialize markets both sync and async """
         try:
             self._api.load_markets(reload=reload)
