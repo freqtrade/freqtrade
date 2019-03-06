@@ -239,13 +239,9 @@ class Exchange(object):
             logger.warning('Unable to validate pairs (assuming they are correct).')
         #     return
 
-        stake_cur = self._conf['stake_currency']
         for pair in pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
-            if not pair.endswith(stake_cur):
-                raise OperationalException(
-                    f'Pair {pair} not compatible with stake_currency: {stake_cur}')
             if self.markets and pair not in self.markets:
                 raise OperationalException(
                     f'Pair {pair} is not available on {self.name}. '
