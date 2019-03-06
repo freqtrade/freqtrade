@@ -68,10 +68,10 @@ class IPairList(ABC):
         markets = self._freqtrade.exchange.markets
 
         # Filter to markets in stake currency
-        stake_pairs = [pair for pair in markets if
-                       pair.endswith(self._config['stake_currency'])]
+        stake_pairs = [pair for pair in markets if  # pair.endswith(self._config['stake_currency'])
+                       markets[pair]["quote"] == self._config['stake_currency']]
 
-        sanitized_whitelist = []
+        sanitized_whitelist = set()
         for pair in whitelist:
             # pair is not in the generated dynamic market, or in the blacklist ... ignore it
             if pair in self.blacklist or pair not in stake_pairs:
@@ -84,7 +84,7 @@ class IPairList(ABC):
                     pair
                 )
                 continue
-            sanitized_whitelist.append(pair)
+            sanitized_whitelist.add(pair)
 
         # We need to remove pairs that are unknown
-        return sanitized_whitelist
+        return list(sanitized_whitelist)
