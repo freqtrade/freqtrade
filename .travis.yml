@@ -41,14 +41,16 @@ jobs:
     - script: mypy freqtrade
       name: mypy
 
+    - stage: coveralls
+      script:
+        - coveralls
+      name: "Coveralls - Test coverage"
+
     - stage: docker
       if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
       script:
         - build_helpers/publish_docker.sh
       name: "Build and test and push docker image"
-
-after_success:
-  - coveralls
 
 notifications:
   slack:
