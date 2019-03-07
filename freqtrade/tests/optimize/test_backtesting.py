@@ -15,6 +15,7 @@ from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
@@ -683,21 +684,6 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
 
 
 def test_backtest_multi_pair(default_conf, fee, mocker):
-
-    def evaluate_result_multi(results, freq, max_open_trades):
-        # Find overlapping trades by expanding each trade once per period
-        # and then counting overlaps
-        dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
-                 for row in results[['open_time', 'close_time']].iterrows()]
-        deltas = [len(x) for x in dates]
-        dates = pd.Series(pd.concat(dates).values, name='date')
-        df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
-
-        df2 = df2.astype(dtype={"open_time": "datetime64", "close_time": "datetime64"})
-        df2 = pd.concat([dates, df2], axis=1)
-        df2 = df2.set_index('date')
-        df_final = df2.resample(freq)[['pair']].count()
-        return df_final[df_final['pair'] > max_open_trades]
 
     def _trend_alternate_hold(dataframe=None, metadata=None):
         """
