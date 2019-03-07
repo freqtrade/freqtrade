@@ -41,6 +41,7 @@ from plotly.offline import plot
 from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
+from freqtrade.data.btanalysis import load_backtest_data, BT_DATA_COLUMNS
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
@@ -56,7 +57,8 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
     trades: pd.DataFrame = pd.DataFrame()
     if args.db_url:
         persistence.init(_CONF)
-        columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
+        columns = ["pair", "profit", "open_time", "close_time",
+                   "open_rate", "close_rate", "duration"]
 
         for x in Trade.query.all():
             print("date: {}".format(x.open_date))
@@ -71,33 +73,13 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
                               columns=columns)
 
     elif args.exportfilename:
-        file = Path(args.exportfilename)
-        # must align with columns in backtest.py
-        columns = ["pair", "profit", "opents", "closets", "index", "duration",
-                   "open_rate", "close_rate", "open_at_end", "sell_reason"]
-        if file.exists():
-            with file.open() as f:
-                data = json.load(f)
-                trades = pd.DataFrame(data, columns=columns)
-            trades = trades.loc[trades["pair"] == pair]
-            if timerange:
-                if timerange.starttype == 'date':
-                    trades = trades.loc[trades["opents"] >= timerange.startts]
-                if timerange.stoptype == 'date':
-                    trades = trades.loc[trades["opents"] <= timerange.stopts]
 
-            trades['opents'] = pd.to_datetime(
-                                            trades['opents'],
-                                            unit='s',
-                                            utc=True,
-                                            infer_datetime_format=True)
-            trades['closets'] = pd.to_datetime(
-                                            trades['closets'],
-                                            unit='s',
-                                            utc=True,
-                                            infer_datetime_format=True)
+        file = Path(args.exportfilename)
+        if file.exists():
+            load_backtest_data(file)
+
         else:
-            trades = pd.DataFrame([], columns=columns)
+            trades = pd.DataFrame([], columns=BT_DATA_COLUMNS)
 
     return trades
 
@@ -206,7 +188,7 @@ def extract_trades_of_period(dataframe, trades) -> pd.DataFrame:
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
     :return: the DataFrame of a trades of period
     """
-    trades = trades.loc[trades['opents'] >= dataframe.iloc[0]['date']]
+    trades = trades.loc[trades['open_time'] >= dataframe.iloc[0]['date']]
     return trades
 
 
@@ -279,7 +261,7 @@ def generate_graph(
     )
 
     trade_buys = go.Scattergl(
-        x=trades["opents"],
+        x=trades["open_time"],
         y=trades["open_rate"],
         mode='markers',
         name='trade_buy',
@@ -291,7 +273,7 @@ def generate_graph(
         )
     )
     trade_sells = go.Scattergl(
-        x=trades["closets"],
+        x=trades["close_time"],
         y=trades["close_rate"],
         mode='markers',
         name='trade_sell',

@@ -8,6 +8,10 @@ import pandas as pd
 
 from freqtrade.misc import json_load
 
+# must align with columns in backtest.py
+BT_DATA_COLUMNS = ["pair", "profitperc", "open_time", "close_time", "index", "duration",
+                   "open_rate", "close_rate", "open_at_end", "sell_reason"]
+
 
 def load_backtest_data(filename) -> pd.DataFrame:
     """
@@ -24,11 +28,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
     with filename.open() as file:
         data = json_load(file)
 
-        # must align with columns in backtest.py
-    columns = ["pair", "profitperc", "open_time", "close_time", "index", "duration",
-               "open_rate", "close_rate", "open_at_end", "sell_reason"]
-
-    df = pd.DataFrame(data, columns=columns)
+    df = pd.DataFrame(data, columns=BT_DATA_COLUMNS)
 
     df['open_time'] = pd.to_datetime(df['open_time'],
                                      unit='s',
