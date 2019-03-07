@@ -17,11 +17,10 @@ from freqtrade import optimize
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.exchange import Exchange
 from freqtrade.data import history
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 
@@ -79,8 +78,8 @@ class Backtesting(object):
             self.strategylist.append(StrategyResolver(self.config).strategy)
         # Load one strategy
         self._set_strategy(self.strategylist[0])
-
-        self.exchange = Exchange(self.config)
+        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
+        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
         self.fee = self.exchange.get_fee()
 
     def _set_strategy(self, strategy):
@@ -93,6 +92,10 @@ class Backtesting(object):
         self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
+        # Set stoploss_on_exchange to false for backtesting,
+        # since a "perfect" stoploss-sell is assumed anyway
+        # And the regular "stoploss" function would not apply to that case
+        self.strategy.order_types['stoploss_on_exchange'] = False
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
                              skip_nan: bool = False) -> str:

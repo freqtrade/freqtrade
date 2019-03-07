@@ -315,7 +315,28 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
-def test_backtesting_init(mocker, default_conf) -> None:
+ORDER_TYPES = [
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
+    },
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True
+    }]
+
+
+@pytest.mark.parametrize("order_types", ORDER_TYPES)
+def test_backtesting_init(mocker, default_conf, order_types) -> None:
+    """
+    Check that stoploss_on_exchange is set to False while backtesting
+    since backtesting assumes a perfect stoploss anyway.
+    """
+    default_conf["order_types"] = order_types
     patch_exchange(mocker)
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
@@ -326,6 +347,7 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert callable(backtesting.advise_sell)
     get_fee.assert_called()
     assert backtesting.fee == 0.5
+    assert not backtesting.strategy.order_types["stoploss_on_exchange"]
 
 
 def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
