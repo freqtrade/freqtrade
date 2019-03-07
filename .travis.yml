@@ -23,6 +23,9 @@ install:
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
+  allow_failures:
+    - script: coveralls
+
   include:
     - stage: tests
       script:
@@ -40,15 +43,14 @@ jobs:
       name: flake8
     - script: mypy freqtrade
       name: mypy
+    - script: coveralls
+      name: "Coveralls"
 
     - stage: docker
       if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
       script:
         - build_helpers/publish_docker.sh
       name: "Build and test and push docker image"
-
-after_success:
-  - coveralls
 
 notifications:
   slack:
