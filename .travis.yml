@@ -23,6 +23,10 @@ install:
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
+  allow_failures:
+    - script:
+        - coveralls
+
   include:
     - stage: tests
       script:
@@ -40,11 +44,9 @@ jobs:
       name: flake8
     - script: mypy freqtrade
       name: mypy
-
-    - stage: coveralls
-      script:
+    - script:
         - coveralls
-      name: "Coveralls - Test coverage"
+      name: "Coveralls"
 
     - stage: docker
       if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
