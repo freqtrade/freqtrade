@@ -24,8 +24,7 @@ install:
 - pip install -e .
 jobs:
   allow_failures:
-    - script:
-        - coveralls
+    - script: coveralls
 
   include:
     - stage: tests
@@ -44,8 +43,7 @@ jobs:
       name: flake8
     - script: mypy freqtrade
       name: mypy
-    - script:
-        - coveralls
+    - script: coveralls
       name: "Coveralls"
 
     - stage: docker
