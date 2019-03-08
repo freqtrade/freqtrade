@@ -23,13 +23,13 @@ install:
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
-  allow_failures:
-    - script: coveralls
 
   include:
     - stage: tests
       script:
       - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
+      # Allow failure for coveralls
+      - coveralls || true  
       name: pytest
     - script:
       - cp config.json.example config.json
@@ -43,8 +43,6 @@ jobs:
       name: flake8
     - script: mypy freqtrade
       name: mypy
-    - script: coveralls
-      name: "Coveralls"
 
     - stage: docker
       if: branch in (master, develop, feat/improve_travis) AND (type in (push, cron))
