@@ -36,7 +36,7 @@ Complementary Loss Rate (*L*) is defined as
 
 or, which is the same, as
 
-    R = 1 – W
+    L = 1 – W
 
 ### Risk Reward Ratio
 Risk Reward Ratio (*R*) is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose:
