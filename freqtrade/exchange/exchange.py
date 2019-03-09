@@ -298,7 +298,7 @@ class Exchange(object):
             'amount': amount,
             "cost": amount * rate,
             'type': ordertype,
-            'side': 'buy',
+            'side': side,
             'remaining': amount,
             'datetime': arrow.utcnow().isoformat(),
             'status': "open",
