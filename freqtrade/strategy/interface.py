@@ -331,7 +331,11 @@ class IStrategy(ABC):
                              f"with offset {sl_offset:.4g} "
                              f"since we have profit {current_profit:.4f}%")
 
-            trade.adjust_stop_loss(current_rate, stop_loss_value)
+            # if trailing_only_offset_is_reached is true,
+            # we update trailing stoploss only if offset is reached.
+            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
+            if tsl_only_offset and current_profit > sl_offset:
+                trade.adjust_stop_loss(current_rate, stop_loss_value)
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
