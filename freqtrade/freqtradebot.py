@@ -155,6 +155,9 @@ class FreqtradeBot(object):
         """
         state_changed = False
         try:
+            # Check whether markets have to be reloaded
+            self.exchange._reload_markets()
+
             # Refresh whitelist
             self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist

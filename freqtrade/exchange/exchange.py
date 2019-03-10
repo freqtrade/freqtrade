@@ -88,6 +88,8 @@ class Exchange(object):
 
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
+        # Timestamp of last markets refresh
+        self._last_markets_refresh: int = 0
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -106,7 +108,12 @@ class Exchange(object):
 
         logger.info('Using Exchange "%s"', self.name)
 
+        # Converts the interval provided in minutes in config to seconds
+        self.markets_refresh_interval: int = exchange_config.get(
+            "markets_refresh_interval", 60) * 60
+        # Initial markets load
         self._load_markets()
+
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
@@ -204,8 +211,20 @@ class Exchange(object):
         try:
             self._api.load_markets(reload=reload)
             self._load_async_markets(reload=reload)
+            self._last_markets_refresh = arrow.utcnow().timestamp
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
+
+    def _reload_markets(self) -> None:
+        """Reload markets both sync and async, if refresh interval has passed"""
+        # Check whether markets have to be reloaded
+        if (self._last_markets_refresh > 0) and (
+                self._last_markets_refresh + self.markets_refresh_interval
+                > arrow.utcnow().timestamp):
+            return None
+        else:
+            logger.debug("Performing scheduled market reload..")
+            self._load_markets(reload=True)
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
