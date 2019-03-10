@@ -252,13 +252,13 @@ def test__load_markets(default_conf, mocker, caplog):
 
 def test__reload_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
-    api_mock = MagicMock()
     initial_markets = {'ETH/BTC': {}}
+    api_mock = MagicMock()
     type(api_mock).markets = initial_markets
-    updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
     default_conf['exchange']['markets_refresh_interval'] = 10
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
     exchange._last_markets_refresh = arrow.utcnow().timestamp
+    updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
 
     def _load_markets(*args, **kwargs):
         exchange._api.markets = updated_markets
