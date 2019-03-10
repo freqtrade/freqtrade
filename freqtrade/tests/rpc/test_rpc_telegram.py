@@ -232,7 +232,7 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     status_table = MagicMock()
@@ -279,7 +279,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
         get_ticker=ticker,
         buy=MagicMock(return_value={'id': 'mocked_order_id'}),
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -334,7 +334,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(
@@ -438,7 +438,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
         'freqtrade.exchange.Exchange',
         get_ticker=ticker,
         get_fee=fee,
-        get_markets=markets
+        markets=PropertyMock(markets)
     )
     msg_mock = MagicMock()
     mocker.patch.multiple(

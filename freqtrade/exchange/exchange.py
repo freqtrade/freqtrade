@@ -681,10 +681,6 @@ class Exchange(object):
             raise OperationalException(e)
 
     @retrier
-    def get_markets(self) -> List[dict]:
-        return list(self.markets.values())
-
-    @retrier
     def get_fee(self, symbol='ETH/BTC', type='', side='', amount=1,
                 price=1, taker_or_maker='maker') -> float:
         try:

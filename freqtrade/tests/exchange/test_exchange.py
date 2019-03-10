@@ -1304,19 +1304,6 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_markets(default_conf, mocker, markets, exchange_name):
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    ret = exchange.get_markets()
-    assert isinstance(ret, list)
-    assert len(ret) == 9
-
-    assert ret[0]["id"] == "ethbtc"
-    assert ret[0]["symbol"] == "ETH/BTC"
-
-
-@pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_fee(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.calculate_fee = MagicMock(return_value={

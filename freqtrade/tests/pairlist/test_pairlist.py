@@ -33,7 +33,7 @@ def whitelist_conf(default_conf):
 
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     with pytest.raises(ImportError,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'."
                              r" This class does not exist or contains Python code errors"):
