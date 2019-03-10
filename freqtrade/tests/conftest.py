@@ -42,7 +42,6 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
-    # mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value={}))
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
