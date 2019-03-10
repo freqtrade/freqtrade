@@ -122,6 +122,10 @@ class Configuration(object):
         set_loggers(config['verbosity'])
         logger.info('Verbosity set to %s', config['verbosity'])
 
+        # Support for sd_notify
+        if self.args.sd_notify:
+            config['internals'].update({'sd_notify': True})
+
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
             # Update to volumePairList (the previous default)

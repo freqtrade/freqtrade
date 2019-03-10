@@ -171,7 +171,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'process_throttle_secs': {'type': 'number'},
-                'interval': {'type': 'integer'}
+                'interval': {'type': 'integer'},
+                'sd_notify': {'type': 'boolean'},
             }
         }
     },

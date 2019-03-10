@@ -428,6 +428,19 @@ For this to be persistent (run when user is logged out) you'll need to enable `l
 sudo loginctl enable-linger "$USER"
 ```
 
+If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
+state and restarting it in the case of failures. If the `internals.sd_notify` parameter is set to true in the 
+configuration or the `--sd-notify` command line option is used, the bot will send keep-alive ping messages to systemd 
+using the sd_notify (systemd notifications) protocol and will also tell systemd its current state (Running or Stopped) 
+when it changes. 
+
+The `freqtrade.service.watchdog` file contains an example of the service unit configuration file which uses systemd 
+as the watchdog.
+
+!!! Note: 
+The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a 
+Docker container.
+
 ------
 
 ## Windows
