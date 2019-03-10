@@ -222,9 +222,8 @@ class Exchange(object):
                 self._last_markets_refresh + self.markets_refresh_interval
                 > arrow.utcnow().timestamp):
             return None
-        else:
-            logger.debug("Performing scheduled market reload..")
-            self._load_markets(reload=True)
+        logger.debug("Performing scheduled market reload..")
+        self._load_markets(reload=True)
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """

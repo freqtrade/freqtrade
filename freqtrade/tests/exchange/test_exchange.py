@@ -245,10 +245,36 @@ def test__load_markets(default_conf, mocker, caplog):
     api_mock = MagicMock()
     api_mock.load_markets = MagicMock(return_value=expected_return)
     type(api_mock).markets = expected_return
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     default_conf['exchange']['pair_whitelist'] = ['ETH/BTC']
     ex = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
     assert ex.markets == expected_return
+
+
+def test__reload_markets(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    api_mock = MagicMock()
+    initial_markets = {'ETH/BTC': {}}
+    type(api_mock).markets = initial_markets
+    updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
+    default_conf['exchange']['markets_refresh_interval'] = 10
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+    exchange._last_markets_refresh = arrow.utcnow().timestamp
+
+    def _load_markets(*args, **kwargs):
+        exchange._api.markets = updated_markets
+
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', _load_markets)
+    assert exchange.markets == initial_markets
+
+    # less than 10 minutes have passed, no reload
+    exchange._reload_markets()
+    assert exchange.markets == initial_markets
+
+    # more than 10 minutes have passed, reload is executed
+    exchange._last_markets_refresh = arrow.utcnow().timestamp - 15 * 60
+    exchange._reload_markets()
+    assert exchange.markets == updated_markets
+    assert log_has('Performing scheduled market reload..', caplog.record_tuples)
 
 
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
