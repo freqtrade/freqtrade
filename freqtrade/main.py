@@ -60,6 +60,7 @@ def main(sysargv: List[str]) -> None:
         logger.exception('Fatal exception!')
     finally:
         if freqtrade:
+            freqtrade.stopping()
             freqtrade.rpc.send_msg({
                 'type': RPCMessageType.STATUS_NOTIFICATION,
                 'status': 'process died'
@@ -72,6 +73,8 @@ def reconfigure(freqtrade: FreqtradeBot, args: Namespace) -> FreqtradeBot:
     """
     Cleans up current instance, reloads the configuration and returns the new instance
     """
+    freqtrade.reconfigure()
+
     # Clean up current modules
     freqtrade.cleanup()
 

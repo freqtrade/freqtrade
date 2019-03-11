@@ -84,7 +84,7 @@ class FreqtradeBot(object):
         # Tell the systemd that we completed initialization phase
         if self._sd_notify:
             logger.debug("sd_notify: READY=1")
-            self._sd_notify.notify('READY=1')
+            self._sd_notify.notify("READY=1")
 
     def _init_modules(self) -> None:
         """
@@ -110,13 +110,20 @@ class FreqtradeBot(object):
         """
         logger.info('Cleaning up modules ...')
 
-        # Tell systemd that we are stopping now
-        if self._sd_notify:
-            logger.debug("sd_notify: STOPPING=1")
-            self._sd_notify.notify('STOPPING=1')
-
         self.rpc.cleanup()
         persistence.cleanup()
+
+    def stopping(self) -> None:
+        # Tell systemd that we are exiting now
+        if self._sd_notify:
+            logger.debug("sd_notify: STOPPING=1")
+            self._sd_notify.notify("STOPPING=1")
+
+    def reconfigure(self) -> None:
+        # Tell systemd that we initiated reconfiguring
+        if self._sd_notify:
+            logger.debug("sd_notify: RELOADING=1")
+            self._sd_notify.notify("RELOADING=1")
 
     def worker(self, old_state: State = None) -> State:
         """
@@ -144,7 +151,7 @@ class FreqtradeBot(object):
             # Ping systemd watchdog before sleeping in the stopped state
             if self._sd_notify:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
-                self._sd_notify.notify('WATCHDOG=1\nSTATUS=State: STOPPED.')
+                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
 
             time.sleep(throttle_secs)
 
@@ -152,7 +159,7 @@ class FreqtradeBot(object):
             # Ping systemd watchdog before throttling
             if self._sd_notify:
                 logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
-                self._sd_notify.notify('WATCHDOG=1\nSTATUS=State: RUNNING.')
+                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
 
             self._throttle(func=self._process, min_secs=throttle_secs)
 
