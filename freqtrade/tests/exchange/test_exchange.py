@@ -594,8 +594,6 @@ def test_buy_prod(default_conf, mocker, exchange_name):
 def test_buy_considers_time_in_force(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
-    order_type = 'market'
-    time_in_force = 'ioc'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
         'info': {
@@ -606,6 +604,25 @@ def test_buy_considers_time_in_force(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.symbol_amount_prec', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    order_type = 'limit'
+    time_in_force = 'ioc'
+
+    order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
+                         amount=1, rate=200, time_in_force=time_in_force)
+
+    assert 'id' in order
+    assert 'info' in order
+    assert order['id'] == order_id
+    assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
+    assert api_mock.create_order.call_args[0][1] == order_type
+    assert api_mock.create_order.call_args[0][2] == 'buy'
+    assert api_mock.create_order.call_args[0][3] == 1
+    assert api_mock.create_order.call_args[0][4] == 200
+    assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'ioc'}
+
+    order_type = 'market'
+    time_in_force = 'ioc'
 
     order = exchange.buy(pair='ETH/BTC', ordertype=order_type,
                          amount=1, rate=200, time_in_force=time_in_force)
@@ -618,13 +635,13 @@ def test_buy_considers_time_in_force(default_conf, mocker):
     assert api_mock.create_order.call_args[0][2] == 'buy'
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] is None
-    assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'ioc'}
+    assert api_mock.create_order.call_args[0][5] == {}
 
 
 def test_buy_kraken_trading_agreement(default_conf, mocker):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
-    order_type = 'market'
+    order_type = 'limit'
     time_in_force = 'ioc'
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -648,7 +665,7 @@ def test_buy_kraken_trading_agreement(default_conf, mocker):
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'buy'
     assert api_mock.create_order.call_args[0][3] == 1
-    assert api_mock.create_order.call_args[0][4] is None
+    assert api_mock.create_order.call_args[0][4] == 200
     assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'ioc',
                                                      'trading_agreement': 'agree'}
 
