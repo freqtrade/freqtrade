@@ -60,9 +60,8 @@ class IPairList(ABC):
     def _validate_whitelist(self, whitelist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
-        :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
-        trade
-        :return: the list of pairs the user wants to trade without the one unavailable or
+        :param whitelist: the sorted list of pairs the user might want to trade
+        :return: the list of pairs the user wants to trade without those unavailable or
         black_listed
         """
         markets = self._freqtrade.exchange.markets
