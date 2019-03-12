@@ -46,7 +46,7 @@ class StrategyResolver(IResolver):
         # Set attributes
         # Check if we need to override configuration
         # (Attribute name,                              default, experimental)
-        attributes = [("minimal_roi",                   None,    False),
+        attributes = [("minimal_roi",                   {"0": 10.0},    False),
                       ("ticker_interval",               None,    False),
                       ("stoploss",                      None,    False),
                       ("trailing_stop",                 None,    False),
