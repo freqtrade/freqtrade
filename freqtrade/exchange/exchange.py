@@ -263,10 +263,8 @@ class Exchange(object):
         """
         Validates the trailing stoploss configuration
         """
-
-        tsl = config.get('trailing_stop', False)
         # Skip if trailing stoploss is not activated
-        if not tsl:
+        if not config.get('trailing_stop', False):
             return
 
         tsl_positive = float(config.get('trailing_stop_positive', 0))
