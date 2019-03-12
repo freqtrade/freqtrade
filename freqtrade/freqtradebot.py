@@ -512,6 +512,7 @@ class FreqtradeBot(object):
                 except OperationalException as exception:
                     logger.warning("Could not update trade amount: %s", exception)
 
+                # This handles both buy and sell orders!
                 trade.update(order)
 
             if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
@@ -657,6 +658,7 @@ class FreqtradeBot(object):
             if order['status'] == 'closed':
                 trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
                 trade.update(order)
+                self.rpc.notify_sell(trade, self.config, trade.close_rate)
                 result = True
             elif self.config.get('trailing_stop', False):
                 # if trailing stoploss is enabled we check if stoploss value has changed
@@ -846,35 +848,5 @@ class FreqtradeBot(object):
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
-
-        profit_trade = trade.calc_profit(rate=limit)
-        current_rate = self.exchange.get_ticker(trade.pair)['bid']
-        profit_percent = trade.calc_profit_percent(limit)
-        gain = "profit" if profit_percent > 0 else "loss"
-
-        msg = {
-            'type': RPCMessageType.SELL_NOTIFICATION,
-            'exchange': trade.exchange.capitalize(),
-            'pair': trade.pair,
-            'gain': gain,
-            'limit': limit,
-            'amount': trade.amount,
-            'open_rate': trade.open_rate,
-            'current_rate': current_rate,
-            'profit_amount': profit_trade,
-            'profit_percent': profit_percent,
-            'sell_reason': sell_reason.value
-        }
-
-        # For regular case, when the configuration exists
-        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
-            stake_currency = self.config['stake_currency']
-            fiat_currency = self.config['fiat_display_currency']
-            msg.update({
-                'stake_currency': stake_currency,
-                'fiat_currency': fiat_currency,
-            })
-
-        # Send the message
-        self.rpc.send_msg(msg)
         Trade.session.flush()
+        self.rpc.notify_sell(trade, self.config, self.exchange.get_ticker(trade.pair)['bid'])

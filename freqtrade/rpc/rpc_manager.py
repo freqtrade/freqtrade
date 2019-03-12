@@ -2,8 +2,9 @@
 This module contains class to manage RPC communications (Telegram, Slack, ...)
 """
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
+from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCMessageType
 
 logger = logging.getLogger(__name__)
@@ -80,3 +81,35 @@ class RPCManager(object):
             'status': f'Searching for {stake_currency} pairs to buy and sell '
                       f'based on {pairlist.short_desc()}'
         })
+
+    def notify_sell(self, trade: Trade, config, current_rate: float):
+        profit_trade = trade.calc_profit(rate=trade.close_rate_requested)
+
+        profit_percent = trade.calc_profit_percent(trade.close_rate_requested)
+        gain = "profit" if profit_percent > 0 else "loss"
+
+        msg = {
+            'type': RPCMessageType.SELL_NOTIFICATION,
+            'exchange': trade.exchange.capitalize(),
+            'pair': trade.pair,
+            'gain': gain,
+            'limit': trade.close_rate_requested,
+            'amount': trade.amount,
+            'open_rate': trade.open_rate,
+            'current_rate': current_rate,
+            'profit_amount': profit_trade,
+            'profit_percent': profit_percent,
+            'sell_reason': trade.sell_reason
+        }
+
+        # For regular case, when the configuration exists
+        if 'stake_currency' in config and 'fiat_display_currency' in config:
+            stake_currency = config['stake_currency']
+            fiat_currency = config['fiat_display_currency']
+            msg.update({
+                'stake_currency': stake_currency,
+                'fiat_currency': fiat_currency,
+            })
+
+        # Send the message
+        self.send_msg(msg)
