@@ -26,6 +26,7 @@ Mandatory Parameters are marked as **Required**.
 | `trailing_stop` | false | Enables trailing stop-loss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
 | `trailing_stop_positive` | 0 | Changes stop-loss once profit has been reached. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
 | `trailing_stop_positive_offset` | 0 | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
+| `trailing_only_offset_is_reached` | false | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-strategy).
 | `unfilledtimeout.buy` | 10 | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | **Required.** Set the bidding price. More information [below](#understand-ask_last_balance).
@@ -319,7 +320,7 @@ section of the configuration.
 * `VolumePairList`
   * Formerly available as `--dynamic-whitelist [<number_assets>]`. This command line
 option is deprecated and should no longer be used.
-  * It selects `number_assets` top pairs based on `sort_key`, which can be one of 
+  * It selects `number_assets` top pairs based on `sort_key`, which can be one of
 `askVolume`, `bidVolume` and `quoteVolume`, defaults to `quoteVolume`.
   * There is a possibility to filter low-value coins that would not allow setting a stop loss
 (set `precision_filter` parameter to `true` for this).
