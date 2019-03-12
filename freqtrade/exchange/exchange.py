@@ -206,11 +206,11 @@ class Exchange(object):
             logger.warning('Could not load async markets. Reason: %s', e)
             return
 
-    def _load_markets(self, reload=False) -> None:
+    def _load_markets(self) -> None:
         """ Initialize markets both sync and async """
         try:
-            self._api.load_markets(reload=reload)
-            self._load_async_markets(reload=reload)
+            self._api.load_markets()
+            self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().timestamp
         except ccxt.BaseError as e:
             logger.warning('Unable to initialize markets. Reason: %s', e)
@@ -223,7 +223,7 @@ class Exchange(object):
                 > arrow.utcnow().timestamp):
             return None
         logger.debug("Performing scheduled market reload..")
-        self._load_markets(reload=True)
+        self._api.load_markets(reload=True)
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
