@@ -111,6 +111,8 @@ class Exchange(object):
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
         self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+        self.validate_trailing_stoploss(config)
+
         if config.get('ticker_interval'):
             # Check if timeframe is available
             self.validate_timeframes(config['ticker_interval'])
@@ -256,6 +258,30 @@ class Exchange(object):
             if self.name != 'Binance':
                 raise OperationalException(
                     f'Time in force policies are not supporetd for  {self.name} yet.')
+
+    def validate_trailing_stoploss(self, config) -> None:
+        """
+        Validates the trailing stoploss configuration
+        """
+
+        tsl = config.get('trailing_stop', False)
+        # Skip if trailing stoploss is not activated
+        if not tsl:
+            return
+
+        tsl_positive = float(config.get('trailing_stop_positive', 0))
+        tsl_offset = float(config.get('trailing_stop_positive_offset', 0))
+        tsl_only_offset = config.get('trailing_only_offset_is_reached', False)
+
+        if tsl_only_offset:
+            if tsl_positive == 0.0:
+                raise OperationalException(
+                    f'The config trailing_only_offset_is_reached need  '
+                    'trailing_stop_positive_offset to be more than 0 in your config')
+        if tsl_positive > 0 and tsl_offset > 0 and tsl_offset <= tsl_positive:
+            raise OperationalException(
+                f'The config trailing_stop_positive_offset need  '
+                    'to be greater than trailing_stop_positive_offset in your config')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
