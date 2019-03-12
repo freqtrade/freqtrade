@@ -658,7 +658,7 @@ class FreqtradeBot(object):
             if order['status'] == 'closed':
                 trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
                 trade.update(order)
-                self.rpc.notify_sell(trade, self.config, trade.close_rate)
+                self.notify_sell(trade)
                 result = True
             elif self.config.get('trailing_stop', False):
                 # if trailing stoploss is enabled we check if stoploss value has changed
@@ -849,4 +849,39 @@ class FreqtradeBot(object):
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
         Trade.session.flush()
-        self.rpc.notify_sell(trade, self.config, self.exchange.get_ticker(trade.pair)['bid'])
+        self.notify_sell(trade)
+
+    def notify_sell(self, trade: Trade):
+        """
+        Sends rpc notification when a sell occured.
+        """
+        profit_trade = trade.calc_profit(rate=trade.close_rate_requested)
+        current_rate = self.exchange.get_ticker(trade.pair)['bid']
+        profit_percent = trade.calc_profit_percent(trade.close_rate_requested)
+        gain = "profit" if profit_percent > 0 else "loss"
+
+        msg = {
+            'type': RPCMessageType.SELL_NOTIFICATION,
+            'exchange': trade.exchange.capitalize(),
+            'pair': trade.pair,
+            'gain': gain,
+            'limit': trade.close_rate_requested,
+            'amount': trade.amount,
+            'open_rate': trade.open_rate,
+            'current_rate': current_rate,
+            'profit_amount': profit_trade,
+            'profit_percent': profit_percent,
+            'sell_reason': trade.sell_reason
+        }
+
+        # For regular case, when the configuration exists
+        if 'stake_currency' in self.config and 'fiat_display_currency' in self.config:
+            stake_currency = self.config['stake_currency']
+            fiat_currency = self.config['fiat_display_currency']
+            msg.update({
+                'stake_currency': stake_currency,
+                'fiat_currency': fiat_currency,
+            })
+
+        # Send the message
+        self.rpc.send_msg(msg)
