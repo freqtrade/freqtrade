@@ -61,6 +61,8 @@ class RPCManager(object):
         stake_currency = config['stake_currency']
         stake_amount = config['stake_amount']
         minimal_roi = config['minimal_roi']
+        stoploss = config['stoploss']
+        trailing_stop = config['trailing_stop']
         ticker_interval = config['ticker_interval']
         exchange_name = config['exchange']['name']
         strategy_name = config.get('strategy', '')
@@ -69,6 +71,7 @@ class RPCManager(object):
             'status': f'*Exchange:* `{exchange_name}`\n'
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
+                      f'*{"Trailing " if trailing_stop else ""}Stoploss:* `{stoploss}`\n'
                       f'*Ticker Interval:* `{ticker_interval}`\n'
                       f'*Strategy:* `{strategy_name}`'
         })

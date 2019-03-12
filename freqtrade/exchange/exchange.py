@@ -298,7 +298,7 @@ class Exchange(object):
             'amount': amount,
             "cost": amount * rate,
             'type': ordertype,
-            'side': 'buy',
+            'side': side,
             'remaining': amount,
             'datetime': arrow.utcnow().isoformat(),
             'status': "open",
@@ -352,7 +352,7 @@ class Exchange(object):
             return dry_order
 
         params = self._params.copy()
-        if time_in_force != 'gtc':
+        if time_in_force != 'gtc' and ordertype != 'market':
             params.update({'timeInForce': time_in_force})
 
         return self.create_order(pair, ordertype, 'buy', amount, rate, params)
@@ -365,7 +365,7 @@ class Exchange(object):
             return dry_order
 
         params = self._params.copy()
-        if time_in_force != 'gtc':
+        if time_in_force != 'gtc' and ordertype != 'market':
             params.update({'timeInForce': time_in_force})
 
         return self.create_order(pair, ordertype, 'sell', amount, rate, params)
