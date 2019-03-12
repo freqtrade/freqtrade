@@ -73,6 +73,7 @@ class IStrategy(ABC):
     trailing_stop: bool = False
     trailing_stop_positive: float
     trailing_stop_positive_offset: float
+    trailing_only_offset_is_reached = False
 
     # associated ticker interval
     ticker_interval: str
