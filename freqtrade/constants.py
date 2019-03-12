@@ -202,6 +202,7 @@ CONF_SCHEMA = {
                     'uniqueItems': True
                 },
                 'outdated_offset': {'type': 'integer', 'minimum': 1},
+                'markets_refresh_interval': {'type': 'integer'},
                 'ccxt_config': {'type': 'object'},
                 'ccxt_async_config': {'type': 'object'}
             },
