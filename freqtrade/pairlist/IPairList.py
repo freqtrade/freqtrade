@@ -67,8 +67,8 @@ class IPairList(ABC):
         markets = self._freqtrade.exchange.markets
 
         # keep only pairs with stake currency as quote
-        stake_pairs = [pair for pair in markets if  # pair.endswith(self._config['stake_currency'])
-                       markets[pair]["quote"] == self._config['stake_currency']]
+        stake_pairs = [pair for pair in markets if pair.endswith(self._config['stake_currency'])]
+        # markets[pair]["quote"] == self._config['stake_currency']
 
         sanitized_whitelist = set()
         for pair in whitelist:
