@@ -432,6 +432,33 @@ def test_validate_order_types(default_conf, mocker):
         Exchange(default_conf)
 
 
+def test_validate_tsl(default_conf, mocker):
+    api_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.name', 'Bittrex')
+    default_conf['trailing_stop'] = True
+    default_conf['trailing_stop_positive'] = 0
+    default_conf['trailing_stop_positive_offset'] = 0
+    default_conf['trailing_only_offset_is_reached'] = False
+
+    Exchange(default_conf)
+
+    default_conf['trailing_only_offset_is_reached'] = True
+    with pytest.raises(OperationalException,
+                       match=r'The config trailing_only_offset_is_reached need '
+                       'trailing_stop_positive_offset to be more than 0 in your config.'):
+        Exchange(default_conf)
+
+    default_conf['trailing_stop_positive_offset'] = 0.01
+    default_conf['trailing_stop_positive'] = 0.015
+    with pytest.raises(OperationalException,
+                       match=r'The config trailing_stop_positive_offset need '
+                       'to be greater than trailing_stop_positive_offset in your config.'):
+        Exchange(default_conf)
+
+
 def test_validate_order_types_not_in_config(default_conf, mocker):
     api_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))

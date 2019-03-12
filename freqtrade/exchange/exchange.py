@@ -274,12 +274,12 @@ class Exchange(object):
         if tsl_only_offset:
             if tsl_positive == 0.0:
                 raise OperationalException(
-                    f'The config trailing_only_offset_is_reached need  '
-                    'trailing_stop_positive_offset to be more than 0 in your config')
+                    f'The config trailing_only_offset_is_reached need '
+                    'trailing_stop_positive_offset to be more than 0 in your config.')
         if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
             raise OperationalException(
-                f'The config trailing_stop_positive_offset need  '
-                'to be greater than trailing_stop_positive_offset in your config')
+                f'The config trailing_stop_positive_offset need '
+                'to be greater than trailing_stop_positive_offset in your config.')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
