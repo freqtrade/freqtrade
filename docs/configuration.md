@@ -47,7 +47,7 @@ Mandatory Parameters are marked as **Required**.
 | `exchange.ccxt_rate_limit` | True | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
-| `exchange.markets_refresh_interval` | 60 | The interval in which markets are reloaded.
+| `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
 | `edge` | false | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-strategy).
