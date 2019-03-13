@@ -855,9 +855,10 @@ class FreqtradeBot(object):
         """
         Sends rpc notification when a sell occured.
         """
-        profit_trade = trade.calc_profit(rate=trade.close_rate_requested)
+        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+        profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
-        profit_percent = trade.calc_profit_percent(trade.close_rate_requested)
+        profit_percent = trade.calc_profit_percent(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {
