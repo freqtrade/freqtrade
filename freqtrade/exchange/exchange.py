@@ -224,6 +224,7 @@ class Exchange(object):
             return None
         logger.debug("Performing scheduled market reload..")
         self._api.load_markets(reload=True)
+        self._last_markets_refresh = arrow.utcnow().timestamp
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
