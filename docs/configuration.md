@@ -119,9 +119,10 @@ See the example below:
 },
 ```
 
-Most of the strategy files already include the optimal `minimal_roi`
-value. This parameter is optional. If you use it in the configuration file, it will take over the
+Most of the strategy files already include the optimal `minimal_roi` value.
+This parameter can be set in either Strategy or Configuration file. If you use it in the configuration file, it will override the
 `minimal_roi` value from the strategy file.
+If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 10}` is used, and minimal roi is disabled unless your trade generates 1000% profit.
 
 ### Understand stoploss
 
