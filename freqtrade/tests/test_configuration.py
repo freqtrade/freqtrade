@@ -13,7 +13,6 @@ from freqtrade import OperationalException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
-from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has
 
@@ -576,28 +575,22 @@ def test__create_datadir(mocker, default_conf, caplog) -> None:
     assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
 
 
-def test_validate_tsl(default_conf, mocker):
-    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.name', 'Bittrex')
+def test_validate_tsl(default_conf):
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0
     default_conf['trailing_stop_positive_offset'] = 0
-    default_conf['trailing_only_offset_is_reached'] = False
-
-    Exchange(default_conf)
 
     default_conf['trailing_only_offset_is_reached'] = True
     with pytest.raises(OperationalException,
                        match=r'The config trailing_only_offset_is_reached need '
                        'trailing_stop_positive_offset to be more than 0 in your config.'):
-        Exchange(default_conf)
+        configuration = Configuration(Namespace())
+        configuration._validate_config(default_conf)
 
     default_conf['trailing_stop_positive_offset'] = 0.01
     default_conf['trailing_stop_positive'] = 0.015
     with pytest.raises(OperationalException,
                        match=r'The config trailing_stop_positive_offset need '
                        'to be greater than trailing_stop_positive_offset in your config.'):
-        Exchange(default_conf)
+        configuration = Configuration(Namespace())
+        configuration._validate_config(default_conf)
