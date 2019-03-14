@@ -1,6 +1,6 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 from freqtrade import OperationalException
 from freqtrade.constants import AVAILABLE_PAIRLISTS
@@ -33,7 +33,7 @@ def whitelist_conf(default_conf):
 
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     with pytest.raises(ImportError,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'."
                              r" This class does not exist or contains Python code errors"):
@@ -44,7 +44,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, whitelist_conf):
 
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     freqtradebot.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
@@ -58,7 +58,7 @@ def test_refresh_market_pair_not_in_whitelist(mocker, markets, whitelist_conf):
 def test_refresh_pairlists(mocker, markets, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
 
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     freqtradebot.pairlists.refresh_pairlist()
     # List ordered by BaseVolume
     whitelist = ['ETH/BTC', 'TKN/BTC']
@@ -73,7 +73,7 @@ def test_refresh_pairlist_dynamic(mocker, markets, tickers, whitelist_conf):
                                   }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_markets=markets,
+        markets=PropertyMock(return_value=markets),
         get_tickers=tickers,
         exchange_has=MagicMock(return_value=True)
     )
@@ -96,7 +96,7 @@ def test_refresh_pairlist_dynamic(mocker, markets, tickers, whitelist_conf):
 
 def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     freqtradebot = get_patched_freqtradebot(mocker, whitelist_conf)
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets_empty)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_empty))
 
     # argument: use the whitelist dynamically by exchange-volume
     whitelist = []
@@ -111,7 +111,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) 
     whitelist_conf['pairlist']['method'] = 'VolumePairList'
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, p, r: round(r, 8))
 
@@ -157,7 +157,7 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     whitelist_conf['pairlist']['method'] = pairlist
-    mocker.patch('freqtrade.exchange.Exchange.get_markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
 
