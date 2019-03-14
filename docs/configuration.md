@@ -48,6 +48,7 @@ Mandatory Parameters are marked as **Required**.
 | `exchange.ccxt_rate_limit` | True | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
+| `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
 | `edge` | false | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.use_sell_signal` | false | Use your sell strategy in addition of the `minimal_roi`. [Strategy Override](#parameters-in-strategy).
 | `experimental.sell_profit_only` | false | Waits until you have made a positive profit before taking a sell decision. [Strategy Override](#parameters-in-strategy).
@@ -119,9 +120,10 @@ See the example below:
 },
 ```
 
-Most of the strategy files already include the optimal `minimal_roi`
-value. This parameter is optional. If you use it in the configuration file, it will take over the
+Most of the strategy files already include the optimal `minimal_roi` value.
+This parameter can be set in either Strategy or Configuration file. If you use it in the configuration file, it will override the
 `minimal_roi` value from the strategy file.
+If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 10}` is used, and minimal roi is disabled unless your trade generates 1000% profit.
 
 ### Understand stoploss
 

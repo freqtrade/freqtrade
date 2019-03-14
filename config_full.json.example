@@ -78,7 +78,8 @@
         "pair_blacklist": [
             "DOGE/BTC"
         ],
-        "outdated_offset": 5
+        "outdated_offset": 5,
+        "markets_refresh_interval": 60
     },
     "edge": {
         "enabled": false,

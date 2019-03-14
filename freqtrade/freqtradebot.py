@@ -155,6 +155,9 @@ class FreqtradeBot(object):
         """
         state_changed = False
         try:
+            # Check whether markets have to be reloaded
+            self.exchange._reload_markets()
+
             # Refresh whitelist
             self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist
@@ -280,12 +283,10 @@ class FreqtradeBot(object):
         return stake_amount
 
     def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
-        markets = self.exchange.get_markets()
-        markets = [m for m in markets if m['symbol'] == pair]
-        if not markets:
-            raise ValueError(f'Can\'t get market information for symbol {pair}')
-
-        market = markets[0]
+        try:
+            market = self.exchange.markets[pair]
+        except KeyError:
+            raise ValueError(f"Can't get market information for symbol {pair}")
 
         if 'limits' not in market:
             return None
@@ -512,6 +513,7 @@ class FreqtradeBot(object):
                 except OperationalException as exception:
                     logger.warning("Could not update trade amount: %s", exception)
 
+                # This handles both buy and sell orders!
                 trade.update(order)
 
             if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
@@ -657,6 +659,7 @@ class FreqtradeBot(object):
             if order['status'] == 'closed':
                 trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
                 trade.update(order)
+                self.notify_sell(trade)
                 result = True
             elif self.config.get('trailing_stop', False):
                 # if trailing stoploss is enabled we check if stoploss value has changed
@@ -846,10 +849,17 @@ class FreqtradeBot(object):
         trade.open_order_id = order_id
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
+        Trade.session.flush()
+        self.notify_sell(trade)
 
-        profit_trade = trade.calc_profit(rate=limit)
+    def notify_sell(self, trade: Trade):
+        """
+        Sends rpc notification when a sell occured.
+        """
+        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+        profit_trade = trade.calc_profit(rate=profit_rate)
         current_rate = self.exchange.get_ticker(trade.pair)['bid']
-        profit_percent = trade.calc_profit_percent(limit)
+        profit_percent = trade.calc_profit_percent(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
         msg = {
@@ -857,13 +867,13 @@ class FreqtradeBot(object):
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'gain': gain,
-            'limit': limit,
+            'limit': trade.close_rate_requested,
             'amount': trade.amount,
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_percent': profit_percent,
-            'sell_reason': sell_reason.value
+            'sell_reason': trade.sell_reason
         }
 
         # For regular case, when the configuration exists
@@ -877,4 +887,3 @@ class FreqtradeBot(object):
 
         # Send the message
         self.rpc.send_msg(msg)
-        Trade.session.flush()
