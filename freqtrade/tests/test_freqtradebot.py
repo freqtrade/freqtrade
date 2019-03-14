@@ -2504,7 +2504,7 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
-        get_markets=markets,
+        markets=PropertyMock(return_value=markets),
     )
 
     default_conf['trailing_stop'] = True
