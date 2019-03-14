@@ -66,14 +66,11 @@ class IPairList(ABC):
         """
         markets = self._freqtrade.exchange.markets
 
-        # keep only pairs with stake currency as quote
-        stake_pairs = [pair for pair in markets if pair.endswith(self._config['stake_currency'])]
-        # markets[pair]["quote"] == self._config['stake_currency']
-
         sanitized_whitelist = set()
         for pair in whitelist:
             # pair is not in the generated dynamic market, or in the blacklist ... ignore it
-            if pair in self.blacklist or pair not in stake_pairs:
+            if (pair in self.blacklist or pair not in markets
+                    or not pair.endswith(self._config['stake_currency'])):
                 continue
             # Check if market is active
             market = markets[pair]
