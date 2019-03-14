@@ -58,6 +58,7 @@ class Configuration(object):
             config['internals'] = {}
 
         logger.info('Validating configuration ...')
+        self._validate_config_schema(config)
         self._validate_config(config)
 
         # Set strategy if not specified in config and or if it's non default
@@ -291,7 +292,7 @@ class Configuration(object):
 
         return config
 
-    def _validate_config(self, conf: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate the configuration follow the Config Schema
         :param conf: Config in JSON format
@@ -308,6 +309,35 @@ class Configuration(object):
             raise ValidationError(
                 best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
             )
+
+    def _validate_config(self, conf: Dict[str, Any]) -> None:
+        """
+        Validate the configuration consistency
+        :param conf: Config in JSON format
+        :return: Returns None if everything is ok, otherwise throw an exception
+        """
+
+        # validating trailing stoploss
+        self._validate_trailing_stoploss(conf)
+
+    def _validate_trailing_stoploss(self, conf: Dict[str, Any]) -> None:
+        # Skip if trailing stoploss is not activated
+        if not conf.get('trailing_stop', False):
+            return
+
+        tsl_positive = float(conf.get('trailing_stop_positive', 0))
+        tsl_offset = float(conf.get('trailing_stop_positive_offset', 0))
+        tsl_only_offset = conf.get('trailing_only_offset_is_reached', False)
+
+        if tsl_only_offset:
+            if tsl_positive == 0.0:
+                raise OperationalException(
+                    f'The config trailing_only_offset_is_reached need '
+                    'trailing_stop_positive_offset to be more than 0 in your config.')
+        if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
+            raise OperationalException(
+                f'The config trailing_stop_positive_offset need '
+                'to be greater than trailing_stop_positive_offset in your config.')
 
     def get_config(self) -> Dict[str, Any]:
         """
