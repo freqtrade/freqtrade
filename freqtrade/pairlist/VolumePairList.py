@@ -69,7 +69,8 @@ class VolumePairList(IPairList):
         tickers = self._freqtrade.exchange.get_tickers()
         # check length so that we make sure that '/' is actually in the string
         tickers = [v for k, v in tickers.items()
-                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
+                   if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency
+                       and v[key] is not None)]
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
         # Validate whitelist to only have active market pairs
         valid_pairs = self._validate_whitelist([s['symbol'] for s in sorted_tickers])
