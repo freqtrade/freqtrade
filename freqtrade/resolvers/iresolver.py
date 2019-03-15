@@ -33,9 +33,9 @@ class IResolver(object):
         module = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
-        except ModuleNotFoundError as err:
+        except (ModuleNotFoundError, SyntaxError) as err:
             # Catch errors in case a specific module is not installed
-            logger.info(f"Could not import {module_path} due to '{err}'")
+            logger.warning(f"Could not import {module_path} due to '{err}'")
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
