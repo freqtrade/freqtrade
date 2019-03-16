@@ -14,8 +14,8 @@ from arrow import Arrow
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
-from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.btanalysis import evaluate_result_multi
+from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
