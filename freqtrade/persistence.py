@@ -204,7 +204,7 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
-    def adjust_high_low(self, current_price: float):
+    def adjust_min_max_rates(self, current_price: float):
         """
         Adjust the max_rate and min_rate.
         """

@@ -627,7 +627,7 @@ def test_adjust_stop_loss(fee):
     assert trade.initial_stop_loss == 0.95
 
 
-def test_adjust_high_low(fee):
+def test_adjust_min_max_rates(fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -637,22 +637,22 @@ def test_adjust_high_low(fee):
         open_rate=1,
     )
 
-    trade.adjust_high_low(trade.open_rate)
+    trade.adjust_min_max_rates(trade.open_rate)
     assert trade.max_rate == 1
     assert trade.min_rate == 1
 
     # check min adjusted, max remained
-    trade.adjust_high_low(0.96)
+    trade.adjust_min_max_rates(0.96)
     assert trade.max_rate == 1
     assert trade.min_rate == 0.96
 
     # check max adjusted, min remains
-    trade.adjust_high_low(1.05)
+    trade.adjust_min_max_rates(1.05)
     assert trade.max_rate == 1.05
     assert trade.min_rate == 0.96
 
     # current rate "in the middle" - no adjustment
-    trade.adjust_high_low(1.03)
+    trade.adjust_min_max_rates(1.03)
     assert trade.max_rate == 1.05
     assert trade.min_rate == 0.96
 
