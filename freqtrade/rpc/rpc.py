@@ -94,7 +94,7 @@ class RPC(object):
                     order = self._freqtrade.exchange.get_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
                 try:
-                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                    current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
                 current_profit = trade.calc_profit_percent(current_rate)
@@ -125,7 +125,7 @@ class RPC(object):
             for trade in trades:
                 # calculate profit and send message to user
                 try:
-                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                    current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
                 trade_perc = (100 * trade.calc_profit_percent(current_rate))
@@ -213,7 +213,7 @@ class RPC(object):
             else:
                 # Get current rate
                 try:
-                    current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+                    current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
                 profit_percent = trade.calc_profit_percent(rate=current_rate)
@@ -280,9 +280,9 @@ class RPC(object):
             else:
                 try:
                     if coin == 'USDT':
-                        rate = 1.0 / self._freqtrade.exchange.get_ticker('BTC/USDT', False)['bid']
+                        rate = 1.0 / self._freqtrade.get_sell_rate('BTC/USDT', False)
                     else:
-                        rate = self._freqtrade.exchange.get_ticker(coin + '/BTC', False)['bid']
+                        rate = self._freqtrade.get_sell_rate(coin + '/BTC', False)
                 except (TemporaryError, DependencyException):
                     continue
             est_btc: float = rate * balance['total']
@@ -356,7 +356,7 @@ class RPC(object):
                     return
 
             # Get current rate and execute sell
-            current_rate = self._freqtrade.exchange.get_ticker(trade.pair, False)['bid']
+            current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
             self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
         # ---- EOF def _exec_forcesell ----
 

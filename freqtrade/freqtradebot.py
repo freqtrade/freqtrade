@@ -579,6 +579,25 @@ class FreqtradeBot(object):
                         f"(from {order_amount} to {real_amount}) from Trades")
         return real_amount
 
+    def get_sell_rate(self, pair: str, refresh: bool) -> float:
+        """
+        Get sell rate - either using get-ticker bid or first bid based on orderbook
+        The orderbook portion is only used for rpc messaging, which would otherwise fail
+        for BitMex (has no bid/ask in get_ticker)
+        or remain static in any other case since it's not updating.
+        :return: Bid rate
+        """
+        config_ask_strategy = self.config.get('ask_strategy', {})
+        if config_ask_strategy.get('use_order_book', False):
+            logger.debug('Using order book to get sell rate')
+
+            order_book = self.exchange.get_order_book(pair, 1)
+            rate = order_book['asks'][0][0]
+
+        else:
+            rate = self.exchange.get_ticker(pair, refresh)['bid']
+        return rate
+
     def handle_trade(self, trade: Trade) -> bool:
         """
         Sells the current pair if the threshold is reached and updates the trade record.
@@ -615,7 +634,7 @@ class FreqtradeBot(object):
 
         else:
             logger.debug('checking sell')
-            sell_rate = self.exchange.get_ticker(trade.pair)['bid']
+            sell_rate = self.get_sell_rate(trade.pair, True)
             if self.check_sell(trade, sell_rate, buy, sell):
                 return True
 
@@ -858,7 +877,8 @@ class FreqtradeBot(object):
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        current_rate = self.exchange.get_ticker(trade.pair)['bid']
+        # Use cached ticker here - it was updated seconds ago.
+        current_rate = self.get_sell_rate(trade.pair, False)
         profit_percent = trade.calc_profit_percent(profit_rate)
         gain = "profit" if profit_percent > 0 else "loss"
 
