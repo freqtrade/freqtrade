@@ -95,7 +95,7 @@ def check_migrate(engine) -> None:
         stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
         stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
         max_rate = get_column_def(cols, 'max_rate', '0.0')
-        min_rate = get_column_def(cols, 'min_rate', '0.0')
+        min_rate = get_column_def(cols, 'min_rate', 'null')
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
@@ -193,7 +193,7 @@ class Trade(_DECL_BASE):
     # absolute value of the highest reached price
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
-    min_rate = Column(Float, nullable=True, default=0.0)
+    min_rate = Column(Float, nullable=True)
     sell_reason = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
     ticker_interval = Column(Integer, nullable=True)
@@ -204,13 +204,13 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
-    def adjust_high_low(self, current_price):
+    def adjust_high_low(self, current_price: float):
         """
         Adjust the max_rate and min_rate.
         """
-        logger.info("Adjusting high/low")
-        self.max_rate = max(current_price, self.max_rate)
-        self.min_rate = min(current_price, self.min_rate)
+        logger.debug("Adjusting min/max rates")
+        self.max_rate = max(current_price, self.max_rate or 0.0)
+        self.min_rate = min(current_price, self.min_rate or 10000000.0)
 
     def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
         """this adjusts the stop loss to it's most recently observed setting"""
