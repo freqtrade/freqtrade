@@ -2962,6 +2962,31 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order, limit_sell_order
     assert freqtrade.handle_trade(trade) is True
 
 
+def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_order_book=order_book_l2,
+        get_ticker=ticker,
+    )
+    pair = "ETH/BTC"
+
+    # Test regular mode
+    ft = get_patched_freqtradebot(mocker, default_conf)
+    rate = ft.get_sell_rate(pair, True)
+    assert isinstance(rate, float)
+    assert rate == 0.00001098
+
+    # Test orderbook mode
+    default_conf['ask_strategy']['use_order_book'] = True
+    default_conf['ask_strategy']['order_book_min'] = 1
+    default_conf['ask_strategy']['order_book_max'] = 2
+    ft = get_patched_freqtradebot(mocker, default_conf)
+    rate = ft.get_sell_rate(pair, True)
+    assert isinstance(rate, float)
+    assert rate == 0.043949
+
+
 def test_startup_messages(default_conf, mocker):
     default_conf['pairlist'] = {'method': 'VolumePairList',
                                 'config': {'number_assets': 20}
