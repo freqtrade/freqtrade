@@ -254,6 +254,8 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
+        trade.adjust_high_low(current_rate)
+
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss)
