@@ -2488,6 +2488,72 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
+def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
+                                 caplog, mocker, markets) -> None:
+    buy_price = limit_buy_order['price']
+    # buy_price: 0.00001099
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock(return_value={
+            'bid': buy_price,
+            'ask': buy_price,
+            'last': buy_price
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets),
+    )
+
+    default_conf['trailing_stop'] = True
+    default_conf['trailing_stop_positive'] = 0.05
+    default_conf['trailing_stop_positive_offset'] = 0.055
+    default_conf['trailing_only_offset_is_reached'] = True
+
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    trade.update(limit_buy_order)
+    caplog.set_level(logging.DEBUG)
+    # stop-loss not reached
+    assert freqtrade.handle_trade(trade) is False
+    assert trade.stop_loss == 0.0000098910
+
+    # Raise ticker above buy price
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.0000004,
+                     'ask': buy_price + 0.0000004,
+                     'last': buy_price + 0.0000004
+                 }))
+
+    # stop-loss should not be adjusted as offset is not reached yet
+    assert freqtrade.handle_trade(trade) is False
+
+    assert not log_has(f'adjusted stop loss', caplog.record_tuples)
+    assert trade.stop_loss == 0.0000098910
+
+    # price rises above the offset (rises 12% when the offset is 5.5%)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': buy_price + 0.0000014,
+                     'ask': buy_price + 0.0000014,
+                     'last': buy_price + 0.0000014
+                 }))
+
+    assert freqtrade.handle_trade(trade) is False
+    assert log_has(f'using positive stop loss mode: 0.05 with offset 0.055 '
+                   f'since we have profit 0.1218%',
+                   caplog.record_tuples)
+    assert log_has(f'adjusted stop loss', caplog.record_tuples)
+    assert trade.stop_loss == 0.0000117705
+
+
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order,
                                           fee, markets, mocker) -> None:
     patch_RPCManager(mocker)

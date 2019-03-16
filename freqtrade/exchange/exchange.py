@@ -118,6 +118,7 @@ class Exchange(object):
         self.validate_pairs(config['exchange']['pair_whitelist'])
         self.validate_ordertypes(config.get('order_types', {}))
         self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+
         if config.get('ticker_interval'):
             # Check if timeframe is available
             self.validate_timeframes(config['ticker_interval'])

@@ -22,7 +22,7 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_schema(default_conf)
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
@@ -30,7 +30,7 @@ def test_load_config_missing_attributes(default_conf) -> None:
 
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_schema(default_conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
@@ -38,7 +38,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
     with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_schema(default_conf)
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
@@ -573,3 +573,29 @@ def test__create_datadir(mocker, default_conf, caplog) -> None:
     cfg._create_datadir(default_conf, '/foo/bar')
     assert md.call_args[0][0] == "/foo/bar"
     assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
+
+
+def test_validate_tsl(default_conf):
+    default_conf['trailing_stop'] = True
+    default_conf['trailing_stop_positive'] = 0
+    default_conf['trailing_stop_positive_offset'] = 0
+
+    default_conf['trailing_only_offset_is_reached'] = True
+    with pytest.raises(OperationalException,
+                       match=r'The config trailing_only_offset_is_reached needs '
+                       'trailing_stop_positive_offset to be more than 0 in your config.'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_consistency(default_conf)
+
+    default_conf['trailing_stop_positive_offset'] = 0.01
+    default_conf['trailing_stop_positive'] = 0.015
+    with pytest.raises(OperationalException,
+                       match=r'The config trailing_stop_positive_offset needs '
+                       'to be greater than trailing_stop_positive_offset in your config.'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_consistency(default_conf)
+
+    default_conf['trailing_stop_positive'] = 0.01
+    default_conf['trailing_stop_positive_offset'] = 0.015
+    Configuration(Namespace())
+    configuration._validate_config_consistency(default_conf)
