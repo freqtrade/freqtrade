@@ -104,6 +104,8 @@ Return a summary of your profit/loss and performance.
 
 Note that for this to work, `forcebuy_enable` needs to be set to true.
 
+[More details](configuration.md/#understand-forcebuy_enable)
+
 ## /performance
 
 Return the performance of each crypto-currency the bot has sold.
