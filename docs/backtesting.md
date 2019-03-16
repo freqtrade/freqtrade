@@ -245,6 +245,26 @@ On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 profit. Hence, keep in mind that your performance is a mix of your
 strategies, your configuration, and the crypto-currency you have set up.
 
+### Further backtest-result analysis
+
+To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
+You can then load the trades to perform further analysis.
+
+A good way for this is using Jupyter (notebook or lab) - which provides an interactive environment to analyze the data.
+
+Freqtrade provides an easy to load the backtest results, which is `load_backtest_data` - and takes a path to the backtest-results file.
+
+``` python
+from freqtrade.data.btanalysis import load_backtest_data
+df = load_backtest_data("user_data/backtest-result.json")
+
+# Show value-counts per pair
+df.groupby("pair")["sell_reason"].value_counts()
+
+```
+
+This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output unreadable. 
+
 ## Backtesting multiple strategies
 
 To backtest multiple strategies, a list of Strategies can be provided.
