@@ -582,15 +582,20 @@ def test_validate_tsl(default_conf):
 
     default_conf['trailing_only_offset_is_reached'] = True
     with pytest.raises(OperationalException,
-                       match=r'The config trailing_only_offset_is_reached need '
+                       match=r'The config trailing_only_offset_is_reached needs '
                        'trailing_stop_positive_offset to be more than 0 in your config.'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_consistency(default_conf)
 
     default_conf['trailing_stop_positive_offset'] = 0.01
     default_conf['trailing_stop_positive'] = 0.015
     with pytest.raises(OperationalException,
-                       match=r'The config trailing_stop_positive_offset need '
+                       match=r'The config trailing_stop_positive_offset needs '
                        'to be greater than trailing_stop_positive_offset in your config.'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_consistency(default_conf)
+
+    default_conf['trailing_stop_positive'] = 0.01
+    default_conf['trailing_stop_positive_offset'] = 0.015
+    Configuration(Namespace())
+    configuration._validate_config_consistency(default_conf)

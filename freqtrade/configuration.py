@@ -59,7 +59,7 @@ class Configuration(object):
 
         logger.info('Validating configuration ...')
         self._validate_config_schema(config)
-        self._validate_config(config)
+        self._validate_config_consistency(config)
 
         # Set strategy if not specified in config and or if it's non default
         if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
@@ -310,11 +310,11 @@ class Configuration(object):
                 best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
             )
 
-    def _validate_config(self, conf: Dict[str, Any]) -> None:
+    def _validate_config_consistency(self, conf: Dict[str, Any]) -> None:
         """
         Validate the configuration consistency
         :param conf: Config in JSON format
-        :return: Returns None if everything is ok, otherwise throw an exception
+        :return: Returns None if everything is ok, otherwise throw an OperationalException
         """
 
         # validating trailing stoploss
@@ -332,11 +332,11 @@ class Configuration(object):
         if tsl_only_offset:
             if tsl_positive == 0.0:
                 raise OperationalException(
-                    f'The config trailing_only_offset_is_reached need '
+                    f'The config trailing_only_offset_is_reached needs '
                     'trailing_stop_positive_offset to be more than 0 in your config.')
         if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
             raise OperationalException(
-                f'The config trailing_stop_positive_offset need '
+                f'The config trailing_stop_positive_offset needs '
                 'to be greater than trailing_stop_positive_offset in your config.')
 
     def get_config(self) -> Dict[str, Any]:
