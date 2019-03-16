@@ -127,6 +127,12 @@ class Arguments(object):
             type=str,
             metavar='PATH',
         )
+        self.parser.add_argument(
+            '--sd-notify',
+            help='Notify systemd service manager.',
+            action='store_true',
+            dest='sd_notify',
+        )
 
     @staticmethod
     def backtesting_options(parser: argparse.ArgumentParser) -> None:
@@ -140,7 +146,6 @@ class Arguments(object):
             dest='position_stacking',
             default=False
         )
-
         parser.add_argument(
             '--dmmp', '--disable-max-market-positions',
             help='Disable applying `max_open_trades` during backtest '

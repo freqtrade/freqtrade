@@ -38,7 +38,7 @@ optional arguments:
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
                         None).
-
+  --sd-notify           Notify systemd service manager.
 ```
 
 ### How to use a different configuration file?

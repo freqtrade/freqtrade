@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
+import sdnotify
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
@@ -51,6 +52,10 @@ class FreqtradeBot(object):
 
         # Init objects
         self.config = config
+
+        self._sd_notify = sdnotify.SystemdNotifier() if \
+            self.config.get('internals', {}).get('sd_notify', False) else None
+
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
         self.rpc: RPCManager = RPCManager(self)
@@ -76,6 +81,11 @@ class FreqtradeBot(object):
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
         self._init_modules()
 
+        # Tell the systemd that we completed initialization phase
+        if self._sd_notify:
+            logger.debug("sd_notify: READY=1")
+            self._sd_notify.notify("READY=1")
+
     def _init_modules(self) -> None:
         """
         Initializes all modules and updates the config
@@ -99,8 +109,21 @@ class FreqtradeBot(object):
         :return: None
         """
         logger.info('Cleaning up modules ...')
+
         self.rpc.cleanup()
         persistence.cleanup()
+
+    def stopping(self) -> None:
+        # Tell systemd that we are exiting now
+        if self._sd_notify:
+            logger.debug("sd_notify: STOPPING=1")
+            self._sd_notify.notify("STOPPING=1")
+
+    def reconfigure(self) -> None:
+        # Tell systemd that we initiated reconfiguring
+        if self._sd_notify:
+            logger.debug("sd_notify: RELOADING=1")
+            self._sd_notify.notify("RELOADING=1")
 
     def worker(self, old_state: State = None) -> State:
         """
@@ -119,16 +142,27 @@ class FreqtradeBot(object):
             if state == State.RUNNING:
                 self.rpc.startup_messages(self.config, self.pairlists)
 
-        if state == State.STOPPED:
-            time.sleep(1)
-        elif state == State.RUNNING:
-            min_secs = self.config.get('internals', {}).get(
-                'process_throttle_secs',
-                constants.PROCESS_THROTTLE_SECS
-            )
+        throttle_secs = self.config.get('internals', {}).get(
+            'process_throttle_secs',
+            constants.PROCESS_THROTTLE_SECS
+        )
 
-            self._throttle(func=self._process,
-                           min_secs=min_secs)
+        if state == State.STOPPED:
+            # Ping systemd watchdog before sleeping in the stopped state
+            if self._sd_notify:
+                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
+                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
+
+            time.sleep(throttle_secs)
+
+        elif state == State.RUNNING:
+            # Ping systemd watchdog before throttling
+            if self._sd_notify:
+                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
+                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
+
+            self._throttle(func=self._process, min_secs=throttle_secs)
+
         return state
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
