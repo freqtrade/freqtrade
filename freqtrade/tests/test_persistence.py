@@ -510,6 +510,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.pair == "ETC/BTC"
     assert trade.exchange == "binance"
     assert trade.max_rate == 0.0
+    assert trade.min_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
     assert trade.sell_reason is None
