@@ -466,6 +466,8 @@ class Telegram(RPC):
         :param update: message update
         :return: None
         """
+        forcebuy_text = "*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. " \
+                        "Optionally takes a rate at which to buy.` \n"
         message = "*/start:* `Starts the trader`\n" \
                   "*/stop:* `Stops the trader`\n" \
                   "*/status [table]:* `Lists all open trades`\n" \
@@ -473,6 +475,7 @@ class Telegram(RPC):
                   "*/profit:* `Lists cumulative profit from all finished trades`\n" \
                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, " \
                   "regardless of profit`\n" \
+                  f"{forcebuy_text if self._config.get('forcebuy_enable', False) else '' }" \
                   "*/performance:* `Show performance of each finished trade grouped by pair`\n" \
                   "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n" \
                   "*/count:* `Show number of trades running compared to allowed number of trades`" \
