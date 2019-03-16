@@ -62,4 +62,4 @@ The 0.01 would translate to a 1% stop loss, once you hit 1.1% profit.
 
 You should also make sure to have this value (`trailing_stop_positive_offset`) lower than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.
 
-If `"trailing_only_offset_is_reached": true` then the trailing stoploss is only activated once the offset is reached.
+If `"trailing_only_offset_is_reached": true` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured`stoploss`.
