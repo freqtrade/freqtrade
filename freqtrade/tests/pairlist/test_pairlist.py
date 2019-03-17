@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 from freqtrade import OperationalException
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.resolvers import PairListResolver
-from freqtrade.tests.conftest import get_patched_freqtradebot, log_has
+from freqtrade.tests.conftest import get_patched_freqtradebot
 import pytest
 
 # whitelist, blacklist
