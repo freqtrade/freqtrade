@@ -148,8 +148,9 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = {"0": data.roi}
-    default_conf['ticker_interval'] = tests_ticker_interval
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
+    default_conf["ticker_interval"] = tests_ticker_interval
+    default_conf["trailing_stop"] = data.trailing_stop
+    mocker.patch("freqtrade.exchange.Exchange.get_fee", MagicMock(return_value=0.0))
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
@@ -157,7 +158,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     backtesting.advise_sell = lambda a, m: frame
     caplog.set_level(logging.DEBUG)
 
-    pair = 'UNITTEST/BTC'
+    pair = "UNITTEST/BTC"
     # Dummy data as we mock the analyze functions
     data_processed = {pair: DataFrame()}
     min_date, max_date = get_timeframe({pair: frame})
