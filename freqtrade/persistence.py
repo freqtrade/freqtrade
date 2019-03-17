@@ -213,7 +213,13 @@ class Trade(_DECL_BASE):
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
     def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
-        """this adjusts the stop loss to it's most recently observed setting"""
+        """
+        This adjusts the stop loss to it's most recently observed setting
+        :param current_price: Current rate the asset is traded
+        :param stoploss: Stoploss as factor (sample -0.05 -> -5% below current price).
+        :param initial: Called to initiate stop_loss.
+            Skips everything if self.stop_loss is already set.
+        """
 
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
