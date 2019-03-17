@@ -65,35 +65,7 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 python3 ./freqtrade/main.py backtesting --export trades
 ```
 
-The exported trades can be read using the following code for manual analysis, or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
-
-``` python
-import json
-from pathlib import Path
-import pandas as pd
-
-filename=Path('user_data/backtest_data/backtest-result.json')
-
-with filename.open() as file:
-        data = json.load(file)
-
-columns = ["pair", "profit", "opents", "closets", "index", "duration",
-           "open_rate", "close_rate", "open_at_end", "sell_reason"]
-df = pd.DataFrame(data, columns=columns)
-
-df['opents'] = pd.to_datetime(df['opents'],
-                              unit='s',
-                              utc=True,
-                              infer_datetime_format=True
-                             )
-df['closets'] = pd.to_datetime(df['closets'],
-                               unit='s',
-                               utc=True,
-                               infer_datetime_format=True
-                              )
-```
-
-If you have some ideas for interesting / helpful backtest data analysis, feel free to submit a PR so the community can benefit from it.
+The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
 
 #### Exporting trades to file specifying a custom filename
 
@@ -263,7 +235,9 @@ df.groupby("pair")["sell_reason"].value_counts()
 
 ```
 
-This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output unreadable. 
+This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output unreadable.
+
+If you have some ideas for interesting / helpful backtest data analysis ideas, please submit a PR so the community can benefit from it.
 
 ## Backtesting multiple strategies
 
