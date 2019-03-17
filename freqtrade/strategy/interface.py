@@ -247,6 +247,9 @@ class IStrategy(ABC):
         """
         This function evaluate if on the condition required to trigger a sell has been reached
         if the threshold is reached and updates the trade record.
+        :param low: Only used during backtesting to simulate stoploss
+        :param high: Only used during backtesting, to simulate ROI
+        :param force_stoploss: Externally provided stoploss
         :return: True if trade should be sold, False otherwise
         """
 
@@ -263,7 +266,7 @@ class IStrategy(ABC):
         if stoplossflag.sell_flag:
             return stoplossflag
 
-        # Set current rate to low for backtesting sell
+        # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_percent(current_rate)
         experimental = self.config.get('experimental', {})
