@@ -257,11 +257,11 @@ class IStrategy(ABC):
         current_rate = low or rate
         current_profit = trade.calc_profit_percent(current_rate)
 
-        trade.adjust_min_max_rates(current_rate)
+        trade.adjust_min_max_rates(high or current_rate)
 
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
-                                              force_stoploss=force_stoploss)
+                                              force_stoploss=force_stoploss, high=high)
 
         if stoplossflag.sell_flag:
             return stoplossflag
@@ -291,7 +291,7 @@ class IStrategy(ABC):
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float, force_stoploss: float) -> SellCheckTuple:
+                          current_profit: float, force_stoploss: float, high) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -322,6 +322,7 @@ class IStrategy(ABC):
             return SellCheckTuple(sell_flag=True, sell_type=selltype)
 
         # update the stop loss afterwards, after all by definition it's supposed to be hanging
+        # TODO: Maybe this needs to be moved to the start of this function. check #1575 for details
         if trailing_stop:
 
             # check if we have a special stop loss for positive condition
@@ -342,7 +343,7 @@ class IStrategy(ABC):
             # we update trailing stoploss only if offset is reached.
             tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
             if not (tsl_only_offset and current_profit < sl_offset):
-                trade.adjust_stop_loss(current_rate, stop_loss_value)
+                trade.adjust_stop_loss(high or current_rate, stop_loss_value)
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
