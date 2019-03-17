@@ -2984,7 +2984,7 @@ def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
     ft = get_patched_freqtradebot(mocker, default_conf)
     rate = ft.get_sell_rate(pair, True)
     assert isinstance(rate, float)
-    assert rate == 0.043949
+    assert rate == 0.043936
 
 
 def test_startup_messages(default_conf, mocker):

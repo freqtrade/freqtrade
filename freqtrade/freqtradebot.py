@@ -592,7 +592,7 @@ class FreqtradeBot(object):
             logger.debug('Using order book to get sell rate')
 
             order_book = self.exchange.get_order_book(pair, 1)
-            rate = order_book['asks'][0][0]
+            rate = order_book['bids'][0][0]
 
         else:
             rate = self.exchange.get_ticker(pair, refresh)['bid']
