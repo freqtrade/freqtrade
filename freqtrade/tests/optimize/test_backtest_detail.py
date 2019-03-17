@@ -130,6 +130,22 @@ tc7 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
 )
 
+
+# Test 8 - trailing_stop should raise so candle 3 causes a stoploss.
+# Candle Data for test 8
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC8: Trailing stoploss - stoploss should be adjusted to 94.5 after candle 1
+tc8 = BTContainer(data=[
+    # D  O    H    L    C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
+    [2, 5000, 5250, 4750, 4850, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=-0.055, trailing_stop=True,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
 TESTS = [
     tc1,
     tc2,
@@ -138,6 +154,7 @@ TESTS = [
     tc5,
     tc6,
     tc7,
+    tc8,
 ]
 
 
