@@ -71,13 +71,15 @@ class IPairList(ABC):
             # pair is not in the generated dynamic market, or in the blacklist ... ignore it
             if (pair in self.blacklist or pair not in markets
                     or not pair.endswith(self._config['stake_currency'])):
+                logger.warning(f"Pair {pair} is not compatible with exchange "
+                               f"{self._freqtrade.exchange.name} or contained in "
+                               f"your blacklist. Removing it from whitelist..")
                 continue
             # Check if market is active
             market = markets[pair]
             if not market['active']:
                 logger.info(
-                    'Ignoring %s from whitelist. Market is not active.',
-                    pair
+                    f"Ignoring {pair} from whitelist. Market is not active."
                 )
                 continue
             sanitized_whitelist.add(pair)
