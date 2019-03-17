@@ -14,10 +14,10 @@ from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataf
 from freqtrade.tests.conftest import patch_exchange
 
 
-# Test 0 Minus 8% Close
+# Test 1 Minus 8% Close
 # Test with Stop-loss at 1%
 # TC1: Stop-Loss Triggered 1% loss
-tc0 = BTContainer(data=[
+tc1 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -30,10 +30,10 @@ tc0 = BTContainer(data=[
 )
 
 
-# Test 1 Minus 4% Low, minus 1% close
+# Test 2 Minus 4% Low, minus 1% close
 # Test with Stop-Loss at 3%
 # TC2: Stop-Loss Triggered 3% Loss
-tc1 = BTContainer(data=[
+tc2 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -53,7 +53,7 @@ tc1 = BTContainer(data=[
 # Test with Stop-Loss at 2%
 # TC3: Trade-A: Stop-Loss Triggered 2% Loss
 #          Trade-B: Stop-Loss Triggered 2% Loss
-tc2 = BTContainer(data=[
+tc3 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -71,7 +71,7 @@ tc2 = BTContainer(data=[
 # Candle Data for test 3 – Candle drops 3% Closed 15% up
 # Test with Stop-loss at 2% ROI 6%
 # TC4: Stop-Loss Triggered 2% Loss
-tc3 = BTContainer(data=[
+tc4 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -83,10 +83,10 @@ tc3 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
-# Test 4 / Drops 0.5% Closes +20%
+# Test 5 / Drops 0.5% Closes +20%
 # Set stop-loss at 1% ROI 3%
 # TC5: ROI triggers 3% Gain
-tc4 = BTContainer(data=[
+tc5 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4980, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4980, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -102,7 +102,7 @@ tc4 = BTContainer(data=[
 # Candle Data for test 6
 # Set stop-loss at 2% ROI at 5%
 # TC6: Stop-Loss triggers 2% Loss
-tc5 = BTContainer(data=[
+tc6 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -118,7 +118,7 @@ tc5 = BTContainer(data=[
 # Candle Data for test 7
 # Set stop-loss at 2% ROI at 3%
 # TC7: ROI Triggers 3% Gain
-tc6 = BTContainer(data=[
+tc7 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
@@ -131,13 +131,13 @@ tc6 = BTContainer(data=[
 )
 
 TESTS = [
-    tc0,
     tc1,
     tc2,
     tc3,
     tc4,
     tc5,
     tc6,
+    tc7,
 ]
 
 
