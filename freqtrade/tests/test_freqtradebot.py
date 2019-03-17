@@ -2259,9 +2259,8 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, fee, market
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    freqtrade.strategy.stop_loss_reached = \
-        lambda current_rate, trade, current_time, force_stoploss, current_profit: SellCheckTuple(
-            sell_flag=False, sell_type=SellType.NONE)
+    freqtrade.strategy.stop_loss_reached = MagicMock(return_value=SellCheckTuple(
+            sell_flag=False, sell_type=SellType.NONE))
     freqtrade.create_trade()
 
     trade = Trade.query.first()
