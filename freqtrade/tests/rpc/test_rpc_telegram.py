@@ -74,7 +74,7 @@ def test_init(default_conf, mocker, caplog) -> None:
     message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], " \
                   "['performance'], ['daily'], ['count'], ['reload_conf'], " \
-                  "['whitelist'], ['help'], ['version']]"
+                  "['stopbuy'], ['whitelist'], ['help'], ['version']]"
 
     assert log_has(message_str, caplog.record_tuples)
 
@@ -660,6 +660,26 @@ def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
     assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
     assert 'already stopped' in msg_mock.call_args_list[0][0][0]
+
+
+def test_stopbuy_handle(default_conf, update, mocker) -> None:
+    patch_coinmarketcap(mocker)
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+
+    assert freqtradebot.config['max_open_trades'] != 0
+    telegram._stopbuy(bot=MagicMock(), update=update)
+    assert freqtradebot.config['max_open_trades'] == 0
+    assert msg_mock.call_count == 1
+    assert 'Setting max_open_trades to 0. Run /reload_conf to reset.' \
+        in msg_mock.call_args_list[0][0][0]
 
 
 def test_reload_conf_handle(default_conf, update, mocker) -> None:
