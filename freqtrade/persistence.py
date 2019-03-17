@@ -209,8 +209,8 @@ class Trade(_DECL_BASE):
         Adjust the max_rate and min_rate.
         """
         logger.debug("Adjusting min/max rates")
-        self.max_rate = max(current_price, self.max_rate or 0.0)
-        self.min_rate = min(current_price, self.min_rate or 10000000.0)
+        self.max_rate = max(current_price, self.max_rate or self.open_rate)
+        self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
     def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
         """this adjusts the stop loss to it's most recently observed setting"""
