@@ -328,6 +328,16 @@ class RPC(object):
         self._freqtrade.state = State.RELOAD_CONF
         return {'status': 'reloading config ...'}
 
+    def _rpc_stopbuy(self) -> Dict[str, str]:
+        """
+        Handler to stop buying, but handle open trades gracefully.
+        """
+        if self._freqtrade.state == State.RUNNING:
+            # Set 'max_open_trades' to 0
+            self._freqtrade.config['max_open_trades'] = 0
+
+        return {'status': 'Setting max_open_trades to 0. Run /reload_conf to reset.'}
+
     def _rpc_forcesell(self, trade_id) -> None:
         """
         Handler for forcesell <id>.

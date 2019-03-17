@@ -91,6 +91,7 @@ class Telegram(RPC):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('reload_conf', self._reload_conf),
+            CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
@@ -363,6 +364,18 @@ class Telegram(RPC):
         self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
 
     @authorized_only
+    def _stopbuy(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /stop_buy.
+        Sets max_open_trades to 0 and gracefully sells all open trades
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        msg = self._rpc_stopbuy()
+        self._send_msg('Status: `{status}`'.format(**msg), bot=bot)
+
+    @authorized_only
     def _forcesell(self, bot: Bot, update: Update) -> None:
         """
         Handler for /forcesell <id>.
@@ -481,6 +494,7 @@ class Telegram(RPC):
                   "*/count:* `Show number of trades running compared to allowed number of trades`" \
                   "\n" \
                   "*/balance:* `Show account balance per currency`\n" \
+                  "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/help:* `This help message`\n" \
