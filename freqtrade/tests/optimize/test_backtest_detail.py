@@ -49,7 +49,6 @@ tc2 = BTContainer(data=[
 # Test 3 Candle drops 4%, Recovers 1%.
 #               Entry Criteria Met
 # 	            Candle drops 20%
-# Candle Data for test 3
 # Test with Stop-Loss at 2%
 # TC3: Trade-A: Stop-Loss Triggered 2% Loss
 #          Trade-B: Stop-Loss Triggered 2% Loss
@@ -99,7 +98,6 @@ tc5 = BTContainer(data=[
 )
 
 # Test 6 / Drops 3% / Recovers 6% Positive / Closes 1% positve
-# Candle Data for test 6
 # Set stop-loss at 2% ROI at 5%
 # TC6: Stop-Loss triggers 2% Loss
 tc6 = BTContainer(data=[
@@ -115,7 +113,6 @@ tc6 = BTContainer(data=[
 )
 
 # Test 7 - 6% Positive / 1% Negative / Close 1% Positve
-# Candle Data for test 7
 # Set stop-loss at 2% ROI at 3%
 # TC7: ROI Triggers 3% Gain
 tc7 = BTContainer(data=[
@@ -132,17 +129,32 @@ tc7 = BTContainer(data=[
 
 
 # Test 8 - trailing_stop should raise so candle 3 causes a stoploss.
-# Candle Data for test 8
 # Set stop-loss at 10%, ROI at 10% (should not apply)
-# TC8: Trailing stoploss - stoploss should be adjusted to 94.5 after candle 1
+# TC8: Trailing stoploss - stoploss should be adjusted candle 2
 tc8 = BTContainer(data=[
-    # D  O    H    L    C    V    B  S
+    # D   O     H     L    C     V    B  S
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
     [2, 5000, 5250, 4750, 4850, 6172, 0, 0],
     [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi=0.10, profit_perc=-0.055, trailing_stop=True,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
+
+# Test 9 - trailing_stop should raise - high and low in same candle.
+# Candle Data for test 9
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC9: Trailing stoploss - stoploss should be adjusted candle 2
+tc9 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
+    [2, 5000, 5050, 4950, 5000, 6172, 0, 0],
+    [3, 5000, 5200, 4550, 4850, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=-0.064, trailing_stop=True,
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
@@ -155,6 +167,7 @@ TESTS = [
     tc6,
     tc7,
     tc8,
+    tc9,
 ]
 
 
