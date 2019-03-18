@@ -678,7 +678,7 @@ def test_stopbuy_handle(default_conf, update, mocker) -> None:
     telegram._stopbuy(bot=MagicMock(), update=update)
     assert freqtradebot.config['max_open_trades'] == 0
     assert msg_mock.call_count == 1
-    assert 'Setting max_open_trades to 0. Run /reload_conf to reset.' \
+    assert 'No more buy will occur from now. Run /reload_conf to reset.' \
         in msg_mock.call_args_list[0][0][0]
 
 

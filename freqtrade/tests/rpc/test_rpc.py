@@ -422,7 +422,7 @@ def test_rpc_stopbuy(mocker, default_conf) -> None:
 
     assert freqtradebot.config['max_open_trades'] != 0
     result = rpc._rpc_stopbuy()
-    assert {'status': 'Setting max_open_trades to 0. Run /reload_conf to reset.'} == result
+    assert {'status': 'No more buy will occur from now. Run /reload_conf to reset.'} == result
     assert freqtradebot.config['max_open_trades'] == 0
 
 
