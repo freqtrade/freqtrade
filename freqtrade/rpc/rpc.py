@@ -336,7 +336,7 @@ class RPC(object):
             # Set 'max_open_trades' to 0
             self._freqtrade.config['max_open_trades'] = 0
 
-        return {'status': 'Setting max_open_trades to 0. Run /reload_conf to reset.'}
+        return {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
 
     def _rpc_forcesell(self, trade_id) -> None:
         """
