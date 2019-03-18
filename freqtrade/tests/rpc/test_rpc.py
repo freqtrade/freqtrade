@@ -406,6 +406,26 @@ def test_rpc_stop(mocker, default_conf) -> None:
     assert freqtradebot.state == State.STOPPED
 
 
+def test_rpc_stopbuy(mocker, default_conf) -> None:
+    patch_coinmarketcap(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_ticker=MagicMock()
+    )
+
+    freqtradebot = FreqtradeBot(default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+    rpc = RPC(freqtradebot)
+    freqtradebot.state = State.RUNNING
+
+    assert freqtradebot.config['max_open_trades'] != 0
+    result = rpc._rpc_stopbuy()
+    assert {'status': 'No more buy will occur from now. Run /reload_conf to reset.'} == result
+    assert freqtradebot.config['max_open_trades'] == 0
+
+
 def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     patch_coinmarketcap(mocker)
     patch_exchange(mocker)

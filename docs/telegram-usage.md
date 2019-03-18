@@ -16,6 +16,7 @@ official commands. You can ask at any moment for help with `/help`.
 |----------|---------|-------------|
 | `/start` | | Starts the trader
 | `/stop` | | Stops the trader
+| `/stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `/reload_conf` | | Reloads the configuration file
 | `/status` | | Lists all open trades
 | `/status table` | | List all open trades in a table format
@@ -43,7 +44,21 @@ Below, example of Telegram message you will receive for each command.
 > `Stopping trader ...`
 > **Status:** `stopped`
 
-## /status
+### /stopbuy
+
+> **status:** `Setting max_open_trades to 0. Run /reload_conf to reset.`
+
+Prevents the bot from opening new trades by temporarily setting "max_open_trades" to 0. Open trades will be handled via their regular rules (ROI / Sell-signal, stoploss, ...).
+
+After this, give the bot time to close off open trades (can be checked via `/status table`).
+Once all positions are sold, run `/stop` to completely stop the bot.
+
+`/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command. 
+
+!!! warning:
+The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
+
+### /status
 
 For each open trade, the bot will send you the following message.
 
@@ -58,7 +73,7 @@ For each open trade, the bot will send you the following message.
 > **Current Profit:** `12.95%`
 > **Open Order:** `None`
 
-## /status table
+### /status table
 
 Return the status of all open trades in a table format.
 ```
@@ -68,7 +83,7 @@ Return the status of all open trades in a table format.
  123  CVC/BTC   1 h      12.95%
 ```
 
-## /count
+### /count
 
 Return the number of trades used and available.
 ```
@@ -77,7 +92,7 @@ current    max
      2     10
 ```
 
-## /profit
+### /profit
 
 Return a summary of your profit/loss and performance.
 
@@ -94,11 +109,11 @@ Return a summary of your profit/loss and performance.
 > **Avg. Duration:** `2:33:45`
 > **Best Performing:** `PAY/BTC: 50.23%`
 
-## /forcesell <trade_id>
+### /forcesell <trade_id>
 
 > **BITTREX:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
 
-## /forcebuy <pair>
+### /forcebuy <pair>
 
 > **BITTREX**: Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
 
@@ -106,7 +121,7 @@ Note that for this to work, `forcebuy_enable` needs to be set to true.
 
 [More details](configuration.md/#understand-forcebuy_enable)
 
-## /performance
+### /performance
 
 Return the performance of each crypto-currency the bot has sold.
 > Performance:
@@ -117,7 +132,7 @@ Return the performance of each crypto-currency the bot has sold.
 > 5. `STORJ/BTC 27.24%`
 > ...
 
-## /balance
+### /balance
 
 Return the balance of all crypto-currency your have on the exchange.
 
@@ -131,7 +146,7 @@ Return the balance of all crypto-currency your have on the exchange.
 > **Balance:** 86.64180098
 > **Pending:** 0.0
 
-## /daily <n>
+### /daily <n>
 
 Per default `/daily` will return the 7 last days.
 The example below if for `/daily 3`:
@@ -145,6 +160,6 @@ Day         Profit BTC      Profit USD
 2018-01-01  0.00269130 BTC  34.986 USD
 ```
 
-## /version
+### /version
 
 > **Version:** `0.14.3`
