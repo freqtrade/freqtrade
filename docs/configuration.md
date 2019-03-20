@@ -20,6 +20,7 @@ Mandatory Parameters are marked as **Required**.
 | `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
 | `dry_run` | true | **Required.** Define if the bot must be in Dry-run or production mode.
+| `dry_run_wallet` | 999.9 | Overrides the default amount of 999.9 stake currency units in the wallet used by the bot running in the Dry Run mode if you need it for any reason.
 | `process_only_new_candles` | false | If set to true indicators are processed only once a new candle arrives. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy).
 | `minimal_roi` | See below | Set the threshold in percent the bot will use to sell a trade. More information below. [Strategy Override](#parameters-in-the-strategy).
 | `stoploss` | -0.10 | Value of the stoploss in percent used by the bot. More information below. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).
