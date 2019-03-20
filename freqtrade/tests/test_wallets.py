@@ -23,13 +23,13 @@ def test_sync_wallet_at_boot(mocker, default_conf):
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    assert len(freqtrade.wallets.wallets) == 2
-    assert freqtrade.wallets.wallets['BNT'].free == 1.0
-    assert freqtrade.wallets.wallets['BNT'].used == 2.0
-    assert freqtrade.wallets.wallets['BNT'].total == 3.0
-    assert freqtrade.wallets.wallets['GAS'].free == 0.260739
-    assert freqtrade.wallets.wallets['GAS'].used == 0.0
-    assert freqtrade.wallets.wallets['GAS'].total == 0.260739
+    assert len(freqtrade.wallets._wallets) == 2
+    assert freqtrade.wallets._wallets['BNT'].free == 1.0
+    assert freqtrade.wallets._wallets['BNT'].used == 2.0
+    assert freqtrade.wallets._wallets['BNT'].total == 3.0
+    assert freqtrade.wallets._wallets['GAS'].free == 0.260739
+    assert freqtrade.wallets._wallets['GAS'].used == 0.0
+    assert freqtrade.wallets._wallets['GAS'].total == 0.260739
     assert freqtrade.wallets.get_free('BNT') == 1.0
 
     mocker.patch.multiple(
@@ -50,13 +50,13 @@ def test_sync_wallet_at_boot(mocker, default_conf):
 
     freqtrade.wallets.update()
 
-    assert len(freqtrade.wallets.wallets) == 2
-    assert freqtrade.wallets.wallets['BNT'].free == 1.2
-    assert freqtrade.wallets.wallets['BNT'].used == 1.9
-    assert freqtrade.wallets.wallets['BNT'].total == 3.5
-    assert freqtrade.wallets.wallets['GAS'].free == 0.270739
-    assert freqtrade.wallets.wallets['GAS'].used == 0.1
-    assert freqtrade.wallets.wallets['GAS'].total == 0.260439
+    assert len(freqtrade.wallets._wallets) == 2
+    assert freqtrade.wallets._wallets['BNT'].free == 1.2
+    assert freqtrade.wallets._wallets['BNT'].used == 1.9
+    assert freqtrade.wallets._wallets['BNT'].total == 3.5
+    assert freqtrade.wallets._wallets['GAS'].free == 0.270739
+    assert freqtrade.wallets._wallets['GAS'].used == 0.1
+    assert freqtrade.wallets._wallets['GAS'].total == 0.260439
     assert freqtrade.wallets.get_free('GAS') == 0.270739
     assert freqtrade.wallets.get_used('GAS') == 0.1
     assert freqtrade.wallets.get_total('GAS') == 0.260439
@@ -81,11 +81,11 @@ def test_sync_wallet_missing_data(mocker, default_conf):
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    assert len(freqtrade.wallets.wallets) == 2
-    assert freqtrade.wallets.wallets['BNT'].free == 1.0
-    assert freqtrade.wallets.wallets['BNT'].used == 2.0
-    assert freqtrade.wallets.wallets['BNT'].total == 3.0
-    assert freqtrade.wallets.wallets['GAS'].free == 0.260739
-    assert freqtrade.wallets.wallets['GAS'].used is None
-    assert freqtrade.wallets.wallets['GAS'].total == 0.260739
+    assert len(freqtrade.wallets._wallets) == 2
+    assert freqtrade.wallets._wallets['BNT'].free == 1.0
+    assert freqtrade.wallets._wallets['BNT'].used == 2.0
+    assert freqtrade.wallets._wallets['BNT'].total == 3.0
+    assert freqtrade.wallets._wallets['GAS'].free == 0.260739
+    assert freqtrade.wallets._wallets['GAS'].used is None
+    assert freqtrade.wallets._wallets['GAS'].total == 0.260739
     assert freqtrade.wallets.get_free('GAS') == 0.260739
