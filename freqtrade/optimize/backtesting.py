@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from pandas import DataFrame
+from pandas import DataFrame, Timestamp
 from tabulate import tabulate
 
 from freqtrade import optimize
@@ -325,18 +325,28 @@ class Backtesting(object):
             pairs.append(pair)
 
         lock_pair_until: Dict = {}
+        indexes: Dict = {}
         tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
-        index = 0
+
         # Loop timerange and test per pair
         while tmp < end_date:
             # print(f"time: {tmp}")
+
             for i, pair in enumerate(ticker):
+                if pair not in indexes:
+                    indexes[pair] = 0
+
                 try:
-                    row = ticker[pair][index]
+                    row = ticker[pair][indexes[pair]]
                 except IndexError:
                     # missing Data for one pair ...
                     # Warnings for this are shown by `validate_backtest_data`
                     continue
+
+                if row.date > Timestamp(tmp.datetime):
+                    continue
+
+                indexes[pair] += 1
 
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
@@ -351,7 +361,7 @@ class Backtesting(object):
 
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][index + 1:],
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
                                                          trade_count_lock, args)
 
                 if trade_entry:
@@ -359,11 +369,9 @@ class Backtesting(object):
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
-                    # This happens only if the buy-signal was with the last candle
-                    lock_pair_until[pair] = end_date
+                    lock_pair_until[pair] = Timestamp(end_date.datetime)
 
             tmp += timedelta(minutes=self.ticker_interval_mins)
-            index += 1
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
