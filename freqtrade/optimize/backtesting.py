@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from pandas import DataFrame, Timestamp
+from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade import optimize
@@ -343,7 +343,7 @@ class Backtesting(object):
                     # Warnings for this are shown by `validate_backtest_data`
                     continue
 
-                if row.date > Timestamp(tmp.datetime):
+                if row.date > tmp.datetime:
                     continue
 
                 indexes[pair] += 1
@@ -369,7 +369,7 @@ class Backtesting(object):
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
-                    lock_pair_until[pair] = Timestamp(end_date.datetime)
+                    lock_pair_until[pair] = end_date.datetime
 
             tmp += timedelta(minutes=self.ticker_interval_mins)
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
