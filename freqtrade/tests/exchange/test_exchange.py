@@ -305,19 +305,6 @@ def test_validate_pairs_not_available(default_conf, mocker):
         Exchange(default_conf)
 
 
-def test_validate_pairs_not_compatible(default_conf, mocker):
-    api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
-        'ETH/BTC': '', 'TKN/BTC': '', 'TRST/BTC': '', 'SWT/BTC': '', 'BCC/BTC': ''
-    })
-    default_conf['stake_currency'] = 'ETH'
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
-    with pytest.raises(OperationalException, match=r'not compatible'):
-        Exchange(default_conf)
-
-
 def test_validate_pairs_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
@@ -335,22 +322,6 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
     Exchange(default_conf)
     assert log_has('Unable to validate pairs (assuming they are correct).',
                    caplog.record_tuples)
-
-
-def test_validate_pairs_stake_exception(default_conf, mocker, caplog):
-    caplog.set_level(logging.INFO)
-    default_conf['stake_currency'] = 'ETH'
-    api_mock = MagicMock()
-    api_mock.name = MagicMock(return_value='binance')
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
-
-    with pytest.raises(
-        OperationalException,
-        match=r'Pair ETH/BTC not compatible with stake_currency: ETH'
-    ):
-        Exchange(default_conf)
 
 
 def test_validate_timeframes(default_conf, mocker):

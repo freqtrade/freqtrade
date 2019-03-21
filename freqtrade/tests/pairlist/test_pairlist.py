@@ -107,7 +107,16 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     assert set(whitelist) == set(pairslist)
 
 
-def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) -> None:
+@pytest.mark.parametrize("precision_filter,base_currency,key,whitelist_result", [
+    (False, "BTC", "quoteVolume", ['ETH/BTC', 'TKN/BTC', 'BTT/BTC']),
+    (False, "BTC", "bidVolume", ['BTT/BTC', 'TKN/BTC', 'ETH/BTC']),
+    (False, "USDT", "quoteVolume", ['ETH/USDT', 'LTC/USDT']),
+    (False, "ETH", "quoteVolume", []),  # this replaces tests that were removed from test_exchange
+    (True, "BTC", "quoteVolume", ["ETH/BTC", "TKN/BTC"]),
+    (True, "BTC", "bidVolume", ["TKN/BTC", "ETH/BTC"])
+])
+def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers, base_currency, key,
+                                      whitelist_result, precision_filter) -> None:
     whitelist_conf['pairlist']['method'] = 'VolumePairList'
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -115,32 +124,10 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, markets, tickers) 
     mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.symbol_price_prec', lambda s, p, r: round(r, 8))
 
-    # Test to retrieved BTC sorted on quoteVolume (default)
-    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='quoteVolume')
-    assert whitelist == ['ETH/BTC', 'TKN/BTC', 'BTT/BTC']
-
-    # Test to retrieve BTC sorted on bidVolume
-    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='bidVolume')
-    assert whitelist == ['BTT/BTC', 'TKN/BTC', 'ETH/BTC']
-
-    # Test with USDT sorted on quoteVolume (default)
-    freqtrade.config['stake_currency'] = 'USDT'  # this has to be set, otherwise markets are removed
-    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='USDT', key='quoteVolume')
-    assert whitelist == ['ETH/USDT', 'LTC/USDT']
-
-    # Test with ETH (our fixture does not have ETH, so result should be empty)
-    freqtrade.config['stake_currency'] = 'ETH'
-    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='ETH', key='quoteVolume')
-    assert whitelist == []
-
-    freqtrade.pairlists._precision_filter = True
-    freqtrade.config['stake_currency'] = 'BTC'
-    # Retest First 2 test-cases to make sure BTT is not in it (too low priced)
-    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='quoteVolume')
-    assert whitelist == ['ETH/BTC', 'TKN/BTC']
-
-    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency='BTC', key='bidVolume')
-    assert whitelist == ['TKN/BTC', 'ETH/BTC']
+    freqtrade.pairlists._precision_filter = precision_filter
+    freqtrade.config['stake_currency'] = base_currency
+    whitelist = freqtrade.pairlists._gen_pair_whitelist(base_currency=base_currency, key=key)
+    assert whitelist == whitelist_result
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
@@ -166,17 +153,24 @@ def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     assert isinstance(freqtrade.pairlists.whitelist, list)
     assert isinstance(freqtrade.pairlists.blacklist, list)
 
-    whitelist = ['ETH/BTC', 'TKN/BTC']
+
+@pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
+@pytest.mark.parametrize("whitelist,log_message", [
+    (['ETH/BTC', 'TKN/BTC'], ""),
+    (['ETH/BTC', 'TKN/BTC', 'TRX/ETH'], "is not compatible with exchange"),  # TRX/ETH wrong stake
+    (['ETH/BTC', 'TKN/BTC', 'BCH/BTC'], "is not compatible with exchange"),  # BCH/BTC not available
+    (['ETH/BTC', 'TKN/BTC', 'BLK/BTC'], "is not compatible with exchange"),  # BLK/BTC in blacklist
+    (['ETH/BTC', 'TKN/BTC', 'LTC/BTC'], "Market is not active")  # LTC/BTC is inactive
+])
+def test_validate_whitelist(mocker, whitelist_conf, markets, pairlist, whitelist, caplog,
+                            log_message):
+    whitelist_conf['pairlist']['method'] = pairlist
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    caplog.clear()
+
     new_whitelist = freqtrade.pairlists._validate_whitelist(whitelist)
 
-    assert set(whitelist) == set(new_whitelist)
-
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'TRX/ETH']
-    new_whitelist = freqtrade.pairlists._validate_whitelist(whitelist)
-    # TRX/ETH was removed
-    assert set(['ETH/BTC', 'TKN/BTC']) == set(new_whitelist)
-
-    whitelist = ['ETH/BTC', 'TKN/BTC', 'BLK/BTC']
-    new_whitelist = freqtrade.pairlists._validate_whitelist(whitelist)
-    # BLK/BTC is in blacklist ...
-    assert set(['ETH/BTC', 'TKN/BTC']) == set(new_whitelist)
+    assert set(new_whitelist) == set(['ETH/BTC', 'TKN/BTC'])
+    assert log_message in caplog.text
