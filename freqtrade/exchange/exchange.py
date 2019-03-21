@@ -21,13 +21,6 @@ logger = logging.getLogger(__name__)
 API_RETRY_COUNT = 4
 
 
-# Urls to exchange markets, insert quote and base with .format()
-_EXCHANGE_URLS = {
-    ccxt.bittrex.__name__: '/Market/Index?MarketName={quote}-{base}',
-    ccxt.binance.__name__: '/tradeDetail.html?symbol={base}_{quote}',
-}
-
-
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
