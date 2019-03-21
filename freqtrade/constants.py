@@ -20,6 +20,7 @@ REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
+DRY_RUN_WALLET = 999.9
 
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
@@ -60,6 +61,7 @@ CONF_SCHEMA = {
         },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
+        'dry_run_wallet': {'type': 'number'},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
