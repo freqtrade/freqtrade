@@ -78,9 +78,7 @@ class IPairList(ABC):
             # Check if market is active
             market = markets[pair]
             if not market['active']:
-                logger.info(
-                    f"Ignoring {pair} from whitelist. Market is not active."
-                )
+                logger.info(f"Ignoring {pair} from whitelist. Market is not active.")
                 continue
             sanitized_whitelist.add(pair)
 
