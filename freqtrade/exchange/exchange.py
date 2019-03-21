@@ -13,7 +13,7 @@ import ccxt
 import ccxt.async_support as ccxt_async
 from pandas import DataFrame
 
-from freqtrade import constants, OperationalException, DependencyException, TemporaryError
+from freqtrade import constants, DependencyException, OperationalException, TemporaryError
 from freqtrade.data.converter import parse_ticker_dataframe
 
 logger = logging.getLogger(__name__)
@@ -269,9 +269,8 @@ class Exchange(object):
         Checks if order time in force configured in strategy/config are supported
         """
         if any(v != 'gtc' for k, v in order_time_in_force.items()):
-            if self.name != 'Binance':
-                raise OperationalException(
-                    f'Time in force policies are not supporetd for  {self.name} yet.')
+            raise OperationalException(
+                f'Time in force policies are not supporetd for  {self.name} yet.')
 
     def exchange_has(self, endpoint: str) -> bool:
         """

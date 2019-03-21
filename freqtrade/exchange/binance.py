@@ -24,3 +24,9 @@ class Binance(Exchange):
         limit = min(list(filter(lambda x: limit <= x, limit_range)))
 
         return super().get_order_book(pair, limit)
+
+    def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
+        """
+        Checks if order time in force configured in strategy/config are supported
+        """
+        pass
