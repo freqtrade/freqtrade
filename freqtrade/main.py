@@ -13,7 +13,6 @@ import sdnotify
 from freqtrade import (constants, OperationalException, __version__)
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
-from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
 from freqtrade.rpc import RPCMessageType
 
@@ -82,6 +81,10 @@ class Worker(object):
         """
         # Load configuration
         self._config = Configuration(self._args, None).get_config()
+
+        # Import freqtradebot here in order to avoid python circular
+        # dependency error, damn!
+        from freqtrade.freqtradebot import FreqtradeBot
 
         # Init the instance of the bot
         self.freqtrade = FreqtradeBot(self._config, self)
