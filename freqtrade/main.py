@@ -36,6 +36,7 @@ def main(sysargv: List[str]) -> None:
         args.func(args)
         return
 
+    worker = None
     return_code = 1
     try:
         # Load and run worker
@@ -51,7 +52,7 @@ def main(sysargv: List[str]) -> None:
     except BaseException:
         logger.exception('Fatal exception!')
     finally:
-        if worker is not None:
+        if worker:
             worker.exit()
         sys.exit(return_code)
 
