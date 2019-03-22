@@ -7,11 +7,10 @@ import logging
 import time
 import traceback
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
-import sdnotify
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, __version__, constants, persistence)
@@ -24,6 +23,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListReso
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
+from freqtrade.main import Worker
 
 
 logger = logging.getLogger(__name__)
@@ -35,26 +35,18 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Dict[str, Any], worker: Worker) -> None:
         """
         Init all variables and objects the bot needs to work
         :param config: configuration dict, you can use Configuration.get_config()
         to get the config dict.
         """
 
-        logger.info(
-            'Starting freqtrade %s',
-            __version__,
-        )
-
-        # Init bot states
-        self.state = State.STOPPED
+        logger.info('Starting freqtrade %s', __version__)
 
         # Init objects
         self.config = config
-
-        self._sd_notify = sdnotify.SystemdNotifier() if \
-            self.config.get('internals', {}).get('sd_notify', False) else None
+        self._worker: Worker = worker
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
@@ -79,29 +71,16 @@ class FreqtradeBot(object):
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
-        self._init_modules()
-
-        # Tell the systemd that we completed initialization phase
-        if self._sd_notify:
-            logger.debug("sd_notify: READY=1")
-            self._sd_notify.notify("READY=1")
-
-    def _init_modules(self) -> None:
-        """
-        Initializes all modules and updates the config
-        :return: None
-        """
-        # Initialize all modules
 
         persistence.init(self.config)
 
-        # Set initial application state
-        initial_state = self.config.get('initial_state')
+    @property
+    def state(self) -> State:
+        return self._worker.state
 
-        if initial_state:
-            self.state = State[initial_state.upper()]
-        else:
-            self.state = State.STOPPED
+    @state.setter
+    def state(self, value: State):
+        self._worker.state = value
 
     def cleanup(self) -> None:
         """
@@ -113,75 +92,7 @@ class FreqtradeBot(object):
         self.rpc.cleanup()
         persistence.cleanup()
 
-    def stopping(self) -> None:
-        # Tell systemd that we are exiting now
-        if self._sd_notify:
-            logger.debug("sd_notify: STOPPING=1")
-            self._sd_notify.notify("STOPPING=1")
-
-    def reconfigure(self) -> None:
-        # Tell systemd that we initiated reconfiguring
-        if self._sd_notify:
-            logger.debug("sd_notify: RELOADING=1")
-            self._sd_notify.notify("RELOADING=1")
-
-    def worker(self, old_state: State = None) -> State:
-        """
-        Trading routine that must be run at each loop
-        :param old_state: the previous service state from the previous call
-        :return: current service state
-        """
-        # Log state transition
-        state = self.state
-        if state != old_state:
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'{state.name.lower()}'
-            })
-            logger.info('Changing state to: %s', state.name)
-            if state == State.RUNNING:
-                self.rpc.startup_messages(self.config, self.pairlists)
-
-        throttle_secs = self.config.get('internals', {}).get(
-            'process_throttle_secs',
-            constants.PROCESS_THROTTLE_SECS
-        )
-
-        if state == State.STOPPED:
-            # Ping systemd watchdog before sleeping in the stopped state
-            if self._sd_notify:
-                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
-                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
-
-            time.sleep(throttle_secs)
-
-        elif state == State.RUNNING:
-            # Ping systemd watchdog before throttling
-            if self._sd_notify:
-                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
-                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
-
-            self._throttle(func=self._process, min_secs=throttle_secs)
-
-        return state
-
-    def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
-        """
-        Throttles the given callable that it
-        takes at least `min_secs` to finish execution.
-        :param func: Any callable
-        :param min_secs: minimum execution time in seconds
-        :return: Any
-        """
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-        duration = max(min_secs - (end - start), 0.0)
-        logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
-        time.sleep(duration)
-        return result
-
-    def _process(self) -> bool:
+    def process(self) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
