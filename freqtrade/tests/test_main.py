@@ -8,7 +8,7 @@ import pytest
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.main import main, reconfigure
+from freqtrade.main import main, Worker
 from freqtrade.state import State
 from freqtrade.tests.conftest import log_has, patch_exchange
 
@@ -126,7 +126,7 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
 
     # Raise exception as side effect to avoid endless loop
     reconfigure_mock = mocker.patch(
-        'freqtrade.main.reconfigure', MagicMock(side_effect=Exception)
+        'freqtrade.main.Worker._reconfigure', MagicMock(side_effect=Exception)
     )
 
     with pytest.raises(SystemExit):
