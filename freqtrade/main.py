@@ -6,11 +6,13 @@ Read the documentation to know what cli arguments you need.
 import logging
 import sys
 import time
+import traceback
 from argparse import Namespace
 from typing import Any, Callable, List
 import sdnotify
 
-from freqtrade import (constants, OperationalException, __version__)
+from freqtrade import (constants, OperationalException, TemporaryError,
+                       __version__)
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.state import State
@@ -173,7 +175,23 @@ class Worker(object):
         return result
 
     def _process(self) -> bool:
-        return self.freqtrade.process()
+        state_changed = False
+        try:
+            state_changed = self.freqtrade.process()
+
+        except TemporaryError as error:
+            logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
+            time.sleep(constants.RETRY_TIMEOUT)
+        except OperationalException:
+            tb = traceback.format_exc()
+            hint = 'Issue `/start` if you think it is safe to restart.'
+            self.freqtrade.rpc.send_msg({
+                'type': RPCMessageType.STATUS_NOTIFICATION,
+                'status': f'OperationalException:\n```\n{tb}```{hint}'
+            })
+            logger.exception('OperationalException. Stopping trader ...')
+            self.state = State.STOPPED
+        return state_changed
 
     def _reconfigure(self):
         """

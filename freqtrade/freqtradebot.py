@@ -4,7 +4,6 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 
 import copy
 import logging
-import time
 import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -13,7 +12,7 @@ import arrow
 from requests.exceptions import RequestException
 
 from freqtrade import (DependencyException, OperationalException,
-                       TemporaryError, __version__, constants, persistence)
+                       __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -99,55 +98,43 @@ class FreqtradeBot(object):
         :return: True if one or more trades has been created or closed, False otherwise
         """
         state_changed = False
-        try:
-            # Check whether markets have to be reloaded
-            self.exchange._reload_markets()
 
-            # Refresh whitelist
-            self.pairlists.refresh_pairlist()
-            self.active_pair_whitelist = self.pairlists.whitelist
+        # Check whether markets have to be reloaded
+        self.exchange._reload_markets()
 
-            # Calculating Edge positioning
-            if self.edge:
-                self.edge.calculate()
-                self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
+        # Refresh whitelist
+        self.pairlists.refresh_pairlist()
+        self.active_pair_whitelist = self.pairlists.whitelist
 
-            # Query trades from persistence layer
-            trades = Trade.get_open_trades()
+        # Calculating Edge positioning
+        if self.edge:
+            self.edge.calculate()
+            self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
 
-            # Extend active-pair whitelist with pairs from open trades
-            # It ensures that tickers are downloaded for open trades
-            self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
+        # Query trades from persistence layer
+        trades = Trade.get_open_trades()
 
-            # Refreshing candles
-            self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
-                                      self.strategy.informative_pairs())
+        # Extend active-pair whitelist with pairs from open trades
+        # It ensures that tickers are downloaded for open trades
+        self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
 
-            # First process current opened trades
-            for trade in trades:
-                state_changed |= self.process_maybe_execute_sell(trade)
+        # Refreshing candles
+        self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
+                                  self.strategy.informative_pairs())
 
-            # Then looking for buy opportunities
-            if len(trades) < self.config['max_open_trades']:
-                state_changed = self.process_maybe_execute_buy()
+        # First process current opened trades
+        for trade in trades:
+            state_changed |= self.process_maybe_execute_sell(trade)
 
-            if 'unfilledtimeout' in self.config:
-                # Check and handle any timed out open orders
-                self.check_handle_timedout()
-                Trade.session.flush()
+        # Then looking for buy opportunities
+        if len(trades) < self.config['max_open_trades']:
+            state_changed = self.process_maybe_execute_buy()
 
-        except TemporaryError as error:
-            logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
-            time.sleep(constants.RETRY_TIMEOUT)
-        except OperationalException:
-            tb = traceback.format_exc()
-            hint = 'Issue `/start` if you think it is safe to restart.'
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'OperationalException:\n```\n{tb}```{hint}'
-            })
-            logger.exception('OperationalException. Stopping trader ...')
-            self.state = State.STOPPED
+        if 'unfilledtimeout' in self.config:
+            # Check and handle any timed out open orders
+            self.check_handle_timedout()
+            Trade.session.flush()
+
         return state_changed
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):
