@@ -293,8 +293,8 @@ You can overwrite position stacking in the configuration by explicitly setting `
 
 Enabling the market-position for hyperopt is currently not possible.
 
-!!! Note:
-Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+!!! Note
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
 
 ## Next Step
 

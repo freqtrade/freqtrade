@@ -47,7 +47,7 @@ python3 ./freqtrade/main.py --strategy AwesomeStrategy
 **For the following section we will use the [user_data/strategies/test_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/user_data/strategies/test_strategy.py)
 file as reference.**
 
-!!! Note: Strategies and Backtesting
+!!! Note Strategies and Backtesting
     To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
     that during backtesting the full time-interval is passed to the `populate_*()` methods at once.
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
@@ -250,17 +250,17 @@ class Awesomestrategy(IStrategy):
             self.cust_info[metadata["pair"]["crosstime"] = 1
 ```
 
-!!! Warning:
+!!! Warning
   The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
 
-!!! Note:
+!!! Note
   If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
 ### Additional data (DataProvider)
 
 The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
 
-!!!Note:
+!!! Note
     The DataProvier is currently not available during backtesting / hyperopt, but this is planned for the future.
 
 All methods return `None` in case of failure (do not raise an exception).
@@ -288,7 +288,7 @@ if self.dp:
                                              ticker_interval='1h')
 ```
 
-!!! Warning: Warning about backtesting
+!!! Warning Warning about backtesting
     Be carefull when using dataprovider in backtesting. `historic_ohlcv()` provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
 
@@ -317,7 +317,7 @@ def informative_pairs(self):
             ]
 ```
 
-!!! Warning:
+!!! Warning
     As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
     All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
     It is however better to use resampling to longer time-intervals when possible
@@ -327,7 +327,7 @@ def informative_pairs(self):
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
 
-!!!NOTE:
+!!! Note
     Wallets is not available during backtesting / hyperopt.
 
 Please always check if `Wallets` is available to avoid failures during backtesting.
