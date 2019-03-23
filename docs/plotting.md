@@ -84,5 +84,5 @@ The `-p` pair argument, can be used to plot a single pair
 
 Example
 ```
-python3 scripts/plot_profit.py --datadir ../freqtrade/freqtrade/tests/testdata-20171221/ -p BTC_LTC
+python3 scripts/plot_profit.py --datadir ../freqtrade/freqtrade/tests/testdata-20171221/ -p LTC/BTC
 ```

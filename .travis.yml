@@ -41,7 +41,7 @@ jobs:
       name: hyperopt
     - script: flake8 freqtrade scripts
       name: flake8
-    - script: mypy freqtrade
+    - script: mypy freqtrade scripts
       name: mypy
 
     - stage: docker

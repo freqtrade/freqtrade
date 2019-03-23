@@ -146,7 +146,7 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
             tickers[pair] = exchange.klines((pair, tick_interval))
     else:
         tickers = history.load_data(
-            datadir=Path(_CONF.get("datadir")),
+            datadir=Path(str(_CONF.get("datadir"))),
             pairs=pairs,
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),

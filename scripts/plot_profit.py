@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
 # data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
 def make_profit_array(data: List, px: int, min_date: int,
-                      interval: int,
+                      interval: str,
                       filter_pairs: Optional[List] = None) -> np.ndarray:
     pg = np.zeros(px)
     filter_pairs = filter_pairs or []
@@ -120,7 +120,7 @@ def plot_profit(args: Namespace) -> None:
         logger.info('Filter, keep pairs %s' % pairs)
 
     tickers = history.load_data(
-        datadir=Path(config.get('datadir')),
+        datadir=Path(str(config.get('datadir'))),
         pairs=pairs,
         ticker_interval=tick_interval,
         refresh_pairs=False,
@@ -178,7 +178,7 @@ def plot_profit(args: Namespace) -> None:
     fig.append_trace(profit, 2, 1)
 
     for pair in pairs:
-        pg = make_profit_array(data, num_iterations, min_date, tick_interval, pair)
+        pg = make_profit_array(data, num_iterations, min_date, tick_interval, [pair])
         pair_profit = go.Scattergl(
             x=dates,
             y=pg,
