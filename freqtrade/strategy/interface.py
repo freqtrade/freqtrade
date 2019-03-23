@@ -301,6 +301,7 @@ class IStrategy(ABC):
         trailing_stop = self.config.get('trailing_stop', False)
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
+        # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
         if trailing_stop:
@@ -310,16 +311,15 @@ class IStrategy(ABC):
             sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
             tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
 
-            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
-
-                # Ignore mypy error check in configuration that this is a float
-                stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
-                logger.debug(f"using positive stop loss: {stop_loss_value} "
-                             f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
-
-            # if trailing_only_offset_is_reached is true,
-            # we update trailing stoploss only if offset is reached.
+            # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (tsl_only_offset and current_profit < sl_offset):
+
+                if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
+                    # Ignore mypy error check in configuration that this is a float
+                    stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
+                    logger.debug(f"using positive stop loss: {stop_loss_value} "
+                                 f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
+
                 trade.adjust_stop_loss(high or current_rate, stop_loss_value)
 
         # evaluate if the stoploss was hit if stoploss is not on exchange
