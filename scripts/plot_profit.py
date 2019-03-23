@@ -12,26 +12,24 @@ Optional Cli parameters
 --timerange: specify what timerange of data to use
 --export-filename: Specify where the backtest export is located.
 """
+import json
 import logging
 import sys
-import json
 from argparse import Namespace
 from pathlib import Path
 from typing import List, Optional
-import numpy as np
 
+import numpy as np
+import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
-import plotly.graph_objs as go
 
+from freqtrade import constants, misc
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade import constants
 from freqtrade.data import history
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
-import freqtrade.misc as misc
-
 
 logger = logging.getLogger(__name__)
 
