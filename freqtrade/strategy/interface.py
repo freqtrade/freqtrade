@@ -299,18 +299,16 @@ class IStrategy(ABC):
         """
 
         trailing_stop = self.config.get('trailing_stop', False)
-        trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
-                               else self.stoploss, initial=True)
+        stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
-        # update the stop loss afterwards, after all by definition it's supposed to be hanging
-        # TODO: Maybe this needs to be moved to the start of this function. check #1575 for details
+        trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
+
         if trailing_stop:
-
             # check if we have a special stop loss for positive condition
             # and if profit is positive
-            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
             sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
+            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
 
             if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
 
@@ -321,7 +319,6 @@ class IStrategy(ABC):
 
             # if trailing_only_offset_is_reached is true,
             # we update trailing stoploss only if offset is reached.
-            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
             if not (tsl_only_offset and current_profit < sl_offset):
                 trade.adjust_stop_loss(high or current_rate, stop_loss_value)
 
