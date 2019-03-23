@@ -202,6 +202,32 @@ class Backtesting(object):
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
 
+    def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
+        """
+        Helper function to convert a processed tickerlist into a list for performance reasons.
+
+        Used by backtest() - so keep this optimized for performance.
+        """
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+        ticker: Dict = {}
+        # Create ticker dict
+        for pair, pair_data in processed.items():
+            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+
+            ticker_data = self.advise_sell(
+                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+
+            # to avoid using data from future, we buy/sell with signal from previous candle
+            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+
+            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+
+            # Convert from Pandas to list for performance reasons
+            # (Looping Pandas is slow.)
+            ticker[pair] = [x for x in ticker_data.itertuples()]
+        return ticker
+
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
             partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
@@ -296,7 +322,6 @@ class Backtesting(object):
             position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
@@ -304,25 +329,7 @@ class Backtesting(object):
         end_date = args['end_date']
         trades = []
         trade_count_lock: Dict = {}
-        ticker: Dict = {}
-        pairs = []
-        # Create ticker dict
-        for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
-
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
-
-            # to avoid using data from future, we buy/sell with signal from previous candle
-            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
-
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
-
-            # Convert from Pandas to list for performance reasons
-            # (Looping Pandas is slow.)
-            ticker[pair] = [x for x in ticker_data.itertuples()]
-            pairs.append(pair)
+        ticker: Dict = self._get_ticker_list(processed)
 
         lock_pair_until: Dict = {}
         indexes: Dict = {}
