@@ -290,8 +290,9 @@ class IStrategy(ABC):
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
-    def stop_loss_reached(self, current_rate: float, trade: Trade, current_time: datetime,
-                          current_profit: float, force_stoploss: float, high) -> SellCheckTuple:
+    def stop_loss_reached(self, current_rate: float, trade: Trade,
+                          current_time: datetime, current_profit: float,
+                          force_stoploss: float, high: float = None) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
@@ -305,15 +306,14 @@ class IStrategy(ABC):
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
         if trailing_stop:
-            # check if we have a special stop loss for positive condition
-            # and if profit is positive
+            # trailing stoploss handling
 
             sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
             tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (tsl_only_offset and current_profit < sl_offset):
-
+                # Specific handling for trailing_stop_positive
                 if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
                     # Ignore mypy error check in configuration that this is a float
                     stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
