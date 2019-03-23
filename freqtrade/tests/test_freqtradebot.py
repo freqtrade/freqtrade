@@ -2406,8 +2406,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, fee, markets
                  }))
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f'using positive stop loss mode: 0.01 with offset 0 '
-                   f'since we have profit 0.2666%',
+    assert log_has(f'using positive stop loss: 0.01 offset: 0 profit: 0.2666%',
                    caplog.record_tuples)
     assert log_has(f'adjusted stop loss', caplog.record_tuples)
     assert trade.stop_loss == 0.0000138501
@@ -2466,8 +2465,7 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, fee,
                  }))
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f'using positive stop loss mode: 0.01 with offset 0.011 '
-                   f'since we have profit 0.2666%',
+    assert log_has(f'using positive stop loss: 0.01 offset: 0.011 profit: 0.2666%',
                    caplog.record_tuples)
     assert log_has(f'adjusted stop loss', caplog.record_tuples)
     assert trade.stop_loss == 0.0000138501
@@ -2546,8 +2544,7 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, fee,
                  }))
 
     assert freqtrade.handle_trade(trade) is False
-    assert log_has(f'using positive stop loss mode: 0.05 with offset 0.055 '
-                   f'since we have profit 0.1218%',
+    assert log_has(f'using positive stop loss: 0.05 offset: 0.055 profit: 0.1218%',
                    caplog.record_tuples)
     assert log_has(f'adjusted stop loss', caplog.record_tuples)
     assert trade.stop_loss == 0.0000117705

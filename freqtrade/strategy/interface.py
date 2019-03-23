@@ -302,6 +302,29 @@ class IStrategy(ABC):
         trade.adjust_stop_loss(trade.open_rate, force_stoploss if force_stoploss
                                else self.stoploss, initial=True)
 
+        # update the stop loss afterwards, after all by definition it's supposed to be hanging
+        # TODO: Maybe this needs to be moved to the start of this function. check #1575 for details
+        if trailing_stop:
+
+            # check if we have a special stop loss for positive condition
+            # and if profit is positive
+            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
+
+            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
+
+            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
+
+                # Ignore mypy error check in configuration that this is a float
+                stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
+                logger.debug(f"using positive stop loss: {stop_loss_value} "
+                             f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
+
+            # if trailing_only_offset_is_reached is true,
+            # we update trailing stoploss only if offset is reached.
+            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
+            if not (tsl_only_offset and current_profit < sl_offset):
+                trade.adjust_stop_loss(high or current_rate, stop_loss_value)
+
         # evaluate if the stoploss was hit if stoploss is not on exchange
         if ((self.stoploss is not None) and
             (trade.stop_loss >= current_rate) and
@@ -320,30 +343,6 @@ class IStrategy(ABC):
 
             logger.debug('Stop loss hit.')
             return SellCheckTuple(sell_flag=True, sell_type=selltype)
-
-        # update the stop loss afterwards, after all by definition it's supposed to be hanging
-        # TODO: Maybe this needs to be moved to the start of this function. check #1575 for details
-        if trailing_stop:
-
-            # check if we have a special stop loss for positive condition
-            # and if profit is positive
-            stop_loss_value = force_stoploss if force_stoploss else self.stoploss
-
-            sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
-
-            if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
-
-                # Ignore mypy error check in configuration that this is a float
-                stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
-                logger.debug(f"using positive stop loss mode: {stop_loss_value} "
-                             f"with offset {sl_offset:.4g} "
-                             f"since we have profit {current_profit:.4f}%")
-
-            # if trailing_only_offset_is_reached is true,
-            # we update trailing stoploss only if offset is reached.
-            tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
-            if not (tsl_only_offset and current_profit < sl_offset):
-                trade.adjust_stop_loss(high or current_rate, stop_loss_value)
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
