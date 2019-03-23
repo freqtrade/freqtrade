@@ -194,11 +194,13 @@ def test_strategy_override_ticker_interval(caplog):
 
     config = {
         'strategy': 'DefaultStrategy',
-        'ticker_interval': 60
+        'ticker_interval': 60,
+        'stake_currency': 'ETH'
     }
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.ticker_interval == 60
+    assert resolver.strategy.stake_currency == 'ETH'
     assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override strategy 'ticker_interval' with value in config file: 60."
