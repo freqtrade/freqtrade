@@ -516,7 +516,8 @@ class Telegram(RPC):
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
-                  "*/blacklist:* `Show current blacklist` \n" \
+                  "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
+                  "to the blacklist.` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 

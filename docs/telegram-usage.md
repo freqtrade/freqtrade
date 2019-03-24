@@ -173,6 +173,7 @@ Shows the current whitelist
 
 Shows the current blacklist.
 If Pair is set, then this pair will be added to the pairlist.
+Also supports multiple pairs, seperated by a space.
 Use `/reload_conf` to reset the blacklist.
 
 > Using blacklist `StaticPairList` with 2 pairs  

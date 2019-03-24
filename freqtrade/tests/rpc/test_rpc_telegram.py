@@ -1099,7 +1099,6 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
     assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
 
 
-
 def test_help_handle(default_conf, update, mocker) -> None:
     patch_coinmarketcap(mocker)
     msg_mock = MagicMock()
