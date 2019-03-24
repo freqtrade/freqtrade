@@ -93,6 +93,7 @@ class Telegram(RPC):
             CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
+            CommandHandler('blacklist', self._blacklist),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -471,6 +472,23 @@ class Telegram(RPC):
             self._send_msg(str(e), bot=bot)
 
     @authorized_only
+    def _blacklist(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /blacklist
+        Shows the currently active blacklist
+        """
+        try:
+            blacklist = self._rpc_blacklist()
+
+            message = f"Using blacklist `{blacklist['method']}` with {blacklist['length']} pairs\n"
+            message += f"`{', '.join(blacklist['blacklist'])}`"
+
+            logger.debug(message)
+            self._send_msg(message)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+    @authorized_only
     def _help(self, bot: Bot, update: Update) -> None:
         """
         Handler for /help.
@@ -497,6 +515,7 @@ class Telegram(RPC):
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
+                  "*/blacklist:* `Show current blacklist` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
