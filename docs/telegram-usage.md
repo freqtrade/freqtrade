@@ -29,7 +29,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/balance` | | Show account balance per currency
 | `/daily <n>` | 7 | Shows profit or loss per day, over the last n days
 | `/whitelist` | | Show the current whitelist
-| `/blacklist` | | Show the current blacklist
+| `/blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
 | `/help` | | Show help message
 | `/version` | | Show version
 
@@ -169,10 +169,11 @@ Shows the current whitelist
 > Using whitelist `StaticPairList` with 22 pairs  
 > `IOTA/BTC, NEO/BTC, TRX/BTC, VET/BTC, ADA/BTC, ETC/BTC, NCASH/BTC, DASH/BTC, XRP/BTC, XVG/BTC, EOS/BTC, LTC/BTC, OMG/BTC, BTG/BTC, LSK/BTC, ZEC/BTC, HOT/BTC, IOTX/BTC, XMR/BTC, AST/BTC, XLM/BTC, NANO/BTC`
 
+### /blacklist [pair]
 
-### /blacklist
-
-Shows the current blacklist
+Shows the current blacklist.
+If Pair is set, then this pair will be added to the pairlist.
+Use `/reload_conf` to reset the blacklist.
 
 > Using blacklist `StaticPairList` with 2 pairs  
 >`DODGE/BTC`, `HOT/BTC`.
