@@ -24,37 +24,37 @@ The backtesting is very easy with freqtrade.
 #### With 5 min tickers (Per default)
 
 ```bash
-python3 ./freqtrade/main.py backtesting
+python3 freqtrade backtesting
 ```
 
 #### With 1 min tickers
 
 ```bash
-python3 ./freqtrade/main.py backtesting --ticker-interval 1m
+python3 freqtrade backtesting --ticker-interval 1m
 ```
 
 #### Update cached pairs with the latest data
 
 ```bash
-python3 ./freqtrade/main.py backtesting --refresh-pairs-cached
+python3 freqtrade backtesting --refresh-pairs-cached
 ```
 
 #### With live data (do not alter your testdata files)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --live
+python3 freqtrade backtesting --live
 ```
 
 #### Using a different on-disk ticker-data source
 
 ```bash
-python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
+python3 freqtrade backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
 #### With a (custom) strategy file
 
 ```bash
-python3 ./freqtrade/main.py -s TestStrategy backtesting
+python3 freqtrade -s TestStrategy backtesting
 ```
 
 Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
@@ -62,7 +62,7 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 #### Exporting trades to file
 
 ```bash
-python3 ./freqtrade/main.py backtesting --export trades
+python3 freqtrade backtesting --export trades
 ```
 
 The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
@@ -70,7 +70,7 @@ The exported trades can be used for [further analysis](#further-backtest-result-
 #### Exporting trades to file specifying a custom filename
 
 ```bash
-python3 ./freqtrade/main.py backtesting --export trades --export-filename=backtest_teststrategy.json
+python3 freqtrade backtesting --export trades --export-filename=backtest_teststrategy.json
 ```
 
 #### Running backtest with smaller testset
@@ -81,7 +81,7 @@ you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py backtesting --timerange=-200
+python3 freqtrade backtesting --timerange=-200
 ```
 
 #### Advanced use of timerange

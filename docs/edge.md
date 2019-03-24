@@ -146,16 +146,19 @@ Percentage of allowed risk per trade.
 (defaults to 0.01 so 1%)
 
 #### stoploss_range_min
+
 Minimum stoploss.
 
 (defaults to -0.01)
 
 #### stoploss_range_max
+
 Maximum stoploss.
 
 (defaults to -0.10)
 
 #### stoploss_range_step
+
 As an example if this is set to -0.01 then Edge will test the strategy for \[-0.01, -0,02, -0,03 ..., -0.09, -0.10\] ranges.
 Note than having a smaller step means having a bigger range which could lead to slow calculation.
 
@@ -164,6 +167,7 @@ If you set this parameter to -0.001, you then slow down the Edge calculation by 
 (defaults to -0.01)
 
 #### minimum_winrate
+
 It filters out pairs which don't have at least minimum_winrate.
 
 This comes handy if you want to be conservative and don't comprise win rate in favour of risk reward ratio.
@@ -171,6 +175,7 @@ This comes handy if you want to be conservative and don't comprise win rate in f
 (defaults to 0.60)
 
 #### minimum_expectancy
+
 It filters out pairs which have the expectancy lower than this number.
 
 Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return.
@@ -178,6 +183,7 @@ Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ re
 (defaults to 0.20)
 
 #### min_trade_number
+
 When calculating *W*, *R* and *E* (expectancy) against historical data, you always want to have a minimum number of trades. The more this number is the more Edge is reliable.
 
 Having a win rate of 100% on a single trade doesn't mean anything at all. But having a win rate of 70% over past 100 trades means clearly something.
@@ -185,6 +191,7 @@ Having a win rate of 100% on a single trade doesn't mean anything at all. But ha
 (defaults to 10, it is highly recommended not to decrease this number)
 
 #### max_trade_duration_minute
+
 Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the strategy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.
 
 **NOTICE:** While configuring this value, you should take into consideration your ticker interval. As an example filtering out trades having duration less than one day for a strategy which has 4h interval does not make sense. Default value is set assuming your strategy interval is relatively small (1m or 5m, etc.).
@@ -192,15 +199,17 @@ Edge will filter out trades with long duration. If a trade is profitable after 1
 (defaults to 1 day, i.e. to 60 * 24 = 1440 minutes)
 
 #### remove_pumps
+
 Edge will remove sudden pumps in a given market while going through historical data. However, given that pumps happen very often in crypto markets, we recommend you keep this off.
 
 (defaults to false)
 
-
 ## Running Edge independently
+
 You can run Edge independently in order to see in details the result. Here is an example:
+
 ```bash
-python3 ./freqtrade/main.py edge
+python3 freqtrade edge
 ```
 
 An example of its output:
@@ -224,18 +233,21 @@ An example of its output:
 | NEBL/BTC  |      -0.03 |       0.63 |                1.29 |                   0.58 |         0.44 |                       19 |                       59 |
 
 ### Update cached pairs with the latest data
+
 ```bash
-python3 ./freqtrade/main.py edge --refresh-pairs-cached
+python3 freqtrade edge --refresh-pairs-cached
 ```
 
 ### Precising stoploss range
+
 ```bash
-python3 ./freqtrade/main.py edge --stoplosses=-0.01,-0.1,-0.001 #min,max,step
+python3 freqtrade edge --stoplosses=-0.01,-0.1,-0.001 #min,max,step
 ```
 
 ### Advanced use of timerange
+
 ```bash
-python3 ./freqtrade/main.py edge --timerange=20181110-20181113
+python3 freqtrade edge --timerange=20181110-20181113
 ```
 
 Doing `--timerange=-200` will get the last 200 timeframes from your inputdata. You can also specify specific dates, or a range span indexed by start and stop.

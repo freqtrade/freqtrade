@@ -47,7 +47,7 @@ The bot allows you to select which configuration file you want to use. Per
 default, the bot will load the file `./config.json`
 
 ```bash
-python3 ./freqtrade/main.py -c path/far/far/away/config.json
+python3 freqtrade -c path/far/far/away/config.json
 ```
 
 ### How to use multiple configuration files?
@@ -63,13 +63,13 @@ empty key and secrete values while running in the Dry Mode (which does not actua
 require them):
 
 ```bash
-python3 ./freqtrade/main.py -c ./config.json
+python3 freqtrade -c ./config.json
 ```
 
 and specify both configuration files when running in the normal Live Trade Mode:
 
 ```bash
-python3 ./freqtrade/main.py -c ./config.json -c path/to/secrets/keys.config.json
+python3 freqtrade -c ./config.json -c path/to/secrets/keys.config.json
 ```
 
 This could help you hide your private Exchange key and Exchange secrete on you local machine
@@ -95,7 +95,7 @@ In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
 a strategy class called `AwesomeStrategy` to load it:
 
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy
+python3 freqtrade --strategy AwesomeStrategy
 ```
 
 If the bot does not find your strategy file, it will display in an error
@@ -109,7 +109,7 @@ Learn more about strategy file in
 This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a folder!):
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
+python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/folder
 ```
 
 #### How to install a strategy?
@@ -136,7 +136,7 @@ using `--db-url`. This can also be used to specify a custom database
 in production mode. Example command:
 
 ```bash
-python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
+python3 freqtrade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
 ## Backtesting commands
