@@ -461,8 +461,11 @@ class RPC(object):
                }
         return res
 
-    def _rpc_blacklist(self) -> Dict:
+    def _rpc_blacklist(self, add: List[str]) -> Dict:
         """ Returns the currently active blacklist"""
+        if add:
+            self._freqtrade.pairlists.blacklist.extend(add)
+
         res = {'method': self._freqtrade.pairlists.name,
                'length': len(self._freqtrade.pairlists.blacklist),
                'blacklist': self._freqtrade.pairlists.blacklist

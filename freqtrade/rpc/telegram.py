@@ -4,7 +4,7 @@
 This module manage Telegram communication
 """
 import logging
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
@@ -93,7 +93,7 @@ class Telegram(RPC):
             CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
-            CommandHandler('blacklist', self._blacklist),
+            CommandHandler('blacklist', self._blacklist, pass_args=True),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -472,15 +472,16 @@ class Telegram(RPC):
             self._send_msg(str(e), bot=bot)
 
     @authorized_only
-    def _blacklist(self, bot: Bot, update: Update) -> None:
+    def _blacklist(self, bot: Bot, update: Update, args: List[str]) -> None:
         """
         Handler for /blacklist
         Shows the currently active blacklist
         """
         try:
-            blacklist = self._rpc_blacklist()
 
-            message = f"Using blacklist `{blacklist['method']}` with {blacklist['length']} pairs\n"
+            blacklist = self._rpc_blacklist(args)
+
+            message = f"Blacklist contains {blacklist['length']} pairs\n"
             message += f"`{', '.join(blacklist['blacklist'])}`"
 
             logger.debug(message)
