@@ -1086,10 +1086,18 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
 
     telegram = Telegram(freqtradebot)
 
-    telegram._blacklist(bot=MagicMock(), update=update)
+    telegram._blacklist(bot=MagicMock(), update=update, args=[])
     assert msg_mock.call_count == 1
-    assert ('Using blacklist `StaticPairList` with 2 pairs\n`DOGE/BTC, HOT/BTC`'
+    assert ("Blacklist contains 2 pairs\n`DOGE/BTC, HOT/BTC`"
             in msg_mock.call_args_list[0][0][0])
+
+    msg_mock.reset_mock()
+    telegram._blacklist(bot=MagicMock(), update=update, args=["ETH/BTC"])
+    assert msg_mock.call_count == 1
+    assert ("Blacklist contains 3 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC`"
+            in msg_mock.call_args_list[0][0][0])
+    assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
+
 
 
 def test_help_handle(default_conf, update, mocker) -> None:
