@@ -51,7 +51,6 @@ try:
 
     id = sys.argv[1]  # get exchange id from command line arguments
 
-
     # check if the exchange is supported by ccxt
     exchange_found = id in ccxt.exchanges
 
@@ -90,4 +89,3 @@ except Exception as e:
     dump('[' + type(e).__name__ + ']', str(e))
     dump("Usage: python " + sys.argv[0], green('id'))
     print_supported_exchanges()
-
