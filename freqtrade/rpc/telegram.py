@@ -93,6 +93,7 @@ class Telegram(RPC):
             CommandHandler('reload_conf', self._reload_conf),
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
+            CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -478,15 +479,8 @@ class Telegram(RPC):
         """
         try:
             edge_pairs = self._rpc_edge()
-            edge_pairs_tab = tabulate(edge_pairs,
-                                      headers=[
-                                          'Pair',
-                                          f'Winrate',
-                                          f'Expectancy',
-                                          f'Stoploss'
-                                      ],
-                                      tablefmt='simple')
-
+            print(edge_pairs)
+            edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
             message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
             self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
         except RPCException as e:
@@ -520,6 +514,7 @@ class Telegram(RPC):
                   "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n" \
                   "*/reload_conf:* `Reload configuration file` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
