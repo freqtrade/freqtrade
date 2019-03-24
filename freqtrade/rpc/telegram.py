@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.telegram ...')
 
 
-def authorized_only(command_handler: Callable[[Any, Bot, Update], None]) -> Callable[..., Any]:
+def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
     """
     Decorator to check if the message comes from the correct chat_id
     :param command_handler: Telegram CommandHandler
