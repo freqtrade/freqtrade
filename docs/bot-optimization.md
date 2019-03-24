@@ -278,7 +278,7 @@ Please always check if the `DataProvider` is available to avoid failures during 
 
 ``` python
 if self.dp:
-    if self.dp.runmode == 'live':
+    if self.dp.runmode in ('live', 'dry_run'):
         if (f'{self.stake_currency}/BTC', self.ticker_interval) in self.dp.available_pairs:
             data_eth = self.dp.ohlcv(pair='{self.stake_currency}/BTC',
                                      ticker_interval=self.ticker_interval)
