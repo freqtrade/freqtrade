@@ -278,13 +278,13 @@ Please always check if the `DataProvider` is available to avoid failures during 
 
 ``` python
 if self.dp:
-    if dp.runmode == 'live':
-        if ('ETH/BTC', ticker_interval) in self.dp.available_pairs:
-            data_eth = self.dp.ohlcv(pair='ETH/BTC',
-                                     ticker_interval=ticker_interval)
+    if self.dp.runmode in ('live', 'dry_run'):
+        if (f'{self.stake_currency}/BTC', self.ticker_interval) in self.dp.available_pairs:
+            data_eth = self.dp.ohlcv(pair='{self.stake_currency}/BTC',
+                                     ticker_interval=self.ticker_interval)
     else:
         # Get historic ohlcv data (cached on disk).
-        history_eth = self.dp.historic_ohlcv(pair='ETH/BTC',
+        history_eth = self.dp.historic_ohlcv(pair='{self.stake_currency}/BTC',
                                              ticker_interval='1h')
 ```
 

@@ -14,8 +14,8 @@ Mandatory Parameters are marked as **Required**.
 |  Command | Default | Description |
 |----------|---------|-------------|
 | `max_open_trades` | 3 | **Required.** Number of trades open your bot will have. If -1 then it is ignored (i.e. potentially unlimited open trades)
-| `stake_currency` | BTC | **Required.** Crypto-currency used for trading.
-| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance.
+| `stake_currency` | BTC | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy).
+| `stake_amount` | 0.05 | **Required.** Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged. Set it to `"unlimited"` to allow the bot to use all available balance. [Strategy Override](#parameters-in-the-strategy).
 | `amount_reserve_percent` | 0.05 | Reserve some amount in min pair stake amount. Default is 5%. The bot will reserve `amount_reserve_percent` + stop-loss value when calculating min pair stake amount in order to avoid possible trade refusals.
 | `ticker_interval` | [1m, 5m, 15m, 30m, 1h, 1d, ...] | The ticker interval to use (1min, 5 min, 15 min, 30 min, 1 hour or 1 day). Default is 5 minutes. [Strategy Override](#parameters-in-the-strategy).
 | `fiat_display_currency` | USD | **Required.** Fiat currency used to show your profits. More information below.
@@ -77,8 +77,10 @@ Mandatory Parameters are marked as **Required**.
 The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
-* `minimal_roi`
+* `stake_currency`
+* `stake_amount`
 * `ticker_interval`
+* `minimal_roi`
 * `stoploss`
 * `trailing_stop`
 * `trailing_stop_positive`
