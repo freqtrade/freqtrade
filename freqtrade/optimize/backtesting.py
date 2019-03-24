@@ -18,6 +18,7 @@ from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -64,6 +65,13 @@ class Backtesting(object):
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
+
+        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
+        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
+        self.fee = self.exchange.get_fee()
+        self.dataprovider = DataProvider(self.config, self.exchange)
+        IStrategy.dp = self.dataprovider
+
         if self.config.get('strategy_list', None):
             # Force one interval
             self.ticker_interval = str(self.config.get('ticker_interval'))
@@ -78,15 +86,13 @@ class Backtesting(object):
             self.strategylist.append(StrategyResolver(self.config).strategy)
         # Load one strategy
         self._set_strategy(self.strategylist[0])
-        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
-        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
-        self.fee = self.exchange.get_fee()
 
     def _set_strategy(self, strategy):
         """
         Load strategy into backtesting
         """
         self.strategy = strategy
+
         self.ticker_interval = self.config.get('ticker_interval')
         self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
         self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
