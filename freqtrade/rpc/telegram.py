@@ -471,6 +471,29 @@ class Telegram(RPC):
             self._send_msg(str(e), bot=bot)
 
     @authorized_only
+    def _edge(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /edge
+        Shows informaton related to Edge
+        """
+        try:
+            edge_pairs = self._rpc_edge()
+            edge_pairs_tab = tabulate(edge_pairs,
+                                      headers=[
+                                          'Pair',
+                                          f'Winrate',
+                                          f'Expectancy',
+                                          f'Stoploss'
+                                      ],
+                                      tablefmt='simple')
+
+            message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
+            self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+
+    @authorized_only
     def _help(self, bot: Bot, update: Update) -> None:
         """
         Handler for /help.

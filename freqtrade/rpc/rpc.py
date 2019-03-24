@@ -460,3 +460,18 @@ class RPC(object):
                'whitelist': self._freqtrade.active_pair_whitelist
                }
         return res
+
+    def _rpc_edge(self) -> Dict:
+        """ Returns information related to Edge """
+        if not self._freqtrade.edge:
+            raise RPCException(f'Edge is not enabled.')
+
+        for pair in self._freqtrade.edge._cached_pairs:
+            res = {
+                'pair': pair,
+                'winrate': self._freqtrade.edge._cached_pairs[pair].winrate,
+                'expectancy': self._freqtrade.edge._cached_pairs[pair].expectancy,
+                'stoploss': self._freqtrade.edge._cached_pairs[pair].stoploss,
+            }
+
+        return res
