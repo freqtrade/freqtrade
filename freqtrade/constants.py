@@ -22,12 +22,6 @@ ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 DRY_RUN_WALLET = 999.9
 
-# Urls to exchange markets, insert quote and base with .format()
-_EXCHANGE_URLS = {
-    "Bittrex": '/Market/Index?MarketName={quote}-{base}',
-    "Binance": '/tradeDetail.html?symbol={base}_{quote}',
-}
-
 TICKER_INTERVAL_MINUTES = {
     '1m': 1,
     '3m': 3,
