@@ -30,6 +30,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/daily <n>` | 7 | Shows profit or loss per day, over the last n days
 | `/whitelist` | | Show the current whitelist
 | `/blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
+| `/edge` | | Show validated pairs by Edge if it is enabled.
 | `/help` | | Show help message
 | `/version` | | Show version
 
@@ -55,7 +56,7 @@ Prevents the bot from opening new trades by temporarily setting "max_open_trades
 After this, give the bot time to close off open trades (can be checked via `/status table`).
 Once all positions are sold, run `/stop` to completely stop the bot.
 
-`/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command. 
+`/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command.
 
 !!! warning
    The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
@@ -166,7 +167,7 @@ Day         Profit BTC      Profit USD
 
 Shows the current whitelist
 
-> Using whitelist `StaticPairList` with 22 pairs  
+> Using whitelist `StaticPairList` with 22 pairs
 > `IOTA/BTC, NEO/BTC, TRX/BTC, VET/BTC, ADA/BTC, ETC/BTC, NCASH/BTC, DASH/BTC, XRP/BTC, XVG/BTC, EOS/BTC, LTC/BTC, OMG/BTC, BTG/BTC, LSK/BTC, ZEC/BTC, HOT/BTC, IOTX/BTC, XMR/BTC, AST/BTC, XLM/BTC, NANO/BTC`
 
 ### /blacklist [pair]
@@ -176,7 +177,7 @@ If Pair is set, then this pair will be added to the pairlist.
 Also supports multiple pairs, seperated by a space.
 Use `/reload_conf` to reset the blacklist.
 
-> Using blacklist `StaticPairList` with 2 pairs  
+> Using blacklist `StaticPairList` with 2 pairs
 >`DODGE/BTC`, `HOT/BTC`.
 
 ### /version
