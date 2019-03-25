@@ -22,7 +22,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListReso
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
-from freqtrade.main import Worker
+from freqtrade.worker import Worker
 
 
 logger = logging.getLogger(__name__)
