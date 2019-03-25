@@ -65,8 +65,9 @@ class Exchange(object):
     # Dict to specify which options each exchange implements
     # TODO: this should be merged with attributes from subclasses
     # To avoid having to copy/paste this to all subclasses.
-    _ft_has = {
+    _ft_has: Dict = {
         "stoploss_on_exchange": False,
+        "order_time_in_force": ["gtc"],
     }
 
     def __init__(self, config: dict) -> None:
@@ -268,7 +269,8 @@ class Exchange(object):
         """
         Checks if order time in force configured in strategy/config are supported
         """
-        if any(v != 'gtc' for k, v in order_time_in_force.items()):
+        if any(v not in self._ft_has["order_time_in_force"]
+               for k, v in order_time_in_force.items()):
             raise OperationalException(
                 f'Time in force policies are not supporetd for  {self.name} yet.')
 
