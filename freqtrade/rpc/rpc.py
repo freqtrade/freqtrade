@@ -468,10 +468,10 @@ class RPC(object):
 
         return [
             {
-                'Pair': pair,
-                'Winrate': self._freqtrade.edge._cached_pairs[pair].winrate,
-                'Expectancy': self._freqtrade.edge._cached_pairs[pair].expectancy,
-                'Stoploss': self._freqtrade.edge._cached_pairs[pair].stoploss,
+                'Pair': k,
+                'Winrate': v.winrate,
+                'Expectancy': v.expectancy,
+                'Stoploss': v.stoploss,
             }
-            for pair in self._freqtrade.edge._cached_pairs
+            for k, v in self._freqtrade.edge._cached_pairs.items()
         ]
