@@ -464,10 +464,14 @@ class RPC(object):
     def _rpc_blacklist(self, add: List[str]) -> Dict:
         """ Returns the currently active blacklist"""
         if add:
-            self._freqtrade.pairlists.blacklist.extend(add)
+            stake_currency = self._freqtrade.config.get('stake_currency')
+            for pair in add:
+                if (pair.endswith(stake_currency)
+                        and pair not in self._freqtrade.pairlists.blacklist):
+                    self._freqtrade.pairlists.blacklist.append(pair)
 
         res = {'method': self._freqtrade.pairlists.name,
                'length': len(self._freqtrade.pairlists.blacklist),
-               'blacklist': self._freqtrade.pairlists.blacklist
+               'blacklist': self._freqtrade.pairlists.blacklist,
                }
         return res
