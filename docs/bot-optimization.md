@@ -290,7 +290,7 @@ if self.dp:
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
 
 !!! Warning Warning in hyperopt
-    This option should only be used in `populate_indicators()` - since it pulls the historic data from disk each time, which would be a huge performance penalty during hyperopt.
+    This option cannot currently be used during hyperopt.
 
 #### Available Pairs
 

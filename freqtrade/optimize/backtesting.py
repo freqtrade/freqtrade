@@ -69,8 +69,10 @@ class Backtesting(object):
         exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
         self.exchange = ExchangeResolver(exchange_name, self.config).exchange
         self.fee = self.exchange.get_fee()
-        self.dataprovider = DataProvider(self.config, self.exchange)
-        IStrategy.dp = self.dataprovider
+
+        if self.config.get('runmode') != RunMode.HYPEROPT:
+            self.dataprovider = DataProvider(self.config, self.exchange)
+            IStrategy.dp = self.dataprovider
 
         if self.config.get('strategy_list', None):
             # Force one interval
