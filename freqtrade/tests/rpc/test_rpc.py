@@ -693,3 +693,23 @@ def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     assert ret['method'] == 'VolumePairList'
     assert ret['length'] == 4
     assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
+
+
+def test_rpc_blacklist(mocker, default_conf) -> None:
+    patch_coinmarketcap(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+
+    freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    ret = rpc._rpc_blacklist(None)
+    assert ret['method'] == 'StaticPairList'
+    assert len(ret['blacklist']) == 2
+    assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
+    assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC']
+
+    ret = rpc._rpc_blacklist(["ETH/BTC"])
+    assert ret['method'] == 'StaticPairList'
+    assert len(ret['blacklist']) == 3
+    assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
+    assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
