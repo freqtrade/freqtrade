@@ -171,6 +171,10 @@ def default_conf():
                 "LTC/BTC",
                 "XRP/BTC",
                 "NEO/BTC"
+            ],
+            "pair_blacklist": [
+                "DOGE/BTC",
+                "HOT/BTC",
             ]
         },
         "telegram": {
