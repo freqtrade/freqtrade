@@ -260,12 +260,9 @@ class Awesomestrategy(IStrategy):
 
 The strategy provides access to the `DataProvider`. This allows you to get additional data to use in your strategy.
 
-!!! Note
-    The DataProvier is currently not available during backtesting / hyperopt, but this is planned for the future.
-
 All methods return `None` in case of failure (do not raise an exception).
 
-Please always check if the `DataProvider` is available to avoid failures during backtesting.
+Please always the mode of operation to select the correct method to get data (samples see below).
 
 #### Possible options for DataProvider
 
@@ -291,6 +288,9 @@ if self.dp:
 !!! Warning Warning about backtesting
     Be carefull when using dataprovider in backtesting. `historic_ohlcv()` provides the full time-range in one go,
     so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).
+
+!!! Warning Warning in hyperopt
+    This option should only be used in `populate_indicators()` - since it pulls the historic data from disk each time, which would be a huge performance penalty during hyperopt.
 
 #### Available Pairs
 
