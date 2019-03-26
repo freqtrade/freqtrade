@@ -697,7 +697,9 @@ def test_stopbuy_handle(default_conf, update, mocker) -> None:
         _send_msg=msg_mock
     )
 
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    worker = get_patched_worker(mocker, default_conf)
+    freqtradebot = worker.freqtrade
+
     telegram = Telegram(freqtradebot)
 
     assert freqtradebot.config['max_open_trades'] != 0
