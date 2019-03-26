@@ -15,6 +15,7 @@ from freqtrade import constants
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.worker import Worker
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
 
@@ -88,7 +89,7 @@ def get_patched_edge(mocker, config) -> Edge:
 # Functions for recurrent object patching
 
 
-def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+def patch_freqtradebot(mocker, config) -> None:
     """
     This function patch _init_modules() to not call dependencies
     :param mocker: a Mocker object to apply patches
@@ -102,7 +103,15 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
 
+
+def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
+
+
+def get_patched_worker(mocker, config) -> Worker:
+    patch_freqtradebot(mocker, config)
+    return Worker(args=None, config=config)
 
 
 def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
