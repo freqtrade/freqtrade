@@ -7,8 +7,9 @@ import pytest
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
+from freqtrade.worker import Worker
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.main import main, Worker
+from freqtrade.main import main
 from freqtrade.state import State
 from freqtrade.tests.conftest import log_has, patch_exchange
 
@@ -135,7 +136,9 @@ def test_reconfigure(mocker, default_conf) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    freqtrade = FreqtradeBot(default_conf)
+    args = Arguments(['-c', 'config.json.example'], '').get_parsed_arg()
+    worker = Worker(args=args, config=default_conf)
+    freqtrade = worker.freqtrade
 
     # Renew mock to return modified data
     conf = deepcopy(default_conf)
@@ -145,11 +148,10 @@ def test_reconfigure(mocker, default_conf) -> None:
         lambda *args, **kwargs: conf
     )
 
+    worker._config = conf
     # reconfigure should return a new instance
-    freqtrade2 = reconfigure(
-        freqtrade,
-        Arguments(['-c', 'config.json.example'], '').get_parsed_arg()
-    )
+    worker._reconfigure()
+    freqtrade2 = worker.freqtrade
 
     # Verify we have a new instance with the new config
     assert freqtrade is not freqtrade2
