@@ -689,7 +689,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
 
     def _trend_alternate_hold(dataframe=None, metadata=None):
         """
-        Buy every xth candle - sell every other xth -2 (hold on to pairs a bit)flake
+        Buy every xth candle - sell every other xth -2 (hold on to pairs a bit)
         """
         if metadata['pair'] in('ETH/BTC', 'LTC/BTC'):
             multi = 20
