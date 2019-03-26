@@ -51,7 +51,7 @@ def get_patched_worker(mocker, config) -> Worker:
     This function patches _init_modules() to not call dependencies
     :param mocker: a Mocker object to apply patches
     :param config: Config to pass to the bot
-    :return: FreqtradeBot
+    :return: Worker
     """
     patch_freqtradebot(mocker, config)
     return Worker(args=None, config=config)
@@ -707,7 +707,7 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
     worker = get_patched_worker(mocker, default_conf)
     patch_get_signal(worker.freqtrade)
 
-    result = worker.freqtrade.process()
+    result = worker._process()
     assert result is False
     assert sleep_mock.has_calls()
 
@@ -726,7 +726,7 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
 
     assert worker.state == State.RUNNING
 
-    result = worker.freqtrade.process()
+    result = worker._process()
     assert result is False
     assert worker.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
