@@ -5,7 +5,7 @@ import logging
 import time
 import traceback
 from argparse import Namespace
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 import sdnotify
 
 from freqtrade import (constants, OperationalException, TemporaryError,
@@ -23,26 +23,28 @@ class Worker(object):
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: Optional[Namespace] = None, config = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
         logger.info('Starting worker %s', __version__)
 
         self._args = args
-        self._init()
+        self._config = config
+        self._init(False)
 
         # Tell systemd that we completed initialization phase
         if self._sd_notify:
             logger.debug("sd_notify: READY=1")
             self._sd_notify.notify("READY=1")
 
-    def _init(self):
+    def _init(self, reconfig: bool):
         """
-        Also called from the _reconfigure() method.
+        Also called from the _reconfigure() method (with reconfig=True).
         """
-        # Load configuration
-        self._config = Configuration(self._args, None).get_config()
+        if reconfig or self._config is None:
+            # Load configuration
+            self._config = Configuration(self._args, None).get_config()
 
         # Import freqtradebot here in order to avoid python circular
         # dependency error, damn!
@@ -77,17 +79,19 @@ class Worker(object):
     def run(self):
         state = None
         while True:
-            state = self._worker(old_state=state, throttle_secs=self._throttle_secs)
+            state = self._worker(old_state=state)
             if state == State.RELOAD_CONF:
                 self.freqtrade = self._reconfigure()
 
-    def _worker(self, old_state: State, throttle_secs: float) -> State:
+    def _worker(self, old_state: State, throttle_secs: Optional[float] = None) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
         state = self._state
+        if throttle_secs is None:
+            throttle_secs = self._throttle_secs
 
         # Log state transition
         if state != old_state:
@@ -166,7 +170,7 @@ class Worker(object):
         self.freqtrade.cleanup()
 
         # Load and validate config and create new instance of the bot
-        self._init()
+        self._init(True)
 
         self.freqtrade.rpc.send_msg({
             'type': RPCMessageType.STATUS_NOTIFICATION,

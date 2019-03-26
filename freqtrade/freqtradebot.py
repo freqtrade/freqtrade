@@ -34,7 +34,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], worker: Worker) -> None:
+    def __init__(self, config: Dict[str, Any], worker: Optional[Worker] = None) -> None:
         """
         Init all variables and objects the bot needs to work
         :param config: configuration dict, you can use Configuration.get_config()
@@ -45,7 +45,7 @@ class FreqtradeBot(object):
 
         # Init objects
         self.config = config
-        self._worker: Worker = worker
+        self._worker = worker
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
@@ -75,10 +75,14 @@ class FreqtradeBot(object):
 
     @property
     def state(self) -> State:
+        if self._worker is None:
+            raise DependencyException("No Worker is available")
         return self._worker.state
 
     @state.setter
     def state(self, value: State):
+        if self._worker is None:
+            raise DependencyException("No Worker is available")
         self._worker.state = value
 
     def cleanup(self) -> None:
