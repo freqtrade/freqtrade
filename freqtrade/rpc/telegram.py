@@ -193,21 +193,25 @@ class Telegram(RPC):
             for result in results:
                 result['date'] = result['date'].humanize()
 
-            messages = [
-                "*Trade ID:* `{trade_id}`\n"
-                "*Current Pair:* {pair}\n"
-                "*Open Since:* `{date}`\n"
-                "*Amount:* `{amount}`\n"
-                "*Open Rate:* `{open_rate:.8f}`\n"
-                "*Close Rate:* `{close_rate}`\n"
-                "*Current Rate:* `{current_rate:.8f}`\n"
-                "*Close Profit:* `{close_profit}`\n"
-                "*Current Profit:* `{current_profit:.2f}%`\n"
-                "*Open Order:* `{open_order}`".format(**result)
-                for result in results
-            ]
+            messages = []
+            for r in results:
+                lines = [
+                    "*Trade ID:* `{trade_id}`",
+                    "*Current Pair:* {pair}",
+                    "*Open Since:* `{date}`",
+                    "*Amount:* `{amount}`",
+                    "*Open Rate:* `{open_rate:.8f}`",
+                    "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
+                    "*Current Rate:* `{current_rate:.8f}`",
+                    "*Close Profit:* `{close_profit}`",
+                    "*Current Profit:* `{current_profit:.2f}%`",
+                    "*Open Order:* `{open_order}`"
+                ]
+                messages.append("\n".join(filter(None,lines)).format(**r))
+
             for msg in messages:
                 self._send_msg(msg, bot=bot)
+
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 

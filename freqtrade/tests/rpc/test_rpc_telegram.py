@@ -267,6 +267,12 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     # Trigger status while we have a fulfilled order for the open trade
     telegram._status(bot=MagicMock(), update=update)
 
+    # close_rate should not be included in the message as the trade is not closed
+    # and no line should be empty
+    lines = msg_mock.call_args_list[0][0][0].split('\n')
+    assert '' not in lines
+    assert 'Close Rate' not in ''.join(lines)
+
     assert msg_mock.call_count == 1
     assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
 
