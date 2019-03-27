@@ -2,19 +2,20 @@
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
 
 from datetime import datetime
-from unittest.mock import MagicMock, ANY, PropertyMock
+from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
 from numpy import isnan
 
-from freqtrade import TemporaryError, DependencyException
+from freqtrade import DependencyException, TemporaryError
+from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from freqtrade.tests.test_freqtradebot import patch_get_signal
 from freqtrade.tests.conftest import patch_coinmarketcap, patch_exchange
+from freqtrade.tests.test_freqtradebot import patch_get_signal
 
 
 # Functions for recurrent object patching
@@ -713,3 +714,32 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert len(ret['blacklist']) == 3
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
+
+def test_rpc_edge_disabled(mocker, default_conf) -> None:
+    patch_coinmarketcap(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    with pytest.raises(RPCException, match=r'Edge is not enabled.'):
+        ret = rpc._rpc_edge()
+
+def test_rpc_edge_enabled(mocker, edge_conf) -> None:
+    patch_coinmarketcap(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'E/F': PairInfo(-0.02, 0.66, 3.71, 0.50, 1.71, 10, 60),
+        }
+    ))
+    freqtradebot = FreqtradeBot(edge_conf)
+
+    rpc = RPC(freqtradebot)
+    ret = rpc._rpc_edge()
+
+    assert len(ret) == 1
+    assert ret[0]['Pair'] == 'E/F'
+    assert ret[0]['Winrate'] == 0.66
+    assert ret[0]['Expectancy'] == 1.71
+    assert ret[0]['Stoploss'] == -0.02
