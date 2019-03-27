@@ -182,7 +182,7 @@ Use `/reload_conf` to reset the blacklist.
 
 ### /edge
 
-Shows pairs accepted by pais along with their corresponding winrate, expectancy and stoploss values.
+Shows pairs validated by Edge along with their corresponding winrate, expectancy and stoploss values.
 
 > **Edge only validated following pairs:**
 ```

@@ -494,7 +494,7 @@ class Telegram(RPC):
     def _edge(self, bot: Bot, update: Update) -> None:
         """
         Handler for /edge
-        Shows informaton related to Edge
+        Shows information related to Edge
         """
         try:
             edge_pairs = self._rpc_edge()
