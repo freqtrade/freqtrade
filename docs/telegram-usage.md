@@ -180,6 +180,21 @@ Use `/reload_conf` to reset the blacklist.
 > Using blacklist `StaticPairList` with 2 pairs
 >`DODGE/BTC`, `HOT/BTC`.
 
+### /edge
+
+Shows pairs accepted by pais along with their corresponding winrate, expectancy and stoploss values.
+
+> **Edge only validated following pairs:**
+```
+Pair        Winrate    Expectancy    Stoploss
+--------  ---------  ------------  ----------
+DOCK/ETH   0.522727      0.881821       -0.03
+PHX/ETH    0.677419      0.560488       -0.03
+HOT/ETH    0.733333      0.490492       -0.03
+HC/ETH     0.588235      0.280988       -0.02
+ARDR/ETH   0.366667      0.143059       -0.01
+```
+
 ### /version
 
 > **Version:** `0.14.3`
