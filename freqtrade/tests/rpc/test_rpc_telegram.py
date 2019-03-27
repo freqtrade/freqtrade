@@ -1140,6 +1140,7 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert '<b>Edge only validated following pairs:</b>\n<pre>' in msg_mock.call_args_list[0][0][0]
     assert 'Pair      Winrate    Expectancy    Stoploss' in msg_mock.call_args_list[0][0][0]
 
+
 def test_help_handle(default_conf, update, mocker) -> None:
     patch_coinmarketcap(mocker)
     msg_mock = MagicMock()
