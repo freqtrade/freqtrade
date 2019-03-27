@@ -262,7 +262,7 @@ The strategy provides access to the `DataProvider`. This allows you to get addit
 
 All methods return `None` in case of failure (do not raise an exception).
 
-Please always the mode of operation to select the correct method to get data (samples see below).
+Please always check the mode of operation to select the correct method to get data (samples see below).
 
 #### Possible options for DataProvider
 
