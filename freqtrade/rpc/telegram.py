@@ -533,8 +533,8 @@ class Telegram(RPC):
                   "*/reload_conf:* `Reload configuration file` \n" \
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
-                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
                   "to the blacklist.` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
