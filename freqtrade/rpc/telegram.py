@@ -196,18 +196,17 @@ class Telegram(RPC):
             messages = []
             for r in results:
                 lines = [
-                    "*Trade ID:* `{trade_id}`",
+                    "*Trade ID:* `{trade_id}` (since `{date}`)",
                     "*Current Pair:* {pair}",
-                    "*Open Since:* `{date}`",
                     "*Amount:* `{amount}`",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
                     "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
                     "*Current Profit:* `{current_profit:.2f}%`",
-                    "*Open Order:* `{open_order}`"
+                    "*Open Order:* `{open_order}`" if r['open_order'] else "",
                 ]
-                messages.append("\n".join(filter(None,lines)).format(**r))
+                messages.append("\n".join(filter(None ,lines)).format(**r))
 
             for msg in messages:
                 self._send_msg(msg, bot=bot)
