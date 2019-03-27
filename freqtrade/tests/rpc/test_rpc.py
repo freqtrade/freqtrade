@@ -715,6 +715,7 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
 
+
 def test_rpc_edge_disabled(mocker, default_conf) -> None:
     patch_coinmarketcap(mocker)
     patch_exchange(mocker)
@@ -722,7 +723,8 @@ def test_rpc_edge_disabled(mocker, default_conf) -> None:
     freqtradebot = FreqtradeBot(default_conf)
     rpc = RPC(freqtradebot)
     with pytest.raises(RPCException, match=r'Edge is not enabled.'):
-        ret = rpc._rpc_edge()
+        rpc._rpc_edge()
+
 
 def test_rpc_edge_enabled(mocker, edge_conf) -> None:
     patch_coinmarketcap(mocker)
