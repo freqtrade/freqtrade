@@ -203,7 +203,7 @@ class Telegram(RPC):
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
-                    "*Close Profit:* `{close_profit}`",
+                    "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
                     "*Current Profit:* `{current_profit:.2f}%`",
                     "*Open Order:* `{open_order}`"
                 ]
