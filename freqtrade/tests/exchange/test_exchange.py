@@ -139,6 +139,28 @@ def test_exchange_resolver(default_conf, mocker, caplog):
                           caplog.record_tuples)
 
 
+def test_validate_order_time_in_force(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    # explicitly test bittrex, exchanges implementing other policies need seperate tests
+    ex = get_patched_exchange(mocker, default_conf, id="bittrex")
+    tif = {
+        "buy": "gtc",
+        "sell": "gtc",
+    }
+
+    ex.validate_order_time_in_force(tif)
+    tif2 = {
+        "buy": "fok",
+        "sell": "ioc",
+    }
+    with pytest.raises(OperationalException, match=r"Time in force.*not supported for .*"):
+        ex.validate_order_time_in_force(tif2)
+
+    # Patch to see if this will pass if the values are in the ft dict
+    ex._ft_has.update({"order_time_in_force": ["gtc", "fok", "ioc"]})
+    ex.validate_order_time_in_force(tif2)
+
+
 def test_symbol_amount_prec(default_conf, mocker):
     '''
     Test rounds down to 4 Decimal places

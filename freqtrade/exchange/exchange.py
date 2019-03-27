@@ -272,7 +272,7 @@ class Exchange(object):
         if any(v not in self._ft_has["order_time_in_force"]
                for k, v in order_time_in_force.items()):
             raise OperationalException(
-                f'Time in force policies are not supporetd for  {self.name} yet.')
+                f'Time in force policies are not supported for {self.name} yet.')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
