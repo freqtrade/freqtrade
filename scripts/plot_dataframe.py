@@ -24,24 +24,22 @@ Example of usage:
 > python3 scripts/plot_dataframe.py --pairs BTC/EUR,XRP/BTC -d user_data/data/
   --indicators1 sma,ema3 --indicators2 fastk,fastd
 """
-import json
 import logging
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 import plotly.graph_objs as go
 import pytz
-
 from plotly import tools
 from plotly.offline import plot
 
 from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_backtest_data, BT_DATA_COLUMNS
+from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
@@ -148,7 +146,7 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
             tickers[pair] = exchange.klines((pair, tick_interval))
     else:
         tickers = history.load_data(
-            datadir=Path(_CONF.get("datadir")),
+            datadir=Path(str(_CONF.get("datadir"))),
             pairs=pairs,
             ticker_interval=tick_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),

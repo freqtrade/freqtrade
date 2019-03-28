@@ -16,6 +16,7 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
@@ -346,6 +347,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     assert callable(backtesting.strategy.tickerdata_to_dataframe)
     assert callable(backtesting.advise_buy)
     assert callable(backtesting.advise_sell)
+    assert isinstance(backtesting.strategy.dp, DataProvider)
     get_fee.assert_called()
     assert backtesting.fee == 0.5
     assert not backtesting.strategy.order_types["stoploss_on_exchange"]

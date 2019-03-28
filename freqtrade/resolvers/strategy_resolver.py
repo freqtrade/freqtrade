@@ -56,6 +56,8 @@ class StrategyResolver(IResolver):
                       ("process_only_new_candles",        None,        False),
                       ("order_types",                     None,        False),
                       ("order_time_in_force",             None,        False),
+                      ("stake_currency",                  None,        False),
+                      ("stake_amount",                    None,        False),
                       ("use_sell_signal",                 False,       True),
                       ("sell_profit_only",                False,       True),
                       ("ignore_roi_if_buy_signal",        False,       True),

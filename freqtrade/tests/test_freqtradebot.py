@@ -13,13 +13,15 @@ import requests
 
 from freqtrade import (DependencyException, OperationalException,
                        TemporaryError, constants)
-from freqtrade.worker import Worker
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType, SellCheckTuple
-from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange, patch_edge, patch_wallet
+from freqtrade.strategy.interface import SellCheckTuple, SellType
+from freqtrade.tests.conftest import (log_has, log_has_re, patch_edge,
+                                      patch_exchange, patch_wallet)
+from freqtrade.worker import Worker
 
 
 # Functions for recurrent object patching
@@ -109,6 +111,10 @@ def test_worker_running(mocker, default_conf, caplog) -> None:
     assert state is State.RUNNING
     assert log_has('Changing state to: RUNNING', caplog.record_tuples)
     assert mock_throttle.call_count == 1
+    # Check strategy is loaded, and received a dataprovider object
+    assert freqtrade.strategy
+    assert freqtrade.strategy.dp
+    assert isinstance(freqtrade.strategy.dp, DataProvider)
 
 
 def test_worker_stopped(mocker, default_conf, caplog) -> None:

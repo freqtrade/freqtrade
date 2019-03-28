@@ -456,7 +456,37 @@ class RPC(object):
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
         res = {'method': self._freqtrade.pairlists.name,
-               'length': len(self._freqtrade.pairlists.whitelist),
+               'length': len(self._freqtrade.active_pair_whitelist),
                'whitelist': self._freqtrade.active_pair_whitelist
                }
         return res
+
+    def _rpc_blacklist(self, add: List[str]) -> Dict:
+        """ Returns the currently active blacklist"""
+        if add:
+            stake_currency = self._freqtrade.config.get('stake_currency')
+            for pair in add:
+                if (pair.endswith(stake_currency)
+                        and pair not in self._freqtrade.pairlists.blacklist):
+                    self._freqtrade.pairlists.blacklist.append(pair)
+
+        res = {'method': self._freqtrade.pairlists.name,
+               'length': len(self._freqtrade.pairlists.blacklist),
+               'blacklist': self._freqtrade.pairlists.blacklist,
+               }
+        return res
+
+    def _rpc_edge(self) -> List[Dict[str, Any]]:
+        """ Returns information related to Edge """
+        if not self._freqtrade.edge:
+            raise RPCException(f'Edge is not enabled.')
+
+        return [
+            {
+                'Pair': k,
+                'Winrate': v.winrate,
+                'Expectancy': v.expectancy,
+                'Stoploss': v.stoploss,
+            }
+            for k, v in self._freqtrade.edge._cached_pairs.items()
+        ]

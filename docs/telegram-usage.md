@@ -28,6 +28,9 @@ official commands. You can ask at any moment for help with `/help`.
 | `/performance` | | Show performance of each finished trade grouped by pair
 | `/balance` | | Show account balance per currency
 | `/daily <n>` | 7 | Shows profit or loss per day, over the last n days
+| `/whitelist` | | Show the current whitelist
+| `/blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
+| `/edge` | | Show validated pairs by Edge if it is enabled.
 | `/help` | | Show help message
 | `/version` | | Show version
 
@@ -55,8 +58,8 @@ Once all positions are sold, run `/stop` to completely stop the bot.
 
 `/reload_conf` resets "max_open_trades" to the value set in the configuration and resets this command. 
 
-!!! warning:
-The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
+!!! warning
+   The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.
 
 ### /status
 
@@ -158,6 +161,38 @@ Day         Profit BTC      Profit USD
 2018-01-03  0.00224175 BTC  29,142 USD
 2018-01-02  0.00033131 BTC   4,307 USD
 2018-01-01  0.00269130 BTC  34.986 USD
+```
+
+### /whitelist
+
+Shows the current whitelist
+
+> Using whitelist `StaticPairList` with 22 pairs  
+> `IOTA/BTC, NEO/BTC, TRX/BTC, VET/BTC, ADA/BTC, ETC/BTC, NCASH/BTC, DASH/BTC, XRP/BTC, XVG/BTC, EOS/BTC, LTC/BTC, OMG/BTC, BTG/BTC, LSK/BTC, ZEC/BTC, HOT/BTC, IOTX/BTC, XMR/BTC, AST/BTC, XLM/BTC, NANO/BTC`
+
+### /blacklist [pair]
+
+Shows the current blacklist.
+If Pair is set, then this pair will be added to the pairlist.
+Also supports multiple pairs, seperated by a space.
+Use `/reload_conf` to reset the blacklist.
+
+> Using blacklist `StaticPairList` with 2 pairs  
+>`DODGE/BTC`, `HOT/BTC`.
+
+### /edge
+
+Shows pairs validated by Edge along with their corresponding winrate, expectancy and stoploss values.
+
+> **Edge only validated following pairs:**
+```
+Pair        Winrate    Expectancy    Stoploss
+--------  ---------  ------------  ----------
+DOCK/ETH   0.522727      0.881821       -0.03
+PHX/ETH    0.677419      0.560488       -0.03
+HOT/ETH    0.733333      0.490492       -0.03
+HC/ETH     0.588235      0.280988       -0.02
+ARDR/ETH   0.366667      0.143059       -0.01
 ```
 
 ### /version

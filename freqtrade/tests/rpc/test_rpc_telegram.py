@@ -13,17 +13,17 @@ from telegram import Chat, Message, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
-from freqtrade.worker import Worker
+from freqtrade.edge import PairInfo
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from freqtrade.strategy.interface import SellType
 from freqtrade.state import State
-from freqtrade.tests.conftest import (get_patched_freqtradebot, get_patched_worker, log_has,
-                                      patch_exchange)
+from freqtrade.strategy.interface import SellType
+from freqtrade.tests.conftest import (get_patched_freqtradebot, get_patched_worker,
+                                      log_has, patch_coinmarketcap, patch_exchange)
 from freqtrade.tests.test_freqtradebot import patch_get_signal
-from freqtrade.tests.conftest import patch_coinmarketcap
+from freqtrade.worker import Worker
 
 
 class DummyCls(Telegram):
@@ -75,7 +75,7 @@ def test_init(default_conf, mocker, caplog) -> None:
     message_str = "rpc.telegram is listening for following commands: [['status'], ['profit'], " \
                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], " \
                   "['performance'], ['daily'], ['count'], ['reload_conf'], " \
-                  "['stopbuy'], ['whitelist'], ['help'], ['version']]"
+                  "['stopbuy'], ['whitelist'], ['blacklist'], ['edge'], ['help'], ['version']]"
 
     assert log_has(message_str, caplog.record_tuples)
 
@@ -1120,6 +1120,73 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
     assert ('Using whitelist `VolumePairList` with 4 pairs\n`ETH/BTC, LTC/BTC, XRP/BTC, NEO/BTC`'
             in msg_mock.call_args_list[0][0][0])
+
+
+def test_blacklist_static(default_conf, update, mocker) -> None:
+    patch_coinmarketcap(mocker)
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._blacklist(bot=MagicMock(), update=update, args=[])
+    assert msg_mock.call_count == 1
+    assert ("Blacklist contains 2 pairs\n`DOGE/BTC, HOT/BTC`"
+            in msg_mock.call_args_list[0][0][0])
+
+    msg_mock.reset_mock()
+    telegram._blacklist(bot=MagicMock(), update=update, args=["ETH/BTC"])
+    assert msg_mock.call_count == 1
+    assert ("Blacklist contains 3 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC`"
+            in msg_mock.call_args_list[0][0][0])
+    assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
+
+
+def test_edge_disabled(default_conf, update, mocker) -> None:
+    patch_coinmarketcap(mocker)
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._edge(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert "Edge is not enabled." in msg_mock.call_args_list[0][0][0]
+
+
+def test_edge_enabled(edge_conf, update, mocker) -> None:
+    patch_coinmarketcap(mocker)
+    msg_mock = MagicMock()
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={
+            'E/F': PairInfo(-0.01, 0.66, 3.71, 0.50, 1.71, 10, 60),
+        }
+    ))
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, edge_conf)
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._edge(bot=MagicMock(), update=update)
+    assert msg_mock.call_count == 1
+    assert '<b>Edge only validated following pairs:</b>\n<pre>' in msg_mock.call_args_list[0][0][0]
+    assert 'Pair      Winrate    Expectancy    Stoploss' in msg_mock.call_args_list[0][0][0]
 
 
 def test_help_handle(default_conf, update, mocker) -> None:

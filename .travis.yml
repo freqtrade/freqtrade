@@ -29,19 +29,19 @@ jobs:
       script:
       - pytest --cov=freqtrade --cov-config=.coveragerc freqtrade/tests/
       # Allow failure for coveralls
-      - coveralls || true  
+      - coveralls || true
       name: pytest
     - script:
       - cp config.json.example config.json
-      - python freqtrade/main.py --datadir freqtrade/tests/testdata backtesting
+      - python freqtrade --datadir freqtrade/tests/testdata backtesting
       name: backtest
     - script:
       - cp config.json.example config.json
-      - python freqtrade/main.py --datadir freqtrade/tests/testdata hyperopt -e 5
+      - python freqtrade --datadir freqtrade/tests/testdata hyperopt -e 5
       name: hyperopt
-    - script: flake8 freqtrade
+    - script: flake8 freqtrade scripts
       name: flake8
-    - script: mypy freqtrade
+    - script: mypy freqtrade scripts
       name: mypy
 
     - stage: docker

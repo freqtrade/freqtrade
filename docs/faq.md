@@ -46,22 +46,24 @@ have to run it for 10.000 or more. But it will take an eternity to
 compute.
 
 We recommend you to run it at least 10.000 epochs:
+
 ```bash
-python3 ./freqtrade/main.py hyperopt -e 10000
+python3 freqtrade hyperopt -e 10000
 ```
 
 or if you want intermediate result to see
+
 ```bash
-for i in {1..100}; do python3 ./freqtrade/main.py hyperopt -e 100; done
+for i in {1..100}; do python3 freqtrade hyperopt -e 100; done
 ```
 
 #### Why it is so long to run hyperopt?
+
 Finding a great Hyperopt results takes time.
 
 If you wonder why it takes a while to find great hyperopt results
 
-This answer was written during the under the release 0.15.1, when we had
-:
+This answer was written during the under the release 0.15.1, when we had:
 - 8 triggers
 - 9 guards: let's say we evaluate even 10 values from each
 - 1 stoploss calculation: let's say we want 10 values from that too to

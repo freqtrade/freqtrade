@@ -152,7 +152,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 ./freqtrade/main.py -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
+python3 freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
@@ -178,7 +178,7 @@ you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py hyperopt --timerange -200
+python3 freqtrade hyperopt --timerange -200
 ```
 
 ### Running Hyperopt with Smaller Search Space
@@ -293,8 +293,8 @@ You can overwrite position stacking in the configuration by explicitly setting `
 
 Enabling the market-position for hyperopt is currently not possible.
 
-!!! Note:
-Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+!!! Note
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
 
 ## Next Step
 
