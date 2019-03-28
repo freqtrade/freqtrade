@@ -13,19 +13,12 @@ import ccxt
 import ccxt.async_support as ccxt_async
 from pandas import DataFrame
 
-from freqtrade import constants, OperationalException, DependencyException, TemporaryError
+from freqtrade import constants, DependencyException, OperationalException, TemporaryError
 from freqtrade.data.converter import parse_ticker_dataframe
 
 logger = logging.getLogger(__name__)
 
 API_RETRY_COUNT = 4
-
-
-# Urls to exchange markets, insert quote and base with .format()
-_EXCHANGE_URLS = {
-    ccxt.bittrex.__name__: '/Market/Index?MarketName={quote}-{base}',
-    ccxt.binance.__name__: '/tradeDetail.html?symbol={base}_{quote}',
-}
 
 
 def retrier_async(f):
@@ -72,8 +65,9 @@ class Exchange(object):
     # Dict to specify which options each exchange implements
     # TODO: this should be merged with attributes from subclasses
     # To avoid having to copy/paste this to all subclasses.
-    _ft_has = {
+    _ft_has: Dict = {
         "stoploss_on_exchange": False,
+        "order_time_in_force": ["gtc"],
     }
 
     def __init__(self, config: dict) -> None:
@@ -275,10 +269,10 @@ class Exchange(object):
         """
         Checks if order time in force configured in strategy/config are supported
         """
-        if any(v != 'gtc' for k, v in order_time_in_force.items()):
-            if self.name != 'Binance':
-                raise OperationalException(
-                    f'Time in force policies are not supporetd for  {self.name} yet.')
+        if any(v not in self._ft_has["order_time_in_force"]
+               for k, v in order_time_in_force.items()):
+            raise OperationalException(
+                f'Time in force policies are not supported for {self.name} yet.')
 
     def exchange_has(self, endpoint: str) -> bool:
         """
