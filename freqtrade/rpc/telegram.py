@@ -94,6 +94,7 @@ class Telegram(RPC):
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist, pass_args=True),
+            CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -490,6 +491,21 @@ class Telegram(RPC):
             self._send_msg(str(e), bot=bot)
 
     @authorized_only
+    def _edge(self, bot: Bot, update: Update) -> None:
+        """
+        Handler for /edge
+        Shows information related to Edge
+        """
+        try:
+            edge_pairs = self._rpc_edge()
+            print(edge_pairs)
+            edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
+            message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
+            self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+        except RPCException as e:
+            self._send_msg(str(e), bot=bot)
+
+    @authorized_only
     def _help(self, bot: Bot, update: Update) -> None:
         """
         Handler for /help.
@@ -518,6 +534,7 @@ class Telegram(RPC):
                   "*/whitelist:* `Show current whitelist` \n" \
                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs " \
                   "to the blacklist.` \n" \
+                  "*/edge:* `Shows validated pairs by Edge if it is enabeld` \n" \
                   "*/help:* `This help message`\n" \
                   "*/version:* `Show version`"
 
