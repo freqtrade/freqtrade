@@ -97,9 +97,13 @@ class RPC(object):
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
+
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
+                sl_percentage = round(((trade.stop_loss - current_rate) / current_rate) * 100, 2)
+                txt_sl_percentage = f'{sl_percentage}%'
+
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
@@ -110,8 +114,8 @@ class RPC(object):
                     amount=round(trade.amount, 8),
                     close_profit=fmt_close_profit,
                     current_profit=round(current_profit * 100, 2),
-                    initial_stoploss=trade.initial_stop_loss,
-                    stoploss=trade.stop_loss,
+                    stop_loss=trade.stop_loss,
+                    stop_loss_percentage=txt_sl_percentage,
                     open_order='({} {} rem={:.8f})'.format(
                       order['type'], order['side'], order['remaining']
                     ) if order else None,

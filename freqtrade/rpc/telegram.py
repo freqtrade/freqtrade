@@ -204,9 +204,10 @@ class Telegram(RPC):
                     "*Current Rate:* `{current_rate:.8f}`",
                     "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
                     "*Current Profit:* `{current_profit:.2f}%`",
+                    "*Stoploss:* `{stop_loss:.8f}` ({stop_loss_percentage})",
                     "*Open Order:* `{open_order}`" if r['open_order'] else "",
                 ]
-                messages.append("\n".join(filter(None ,lines)).format(**r))
+                messages.append("\n".join(filter(None, lines)).format(**r))
 
             for msg in messages:
                 self._send_msg(msg, bot=bot)
