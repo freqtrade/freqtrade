@@ -112,9 +112,9 @@ def test_worker_running(mocker, default_conf, caplog) -> None:
     assert log_has('Changing state to: RUNNING', caplog.record_tuples)
     assert mock_throttle.call_count == 1
     # Check strategy is loaded, and received a dataprovider object
-    assert freqtrade.strategy
-    assert freqtrade.strategy.dp
-    assert isinstance(freqtrade.strategy.dp, DataProvider)
+    assert worker.freqtrade.strategy
+    assert worker.freqtrade.strategy.dp
+    assert isinstance(worker.freqtrade.strategy.dp, DataProvider)
 
 
 def test_worker_stopped(mocker, default_conf, caplog) -> None:
@@ -710,7 +710,7 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
     )
     sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
 
-    worker = get_patched_worker(mocker, default_conf)
+    worker = Worker(args=None, config=default_conf)
     patch_get_signal(worker.freqtrade)
 
     result = worker._process()
@@ -727,7 +727,7 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
         markets=PropertyMock(return_value=markets),
         buy=MagicMock(side_effect=OperationalException)
     )
-    worker = get_patched_worker(mocker, default_conf)
+    worker = Worker(args=None, config=default_conf)
     patch_get_signal(worker.freqtrade)
 
     assert worker.state == State.RUNNING
