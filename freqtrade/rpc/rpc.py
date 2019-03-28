@@ -97,11 +97,9 @@ class RPC(object):
                     current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
                 except DependencyException:
                     current_rate = NAN
-
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
-
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
