@@ -110,6 +110,7 @@ class RPC(object):
                     amount=round(trade.amount, 8),
                     close_profit=fmt_close_profit,
                     current_profit=round(current_profit * 100, 2),
+                    stop_loss=trade.stop_loss,
                     open_order='({} {} rem={:.8f})'.format(
                       order['type'], order['side'], order['remaining']
                     ) if order else None,

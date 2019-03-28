@@ -59,6 +59,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         'amount': 90.99181074,
         'close_profit': None,
         'current_profit': -0.59,
+        'stop_loss': 0.0,
         'open_order': '(limit buy rem=0.00000000)'
     } == results[0]
 
@@ -79,6 +80,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         'amount': 90.99181074,
         'close_profit': None,
         'current_profit': ANY,
+        'stop_loss': 0.0,
         'open_order': '(limit buy rem=0.00000000)'
     } == results[0]
 

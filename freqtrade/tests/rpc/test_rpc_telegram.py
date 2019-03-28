@@ -201,6 +201,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
             'amount': 90.99181074,
             'close_profit': None,
             'current_profit': -0.59,
+            'stop_loss': 1.099e-05,
             'open_order': '(limit buy rem=0.00000000)'
         }]),
         _status_table=status_table,
@@ -266,6 +267,13 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     freqtradebot.create_trade()
     # Trigger status while we have a fulfilled order for the open trade
     telegram._status(bot=MagicMock(), update=update)
+
+    # close_rate should not be included in the message as the trade is not closed
+    # and no line should be empty
+    lines = msg_mock.call_args_list[0][0][0].split('\n')
+    assert '' not in lines
+    assert 'Close Rate' not in ''.join(lines)
+    assert 'Close Profit' not in ''.join(lines)
 
     assert msg_mock.call_count == 1
     assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
