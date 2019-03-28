@@ -83,7 +83,7 @@ def check_migrate(engine) -> None:
         logger.debug(f'trying {table_back_name}')
 
     # Check for latest column
-    if not has_column(cols, 'stoploss_last_update'):
+    if not has_column(cols, 'min_rate'):
         logger.info(f'Running database migration - backup available as {table_back_name}')
 
         fee_open = get_column_def(cols, 'fee_open', 'fee')
@@ -95,6 +95,7 @@ def check_migrate(engine) -> None:
         stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
         stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
         max_rate = get_column_def(cols, 'max_rate', '0.0')
+        min_rate = get_column_def(cols, 'min_rate', 'null')
         sell_reason = get_column_def(cols, 'sell_reason', 'null')
         strategy = get_column_def(cols, 'strategy', 'null')
         ticker_interval = get_column_def(cols, 'ticker_interval', 'null')
@@ -113,7 +114,7 @@ def check_migrate(engine) -> None:
                 open_rate_requested, close_rate, close_rate_requested, close_profit,
                 stake_amount, amount, open_date, close_date, open_order_id,
                 stop_loss, initial_stop_loss, stoploss_order_id, stoploss_last_update,
-                max_rate, sell_reason, strategy,
+                max_rate, min_rate, sell_reason, strategy,
                 ticker_interval
                 )
             select id, lower(exchange),
@@ -130,7 +131,7 @@ def check_migrate(engine) -> None:
                 stake_amount, amount, open_date, close_date, open_order_id,
                 {stop_loss} stop_loss, {initial_stop_loss} initial_stop_loss,
                 {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
-                {max_rate} max_rate, {sell_reason} sell_reason,
+                {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
                 {strategy} strategy, {ticker_interval} ticker_interval
                 from {table_back_name}
              """)
@@ -191,6 +192,8 @@ class Trade(_DECL_BASE):
     stoploss_last_update = Column(DateTime, nullable=True)
     # absolute value of the highest reached price
     max_rate = Column(Float, nullable=True, default=0.0)
+    # Lowest price reached
+    min_rate = Column(Float, nullable=True)
     sell_reason = Column(String, nullable=True)
     strategy = Column(String, nullable=True)
     ticker_interval = Column(Integer, nullable=True)
@@ -201,21 +204,28 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
+    def adjust_min_max_rates(self, current_price: float):
+        """
+        Adjust the max_rate and min_rate.
+        """
+        logger.debug("Adjusting min/max rates")
+        self.max_rate = max(current_price, self.max_rate or self.open_rate)
+        self.min_rate = min(current_price, self.min_rate or self.open_rate)
+
     def adjust_stop_loss(self, current_price: float, stoploss: float, initial: bool = False):
-        """this adjusts the stop loss to it's most recently observed setting"""
+        """
+        This adjusts the stop loss to it's most recently observed setting
+        :param current_price: Current rate the asset is traded
+        :param stoploss: Stoploss as factor (sample -0.05 -> -5% below current price).
+        :param initial: Called to initiate stop_loss.
+            Skips everything if self.stop_loss is already set.
+        """
 
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
             return
 
         new_loss = float(current_price * (1 - abs(stoploss)))
-
-        # keeping track of the highest observed rate for this trade
-        if self.max_rate is None:
-            self.max_rate = current_price
-        else:
-            if current_price > self.max_rate:
-                self.max_rate = current_price
 
         # no stop loss assigned yet
         if not self.stop_loss:

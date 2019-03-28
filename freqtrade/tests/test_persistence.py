@@ -510,6 +510,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.pair == "ETC/BTC"
     assert trade.exchange == "binance"
     assert trade.max_rate == 0.0
+    assert trade.min_rate is None
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
     assert trade.sell_reason is None
@@ -585,7 +586,48 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
                    caplog.record_tuples)
 
 
-def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
+def test_adjust_stop_loss(fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+        max_rate=1,
+    )
+
+    trade.adjust_stop_loss(trade.open_rate, 0.05, True)
+    assert trade.stop_loss == 0.95
+    assert trade.initial_stop_loss == 0.95
+
+    # Get percent of profit with a lower rate
+    trade.adjust_stop_loss(0.96, 0.05)
+    assert trade.stop_loss == 0.95
+    assert trade.initial_stop_loss == 0.95
+
+    # Get percent of profit with a custom rate (Higher than open rate)
+    trade.adjust_stop_loss(1.3, -0.1)
+    assert round(trade.stop_loss, 8) == 1.17
+    assert trade.initial_stop_loss == 0.95
+
+    # current rate lower again ... should not change
+    trade.adjust_stop_loss(1.2, 0.1)
+    assert round(trade.stop_loss, 8) == 1.17
+    assert trade.initial_stop_loss == 0.95
+
+    # current rate higher... should raise stoploss
+    trade.adjust_stop_loss(1.4, 0.1)
+    assert round(trade.stop_loss, 8) == 1.26
+    assert trade.initial_stop_loss == 0.95
+
+    #  Initial is true but stop_loss set - so doesn't do anything
+    trade.adjust_stop_loss(1.7, 0.1, True)
+    assert round(trade.stop_loss, 8) == 1.26
+    assert trade.initial_stop_loss == 0.95
+
+
+def test_adjust_min_max_rates(fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -595,40 +637,24 @@ def test_adjust_stop_loss(limit_buy_order, limit_sell_order, fee):
         open_rate=1,
     )
 
-    trade.adjust_stop_loss(trade.open_rate, 0.05, True)
-    assert trade.stop_loss == 0.95
+    trade.adjust_min_max_rates(trade.open_rate)
     assert trade.max_rate == 1
-    assert trade.initial_stop_loss == 0.95
+    assert trade.min_rate == 1
 
-    # Get percent of profit with a lowre rate
-    trade.adjust_stop_loss(0.96, 0.05)
-    assert trade.stop_loss == 0.95
+    # check min adjusted, max remained
+    trade.adjust_min_max_rates(0.96)
     assert trade.max_rate == 1
-    assert trade.initial_stop_loss == 0.95
+    assert trade.min_rate == 0.96
 
-    # Get percent of profit with a custom rate (Higher than open rate)
-    trade.adjust_stop_loss(1.3, -0.1)
-    assert round(trade.stop_loss, 8) == 1.17
-    assert trade.max_rate == 1.3
-    assert trade.initial_stop_loss == 0.95
+    # check max adjusted, min remains
+    trade.adjust_min_max_rates(1.05)
+    assert trade.max_rate == 1.05
+    assert trade.min_rate == 0.96
 
-    # current rate lower again ... should not change
-    trade.adjust_stop_loss(1.2, 0.1)
-    assert round(trade.stop_loss, 8) == 1.17
-    assert trade.max_rate == 1.3
-    assert trade.initial_stop_loss == 0.95
-
-    # current rate higher... should raise stoploss
-    trade.adjust_stop_loss(1.4, 0.1)
-    assert round(trade.stop_loss, 8) == 1.26
-    assert trade.max_rate == 1.4
-    assert trade.initial_stop_loss == 0.95
-
-    #  Initial is true but stop_loss set - so doesn't do anything
-    trade.adjust_stop_loss(1.7, 0.1, True)
-    assert round(trade.stop_loss, 8) == 1.26
-    assert trade.max_rate == 1.4
-    assert trade.initial_stop_loss == 0.95
+    # current rate "in the middle" - no adjustment
+    trade.adjust_min_max_rates(1.03)
+    assert trade.max_rate == 1.05
+    assert trade.min_rate == 0.96
 
 
 def test_get_open(default_conf, fee):
