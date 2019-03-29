@@ -4,7 +4,9 @@ This module contains the configuration class
 import json
 import logging
 import os
+import sys
 from argparse import Namespace
+from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, Optional
 
 import ccxt
@@ -12,8 +14,8 @@ from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
-from freqtrade.state import RunMode
 from freqtrade.misc import deep_merge_dicts
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -116,9 +118,22 @@ class Configuration(object):
             config.update({'verbosity': self.args.loglevel})
         else:
             config.update({'verbosity': 0})
+
+        # Log to stdout, not stderr
+        log_handlers = [logging.StreamHandler(sys.stdout)]
+        if 'logfile' in self.args and self.args.logfile:
+            config.update({'logfile': self.args.logfile})
+
+        # Allow setting this as either configuration or argument
+        if 'logfile' in config:
+            log_handlers.append(RotatingFileHandler(config['logfile'],
+                                                    maxBytes=1024 * 1024,  # 1Mb
+                                                    backupCount=10))
+
         logging.basicConfig(
             level=logging.INFO if config['verbosity'] < 1 else logging.DEBUG,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=log_handlers
         )
         set_loggers(config['verbosity'])
         logger.info('Verbosity set to %s', config['verbosity'])

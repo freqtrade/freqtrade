@@ -72,6 +72,13 @@ class Arguments(object):
             default=0,
         )
         self.parser.add_argument(
+            '--logfile',
+            help='Log to the file specified',
+            dest='logfile',
+            type=str,
+            metavar='FILE'
+        )
+        self.parser.add_argument(
             '--version',
             action='version',
             version=f'%(prog)s {__version__}'
