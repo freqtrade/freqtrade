@@ -5,6 +5,7 @@ import logging
 from argparse import Namespace
 from copy import deepcopy
 from unittest.mock import MagicMock
+from pathlib import Path
 
 import pytest
 from jsonschema import Draft4Validator, ValidationError, validate
@@ -545,6 +546,23 @@ def test_set_loggers() -> None:
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
     assert logging.getLogger('telegram').level is logging.INFO
+
+
+def test_set_logfile(default_conf, mocker):
+    mocker.patch('freqtrade.configuration.open',
+                 mocker.mock_open(read_data=json.dumps(default_conf)))
+
+    arglist = [
+        '--logfile', 'test_file.log',
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf['logfile'] == "test_file.log"
+    f = Path("test_file.log")
+    assert f.is_file()
+    f.unlink()
 
 
 def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
