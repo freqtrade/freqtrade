@@ -7,7 +7,7 @@ import os
 import sys
 from argparse import Namespace
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import ccxt
 from jsonschema import Draft4Validator, validate
@@ -120,7 +120,7 @@ class Configuration(object):
             config.update({'verbosity': 0})
 
         # Log to stdout, not stderr
-        log_handlers = [logging.StreamHandler(sys.stdout)]
+        log_handlers: List[logging.Handler] = [logging.StreamHandler(sys.stdout)]
         if 'logfile' in self.args and self.args.logfile:
             config.update({'logfile': self.args.logfile})
 
