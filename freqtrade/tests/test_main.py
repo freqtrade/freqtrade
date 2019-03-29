@@ -8,7 +8,6 @@ import pytest
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.worker import Worker
-from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
 from freqtrade.tests.conftest import log_has, patch_exchange
@@ -85,7 +84,10 @@ def test_main_keyboard_interrupt(mocker, default_conf, caplog) -> None:
 def test_main_operational_exception(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
-    mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=OperationalException('Oh snap!')))
+    mocker.patch(
+        'freqtrade.worker.Worker._worker',
+        MagicMock(side_effect=OperationalException('Oh snap!'))
+    )
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
@@ -128,7 +130,10 @@ def test_main_reload_conf(mocker, default_conf, caplog) -> None:
 def test_reconfigure(mocker, default_conf) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
-    mocker.patch('freqtrade.worker.Worker._worker', MagicMock(side_effect=OperationalException('Oh snap!')))
+    mocker.patch(
+        'freqtrade.worker.Worker._worker',
+        MagicMock(side_effect=OperationalException('Oh snap!'))
+    )
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf

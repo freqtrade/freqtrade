@@ -23,7 +23,7 @@ class Worker(object):
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Optional[Namespace] = None, config = None) -> None:
+    def __init__(self, args: Namespace, config=None) -> None:
         """
         Init all variables and objects the bot needs to work
         """

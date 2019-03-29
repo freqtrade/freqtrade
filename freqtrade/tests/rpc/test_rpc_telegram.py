@@ -14,7 +14,6 @@ from telegram.error import NetworkError
 
 from freqtrade import __version__
 from freqtrade.edge import PairInfo
-from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
