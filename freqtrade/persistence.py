@@ -91,9 +91,9 @@ def check_migrate(engine) -> None:
         open_rate_requested = get_column_def(cols, 'open_rate_requested', 'null')
         close_rate_requested = get_column_def(cols, 'close_rate_requested', 'null')
         stop_loss = get_column_def(cols, 'stop_loss', '0.0')
-        stop_loss_pct = get_column_def(cols, 'stop_loss_pct', '0.0')
+        stop_loss_pct = get_column_def(cols, 'stop_loss_pct', 'null')
         initial_stop_loss = get_column_def(cols, 'initial_stop_loss', '0.0')
-        initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', '0.0')
+        initial_stop_loss_pct = get_column_def(cols, 'initial_stop_loss_pct', 'null')
         stoploss_order_id = get_column_def(cols, 'stoploss_order_id', 'null')
         stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
         max_rate = get_column_def(cols, 'max_rate', '0.0')
@@ -190,11 +190,11 @@ class Trade(_DECL_BASE):
     # absolute value of the stop loss
     stop_loss = Column(Float, nullable=True, default=0.0)
     # percentage value of the stop loss
-    stop_loss_pct = Column(Float, nullable=True, default=0.0)
+    stop_loss_pct = Column(Float, nullable=True)
     # absolute value of the initial stop loss
     initial_stop_loss = Column(Float, nullable=True, default=0.0)
     # percentage value of the initial stop loss
-    initial_stop_loss_pct = Column(Float, nullable=True, default=0.0)
+    initial_stop_loss_pct = Column(Float, nullable=True)
     # stoploss order id which is on exchange
     stoploss_order_id = Column(String, nullable=True, index=True)
     # last update time of the stoploss order on exchange
