@@ -159,7 +159,7 @@ class Worker(object):
     def _reconfigure(self):
         """
         Cleans up current freqtradebot instance, reloads the configuration and
-        returns the new instance
+        replaces it with the new instance
         """
         # Tell systemd that we initiated reconfiguration
         if self._sd_notify:
