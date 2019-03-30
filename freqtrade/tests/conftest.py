@@ -4,7 +4,6 @@ import logging
 import re
 from datetime import datetime
 from functools import reduce
-from typing import Dict, Optional
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -13,8 +12,8 @@ from telegram import Chat, Message, Update
 
 from freqtrade import constants
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
 
