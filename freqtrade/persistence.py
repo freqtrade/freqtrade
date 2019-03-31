@@ -240,16 +240,16 @@ class Trade(_DECL_BASE):
         if not self.stop_loss:
             logger.debug("assigning new stop loss")
             self.stop_loss = new_loss
-            self.stop_loss_pct = stoploss
+            self.stop_loss_pct = -1 * abs(stoploss)
             self.initial_stop_loss = new_loss
-            self.initial_stop_loss_pct = stoploss
+            self.initial_stop_loss_pct = -1 * abs(stoploss)
             self.stoploss_last_update = datetime.utcnow()
 
         # evaluate if the stop loss needs to be updated
         else:
             if new_loss > self.stop_loss:  # stop losses only walk up, never down!
                 self.stop_loss = new_loss
-                self.stop_loss_pct = stoploss
+                self.stop_loss_pct = -1 * abs(stoploss)
                 self.stoploss_last_update = datetime.utcnow()
                 logger.debug("adjusted stop loss")
             else:
