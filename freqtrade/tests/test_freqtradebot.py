@@ -1306,21 +1306,31 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
     trade.open_order_id = '123'
     trade.open_fee = 0.001
 
+    # Test raise of DependencyException exception
+    mocker.patch(
+        'freqtrade.freqtradebot.FreqtradeBot.update_open_order',
+        side_effect=DependencyException()
+    )
+    freqtrade.process_maybe_execute_sell(trade)
+    assert log_has('Unable to sell trade: ', caplog.record_tuples)
+
+
+def test_update_open_order_exception(mocker, default_conf,
+                                     limit_buy_order, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
+
+    trade = MagicMock()
+    trade.open_order_id = '123'
+    trade.open_fee = 0.001
+
     # Test raise of OperationalException exception
     mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
         side_effect=OperationalException()
     )
-    freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.update_open_order(trade)
     assert log_has('Could not update trade amount: ', caplog.record_tuples)
-
-    # Test raise of DependencyException exception
-    mocker.patch(
-        'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-        side_effect=DependencyException()
-    )
-    freqtrade.process_maybe_execute_sell(trade)
-    assert log_has('Unable to sell trade: ', caplog.record_tuples)
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
