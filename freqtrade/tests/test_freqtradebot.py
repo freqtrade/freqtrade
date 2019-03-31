@@ -1031,6 +1031,13 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
 
+    mocker.patch(
+        'freqtrade.exchange.Exchange.stoploss_limit',
+        side_effect=DependencyException()
+    )
+    freqtrade.handle_stoploss_on_exchange(trade)
+    assert log_has('Unable to create stoploss order: ', caplog.record_tuples)
+
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
                                               markets, limit_buy_order, limit_sell_order) -> None:
