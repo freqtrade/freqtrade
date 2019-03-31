@@ -1352,6 +1352,26 @@ def test_update_open_order(mocker, default_conf, limit_buy_order, caplog) -> Non
     assert filter(regexp.match, caplog.record_tuples)
 
 
+def test_update_open_order_withorderdict(default_conf, trades_for_order, limit_buy_order, mocker):
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    # get_order should not be called!!
+    mocker.patch('freqtrade.exchange.Exchange.get_order', MagicMock(side_effect=ValueError))
+    patch_exchange(mocker)
+    Trade.session = MagicMock()
+    amount = sum(x['amount'] for x in trades_for_order)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade.update_open_order(trade, limit_buy_order)
+    assert trade.amount != amount
+    assert trade.amount == limit_buy_order['amount']
+
+
 def test_update_open_order_exception(mocker, default_conf,
                                      limit_buy_order, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
