@@ -472,7 +472,6 @@ class FreqtradeBot(object):
             stake_amount = order['cost']
             amount = order['amount']
             buy_limit_filled_price = order['price']
-            order_id = None
 
         self.rpc.send_msg({
             'type': RPCMessageType.BUY_NOTIFICATION,
