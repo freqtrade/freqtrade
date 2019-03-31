@@ -500,6 +500,10 @@ class FreqtradeBot(object):
             ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
         )
 
+        # Update fees if order is closed already.
+        if order_status == 'closed':
+            self.update_open_order(trade, order)
+
         Trade.session.add(trade)
         Trade.session.flush()
 
