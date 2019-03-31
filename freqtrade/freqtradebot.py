@@ -530,24 +530,7 @@ class FreqtradeBot(object):
         :return: True if executed
         """
         try:
-            # Get order details for actual price per unit
-            if trade.open_order_id:
-                # Update trade with order values
-                logger.info('Found open order for %s', trade)
-                order = self.exchange.get_order(trade.open_order_id, trade.pair)
-                # Try update amount (binance-fix)
-                try:
-                    new_amount = self.get_real_amount(trade, order)
-                    if order['amount'] != new_amount:
-                        order['amount'] = new_amount
-                        # Fee was applied, so set to 0
-                        trade.fee_open = 0
-
-                except OperationalException as exception:
-                    logger.warning("Could not update trade amount: %s", exception)
-
-                # This handles both buy and sell orders!
-                trade.update(order)
+            self.update_open_order(trade)
 
             if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
                 result = self.handle_stoploss_on_exchange(trade)
@@ -611,6 +594,28 @@ class FreqtradeBot(object):
             logger.info(f"Applying fee on amount for {trade} "
                         f"(from {order_amount} to {real_amount}) from Trades")
         return real_amount
+
+    def update_open_order(self, trade, action_order: dict = None):
+        """
+        Checks trades with open orders and updates the amount if necessary
+        """
+        # Get order details for actual price per unit
+        if trade.open_order_id:
+            # Update trade with order values
+            logger.info('Found open order for %s', trade)
+            order = action_order or self.exchange.get_order(trade.open_order_id, trade.pair)
+            # Try update amount (binance-fix)
+            try:
+                new_amount = self.get_real_amount(trade, order)
+                if order['amount'] != new_amount:
+                    order['amount'] = new_amount
+                    # Fee was applied, so set to 0
+                    trade.fee_open = 0
+
+            except OperationalException as exception:
+                logger.warning("Could not update trade amount: %s", exception)
+
+            trade.update(order)
 
     def get_sell_rate(self, pair: str, refresh: bool) -> float:
         """
