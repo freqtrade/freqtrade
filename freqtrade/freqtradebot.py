@@ -22,7 +22,6 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListReso
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType, IStrategy
 from freqtrade.wallets import Wallets
-from freqtrade.worker import Worker
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ class FreqtradeBot(object):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any], worker: Optional[Worker] = None) -> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Init all variables and objects the bot needs to work
         :param config: configuration dict, you can use Configuration.get_config()
@@ -43,9 +42,11 @@ class FreqtradeBot(object):
 
         logger.info('Starting freqtrade %s', __version__)
 
+        # Init bot state
+        self.state = State.STOPPED
+
         # Init objects
         self.config = config
-        self._worker = worker
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
@@ -73,17 +74,9 @@ class FreqtradeBot(object):
 
         persistence.init(self.config)
 
-    @property
-    def state(self) -> State:
-        if self._worker is None:
-            raise DependencyException("No Worker is available")
-        return self._worker.state
-
-    @state.setter
-    def state(self, value: State):
-        if self._worker is None:
-            raise DependencyException("No Worker is available")
-        self._worker.state = value
+        # Set initial bot state from config
+        initial_state = self.config.get('initial_state')
+        self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
     def cleanup(self) -> None:
         """

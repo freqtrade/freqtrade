@@ -11,6 +11,7 @@ import sdnotify
 from freqtrade import (constants, OperationalException, TemporaryError,
                        __version__)
 from freqtrade.configuration import Configuration
+from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
 from freqtrade.rpc import RPCMessageType
 
@@ -46,19 +47,8 @@ class Worker(object):
             # Load configuration
             self._config = Configuration(self._args, None).get_config()
 
-        # Import freqtradebot here in order to avoid python circular
-        # dependency error, damn!
-        from freqtrade.freqtradebot import FreqtradeBot
-
         # Init the instance of the bot
-        self.freqtrade = FreqtradeBot(self._config, self)
-
-        # Set initial bot state
-        initial_state = self._config.get('initial_state')
-        if initial_state:
-            self._state = State[initial_state.upper()]
-        else:
-            self._state = State.STOPPED
+        self.freqtrade = FreqtradeBot(self._config)
 
         self._throttle_secs = self._config.get('internals', {}).get(
             'process_throttle_secs',
@@ -70,11 +60,11 @@ class Worker(object):
 
     @property
     def state(self) -> State:
-        return self._state
+        return self.freqtrade.state
 
     @state.setter
     def state(self, value: State):
-        self._state = value
+        self.freqtrade.state = value
 
     def run(self):
         state = None
@@ -89,7 +79,7 @@ class Worker(object):
         :param old_state: the previous service state from the previous call
         :return: current service state
         """
-        state = self._state
+        state = self.freqtrade.state
         if throttle_secs is None:
             throttle_secs = self._throttle_secs
 
@@ -141,7 +131,6 @@ class Worker(object):
         state_changed = False
         try:
             state_changed = self.freqtrade.process()
-
         except TemporaryError as error:
             logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
             time.sleep(constants.RETRY_TIMEOUT)
@@ -153,7 +142,8 @@ class Worker(object):
                 'status': f'OperationalException:\n```\n{tb}```{hint}'
             })
             logger.exception('OperationalException. Stopping trader ...')
-            self.state = State.STOPPED
+            self.freqtrade.state = State.STOPPED
+###            state_changed = True
         return state_changed
 
     def _reconfigure(self):
