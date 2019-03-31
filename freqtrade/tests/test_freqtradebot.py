@@ -1291,7 +1291,7 @@ def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplo
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    assert freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.update_open_order(trade)
 
     regexp = re.compile('Found open order for.*')
     assert filter(regexp.match, caplog.record_tuples)
@@ -1313,6 +1313,43 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
     )
     freqtrade.process_maybe_execute_sell(trade)
     assert log_has('Unable to sell trade: ', caplog.record_tuples)
+
+
+def test_update_open_order(mocker, default_conf, limit_buy_order, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
+                 return_value=limit_buy_order['amount'])
+
+    trade = Trade()
+    # Mock session away
+    Trade.session = MagicMock()
+    trade.open_order_id = '123'
+    trade.open_fee = 0.001
+    freqtrade.update_open_order(trade)
+    # Test amount not modified by fee-logic
+    assert not log_has_re(r'Applying fee to .*', caplog.record_tuples)
+    assert trade.open_order_id is None
+    assert trade.amount == limit_buy_order['amount']
+
+    trade.open_order_id = '123'
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
+    assert trade.amount != 90.81
+    # test amount modified by fee-logic
+    freqtrade.update_open_order(trade)
+    assert trade.amount == 90.81
+    assert trade.open_order_id is None
+
+    trade.is_open = True
+    trade.open_order_id = None
+    # Assert we call handle_trade() if trade is feasible for execution
+    freqtrade.update_open_order(trade)
+
+    regexp = re.compile('Found open order for.*')
+    assert filter(regexp.match, caplog.record_tuples)
 
 
 def test_update_open_order_exception(mocker, default_conf,
