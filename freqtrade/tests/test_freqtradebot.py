@@ -545,8 +545,7 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
-    result = freqtrade.create_trade()
-    assert result is False
+    assert not freqtrade.create_trade()
 
 
 def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
@@ -567,7 +566,7 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
-    assert freqtrade.create_trade() is False
+    assert not freqtrade.create_trade()
     assert freqtrade._get_trade_stake_amount('ETH/BTC') is None
 
 
@@ -588,9 +587,7 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, marke
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
-
-    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
-        freqtrade.create_trade()
+    assert not freqtrade.create_trade()
 
 
 def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
@@ -610,9 +607,7 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade()
-
-    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
-        freqtrade.create_trade()
+    assert not freqtrade.create_trade()
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
