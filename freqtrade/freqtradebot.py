@@ -363,7 +363,8 @@ class FreqtradeBot(object):
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            raise DependencyException('No currency pairs in whitelist')
+            logger.info("No currency pairs left in whitelist, no trades can be created.")
+            return False
 
         # running get_signal on historical data fetched
         for _pair in whitelist:
