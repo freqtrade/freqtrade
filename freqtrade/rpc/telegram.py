@@ -197,7 +197,7 @@ class Telegram(RPC):
             messages = []
             for r in results:
                 lines = [
-                    "*Trade ID:* `{trade_id}` (since `{date}`)",
+                    "*Trade ID:* `{trade_id}` `(since {date})`",
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount}`",
                     "*Open Rate:* `{open_rate:.8f}`",
@@ -205,7 +205,9 @@ class Telegram(RPC):
                     "*Current Rate:* `{current_rate:.8f}`",
                     "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
                     "*Current Profit:* `{current_profit:.2f}%`",
-                    "*Stoploss:* `{stop_loss:.8f}`",
+                    "*Initial Stoploss:* `{initial_stop_loss:.8f}` `({initial_stop_loss_pct}%)`"
+                    if r['stop_loss'] != r['initial_stop_loss'] else "",
+                    "*Stoploss:* `{stop_loss:.8f}` `({stop_loss_pct}%)`",
                     "*Open Order:* `{open_order}`" if r['open_order'] else "",
                 ]
                 messages.append("\n".join(filter(None, lines)).format(**r))

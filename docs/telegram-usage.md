@@ -65,16 +65,14 @@ Once all positions are sold, run `/stop` to completely stop the bot.
 
 For each open trade, the bot will send you the following message.
 
-> **Trade ID:** `123`
+> **Trade ID:** `123` `(since 1 days ago)`
 > **Current Pair:** CVC/BTC
 > **Open Since:** `1 days ago`
 > **Amount:** `26.64180098`
 > **Open Rate:** `0.00007489`
-> **Close Rate:** `None`
 > **Current Rate:** `0.00007489`
-> **Close Profit:** `None`
 > **Current Profit:** `12.95%`
-> **Open Order:** `None`
+> **Stoploss:** `0.00007389 (-0.02%)`
 
 ### /status table
 

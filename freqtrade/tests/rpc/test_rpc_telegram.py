@@ -196,7 +196,10 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
             'amount': 90.99181074,
             'close_profit': None,
             'current_profit': -0.59,
+            'initial_stop_loss': 1.098e-05,
             'stop_loss': 1.099e-05,
+            'initial_stop_loss_pct': -0.05,
+            'stop_loss_pct': -0.01,
             'open_order': '(limit buy rem=0.00000000)'
         }]),
         _status_table=status_table,
