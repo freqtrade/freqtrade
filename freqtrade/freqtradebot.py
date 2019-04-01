@@ -79,8 +79,6 @@ class FreqtradeBot(object):
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
-        if not self.active_pair_whitelist:
-            raise DependencyException('Whitelist is empty.')
 
         self._init_modules()
 
@@ -198,6 +196,9 @@ class FreqtradeBot(object):
             # Refresh whitelist
             self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist
+            if not self.active_pair_whitelist:
+                logger.warning('Whitelist is empty.')
+                return False
 
             # Calculating Edge positioning
             if self.edge:
