@@ -6,9 +6,9 @@ This page explains the different parameters of the bot and how to run it.
 ## Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH]
+usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
+                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH] [--sd-notify]
                  {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
@@ -22,6 +22,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified
   --version             show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: None). Multiple
