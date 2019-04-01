@@ -79,6 +79,9 @@ class FreqtradeBot(object):
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
+        if not self.active_pair_whitelist:
+            raise DependencyException('Whitelist is empty.')
+
         self._init_modules()
 
         # Tell the systemd that we completed initialization phase
