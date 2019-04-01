@@ -363,7 +363,7 @@ class FreqtradeBot(object):
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            logger.info("No currency pairs left in whitelist, no trades can be created.")
+            logger.info("No currency pair left in whitelist, no more trade can be created.")
             return False
 
         # running get_signal on historical data fetched
