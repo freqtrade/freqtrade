@@ -502,7 +502,7 @@ class FreqtradeBot(object):
 
         # Update fees if order is closed
         if order_status == 'closed':
-            self.update_open_order(trade, order)
+            self.update_trade_state(trade, order)
 
         Trade.session.add(trade)
         Trade.session.flush()
@@ -534,7 +534,7 @@ class FreqtradeBot(object):
         :return: True if executed
         """
         try:
-            self.update_open_order(trade)
+            self.update_trade_state(trade)
 
             if self.strategy.order_types.get('stoploss_on_exchange') and trade.is_open:
                 result = self.handle_stoploss_on_exchange(trade)
@@ -599,7 +599,7 @@ class FreqtradeBot(object):
                         f"(from {order_amount} to {real_amount}) from Trades")
         return real_amount
 
-    def update_open_order(self, trade, action_order: dict = None):
+    def update_trade_state(self, trade, action_order: dict = None):
         """
         Checks trades with open orders and updates the amount if necessary
         """
