@@ -17,6 +17,14 @@ class OperationalException(BaseException):
     """
 
 
+class InvalidOrder(BaseException):
+    """
+    This is returned when the order is not valid. Example:
+    If stoploss on exchange order is hit, then trying to cancel the order
+    should return this exception.
+    """
+
+
 class TemporaryError(BaseException):
     """
     Temporary network or exchange related error.
