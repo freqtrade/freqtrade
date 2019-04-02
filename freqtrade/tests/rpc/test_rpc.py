@@ -16,7 +16,6 @@ from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.tests.conftest import patch_coinmarketcap, patch_exchange
 from freqtrade.tests.test_freqtradebot import patch_get_signal
-from freqtrade.worker import Worker
 
 
 # Functions for recurrent object patching
@@ -39,8 +38,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -97,8 +95,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -135,8 +132,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     stake_currency = default_conf['stake_currency']
@@ -191,8 +187,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     stake_currency = default_conf['stake_currency']
@@ -281,8 +276,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee, markets,
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     stake_currency = default_conf['stake_currency']
@@ -352,8 +346,7 @@ def test_rpc_balance_handle(default_conf, mocker):
         get_ticker=MagicMock(side_effect=TemporaryError('Could not load ticker due to xxx'))
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -382,8 +375,7 @@ def test_rpc_start(mocker, default_conf) -> None:
         get_ticker=MagicMock()
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -407,8 +399,7 @@ def test_rpc_stop(mocker, default_conf) -> None:
         get_ticker=MagicMock()
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -433,8 +424,7 @@ def test_rpc_stopbuy(mocker, default_conf) -> None:
         get_ticker=MagicMock()
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -467,8 +457,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -561,8 +550,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -599,8 +587,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee, markets) -> None:
         markets=PropertyMock(return_value=markets)
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -631,8 +618,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, markets, limit_buy_order
         buy=buy_mm
     )
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -659,8 +645,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, markets, limit_buy_order
     # Test not buying
     default_conf['stake_amount'] = 0.0000001
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -676,8 +661,7 @@ def test_rpcforcebuy_stopped(mocker, default_conf) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -691,8 +675,7 @@ def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
@@ -706,8 +689,7 @@ def test_rpc_whitelist(mocker, default_conf) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_whitelist()
@@ -724,8 +706,7 @@ def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
-    worker = Worker(args=None, config=default_conf)
-    freqtradebot = worker.freqtrade
+    freqtradebot = FreqtradeBot(config=default_conf)
 
     rpc = RPC(freqtradebot)
     ret = rpc._rpc_whitelist()
