@@ -88,7 +88,7 @@ def test_freqtradebot_state(mocker, default_conf, markets) -> None:
     assert freqtrade.state is State.RUNNING
 
     default_conf.pop('initial_state')
-    freqtrade = FreqtradeBot(config=default_conf)
+    freqtrade = FreqtradeBot(default_conf)
     assert freqtrade.state is State.STOPPED
 
 

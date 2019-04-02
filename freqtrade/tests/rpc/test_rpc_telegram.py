@@ -96,9 +96,7 @@ def test_authorized_only(default_conf, mocker, caplog) -> None:
     update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
-
-    bot = FreqtradeBot(config=default_conf)
-
+    bot = FreqtradeBot(default_conf)
     patch_get_signal(bot, (True, False))
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
@@ -124,9 +122,7 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     update.message = Message(randint(1, 100), 0, datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
-
-    bot = FreqtradeBot(config=default_conf)
-
+    bot = FreqtradeBot(default_conf)
     patch_get_signal(bot, (True, False))
     dummy = DummyCls(bot)
     dummy.dummy_handler(bot=MagicMock(), update=update)
@@ -153,8 +149,7 @@ def test_authorized_only_exception(default_conf, mocker, caplog) -> None:
 
     default_conf['telegram']['enabled'] = False
 
-    bot = FreqtradeBot(config=default_conf)
-
+    bot = FreqtradeBot(default_conf)
     patch_get_signal(bot, (True, False))
     dummy = DummyCls(bot)
 
@@ -212,8 +207,7 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -248,8 +242,7 @@ def test_status_handle(default_conf, update, ticker, fee, markets, mocker) -> No
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
 
     telegram = Telegram(freqtradebot)
@@ -301,9 +294,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, markets, mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
     default_conf['stake_amount'] = 15.0
-
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
 
     telegram = Telegram(freqtradebot)
@@ -356,8 +347,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -421,8 +411,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -460,8 +449,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -724,8 +712,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
         validate_pairs=MagicMock(return_value={})
     )
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -775,8 +762,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
         validate_pairs=MagicMock(return_value={})
     )
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -829,8 +815,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         validate_pairs=MagicMock(return_value={})
     )
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -872,8 +857,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     )
     patch_exchange(mocker)
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -914,8 +898,7 @@ def test_forcebuy_handle(default_conf, update, markets, mocker) -> None:
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch('freqtrade.rpc.RPC._rpc_forcebuy', fbuy_mock)
 
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -948,9 +931,7 @@ def test_forcebuy_handle_exception(default_conf, update, markets, mocker) -> Non
         markets=PropertyMock(markets),
         validate_pairs=MagicMock(return_value={})
     )
-
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -978,9 +959,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
         validate_pairs=MagicMock(return_value={})
     )
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
@@ -1018,9 +997,7 @@ def test_count_handle(default_conf, update, ticker, fee, markets, mocker) -> Non
         markets=PropertyMock(markets)
     )
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-
-    freqtradebot = FreqtradeBot(config=default_conf)
-
+    freqtradebot = FreqtradeBot(default_conf)
     patch_get_signal(freqtradebot, (True, False))
     telegram = Telegram(freqtradebot)
 
