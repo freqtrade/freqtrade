@@ -82,7 +82,17 @@ def patch_RPCManager(mocker) -> MagicMock:
 
 # Unit tests
 
-def test_freqtradebot(mocker, default_conf, markets) -> None:
+def test_freqtradebot_state(mocker, default_conf, markets) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert freqtrade.state is State.RUNNING
+
+    default_conf.pop('initial_state')
+    freqtrade = FreqtradeBot(config=default_conf)
+    assert freqtrade.state is State.STOPPED
+
+
+def test_worker_state(mocker, default_conf, markets) -> None:
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     worker = get_patched_worker(mocker, default_conf)
     assert worker.state is State.RUNNING
