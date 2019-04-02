@@ -1031,6 +1031,13 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
 
+    mocker.patch(
+        'freqtrade.exchange.Exchange.stoploss_limit',
+        side_effect=DependencyException()
+    )
+    freqtrade.handle_stoploss_on_exchange(trade)
+    assert log_has('Unable to create stoploss order: ', caplog.record_tuples)
+
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
                                               markets, limit_buy_order, limit_sell_order) -> None:
@@ -1281,17 +1288,84 @@ def test_process_maybe_execute_sell(mocker, default_conf, limit_buy_order, caplo
     # test amount modified by fee-logic
     assert not freqtrade.process_maybe_execute_sell(trade)
 
+
+def test_process_maybe_execute_sell_exception(mocker, default_conf,
+                                              limit_buy_order, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
+
+    trade = MagicMock()
+    trade.open_order_id = '123'
+    trade.open_fee = 0.001
+
+    # Test raise of DependencyException exception
+    mocker.patch(
+        'freqtrade.freqtradebot.FreqtradeBot.update_trade_state',
+        side_effect=DependencyException()
+    )
+    freqtrade.process_maybe_execute_sell(trade)
+    assert log_has('Unable to sell trade: ', caplog.record_tuples)
+
+
+def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
+    mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
+                 return_value=limit_buy_order['amount'])
+
+    trade = Trade()
+    # Mock session away
+    Trade.session = MagicMock()
+    trade.open_order_id = '123'
+    trade.open_fee = 0.001
+    freqtrade.update_trade_state(trade)
+    # Test amount not modified by fee-logic
+    assert not log_has_re(r'Applying fee to .*', caplog.record_tuples)
+    assert trade.open_order_id is None
+    assert trade.amount == limit_buy_order['amount']
+
+    trade.open_order_id = '123'
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
+    assert trade.amount != 90.81
+    # test amount modified by fee-logic
+    freqtrade.update_trade_state(trade)
+    assert trade.amount == 90.81
+    assert trade.open_order_id is None
+
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    assert freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.update_trade_state(trade)
 
     regexp = re.compile('Found open order for.*')
     assert filter(regexp.match, caplog.record_tuples)
 
 
-def test_process_maybe_execute_sell_exception(mocker, default_conf,
-                                              limit_buy_order, caplog) -> None:
+def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, mocker):
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    # get_order should not be called!!
+    mocker.patch('freqtrade.exchange.Exchange.get_order', MagicMock(side_effect=ValueError))
+    patch_exchange(mocker)
+    Trade.session = MagicMock()
+    amount = sum(x['amount'] for x in trades_for_order)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade.update_trade_state(trade, limit_buy_order)
+    assert trade.amount != amount
+    assert trade.amount == limit_buy_order['amount']
+
+
+def test_update_trade_state_exception(mocker, default_conf,
+                                      limit_buy_order, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.get_order', return_value=limit_buy_order)
 
@@ -1304,16 +1378,8 @@ def test_process_maybe_execute_sell_exception(mocker, default_conf,
         'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
         side_effect=OperationalException()
     )
-    freqtrade.process_maybe_execute_sell(trade)
+    freqtrade.update_trade_state(trade)
     assert log_has('Could not update trade amount: ', caplog.record_tuples)
-
-    # Test raise of DependencyException exception
-    mocker.patch(
-        'freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-        side_effect=DependencyException()
-    )
-    freqtrade.process_maybe_execute_sell(trade)
-    assert log_has('Unable to sell trade: ', caplog.record_tuples)
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
