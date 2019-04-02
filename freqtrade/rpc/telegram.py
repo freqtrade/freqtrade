@@ -205,12 +205,17 @@ class Telegram(RPC):
                     "*Current Rate:* `{current_rate:.8f}`",
                     "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
                     "*Current Profit:* `{current_profit:.2f}%`",
+
+                    # Adding initial stoploss only if it is different from stoploss
                     "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
                     ("`({initial_stop_loss_pct:.2f}%)`" if r['initial_stop_loss_pct'] else "")
                     if r['stop_loss'] != r['initial_stop_loss'] else "",
+
+                    # Adding stoploss and stoploss percentage only if it is not None
                     "*Stoploss:* `{stop_loss:.8f}` " +
                     ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
-                    "*Open Order:* `{open_order}`" if r['open_order'] else "",
+
+                    "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
                 messages.append("\n".join(filter(None, lines)).format(**r))
 
