@@ -13,7 +13,8 @@ import ccxt
 import ccxt.async_support as ccxt_async
 from pandas import DataFrame
 
-from freqtrade import constants, DependencyException, OperationalException, TemporaryError
+from freqtrade import (constants, DependencyException, OperationalException,
+                       TemporaryError, InvalidOrder)
 from freqtrade.data.converter import parse_ticker_dataframe
 
 logger = logging.getLogger(__name__)
