@@ -68,9 +68,9 @@ For any other type of installation please refer to [Installation doc](https://ww
 ### Bot commands
 
 ```
-usage: freqtrade [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-                 [--strategy-path PATH] [--dynamic-whitelist [INT]]
-                 [--db-url PATH]
+usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
+                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH] [--sd-notify]
                  {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
@@ -84,6 +84,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified
   --version             show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: None). Multiple
@@ -100,6 +101,7 @@ optional arguments:
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
                         None).
+  --sd-notify           Notify systemd service manager.
 ```
 
 ### Telegram RPC commands

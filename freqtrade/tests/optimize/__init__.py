@@ -28,6 +28,7 @@ class BTContainer(NamedTuple):
     roi: float
     trades: List[BTrade]
     profit_perc: float
+    trailing_stop: bool = False
 
 
 def _get_frame_time_from_offset(offset):

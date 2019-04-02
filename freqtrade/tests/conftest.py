@@ -4,7 +4,6 @@ import logging
 import re
 from datetime import datetime
 from functools import reduce
-from typing import Dict, Optional
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -13,11 +12,11 @@ from telegram import Chat, Message, Update
 
 from freqtrade import constants
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
-from freqtrade.worker import Worker
+from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.worker import Worker
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -96,7 +95,6 @@ def patch_freqtradebot(mocker, config) -> None:
     :param config: Config to pass to the bot
     :return: None
     """
-    patch_coinmarketcap(mocker, {'price_usd': 12345.0})
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     patch_exchange(mocker, None)
@@ -114,7 +112,8 @@ def get_patched_worker(mocker, config) -> Worker:
     return Worker(args=None, config=config)
 
 
-def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
+@pytest.fixture(autouse=True)
+def patch_coinmarketcap(mocker) -> None:
     """
     Mocker to coinmarketcap to speed up tests
     :param mocker: mocker to patch coinmarketcap class
