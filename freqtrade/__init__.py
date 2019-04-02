@@ -17,7 +17,7 @@ class OperationalException(BaseException):
     """
 
 
-class InvalidOrder(BaseException):
+class InvalidOrderException(BaseException):
     """
     This is returned when the order is not valid. Example:
     If stoploss on exchange order is hit, then trying to cancel the order

@@ -14,7 +14,7 @@ import ccxt.async_support as ccxt_async
 from pandas import DataFrame
 
 from freqtrade import (constants, DependencyException, OperationalException,
-                       TemporaryError, InvalidOrder)
+                       TemporaryError, InvalidOrderException)
 from freqtrade.data.converter import parse_ticker_dataframe
 
 logger = logging.getLogger(__name__)
@@ -608,7 +608,7 @@ class Exchange(object):
         try:
             return self._api.cancel_order(order_id, pair)
         except ccxt.InvalidOrder as e:
-            raise DependencyException(
+            raise InvalidOrderException(
                 f'Could not cancel order. Message: {e}')
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
