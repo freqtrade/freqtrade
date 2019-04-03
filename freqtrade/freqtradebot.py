@@ -79,7 +79,6 @@ class FreqtradeBot(object):
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
-
         self._init_modules()
 
         # Tell the systemd that we completed initialization phase
@@ -196,9 +195,6 @@ class FreqtradeBot(object):
             # Refresh whitelist
             self.pairlists.refresh_pairlist()
             self.active_pair_whitelist = self.pairlists.whitelist
-            if not self.active_pair_whitelist:
-                logger.warning('Whitelist is empty.')
-                return False
 
             # Calculating Edge positioning
             if self.edge:
@@ -360,6 +356,10 @@ class FreqtradeBot(object):
         interval = self.strategy.ticker_interval
         whitelist = copy.deepcopy(self.active_pair_whitelist)
 
+        if not whitelist:
+            logger.warning("Whitelist is empty.")
+            return False
+
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.get_open_trades():
             if trade.pair in whitelist:
@@ -367,7 +367,7 @@ class FreqtradeBot(object):
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            logger.info("No currency pair left in whitelist, no more trade can be created.")
+            logger.info("No currency pair in whitelist, but checking to sell open trades.")
             return False
 
         # running get_signal on historical data fetched
