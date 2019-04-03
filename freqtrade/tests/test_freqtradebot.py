@@ -551,8 +551,7 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
-    result = freqtrade.create_trade()
-    assert result is False
+    assert not freqtrade.create_trade()
 
 
 def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
@@ -573,11 +572,12 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order,
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
-    assert freqtrade.create_trade() is False
+    assert not freqtrade.create_trade()
     assert freqtrade._get_trade_stake_amount('ETH/BTC') is None
 
 
-def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, markets, mocker) -> None:
+def test_create_trade_no_pairs_let(default_conf, ticker, limit_buy_order, fee,
+                                   markets, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -589,18 +589,17 @@ def test_create_trade_no_pairs(default_conf, ticker, limit_buy_order, fee, marke
     )
 
     default_conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
-    default_conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
-    freqtrade.create_trade()
+    assert freqtrade.create_trade()
+    assert not freqtrade.create_trade()
+    assert log_has("No currency pair in whitelist, but checking to sell open trades.",
+                   caplog.record_tuples)
 
-    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
-        freqtrade.create_trade()
 
-
-def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
-                                               limit_buy_order, fee, markets, mocker) -> None:
+def test_create_trade_no_pairs_in_whitelist(default_conf, ticker, limit_buy_order, fee,
+                                            markets, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -610,15 +609,12 @@ def test_create_trade_no_pairs_after_blacklist(default_conf, ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets)
     )
-    default_conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
-    default_conf['exchange']['pair_blacklist'] = ["ETH/BTC"]
+    default_conf['exchange']['pair_whitelist'] = []
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
-    freqtrade.create_trade()
-
-    with pytest.raises(DependencyException, match=r'.*No currency pairs in whitelist.*'):
-        freqtrade.create_trade()
+    assert not freqtrade.create_trade()
+    assert log_has("Whitelist is empty.", caplog.record_tuples)
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:

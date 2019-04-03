@@ -356,6 +356,10 @@ class FreqtradeBot(object):
         interval = self.strategy.ticker_interval
         whitelist = copy.deepcopy(self.active_pair_whitelist)
 
+        if not whitelist:
+            logger.warning("Whitelist is empty.")
+            return False
+
         # Remove currently opened and latest pairs from whitelist
         for trade in Trade.get_open_trades():
             if trade.pair in whitelist:
@@ -363,7 +367,8 @@ class FreqtradeBot(object):
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            raise DependencyException('No currency pairs in whitelist')
+            logger.info("No currency pair in whitelist, but checking to sell open trades.")
+            return False
 
         # running get_signal on historical data fetched
         for _pair in whitelist:
