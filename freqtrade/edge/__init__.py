@@ -203,6 +203,24 @@ class Edge():
 
         return self._final_pairs
 
+    def accepted_pairs(self) -> list:
+        """
+        return a list of accepted pairs along with their winrate, expectancy and stoploss
+        ex:
+        #[{'Pair': 'ADX/ETH', 'Winrate': 0.08333333333333333, 'Expectancy': -0.8105153934775888, 'Stoploss': -0.02}]
+        """
+        final = []
+        for pair, info in self._cached_pairs.items():
+            if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
+                info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)):
+                final.append({
+                    'Pair': pair,
+                    'Winrate': info.winrate,
+                    'Expectancy': info.expectancy,
+                    'Stoploss': info.stoploss,
+                })
+        return final
+
     def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
         """
         The result frame contains a number of columns that are calculable
