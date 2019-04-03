@@ -208,12 +208,12 @@ class Telegram(RPC):
 
                     # Adding initial stoploss only if it is different from stoploss
                     "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
-                    ("`({initial_stop_loss_pct:.2f}%)`" if r['initial_stop_loss_pct'] else "")
+                    ("`({initial_stop_loss_pct:.2f})`" if r['initial_stop_loss_pct'] else "")
                     if r['stop_loss'] != r['initial_stop_loss'] else "",
 
                     # Adding stoploss and stoploss percentage only if it is not None
                     "*Stoploss:* `{stop_loss:.8f}` " +
-                    ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
+                    ("`({stop_loss_pct:.2f})`" if r['stop_loss_pct'] else ""),
 
                     "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
