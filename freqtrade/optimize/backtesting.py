@@ -337,7 +337,6 @@ class Backtesting(object):
 
         # Loop timerange and test per pair
         while tmp < end_date:
-            # print(f"time: {tmp}")
 
             for i, pair in enumerate(ticker):
                 if pair not in indexes:
@@ -358,9 +357,9 @@ class Backtesting(object):
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
 
-                if not position_stacking:
-                    if pair in lock_pair_until and row.date <= lock_pair_until[pair]:
-                        continue
+                if (not position_stacking and pair in lock_pair_until
+                        and row.date <= lock_pair_until[pair]):
+                    continue
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
                     if not trade_count_lock.get(row.date, 0) < max_open_trades:
