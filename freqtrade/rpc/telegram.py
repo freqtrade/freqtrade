@@ -511,7 +511,6 @@ class Telegram(RPC):
         """
         try:
             edge_pairs = self._rpc_edge()
-            print(edge_pairs)
             edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
             message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
             self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)

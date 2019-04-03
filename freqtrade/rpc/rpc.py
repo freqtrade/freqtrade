@@ -484,13 +484,4 @@ class RPC(object):
         """ Returns information related to Edge """
         if not self._freqtrade.edge:
             raise RPCException(f'Edge is not enabled.')
-
-        return [
-            {
-                'Pair': k,
-                'Winrate': v.winrate,
-                'Expectancy': v.expectancy,
-                'Stoploss': v.stoploss,
-            }
-            for k, v in self._freqtrade.edge._cached_pairs.items()
-        ]
+        return self._freqtrade.edge.accepted_pairs()
