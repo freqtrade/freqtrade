@@ -199,7 +199,7 @@ class Telegram(RPC):
                 lines = [
                     "*Trade ID:* `{trade_id}` `(since {date})`",
                     "*Current Pair:* {pair}",
-                    "*Amount:* `{amount}`",
+                    "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",

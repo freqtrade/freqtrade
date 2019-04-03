@@ -103,11 +103,13 @@ class RPC(object):
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
+                    base_currency=self._freqtrade.config['stake_currency'],
                     date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
                     current_rate=current_rate,
                     amount=round(trade.amount, 8),
+                    stake_amount=round(trade.amount, 8),
                     close_profit=fmt_close_profit,
                     current_profit=round(current_profit * 100, 2),
                     stop_loss=trade.stop_loss,

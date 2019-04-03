@@ -189,11 +189,13 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
         _rpc_trade_status=MagicMock(return_value=[{
             'trade_id': 1,
             'pair': 'ETH/BTC',
+            'base_currency': 'BTC',
             'date': arrow.utcnow(),
             'open_rate': 1.099e-05,
             'close_rate': None,
             'current_rate': 1.098e-05,
             'amount': 90.99181074,
+            'stake_amount': 90.99181074,
             'close_profit': None,
             'current_profit': -0.59,
             'initial_stop_loss': 1.098e-05,
