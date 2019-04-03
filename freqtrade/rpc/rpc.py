@@ -113,11 +113,13 @@ class RPC(object):
                     close_profit=fmt_close_profit,
                     current_profit=round(current_profit * 100, 2),
                     stop_loss=trade.stop_loss,
-                    stop_loss_pct=trade.stop_loss_pct,
+                    stop_loss_pct=(trade.stop_loss_pct * 100)
+                    if trade.stop_loss_pct else None,
                     initial_stop_loss=trade.initial_stop_loss,
-                    initial_stop_loss_pct=trade.initial_stop_loss_pct,
+                    initial_stop_loss_pct=(trade.initial_stop_loss_pct * 100)
+                    if trade.initial_stop_loss_pct else None,
                     open_order='({} {} rem={:.8f})'.format(
-                      order['type'], order['side'], order['remaining']
+                        order['type'], order['side'], order['remaining']
                     ) if order else None,
                 ))
             return results
