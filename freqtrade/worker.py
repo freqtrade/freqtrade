@@ -143,7 +143,9 @@ class Worker(object):
             })
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED
-###            state_changed = True
+            # TODO: The return value of _process() is not used apart tests
+            # and should (could) be eliminated later. See PR #1689.
+#            state_changed = True
         return state_changed
 
     def _reconfigure(self):
