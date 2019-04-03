@@ -211,12 +211,12 @@ class Edge():
         for pair, info in self._cached_pairs.items():
             if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
                  info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)):
-                    final.append({
-                        'Pair': pair,
-                        'Winrate': info.winrate,
-                        'Expectancy': info.expectancy,
-                        'Stoploss': info.stoploss,
-                    })
+                final.append({
+                    'Pair': pair,
+                    'Winrate': info.winrate,
+                    'Expectancy': info.expectancy,
+                    'Stoploss': info.stoploss,
+                })
         return final
 
     def _fill_calculable_fields(self, result: DataFrame) -> DataFrame:
