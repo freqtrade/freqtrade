@@ -334,10 +334,11 @@ class Backtesting(object):
         ticker: Dict = self._get_ticker_list(processed)
 
         lock_pair_until: Dict = {}
+        # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = {}
         tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
 
-        # Loop timerange and test per pair
+        # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
 
             for i, pair in enumerate(ticker):
