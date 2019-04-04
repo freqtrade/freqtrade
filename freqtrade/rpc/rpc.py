@@ -48,6 +48,11 @@ class RPCException(Exception):
     def __str__(self):
         return self.message
 
+    def __json__(self):
+        return {
+            'msg': self.message
+        }
+
 
 class RPC(object):
     """

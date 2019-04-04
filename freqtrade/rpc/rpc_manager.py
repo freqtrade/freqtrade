@@ -29,6 +29,12 @@ class RPCManager(object):
             from freqtrade.rpc.webhook import Webhook
             self.registered_modules.append(Webhook(freqtrade))
 
+        # Enable local rest api server for cmd line control
+        if freqtrade.config.get('api_server', {}).get('enabled', False):
+            logger.info('Enabling rpc.api_server')
+            from freqtrade.rpc.api_server import ApiServer
+            self.registered_modules.append(ApiServer(freqtrade))
+
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
