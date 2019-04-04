@@ -4,7 +4,7 @@ import logging
 # import json
 from typing import Dict
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 # from flask_restful import Resource, Api
 from freqtrade.rpc.rpc import RPC, RPCException
 from ipaddress import IPv4Address
@@ -39,10 +39,14 @@ class ApiServer(RPC):
         thread.start()
 
     def cleanup(self) -> None:
-        pass
+        logger.info("Stopping API Server")
 
     def send_msg(self, msg: Dict[str, str]) -> None:
         pass
+
+    def rest_dump(self, return_value):
+        """ Helper function to jsonify object for a webserver """
+        return jsonify(return_value)
 
     def register_rest_other(self):
         """
@@ -89,6 +93,7 @@ class ApiServer(RPC):
             app.run(host=rest_ip, port=rest_port)
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
+        logger.info('Starting Local Rest Server_end')
 
     """
     Define the application methods here, called by app.add_url_rule
@@ -99,7 +104,7 @@ class ApiServer(RPC):
         """
         Return "404 not found", 404.
         """
-        return json.dumps({
+        return self.rest_dump({
             'status': 'error',
             'reason': '''There's no API call for %s''' % request.base_url,
             'code': 404
@@ -113,20 +118,14 @@ class ApiServer(RPC):
         This may be deprecated at any time.
         :return: index.html
         """
-        rest_cmds = 'Commands implemented: <br>' \
-                    '<a href=/daily?timescale=7>Show 7 days of stats</a>' \
-                    '<br>' \
-                    '<a href=/stop>Stop the Trade thread</a>' \
-                    '<br>' \
-                    '<a href=/start>Start the Traded thread</a>' \
-                    '<br>' \
-                    '<a href=/profit>Show profit summary</a>' \
-                    '<br>' \
-                    '<a href=/status_table>Show status table - Open trades</a>' \
-                    '<br>' \
-                    '<a href=/paypal> 404 page does not exist</a>' \
-                    '<br>'
-
+        rest_cmds = ('Commands implemented: <br>'
+                     '<a href=/daily?timescale=7>Show 7 days of stats</a><br>'
+                     '<a href=/stop>Stop the Trade thread</a><br>'
+                     '<a href=/start>Start the Traded thread</a><br>'
+                     '<a href=/profit>Show profit summary</a><br>'
+                     '<a href=/status_table>Show status table - Open trades</a><br>'
+                     '<a href=/paypal> 404 page does not exist</a><br>'
+                     )
         return rest_cmds
 
     def daily(self):
@@ -145,7 +144,7 @@ class ApiServer(RPC):
                                            self._config['fiat_display_currency']
                                            )
 
-            return json.dumps(stats, indent=4, sort_keys=True, default=str)
+            return self.rest_dump(stats)
         except RPCException as e:
             logger.exception("API Error querying daily:", e)
             return "Error querying daily"
@@ -164,7 +163,7 @@ class ApiServer(RPC):
                                                self._config['fiat_display_currency']
                                                )
 
-            return json.dumps(stats, indent=4, sort_keys=True, default=str)
+            return self.rest_dump(stats)
         except RPCException as e:
             logger.exception("API Error calling profit", e)
             return "Error querying closed trades - maybe there are none"
@@ -178,7 +177,7 @@ class ApiServer(RPC):
         """
         try:
             results = self._rpc_trade_status()
-            return json.dumps(results, indent=4, sort_keys=True, default=str)
+            return self.rest_dump(results)
 
         except RPCException as e:
             logger.exception("API Error calling status table", e)
@@ -191,7 +190,7 @@ class ApiServer(RPC):
         Starts TradeThread in bot if stopped.
         """
         msg = self._rpc_start()
-        return json.dumps(msg)
+        return self.rest_dump(msg)
 
     def stop(self):
         """
@@ -200,4 +199,4 @@ class ApiServer(RPC):
         Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
-        return json.dumps(msg)
+        return self.rest_dump(msg)
