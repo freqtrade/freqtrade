@@ -1009,7 +1009,21 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id == 100
 
-    # Third case: when stoploss is set and it is hit
+    # Third case: when stoploss was set but it was canceled for some reason
+    # should set a stoploss immediately and return False
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    canceled_stoploss_order = MagicMock(return_value={'status': 'canceled'})
+    mocker.patch('freqtrade.exchange.Exchange.get_order', canceled_stoploss_order)
+    stoploss_limit.reset_mock()
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss_limit.call_count == 1
+    assert trade.stoploss_order_id == "13434334"
+
+    # Fourth case: when stoploss is set and it is hit
     # should unset stoploss_order_id and return true
     # as a trade actually happened
     freqtrade.create_trade()
