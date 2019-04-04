@@ -1036,7 +1036,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         side_effect=DependencyException()
     )
     freqtrade.handle_stoploss_on_exchange(trade)
-    assert log_has('Unable to create stoploss order: ', caplog.record_tuples)
+    assert log_has('Unable to place a stoploss order on exchange: ', caplog.record_tuples)
 
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
