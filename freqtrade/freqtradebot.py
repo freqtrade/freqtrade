@@ -700,7 +700,7 @@ class FreqtradeBot(object):
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
 
-        # If there open order id does not exist,
+        # If trade open order id does not exist,
         # it means buy order is fulfilled
         buy_order_fulfilled = not trade.open_order_id
 
