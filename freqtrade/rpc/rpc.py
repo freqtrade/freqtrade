@@ -109,7 +109,7 @@ class RPC(object):
                     close_rate=trade.close_rate,
                     current_rate=current_rate,
                     amount=round(trade.amount, 8),
-                    stake_amount=round(trade.amount, 8),
+                    stake_amount=round(trade.stake_amount, 8),
                     close_profit=fmt_close_profit,
                     current_profit=round(current_profit * 100, 2),
                     stop_loss=trade.stop_loss,
