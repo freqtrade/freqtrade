@@ -24,11 +24,10 @@ import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
 
-from freqtrade import constants, misc
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
-from freqtrade.misc import timeframe_to_seconds
+from freqtrade.misc import common_datearray, timeframe_to_seconds
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 
@@ -132,7 +131,7 @@ def plot_profit(args: Namespace) -> None:
     # NOTE: the dataframes are of unequal length,
     # 'dates' is an merged date array of them all.
 
-    dates = misc.common_datearray(dataframes)
+    dates = common_datearray(dataframes)
     min_date = int(min(dates).timestamp())
     max_date = int(max(dates).timestamp())
     num_iterations = define_index(min_date, max_date, tick_interval) + 1
