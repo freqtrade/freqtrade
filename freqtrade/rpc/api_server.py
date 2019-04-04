@@ -38,6 +38,12 @@ class ApiServer(RPC):
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
 
+    def cleanup(self) -> None:
+        pass
+
+    def send_msg(self, msg: Dict[str, str]) -> None:
+        pass
+
     def register_rest_other(self):
         """
         Registers flask app URLs that are not calls to functionality in rpc.rpc.
@@ -83,12 +89,6 @@ class ApiServer(RPC):
             app.run(host=rest_ip, port=rest_port)
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
-
-    def cleanup(self) -> None:
-        pass
-
-    def send_msg(self, msg: Dict[str, str]) -> None:
-        pass
 
     """
     Define the application methods here, called by app.add_url_rule
