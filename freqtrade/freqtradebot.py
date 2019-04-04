@@ -699,7 +699,6 @@ class FreqtradeBot(object):
         except DependencyException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
-
         # If trade open order id does not exist,
         # it means buy order is fulfilled
         buy_order_fulfilled = not trade.open_order_id
@@ -734,7 +733,6 @@ class FreqtradeBot(object):
             except DependencyException as exception:
                 logger.warning('Unable to place a stoploss order on exchange: %s', exception)
 
-
         # If stoploss order is canceled for some reason we add it
         if stoploss_order and stoploss_order['status'] == 'canceled':
             try:
@@ -745,7 +743,8 @@ class FreqtradeBot(object):
                 trade.stoploss_order_id = str(stoploss_order_id)
                 return False
             except DependencyException as exception:
-                logger.warning('Stoploss order was cancelled, but unable to recreate one: %s', exception)
+                logger.warning('Stoploss order was cancelled, '
+                               'but unable to recreate one: %s', exception)
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] == 'closed':
