@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from typing import Dict
 
+from ccxt import Exchange
 import numpy as np
 from pandas import DataFrame
 import rapidjson
@@ -131,3 +132,15 @@ def deep_merge_dicts(source, destination):
             destination[key] = value
 
     return destination
+
+
+def timeframe_to_seconds(ticker_interval: str) -> int:
+    return Exchange.parse_timeframe(ticker_interval)
+
+
+def timeframe_to_minutes(ticker_interval: str) -> int:
+    return Exchange.parse_timeframe(ticker_interval) // 60
+
+
+def timeframe_to_msecs(ticker_interval: str) -> int:
+    return Exchange.parse_timeframe(ticker_interval) * 1000

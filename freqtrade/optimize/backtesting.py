@@ -19,7 +19,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.misc import file_dump_json
+from freqtrade.misc import file_dump_json, timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -77,7 +77,7 @@ class Backtesting(object):
         if self.config.get('strategy_list', None):
             # Force one interval
             self.ticker_interval = str(self.config.get('ticker_interval'))
-            self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
+            self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -96,7 +96,7 @@ class Backtesting(object):
         self.strategy = strategy
 
         self.ticker_interval = self.config.get('ticker_interval')
-        self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
+        self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
         self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
@@ -421,7 +421,7 @@ class Backtesting(object):
             min_date, max_date = optimize.get_timeframe(data)
             # Validate dataframe for missing values (mainly at start and end, as fillup is called)
             optimize.validate_backtest_data(data, min_date, max_date,
-                                            constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
+                                            timeframe_to_minutes(self.ticker_interval))
             logger.info(
                 'Measuring data from %s up to %s (%s days)..',
                 min_date.isoformat(),

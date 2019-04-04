@@ -28,6 +28,7 @@ from freqtrade import constants, misc
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
+from freqtrade.misc import timeframe_to_seconds
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 
@@ -193,8 +194,8 @@ def define_index(min_date: int, max_date: int, interval: str) -> int:
     """
     Return the index of a specific date
     """
-    interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-    return int((max_date - min_date) / (interval_minutes * 60))
+    interval_seconds = timeframe_to_seconds(interval)
+    return int((max_date - min_date) / interval_seconds)
 
 
 def plot_parse_args(args: List[str]) -> Namespace:

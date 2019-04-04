@@ -12,8 +12,8 @@ import warnings
 import arrow
 from pandas import DataFrame
 
-from freqtrade import constants
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.misc import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.wallets import Wallets
 
@@ -221,7 +221,7 @@ class IStrategy(ABC):
 
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
-        interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
+        interval_minutes = timeframe_to_minutes(interval)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
         if signal_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
             logger.warning(

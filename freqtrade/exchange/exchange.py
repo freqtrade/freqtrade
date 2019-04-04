@@ -15,8 +15,11 @@ from pandas import DataFrame
 
 from freqtrade import constants, DependencyException, OperationalException, TemporaryError
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.misc import timeframe_to_seconds, timeframe_to_msecs
+
 
 logger = logging.getLogger(__name__)
+
 
 API_RETRY_COUNT = 4
 
@@ -502,8 +505,8 @@ class Exchange(object):
         # Assume exchange returns 500 candles
         _LIMIT = 500
 
-        one_call = constants.TICKER_INTERVAL_MINUTES[tick_interval] * 60 * _LIMIT * 1000
-        logger.debug("one_call: %s", one_call)
+        one_call = timeframe_to_msecs(tick_interval) * _LIMIT
+        logger.debug("one_call: %s msecs", one_call)
         input_coroutines = [self._async_get_candle_history(
             pair, tick_interval, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
@@ -557,7 +560,7 @@ class Exchange(object):
 
     def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
         # Calculating ticker interval in seconds
-        interval_in_sec = constants.TICKER_INTERVAL_MINUTES[ticker_interval] * 60
+        interval_in_sec = timeframe_to_seconds(ticker_interval)
 
         return not ((self._pairs_last_refresh_time.get((pair, ticker_interval), 0)
                      + interval_in_sec) >= arrow.utcnow().timestamp)
