@@ -1,5 +1,5 @@
 # SQL Helper
-This page constains some help if you want to edit your sqlite db.
+This page contains some help if you want to edit your sqlite db.
 
 ## Install sqlite3
 **Ubuntu/Debian installation**
@@ -66,11 +66,13 @@ SELECT * FROM trades;
 ## Fix trade still open after a manual sell on the exchange
 
 !!! Warning
-  Manually selling on the exchange should not be done by default, since the bot does not detect this and will try to sell anyway.
-  /foresell <tradeid> should accomplish the same thing.
+  	Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway.
+  	Whenever possible, /forcesell <tradeid> should be used to accomplish the same thing.
+
+		It is strongly advised to backup your database file before making any manual changes.
 
 !!! Note
-  This should not be necessary after /forcesell, as forcesell orders are closed automatically by the bot on the next iteration.
+  	This should not be necessary after /forcesell, as forcesell orders are closed automatically by the bot on the next iteration.
 
 ```sql
 UPDATE trades
