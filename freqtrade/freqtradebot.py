@@ -4,17 +4,15 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 
 import copy
 import logging
-import time
 import traceback
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 from requests.exceptions import RequestException
-import sdnotify
 
 from freqtrade import (DependencyException, OperationalException,
-                       TemporaryError, __version__, constants, persistence)
+                       __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -42,19 +40,13 @@ class FreqtradeBot(object):
         to get the config dict.
         """
 
-        logger.info(
-            'Starting freqtrade %s',
-            __version__,
-        )
+        logger.info('Starting freqtrade %s', __version__)
 
-        # Init bot states
+        # Init bot state
         self.state = State.STOPPED
 
         # Init objects
         self.config = config
-
-        self._sd_notify = sdnotify.SystemdNotifier() if \
-            self.config.get('internals', {}).get('sd_notify', False) else None
 
         self.strategy: IStrategy = StrategyResolver(self.config).strategy
 
@@ -79,29 +71,12 @@ class FreqtradeBot(object):
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
-        self._init_modules()
-
-        # Tell the systemd that we completed initialization phase
-        if self._sd_notify:
-            logger.debug("sd_notify: READY=1")
-            self._sd_notify.notify("READY=1")
-
-    def _init_modules(self) -> None:
-        """
-        Initializes all modules and updates the config
-        :return: None
-        """
-        # Initialize all modules
 
         persistence.init(self.config)
 
-        # Set initial application state
+        # Set initial bot state from config
         initial_state = self.config.get('initial_state')
-
-        if initial_state:
-            self.state = State[initial_state.upper()]
-        else:
-            self.state = State.STOPPED
+        self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
     def cleanup(self) -> None:
         """
@@ -113,130 +88,50 @@ class FreqtradeBot(object):
         self.rpc.cleanup()
         persistence.cleanup()
 
-    def stopping(self) -> None:
-        # Tell systemd that we are exiting now
-        if self._sd_notify:
-            logger.debug("sd_notify: STOPPING=1")
-            self._sd_notify.notify("STOPPING=1")
-
-    def reconfigure(self) -> None:
-        # Tell systemd that we initiated reconfiguring
-        if self._sd_notify:
-            logger.debug("sd_notify: RELOADING=1")
-            self._sd_notify.notify("RELOADING=1")
-
-    def worker(self, old_state: State = None) -> State:
-        """
-        Trading routine that must be run at each loop
-        :param old_state: the previous service state from the previous call
-        :return: current service state
-        """
-        # Log state transition
-        state = self.state
-        if state != old_state:
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'{state.name.lower()}'
-            })
-            logger.info('Changing state to: %s', state.name)
-            if state == State.RUNNING:
-                self.rpc.startup_messages(self.config, self.pairlists)
-
-        throttle_secs = self.config.get('internals', {}).get(
-            'process_throttle_secs',
-            constants.PROCESS_THROTTLE_SECS
-        )
-
-        if state == State.STOPPED:
-            # Ping systemd watchdog before sleeping in the stopped state
-            if self._sd_notify:
-                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: STOPPED.")
-                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: STOPPED.")
-
-            time.sleep(throttle_secs)
-
-        elif state == State.RUNNING:
-            # Ping systemd watchdog before throttling
-            if self._sd_notify:
-                logger.debug("sd_notify: WATCHDOG=1\\nSTATUS=State: RUNNING.")
-                self._sd_notify.notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
-
-            self._throttle(func=self._process, min_secs=throttle_secs)
-
-        return state
-
-    def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
-        """
-        Throttles the given callable that it
-        takes at least `min_secs` to finish execution.
-        :param func: Any callable
-        :param min_secs: minimum execution time in seconds
-        :return: Any
-        """
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-        duration = max(min_secs - (end - start), 0.0)
-        logger.debug('Throttling %s for %.2f seconds', func.__name__, duration)
-        time.sleep(duration)
-        return result
-
-    def _process(self) -> bool:
+    def process(self) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
         otherwise a new trade is created.
         :return: True if one or more trades has been created or closed, False otherwise
         """
         state_changed = False
-        try:
-            # Check whether markets have to be reloaded
-            self.exchange._reload_markets()
 
-            # Refresh whitelist
-            self.pairlists.refresh_pairlist()
-            self.active_pair_whitelist = self.pairlists.whitelist
+        # Check whether markets have to be reloaded
+        self.exchange._reload_markets()
 
-            # Calculating Edge positioning
-            if self.edge:
-                self.edge.calculate()
-                self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
+        # Refresh whitelist
+        self.pairlists.refresh_pairlist()
+        self.active_pair_whitelist = self.pairlists.whitelist
 
-            # Query trades from persistence layer
-            trades = Trade.get_open_trades()
+        # Calculating Edge positioning
+        if self.edge:
+            self.edge.calculate()
+            self.active_pair_whitelist = self.edge.adjust(self.active_pair_whitelist)
 
-            # Extend active-pair whitelist with pairs from open trades
-            # It ensures that tickers are downloaded for open trades
-            self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
+        # Query trades from persistence layer
+        trades = Trade.get_open_trades()
 
-            # Refreshing candles
-            self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
-                                      self.strategy.informative_pairs())
+        # Extend active-pair whitelist with pairs from open trades
+        # It ensures that tickers are downloaded for open trades
+        self._extend_whitelist_with_trades(self.active_pair_whitelist, trades)
 
-            # First process current opened trades
-            for trade in trades:
-                state_changed |= self.process_maybe_execute_sell(trade)
+        # Refreshing candles
+        self.dataprovider.refresh(self._create_pair_whitelist(self.active_pair_whitelist),
+                                  self.strategy.informative_pairs())
 
-            # Then looking for buy opportunities
-            if len(trades) < self.config['max_open_trades']:
-                state_changed = self.process_maybe_execute_buy()
+        # First process current opened trades
+        for trade in trades:
+            state_changed |= self.process_maybe_execute_sell(trade)
 
-            if 'unfilledtimeout' in self.config:
-                # Check and handle any timed out open orders
-                self.check_handle_timedout()
-                Trade.session.flush()
+        # Then looking for buy opportunities
+        if len(trades) < self.config['max_open_trades']:
+            state_changed = self.process_maybe_execute_buy()
 
-        except TemporaryError as error:
-            logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
-            time.sleep(constants.RETRY_TIMEOUT)
-        except OperationalException:
-            tb = traceback.format_exc()
-            hint = 'Issue `/start` if you think it is safe to restart.'
-            self.rpc.send_msg({
-                'type': RPCMessageType.STATUS_NOTIFICATION,
-                'status': f'OperationalException:\n```\n{tb}```{hint}'
-            })
-            logger.exception('OperationalException. Stopping trader ...')
-            self.state = State.STOPPED
+        if 'unfilledtimeout' in self.config:
+            # Check and handle any timed out open orders
+            self.check_handle_timedout()
+            Trade.session.flush()
+
         return state_changed
 
     def _extend_whitelist_with_trades(self, whitelist: List[str], trades: List[Any]):

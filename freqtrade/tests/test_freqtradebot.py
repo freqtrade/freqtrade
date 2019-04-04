@@ -21,12 +21,13 @@ from freqtrade.state import State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.tests.conftest import (log_has, log_has_re, patch_edge,
                                       patch_exchange, patch_wallet)
+from freqtrade.worker import Worker
 
 
 # Functions for recurrent object patching
-def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+def patch_freqtradebot(mocker, config) -> None:
     """
-    This function patch _init_modules() to not call dependencies
+    This function patches _init_modules() to not call dependencies
     :param mocker: a Mocker object to apply patches
     :param config: Config to pass to the bot
     :return: None
@@ -35,7 +36,27 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     patch_exchange(mocker)
 
+
+def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: FreqtradeBot
+    """
+    patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
+
+
+def get_patched_worker(mocker, config) -> Worker:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: Worker
+    """
+    patch_freqtradebot(mocker, config)
+    return Worker(args=None, config=config)
 
 
 def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
@@ -61,7 +82,7 @@ def patch_RPCManager(mocker) -> MagicMock:
 
 # Unit tests
 
-def test_freqtradebot(mocker, default_conf, markets) -> None:
+def test_freqtradebot_state(mocker, default_conf, markets) -> None:
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     assert freqtrade.state is State.RUNNING
@@ -69,6 +90,16 @@ def test_freqtradebot(mocker, default_conf, markets) -> None:
     default_conf.pop('initial_state')
     freqtrade = FreqtradeBot(default_conf)
     assert freqtrade.state is State.STOPPED
+
+
+def test_worker_state(mocker, default_conf, markets) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    worker = get_patched_worker(mocker, default_conf)
+    assert worker.state is State.RUNNING
+
+    default_conf.pop('initial_state')
+    worker = Worker(args=None, config=default_conf)
+    assert worker.state is State.STOPPED
 
 
 def test_cleanup(mocker, default_conf, caplog) -> None:
@@ -82,28 +113,28 @@ def test_cleanup(mocker, default_conf, caplog) -> None:
 
 def test_worker_running(mocker, default_conf, caplog) -> None:
     mock_throttle = MagicMock()
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._throttle', mock_throttle)
+    mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
 
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    worker = get_patched_worker(mocker, default_conf)
 
-    state = freqtrade.worker(old_state=None)
+    state = worker._worker(old_state=None)
     assert state is State.RUNNING
     assert log_has('Changing state to: RUNNING', caplog.record_tuples)
     assert mock_throttle.call_count == 1
     # Check strategy is loaded, and received a dataprovider object
-    assert freqtrade.strategy
-    assert freqtrade.strategy.dp
-    assert isinstance(freqtrade.strategy.dp, DataProvider)
+    assert worker.freqtrade.strategy
+    assert worker.freqtrade.strategy.dp
+    assert isinstance(worker.freqtrade.strategy.dp, DataProvider)
 
 
 def test_worker_stopped(mocker, default_conf, caplog) -> None:
     mock_throttle = MagicMock()
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot._throttle', mock_throttle)
+    mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
     mock_sleep = mocker.patch('time.sleep', return_value=None)
 
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    freqtrade.state = State.STOPPED
-    state = freqtrade.worker(old_state=State.RUNNING)
+    worker = get_patched_worker(mocker, default_conf)
+    worker.state = State.STOPPED
+    state = worker._worker(old_state=State.RUNNING)
     assert state is State.STOPPED
     assert log_has('Changing state to: STOPPED', caplog.record_tuples)
     assert mock_throttle.call_count == 0
@@ -115,17 +146,17 @@ def test_throttle(mocker, default_conf, caplog) -> None:
         return 42
 
     caplog.set_level(logging.DEBUG)
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    worker = get_patched_worker(mocker, default_conf)
 
     start = time.time()
-    result = freqtrade._throttle(throttled_func, min_secs=0.1)
+    result = worker._throttle(throttled_func, min_secs=0.1)
     end = time.time()
 
     assert result == 42
     assert end - start > 0.1
     assert log_has('Throttling throttled_func for 0.10 seconds', caplog.record_tuples)
 
-    result = freqtrade._throttle(throttled_func, min_secs=-1)
+    result = worker._throttle(throttled_func, min_secs=-1)
     assert result == 42
 
 
@@ -133,12 +164,12 @@ def test_throttle_with_assets(mocker, default_conf) -> None:
     def throttled_func(nb_assets=-1):
         return nb_assets
 
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    worker = get_patched_worker(mocker, default_conf)
 
-    result = freqtrade._throttle(throttled_func, min_secs=0.1, nb_assets=666)
+    result = worker._throttle(throttled_func, min_secs=0.1, nb_assets=666)
     assert result == 666
 
-    result = freqtrade._throttle(throttled_func, min_secs=0.1)
+    result = worker._throttle(throttled_func, min_secs=0.1)
     assert result == -1
 
 
@@ -224,7 +255,7 @@ def test_edge_called_in_process(mocker, edge_conf) -> None:
     freqtrade = FreqtradeBot(edge_conf)
     freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     patch_get_signal(freqtrade)
-    freqtrade._process()
+    freqtrade.process()
     assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']
 
 
@@ -654,7 +685,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order,
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
 
-    result = freqtrade._process()
+    result = freqtrade.process()
     assert result is True
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -685,10 +716,10 @@ def test_process_exchange_failures(default_conf, ticker, markets, mocker) -> Non
     )
     sleep_mock = mocker.patch('time.sleep', side_effect=lambda _: None)
 
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    worker = Worker(args=None, config=default_conf)
+    patch_get_signal(worker.freqtrade)
 
-    result = freqtrade._process()
+    result = worker._process()
     assert result is False
     assert sleep_mock.has_calls()
 
@@ -702,14 +733,14 @@ def test_process_operational_exception(default_conf, ticker, markets, mocker) ->
         markets=PropertyMock(return_value=markets),
         buy=MagicMock(side_effect=OperationalException)
     )
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
+    worker = Worker(args=None, config=default_conf)
+    patch_get_signal(worker.freqtrade)
 
-    assert freqtrade.state == State.RUNNING
+    assert worker.state == State.RUNNING
 
-    result = freqtrade._process()
+    result = worker._process()
     assert result is False
-    assert freqtrade.state == State.STOPPED
+    assert worker.state == State.STOPPED
     assert 'OperationalException' in msg_mock.call_args_list[-1][0][0]['status']
 
 
@@ -730,18 +761,18 @@ def test_process_trade_handling(
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
-    result = freqtrade._process()
+    result = freqtrade.process()
     assert result is True
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
 
-    result = freqtrade._process()
+    result = freqtrade.process()
     assert result is False
 
 
 def test_process_trade_no_whitelist_pair(
         default_conf, ticker, limit_buy_order, markets, fee, mocker) -> None:
-    """ Test _process with trade not in pair list """
+    """ Test process with trade not in pair list """
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -778,7 +809,7 @@ def test_process_trade_no_whitelist_pair(
     ))
 
     assert pair not in freqtrade.active_pair_whitelist
-    result = freqtrade._process()
+    result = freqtrade.process()
     assert pair in freqtrade.active_pair_whitelist
     # Make sure each pair is only in the list once
     assert len(freqtrade.active_pair_whitelist) == len(set(freqtrade.active_pair_whitelist))
@@ -808,7 +839,7 @@ def test_process_informative_pairs_added(default_conf, ticker, markets, mocker) 
     freqtrade.strategy.informative_pairs = inf_pairs
     # patch_get_signal(freqtrade)
 
-    freqtrade._process()
+    freqtrade.process()
     assert inf_pairs.call_count == 1
     assert refresh_mock.call_count == 1
     assert ("BTC/ETH", "1m") in refresh_mock.call_args[0][0]
@@ -3056,5 +3087,5 @@ def test_startup_messages(default_conf, mocker):
                                 'config': {'number_assets': 20}
                                 }
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    assert freqtrade.state is State.RUNNING
+    worker = get_patched_worker(mocker, default_conf)
+    assert worker.state is State.RUNNING
