@@ -701,9 +701,13 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
+
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
     data = history.load_data(datadir=None, ticker_interval='5m', pairs=pairs)
+    # Only use 500 lines to increase performance
     data = trim_dictlist(data, -500)
+
+    # Remove data for one pair from the beginning of the data
     data[pair] = data[pair][tres:]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}

@@ -329,6 +329,8 @@ class Backtesting(object):
         end_date = args['end_date']
         trades = []
         trade_count_lock: Dict = {}
+
+        # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
         ticker: Dict = self._get_ticker_list(processed)
 
         lock_pair_until: Dict = {}
@@ -345,10 +347,11 @@ class Backtesting(object):
                 try:
                     row = ticker[pair][indexes[pair]]
                 except IndexError:
-                    # missing Data for one pair ...
+                    # missing Data for one pair at the end.
                     # Warnings for this are shown by `validate_backtest_data`
                     continue
 
+                # Waits until the time-counter reaches the start of the data for this pair.
                 if row.date > tmp.datetime:
                     continue
 
@@ -359,12 +362,13 @@ class Backtesting(object):
 
                 if (not position_stacking and pair in lock_pair_until
                         and row.date <= lock_pair_until[pair]):
+                    # without positionstacking, we can only have one open trade per pair.
                     continue
+
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
                     if not trade_count_lock.get(row.date, 0) < max_open_trades:
                         continue
-
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
                 trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
@@ -377,6 +381,7 @@ class Backtesting(object):
                     # Set lock_pair_until to end of testing period if trade could not be closed
                     lock_pair_until[pair] = end_date.datetime
 
+            # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.ticker_interval_mins)
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
