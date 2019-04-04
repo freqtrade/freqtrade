@@ -66,9 +66,7 @@ SELECT * FROM trades;
 ## Fix trade still open after a manual sell on the exchange
 
 !!! Warning
-  	Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway.
-  	Whenever possible, /forcesell <tradeid> should be used to accomplish the same thing.
-
+  	Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway. Whenever possible, forcesell <tradeid> should be used to accomplish the same thing.  
 		It is strongly advised to backup your database file before making any manual changes.
 
 !!! Note

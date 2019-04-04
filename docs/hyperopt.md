@@ -62,7 +62,7 @@ If you have updated the buy strategy, ie. changed the contents of
 
 #### Sell optimization
 
-Similar to the buy-signal above, sell-signals can also be optimized. 
+Similar to the buy-signal above, sell-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
@@ -163,7 +163,7 @@ running at least several thousand evaluations.
 The `--spaces all` flag determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Warning
-When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
+    When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
 
 ### Execute Hyperopt with Different Ticker-Data Source
 
