@@ -1,7 +1,5 @@
 # Webhook usage
 
-This page explains how to configure your bot to talk to webhooks.
-
 ## Configuration
 
 Enable webhooks by adding a webhook-section to your configuration file, and setting `webhook.enabled` to `true`.
