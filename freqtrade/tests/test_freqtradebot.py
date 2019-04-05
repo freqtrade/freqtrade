@@ -1052,7 +1052,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     freqtrade.handle_stoploss_on_exchange(trade)
     assert log_has('Unable to place a stoploss order on exchange: ', caplog.record_tuples)
 
-    #Fifth case: get_order returns InvalidOrder
+    # Fifth case: get_order returns InvalidOrder
     # It should try to add stoploss order
     trade.stoploss_order_id = 100
     stoploss_limit.reset_mock()
