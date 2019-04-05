@@ -1,14 +1,11 @@
-import json
-import threading
 import logging
-# import json
+import threading
+from ipaddress import IPv4Address
 from typing import Dict
 
-from flask import Flask, request, jsonify
-# from flask_restful import Resource, Api
-from freqtrade.rpc.rpc import RPC, RPCException
-from ipaddress import IPv4Address
+from flask import Flask, jsonify, request
 
+from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
@@ -42,6 +39,7 @@ class ApiServer(RPC):
         logger.info("Stopping API Server")
 
     def send_msg(self, msg: Dict[str, str]) -> None:
+        """We don't push to endpoints at the moment. Look at webhooks for that."""
         pass
 
     def rest_dump(self, return_value):
