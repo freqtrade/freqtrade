@@ -122,8 +122,8 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.exit_type == trade.sell_reason
-        assert res.open_time == _get_frame_time_from_offset(trade.open_tick)
-        assert res.close_time == _get_frame_time_from_offset(trade.close_tick)
+        assert arrow.get(res.open_time) == _get_frame_time_from_offset(trade.open_tick)
+        assert arrow.get(res.close_time) == _get_frame_time_from_offset(trade.close_tick)
 
 
 def test_adjust(mocker, edge_conf):
