@@ -699,8 +699,7 @@ class FreqtradeBot(object):
         except DependencyException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
-        # If trade open order id does not exist,
-        # it means buy order is fulfilled
+        # If trade open order id does not exist: buy order is fulfilled
         buy_order_fulfilled = not trade.open_order_id
 
         # Limit price threshold: As limit price should always be below price
