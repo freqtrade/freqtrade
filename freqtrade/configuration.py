@@ -217,13 +217,21 @@ class Configuration(object):
             config.update({'position_stacking': True})
             logger.info('Parameter --enable-position-stacking detected ...')
 
-        # If --disable-max-market-positions is used we add it to the configuration
+        # If --disable-max-market-positions or --max_open_trades is used we update configuration
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
             logger.info('max_open_trades set to unlimited ...')
+        elif 'max_open_trades' in self.args and self.args.max_open_trades:
+            config.update({'max_open_trades': self.args.max_open_trades})
+            logger.info('Parameter --max_open_trades detected, overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+
+        # If --stake_amount is used we update configuration
+        if 'stake_amount' in self.args and self.args.stake_amount:
+            config.update({'stake_amount': self.args.stake_amount})
+            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...', config.get('stake_amount'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
