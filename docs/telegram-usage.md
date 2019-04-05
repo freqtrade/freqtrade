@@ -1,13 +1,13 @@
 # Telegram usage
 
-This page explains how to command your bot with Telegram.
-
 ## Prerequisite
+
 To control your bot with Telegram, you need first to
 [set up a Telegram bot](installation.md)
 and add your Telegram API keys into your config file.
 
 ## Telegram commands
+
 Per default, the Telegram bot shows predefined commands. Some commands
 are only available by sending them to the bot. The table below list the
 official commands. You can ask at any moment for help with `/help`.
