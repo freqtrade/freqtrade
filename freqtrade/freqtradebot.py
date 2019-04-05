@@ -12,7 +12,7 @@ import arrow
 from requests.exceptions import RequestException
 
 from freqtrade import (DependencyException, OperationalException, InvalidOrderException,
-                       TemporaryError, __version__, constants, persistence)
+                       __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
