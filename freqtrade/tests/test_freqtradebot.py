@@ -12,7 +12,7 @@ import pytest
 import requests
 
 from freqtrade import (DependencyException, OperationalException,
-                       TemporaryError, constants)
+                       TemporaryError, InvalidOrderException, constants)
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -1051,6 +1051,15 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     )
     freqtrade.handle_stoploss_on_exchange(trade)
     assert log_has('Unable to place a stoploss order on exchange: ', caplog.record_tuples)
+
+    #Fifth case: get_order returns InvalidOrder
+    # It should try to add stoploss order
+    trade.stoploss_order_id = 100
+    stoploss_limit.reset_mock()
+    mocker.patch('freqtrade.exchange.Exchange.get_order', side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    freqtrade.handle_stoploss_on_exchange(trade)
+    assert stoploss_limit.call_count == 1
 
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,

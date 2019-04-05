@@ -13,7 +13,7 @@ import arrow
 from requests.exceptions import RequestException
 import sdnotify
 
-from freqtrade import (DependencyException, OperationalException,
+from freqtrade import (DependencyException, OperationalException, InvalidOrderException,
                        TemporaryError, __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
@@ -692,11 +692,13 @@ class FreqtradeBot(object):
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
 
+        stoploss_order = None
+
         try:
             # First we check if there is already a stoploss on exchange
             stoploss_order = self.exchange.get_order(trade.stoploss_order_id, trade.pair) \
                 if trade.stoploss_order_id else None
-        except DependencyException as exception:
+        except InvalidOrderException as exception:
             logger.warning('Unable to fetch stoploss order: %s', exception)
 
         # If trade open order id does not exist: buy order is fulfilled
@@ -705,8 +707,7 @@ class FreqtradeBot(object):
         # Limit price threshold: As limit price should always be below price
         limit_price_pct = 0.99
 
-        # If buy order is fulfilled but there is no stoploss,
-        # then we add a stoploss on exchange
+        # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
         if (buy_order_fulfilled and not stoploss_order):
             if self.edge:
                 stoploss = self.edge.stoploss(pair=trade.pair)
