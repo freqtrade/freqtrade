@@ -79,7 +79,7 @@ prevent unintended disclosure of sensitive private data when you publish example
 of your configuration in the project issues or in the Internet.
 
 See more details on this technique with examples in the documentation page on
-[configuration](bot-configuration.md).
+[configuration](configuration.md).
 
 ### How to use **--strategy**?
 

@@ -210,6 +210,32 @@ class Backtesting(object):
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
 
+    def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
+        """
+        Helper function to convert a processed tickerlist into a list for performance reasons.
+
+        Used by backtest() - so keep this optimized for performance.
+        """
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+        ticker: Dict = {}
+        # Create ticker dict
+        for pair, pair_data in processed.items():
+            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+
+            ticker_data = self.advise_sell(
+                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+
+            # to avoid using data from future, we buy/sell with signal from previous candle
+            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+
+            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+
+            # Convert from Pandas to list for performance reasons
+            # (Looping Pandas is slow.)
+            ticker[pair] = [x for x in ticker_data.itertuples()]
+        return ticker
+
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
             partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
@@ -304,7 +330,6 @@ class Backtesting(object):
             position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
@@ -312,54 +337,50 @@ class Backtesting(object):
         end_date = args['end_date']
         trades = []
         trade_count_lock: Dict = {}
-        ticker: Dict = {}
-        pairs = []
-        # Create ticker dict
-        for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
-
-            # to avoid using data from future, we buy/sell with signal from previous candle
-            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
-
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
-
-            # Convert from Pandas to list for performance reasons
-            # (Looping Pandas is slow.)
-            ticker[pair] = [x for x in ticker_data.itertuples()]
-            pairs.append(pair)
+        # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
+        ticker: Dict = self._get_ticker_list(processed)
 
         lock_pair_until: Dict = {}
+        # Indexes per pair, so some pairs are allowed to have a missing start.
+        indexes: Dict = {}
         tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
-        index = 0
-        # Loop timerange and test per pair
+
+        # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
-            # print(f"time: {tmp}")
+
             for i, pair in enumerate(ticker):
+                if pair not in indexes:
+                    indexes[pair] = 0
+
                 try:
-                    row = ticker[pair][index]
+                    row = ticker[pair][indexes[pair]]
                 except IndexError:
-                    # missing Data for one pair ...
+                    # missing Data for one pair at the end.
                     # Warnings for this are shown by `validate_backtest_data`
                     continue
+
+                # Waits until the time-counter reaches the start of the data for this pair.
+                if row.date > tmp.datetime:
+                    continue
+
+                indexes[pair] += 1
 
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
 
-                if not position_stacking:
-                    if pair in lock_pair_until and row.date <= lock_pair_until[pair]:
-                        continue
+                if (not position_stacking and pair in lock_pair_until
+                        and row.date <= lock_pair_until[pair]):
+                    # without positionstacking, we can only have one open trade per pair.
+                    continue
+
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
                     if not trade_count_lock.get(row.date, 0) < max_open_trades:
                         continue
-
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][index + 1:],
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
                                                          trade_count_lock, args)
 
                 if trade_entry:
@@ -367,11 +388,10 @@ class Backtesting(object):
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
-                    # This happens only if the buy-signal was with the last candle
-                    lock_pair_until[pair] = end_date
+                    lock_pair_until[pair] = end_date.datetime
 
+            # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.ticker_interval_mins)
-            index += 1
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:

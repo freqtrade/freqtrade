@@ -197,16 +197,25 @@ class Telegram(RPC):
             messages = []
             for r in results:
                 lines = [
-                    "*Trade ID:* `{trade_id}` (since `{date}`)",
+                    "*Trade ID:* `{trade_id}` `(since {date})`",
                     "*Current Pair:* {pair}",
-                    "*Amount:* `{amount}`",
+                    "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
                     "*Close Profit:* `{close_profit}`" if r['close_profit'] else "",
                     "*Current Profit:* `{current_profit:.2f}%`",
-                    "*Stoploss:* `{stop_loss:.8f}`",
-                    "*Open Order:* `{open_order}`" if r['open_order'] else "",
+
+                    # Adding initial stoploss only if it is different from stoploss
+                    "*Initial Stoploss:* `{initial_stop_loss:.8f}` " +
+                    ("`({initial_stop_loss_pct:.2f}%)`" if r['initial_stop_loss_pct'] else "")
+                    if r['stop_loss'] != r['initial_stop_loss'] else "",
+
+                    # Adding stoploss and stoploss percentage only if it is not None
+                    "*Stoploss:* `{stop_loss:.8f}` " +
+                    ("`({stop_loss_pct:.2f}%)`" if r['stop_loss_pct'] else ""),
+
+                    "*Open Order:* `{open_order}`" if r['open_order'] else ""
                 ]
                 messages.append("\n".join(filter(None, lines)).format(**r))
 
@@ -502,7 +511,6 @@ class Telegram(RPC):
         """
         try:
             edge_pairs = self._rpc_edge()
-            print(edge_pairs)
             edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
             message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
             self._send_msg(message, bot=bot, parse_mode=ParseMode.HTML)

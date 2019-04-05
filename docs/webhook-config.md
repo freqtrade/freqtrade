@@ -1,7 +1,5 @@
 # Webhook usage
 
-This page explains how to configure your bot to talk to webhooks.
-
 ## Configuration
 
 Enable webhooks by adding a webhook-section to your configuration file, and setting `webhook.enabled` to `true`.
@@ -39,32 +37,30 @@ Different payloads can be configured for different events. Not all fields are ne
 The fields in `webhook.webhookbuy` are filled when the bot executes a buy. Parameters are filled using string.format.
 Possible parameters are:
 
-* exchange
-* pair
-* limit
-* stake_amount
-* stake_amount_fiat
-* stake_currency
-* fiat_currency
+* `exchange`
+* `pair`
+* `limit`
+* `stake_amount`
+* `stake_currency`
+* `fiat_currency`
 
 ### Webhooksell
 
 The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
 Possible parameters are:
 
-* exchange
-* pair
-* gain
-* limit
-* amount
-* open_rate
-* current_rate
-* profit_amount
-* profit_percent
-* profit_fiat
-* stake_currency
-* fiat_currency
-* sell_reason
+* `exchange`
+* `pair`
+* `gain`
+* `limit`
+* `amount`
+* `open_rate`
+* `current_rate`
+* `profit_amount`
+* `profit_percent`
+* `stake_currency`
+* `fiat_currency`
+* `sell_reason`
 
 ### Webhookstatus
 

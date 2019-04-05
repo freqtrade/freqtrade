@@ -685,25 +685,32 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     assert len(results.loc[results.open_at_end]) == 0
 
 
-def test_backtest_multi_pair(default_conf, fee, mocker):
+@pytest.mark.parametrize("pair", ['ADA/BTC', 'LTC/BTC'])
+@pytest.mark.parametrize("tres", [0, 20, 30])
+def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
 
     def _trend_alternate_hold(dataframe=None, metadata=None):
         """
-        Buy every 8th candle - sell every other 8th -2 (hold on to pairs a bit)
+        Buy every xth candle - sell every other xth -2 (hold on to pairs a bit)
         """
-        multi = 8
+        if metadata['pair'] in('ETH/BTC', 'LTC/BTC'):
+            multi = 20
+        else:
+            multi = 18
         dataframe['buy'] = np.where(dataframe.index % multi == 0, 1, 0)
         dataframe['sell'] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
-        if metadata['pair'] in('ETH/BTC', 'LTC/BTC'):
-            dataframe['buy'] = dataframe['buy'].shift(-4)
-            dataframe['sell'] = dataframe['sell'].shift(-4)
         return dataframe
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
+
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
     data = history.load_data(datadir=None, ticker_interval='5m', pairs=pairs)
+    # Only use 500 lines to increase performance
     data = trim_dictlist(data, -500)
+
+    # Remove data for one pair from the beginning of the data
+    data[pair] = data[pair][tres:]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '5m'

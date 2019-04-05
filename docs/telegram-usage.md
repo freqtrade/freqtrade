@@ -1,13 +1,13 @@
 # Telegram usage
 
-This page explains how to command your bot with Telegram.
-
 ## Prerequisite
+
 To control your bot with Telegram, you need first to
 [set up a Telegram bot](installation.md)
 and add your Telegram API keys into your config file.
 
 ## Telegram commands
+
 Per default, the Telegram bot shows predefined commands. Some commands
 are only available by sending them to the bot. The table below list the
 official commands. You can ask at any moment for help with `/help`.
@@ -65,16 +65,14 @@ Once all positions are sold, run `/stop` to completely stop the bot.
 
 For each open trade, the bot will send you the following message.
 
-> **Trade ID:** `123`
-> **Current Pair:** CVC/BTC
-> **Open Since:** `1 days ago`
-> **Amount:** `26.64180098`
-> **Open Rate:** `0.00007489`
-> **Close Rate:** `None`
-> **Current Rate:** `0.00007489`
-> **Close Profit:** `None`
-> **Current Profit:** `12.95%`
-> **Open Order:** `None`
+> **Trade ID:** `123` `(since 1 days ago)`  
+> **Current Pair:** CVC/BTC  
+> **Open Since:** `1 days ago`  
+> **Amount:** `26.64180098`  
+> **Open Rate:** `0.00007489`  
+> **Current Rate:** `0.00007489`  
+> **Current Profit:** `12.95%`  
+> **Stoploss:** `0.00007389 (-0.02%)`  
 
 ### /status table
 
@@ -99,18 +97,18 @@ current    max
 
 Return a summary of your profit/loss and performance.
 
-> **ROI:** Close trades
->   ∙ `0.00485701 BTC (258.45%)`
->   ∙ `62.968 USD`
-> **ROI:** All trades
->   ∙ `0.00255280 BTC (143.43%)`
->   ∙ `33.095 EUR`
->
-> **Total Trade Count:** `138`
-> **First Trade opened:** `3 days ago`
-> **Latest Trade opened:** `2 minutes ago`
-> **Avg. Duration:** `2:33:45`
-> **Best Performing:** `PAY/BTC: 50.23%`
+> **ROI:** Close trades  
+>   ∙ `0.00485701 BTC (258.45%)`  
+>   ∙ `62.968 USD`  
+> **ROI:** All trades  
+>   ∙ `0.00255280 BTC (143.43%)`  
+>   ∙ `33.095 EUR`  
+>  
+> **Total Trade Count:** `138`  
+> **First Trade opened:** `3 days ago`  
+> **Latest Trade opened:** `2 minutes ago`  
+> **Avg. Duration:** `2:33:45`  
+> **Best Performing:** `PAY/BTC: 50.23%`  
 
 ### /forcesell <trade_id>
 
@@ -128,26 +126,26 @@ Note that for this to work, `forcebuy_enable` needs to be set to true.
 
 Return the performance of each crypto-currency the bot has sold.
 > Performance:
-> 1. `RCN/BTC 57.77%`
-> 2. `PAY/BTC 56.91%`
-> 3. `VIB/BTC 47.07%`
-> 4. `SALT/BTC 30.24%`
-> 5. `STORJ/BTC 27.24%`
-> ...
+> 1. `RCN/BTC 57.77%`  
+> 2. `PAY/BTC 56.91%`  
+> 3. `VIB/BTC 47.07%`  
+> 4. `SALT/BTC 30.24%`  
+> 5. `STORJ/BTC 27.24%`  
+> ...  
 
 ### /balance
 
 Return the balance of all crypto-currency your have on the exchange.
 
-> **Currency:** BTC
-> **Available:** 3.05890234
-> **Balance:** 3.05890234
-> **Pending:** 0.0
+> **Currency:** BTC  
+> **Available:** 3.05890234  
+> **Balance:** 3.05890234  
+> **Pending:** 0.0  
 
-> **Currency:** CVC
-> **Available:** 86.64180098
-> **Balance:** 86.64180098
-> **Pending:** 0.0
+> **Currency:** CVC  
+> **Available:** 86.64180098  
+> **Balance:** 86.64180098  
+> **Pending:** 0.0  
 
 ### /daily <n>
 

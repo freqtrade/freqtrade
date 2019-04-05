@@ -103,16 +103,23 @@ class RPC(object):
                 results.append(dict(
                     trade_id=trade.id,
                     pair=trade.pair,
+                    base_currency=self._freqtrade.config['stake_currency'],
                     date=arrow.get(trade.open_date),
                     open_rate=trade.open_rate,
                     close_rate=trade.close_rate,
                     current_rate=current_rate,
                     amount=round(trade.amount, 8),
+                    stake_amount=round(trade.stake_amount, 8),
                     close_profit=fmt_close_profit,
                     current_profit=round(current_profit * 100, 2),
                     stop_loss=trade.stop_loss,
+                    stop_loss_pct=(trade.stop_loss_pct * 100)
+                    if trade.stop_loss_pct else None,
+                    initial_stop_loss=trade.initial_stop_loss,
+                    initial_stop_loss_pct=(trade.initial_stop_loss_pct * 100)
+                    if trade.initial_stop_loss_pct else None,
                     open_order='({} {} rem={:.8f})'.format(
-                      order['type'], order['side'], order['remaining']
+                        order['type'], order['side'], order['remaining']
                     ) if order else None,
                 ))
             return results
@@ -481,13 +488,4 @@ class RPC(object):
         """ Returns information related to Edge """
         if not self._freqtrade.edge:
             raise RPCException(f'Edge is not enabled.')
-
-        return [
-            {
-                'Pair': k,
-                'Winrate': v.winrate,
-                'Expectancy': v.expectancy,
-                'Stoploss': v.stoploss,
-            }
-            for k, v in self._freqtrade.edge._cached_pairs.items()
-        ]
+        return self._freqtrade.edge.accepted_pairs()
