@@ -703,10 +703,7 @@ class FreqtradeBot(object):
         # it means buy order is fulfilled
         buy_order_fulfilled = not trade.open_order_id
 
-        # Limit price threshold
-        # This is the limit price percentage below which you don't want to sell
-        # 0.99 is arbitrary here.
-        # As limit price should always be below price
+        # Limit price threshold: As limit price should always be below price
         limit_price_pct = 0.99
 
         # If buy order is fulfilled but there is no stoploss,
