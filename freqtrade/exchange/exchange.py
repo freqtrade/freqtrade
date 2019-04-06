@@ -625,7 +625,7 @@ class Exchange(object):
             return self._api.fetch_order(order_id, pair)
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Tried to get an invalid order. Message: {e}')
+                f'Tried to get an invalid order (id: {order_id}). Message: {e}')
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}')
