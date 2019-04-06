@@ -454,7 +454,7 @@ class RPC(object):
             for pair, rate, count in pair_rates
         ]
 
-    def _rpc_count(self) -> List[Trade]:
+    def _rpc_count(self) -> Dict[str, float]:
         """ Returns the number of trades running """
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
@@ -462,8 +462,8 @@ class RPC(object):
         trades = Trade.get_open_trades()
         return {
             'current': len(trades),
-            'max': self._config['max_open_trades'],
-            'total stake': sum((trade.open_rate * trade.amount) for trade in trades)
+            'max': float(self._freqtrade.config['max_open_trades']),
+            'total_stake': sum((trade.open_rate * trade.amount) for trade in trades)
         }
 
     def _rpc_whitelist(self) -> Dict:

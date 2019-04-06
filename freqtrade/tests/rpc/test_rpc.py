@@ -581,15 +581,13 @@ def test_rpc_count(mocker, default_conf, ticker, fee, markets) -> None:
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
 
-    trades = rpc._rpc_count()
-    nb_trades = len(trades)
-    assert nb_trades == 0
+    counts = rpc._rpc_count()
+    assert counts["current"] == 0
 
     # Create some test data
     freqtradebot.create_trade()
-    trades = rpc._rpc_count()
-    nb_trades = len(trades)
-    assert nb_trades == 1
+    counts = rpc._rpc_count()
+    assert counts["current"] == 1
 
 
 def test_rpcforcebuy(mocker, default_conf, ticker, fee, markets, limit_buy_order) -> None:
