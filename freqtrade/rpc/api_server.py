@@ -5,6 +5,7 @@ from typing import Dict
 
 from flask import Flask, jsonify, request
 
+from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
@@ -65,16 +66,17 @@ class ApiServer(RPC):
         :return:
         """
         # TODO: actions should not be GET...
-        app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
-        app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
-        app.add_url_rule('/stopbuy', 'stopbuy', view_func=self.stopbuy, methods=['GET'])
-        app.add_url_rule('/reload_conf', 'reload_conf', view_func=self.reload_conf,
+        app.add_url_rule('/start', 'start', view_func=self._start, methods=['GET'])
+        app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['GET'])
+        app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['GET'])
+        app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
+        app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
                          methods=['GET'])
-        app.add_url_rule('/count', 'count', view_func=self.count, methods=['GET'])
-        app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
-        app.add_url_rule('/profit', 'profit', view_func=self.profit, methods=['GET'])
+        app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
+        app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
+        app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
         app.add_url_rule('/status_table', 'status_table',
-                         view_func=self.status_table, methods=['GET'])
+                         view_func=self._status_table, methods=['GET'])
 
     def run(self):
         """ Method that runs flask app in its own thread forever """
@@ -133,7 +135,56 @@ class ApiServer(RPC):
                      )
         return rest_cmds
 
-    def daily(self):
+    def _start(self):
+        """
+        Handler for /start.
+        Starts TradeThread in bot if stopped.
+        """
+        msg = self._rpc_start()
+        return self.rest_dump(msg)
+
+    def _stop(self):
+        """
+        Handler for /stop.
+        Stops TradeThread in bot if running
+        """
+        msg = self._rpc_stop()
+        return self.rest_dump(msg)
+
+    def _stopbuy(self):
+        """
+        Handler for /stopbuy.
+        Sets max_open_trades to 0 and gracefully sells all open trades
+        """
+        msg = self._rpc_stopbuy()
+        return self.rest_dump(msg)
+
+    def _version(self):
+        """
+        Prints the bot's version
+        """
+        return self.rest_dump({"version": __version__})
+
+    def _reload_conf(self):
+        """
+        Handler for /reload_conf.
+        Triggers a config file reload
+        """
+        msg = self._rpc_reload_conf()
+        return self.rest_dump(msg)
+
+    def _count(self):
+        """
+        Handler for /count.
+        Returns the number of trades running
+        """
+        try:
+            msg = self._rpc_count()
+        except RPCException as e:
+            msg = {"status": str(e)}
+        return self.rest_dump(msg)
+
+    def _daily(self):
         """
         Returns the last X days trading stats summary.
 
@@ -154,7 +205,7 @@ class ApiServer(RPC):
             logger.exception("API Error querying daily:", e)
             return "Error querying daily"
 
-    def profit(self):
+    def _profit(self):
         """
         Handler for /profit.
 
@@ -173,7 +224,7 @@ class ApiServer(RPC):
             logger.exception("API Error calling profit", e)
             return "Error querying closed trades - maybe there are none"
 
-    def status_table(self):
+    def _status_table(self):
         """
         Handler for /status table.
 
@@ -187,49 +238,3 @@ class ApiServer(RPC):
         except RPCException as e:
             logger.exception("API Error calling status table", e)
             return "Error querying open trades - maybe there are none."
-
-    def start(self):
-        """
-        Handler for /start.
-
-        Starts TradeThread in bot if stopped.
-        """
-        msg = self._rpc_start()
-        return self.rest_dump(msg)
-
-    def stop(self):
-        """
-        Handler for /stop.
-
-        Stops TradeThread in bot if running
-        """
-        msg = self._rpc_stop()
-        return self.rest_dump(msg)
-
-    def stopbuy(self):
-        """
-        Handler for /stopbuy.
-
-        Sets max_open_trades to 0 and gracefully sells all open trades
-        """
-        msg = self._rpc_stopbuy()
-        return self.rest_dump(msg)
-
-    def reload_conf(self):
-        """
-        Handler for /reload_conf.
-        Triggers a config file reload
-        """
-        msg = self._rpc_reload_conf()
-        return self.rest_dump(msg)
-
-    def count(self):
-        """
-        Handler for /count.
-        Returns the number of trades running
-        """
-        try:
-            msg = self._rpc_count()
-        except RPCException as e:
-            msg = {"status": str(e)}
-        return self.rest_dump(msg)
