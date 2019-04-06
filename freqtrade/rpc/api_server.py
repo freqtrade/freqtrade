@@ -37,6 +37,8 @@ class ApiServer(RPC):
 
     def cleanup(self) -> None:
         logger.info("Stopping API Server")
+        # TODO: Gracefully shutdown - right now it'll fail on /reload_conf
+        # since it's not terminated correctly.
 
     def send_msg(self, msg: Dict[str, str]) -> None:
         """We don't push to endpoints at the moment. Look at webhooks for that."""
@@ -62,8 +64,13 @@ class ApiServer(RPC):
         Label can be used as a shortcut when refactoring
         :return:
         """
-        app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
+        # TODO: actions should not be GET...
         app.add_url_rule('/start', 'start', view_func=self.start, methods=['GET'])
+        app.add_url_rule('/stop', 'stop', view_func=self.stop, methods=['GET'])
+        app.add_url_rule('/stopbuy', 'stopbuy', view_func=self.stopbuy, methods=['GET'])
+        app.add_url_rule('/reload_conf', 'reload_conf', view_func=self.reload_conf,
+                         methods=['GET'])
+        app.add_url_rule('/count', 'count', view_func=self.count, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self.daily, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self.profit, methods=['GET'])
         app.add_url_rule('/status_table', 'status_table',
@@ -197,4 +204,32 @@ class ApiServer(RPC):
         Stops TradeThread in bot if running
         """
         msg = self._rpc_stop()
+        return self.rest_dump(msg)
+
+    def stopbuy(self):
+        """
+        Handler for /stopbuy.
+
+        Sets max_open_trades to 0 and gracefully sells all open trades
+        """
+        msg = self._rpc_stopbuy()
+        return self.rest_dump(msg)
+
+    def reload_conf(self):
+        """
+        Handler for /reload_conf.
+        Triggers a config file reload
+        """
+        msg = self._rpc_reload_conf()
+        return self.rest_dump(msg)
+
+    def count(self):
+        """
+        Handler for /count.
+        Returns the number of trades running
+        """
+        try:
+            msg = self._rpc_count()
+        except RPCException as e:
+            msg = {"status": str(e)}
         return self.rest_dump(msg)
