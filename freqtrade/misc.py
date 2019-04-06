@@ -135,12 +135,27 @@ def deep_merge_dicts(source, destination):
 
 
 def timeframe_to_seconds(ticker_interval: str) -> int:
+    """
+    This function uses ccxt to parse the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) and returns the number
+    of seconds for one timeframe interval.
+    """
     return Exchange.parse_timeframe(ticker_interval)
 
 
 def timeframe_to_minutes(ticker_interval: str) -> int:
+    """
+    This function uses ccxt to parse the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) and returns the number
+    of minutes for one timeframe interval.
+    """
     return Exchange.parse_timeframe(ticker_interval) // 60
 
 
 def timeframe_to_msecs(ticker_interval: str) -> int:
+    """
+    This function uses ccxt to parse the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) and returns the number
+    of milliseconds for one timeframe interval.
+    """
     return Exchange.parse_timeframe(ticker_interval) * 1000
