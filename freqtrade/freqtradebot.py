@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 from requests.exceptions import RequestException
 
-from freqtrade import (DependencyException, OperationalException,
+from freqtrade import (DependencyException, OperationalException, InvalidOrderException,
                        __version__, constants, persistence)
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
@@ -590,46 +590,74 @@ class FreqtradeBot(object):
         is enabled.
         """
 
-        result = False
+        logger.debug('Handling stoploss on exchange %s ...', trade)
+
+        stoploss_order = None
+
         try:
-            # If trade is open and the buy order is fulfilled but there is no stoploss,
-            # then we add a stoploss on exchange
-            if not trade.open_order_id and not trade.stoploss_order_id:
-                if self.edge:
-                    stoploss = self.edge.stoploss(pair=trade.pair)
-                else:
-                    stoploss = self.strategy.stoploss
+            # First we check if there is already a stoploss on exchange
+            stoploss_order = self.exchange.get_order(trade.stoploss_order_id, trade.pair) \
+                if trade.stoploss_order_id else None
+        except InvalidOrderException as exception:
+            logger.warning('Unable to fetch stoploss order: %s', exception)
 
-                stop_price = trade.open_rate * (1 + stoploss)
+        # If trade open order id does not exist: buy order is fulfilled
+        buy_order_fulfilled = not trade.open_order_id
 
-                # limit price should be less than stop price.
-                # 0.99 is arbitrary here.
-                limit_price = stop_price * 0.99
+        # Limit price threshold: As limit price should always be below price
+        limit_price_pct = 0.99
 
+        # If buy order is fulfilled but there is no stoploss, we add a stoploss on exchange
+        if (buy_order_fulfilled and not stoploss_order):
+            if self.edge:
+                stoploss = self.edge.stoploss(pair=trade.pair)
+            else:
+                stoploss = self.strategy.stoploss
+
+            stop_price = trade.open_rate * (1 + stoploss)
+
+            # limit price should be less than stop price.
+            limit_price = stop_price * limit_price_pct
+
+            try:
                 stoploss_order_id = self.exchange.stoploss_limit(
                     pair=trade.pair, amount=trade.amount, stop_price=stop_price, rate=limit_price
                 )['id']
                 trade.stoploss_order_id = str(stoploss_order_id)
                 trade.stoploss_last_update = datetime.now()
+                return False
 
-            # Or the trade open and there is already a stoploss on exchange.
-            # so we check if it is hit ...
-            elif trade.stoploss_order_id:
-                logger.debug('Handling stoploss on exchange %s ...', trade)
-                order = self.exchange.get_order(trade.stoploss_order_id, trade.pair)
-                if order['status'] == 'closed':
-                    trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
-                    trade.update(order)
-                    self.notify_sell(trade)
-                    result = True
-                elif self.config.get('trailing_stop', False):
-                    # if trailing stoploss is enabled we check if stoploss value has changed
-                    # in which case we cancel stoploss order and put another one with new
-                    # value immediately
-                    self.handle_trailing_stoploss_on_exchange(trade, order)
-        except DependencyException as exception:
-            logger.warning('Unable to create stoploss order: %s', exception)
-        return result
+            except DependencyException as exception:
+                logger.warning('Unable to place a stoploss order on exchange: %s', exception)
+
+        # If stoploss order is canceled for some reason we add it
+        if stoploss_order and stoploss_order['status'] == 'canceled':
+            try:
+                stoploss_order_id = self.exchange.stoploss_limit(
+                    pair=trade.pair, amount=trade.amount,
+                    stop_price=trade.stop_loss, rate=trade.stop_loss * limit_price_pct
+                )['id']
+                trade.stoploss_order_id = str(stoploss_order_id)
+                return False
+            except DependencyException as exception:
+                logger.warning('Stoploss order was cancelled, '
+                               'but unable to recreate one: %s', exception)
+
+        # We check if stoploss order is fulfilled
+        if stoploss_order and stoploss_order['status'] == 'closed':
+            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            trade.update(stoploss_order)
+            self.notify_sell(trade)
+            return True
+
+        # Finally we check if stoploss on exchange should be moved up because of trailing.
+        if stoploss_order and self.config.get('trailing_stop', False):
+            # if trailing stoploss is enabled we check if stoploss value has changed
+            # in which case we cancel stoploss order and put another one with new
+            # value immediately
+            self.handle_trailing_stoploss_on_exchange(trade, stoploss_order)
+
+        return False
 
     def handle_trailing_stoploss_on_exchange(self, trade: Trade, order):
         """
@@ -645,8 +673,8 @@ class FreqtradeBot(object):
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() > update_beat:
                 # cancelling the current stoploss on exchange first
-                logger.info('Trailing stoploss: cancelling current stoploss on exchange '
-                            'in order to add another one ...')
+                logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s})'
+                            'in order to add another one ...', order['id'])
                 if self.exchange.cancel_order(order['id'], trade.pair):
                     # creating the new one
                     stoploss_order_id = self.exchange.stoploss_limit(

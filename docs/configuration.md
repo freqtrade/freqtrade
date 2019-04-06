@@ -212,6 +212,10 @@ The below is the default which is used if this is not configured in either strat
     unsure of what you are doing. For more information about how stoploss works please
     read [the stoploss documentation](stoploss.md).
 
+!!! Note
+    In case of stoploss on exchange if the stoploss is cancelled manually then
+    the bot would recreate one.
+
 ### Understand order_time_in_force
 The `order_time_in_force` configuration parameter defines the policy by which the order
 is executed on the exchange. Three commonly used time in force are:

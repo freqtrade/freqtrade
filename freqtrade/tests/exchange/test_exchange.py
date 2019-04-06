@@ -11,7 +11,8 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade import DependencyException, OperationalException, TemporaryError
+from freqtrade import (DependencyException, OperationalException,
+                       TemporaryError, InvalidOrderException)
 from freqtrade.exchange import Binance, Exchange, Kraken
 from freqtrade.exchange.exchange import API_RETRY_COUNT
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
@@ -1233,11 +1234,11 @@ def test_cancel_order(default_conf, mocker, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.cancel_order(order_id='_', pair='TKN/BTC') == 123
 
-    with pytest.raises(DependencyException):
+    with pytest.raises(InvalidOrderException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder)
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.cancel_order(order_id='_', pair='TKN/BTC')
-    assert api_mock.cancel_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.cancel_order.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "cancel_order", "cancel_order",
@@ -1260,11 +1261,11 @@ def test_get_order(default_conf, mocker, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.get_order('X', 'TKN/BTC') == 456
 
-    with pytest.raises(DependencyException):
+    with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder)
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.get_order(order_id='_', pair='TKN/BTC')
-    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_order.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_order', 'fetch_order',

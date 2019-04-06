@@ -12,7 +12,7 @@ import pytest
 import requests
 
 from freqtrade import (DependencyException, OperationalException,
-                       TemporaryError, constants)
+                       TemporaryError, InvalidOrderException, constants)
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -1036,7 +1036,21 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id == 100
 
-    # Third case: when stoploss is set and it is hit
+    # Third case: when stoploss was set but it was canceled for some reason
+    # should set a stoploss immediately and return False
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    canceled_stoploss_order = MagicMock(return_value={'status': 'canceled'})
+    mocker.patch('freqtrade.exchange.Exchange.get_order', canceled_stoploss_order)
+    stoploss_limit.reset_mock()
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert stoploss_limit.call_count == 1
+    assert trade.stoploss_order_id == "13434334"
+
+    # Fourth case: when stoploss is set and it is hit
     # should unset stoploss_order_id and return true
     # as a trade actually happened
     freqtrade.create_trade()
@@ -1063,7 +1077,16 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         side_effect=DependencyException()
     )
     freqtrade.handle_stoploss_on_exchange(trade)
-    assert log_has('Unable to create stoploss order: ', caplog.record_tuples)
+    assert log_has('Unable to place a stoploss order on exchange: ', caplog.record_tuples)
+
+    # Fifth case: get_order returns InvalidOrder
+    # It should try to add stoploss order
+    trade.stoploss_order_id = 100
+    stoploss_limit.reset_mock()
+    mocker.patch('freqtrade.exchange.Exchange.get_order', side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.stoploss_limit', stoploss_limit)
+    freqtrade.handle_stoploss_on_exchange(trade)
+    assert stoploss_limit.call_count == 1
 
 
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, caplog,
