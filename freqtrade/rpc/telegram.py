@@ -456,12 +456,10 @@ class Telegram(RPC):
         :return: None
         """
         try:
-            trades = self._rpc_count()
-            message = tabulate({
-                'current': [len(trades)],
-                'max': [self._config['max_open_trades']],
-                'total stake': [sum((trade.open_rate * trade.amount) for trade in trades)]
-            }, headers=['current', 'max', 'total stake'], tablefmt='simple')
+            counts = self._rpc_count()
+            message = tabulate({k: [v] for k, v in counts.items()},
+                               headers=['current', 'max', 'total stake'],
+                               tablefmt='simple')
             message = "<pre>{}</pre>".format(message)
             logger.debug(message)
             self._send_msg(message, parse_mode=ParseMode.HTML)

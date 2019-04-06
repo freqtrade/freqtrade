@@ -459,7 +459,12 @@ class RPC(object):
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        return Trade.get_open_trades()
+        trades = Trade.get_open_trades()
+        return {
+            'current': len(trades),
+            'max': self._config['max_open_trades'],
+            'total stake': sum((trade.open_rate * trade.amount) for trade in trades)
+        }
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""
