@@ -12,10 +12,12 @@ from typing import Optional, List, Dict, Tuple, Any
 import arrow
 from pandas import DataFrame
 
-from freqtrade import misc, constants, OperationalException
+from freqtrade import misc, OperationalException
+from freqtrade.arguments import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.exchange import Exchange
-from freqtrade.arguments import TimeRange
+from freqtrade.misc import timeframe_to_minutes
+
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +165,7 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
         if timerange.starttype == 'date':
             since_ms = timerange.startts * 1000
         elif timerange.stoptype == 'line':
-            num_minutes = timerange.stopts * constants.TICKER_INTERVAL_MINUTES[tick_interval]
+            num_minutes = timerange.stopts * timeframe_to_minutes(tick_interval)
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file

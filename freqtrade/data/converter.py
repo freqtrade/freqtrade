@@ -4,8 +4,8 @@ Functions to convert data from one format to another
 import logging
 import pandas as pd
 from pandas import DataFrame, to_datetime
+from freqtrade.misc import timeframe_to_minutes
 
-from freqtrade.constants import TICKER_INTERVAL_MINUTES
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +65,9 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str) -> Da
         'close': 'last',
         'volume': 'sum'
     }
-    tick_mins = TICKER_INTERVAL_MINUTES[ticker_interval]
+    ticker_minutes = timeframe_to_minutes(ticker_interval)
     # Resample to create "NAN" values
-    df = dataframe.resample(f'{tick_mins}min', on='date').agg(ohlc_dict)
+    df = dataframe.resample(f'{ticker_minutes}min', on='date').agg(ohlc_dict)
 
     # Forwardfill close for missing columns
     df['close'] = df['close'].fillna(method='ffill')

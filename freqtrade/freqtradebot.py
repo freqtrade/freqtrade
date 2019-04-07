@@ -16,6 +16,7 @@ from freqtrade import (DependencyException, OperationalException, InvalidOrderEx
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
+from freqtrade.misc import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
@@ -397,7 +398,7 @@ class FreqtradeBot(object):
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
-            ticker_interval=constants.TICKER_INTERVAL_MINUTES[self.config['ticker_interval']]
+            ticker_interval=timeframe_to_minutes(self.config['ticker_interval'])
         )
 
         # Update fees if order is closed
