@@ -27,10 +27,9 @@ RUN wget https://github.com/jjhelmus/berryconda/releases/download/v2.0.0/Berryco
  && rm Berryconda3-2.0.0-Linux-armv7l.sh
 
 # Install dependencies
-COPY requirements.txt /freqtrade/
-RUN sed -i -e '/^numpy==/d' -e '/^pandas==/d' -e '/^scipy==/d' ./requirements.txt \
- && ~/berryconda3/bin/conda install -y numpy pandas scipy \
- && ~/berryconda3/bin/pip install -r requirements.txt --no-cache-dir
+COPY requirements-pi.txt /freqtrade/
+RUN ~/berryconda3/bin/conda install -y numpy pandas scipy \
+ && ~/berryconda3/bin/pip install -r requirements-pi.txt --no-cache-dir
 
 # Install and execute
 COPY . /freqtrade/
