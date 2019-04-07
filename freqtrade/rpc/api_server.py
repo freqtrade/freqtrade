@@ -3,13 +3,31 @@ import threading
 from ipaddress import IPv4Address
 from typing import Dict
 
+from arrow import Arrow
 from flask import Flask, jsonify, request
+from flask.json import JSONEncoder
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
+
+
+class ArrowJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, Arrow):
+                return obj.for_json()
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
+
+
 app = Flask(__name__)
+app.json_encoder = ArrowJSONEncoder
 
 
 class ApiServer(RPC):
@@ -42,12 +60,18 @@ class ApiServer(RPC):
         # since it's not terminated correctly.
 
     def send_msg(self, msg: Dict[str, str]) -> None:
-        """We don't push to endpoints at the moment. Look at webhooks for that."""
+        """
+        We don't push to endpoints at the moment.
+        Take a look at webhooks for that functionality.
+        """
         pass
 
     def rest_dump(self, return_value):
         """ Helper function to jsonify object for a webserver """
         return jsonify(return_value)
+
+    def rest_error(self, error_msg):
+        return jsonify({"error": error_msg}), 502
 
     def register_rest_other(self):
         """
@@ -75,8 +99,7 @@ class ApiServer(RPC):
         app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
-        app.add_url_rule('/status_table', 'status_table',
-                         view_func=self._status_table, methods=['GET'])
+        app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
 
     def run(self):
         """ Method that runs flask app in its own thread forever """
@@ -180,9 +203,9 @@ class ApiServer(RPC):
         """
         try:
             msg = self._rpc_count()
+            return self.rest_dump(msg)
         except RPCException as e:
-            msg = {"status": str(e)}
-        return self.rest_dump(msg)
+            return self.rest_error(str(e))
 
     def _daily(self):
         """
@@ -202,8 +225,8 @@ class ApiServer(RPC):
 
             return self.rest_dump(stats)
         except RPCException as e:
-            logger.exception("API Error querying daily:", e)
-            return "Error querying daily"
+            logger.exception("API Error querying daily: %s", e)
+            return self.rest_error(f"Error querying daily {e}")
 
     def _profit(self):
         """
@@ -221,20 +244,19 @@ class ApiServer(RPC):
 
             return self.rest_dump(stats)
         except RPCException as e:
-            logger.exception("API Error calling profit", e)
-            return "Error querying closed trades - maybe there are none"
+            logger.exception("API Error calling profit: %s", e)
+            return self.rest_error("Error querying closed trades - maybe there are none")
 
-    def _status_table(self):
+    def _status(self):
         """
         Handler for /status table.
 
-        Returns the current TradeThread status in table format
-        :return: results
+        Returns the current status of the trades in json format
         """
         try:
             results = self._rpc_trade_status()
             return self.rest_dump(results)
 
         except RPCException as e:
-            logger.exception("API Error calling status table", e)
-            return "Error querying open trades - maybe there are none."
+            logger.exception("API Error calling status table: %s", e)
+            return self.rest_error("Error querying open trades - maybe there are none.")
