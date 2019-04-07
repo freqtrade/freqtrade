@@ -90,16 +90,27 @@ class ApiServer(RPC):
         :return:
         """
         # TODO: actions should not be GET...
+        # Actions to control the bot
         app.add_url_rule('/start', 'start', view_func=self._start, methods=['GET'])
         app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['GET'])
         app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['GET'])
-        app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
         app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
                          methods=['GET'])
+        # Info commands
+        app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
         app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
+        app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
+        # TODO: Implement the following
+        # performance
+        # forcebuy
+        # forcesell
+        # whitelist
+        # blacklist
+        # edge
+        # help (?)
 
     def run(self):
         """ Method that runs flask app in its own thread forever """
@@ -258,5 +269,19 @@ class ApiServer(RPC):
             return self.rest_dump(results)
 
         except RPCException as e:
-            logger.exception("API Error calling status table: %s", e)
+            logger.exception("API Error calling status: %s", e)
             return self.rest_error("Error querying open trades - maybe there are none.")
+
+    def _balance(self):
+        """
+        Handler for /balance table.
+
+        Returns the current status of the trades in json format
+        """
+        try:
+            results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+            return self.rest_dump(results)
+
+        except RPCException as e:
+            logger.exception("API Error calling status table: %s", e)
+            return self.rest_error(f"{e}")
