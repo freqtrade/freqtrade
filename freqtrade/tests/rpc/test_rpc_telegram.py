@@ -4,7 +4,8 @@
 
 import re
 from datetime import datetime
-from random import randint
+from random import choice, randint
+from string import ascii_uppercase
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -20,7 +21,8 @@ from freqtrade.rpc import RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has, patch_exchange)
+from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
+                                      patch_exchange)
 from freqtrade.tests.test_freqtradebot import patch_get_signal
 
 
@@ -585,6 +587,40 @@ def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
     assert 'all balances are zero' in result
+
+
+def test_balance_handle_too_large_response(default_conf, update, mocker) -> None:
+    balances = []
+    for i in range(100):
+        curr = choice(ascii_uppercase) + choice(ascii_uppercase) + choice(ascii_uppercase)
+        balances.append({
+            'currency': curr,
+            'available': 1.0,
+            'pending': 0.5,
+            'balance': i,
+            'est_btc': 1
+        })
+    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_balance', return_value={
+        'currencies': balances,
+        'total': 100.0,
+        'symbol': 100.0,
+        'value': 1000.0,
+    })
+
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._balance(bot=MagicMock(), update=update)
+    assert msg_mock.call_count > 1
 
 
 def test_start_handle(default_conf, update, mocker) -> None:
