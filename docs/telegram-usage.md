@@ -116,7 +116,7 @@ Return a summary of your profit/loss and performance.
 
 ### /forcebuy <pair>
 
-> **BITTREX**: Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+> **BITTREX:** Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
 
 Note that for this to work, `forcebuy_enable` needs to be set to true.
 
