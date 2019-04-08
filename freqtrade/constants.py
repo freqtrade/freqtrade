@@ -172,7 +172,7 @@ CONF_SCHEMA = {
         'exchange': {
             'type': 'object',
             'properties': {
-                'name': {'type': 'string', 'default': 'bittrex'},
+                'name': {'type': 'string'},
                 'sandbox': {'type': 'boolean', 'default': False},
                 'key': {'type': 'string', 'default': ''},
                 'secret': {'type': 'string', 'default': ''},
@@ -199,7 +199,7 @@ CONF_SCHEMA = {
                 'ccxt_config': {'type': 'object'},
                 'ccxt_async_config': {'type': 'object'}
             },
-            'required': ['pair_whitelist']
+            'required': ['name', 'pair_whitelist']
         },
         'edge': {
             'type': 'object',
