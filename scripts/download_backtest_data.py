@@ -92,18 +92,18 @@ for pair in PAIRS:
         pairs_not_available.append(pair)
         print(f"skipping pair {pair}")
         continue
-    for tick_interval in timeframes:
+    for ticker_interval in timeframes:
         pair_print = pair.replace('/', '_')
-        filename = f'{pair_print}-{tick_interval}.json'
+        filename = f'{pair_print}-{ticker_interval}.json'
         dl_file = dl_path.joinpath(filename)
         if args.erase and dl_file.exists():
-            print(f'Deleting existing data for pair {pair}, interval {tick_interval}')
+            print(f'Deleting existing data for pair {pair}, interval {ticker_interval}')
             dl_file.unlink()
 
-        print(f'downloading pair {pair}, interval {tick_interval}')
+        print(f'downloading pair {pair}, interval {ticker_interval}')
         download_pair_history(datadir=dl_path, exchange=exchange,
                               pair=pair,
-                              tick_interval=tick_interval,
+                              ticker_interval=ticker_interval,
                               timerange=timerange)
 
 

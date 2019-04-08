@@ -490,26 +490,26 @@ class Exchange(object):
             logger.info("returning cached ticker-data for %s", pair)
             return self._cached_ticker[pair]
 
-    def get_history(self, pair: str, tick_interval: str,
+    def get_history(self, pair: str, ticker_interval: str,
                     since_ms: int) -> List:
         """
         Gets candle history using asyncio and returns the list of candles.
         Handles all async doing.
         """
         return asyncio.get_event_loop().run_until_complete(
-            self._async_get_history(pair=pair, tick_interval=tick_interval,
+            self._async_get_history(pair=pair, ticker_interval=ticker_interval,
                                     since_ms=since_ms))
 
     async def _async_get_history(self, pair: str,
-                                 tick_interval: str,
+                                 ticker_interval: str,
                                  since_ms: int) -> List:
         # Assume exchange returns 500 candles
         _LIMIT = 500
 
-        one_call = timeframe_to_msecs(tick_interval) * _LIMIT
+        one_call = timeframe_to_msecs(ticker_interval) * _LIMIT
         logger.debug("one_call: %s msecs", one_call)
         input_coroutines = [self._async_get_candle_history(
-            pair, tick_interval, since) for since in
+            pair, ticker_interval, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
 
         tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
@@ -549,14 +549,14 @@ class Exchange(object):
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
             pair = res[0]
-            tick_interval = res[1]
+            ticker_interval = res[1]
             ticks = res[2]
             # keeping last candle time as last refreshed time of the pair
             if ticks:
-                self._pairs_last_refresh_time[(pair, tick_interval)] = ticks[-1][0] // 1000
+                self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self._klines[(pair, tick_interval)] = parse_ticker_dataframe(
-                ticks, tick_interval, fill_missing=True)
+            self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
+                ticks, ticker_interval, fill_missing=True)
         return tickers
 
     def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
@@ -567,17 +567,17 @@ class Exchange(object):
                      + interval_in_sec) >= arrow.utcnow().timestamp)
 
     @retrier_async
-    async def _async_get_candle_history(self, pair: str, tick_interval: str,
+    async def _async_get_candle_history(self, pair: str, ticker_interval: str,
                                         since_ms: Optional[int] = None) -> Tuple[str, str, List]:
         """
         Asyncronously gets candle histories using fetch_ohlcv
-        returns tuple: (pair, tick_interval, ohlcv_list)
+        returns tuple: (pair, ticker_interval, ohlcv_list)
         """
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s, %s since %s ...", pair, tick_interval, since_ms)
+            logger.debug("fetching %s, %s since %s ...", pair, ticker_interval, since_ms)
 
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=tick_interval,
+            data = await self._api_async.fetch_ohlcv(pair, timeframe=ticker_interval,
                                                      since=since_ms)
 
             # Because some exchange sort Tickers ASC and other DESC.
@@ -589,9 +589,9 @@ class Exchange(object):
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, tick_interval, []
-            logger.debug("done fetching %s, %s ...", pair, tick_interval)
-            return pair, tick_interval, data
+                return pair, ticker_interval, []
+            logger.debug("done fetching %s, %s ...", pair, ticker_interval)
+            return pair, ticker_interval, data
 
         except ccxt.NotSupported as e:
             raise OperationalException(

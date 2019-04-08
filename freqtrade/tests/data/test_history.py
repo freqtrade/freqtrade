@@ -242,10 +242,10 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf) -> Non
 
     assert download_pair_history(datadir=None, exchange=exchange,
                                  pair='MEME/BTC',
-                                 tick_interval='1m')
+                                 ticker_interval='1m')
     assert download_pair_history(datadir=None, exchange=exchange,
                                  pair='CFI/BTC',
-                                 tick_interval='1m')
+                                 ticker_interval='1m')
     assert not exchange._pairs_last_refresh_time
     assert os.path.isfile(file1_1) is True
     assert os.path.isfile(file2_1) is True
@@ -259,10 +259,10 @@ def test_download_pair_history(ticker_history_list, mocker, default_conf) -> Non
 
     assert download_pair_history(datadir=None, exchange=exchange,
                                  pair='MEME/BTC',
-                                 tick_interval='5m')
+                                 ticker_interval='5m')
     assert download_pair_history(datadir=None, exchange=exchange,
                                  pair='CFI/BTC',
-                                 tick_interval='5m')
+                                 ticker_interval='5m')
     assert not exchange._pairs_last_refresh_time
     assert os.path.isfile(file1_5) is True
     assert os.path.isfile(file2_5) is True
@@ -280,8 +280,8 @@ def test_download_pair_history2(mocker, default_conf) -> None:
     json_dump_mock = mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_history', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
-    download_pair_history(None, exchange, pair="UNITTEST/BTC", tick_interval='1m')
-    download_pair_history(None, exchange, pair="UNITTEST/BTC", tick_interval='3m')
+    download_pair_history(None, exchange, pair="UNITTEST/BTC", ticker_interval='1m')
+    download_pair_history(None, exchange, pair="UNITTEST/BTC", ticker_interval='3m')
     assert json_dump_mock.call_count == 2
 
 
@@ -298,7 +298,7 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog, def
 
     assert not download_pair_history(datadir=None, exchange=exchange,
                                      pair='MEME/BTC',
-                                     tick_interval='1m')
+                                     ticker_interval='1m')
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)

@@ -101,7 +101,7 @@ def load_pair_history(pair: str,
         download_pair_history(datadir=datadir,
                               exchange=exchange,
                               pair=pair,
-                              tick_interval=ticker_interval,
+                              ticker_interval=ticker_interval,
                               timerange=timerange)
 
     pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
@@ -151,7 +151,7 @@ def make_testdata_path(datadir: Optional[Path]) -> Path:
     return datadir or (Path(__file__).parent.parent / "tests" / "testdata").resolve()
 
 
-def load_cached_data_for_updating(filename: Path, tick_interval: str,
+def load_cached_data_for_updating(filename: Path, ticker_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[List[Any],
                                                                            Optional[int]]:
     """
@@ -165,7 +165,7 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
         if timerange.starttype == 'date':
             since_ms = timerange.startts * 1000
         elif timerange.stoptype == 'line':
-            num_minutes = timerange.stopts * timeframe_to_minutes(tick_interval)
+            num_minutes = timerange.stopts * timeframe_to_minutes(ticker_interval)
             since_ms = arrow.utcnow().shift(minutes=num_minutes).timestamp * 1000
 
     # read the cached file
@@ -192,7 +192,7 @@ def load_cached_data_for_updating(filename: Path, tick_interval: str,
 def download_pair_history(datadir: Optional[Path],
                           exchange: Exchange,
                           pair: str,
-                          tick_interval: str = '5m',
+                          ticker_interval: str = '5m',
                           timerange: Optional[TimeRange] = None) -> bool:
     """
     Download the latest ticker intervals from the exchange for the pair passed in parameters
@@ -202,7 +202,7 @@ def download_pair_history(datadir: Optional[Path],
 
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
     :param pair: pair to download
-    :param tick_interval: ticker interval
+    :param ticker_interval: ticker interval
     :param timerange: range of time to download
     :return: bool with success state
 
@@ -210,17 +210,17 @@ def download_pair_history(datadir: Optional[Path],
     try:
         path = make_testdata_path(datadir)
         filepair = pair.replace("/", "_")
-        filename = path.joinpath(f'{filepair}-{tick_interval}.json')
+        filename = path.joinpath(f'{filepair}-{ticker_interval}.json')
 
-        logger.info('Download the pair: "%s", Interval: %s', pair, tick_interval)
+        logger.info('Download the pair: "%s", Interval: %s', pair, ticker_interval)
 
-        data, since_ms = load_cached_data_for_updating(filename, tick_interval, timerange)
+        data, since_ms = load_cached_data_for_updating(filename, ticker_interval, timerange)
 
         logger.debug("Current Start: %s", misc.format_ms_time(data[1][0]) if data else 'None')
         logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_history(pair=pair, tick_interval=tick_interval,
+        new_data = exchange.get_history(pair=pair, ticker_interval=ticker_interval,
                                         since_ms=since_ms if since_ms
                                         else
                                         int(arrow.utcnow().shift(days=-30).float_timestamp) * 1000)
@@ -233,5 +233,5 @@ def download_pair_history(datadir: Optional[Path],
         return True
     except BaseException:
         logger.info('Failed to download the pair: "%s", Interval: %s',
-                    pair, tick_interval)
+                    pair, ticker_interval)
         return False

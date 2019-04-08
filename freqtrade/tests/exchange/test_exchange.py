@@ -941,8 +941,8 @@ def test_get_history(default_conf, mocker, caplog, exchange_name):
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, tick_interval, since_ms):
-        return pair, tick_interval, tick
+    async def mock_candle_hist(pair, ticker_interval, since_ms):
+        return pair, ticker_interval, tick
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -1038,7 +1038,7 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
-                               pair='ABCD/BTC', tick_interval=default_conf['ticker_interval'])
+                               pair='ABCD/BTC', ticker_interval=default_conf['ticker_interval'])
 
     api_mock = MagicMock()
     with pytest.raises(OperationalException, match=r'Could not fetch ticker data*'):
