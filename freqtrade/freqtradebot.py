@@ -53,7 +53,7 @@ class FreqtradeBot(object):
 
         self.rpc: RPCManager = RPCManager(self)
 
-        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
+        exchange_name = self.config.get('exchange', {}).get('name').title()
         self.exchange = ExchangeResolver(exchange_name, self.config).exchange
 
         self.wallets = Wallets(self.config, self.exchange)
