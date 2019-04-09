@@ -6,6 +6,7 @@ from freqtrade.strategy.interface import IStrategy
 # Import Default-Strategy to have hyperopt correctly resolve
 from freqtrade.strategy.default_strategy import DefaultStrategy  # noqa: F401
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +17,6 @@ def import_strategy(strategy: IStrategy, config: dict) -> IStrategy:
     """
 
     # Copy all attributes from base class and class
-
     comb = {**strategy.__class__.__dict__, **strategy.__dict__}
 
     # Delete '_abc_impl' from dict as deepcopy fails on 3.7 with
@@ -26,6 +26,7 @@ def import_strategy(strategy: IStrategy, config: dict) -> IStrategy:
         del comb['_abc_impl']
 
     attr = deepcopy(comb)
+
     # Adjust module name
     attr['__module__'] = 'freqtrade.strategy'
 

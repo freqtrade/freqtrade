@@ -1,5 +1,7 @@
 # pragma pylint: disable=W0603
-""" Cryptocurrency Exchanges support """
+"""
+Cryptocurrency Exchanges support
+"""
 import logging
 import inspect
 from random import randint
@@ -16,7 +18,6 @@ from pandas import DataFrame
 from freqtrade import (constants, DependencyException, OperationalException,
                        TemporaryError, InvalidOrderException)
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.misc import timeframe_to_seconds, timeframe_to_msecs
 
 
 logger = logging.getLogger(__name__)
@@ -138,7 +139,7 @@ class Exchange(object):
         # Find matching class for the given exchange name
         name = exchange_config['name']
 
-        if name not in ccxt_module.exchanges:
+        if not is_exchange_supported(name, ccxt_module):
             raise OperationalException(f'Exchange {name} is not supported')
 
         ex_config = {
@@ -690,3 +691,35 @@ class Exchange(object):
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
+
+
+def is_exchange_supported(exchange: str, ccxt_module=None) -> bool:
+    return exchange in supported_exchanges(ccxt_module)
+
+
+def supported_exchanges(ccxt_module=None) -> str:
+    exchanges = ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
+    return exchanges
+
+
+def timeframe_to_seconds(ticker_interval: str) -> int:
+    """
+    Translates the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
+    of seconds for one timeframe interval.
+    """
+    return ccxt.Exchange.parse_timeframe(ticker_interval)
+
+
+def timeframe_to_minutes(ticker_interval: str) -> int:
+    """
+    Same as above, but returns minutes.
+    """
+    return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
+
+
+def timeframe_to_msecs(ticker_interval: str) -> int:
+    """
+    Same as above, but returns milliseconds.
+    """
+    return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000

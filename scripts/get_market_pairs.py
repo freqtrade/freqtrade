@@ -1,6 +1,8 @@
 import os
 import sys
 
+from freqtrade.exchange import is_exchange_supported, supported_exchanges
+
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
 
@@ -44,7 +46,7 @@ def dump(*args):
 
 
 def print_supported_exchanges():
-    dump('Supported exchanges:', green(', '.join(ccxt.exchanges)))
+    dump('Supported exchanges:', green(', '.join(supported_exchanges())))
 
 
 try:
@@ -52,9 +54,7 @@ try:
     id = sys.argv[1]  # get exchange id from command line arguments
 
     # check if the exchange is supported by ccxt
-    exchange_found = id in ccxt.exchanges
-
-    if exchange_found:
+    if is_exchange_supported(id):
         dump('Instantiating', green(id), 'exchange')
 
         # instantiate the exchange by id
@@ -79,9 +79,7 @@ try:
 
         for (k, v) in tuples:
             dump('{:<15} {:<15} {:<15} {:<15}'.format(v['id'], v['symbol'], v['base'], v['quote']))
-
     else:
-
         dump('Exchange ' + red(id) + ' not found')
         print_supported_exchanges()
 

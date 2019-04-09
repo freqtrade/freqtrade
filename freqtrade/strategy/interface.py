@@ -13,9 +13,10 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.misc import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.wallets import Wallets
+
 
 logger = logging.getLogger(__name__)
 

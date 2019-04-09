@@ -16,7 +16,7 @@ from freqtrade import (DependencyException, OperationalException, InvalidOrderEx
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.misc import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver, PairListResolver
@@ -460,7 +460,7 @@ class FreqtradeBot(object):
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
         Get real amount for the trade
-        Necessary for self.exchanges which charge fees in base currency (e.g. binance)
+        Necessary for exchanges which charge fees in base currency (e.g. binance)
         """
         order_amount = order['amount']
         # Only run for closed orders

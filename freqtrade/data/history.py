@@ -1,10 +1,10 @@
 """
 Handle historic data (ohlcv).
-includes:
+
+Includes:
 * load data for a pair (or a list of pairs) from disk
 * download data from exchange and store to disk
 """
-
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Any
@@ -15,8 +15,7 @@ from pandas import DataFrame
 from freqtrade import misc, OperationalException
 from freqtrade.arguments import TimeRange
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.exchange import Exchange
-from freqtrade.misc import timeframe_to_minutes
+from freqtrade.exchange import Exchange, timeframe_to_minutes
 
 
 logger = logging.getLogger(__name__)

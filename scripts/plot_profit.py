@@ -27,9 +27,11 @@ from plotly.offline import plot
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
-from freqtrade.misc import common_datearray, timeframe_to_seconds
+from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.misc import common_datearray
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
