@@ -235,8 +235,7 @@ class ApiServer(RPC):
 
         :return: stats
         """
-        timescale = request.args.get('timescale')
-        logger.info("LocalRPC - Daily Command Called")
+        timescale = request.args.get('timescale', 7)
         timescale = int(timescale)
 
         stats = self._rpc_daily_profit(timescale,
