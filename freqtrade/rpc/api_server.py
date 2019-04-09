@@ -37,6 +37,18 @@ class ApiServer(RPC):
     This class starts a none blocking thread the api server runs within
     """
 
+    def safe_rpc(func):
+
+        def func_wrapper(self, *args, **kwargs):
+
+            try:
+                return func(self, *args, **kwargs)
+            except RPCException as e:
+                logger.exception("API Error calling %s: %s", func.__name__, e)
+                return self.rest_error(f"Error querying {func.__name__}: {e}")
+
+        return func_wrapper
+
     def __init__(self, freqtrade) -> None:
         """
         Init the api server, and init the super class RPC
@@ -103,11 +115,11 @@ class ApiServer(RPC):
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
         app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
+        app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist, methods=['GET'])
         # TODO: Implement the following
         # performance
         # forcebuy
         # forcesell
-        # whitelist
         # blacklist
         # edge
         # help (?)
@@ -207,38 +219,34 @@ class ApiServer(RPC):
         msg = self._rpc_reload_conf()
         return self.rest_dump(msg)
 
+    @safe_rpc
     def _count(self):
         """
         Handler for /count.
         Returns the number of trades running
         """
-        try:
-            msg = self._rpc_count()
-            return self.rest_dump(msg)
-        except RPCException as e:
-            return self.rest_error(str(e))
+        msg = self._rpc_count()
+        return self.rest_dump(msg)
 
+    @safe_rpc
     def _daily(self):
         """
         Returns the last X days trading stats summary.
 
         :return: stats
         """
-        try:
-            timescale = request.args.get('timescale')
-            logger.info("LocalRPC - Daily Command Called")
-            timescale = int(timescale)
+        timescale = request.args.get('timescale')
+        logger.info("LocalRPC - Daily Command Called")
+        timescale = int(timescale)
 
-            stats = self._rpc_daily_profit(timescale,
-                                           self._config['stake_currency'],
-                                           self._config['fiat_display_currency']
-                                           )
+        stats = self._rpc_daily_profit(timescale,
+                                       self._config['stake_currency'],
+                                       self._config['fiat_display_currency']
+                                       )
 
-            return self.rest_dump(stats)
-        except RPCException as e:
-            logger.exception("API Error querying daily: %s", e)
-            return self.rest_error(f"Error querying daily {e}")
+        return self.rest_dump(stats)
 
+    @safe_rpc
     def _profit(self):
         """
         Handler for /profit.
@@ -246,42 +254,39 @@ class ApiServer(RPC):
         Returns a cumulative profit statistics
         :return: stats
         """
-        try:
-            logger.info("LocalRPC - Profit Command Called")
+        logger.info("LocalRPC - Profit Command Called")
 
-            stats = self._rpc_trade_statistics(self._config['stake_currency'],
-                                               self._config['fiat_display_currency']
-                                               )
+        stats = self._rpc_trade_statistics(self._config['stake_currency'],
+                                           self._config['fiat_display_currency']
+                                           )
 
-            return self.rest_dump(stats)
-        except RPCException as e:
-            logger.exception("API Error calling profit: %s", e)
-            return self.rest_error("Error querying closed trades - maybe there are none")
+        return self.rest_dump(stats)
 
+    @safe_rpc
     def _status(self):
         """
         Handler for /status table.
 
         Returns the current status of the trades in json format
         """
-        try:
-            results = self._rpc_trade_status()
-            return self.rest_dump(results)
+        results = self._rpc_trade_status()
+        return self.rest_dump(results)
 
-        except RPCException as e:
-            logger.exception("API Error calling status: %s", e)
-            return self.rest_error("Error querying open trades - maybe there are none.")
-
+    @safe_rpc
     def _balance(self):
         """
         Handler for /balance table.
 
         Returns the current status of the trades in json format
         """
-        try:
-            results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
-            return self.rest_dump(results)
+        results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
+        return self.rest_dump(results)
 
-        except RPCException as e:
-            logger.exception("API Error calling status table: %s", e)
-            return self.rest_error(f"{e}")
+    @safe_rpc
+    def _whitelist(self):
+        """
+        Handler for /whitelist table.
+
+        """
+        results = self._rpc_whitelist()
+        return self.rest_dump(results)
