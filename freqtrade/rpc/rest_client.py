@@ -8,11 +8,10 @@ so it can be used as a standalone script.
 """
 
 import argparse
+import json
 import logging
-import time
 from sys import argv
-
-import click
+from pathlib import Path
 
 from requests import get
 from requests.exceptions import ConnectionError
@@ -23,21 +22,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ft_rest_client")
 
-# TODO - use IP and Port from config.json not hardcode
 
 COMMANDS_NO_ARGS = ["start",
                     "stop",
+                    "stopbuy",
+                    "reload_conf"
                     ]
 COMMANDS_ARGS = ["daily",
                  ]
-
-SERVER_URL = "http://localhost:5002"
 
 
 def add_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("command",
                         help="Positional argument defining the command to execute.")
+    parser.add_argument('-c', '--config',
+                        help='Specify configuration file (default: %(default)s). ',
+                        dest='config',
+                        type=str,
+                        metavar='PATH',
+                        default='config.json'
+                        )
     args = parser.parse_args()
     # if len(argv) == 1:
     #     print('\nThis script accepts the following arguments')
@@ -48,6 +53,14 @@ def add_arguments():
     return vars(args)
 
 
+def load_config(configfile):
+    file = Path(configfile)
+    if file.is_file():
+        with file.open("r") as f:
+            config = json.load(f)
+    return config
+
+
 def call_authorized(url):
     try:
         return get(url).json()
@@ -55,21 +68,26 @@ def call_authorized(url):
         logger.warning("Connection error")
 
 
-def call_command_noargs(command):
-    logger.info(f"Running command `{command}` at {SERVER_URL}")
-    r = call_authorized(f"{SERVER_URL}/{command}")
+def call_command_noargs(server_url, command):
+    logger.info(f"Running command `{command}` at {server_url}")
+    r = call_authorized(f"{server_url}/{command}")
     logger.info(r)
 
 
 def main(args):
 
+    config = load_config(args["config"])
+    url = config.get("api_server", {}).get("server_url", "127.0.0.1")
+    port = config.get("api_server", {}).get("listen_port", "8080")
+    server_url = f"http://{url}:{port}"
+
     # Call commands without arguments
     if args["command"] in COMMANDS_NO_ARGS:
-        call_command_noargs(args["command"])
+        call_command_noargs(server_url, args["command"])
 
     if args["command"] == "daily":
         if str.isnumeric(argv[2]):
-            get_url = SERVER_URL + '/daily?timescale=' + argv[2]
+            get_url = server_url + '/daily?timescale=' + argv[2]
             d = get(get_url).json()
             print(d)
         else:
