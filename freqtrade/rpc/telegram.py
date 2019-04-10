@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.telegram ...')
 
 
-MAX_TELEGRAM_MESSAGE = 4096
+MAX_TELEGRAM_MESSAGE_LENGTH = 4096
 
 
 def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
@@ -339,7 +339,7 @@ class Telegram(RPC):
                     curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
 
                 # Handle overflowing messsage length
-                if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE:
+                if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     self._send_msg(output, bot=bot)
                     output = curr_output
                 else:

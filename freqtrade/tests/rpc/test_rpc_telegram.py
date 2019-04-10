@@ -621,6 +621,11 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
 
     telegram._balance(bot=MagicMock(), update=update)
     assert msg_mock.call_count > 1
+    # Test if wrap happens around 4000 -
+    # and each single currency-output is around 120 characters long so we need
+    # an offset to avoid random test failures
+    assert len(msg_mock.call_args_list[0][0][0]) < 4096
+    assert len(msg_mock.call_args_list[0][0][0]) > (4096 - 120)
 
 
 def test_start_handle(default_conf, update, mocker) -> None:
