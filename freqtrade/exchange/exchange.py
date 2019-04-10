@@ -697,9 +697,8 @@ def is_exchange_supported(exchange: str, ccxt_module=None) -> bool:
     return exchange in supported_exchanges(ccxt_module)
 
 
-def supported_exchanges(ccxt_module=None) -> str:
-    exchanges = ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
-    return exchanges
+def supported_exchanges(ccxt_module=None) -> List[str]:
+    return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
 
 
 def timeframe_to_seconds(ticker_interval: str) -> int:
