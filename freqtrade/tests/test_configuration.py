@@ -619,9 +619,11 @@ def test_validate_tsl(default_conf):
     configuration._validate_config_consistency(default_conf)
 
 
-# config['exchange'] subtree has required options in it
-# so it cannot be omitted in the config
 def test_load_config_default_exchange(all_conf) -> None:
+    """
+    config['exchange'] subtree has required options in it
+    so it cannot be omitted in the config
+    """
     del all_conf['exchange']
 
     assert 'exchange' not in all_conf
@@ -630,12 +632,13 @@ def test_load_config_default_exchange(all_conf) -> None:
                        match=r'\'exchange\' is a required property'):
         configuration = Configuration(Namespace())
         configuration._validate_config_schema(all_conf)
-###    assert 'exchange' in all_conf
 
 
-# config['exchange']['name'] option is required
-# so it cannot be omitted in the config
 def test_load_config_default_exchange_name(all_conf) -> None:
+    """
+    config['exchange']['name'] option is required
+    so it cannot be omitted in the config
+    """
     del all_conf['exchange']['name']
 
     assert 'name' not in all_conf['exchange']
@@ -646,10 +649,12 @@ def test_load_config_default_exchange_name(all_conf) -> None:
         configuration._validate_config_schema(all_conf)
 
 
-# config['exchange']['sandbox'] option has default value: False
-# so it can be omitted in the config and the default value
-# should be present in the config as the option value
 def test_load_config_default_exchange_sandbox(all_conf) -> None:
+    """
+    config['exchange']['sandbox'] option has default value: False
+    so it can be omitted in the config and the default value
+    should be present in the config as the option value
+    """
     del all_conf['exchange']['sandbox']
 
     assert 'sandbox' not in all_conf['exchange']
@@ -660,10 +665,12 @@ def test_load_config_default_exchange_sandbox(all_conf) -> None:
     assert all_conf['exchange']['sandbox'] is False
 
 
-# config['exchange']['key'] option has default value: ''
-# so it can be omitted in the config and the default value
-# should be present in the config as the option value
 def test_load_config_default_exchange_key(all_conf) -> None:
+    """
+    config['exchange']['key'] option has default value: ''
+    so it can be omitted in the config and the default value
+    should be present in the config as the option value
+    """
     del all_conf['exchange']['key']
 
     assert 'key' not in all_conf['exchange']
@@ -674,10 +681,12 @@ def test_load_config_default_exchange_key(all_conf) -> None:
     assert all_conf['exchange']['key'] == ''
 
 
-# config['exchange']['secret'] option has default value: ''
-# so it can be omitted in the config and the default value
-# should be present in the config as the option value
 def test_load_config_default_exchange_secret(all_conf) -> None:
+    """
+    config['exchange']['secret'] option has default value: ''
+    so it can be omitted in the config and the default value
+    should be present in the config as the option value
+    """
     del all_conf['exchange']['secret']
 
     assert 'secret' not in all_conf['exchange']
@@ -688,10 +697,12 @@ def test_load_config_default_exchange_secret(all_conf) -> None:
     assert all_conf['exchange']['secret'] == ''
 
 
-# config['exchange']['password'] option has default value: ''
-# so it can be omitted in the config and the default value
-# should be present in the config as the option value
 def test_load_config_default_exchange_password(all_conf) -> None:
+    """
+    config['exchange']['password'] option has default value: ''
+    so it can be omitted in the config and the default value
+    should be present in the config as the option value
+    """
     del all_conf['exchange']['password']
 
     assert 'password' not in all_conf['exchange']
