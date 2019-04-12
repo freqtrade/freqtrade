@@ -1,3 +1,7 @@
+"""
+This script was adapted from ccxt here:
+https://github.com/ccxt/ccxt/blob/master/examples/py/arbitrage-pairs.py
+"""
 import os
 import sys
 
