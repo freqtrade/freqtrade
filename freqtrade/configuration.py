@@ -194,7 +194,7 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
         """
         Extract information for sys.argv and load Backtesting configuration
         :return: configuration as dictionary
@@ -224,14 +224,16 @@ class Configuration(object):
             logger.info('max_open_trades set to unlimited ...')
         elif 'max_open_trades' in self.args and self.args.max_open_trades:
             config.update({'max_open_trades': self.args.max_open_trades})
-            logger.info('Parameter --max_open_trades detected, overriding max_open_trades to: %s ...', config.get('max_open_trades'))
+            logger.info('Parameter --max_open_trades detected, '
+                        'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
         # If --stake_amount is used we update configuration
         if 'stake_amount' in self.args and self.args.stake_amount:
             config.update({'stake_amount': self.args.stake_amount})
-            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...', config.get('stake_amount'))
+            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
+                        config.get('stake_amount'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
