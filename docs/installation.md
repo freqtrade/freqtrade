@@ -315,7 +315,6 @@ Before installing FreqTrade on a Raspberry Pi running the official Raspbian Imag
 
 The following assumes that miniconda3 is installed and available in your environment. Last miniconda3 installation file use python 3.4, we will update to python 3.6 on this installation.
 It's recommended to use (mini)conda for this as installation/compilation of `numpy`, `scipy` and `pandas` takes a long time.
-If you have installed it from (mini)conda, you can remove `numpy`, `scipy`, and `pandas` from `requirements.txt` before you install it with `pip`.
 
 Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
 
@@ -327,7 +326,7 @@ conda activate freqtrade
 conda install scipy pandas numpy
 
 sudo apt install libffi-dev
-python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements-pi.txt
 python3 -m pip install -e .
 ```
 
