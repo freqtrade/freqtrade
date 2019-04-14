@@ -142,12 +142,12 @@ def test_loss_calculation_has_limited_profit(hyperopt) -> None:
 def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.current_best_loss = 2
     hyperopt.log_results(
-        {
+        [{
             'loss': 1,
-            'current_tries': 1,
-            'total_tries': 2,
             'result': 'foo'
-        }
+        }],
+        0,
+        2
     )
     out, err = capsys.readouterr()
     assert '    1/2: foo. Loss 1.00000' in out
@@ -156,9 +156,11 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
     hyperopt.current_best_loss = 2
     hyperopt.log_results(
-        {
+        [{
             'loss': 3,
-        }
+        }],
+        0,
+        1
     )
     assert caplog.record_tuples == []
 

@@ -3,11 +3,11 @@
 """
 This module contains the hyperopt logic
 """
-
 import logging
 import multiprocessing
 import os
 import sys
+
 from argparse import Namespace
 from math import exp
 from operator import itemgetter
@@ -28,10 +28,13 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.resolvers import HyperOptResolver
 
+
 logger = logging.getLogger(__name__)
+
 
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
+EVALS_FRAME = 100
 
 
 class Hyperopt(Backtesting):
@@ -111,21 +114,22 @@ class Hyperopt(Backtesting):
             logger.info('ROI table:')
             pprint(self.custom_hyperopt.generate_roi_table(best_result['params']), indent=4)
 
-    def log_results(self, results) -> None:
+    def log_results_immediate(self) -> None:
+        print('.', end='')
+        sys.stdout.flush()
+
+    def log_results(self, f_val, frame_start, total_tries) -> None:
         """
         Log results if it is better than any previous evaluation
         """
-        if results['loss'] < self.current_best_loss:
-            current = results['current_tries']
-            total = results['total_tries']
-            res = results['result']
-            loss = results['loss']
-            self.current_best_loss = results['loss']
-            log_msg = f'\n{current:5d}/{total}: {res}. Loss {loss:.5f}'
-            print(log_msg)
-        else:
-            print('.', end='')
-            sys.stdout.flush()
+        for i, v in enumerate(f_val):
+            if v['loss'] < self.current_best_loss:
+                current = frame_start + i + 1
+                res = v['result']
+                loss = v['loss']
+                self.current_best_loss = v['loss']
+                log_msg = f'\n{current:5d}/{total_tries}: {res}. Loss {loss:.5f}'
+                print(log_msg)
 
     def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
         """
@@ -238,9 +242,17 @@ class Hyperopt(Backtesting):
             acq_optimizer_kwargs={'n_jobs': cpu_count}
         )
 
-    def run_optimizer_parallel(self, parallel, asked) -> List:
-        return parallel(delayed(
-                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
+    def run_optimizer_parallel(self, parallel, opt, tries: int, first_try: int) -> List:
+        result = parallel(delayed(
+                          wrap_non_picklable_objects(self.parallel_tell_and_log))
+                          (opt, i, opt.ask()) for i in range(first_try, first_try + tries))
+        return result
+
+    def parallel_tell_and_log(self, opt, i, asked):
+        f_val = self.generate_optimizer(asked)
+        opt.tell(asked, f_val['loss'])
+        self.log_results_immediate()
+        return f_val
 
     def load_previous_results(self):
         """ read trials file if we have one """
@@ -272,22 +284,25 @@ class Hyperopt(Backtesting):
         logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
 
         opt = self.get_optimizer(cpus)
-        EVALS = max(self.total_tries // cpus, 1)
-        try:
-            with Parallel(n_jobs=cpus) as parallel:
-                for i in range(EVALS):
-                    asked = opt.ask(n_points=cpus)
-                    f_val = self.run_optimizer_parallel(parallel, asked)
-                    opt.tell(asked, [i['loss'] for i in f_val])
 
+        frames = self.total_tries // EVALS_FRAME
+        last_frame_len = self.total_tries % EVALS_FRAME
+
+        try:
+            with Parallel(n_jobs=cpus, verbose=0) as parallel:
+                for frame in range(frames + 1):
+                    frame_start = frame * EVALS_FRAME
+                    frame_len = last_frame_len if frame == frames else EVALS_FRAME
+                    print(f"\n{frame_start+1}-{frame_start+frame_len}"
+                          f"/{self.total_tries}: ", end='')
+                    f_val = self.run_optimizer_parallel(
+                            parallel, opt,
+                            frame_len,
+                            frame_start
+                    )
                     self.trials += f_val
-                    for j in range(cpus):
-                        self.log_results({
-                            'loss': f_val[j]['loss'],
-                            'current_tries': i * cpus + j,
-                            'total_tries': self.total_tries,
-                            'result': f_val[j]['result'],
-                        })
+                    self.log_results(f_val, frame_start, self.total_tries)
+
         except KeyboardInterrupt:
             print('User interrupted..')
 
