@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-
-"""This script generate json data"""
+"""
+This script generates json data
+"""
 import json
 import sys
 from pathlib import Path
@@ -35,7 +36,7 @@ if args.config:
     config: Dict[str, Any] = {}
     # Now expecting a list of config filenames here, not a string
     for path in args.config:
-        print('Using config: %s ...', path)
+        print(f"Using config: {path}...")
         # Merge config options, overwriting old values
         config = deep_merge_dicts(configuration._load_config_file(path), config)
 
@@ -44,18 +45,19 @@ if args.config:
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 else:
-    config = {'stake_currency': '',
-              'dry_run': True,
-              'exchange': {
-                  'name': args.exchange,
-                  'key': '',
-                  'secret': '',
-                  'pair_whitelist': [],
-                  'ccxt_async_config': {
-                      "enableRateLimit": False
-                  }
-              }
-              }
+    config = {
+        'stake_currency': '',
+        'dry_run': True,
+        'exchange': {
+            'name': args.exchange,
+            'key': '',
+            'secret': '',
+            'pair_whitelist': [],
+            'ccxt_async_config': {
+                'enableRateLimit': False
+            }
+        }
+    }
 
 
 dl_path = Path(DEFAULT_DL_PATH).joinpath(config['exchange']['name'])

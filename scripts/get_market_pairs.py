@@ -4,6 +4,7 @@ https://github.com/ccxt/ccxt/blob/master/examples/py/arbitrage-pairs.py
 """
 import os
 import sys
+import traceback
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
@@ -53,6 +54,11 @@ def print_supported_exchanges():
 
 try:
 
+    if len(sys.argv) < 2:
+        dump("Usage: python " + sys.argv[0], green('id'))
+        print_supported_exchanges()
+        sys.exit(1)
+
     id = sys.argv[1]  # get exchange id from command line arguments
 
     # check if the exchange is supported by ccxt
@@ -91,5 +97,7 @@ try:
 
 except Exception as e:
     dump('[' + type(e).__name__ + ']', str(e))
+    dump(traceback.format_exc())
     dump("Usage: python " + sys.argv[0], green('id'))
     print_supported_exchanges()
+    sys.exit(1)
