@@ -46,7 +46,6 @@ Mandatory Parameters are marked as **Required**.
 | `exchange.secret` | secret | API secret to use for the exchange. Only required when you are in production mode.
 | `exchange.pair_whitelist` | [] | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
-| `exchange.ccxt_rate_limit` | True | DEPRECATED!! Have CCXT handle Exchange rate limits. Depending on the exchange, having this to false can lead to temporary bans from the exchange.
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.ccxt_async_config` | None | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
 | `exchange.markets_refresh_interval` | 60 | The interval in minutes in which markets are reloaded.
@@ -217,6 +216,7 @@ The below is the default which is used if this is not configured in either strat
     the bot would recreate one.
 
 ### Understand order_time_in_force
+
 The `order_time_in_force` configuration parameter defines the policy by which the order
 is executed on the exchange. Three commonly used time in force are:
 
@@ -252,9 +252,9 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
     This is an ongoing work. For now it is supported only for binance and only for buy orders.
     Please don't change the default value unless you know what you are doing.
 
-### What values for exchange.name?
+### Exchange configuration
 
-Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115 cryptocurrency
+Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
 exchange markets and trading APIs. The complete up-to-date list can be found in the
 [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was tested
 with only Bittrex and Binance.
@@ -265,6 +265,30 @@ The bot was tested with the following exchanges:
 - [Binance](https://www.binance.com/): "binance"
 
 Feel free to test other exchanges and submit your PR to improve the bot.
+
+#### Sample exchange configuration
+
+A exchange configuration for "binance" would look as follows:
+
+```json
+"exchange": {
+    "name": "binance",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "ccxt_config": {"enableRateLimit": true},
+    "ccxt_async_config": {
+        "enableRateLimit": true,
+        "rateLimit": 200
+    },
+```
+
+This configuration enables binance, as well as rate limiting to avoid bans from the exchange.
+`"rateLimit": 200` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+
+!!! Note
+    Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
+    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step. 
+
 
 ### What values can be used for fiat_display_currency?
 
