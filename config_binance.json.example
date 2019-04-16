@@ -30,7 +30,8 @@
         "secret": "your_exchange_secret",
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
-            "enableRateLimit": false
+            "enableRateLimit": true,
+            "rateLimit": 200
         },
         "pair_whitelist": [
             "AST/BTC",
