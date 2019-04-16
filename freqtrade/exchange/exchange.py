@@ -146,7 +146,6 @@ class Exchange(object):
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid', ''),
-            'enableRateLimit': exchange_config.get('ccxt_rate_limit', True)
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)

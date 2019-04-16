@@ -485,15 +485,6 @@ def test_check_exchange(default_conf, caplog) -> None:
     ):
         configuration.check_exchange(default_conf)
 
-    # Test ccxt_rate_limit depreciation
-    default_conf.get('exchange').update({'name': 'binance'})
-    default_conf['exchange']['ccxt_rate_limit'] = True
-    configuration.check_exchange(default_conf)
-    assert log_has("`ccxt_rate_limit` has been deprecated in favor of "
-                   "`ccxt_config` and `ccxt_async_config` and will be removed "
-                   "in a future version.",
-                   caplog.record_tuples)
-
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
