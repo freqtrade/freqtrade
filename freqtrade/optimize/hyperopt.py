@@ -318,8 +318,8 @@ class Hyperopt(Backtesting):
 
         self.opt = self.get_optimizer(cpus)
 
-        frames = self.total_tries // EVALS_FRAME
-        last_frame_len = self.total_tries % EVALS_FRAME
+        frames = ((self.total_tries - 1) // EVALS_FRAME)
+        last_frame_len = (self.total_tries - 1) % EVALS_FRAME
 
         try:
             register_parallel_backend('custom', CustomImmediateResultBackend)
@@ -327,7 +327,7 @@ class Hyperopt(Backtesting):
                 with Parallel(n_jobs=cpus, verbose=0) as parallel:
                     for frame in range(frames + 1):
                         frame_start = frame * EVALS_FRAME
-                        frame_len = last_frame_len if frame == frames else EVALS_FRAME
+                        frame_len = last_frame_len+1 if frame == frames else EVALS_FRAME
                         print(f"\n{frame_start+1}-{frame_start+frame_len}"
                               f"/{self.total_tries}: ", end='')
                         f_val = self.run_optimizer_parallel(
@@ -339,8 +339,9 @@ class Hyperopt(Backtesting):
                         self.log_results(f_val, frame_start, self.total_tries)
 
         except KeyboardInterrupt:
-            print('User interrupted..')
+            print("User interrupted..")
 
+        print("\n")
         self.save_trials()
         self.log_trials_result()
 
