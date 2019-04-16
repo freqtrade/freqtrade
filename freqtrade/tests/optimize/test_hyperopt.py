@@ -358,7 +358,12 @@ def test_generate_optimizer(mocker, default_conf) -> None:
         'loss': 1.9840569076926293,
         'result': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
                   '(0.0231Σ%). Avg duration 100.0 mins.',
-        'params': optimizer_param
+        'params': optimizer_param,
+        'asked': [
+            0, 35, 0, 0, False, True, False, False, 'macd_cross_signal', 0, 75, 0, 0,
+            False, True, False, False, 'macd_cross_signal', 60.0, 30.0, 20.0,
+            0.01, 0.01, 0.1, -0.4
+        ]
     }
 
     hyperopt = Hyperopt(default_conf)
