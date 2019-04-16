@@ -157,12 +157,15 @@ class StrategyResolver(IResolver):
                         getfullargspec(strategy.populate_indicators).args)
                     strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
                     strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-
-                    return import_strategy(strategy, config=config)
+                    try:
+                        return import_strategy(strategy, config=config)
+                    except TypeError as e:
+                        logger.warning(
+                            f"Impossible to load strategy '{strategy}' from {_path}. Error: {e}")
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
 
         raise ImportError(
-            "Impossible to load Strategy '{}'. This class does not exist"
-            " or contains Python code errors".format(strategy_name)
+            f"Impossible to load Strategy '{strategy_name}'. This class does not exist"
+            " or contains Python code errors"
         )
