@@ -258,7 +258,6 @@ class Hyperopt(Backtesting):
             acq_optimizer="auto",
             n_initial_points=30,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
-            random_state=777,
         )
 
     def run_optimizer_parallel(self, parallel, tries: int, first_try: int) -> List:
