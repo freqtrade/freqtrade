@@ -19,6 +19,7 @@ from typing import Any, Dict, List
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects
 from joblib._parallel_backends import LokyBackend
 from joblib import register_parallel_backend, parallel_backend
+from joblib.externals.loky import set_loky_pickler
 from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
@@ -261,9 +262,7 @@ class Hyperopt(Backtesting):
         )
 
     def run_optimizer_parallel(self, parallel, tries: int, first_try: int) -> List:
-        result = parallel(delayed(
-                          wrap_non_picklable_objects(self.parallel_objective))
-                          (asked, i) for asked, i in
+        result = parallel(delayed(self.parallel_objective)(asked, i) for asked, i in
                           zip(self.opt_generator(), range(first_try, first_try + tries)))
         return result
 
@@ -315,6 +314,7 @@ class Hyperopt(Backtesting):
         cpus = multiprocessing.cpu_count()
         logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
 
+        set_loky_pickler('pickle')
         self.opt = self.get_optimizer(cpus)
 
         frames = ((self.total_tries - 1) // EVALS_FRAME)
