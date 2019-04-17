@@ -54,7 +54,8 @@ else:
             'secret': '',
             'pair_whitelist': [],
             'ccxt_async_config': {
-                'enableRateLimit': False
+                'enableRateLimit': True,
+                'rateLimit': 200
             }
         }
     }

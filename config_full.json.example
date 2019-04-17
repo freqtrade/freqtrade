@@ -61,6 +61,7 @@
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
             "enableRateLimit": false,
+            "rateLimit": 500,
             "aiohttp_trust_env": false
         },
         "pair_whitelist": [
