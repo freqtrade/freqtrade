@@ -398,10 +398,11 @@ class CustomImmediateResultBackend(LokyBackend):
         Use it to run Optimizer.tell() with immediate results of the backtest()
         evaluated in the joblib worker process.
         """
-        # Fetch results from the Future object passed to us.
-        # Future object is assumed to be 'done' already.
-        f_val = result.result().copy()
-        _hyperopt.parallel_callback(f_val)
+        if not result.exception():
+            # Fetch results from the Future object passed to us.
+            # Future object is assumed to be 'done' already.
+            f_val = result.result().copy()
+            _hyperopt.parallel_callback(f_val)
 
     def apply_async(self, func, callback=None):
         cbs = MultiCallback(callback, self.callback)
