@@ -9,13 +9,14 @@ from argparse import Namespace
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, List, Optional
 
-import ccxt
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
+from freqtrade.exchange import is_exchange_supported, supported_exchanges
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -384,10 +385,11 @@ class Configuration(object):
         :return: True or raised an exception if the exchange if not supported
         """
         exchange = config.get('exchange', {}).get('name').lower()
-        if exchange not in ccxt.exchanges:
+        if not is_exchange_supported(exchange):
 
             exception_msg = f'Exchange "{exchange}" not supported.\n' \
-                            f'The following exchanges are supported: {", ".join(ccxt.exchanges)}'
+                            f'The following exchanges are supported: ' \
+                            f'{", ".join(supported_exchanges())}'
 
             logger.critical(exception_msg)
             raise OperationalException(
