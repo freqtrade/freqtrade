@@ -116,11 +116,13 @@ class ApiServer(RPC):
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
         app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
         app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist, methods=['GET'])
+        app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist, methods=['GET'])
         # TODO: Implement the following
         # performance
         # forcebuy
         # forcesell
-        # blacklist
+        # whitelist param
+        # balacklist params
         # edge
         # help (?)
 
@@ -264,7 +266,7 @@ class ApiServer(RPC):
     @safe_rpc
     def _status(self):
         """
-        Handler for /status table.
+        Handler for /status.
 
         Returns the current status of the trades in json format
         """
@@ -274,7 +276,7 @@ class ApiServer(RPC):
     @safe_rpc
     def _balance(self):
         """
-        Handler for /balance table.
+        Handler for /balance.
 
         Returns the current status of the trades in json format
         """
@@ -284,8 +286,15 @@ class ApiServer(RPC):
     @safe_rpc
     def _whitelist(self):
         """
-        Handler for /whitelist table.
-
+        Handler for /whitelist.
         """
         results = self._rpc_whitelist()
+        return self.rest_dump(results)
+
+    @safe_rpc
+    def _blacklist(self):
+        """
+        Handler for /blacklist.
+        """
+        results = self._rpc_blacklist()
         return self.rest_dump(results)
