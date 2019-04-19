@@ -26,16 +26,28 @@ logger = logging.getLogger("ft_rest_client")
 COMMANDS_NO_ARGS = ["start",
                     "stop",
                     "stopbuy",
-                    "reload_conf"
+                    "reload_conf",
                     ]
-COMMANDS_ARGS = ["daily",
-                 ]
+INFO_COMMANDS = {"version": [],
+                 "count": [],
+                 "daily": ["timescale"],
+                 "profit": [],
+                 "status": [],
+                 "balance": []
+                 }
 
 
 def add_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("command",
                         help="Positional argument defining the command to execute.")
+
+    parser.add_argument("command_arguments",
+                        help="Positional arguments for the parameters for [command]",
+                        nargs="*",
+                        default=[]
+                        )
+
     parser.add_argument('-c', '--config',
                         help='Specify configuration file (default: %(default)s). ',
                         dest='config',
@@ -58,7 +70,8 @@ def load_config(configfile):
     if file.is_file():
         with file.open("r") as f:
             config = json.load(f)
-    return config
+        return config
+    return {}
 
 
 def call_authorized(url):
@@ -74,6 +87,22 @@ def call_command_noargs(server_url, command):
     logger.info(r)
 
 
+def call_info(server_url, command, command_args):
+    logger.info(f"Running command `{command}` with parameters `{command_args}` at {server_url}")
+    call = f"{server_url}/{command}?"
+    args = INFO_COMMANDS[command]
+    if len(args) < len(command_args):
+        logger.error(f"Command {command} does only support {len(args)} arguments.")
+        return
+    for idx, arg in enumerate(command_args):
+
+        call += f"{args[idx]}={arg}"
+    logger.debug(call)
+    r = call_authorized(call)
+
+    logger.info(r)
+
+
 def main(args):
 
     config = load_config(args["config"])
@@ -85,13 +114,8 @@ def main(args):
     if args["command"] in COMMANDS_NO_ARGS:
         call_command_noargs(server_url, args["command"])
 
-    if args["command"] == "daily":
-        if str.isnumeric(argv[2]):
-            get_url = server_url + '/daily?timescale=' + argv[2]
-            d = get(get_url).json()
-            print(d)
-        else:
-            print("\nThe second argument to daily must be an integer, 1,2,3 etc")
+    if args["command"] in INFO_COMMANDS:
+        call_info(server_url, args["command"], args["command_arguments"])
 
 
 if __name__ == "__main__":
