@@ -1,7 +1,8 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
-from freqtrade import optimize, constants
+from freqtrade import optimize
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
+from freqtrade.misc import timeframe_to_minutes
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, patch_exchange
 
@@ -37,7 +38,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
     min_date, max_date = optimize.get_timeframe(data)
     caplog.clear()
     assert optimize.validate_backtest_data(data, min_date, max_date,
-                                           constants.TICKER_INTERVAL_MINUTES["1m"])
+                                           timeframe_to_minutes('1m'))
     assert len(caplog.record_tuples) == 1
     assert log_has(
         "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
@@ -61,5 +62,5 @@ def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
     min_date, max_date = optimize.get_timeframe(data)
     caplog.clear()
     assert not optimize.validate_backtest_data(data, min_date, max_date,
-                                               constants.TICKER_INTERVAL_MINUTES["5m"])
+                                               timeframe_to_minutes('5m'))
     assert len(caplog.record_tuples) == 0

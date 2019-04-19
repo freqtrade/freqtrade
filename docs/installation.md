@@ -315,7 +315,6 @@ Before installing FreqTrade on a Raspberry Pi running the official Raspbian Imag
 
 The following assumes that miniconda3 is installed and available in your environment. Last miniconda3 installation file use python 3.4, we will update to python 3.6 on this installation.
 It's recommended to use (mini)conda for this as installation/compilation of `numpy`, `scipy` and `pandas` takes a long time.
-If you have installed it from (mini)conda, you can remove `numpy`, `scipy`, and `pandas` from `requirements.txt` before you install it with `pip`.
 
 Additional package to install on your Raspbian, `libffi-dev` required by cryptography (from python-telegram-bot).
 
@@ -327,7 +326,7 @@ conda activate freqtrade
 conda install scipy pandas numpy
 
 sudo apt install libffi-dev
-python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements-pi.txt
 python3 -m pip install -e .
 ```
 
@@ -407,7 +406,7 @@ pip3 install -e .
 If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
 ```bash
-python3.6 ./freqtrade/main.py -c config.json
+python3.6 freqtrade -c config.json
 ```
 
 *Note*: If you run the bot on a server, you should consider using [Docker](#automatic-installation---docker) a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
@@ -427,6 +426,19 @@ For this to be persistent (run when user is logged out) you'll need to enable `l
 ```bash
 sudo loginctl enable-linger "$USER"
 ```
+
+If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
+state and restarting it in the case of failures. If the `internals.sd_notify` parameter is set to true in the 
+configuration or the `--sd-notify` command line option is used, the bot will send keep-alive ping messages to systemd 
+using the sd_notify (systemd notifications) protocol and will also tell systemd its current state (Running or Stopped) 
+when it changes. 
+
+The `freqtrade.service.watchdog` file contains an example of the service unit configuration file which uses systemd 
+as the watchdog.
+
+!!! Note 
+  The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a 
+  Docker container.
 
 ------
 

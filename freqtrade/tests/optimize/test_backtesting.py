@@ -14,7 +14,9 @@ from arrow import Arrow
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
+from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.optimize import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
@@ -315,7 +317,28 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
-def test_backtesting_init(mocker, default_conf) -> None:
+ORDER_TYPES = [
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': False
+    },
+    {
+        'buy': 'limit',
+        'sell': 'limit',
+        'stoploss': 'limit',
+        'stoploss_on_exchange': True
+    }]
+
+
+@pytest.mark.parametrize("order_types", ORDER_TYPES)
+def test_backtesting_init(mocker, default_conf, order_types) -> None:
+    """
+    Check that stoploss_on_exchange is set to False while backtesting
+    since backtesting assumes a perfect stoploss anyway.
+    """
+    default_conf["order_types"] = order_types
     patch_exchange(mocker)
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
@@ -324,8 +347,10 @@ def test_backtesting_init(mocker, default_conf) -> None:
     assert callable(backtesting.strategy.tickerdata_to_dataframe)
     assert callable(backtesting.advise_buy)
     assert callable(backtesting.advise_sell)
+    assert isinstance(backtesting.strategy.dp, DataProvider)
     get_fee.assert_called()
     assert backtesting.fee == 0.5
+    assert not backtesting.strategy.order_types["stoploss_on_exchange"]
 
 
 def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
@@ -660,40 +685,32 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker):
     assert len(results.loc[results.open_at_end]) == 0
 
 
-def test_backtest_multi_pair(default_conf, fee, mocker):
-
-    def evaluate_result_multi(results, freq, max_open_trades):
-        # Find overlapping trades by expanding each trade once per period
-        # and then counting overlaps
-        dates = [pd.Series(pd.date_range(row[1].open_time, row[1].close_time, freq=freq))
-                 for row in results[['open_time', 'close_time']].iterrows()]
-        deltas = [len(x) for x in dates]
-        dates = pd.Series(pd.concat(dates).values, name='date')
-        df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
-
-        df2 = df2.astype(dtype={"open_time": "datetime64", "close_time": "datetime64"})
-        df2 = pd.concat([dates, df2], axis=1)
-        df2 = df2.set_index('date')
-        df_final = df2.resample(freq)[['pair']].count()
-        return df_final[df_final['pair'] > max_open_trades]
+@pytest.mark.parametrize("pair", ['ADA/BTC', 'LTC/BTC'])
+@pytest.mark.parametrize("tres", [0, 20, 30])
+def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
 
     def _trend_alternate_hold(dataframe=None, metadata=None):
         """
-        Buy every 8th candle - sell every other 8th -2 (hold on to pairs a bit)
+        Buy every xth candle - sell every other xth -2 (hold on to pairs a bit)
         """
-        multi = 8
+        if metadata['pair'] in('ETH/BTC', 'LTC/BTC'):
+            multi = 20
+        else:
+            multi = 18
         dataframe['buy'] = np.where(dataframe.index % multi == 0, 1, 0)
         dataframe['sell'] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
-        if metadata['pair'] in('ETH/BTC', 'LTC/BTC'):
-            dataframe['buy'] = dataframe['buy'].shift(-4)
-            dataframe['sell'] = dataframe['sell'].shift(-4)
         return dataframe
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
+
     pairs = ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC', 'NXT/BTC']
     data = history.load_data(datadir=None, ticker_interval='5m', pairs=pairs)
+    # Only use 500 lines to increase performance
     data = trim_dictlist(data, -500)
+
+    # Remove data for one pair from the beginning of the data
+    data[pair] = data[pair][tres:]
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '5m'

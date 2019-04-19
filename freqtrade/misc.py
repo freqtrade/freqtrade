@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from typing import Dict
 
+from ccxt import Exchange
 import numpy as np
 from pandas import DataFrame
 import rapidjson
@@ -113,3 +114,44 @@ def format_ms_time(date: int) -> str:
     : epoch-string in ms
     """
     return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def deep_merge_dicts(source, destination):
+    """
+    >>> a = { 'first' : { 'rows' : { 'pass' : 'dog', 'number' : '1' } } }
+    >>> b = { 'first' : { 'rows' : { 'fail' : 'cat', 'number' : '5' } } }
+    >>> merge(b, a) == { 'first' : { 'rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }
+    True
+    """
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            deep_merge_dicts(value, node)
+        else:
+            destination[key] = value
+
+    return destination
+
+
+def timeframe_to_seconds(ticker_interval: str) -> int:
+    """
+    Translates the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
+    of seconds for one timeframe interval.
+    """
+    return Exchange.parse_timeframe(ticker_interval)
+
+
+def timeframe_to_minutes(ticker_interval: str) -> int:
+    """
+    Same as above, but returns minutes.
+    """
+    return Exchange.parse_timeframe(ticker_interval) // 60
+
+
+def timeframe_to_msecs(ticker_interval: str) -> int:
+    """
+    Same as above, but returns milliseconds.
+    """
+    return Exchange.parse_timeframe(ticker_interval) * 1000

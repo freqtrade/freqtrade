@@ -60,32 +60,27 @@ class IPairList(ABC):
     def _validate_whitelist(self, whitelist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary
-        :param whitelist: the sorted list (based on BaseVolume) of pairs the user might want to
-        trade
-        :return: the list of pairs the user wants to trade without the one unavailable or
+        :param whitelist: the sorted list of pairs the user might want to trade
+        :return: the list of pairs the user wants to trade without those unavailable or
         black_listed
         """
-        sanitized_whitelist = whitelist
-        markets = self._freqtrade.exchange.get_markets()
+        markets = self._freqtrade.exchange.markets
 
-        # Filter to markets in stake currency
-        markets = [m for m in markets if m['quote'] == self._config['stake_currency']]
-        known_pairs = set()
-
-        for market in markets:
-            pair = market['symbol']
-            # pair is not int the generated dynamic market, or in the blacklist ... ignore it
-            if pair not in whitelist or pair in self.blacklist:
+        sanitized_whitelist = set()
+        for pair in whitelist:
+            # pair is not in the generated dynamic market, or in the blacklist ... ignore it
+            if (pair in self.blacklist or pair not in markets
+                    or not pair.endswith(self._config['stake_currency'])):
+                logger.warning(f"Pair {pair} is not compatible with exchange "
+                               f"{self._freqtrade.exchange.name} or contained in "
+                               f"your blacklist. Removing it from whitelist..")
                 continue
-            # else the pair is valid
-            known_pairs.add(pair)
-            # Market is not active
+            # Check if market is active
+            market = markets[pair]
             if not market['active']:
-                sanitized_whitelist.remove(pair)
-                logger.info(
-                    'Ignoring %s from whitelist. Market is not active.',
-                    pair
-                )
+                logger.info(f"Ignoring {pair} from whitelist. Market is not active.")
+                continue
+            sanitized_whitelist.add(pair)
 
         # We need to remove pairs that are unknown
-        return [x for x in sanitized_whitelist if x in known_pairs]
+        return list(sanitized_whitelist)

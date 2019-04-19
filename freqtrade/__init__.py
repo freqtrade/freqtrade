@@ -1,5 +1,5 @@
 """ FreqTrade bot """
-__version__ = '0.18.1'
+__version__ = '0.18.5'
 
 
 class DependencyException(BaseException):
@@ -14,6 +14,14 @@ class OperationalException(BaseException):
     Requires manual intervention.
     This happens when an exchange returns an unexpected error during runtime
     or given configuration is invalid.
+    """
+
+
+class InvalidOrderException(BaseException):
+    """
+    This is returned when the order is not valid. Example:
+    If stoploss on exchange order is hit, then trying to cancel the order
+    should return this exception.
     """
 
 

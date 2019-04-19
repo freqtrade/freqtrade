@@ -1,17 +1,19 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
+import warnings
 from base64 import urlsafe_b64encode
 from os import path
 from pathlib import Path
-import warnings
+from unittest.mock import Mock
 
 import pytest
 from pandas import DataFrame
 
+from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy import import_strategy
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.tests.conftest import log_has_re
 
 
 def test_import_strategy(caplog):
@@ -92,6 +94,16 @@ def test_load_not_found_strategy():
                        match=r"Impossible to load Strategy 'NotFoundStrategy'."
                              r" This class does not exist or contains Python code errors"):
         strategy._load_strategy(strategy_name='NotFoundStrategy', config={})
+
+
+def test_load_staticmethod_importerror(mocker, caplog):
+    mocker.patch("freqtrade.resolvers.strategy_resolver.import_strategy", Mock(
+        side_effect=TypeError("can't pickle staticmethod objects")))
+    with pytest.raises(ImportError,
+                       match=r"Impossible to load Strategy 'DefaultStrategy'."
+                             r" This class does not exist or contains Python code errors"):
+        StrategyResolver()
+    assert log_has_re(r".*Error: can't pickle staticmethod objects", caplog.record_tuples)
 
 
 def test_strategy(result):
@@ -194,11 +206,13 @@ def test_strategy_override_ticker_interval(caplog):
 
     config = {
         'strategy': 'DefaultStrategy',
-        'ticker_interval': 60
+        'ticker_interval': 60,
+        'stake_currency': 'ETH'
     }
     resolver = StrategyResolver(config)
 
     assert resolver.strategy.ticker_interval == 60
+    assert resolver.strategy.stake_currency == 'ETH'
     assert ('freqtrade.resolvers.strategy_resolver',
             logging.INFO,
             "Override strategy 'ticker_interval' with value in config file: 60."

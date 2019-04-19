@@ -17,11 +17,11 @@ from freqtrade import optimize
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.exchange import Exchange
 from freqtrade.data import history
-from freqtrade.misc import file_dump_json
+from freqtrade.data.dataprovider import DataProvider
+from freqtrade.misc import file_dump_json, timeframe_to_minutes
 from freqtrade.persistence import Trade
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
 
@@ -65,10 +65,19 @@ class Backtesting(object):
         self.config['exchange']['uid'] = ''
         self.config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
+
+        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
+        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
+        self.fee = self.exchange.get_fee()
+
+        if self.config.get('runmode') != RunMode.HYPEROPT:
+            self.dataprovider = DataProvider(self.config, self.exchange)
+            IStrategy.dp = self.dataprovider
+
         if self.config.get('strategy_list', None):
             # Force one interval
             self.ticker_interval = str(self.config.get('ticker_interval'))
-            self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
+            self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -80,19 +89,21 @@ class Backtesting(object):
         # Load one strategy
         self._set_strategy(self.strategylist[0])
 
-        self.exchange = Exchange(self.config)
-        self.fee = self.exchange.get_fee()
-
     def _set_strategy(self, strategy):
         """
         Load strategy into backtesting
         """
         self.strategy = strategy
+
         self.ticker_interval = self.config.get('ticker_interval')
-        self.ticker_interval_mins = constants.TICKER_INTERVAL_MINUTES[self.ticker_interval]
+        self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
         self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
+        # Set stoploss_on_exchange to false for backtesting,
+        # since a "perfect" stoploss-sell is assumed anyway
+        # And the regular "stoploss" function would not apply to that case
+        self.strategy.order_types['stoploss_on_exchange'] = False
 
     def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame,
                              skip_nan: bool = False) -> str:
@@ -199,6 +210,32 @@ class Backtesting(object):
             logger.info('Dumping backtest results to %s', recordfilename)
             file_dump_json(recordfilename, records)
 
+    def _get_ticker_list(self, processed) -> Dict[str, DataFrame]:
+        """
+        Helper function to convert a processed tickerlist into a list for performance reasons.
+
+        Used by backtest() - so keep this optimized for performance.
+        """
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+        ticker: Dict = {}
+        # Create ticker dict
+        for pair, pair_data in processed.items():
+            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
+
+            ticker_data = self.advise_sell(
+                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+
+            # to avoid using data from future, we buy/sell with signal from previous candle
+            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
+            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
+
+            ticker_data.drop(ticker_data.head(1).index, inplace=True)
+
+            # Convert from Pandas to list for performance reasons
+            # (Looping Pandas is slow.)
+            ticker[pair] = [x for x in ticker_data.itertuples()]
+        return ticker
+
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
             partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
@@ -293,7 +330,6 @@ class Backtesting(object):
             position_stacking: do we allow position stacking? (default: False)
         :return: DataFrame
         """
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         processed = args['processed']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
@@ -301,54 +337,50 @@ class Backtesting(object):
         end_date = args['end_date']
         trades = []
         trade_count_lock: Dict = {}
-        ticker: Dict = {}
-        pairs = []
-        # Create ticker dict
-        for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
-
-            # to avoid using data from future, we buy/sell with signal from previous candle
-            ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
-            ticker_data.loc[:, 'sell'] = ticker_data['sell'].shift(1)
-
-            ticker_data.drop(ticker_data.head(1).index, inplace=True)
-
-            # Convert from Pandas to list for performance reasons
-            # (Looping Pandas is slow.)
-            ticker[pair] = [x for x in ticker_data.itertuples()]
-            pairs.append(pair)
+        # Dict of ticker-lists for performance (looping lists is a lot faster than dataframes)
+        ticker: Dict = self._get_ticker_list(processed)
 
         lock_pair_until: Dict = {}
+        # Indexes per pair, so some pairs are allowed to have a missing start.
+        indexes: Dict = {}
         tmp = start_date + timedelta(minutes=self.ticker_interval_mins)
-        index = 0
-        # Loop timerange and test per pair
+
+        # Loop timerange and get candle for each pair at that point in time
         while tmp < end_date:
-            # print(f"time: {tmp}")
+
             for i, pair in enumerate(ticker):
+                if pair not in indexes:
+                    indexes[pair] = 0
+
                 try:
-                    row = ticker[pair][index]
+                    row = ticker[pair][indexes[pair]]
                 except IndexError:
-                    # missing Data for one pair ...
+                    # missing Data for one pair at the end.
                     # Warnings for this are shown by `validate_backtest_data`
                     continue
+
+                # Waits until the time-counter reaches the start of the data for this pair.
+                if row.date > tmp.datetime:
+                    continue
+
+                indexes[pair] += 1
 
                 if row.buy == 0 or row.sell == 1:
                     continue  # skip rows where no buy signal or that would immediately sell off
 
-                if not position_stacking:
-                    if pair in lock_pair_until and row.date <= lock_pair_until[pair]:
-                        continue
+                if (not position_stacking and pair in lock_pair_until
+                        and row.date <= lock_pair_until[pair]):
+                    # without positionstacking, we can only have one open trade per pair.
+                    continue
+
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
                     if not trade_count_lock.get(row.date, 0) < max_open_trades:
                         continue
-
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][index + 1:],
+                trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
                                                          trade_count_lock, args)
 
                 if trade_entry:
@@ -356,11 +388,10 @@ class Backtesting(object):
                     trades.append(trade_entry)
                 else:
                     # Set lock_pair_until to end of testing period if trade could not be closed
-                    # This happens only if the buy-signal was with the last candle
-                    lock_pair_until[pair] = end_date
+                    lock_pair_until[pair] = end_date.datetime
 
+            # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.ticker_interval_mins)
-            index += 1
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
     def start(self) -> None:
@@ -410,7 +441,7 @@ class Backtesting(object):
             min_date, max_date = optimize.get_timeframe(data)
             # Validate dataframe for missing values (mainly at start and end, as fillup is called)
             optimize.validate_backtest_data(data, min_date, max_date,
-                                            constants.TICKER_INTERVAL_MINUTES[self.ticker_interval])
+                                            timeframe_to_minutes(self.ticker_interval))
             logger.info(
                 'Measuring data from %s up to %s (%s days)..',
                 min_date.isoformat(),

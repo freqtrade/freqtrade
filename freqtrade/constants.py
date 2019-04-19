@@ -3,9 +3,10 @@
 """
 bot constants
 """
+DEFAULT_CONFIG = 'config.json'
 DYNAMIC_WHITELIST = 20  # pairs
 PROCESS_THROTTLE_SECS = 5  # sec
-TICKER_INTERVAL = 5  # min
+DEFAULT_TICKER_INTERVAL = 5  # min
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 DEFAULT_STRATEGY = 'DefaultStrategy'
@@ -19,23 +20,13 @@ REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
+DRY_RUN_WALLET = 999.9
 
-TICKER_INTERVAL_MINUTES = {
-    '1m': 1,
-    '3m': 3,
-    '5m': 5,
-    '15m': 15,
-    '30m': 30,
-    '1h': 60,
-    '2h': 120,
-    '4h': 240,
-    '6h': 360,
-    '8h': 480,
-    '12h': 720,
-    '1d': 1440,
-    '3d': 4320,
-    '1w': 10080,
-}
+TICKER_INTERVALS = [
+    '1m', '3m', '5m', '15m', '30m',
+    '1h', '2h', '4h', '6h', '8h', '12h',
+    '1d', '3d', '1w',
+]
 
 SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
@@ -50,7 +41,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': -1},
-        'ticker_interval': {'type': 'string', 'enum': list(TICKER_INTERVAL_MINUTES.keys())},
+        'ticker_interval': {'type': 'string', 'enum': TICKER_INTERVALS},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'XBT', 'ETH', 'USDT', 'EUR', 'USD']},
         'stake_amount': {
             "type": ["number", "string"],
@@ -59,6 +50,7 @@ CONF_SCHEMA = {
         },
         'fiat_display_currency': {'type': 'string', 'enum': SUPPORTED_FIAT},
         'dry_run': {'type': 'boolean'},
+        'dry_run_wallet': {'type': 'number'},
         'process_only_new_candles': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',
@@ -67,10 +59,12 @@ CONF_SCHEMA = {
             },
             'minProperties': 1
         },
+        'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'trailing_stop': {'type': 'boolean'},
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'trailing_only_offset_is_reached': {'type': 'boolean'},
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
@@ -169,7 +163,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'process_throttle_secs': {'type': 'number'},
-                'interval': {'type': 'integer'}
+                'interval': {'type': 'integer'},
+                'sd_notify': {'type': 'boolean'},
             }
         }
     },
@@ -200,6 +195,7 @@ CONF_SCHEMA = {
                     'uniqueItems': True
                 },
                 'outdated_offset': {'type': 'integer', 'minimum': 1},
+                'markets_refresh_interval': {'type': 'integer'},
                 'ccxt_config': {'type': 'object'},
                 'ccxt_async_config': {'type': 'object'}
             },

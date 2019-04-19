@@ -62,7 +62,7 @@ If you have updated the buy strategy, ie. changed the contents of
 
 #### Sell optimization
 
-Similar to the buy-signal above, sell-signals can also be optimized. 
+Similar to the buy-signal above, sell-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Inside `sell_indicator_space()` - the parameters hyperopt shall be optimizing.
@@ -152,7 +152,7 @@ Because hyperopt tries a lot of combinations to find the best parameters it will
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
 ```bash
-python3 ./freqtrade/main.py --hyperopt <hyperoptname> -c config.json hyperopt -e 5000 --spaces all
+python3 freqtrade -c config.json hyperopt --customhyperopt <hyperoptname> -e 5000 --spaces all
 ```
 
 Use  `<hyperoptname>` as the name of the custom hyperopt used.
@@ -163,7 +163,7 @@ running at least several thousand evaluations.
 The `--spaces all` flag determines that all possible parameters should be optimized. Possibilities are listed below.
 
 !!! Warning
-When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
+    When switching parameters or changing configuration options, the file `user_data/hyperopt_results.pickle` should be removed. It's used to be able to continue interrupted calculations, but does not detect changes to settings or the hyperopt file.
 
 ### Execute Hyperopt with Different Ticker-Data Source
 
@@ -178,7 +178,7 @@ you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py hyperopt --timerange -200
+python3 freqtrade hyperopt --timerange -200
 ```
 
 ### Running Hyperopt with Smaller Search Space
@@ -285,11 +285,16 @@ This would translate to the following ROI table:
 ### Validate backtest result
 
 Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.
-To archive the same results (number of trades, ...) than during hyperopt, please use the command line flag `--disable-max-market-positions`.
-This setting is the default for hyperopt for speed reasons. You can overwrite this in the configuration by setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L283).
+To archive the same results (number of trades, ...) than during hyperopt, please use the command line flags `--disable-max-market-positions` and `--enable-position-stacking` for backtesting.
 
-!!! Note:
-Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+This configuration is the default in hyperopt for performance reasons.
+
+You can overwrite position stacking in the configuration by explicitly setting `"position_stacking"=false` or by changing the relevant line in your hyperopt file [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/optimize/hyperopt.py#L191).
+
+Enabling the market-position for hyperopt is currently not possible.
+
+!!! Note
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
 
 ## Next Step
 

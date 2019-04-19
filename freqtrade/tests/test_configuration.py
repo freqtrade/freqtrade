@@ -1,15 +1,16 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 
 import json
-from argparse import Namespace
 import logging
+from argparse import Namespace
+from copy import deepcopy
 from unittest.mock import MagicMock
+from pathlib import Path
 
 import pytest
-from jsonschema import validate, ValidationError, Draft4Validator
+from jsonschema import Draft4Validator, ValidationError, validate
 
-from freqtrade import constants
-from freqtrade import OperationalException
+from freqtrade import OperationalException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
@@ -22,7 +23,7 @@ def test_load_config_invalid_pair(default_conf) -> None:
 
     with pytest.raises(ValidationError, match=r'.*does not match.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_schema(default_conf)
 
 
 def test_load_config_missing_attributes(default_conf) -> None:
@@ -30,7 +31,7 @@ def test_load_config_missing_attributes(default_conf) -> None:
 
     with pytest.raises(ValidationError, match=r'.*\'exchange\' is a required property.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_schema(default_conf)
 
 
 def test_load_config_incorrect_stake_amount(default_conf) -> None:
@@ -38,7 +39,7 @@ def test_load_config_incorrect_stake_amount(default_conf) -> None:
 
     with pytest.raises(ValidationError, match=r'.*\'fake\' does not match \'unlimited\'.*'):
         configuration = Configuration(Namespace())
-        configuration._validate_config(default_conf)
+        configuration._validate_config_schema(default_conf)
 
 
 def test_load_config_file(default_conf, mocker, caplog) -> None:
@@ -50,18 +51,49 @@ def test_load_config_file(default_conf, mocker, caplog) -> None:
     validated_conf = configuration._load_config_file('somefile')
     assert file_mock.call_count == 1
     assert validated_conf.items() >= default_conf.items()
-    assert 'internals' in validated_conf
-    assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     default_conf['max_open_trades'] = 0
-    file_mock = mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)
     ))
 
-    Configuration(Namespace())._load_config_file('somefile')
-    assert file_mock.call_count == 1
+    args = Arguments([], '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf['max_open_trades'] == 0
+    assert 'internals' in validated_conf
+    assert log_has('Validating configuration ...', caplog.record_tuples)
+
+
+def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
+    conf1 = deepcopy(default_conf)
+    conf2 = deepcopy(default_conf)
+    del conf1['exchange']['key']
+    del conf1['exchange']['secret']
+    del conf2['exchange']['name']
+    conf2['exchange']['pair_whitelist'] += ['NANO/BTC']
+
+    config_files = [conf1, conf2]
+
+    configsmock = MagicMock(side_effect=config_files)
+    mocker.patch('freqtrade.configuration.Configuration._load_config_file', configsmock)
+
+    arg_list = ['-c', 'test_conf.json', '--config', 'test2_conf.json', ]
+    args = Arguments(arg_list, '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    exchange_conf = default_conf['exchange']
+    assert validated_conf['exchange']['name'] == exchange_conf['name']
+    assert validated_conf['exchange']['key'] == exchange_conf['key']
+    assert validated_conf['exchange']['secret'] == exchange_conf['secret']
+    assert validated_conf['exchange']['pair_whitelist'] != conf1['exchange']['pair_whitelist']
+    assert validated_conf['exchange']['pair_whitelist'] == conf2['exchange']['pair_whitelist']
+
+    assert 'internals' in validated_conf
     assert log_has('Validating configuration ...', caplog.record_tuples)
 
 
@@ -453,15 +485,6 @@ def test_check_exchange(default_conf, caplog) -> None:
     ):
         configuration.check_exchange(default_conf)
 
-    # Test ccxt_rate_limit depreciation
-    default_conf.get('exchange').update({'name': 'binance'})
-    default_conf['exchange']['ccxt_rate_limit'] = True
-    configuration.check_exchange(default_conf)
-    assert log_has("`ccxt_rate_limit` has been deprecated in favor of "
-                   "`ccxt_config` and `ccxt_async_config` and will be removed "
-                   "in a future version.",
-                   caplog.record_tuples)
-
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
@@ -516,6 +539,23 @@ def test_set_loggers() -> None:
     assert logging.getLogger('telegram').level is logging.INFO
 
 
+def test_set_logfile(default_conf, mocker):
+    mocker.patch('freqtrade.configuration.open',
+                 mocker.mock_open(read_data=json.dumps(default_conf)))
+
+    arglist = [
+        '--logfile', 'test_file.log',
+    ]
+    args = Arguments(arglist, '').get_parsed_arg()
+    configuration = Configuration(args)
+    validated_conf = configuration.load_config()
+
+    assert validated_conf['logfile'] == "test_file.log"
+    f = Path("test_file.log")
+    assert f.is_file()
+    f.unlink()
+
+
 def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
     default_conf['forcebuy_enable'] = True
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
@@ -542,3 +582,29 @@ def test__create_datadir(mocker, default_conf, caplog) -> None:
     cfg._create_datadir(default_conf, '/foo/bar')
     assert md.call_args[0][0] == "/foo/bar"
     assert log_has('Created data directory: /foo/bar', caplog.record_tuples)
+
+
+def test_validate_tsl(default_conf):
+    default_conf['trailing_stop'] = True
+    default_conf['trailing_stop_positive'] = 0
+    default_conf['trailing_stop_positive_offset'] = 0
+
+    default_conf['trailing_only_offset_is_reached'] = True
+    with pytest.raises(OperationalException,
+                       match=r'The config trailing_only_offset_is_reached needs '
+                       'trailing_stop_positive_offset to be more than 0 in your config.'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_consistency(default_conf)
+
+    default_conf['trailing_stop_positive_offset'] = 0.01
+    default_conf['trailing_stop_positive'] = 0.015
+    with pytest.raises(OperationalException,
+                       match=r'The config trailing_stop_positive_offset needs '
+                       'to be greater than trailing_stop_positive_offset in your config.'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_consistency(default_conf)
+
+    default_conf['trailing_stop_positive'] = 0.01
+    default_conf['trailing_stop_positive_offset'] = 0.015
+    Configuration(Namespace())
+    configuration._validate_config_consistency(default_conf)

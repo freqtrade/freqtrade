@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-
-"""This script generate json data"""
+"""
+This script generates json data
+"""
 import json
 import sys
 from pathlib import Path
 import arrow
+from typing import Any, Dict
 
-from freqtrade import arguments
+from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.exchange import Exchange
 from freqtrade.data.history import download_pair_history
 from freqtrade.configuration import Configuration, set_loggers
+from freqtrade.misc import deep_merge_dicts
 
 import logging
 logging.basicConfig(
@@ -21,7 +24,7 @@ set_loggers(0)
 
 DEFAULT_DL_PATH = 'user_data/data'
 
-arguments = arguments.Arguments(sys.argv[1:], 'download utility')
+arguments = Arguments(sys.argv[1:], 'download utility')
 arguments.testdata_dl_options()
 args = arguments.parse_args()
 
@@ -29,25 +32,33 @@ timeframes = args.timeframes
 
 if args.config:
     configuration = Configuration(args)
-    config = configuration._load_config_file(args.config)
+
+    config: Dict[str, Any] = {}
+    # Now expecting a list of config filenames here, not a string
+    for path in args.config:
+        print(f"Using config: {path}...")
+        # Merge config options, overwriting old values
+        config = deep_merge_dicts(configuration._load_config_file(path), config)
 
     config['stake_currency'] = ''
     # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 else:
-    config = {'stake_currency': '',
-              'dry_run': True,
-              'exchange': {
-                  'name': args.exchange,
-                  'key': '',
-                  'secret': '',
-                  'pair_whitelist': [],
-                  'ccxt_async_config': {
-                      "enableRateLimit": False
-                  }
-              }
-              }
+    config = {
+        'stake_currency': '',
+        'dry_run': True,
+        'exchange': {
+            'name': args.exchange,
+            'key': '',
+            'secret': '',
+            'pair_whitelist': [],
+            'ccxt_async_config': {
+                'enableRateLimit': True,
+                'rateLimit': 200
+            }
+        }
+    }
 
 
 dl_path = Path(DEFAULT_DL_PATH).joinpath(config['exchange']['name'])
@@ -84,18 +95,18 @@ for pair in PAIRS:
         pairs_not_available.append(pair)
         print(f"skipping pair {pair}")
         continue
-    for tick_interval in timeframes:
+    for ticker_interval in timeframes:
         pair_print = pair.replace('/', '_')
-        filename = f'{pair_print}-{tick_interval}.json'
+        filename = f'{pair_print}-{ticker_interval}.json'
         dl_file = dl_path.joinpath(filename)
         if args.erase and dl_file.exists():
-            print(f'Deleting existing data for pair {pair}, interval {tick_interval}')
+            print(f'Deleting existing data for pair {pair}, interval {ticker_interval}')
             dl_file.unlink()
 
-        print(f'downloading pair {pair}, interval {tick_interval}')
+        print(f'downloading pair {pair}, interval {ticker_interval}')
         download_pair_history(datadir=dl_path, exchange=exchange,
                               pair=pair,
-                              tick_interval=tick_interval,
+                              ticker_interval=ticker_interval,
                               timerange=timerange)
 
 

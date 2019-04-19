@@ -4,7 +4,6 @@ import logging
 import re
 from datetime import datetime
 from functools import reduce
-from typing import Dict, Optional
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -13,9 +12,11 @@ from telegram import Chat, Message, Update
 
 from freqtrade import constants
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.exchange import Exchange
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.resolvers import ExchangeResolver
+from freqtrade.worker import Worker
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -36,6 +37,7 @@ def log_has_re(line, logs):
 
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
@@ -49,7 +51,11 @@ def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
 
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchange:
     patch_exchange(mocker, api_mock, id)
-    exchange = Exchange(config)
+    config["exchange"]["name"] = id
+    try:
+        exchange = ExchangeResolver(id.title(), config).exchange
+    except ImportError:
+        exchange = Exchange(config)
     return exchange
 
 
@@ -82,24 +88,32 @@ def get_patched_edge(mocker, config) -> Edge:
 # Functions for recurrent object patching
 
 
-def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+def patch_freqtradebot(mocker, config) -> None:
     """
     This function patch _init_modules() to not call dependencies
     :param mocker: a Mocker object to apply patches
     :param config: Config to pass to the bot
     :return: None
     """
-    patch_coinmarketcap(mocker, {'price_usd': 12345.0})
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
     patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
 
+
+def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
 
 
-def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> None:
+def get_patched_worker(mocker, config) -> Worker:
+    patch_freqtradebot(mocker, config)
+    return Worker(args=None, config=config)
+
+
+@pytest.fixture(autouse=True)
+def patch_coinmarketcap(mocker) -> None:
     """
     Mocker to coinmarketcap to speed up tests
     :param mocker: mocker to patch coinmarketcap class
@@ -165,6 +179,10 @@ def default_conf():
                 "LTC/BTC",
                 "XRP/BTC",
                 "NEO/BTC"
+            ],
+            "pair_blacklist": [
+                "DOGE/BTC",
+                "HOT/BTC",
             ]
         },
         "telegram": {
@@ -220,8 +238,8 @@ def ticker_sell_down():
 
 @pytest.fixture
 def markets():
-    return MagicMock(return_value=[
-        {
+    return {
+        'ETH/BTC': {
             'id': 'ethbtc',
             'symbol': 'ETH/BTC',
             'base': 'ETH',
@@ -246,7 +264,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'TKN/BTC': {
             'id': 'tknbtc',
             'symbol': 'TKN/BTC',
             'base': 'TKN',
@@ -271,7 +289,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'BLK/BTC': {
             'id': 'blkbtc',
             'symbol': 'BLK/BTC',
             'base': 'BLK',
@@ -296,7 +314,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'LTC/BTC': {
             'id': 'ltcbtc',
             'symbol': 'LTC/BTC',
             'base': 'LTC',
@@ -321,7 +339,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'XRP/BTC': {
             'id': 'xrpbtc',
             'symbol': 'XRP/BTC',
             'base': 'XRP',
@@ -346,7 +364,7 @@ def markets():
             },
             'info': '',
         },
-        {
+        'NEO/BTC': {
             'id': 'neobtc',
             'symbol': 'NEO/BTC',
             'base': 'NEO',
@@ -370,8 +388,80 @@ def markets():
                 },
             },
             'info': '',
+        },
+        'BTT/BTC': {
+            'id': 'BTTBTC',
+            'symbol': 'BTT/BTC',
+            'base': 'BTT',
+            'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'base': 8,
+                'quote': 8,
+                'amount': 0,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 1.0,
+                    'max': 90000000.0
+                },
+                'price': {
+                    'min': None,
+                    'max': None
+                },
+                'cost': {
+                    'min': 0.001,
+                    'max': None
+                }
+            },
+            'info': "",
+        },
+        'ETH/USDT': {
+            'id': 'USDT-ETH',
+            'symbol': 'ETH/USDT',
+            'base': 'ETH',
+            'quote': 'USDT',
+            'precision': {
+                'amount': 8,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.02214286,
+                    'max': None
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': None
+                }
+            },
+            'active': True,
+            'info': ""
+        },
+        'LTC/USDT': {
+            'id': 'USDT-LTC',
+            'symbol': 'LTC/USDT',
+            'base': 'LTC',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'amount': 8,
+                'price': 8
+            },
+            'limits': {
+                'amount': {
+                    'min': 0.06646786,
+                    'max': None
+                },
+                'price': {
+                    'min': 1e-08,
+                    'max': None
+                }
+            },
+            'info': ""
         }
-    ])
+    }
 
 
 @pytest.fixture
@@ -590,6 +680,7 @@ def tickers():
             'vwap': 0.01869197,
             'open': 0.018585,
             'close': 0.018573,
+            'last': 0.018799,
             'baseVolume': 81058.66,
             'quoteVolume': 2247.48374509,
         },
@@ -635,6 +726,28 @@ def tickers():
             'average': None,
             'baseVolume': 88620.68,
             'quoteVolume': 1401.65697943,
+            'info': {}
+        },
+        'BTT/BTC': {
+            'symbol': 'BTT/BTC',
+            'timestamp': 1550936557206,
+            'datetime': '2019-02-23T15:42:37.206Z',
+            'high': 0.00000026,
+            'low': 0.00000024,
+            'bid': 0.00000024,
+            'bidVolume': 2446894197.0,
+            'ask': 0.00000025,
+            'askVolume': 2447913837.0,
+            'vwap': 0.00000025,
+            'open': 0.00000026,
+            'close': 0.00000024,
+            'last': 0.00000024,
+            'previousClose': 0.00000026,
+            'change': -0.00000002,
+            'percentage': -7.692,
+            'average': None,
+            'baseVolume': 4886464537.0,
+            'quoteVolume': 1215.14489611,
             'info': {}
         },
         'ETH/USDT': {

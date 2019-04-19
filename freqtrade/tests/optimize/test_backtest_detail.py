@@ -14,10 +14,10 @@ from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataf
 from freqtrade.tests.conftest import patch_exchange
 
 
-# Test 0 Minus 8% Close
+# Test 1 Minus 8% Close
 # Test with Stop-loss at 1%
 # TC1: Stop-Loss Triggered 1% loss
-tc0 = BTContainer(data=[
+tc1 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -30,10 +30,10 @@ tc0 = BTContainer(data=[
 )
 
 
-# Test 1 Minus 4% Low, minus 1% close
+# Test 2 Minus 4% Low, minus 1% close
 # Test with Stop-Loss at 3%
 # TC2: Stop-Loss Triggered 3% Loss
-tc1 = BTContainer(data=[
+tc2 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -49,11 +49,10 @@ tc1 = BTContainer(data=[
 # Test 3 Candle drops 4%, Recovers 1%.
 #               Entry Criteria Met
 # 	            Candle drops 20%
-# Candle Data for test 3
 # Test with Stop-Loss at 2%
 # TC3: Trade-A: Stop-Loss Triggered 2% Loss
 #          Trade-B: Stop-Loss Triggered 2% Loss
-tc2 = BTContainer(data=[
+tc3 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -71,7 +70,7 @@ tc2 = BTContainer(data=[
 # Candle Data for test 3 – Candle drops 3% Closed 15% up
 # Test with Stop-loss at 2% ROI 6%
 # TC4: Stop-Loss Triggered 2% Loss
-tc3 = BTContainer(data=[
+tc4 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -83,10 +82,10 @@ tc3 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
-# Test 4 / Drops 0.5% Closes +20%
+# Test 5 / Drops 0.5% Closes +20%
 # Set stop-loss at 1% ROI 3%
 # TC5: ROI triggers 3% Gain
-tc4 = BTContainer(data=[
+tc5 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4980, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4980, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -99,10 +98,9 @@ tc4 = BTContainer(data=[
 )
 
 # Test 6 / Drops 3% / Recovers 6% Positive / Closes 1% positve
-# Candle Data for test 6
 # Set stop-loss at 2% ROI at 5%
 # TC6: Stop-Loss triggers 2% Loss
-tc5 = BTContainer(data=[
+tc6 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -115,10 +113,9 @@ tc5 = BTContainer(data=[
 )
 
 # Test 7 - 6% Positive / 1% Negative / Close 1% Positve
-# Candle Data for test 7
 # Set stop-loss at 2% ROI at 3%
 # TC7: ROI Triggers 3% Gain
-tc6 = BTContainer(data=[
+tc7 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
@@ -130,14 +127,47 @@ tc6 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
 )
 
+
+# Test 8 - trailing_stop should raise so candle 3 causes a stoploss.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC8: Trailing stoploss - stoploss should be adjusted candle 2
+tc8 = BTContainer(data=[
+    # D   O     H     L    C     V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
+    [2, 5000, 5250, 4750, 4850, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=-0.055, trailing_stop=True,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
+
+# Test 9 - trailing_stop should raise - high and low in same candle.
+# Candle Data for test 9
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC9: Trailing stoploss - stoploss should be adjusted candle 2
+tc9 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
+    [2, 5000, 5050, 4950, 5000, 6172, 0, 0],
+    [3, 5000, 5200, 4550, 4850, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=-0.064, trailing_stop=True,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
 TESTS = [
-    tc0,
     tc1,
     tc2,
     tc3,
     tc4,
     tc5,
     tc6,
+    tc7,
+    tc8,
+    tc9,
 ]
 
 
@@ -148,8 +178,9 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     """
     default_conf["stoploss"] = data.stop_loss
     default_conf["minimal_roi"] = {"0": data.roi}
-    default_conf['ticker_interval'] = tests_ticker_interval
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.0))
+    default_conf["ticker_interval"] = tests_ticker_interval
+    default_conf["trailing_stop"] = data.trailing_stop
+    mocker.patch("freqtrade.exchange.Exchange.get_fee", MagicMock(return_value=0.0))
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
@@ -157,7 +188,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     backtesting.advise_sell = lambda a, m: frame
     caplog.set_level(logging.DEBUG)
 
-    pair = 'UNITTEST/BTC'
+    pair = "UNITTEST/BTC"
     # Dummy data as we mock the analyze functions
     data_processed = {pair: DataFrame()}
     min_date, max_date = get_timeframe({pair: frame})

@@ -4,15 +4,19 @@ This module contains the configuration class
 import json
 import logging
 import os
+import sys
 from argparse import Namespace
-from typing import Any, Dict, Optional
+from logging.handlers import RotatingFileHandler
+from typing import Any, Dict, List, Optional
 
 import ccxt
 from jsonschema import Draft4Validator, validate
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
+from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,8 +49,19 @@ class Configuration(object):
         Extract information for sys.argv and load the bot configuration
         :return: Configuration dictionary
         """
-        logger.info('Using config: %s ...', self.args.config)
-        config = self._load_config_file(self.args.config)
+        config: Dict[str, Any] = {}
+        # Now expecting a list of config filenames here, not a string
+        for path in self.args.config:
+            logger.info('Using config: %s ...', path)
+            # Merge config options, overwriting old values
+            config = deep_merge_dicts(self._load_config_file(path), config)
+
+        if 'internals' not in config:
+            config['internals'] = {}
+
+        logger.info('Validating configuration ...')
+        self._validate_config_schema(config)
+        self._validate_config_consistency(config)
 
         # Set strategy if not specified in config and or if it's non default
         if self.args.strategy != constants.DEFAULT_STRATEGY or not config.get('strategy'):
@@ -54,9 +69,6 @@ class Configuration(object):
 
         if self.args.strategy_path:
             config.update({'strategy_path': self.args.strategy_path})
-
-        # Add the hyperopt file to use
-        config.update({'hyperopt': self.args.hyperopt})
 
         # Load Common configuration
         config = self._load_common_config(config)
@@ -93,11 +105,7 @@ class Configuration(object):
                 f'Config file "{path}" not found!'
                 ' Please create a config file or check whether it exists.')
 
-        if 'internals' not in conf:
-            conf['internals'] = {}
-        logger.info('Validating configuration ...')
-
-        return self._validate_config(conf)
+        return conf
 
     def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -110,12 +118,29 @@ class Configuration(object):
             config.update({'verbosity': self.args.loglevel})
         else:
             config.update({'verbosity': 0})
+
+        # Log to stdout, not stderr
+        log_handlers: List[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+        if 'logfile' in self.args and self.args.logfile:
+            config.update({'logfile': self.args.logfile})
+
+        # Allow setting this as either configuration or argument
+        if 'logfile' in config:
+            log_handlers.append(RotatingFileHandler(config['logfile'],
+                                                    maxBytes=1024 * 1024,  # 1Mb
+                                                    backupCount=10))
+
         logging.basicConfig(
             level=logging.INFO if config['verbosity'] < 1 else logging.DEBUG,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=log_handlers
         )
         set_loggers(config['verbosity'])
         logger.info('Verbosity set to %s', config['verbosity'])
+
+        # Support for sd_notify
+        if self.args.sd_notify:
+            config['internals'].update({'sd_notify': True})
 
         # Add dynamic_whitelist if found
         if 'dynamic_whitelist' in self.args and self.args.dynamic_whitelist:
@@ -169,7 +194,7 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
         """
         Extract information for sys.argv and load Backtesting configuration
         :return: configuration as dictionary
@@ -192,13 +217,23 @@ class Configuration(object):
             config.update({'position_stacking': True})
             logger.info('Parameter --enable-position-stacking detected ...')
 
-        # If --disable-max-market-positions is used we add it to the configuration
+        # If --disable-max-market-positions or --max_open_trades is used we update configuration
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
             logger.info('max_open_trades set to unlimited ...')
+        elif 'max_open_trades' in self.args and self.args.max_open_trades:
+            config.update({'max_open_trades': self.args.max_open_trades})
+            logger.info('Parameter --max_open_trades detected, '
+                        'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+
+        # If --stake_amount is used we update configuration
+        if 'stake_amount' in self.args and self.args.stake_amount:
+            config.update({'stake_amount': self.args.stake_amount})
+            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
+                        config.get('stake_amount'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
@@ -268,6 +303,11 @@ class Configuration(object):
         Extract information for sys.argv and load Hyperopt configuration
         :return: configuration as dictionary
         """
+
+        if "hyperopt" in self.args:
+            # Add the hyperopt file to use
+            config.update({'hyperopt': self.args.hyperopt})
+
         # If --epochs is used we add it to the configuration
         if 'epochs' in self.args and self.args.epochs:
             config.update({'epochs': self.args.epochs})
@@ -281,7 +321,7 @@ class Configuration(object):
 
         return config
 
-    def _validate_config(self, conf: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate the configuration follow the Config Schema
         :param conf: Config in JSON format
@@ -298,6 +338,35 @@ class Configuration(object):
             raise ValidationError(
                 best_match(Draft4Validator(constants.CONF_SCHEMA).iter_errors(conf)).message
             )
+
+    def _validate_config_consistency(self, conf: Dict[str, Any]) -> None:
+        """
+        Validate the configuration consistency
+        :param conf: Config in JSON format
+        :return: Returns None if everything is ok, otherwise throw an OperationalException
+        """
+
+        # validating trailing stoploss
+        self._validate_trailing_stoploss(conf)
+
+    def _validate_trailing_stoploss(self, conf: Dict[str, Any]) -> None:
+        # Skip if trailing stoploss is not activated
+        if not conf.get('trailing_stop', False):
+            return
+
+        tsl_positive = float(conf.get('trailing_stop_positive', 0))
+        tsl_offset = float(conf.get('trailing_stop_positive_offset', 0))
+        tsl_only_offset = conf.get('trailing_only_offset_is_reached', False)
+
+        if tsl_only_offset:
+            if tsl_positive == 0.0:
+                raise OperationalException(
+                    f'The config trailing_only_offset_is_reached needs '
+                    'trailing_stop_positive_offset to be more than 0 in your config.')
+        if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
+            raise OperationalException(
+                f'The config trailing_stop_positive_offset needs '
+                'to be greater than trailing_stop_positive_offset in your config.')
 
     def get_config(self) -> Dict[str, Any]:
         """
@@ -324,11 +393,6 @@ class Configuration(object):
             raise OperationalException(
                 exception_msg
             )
-        # Depreciation warning
-        if 'ccxt_rate_limit' in config.get('exchange', {}):
-            logger.warning("`ccxt_rate_limit` has been deprecated in favor of "
-                           "`ccxt_config` and `ccxt_async_config` and will be removed "
-                           "in a future version.")
 
         logger.debug('Exchange "%s" supported', exchange)
         return True

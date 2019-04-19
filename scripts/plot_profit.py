@@ -12,26 +12,24 @@ Optional Cli parameters
 --timerange: specify what timerange of data to use
 --export-filename: Specify where the backtest export is located.
 """
+import json
 import logging
 import sys
-import json
 from argparse import Namespace
 from pathlib import Path
 from typing import List, Optional
-import numpy as np
 
+import numpy as np
+import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
-import plotly.graph_objs as go
 
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade import constants
 from freqtrade.data import history
+from freqtrade.misc import common_datearray, timeframe_to_seconds
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
-import freqtrade.misc as misc
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +37,7 @@ logger = logging.getLogger(__name__)
 # data:: [ pair,      profit-%,  enter,         exit,        time, duration]
 # data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
 def make_profit_array(data: List, px: int, min_date: int,
-                      interval: int,
+                      interval: str,
                       filter_pairs: Optional[List] = None) -> np.ndarray:
     pg = np.zeros(px)
     filter_pairs = filter_pairs or []
@@ -78,7 +76,7 @@ def plot_profit(args: Namespace) -> None:
     in helping out to find a good algorithm.
     """
 
-    # We need to use the same pairs, same tick_interval
+    # We need to use the same pairs, same ticker_interval
     # and same timeperiod as used in backtesting
     # to match the tickerdata against the profits-results
     timerange = Arguments.parse_timerange(args.timerange)
@@ -114,7 +112,7 @@ def plot_profit(args: Namespace) -> None:
     else:
         filter_pairs = config['exchange']['pair_whitelist']
 
-    tick_interval = strategy.ticker_interval
+    ticker_interval = strategy.ticker_interval
     pairs = config['exchange']['pair_whitelist']
 
     if filter_pairs:
@@ -122,9 +120,9 @@ def plot_profit(args: Namespace) -> None:
         logger.info('Filter, keep pairs %s' % pairs)
 
     tickers = history.load_data(
-        datadir=Path(config.get('datadir')),
+        datadir=Path(str(config.get('datadir'))),
         pairs=pairs,
-        ticker_interval=tick_interval,
+        ticker_interval=ticker_interval,
         refresh_pairs=False,
         timerange=timerange
     )
@@ -133,10 +131,10 @@ def plot_profit(args: Namespace) -> None:
     # NOTE: the dataframes are of unequal length,
     # 'dates' is an merged date array of them all.
 
-    dates = misc.common_datearray(dataframes)
+    dates = common_datearray(dataframes)
     min_date = int(min(dates).timestamp())
     max_date = int(max(dates).timestamp())
-    num_iterations = define_index(min_date, max_date, tick_interval) + 1
+    num_iterations = define_index(min_date, max_date, ticker_interval) + 1
 
     # Make an average close price of all the pairs that was involved.
     # this could be useful to gauge the overall market trend
@@ -156,7 +154,7 @@ def plot_profit(args: Namespace) -> None:
     avgclose /= num
 
     # make an profits-growth array
-    pg = make_profit_array(data, num_iterations, min_date, tick_interval, filter_pairs)
+    pg = make_profit_array(data, num_iterations, min_date, ticker_interval, filter_pairs)
 
     #
     # Plot the pairs average close prices, and total profit growth
@@ -180,7 +178,7 @@ def plot_profit(args: Namespace) -> None:
     fig.append_trace(profit, 2, 1)
 
     for pair in pairs:
-        pg = make_profit_array(data, num_iterations, min_date, tick_interval, pair)
+        pg = make_profit_array(data, num_iterations, min_date, ticker_interval, [pair])
         pair_profit = go.Scattergl(
             x=dates,
             y=pg,
@@ -191,12 +189,12 @@ def plot_profit(args: Namespace) -> None:
     plot(fig, filename=str(Path('user_data').joinpath('freqtrade-profit-plot.html')))
 
 
-def define_index(min_date: int, max_date: int, interval: str) -> int:
+def define_index(min_date: int, max_date: int, ticker_interval: str) -> int:
     """
     Return the index of a specific date
     """
-    interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-    return int((max_date - min_date) / (interval_minutes * 60))
+    interval_seconds = timeframe_to_seconds(ticker_interval)
+    return int((max_date - min_date) / interval_seconds)
 
 
 def plot_parse_args(args: List[str]) -> Namespace:

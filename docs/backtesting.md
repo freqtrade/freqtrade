@@ -24,37 +24,37 @@ The backtesting is very easy with freqtrade.
 #### With 5 min tickers (Per default)
 
 ```bash
-python3 ./freqtrade/main.py backtesting
+python3 freqtrade backtesting
 ```
 
 #### With 1 min tickers
 
 ```bash
-python3 ./freqtrade/main.py backtesting --ticker-interval 1m
+python3 freqtrade backtesting --ticker-interval 1m
 ```
 
 #### Update cached pairs with the latest data
 
 ```bash
-python3 ./freqtrade/main.py backtesting --refresh-pairs-cached
+python3 freqtrade backtesting --refresh-pairs-cached
 ```
 
 #### With live data (do not alter your testdata files)
 
 ```bash
-python3 ./freqtrade/main.py backtesting --live
+python3 freqtrade backtesting --live
 ```
 
 #### Using a different on-disk ticker-data source
 
 ```bash
-python3 ./freqtrade/main.py backtesting --datadir freqtrade/tests/testdata-20180101
+python3 freqtrade backtesting --datadir freqtrade/tests/testdata-20180101
 ```
 
 #### With a (custom) strategy file
 
 ```bash
-python3 ./freqtrade/main.py -s TestStrategy backtesting
+python3 freqtrade -s TestStrategy backtesting
 ```
 
 Where `-s TestStrategy` refers to the class name within the strategy file `test_strategy.py` found in the `freqtrade/user_data/strategies` directory
@@ -62,43 +62,15 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 #### Exporting trades to file
 
 ```bash
-python3 ./freqtrade/main.py backtesting --export trades
+python3 freqtrade backtesting --export trades
 ```
 
-The exported trades can be read using the following code for manual analysis, or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
-
-``` python
-import json
-from pathlib import Path
-import pandas as pd
-
-filename=Path('user_data/backtest_data/backtest-result.json')
-
-with filename.open() as file:
-        data = json.load(file)
-
-columns = ["pair", "profit", "opents", "closets", "index", "duration",
-           "open_rate", "close_rate", "open_at_end", "sell_reason"]
-df = pd.DataFrame(data, columns=columns)
-
-df['opents'] = pd.to_datetime(df['opents'],
-                              unit='s',
-                              utc=True,
-                              infer_datetime_format=True
-                             )
-df['closets'] = pd.to_datetime(df['closets'],
-                               unit='s',
-                               utc=True,
-                               infer_datetime_format=True
-                              )
-```
-
-If you have some ideas for interesting / helpful backtest data analysis, feel free to submit a PR so the community can benefit from it.
+The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
 
 #### Exporting trades to file specifying a custom filename
 
 ```bash
-python3 ./freqtrade/main.py backtesting --export trades --export-filename=backtest_teststrategy.json
+python3 freqtrade backtesting --export trades --export-filename=backtest_teststrategy.json
 ```
 
 #### Running backtest with smaller testset
@@ -109,7 +81,7 @@ you want to use. The last N ticks/timeframes will be used.
 Example:
 
 ```bash
-python3 ./freqtrade/main.py backtesting --timerange=-200
+python3 freqtrade backtesting --timerange=-200
 ```
 
 #### Advanced use of timerange
@@ -244,6 +216,28 @@ On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 (55%), there is a lot of chance that the bot will never reach this
 profit. Hence, keep in mind that your performance is a mix of your
 strategies, your configuration, and the crypto-currency you have set up.
+
+### Further backtest-result analysis
+
+To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
+You can then load the trades to perform further analysis.
+
+A good way for this is using Jupyter (notebook or lab) - which provides an interactive environment to analyze the data.
+
+Freqtrade provides an easy to load the backtest results, which is `load_backtest_data` - and takes a path to the backtest-results file.
+
+``` python
+from freqtrade.data.btanalysis import load_backtest_data
+df = load_backtest_data("user_data/backtest-result.json")
+
+# Show value-counts per pair
+df.groupby("pair")["sell_reason"].value_counts()
+
+```
+
+This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output unreadable.
+
+If you have some ideas for interesting / helpful backtest data analysis ideas, please submit a PR so the community can benefit from it.
 
 ## Backtesting multiple strategies
 

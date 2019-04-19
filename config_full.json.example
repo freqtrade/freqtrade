@@ -9,6 +9,7 @@
     "trailing_stop": false,
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
+    "trailing_only_offset_is_reached": false,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -38,18 +39,19 @@
         "buy": "limit",
         "sell": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": "false",
+        "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
     },
     "order_time_in_force": {
         "buy": "gtc",
-        "sell": "gtc",
+        "sell": "gtc"
     },
     "pairlist": {
         "method": "VolumePairList",
         "config": {
             "number_assets": 20,
-            "sort_key": "quoteVolume"
+            "sort_key": "quoteVolume",
+            "precision_filter": false
         }
     },
     "exchange": {
@@ -59,6 +61,7 @@
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
             "enableRateLimit": false,
+            "rateLimit": 500,
             "aiohttp_trust_env": false
         },
         "pair_whitelist": [
@@ -76,7 +79,8 @@
         "pair_blacklist": [
             "DOGE/BTC"
         ],
-        "outdated_offset": 5
+        "outdated_offset": 5,
+        "markets_refresh_interval": 60
     },
     "edge": {
         "enabled": false,

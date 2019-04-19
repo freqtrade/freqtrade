@@ -24,23 +24,22 @@ Example of usage:
 > python3 scripts/plot_dataframe.py --pairs BTC/EUR,XRP/BTC -d user_data/data/
   --indicators1 sma,ema3 --indicators2 fastk,fastd
 """
-import json
 import logging
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 import plotly.graph_objs as go
 import pytz
-
 from plotly import tools
 from plotly.offline import plot
 
 from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
+from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
 from freqtrade.exchange import Exchange
 from freqtrade.optimize.backtesting import setup_configuration
 from freqtrade.persistence import Trade
@@ -56,7 +55,8 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
     trades: pd.DataFrame = pd.DataFrame()
     if args.db_url:
         persistence.init(_CONF)
-        columns = ["pair", "profit", "opents", "closets", "open_rate", "close_rate", "duration"]
+        columns = ["pair", "profit", "open_time", "close_time",
+                   "open_rate", "close_rate", "duration"]
 
         for x in Trade.query.all():
             print("date: {}".format(x.open_date))
@@ -71,38 +71,18 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
                               columns=columns)
 
     elif args.exportfilename:
-        file = Path(args.exportfilename)
-        # must align with columns in backtest.py
-        columns = ["pair", "profit", "opents", "closets", "index", "duration",
-                   "open_rate", "close_rate", "open_at_end", "sell_reason"]
-        if file.exists():
-            with file.open() as f:
-                data = json.load(f)
-                trades = pd.DataFrame(data, columns=columns)
-            trades = trades.loc[trades["pair"] == pair]
-            if timerange:
-                if timerange.starttype == 'date':
-                    trades = trades.loc[trades["opents"] >= timerange.startts]
-                if timerange.stoptype == 'date':
-                    trades = trades.loc[trades["opents"] <= timerange.stopts]
 
-            trades['opents'] = pd.to_datetime(
-                                            trades['opents'],
-                                            unit='s',
-                                            utc=True,
-                                            infer_datetime_format=True)
-            trades['closets'] = pd.to_datetime(
-                                            trades['closets'],
-                                            unit='s',
-                                            utc=True,
-                                            infer_datetime_format=True)
+        file = Path(args.exportfilename)
+        if file.exists():
+            load_backtest_data(file)
+
         else:
-            trades = pd.DataFrame([], columns=columns)
+            trades = pd.DataFrame([], columns=BT_DATA_COLUMNS)
 
     return trades
 
 
-def generate_plot_file(fig, pair, tick_interval, is_last) -> None:
+def generate_plot_file(fig, pair, ticker_interval, is_last) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :return: None
@@ -110,7 +90,7 @@ def generate_plot_file(fig, pair, tick_interval, is_last) -> None:
     logger.info('Generate plot file for %s', pair)
 
     pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + tick_interval + '.html'
+    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
 
     Path("user_data/plots").mkdir(parents=True, exist_ok=True)
 
@@ -155,20 +135,20 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
     :return: dictinnary of tickers. output format: {'pair': tickersdata}
     """
 
-    tick_interval = strategy.ticker_interval
+    ticker_interval = strategy.ticker_interval
     timerange = Arguments.parse_timerange(args.timerange)
 
     tickers = {}
     if args.live:
         logger.info('Downloading pairs.')
-        exchange.refresh_latest_ohlcv([(pair, tick_interval) for pair in pairs])
+        exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
         for pair in pairs:
-            tickers[pair] = exchange.klines((pair, tick_interval))
+            tickers[pair] = exchange.klines((pair, ticker_interval))
     else:
         tickers = history.load_data(
-            datadir=Path(_CONF.get("datadir")),
+            datadir=Path(str(_CONF.get("datadir"))),
             pairs=pairs,
-            ticker_interval=tick_interval,
+            ticker_interval=ticker_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
             timerange=timerange,
             exchange=Exchange(_CONF)
@@ -206,7 +186,7 @@ def extract_trades_of_period(dataframe, trades) -> pd.DataFrame:
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
     :return: the DataFrame of a trades of period
     """
-    trades = trades.loc[trades['opents'] >= dataframe.iloc[0]['date']]
+    trades = trades.loc[trades['open_time'] >= dataframe.iloc[0]['date']]
     return trades
 
 
@@ -279,7 +259,7 @@ def generate_graph(
     )
 
     trade_buys = go.Scattergl(
-        x=trades["opents"],
+        x=trades["open_time"],
         y=trades["open_rate"],
         mode='markers',
         name='trade_buy',
@@ -291,7 +271,7 @@ def generate_graph(
         )
     )
     trade_sells = go.Scattergl(
-        x=trades["closets"],
+        x=trades["close_time"],
         y=trades["close_rate"],
         mode='markers',
         name='trade_sell',
@@ -419,7 +399,7 @@ def analyse_and_plot_pairs(args: Namespace):
     strategy, exchange, pairs = get_trading_env(args)
     # Set timerange to use
     timerange = Arguments.parse_timerange(args.timerange)
-    tick_interval = strategy.ticker_interval
+    ticker_interval = strategy.ticker_interval
 
     tickers = get_tickers_data(strategy, exchange, pairs, args)
     pair_counter = 0
@@ -442,7 +422,7 @@ def analyse_and_plot_pairs(args: Namespace):
         )
 
         is_last = (False, True)[pair_counter == len(tickers)]
-        generate_plot_file(fig, pair, tick_interval, is_last)
+        generate_plot_file(fig, pair, ticker_interval, is_last)
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 

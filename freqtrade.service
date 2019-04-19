@@ -6,7 +6,7 @@ After=network.target
 # Set WorkingDirectory and ExecStart to your file paths accordingly
 # NOTE: %h will be resolved to /home/<username>
 WorkingDirectory=%h/freqtrade
-ExecStart=/usr/bin/freqtrade --dynamic-whitelist 40
+ExecStart=/usr/bin/freqtrade
 Restart=on-failure
 
 [Install]

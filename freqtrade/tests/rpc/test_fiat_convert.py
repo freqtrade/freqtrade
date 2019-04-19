@@ -8,7 +8,7 @@ import pytest
 from requests.exceptions import RequestException
 
 from freqtrade.rpc.fiat_convert import CryptoFiat, CryptoToFiatConverter
-from freqtrade.tests.conftest import log_has, patch_coinmarketcap
+from freqtrade.tests.conftest import log_has
 
 
 def test_pair_convertion_object():
@@ -40,7 +40,6 @@ def test_pair_convertion_object():
 
 
 def test_fiat_convert_is_supported(mocker):
-    patch_coinmarketcap(mocker)
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._is_supported_fiat(fiat='USD') is True
     assert fiat_convert._is_supported_fiat(fiat='usd') is True
@@ -49,7 +48,6 @@ def test_fiat_convert_is_supported(mocker):
 
 
 def test_fiat_convert_add_pair(mocker):
-    patch_coinmarketcap(mocker)
 
     fiat_convert = CryptoToFiatConverter()
 
@@ -72,8 +70,6 @@ def test_fiat_convert_add_pair(mocker):
 
 
 def test_fiat_convert_find_price(mocker):
-    patch_coinmarketcap(mocker)
-
     fiat_convert = CryptoToFiatConverter()
 
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
@@ -93,15 +89,12 @@ def test_fiat_convert_find_price(mocker):
 
 def test_fiat_convert_unsupported_crypto(mocker, caplog):
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
-    patch_coinmarketcap(mocker)
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._find_price(crypto_symbol='CRYPTO_123', fiat_symbol='EUR') == 0.0
     assert log_has('unsupported crypto-symbol CRYPTO_123 - returning 0.0', caplog.record_tuples)
 
 
 def test_fiat_convert_get_price(mocker):
-    patch_coinmarketcap(mocker)
-
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=28000.0)
 
@@ -134,21 +127,18 @@ def test_fiat_convert_get_price(mocker):
 
 
 def test_fiat_convert_same_currencies(mocker):
-    patch_coinmarketcap(mocker)
     fiat_convert = CryptoToFiatConverter()
 
     assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='USD') == 1.0
 
 
 def test_fiat_convert_two_FIAT(mocker):
-    patch_coinmarketcap(mocker)
     fiat_convert = CryptoToFiatConverter()
 
     assert fiat_convert.get_price(crypto_symbol='USD', fiat_symbol='EUR') == 0.0
 
 
 def test_loadcryptomap(mocker):
-    patch_coinmarketcap(mocker)
 
     fiat_convert = CryptoToFiatConverter()
     assert len(fiat_convert._cryptomap) == 2
@@ -174,7 +164,6 @@ def test_fiat_init_network_exception(mocker):
 
 def test_fiat_convert_without_network(mocker):
     # Because CryptoToFiatConverter is a Singleton we reset the value of _coinmarketcap
-    patch_coinmarketcap(mocker)
 
     fiat_convert = CryptoToFiatConverter()
 
@@ -205,7 +194,6 @@ def test_fiat_invalid_response(mocker, caplog):
 
 
 def test_convert_amount(mocker):
-    patch_coinmarketcap(mocker)
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
 
     fiat_convert = CryptoToFiatConverter()

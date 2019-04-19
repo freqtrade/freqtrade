@@ -1,5 +1,5 @@
 """
-Static List provider
+Volume PairList provider
 
 Provides lists as configured in config.json
 
@@ -26,6 +26,7 @@ class VolumePairList(IPairList):
                 'for "pairlist.config.number_assets"')
         self._number_pairs = self._whitelistconf['number_assets']
         self._sort_key = self._whitelistconf.get('sort_key', 'quoteVolume')
+        self._precision_filter = self._whitelistconf.get('precision_filter', False)
 
         if not self._freqtrade.exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -52,9 +53,9 @@ class VolumePairList(IPairList):
         -> Please overwrite in subclasses
         """
         # Generate dynamic whitelist
-        pairs = self._gen_pair_whitelist(self._config['stake_currency'], self._sort_key)
-        # Validate whitelist to only have active market pairs
-        self._whitelist = self._validate_whitelist(pairs)[:self._number_pairs]
+        self._whitelist = self._gen_pair_whitelist(
+            self._config['stake_currency'], self._sort_key)[:self._number_pairs]
+        logger.info(f"Searching pairs: {self._whitelist}")
 
     @cached(TTLCache(maxsize=1, ttl=1800))
     def _gen_pair_whitelist(self, base_currency: str, key: str) -> List[str]:
@@ -68,8 +69,27 @@ class VolumePairList(IPairList):
         tickers = self._freqtrade.exchange.get_tickers()
         # check length so that we make sure that '/' is actually in the string
         tickers = [v for k, v in tickers.items()
-                   if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
-
+                   if (len(k.split('/')) == 2 and k.split('/')[1] == base_currency
+                       and v[key] is not None)]
         sorted_tickers = sorted(tickers, reverse=True, key=lambda t: t[key])
-        pairs = [s['symbol'] for s in sorted_tickers]
+        # Validate whitelist to only have active market pairs
+        valid_pairs = self._validate_whitelist([s['symbol'] for s in sorted_tickers])
+        valid_tickers = [t for t in sorted_tickers if t["symbol"] in valid_pairs]
+
+        if self._freqtrade.strategy.stoploss is not None and self._precision_filter:
+
+            stop_prices = [self._freqtrade.get_target_bid(t["symbol"], t)
+                           * (1 - abs(self._freqtrade.strategy.stoploss)) for t in valid_tickers]
+            rates = [sp * 0.99 for sp in stop_prices]
+            logger.debug("\n".join([f"{sp} : {r}" for sp, r in zip(stop_prices[:10], rates[:10])]))
+            for i, t in enumerate(valid_tickers):
+                sp = self._freqtrade.exchange.symbol_price_prec(t["symbol"], stop_prices[i])
+                r = self._freqtrade.exchange.symbol_price_prec(t["symbol"], rates[i])
+                logger.debug(f"{t['symbol']} - {sp} : {r}")
+                if sp <= r:
+                    logger.info(f"Removed {t['symbol']} from whitelist, "
+                                f"because stop price {sp} would be <= stop limit {r}")
+                    valid_tickers.remove(t)
+
+        pairs = [s['symbol'] for s in valid_tickers]
         return pairs

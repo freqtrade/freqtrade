@@ -46,18 +46,21 @@ class StrategyResolver(IResolver):
         # Set attributes
         # Check if we need to override configuration
         # (Attribute name,                              default, experimental)
-        attributes = [("minimal_roi",                   None,    False),
-                      ("ticker_interval",               None,    False),
-                      ("stoploss",                      None,    False),
-                      ("trailing_stop",                 None,    False),
-                      ("trailing_stop_positive",        None,    False),
-                      ("trailing_stop_positive_offset", 0.0,     False),
-                      ("process_only_new_candles",      None,    False),
-                      ("order_types",                   None,    False),
-                      ("order_time_in_force",           None,    False),
-                      ("use_sell_signal",               False,   True),
-                      ("sell_profit_only",              False,   True),
-                      ("ignore_roi_if_buy_signal",      False,   True),
+        attributes = [("minimal_roi",                     {"0": 10.0}, False),
+                      ("ticker_interval",                 None,        False),
+                      ("stoploss",                        None,        False),
+                      ("trailing_stop",                   None,        False),
+                      ("trailing_stop_positive",          None,        False),
+                      ("trailing_stop_positive_offset",   0.0,         False),
+                      ("trailing_only_offset_is_reached", None,        False),
+                      ("process_only_new_candles",        None,        False),
+                      ("order_types",                     None,        False),
+                      ("order_time_in_force",             None,        False),
+                      ("stake_currency",                  None,        False),
+                      ("stake_amount",                    None,        False),
+                      ("use_sell_signal",                 False,       True),
+                      ("sell_profit_only",                False,       True),
+                      ("ignore_roi_if_buy_signal",        False,       True),
                       ]
         for attribute, default, experimental in attributes:
             if experimental:
@@ -149,17 +152,20 @@ class StrategyResolver(IResolver):
                 strategy = self._search_object(directory=_path, object_type=IStrategy,
                                                object_name=strategy_name, kwargs={'config': config})
                 if strategy:
-                    logger.info('Using resolved strategy %s from \'%s\'', strategy_name, _path)
+                    logger.info("Using resolved strategy %s from '%s'", strategy_name, _path)
                     strategy._populate_fun_len = len(
                         getfullargspec(strategy.populate_indicators).args)
                     strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
                     strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-
-                    return import_strategy(strategy, config=config)
+                    try:
+                        return import_strategy(strategy, config=config)
+                    except TypeError as e:
+                        logger.warning(
+                            f"Impossible to load strategy '{strategy}' from {_path}. Error: {e}")
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
 
         raise ImportError(
-            "Impossible to load Strategy '{}'. This class does not exist"
-            " or contains Python code errors".format(strategy_name)
+            f"Impossible to load Strategy '{strategy_name}'. This class does not exist"
+            " or contains Python code errors"
         )

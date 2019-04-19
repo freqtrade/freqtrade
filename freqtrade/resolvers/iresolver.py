@@ -31,7 +31,11 @@ class IResolver(object):
         # Generate spec based on absolute path
         spec = importlib.util.spec_from_file_location('unknown', str(module_path))
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
+        try:
+            spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
+        except (ModuleNotFoundError, SyntaxError) as err:
+            # Catch errors in case a specific module is not installed
+            logger.warning(f"Could not import {module_path} due to '{err}'")
 
         valid_objects_gen = (
             obj for name, obj in inspect.getmembers(module, inspect.isclass)
@@ -47,7 +51,7 @@ class IResolver(object):
         :param directory: relative or absolute directory path
         :return: object instance
         """
-        logger.debug('Searching for %s %s in \'%s\'', object_type.__name__, object_name, directory)
+        logger.debug("Searching for %s %s in '%s'", object_type.__name__, object_name, directory)
         for entry in directory.iterdir():
             # Only consider python files
             if not str(entry).endswith('.py'):

@@ -6,49 +6,80 @@ This page explains the different parameters of the bot and how to run it.
 ## Bot commands
 
 ```
-usage: main.py [-h] [-v] [--version] [-c PATH] [-d PATH] [-s NAME]
-               [--strategy-path PATH] [--customhyperopt NAME]
-               [--dynamic-whitelist [INT]] [--db-url PATH]
-               {backtesting,edge,hyperopt} ...
+usage: freqtrade [-h] [-v] [--logfile FILE] [--version] [-c PATH] [-d PATH]
+                 [-s NAME] [--strategy-path PATH] [--dynamic-whitelist [INT]]
+                 [--db-url PATH] [--sd-notify]
+                 {backtesting,edge,hyperopt} ...
 
 Free, open source crypto trading bot
 
 positional arguments:
   {backtesting,edge,hyperopt}
-    backtesting         backtesting module
-    edge                edge module
-    hyperopt            hyperopt module
+    backtesting         Backtesting module.
+    edge                Edge module.
+    hyperopt            Hyperopt module.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -v, --verbose         verbose mode (-vv for more, -vvv to get all messages)
-  --version             show program\'s version number and exit
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified
+  --version             show program's version number and exit
   -c PATH, --config PATH
-                        specify configuration file (default: config.json)
+                        Specify configuration file (default: None). Multiple
+                        --config options may be used.
   -d PATH, --datadir PATH
-                        path to backtest data
+                        Path to backtest data.
   -s NAME, --strategy NAME
-                        specify strategy class name (default: DefaultStrategy)
-  --strategy-path PATH  specify additional strategy lookup path
-  --customhyperopt NAME
-                        specify hyperopt class name (default:
-                        DefaultHyperOpts)
+                        Specify strategy class name (default:
+                        DefaultStrategy).
+  --strategy-path PATH  Specify additional strategy lookup path.
   --dynamic-whitelist [INT]
-                        dynamically generate and update whitelist based on 24h
-                        BaseVolume (default: 20) DEPRECATED.
+                        Dynamically generate and update whitelist based on 24h
+                        BaseVolume (default: 20). DEPRECATED.
   --db-url PATH         Override trades database URL, this is useful if
                         dry_run is enabled or in custom deployments (default:
-                        None)
+                        None).
+  --sd-notify           Notify systemd service manager.
 ```
 
-### How to use a different config file?
+### How to use a different configuration file?
 
-The bot allows you to select which config file you want to use. Per
+The bot allows you to select which configuration file you want to use. Per
 default, the bot will load the file `./config.json`
 
 ```bash
-python3 ./freqtrade/main.py -c path/far/far/away/config.json
+python3 freqtrade -c path/far/far/away/config.json
 ```
+
+### How to use multiple configuration files?
+
+The bot allows you to use multiple configuration files by specifying multiple
+`-c/--config` configuration options in the command line. Configuration parameters
+defined in the last configuration file override parameters with the same name
+defined in the previous configuration file specified in the command line.
+
+For example, you can make a separate configuration file with your key and secrete
+for the Exchange you use for trading, specify default configuration file with
+empty key and secrete values while running in the Dry Mode (which does not actually
+require them):
+
+```bash
+python3 freqtrade -c ./config.json
+```
+
+and specify both configuration files when running in the normal Live Trade Mode:
+
+```bash
+python3 freqtrade -c ./config.json -c path/to/secrets/keys.config.json
+```
+
+This could help you hide your private Exchange key and Exchange secrete on you local machine
+by setting appropriate file permissions for the file which contains actual secrets and, additionally,
+prevent unintended disclosure of sensitive private data when you publish examples
+of your configuration in the project issues or in the Internet.
+
+See more details on this technique with examples in the documentation page on
+[configuration](configuration.md).
 
 ### How to use **--strategy**?
 
@@ -65,20 +96,21 @@ In `user_data/strategies` you have a file `my_awesome_strategy.py` which has
 a strategy class called `AwesomeStrategy` to load it:
 
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy
+python3 freqtrade --strategy AwesomeStrategy
 ```
 
 If the bot does not find your strategy file, it will display in an error
 message the reason (File not found, or errors in your code).
 
-Learn more about strategy file in [optimize your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md).
+Learn more about strategy file in
+[optimize your bot](bot-optimization.md).
 
 ### How to use **--strategy-path**?
 
 This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a folder!):
 ```bash
-python3 ./freqtrade/main.py --strategy AwesomeStrategy --strategy-path /some/folder
+python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/folder
 ```
 
 #### How to install a strategy?
@@ -89,29 +121,13 @@ This is very simple. Copy paste your strategy file into the folder
 ### How to use **--dynamic-whitelist**?
 
 !!! danger "DEPRECATED"
-    Dynamic-whitelist is deprecated. Please move your configurations to the configuration as outlined [here](/configuration/#dynamic-pairlists)
+    This command line option is deprecated. Please move your configurations using it
+to the configurations that utilize the `StaticPairList` or `VolumePairList` methods set
+in the configuration file
+as outlined [here](configuration/#dynamic-pairlists)
 
-Per default `--dynamic-whitelist` will retrieve the 20 currencies based
-on BaseVolume. This value can be changed when you run the script.
-
-**By Default**
-Get the 20 currencies based on BaseVolume.
-
-```bash
-python3 ./freqtrade/main.py --dynamic-whitelist
-```
-
-**Customize the number of currencies to retrieve**
-Get the 30 currencies based on BaseVolume.
-
-```bash
-python3 ./freqtrade/main.py --dynamic-whitelist 30
-```
-
-**Exception**
-`--dynamic-whitelist` must be greater than 0. If you enter 0 or a
-negative value (e.g -2), `--dynamic-whitelist` will use the default
-value (20).
+Description of this deprecated feature was moved to [here](deprecated.md).
+Please no longer use it.
 
 ### How to use **--db-url**?
 
@@ -121,7 +137,7 @@ using `--db-url`. This can also be used to specify a custom database
 in production mode. Example command:
 
 ```bash
-python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
+python3 freqtrade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite
 ```
 
 ## Backtesting commands
@@ -129,27 +145,27 @@ python3 ./freqtrade/main.py -c config.json --db-url sqlite:///tradesv3.dry_run.s
 Backtesting also uses the config specified via `-c/--config`.
 
 ```
-usage: main.py backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                           [--eps] [--dmmp] [-l] [-r]
-                           [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                           [--export EXPORT] [--export-filename PATH]
+usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                             [--eps] [--dmmp] [-l] [-r]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                             [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
-                        specify what timerange of data to use.
+                        Specify what timerange of data to use.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
-                        stacking)
+                        stacking).
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
-                        number)
-  -l, --live            using live data
+                        number).
+  -l, --live            Use live data.
   -r, --refresh-pairs-cached
-                        refresh the pairs files in tests/testdata with the
+                        Refresh the pairs files in tests/testdata with the
                         latest data from the exchange. Use it if you want to
                         run your backtesting with up-to-date data.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
@@ -159,7 +175,7 @@ optional arguments:
                         this together with --export trades, the strategy-name
                         is injected into the filename (so backtest-data.json
                         becomes backtest-data-DefaultStrategy.json
-  --export EXPORT       export backtest results, argument are: trades Example
+  --export EXPORT       Export backtest results, argument are: trades. Example
                         --export=trades
   --export-filename PATH
                         Save backtest results to this filename requires
@@ -189,29 +205,30 @@ To optimize your strategy, you can use hyperopt parameter hyperoptimization
 to find optimal parameter values for your stategy.
 
 ```
-usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--eps] [--dmmp]
-                          [--timerange TIMERANGE] [-e INT]
-                          [-s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]]
+usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                          [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
+                          [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --customhyperopt NAME
+                        Specify hyperopt class name (default:
+                        DefaultHyperOpts).
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
-                        stacking)
+                        stacking).
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
-                        number)
-  --timerange TIMERANGE
-                        specify what timerange of data to use.
-  --hyperopt PATH       specify hyperopt file (default:
-                        freqtrade/optimize/default_hyperopt.py)
-  -e INT, --epochs INT  specify number of epochs (default: 100)
-  -s {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...], --spaces {all,buy,roi,stoploss} [{all,buy,roi,stoploss} ...]
+                        number).
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space separate
-                        list. Default: all
+                        list. Default: all.
 
 ```
 
@@ -220,22 +237,22 @@ optional arguments:
 To know your trade expectacny and winrate against historical data, you can use Edge.
 
 ```
-usage: main.py edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE] [-r]
-                    [--stoplosses STOPLOSS_RANGE]
+usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE] [-r]
+                      [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
-                        specify ticker interval (1m, 5m, 30m, 1h, 1d)
+                        Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
-                        specify what timerange of data to use.
+                        Specify what timerange of data to use.
   -r, --refresh-pairs-cached
-                        refresh the pairs files in tests/testdata with the
+                        Refresh the pairs files in tests/testdata with the
                         latest data from the exchange. Use it if you want to
                         run your edge with up-to-date data.
   --stoplosses STOPLOSS_RANGE
-                        defines a range of stoploss against which edge will
-                        assess the strategythe format is "min,max,step"
+                        Defines a range of stoploss against which edge will
+                        assess the strategy the format is "min,max,step"
                         (without any space).example:
                         --stoplosses=-0.01,-0.1,-0.001
 ```

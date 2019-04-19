@@ -48,7 +48,7 @@ class PairListResolver(IResolver):
                                                object_name=pairlist_name,
                                                kwargs=kwargs)
                 if pairlist:
-                    logger.info('Using resolved pairlist %s from \'%s\'', pairlist_name, _path)
+                    logger.info("Using resolved pairlist %s from '%s'", pairlist_name, _path)
                     return pairlist
             except FileNotFoundError:
                 logger.warning('Path "%s" does not exist', _path.relative_to(Path.cwd()))
