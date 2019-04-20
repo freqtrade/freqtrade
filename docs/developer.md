@@ -95,9 +95,9 @@ git checkout develop
 git checkout -b new_release
 ```
 
-* edit `freqtrade/__init__.py` and add the desired version (for example `0.18.0`)
+* Edit `freqtrade/__init__.py` and add the desired version (for example `0.18.0`)
 * Commit this part
-* push that branch to the remote and create a PR
+* push that branch to the remote and create a PR against the master branch
 
 ### create changelog from git commits
 
@@ -108,10 +108,12 @@ git log --oneline --no-decorate --no-merges master..develop
 
 ### Create github release / tag
 
+* Use the button "Draft a new release" in the Github UI (subsection releases)
 * Use the version-number specified as tag. 
 * Use "master" as reference (this step comes after the above PR is merged).
-* use the above changelog as release comment (as codeblock)
+* Use the above changelog as release comment (as codeblock)
 
 ### After-release
 
-* update version in develop to next valid version and postfix that with `-dev` (`0.18.0 -> 0.18.1-dev`)
+* Update version in develop to next valid version and postfix that with `-dev` (`0.18.0 -> 0.18.1-dev`).
+* Create a PR against develop to update that branch.
