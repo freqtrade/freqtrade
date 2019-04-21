@@ -320,6 +320,10 @@ class Configuration(object):
             config.update({'spaces': self.args.spaces})
             logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
 
+        if 'print_all' in self.args and self.args.print_all:
+            config.update({'print_all': self.args.print_all})
+            logger.info('Parameter --print-all detected: %s', config.get('print_all'))
+
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
