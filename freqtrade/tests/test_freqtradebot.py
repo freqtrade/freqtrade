@@ -1459,6 +1459,7 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
     assert trade.amount == limit_sell_order['amount']
     # Wallet needs to be updated after closing a limit-sell order to reenable buying
     assert wallet_mock.call_count == 1
+    assert not trade.is_open
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
