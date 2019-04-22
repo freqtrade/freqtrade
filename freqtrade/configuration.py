@@ -208,17 +208,14 @@ class Configuration(object):
             logger.info('Parameter -i/--ticker-interval detected ...')
             logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
 
-        # If -l/--live is used we add it to the configuration
         if 'live' in self.args and self.args.live:
             config.update({'live': True})
             logger.info('Parameter -l/--live detected ...')
 
-        # If --enable-position-stacking is used we add it to the configuration
         if 'position_stacking' in self.args and self.args.position_stacking:
             config.update({'position_stacking': True})
             logger.info('Parameter --enable-position-stacking detected ...')
 
-        # If --disable-max-market-positions or --max_open_trades is used we update configuration
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
@@ -230,25 +227,21 @@ class Configuration(object):
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
-        # If --stake_amount is used we update configuration
         if 'stake_amount' in self.args and self.args.stake_amount:
             config.update({'stake_amount': self.args.stake_amount})
             logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
                         config.get('stake_amount'))
 
-        # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
             config.update({'timerange': self.args.timerange})
             logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
 
-        # If --datadir is used we add it to the configuration
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self._create_datadir(config, self.args.datadir)})
         else:
             config.update({'datadir': self._create_datadir(config, None)})
         logger.info('Using data folder: %s ...', config.get('datadir'))
 
-        # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
             config.update({'refresh_pairs': True})
             logger.info('Parameter -r/--refresh-pairs-cached detected ...')
@@ -261,12 +254,10 @@ class Configuration(object):
             config.update({'ticker_interval': self.args.ticker_interval})
             logger.info('Overriding ticker interval with Command line argument')
 
-        # If --export is used we add it to the configuration
         if 'export' in self.args and self.args.export:
             config.update({'export': self.args.export})
             logger.info('Parameter --export detected: %s ...', self.args.export)
 
-        # If --export-filename is used we add it to the configuration
         if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
             config.update({'exportfilename': self.args.exportfilename})
             logger.info('Storing backtest results to %s ...', self.args.exportfilename)
@@ -279,12 +270,10 @@ class Configuration(object):
         :return: configuration as dictionary
         """
 
-        # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
             config.update({'timerange': self.args.timerange})
             logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
 
-        # If --timerange is used we add it to the configuration
         if 'stoploss_range' in self.args and self.args.stoploss_range:
             txt_range = eval(self.args.stoploss_range)
             config['edge'].update({'stoploss_range_min': txt_range[0]})
@@ -292,7 +281,6 @@ class Configuration(object):
             config['edge'].update({'stoploss_range_step': txt_range[2]})
             logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
 
-        # If -r/--refresh-pairs-cached is used we add it to the configuration
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
             config.update({'refresh_pairs': True})
             logger.info('Parameter -r/--refresh-pairs-cached detected ...')
@@ -309,13 +297,11 @@ class Configuration(object):
             # Add the hyperopt file to use
             config.update({'hyperopt': self.args.hyperopt})
 
-        # If --epochs is used we add it to the configuration
         if 'epochs' in self.args and self.args.epochs:
             config.update({'epochs': self.args.epochs})
             logger.info('Parameter --epochs detected ...')
             logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
 
-        # If --spaces is used we add it to the configuration
         if 'spaces' in self.args and self.args.spaces:
             config.update({'spaces': self.args.spaces})
             logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
@@ -323,6 +309,10 @@ class Configuration(object):
         if 'print_all' in self.args and self.args.print_all:
             config.update({'print_all': self.args.print_all})
             logger.info('Parameter --print-all detected: %s', config.get('print_all'))
+
+        if 'hyperopt_jobs' in self.args and self.args.hyperopt_jobs:
+            config.update({'hyperopt_jobs': self.args.hyperopt_jobs})
+            logger.info('Parameter -j/--job-workers detected: %s', config.get('hyperopt_jobs'))
 
         return config
 

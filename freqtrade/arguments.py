@@ -315,6 +315,17 @@ class Arguments(object):
             dest='print_all',
             default=False
         )
+        parser.add_argument(
+            '-j', '--job-workers',
+            help='The number of concurrently running jobs for hyperoptimization '
+                 '(hyperopt worker processes). '
+                 'If -1 (default), all CPUs are used, for -2, all CPUs but one are used, etc. '
+                 'If 1 is given, no parallel computing code is used at all.',
+            dest='hyperopt_jobs',
+            default=-1,
+            type=int,
+            metavar='JOBS',
+        )
 
     def _build_subcommands(self) -> None:
         """

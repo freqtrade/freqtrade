@@ -206,8 +206,11 @@ to find optimal parameter values for your stategy.
 
 ```
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                          [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
-                          [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
+                        [--max_open_trades MAX_OPEN_TRADES]
+                        [--stake_amount STAKE_AMOUNT] [--customhyperopt NAME]
+                        [--eps] [--dmmp] [-e INT]
+                        [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
+                        [--print-all] [-j JOBS]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -215,6 +218,10 @@ optional arguments:
                         Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --max_open_trades MAX_OPEN_TRADES
+                        Specify max_open_trades to use.
+  --stake_amount STAKE_AMOUNT
+                        Specify stake_amount.
   --customhyperopt NAME
                         Specify hyperopt class name (default:
                         DefaultHyperOpts).
@@ -229,7 +236,13 @@ optional arguments:
   -s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...], --spaces {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]
                         Specify which parameters to hyperopt. Space separate
                         list. Default: all.
-
+  --print-all           Print all results, not only the best ones.
+  -j JOBS, --job-workers JOBS
+                        The number of concurrently running jobs for
+                        hyperoptimization (hyperopt worker processes). If -1
+                        (default), all CPUs are used, for -2, all CPUs but one
+                        are used, etc. If 1 is given, no parallel computing
+                        code is used at all.
 ```
 
 ## Edge commands

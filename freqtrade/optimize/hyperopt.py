@@ -270,21 +270,25 @@ class Hyperopt(Backtesting):
 
         cpus = multiprocessing.cpu_count()
         logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
+        config_jobs = self.config.get('hyperopt_jobs', -1)
+        logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
-        opt = self.get_optimizer(cpus)
-        EVALS = max(self.total_tries // cpus, 1)
+        opt = self.get_optimizer(config_jobs)
         try:
-            with Parallel(n_jobs=cpus) as parallel:
+            with Parallel(n_jobs=config_jobs) as parallel:
+                jobs = parallel._effective_n_jobs()
+                logger.info(f'Effective number of parallel workers used: {jobs}')
+                EVALS = max(self.total_tries // jobs, 1)
                 for i in range(EVALS):
-                    asked = opt.ask(n_points=cpus)
+                    asked = opt.ask(n_points=jobs)
                     f_val = self.run_optimizer_parallel(parallel, asked)
                     opt.tell(asked, [i['loss'] for i in f_val])
 
                     self.trials += f_val
-                    for j in range(cpus):
+                    for j in range(jobs):
                         self.log_results({
                             'loss': f_val[j]['loss'],
-                            'current_tries': i * cpus + j,
+                            'current_tries': i * jobs + j,
                             'total_tries': self.total_tries,
                             'result': f_val[j]['result'],
                         })
