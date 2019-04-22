@@ -116,7 +116,8 @@ def load_pair_history(pair: str,
         return parse_ticker_dataframe(pairdata, ticker_interval, fill_up_missing)
     else:
         logger.warning('No data for pair: "%s", Interval: %s. '
-                       'Use --refresh-pairs-cached to download the data',
+                       'Use --refresh-pairs-cached option or download_backtest_data.py '
+                       'script to download the data',
                        pair, ticker_interval)
         return None
 

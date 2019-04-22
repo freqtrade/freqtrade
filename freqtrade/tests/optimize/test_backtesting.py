@@ -260,6 +260,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
 
     assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+
     assert 'timerange' in config
     assert log_has(
         'Parameter --timerange detected: {} ...'.format(config['timerange']),
