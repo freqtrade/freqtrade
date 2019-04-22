@@ -1407,7 +1407,8 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
         amount=amount,
         exchange='binance',
         open_rate=0.245441,
-        open_order_id="123456"
+        open_order_id="123456",
+        is_open=True,
     )
     freqtrade.update_trade_state(trade, limit_buy_order)
     assert trade.amount != amount
@@ -1430,6 +1431,34 @@ def test_update_trade_state_exception(mocker, default_conf,
     )
     freqtrade.update_trade_state(trade)
     assert log_has('Could not update trade amount: ', caplog.record_tuples)
+
+
+def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order, mocker):
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    # get_order should not be called!!
+    mocker.patch('freqtrade.exchange.Exchange.get_order', MagicMock(side_effect=ValueError))
+    wallet_mock = MagicMock()
+    mocker.patch('freqtrade.wallets.Wallets.update', wallet_mock)
+
+    patch_exchange(mocker)
+    Trade.session = MagicMock()
+    amount = limit_sell_order["amount"]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    wallet_mock.reset_mock()
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        fee_open=0.0025,
+        fee_close=0.0025,
+        open_order_id="123456",
+        is_open=True,
+    )
+    freqtrade.update_trade_state(trade, limit_sell_order)
+    assert trade.amount == limit_sell_order['amount']
+    # Wallet needs to be updated after closing a limit-sell order to reenable buying
+    assert wallet_mock.call_count == 1
 
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order,
