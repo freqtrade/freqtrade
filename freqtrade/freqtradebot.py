@@ -522,6 +522,10 @@ class FreqtradeBot(object):
 
             trade.update(order)
 
+            # Updating wallets when order is closed
+            if not trade.is_open:
+                self.wallets.update()
+
     def get_sell_rate(self, pair: str, refresh: bool) -> float:
         """
         Get sell rate - either using get-ticker bid or first bid based on orderbook
