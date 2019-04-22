@@ -115,7 +115,7 @@ class Hyperopt(Backtesting):
         """
         Log results if it is better than any previous evaluation
         """
-        if results['loss'] < self.current_best_loss:
+        if self.config.get('print_all', False) or results['loss'] < self.current_best_loss:
             current = results['current_tries']
             total = results['total_tries']
             res = results['result']

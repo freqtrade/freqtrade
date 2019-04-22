@@ -283,7 +283,6 @@ class Arguments(object):
             dest='position_stacking',
             default=False
         )
-
         parser.add_argument(
             '--dmmp', '--disable-max-market-positions',
             help='Disable applying `max_open_trades` during backtest '
@@ -308,6 +307,13 @@ class Arguments(object):
             default='all',
             nargs='+',
             dest='spaces',
+        )
+        parser.add_argument(
+            '--print-all',
+            help='Print all results, not only the best ones.',
+            action='store_true',
+            dest='print_all',
+            default=False
         )
 
     def _build_subcommands(self) -> None:
