@@ -5,7 +5,6 @@ This module contains the hyperopt logic
 """
 
 import logging
-import multiprocessing
 import os
 import sys
 from argparse import Namespace
@@ -15,7 +14,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List
 
-from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects
+from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
 from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
@@ -268,7 +267,7 @@ class Hyperopt(Backtesting):
         self.exchange = None  # type: ignore
         self.load_previous_results()
 
-        cpus = multiprocessing.cpu_count()
+        cpus = cpu_count()
         logger.info(f'Found {cpus} CPU cores. Let\'s make them scream!')
         config_jobs = self.config.get('hyperopt_jobs', -1)
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
