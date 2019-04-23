@@ -1,16 +1,19 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 from datetime import datetime
+import json
 import os
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
+from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
-from freqtrade.optimize.hyperopt import Hyperopt, start
+from freqtrade.optimize.hyperopt import Hyperopt, start, setup_configuration
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.resolvers import StrategyResolver, HyperOptResolver
+from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, patch_exchange
 from freqtrade.tests.optimize.test_backtesting import get_args
 
@@ -37,6 +40,112 @@ def create_trials(mocker, hyperopt) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', return_value=None)
 
     return [{'loss': 1, 'result': 'foo', 'params': {}}]
+
+
+def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+
+    args = [
+        '--config', 'config.json',
+        'hyperopt'
+    ]
+
+    config = setup_configuration(get_args(args))
+    assert 'max_open_trades' in config
+    assert 'stake_currency' in config
+    assert 'stake_amount' in config
+    assert 'exchange' in config
+    assert 'pair_whitelist' in config['exchange']
+    assert 'datadir' in config
+    assert log_has(
+        'Using data folder: {} ...'.format(config['datadir']),
+        caplog.record_tuples
+    )
+    assert 'ticker_interval' in config
+    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+
+    assert 'live' not in config
+    assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
+
+    assert 'position_stacking' not in config
+    assert not log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+
+    assert 'refresh_pairs' not in config
+    assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+
+    assert 'timerange' not in config
+    assert 'runmode' in config
+    assert config['runmode'] == RunMode.HYPEROPT
+
+
+def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplog) -> None:
+    mocker.patch('freqtrade.configuration.open', mocker.mock_open(
+        read_data=json.dumps(default_conf)
+    ))
+    mocker.patch('freqtrade.configuration.Configuration._create_datadir', lambda s, c, x: x)
+
+    args = [
+        '--config', 'config.json',
+        '--datadir', '/foo/bar',
+        'hyperopt',
+        '--ticker-interval', '1m',
+        '--timerange', ':100',
+        '--refresh-pairs-cached',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
+        '--epochs', '1000',
+        '--spaces', 'all',
+        '--print-all'
+    ]
+
+    config = setup_configuration(get_args(args))
+    assert 'max_open_trades' in config
+    assert 'stake_currency' in config
+    assert 'stake_amount' in config
+    assert 'exchange' in config
+    assert 'pair_whitelist' in config['exchange']
+    assert 'datadir' in config
+    assert config['runmode'] == RunMode.HYPEROPT
+
+    assert log_has(
+        'Using data folder: {} ...'.format(config['datadir']),
+        caplog.record_tuples
+    )
+    assert 'ticker_interval' in config
+    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert log_has(
+        'Using ticker_interval: 1m ...',
+        caplog.record_tuples
+    )
+
+    assert 'position_stacking' in config
+    assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)
+
+    assert 'use_max_market_positions' in config
+    assert log_has('Parameter --disable-max-market-positions detected ...', caplog.record_tuples)
+    assert log_has('max_open_trades set to unlimited ...', caplog.record_tuples)
+
+    assert 'refresh_pairs' in config
+    assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
+
+    assert 'timerange' in config
+    assert log_has(
+        'Parameter --timerange detected: {} ...'.format(config['timerange']),
+        caplog.record_tuples
+    )
+
+    assert 'epochs' in config
+    assert log_has('Parameter --epochs detected ...', caplog.record_tuples)
+
+    assert 'spaces' in config
+    assert log_has(
+        'Parameter -s/--spaces detected: {}'.format(config['spaces']),
+        caplog.record_tuples
+    )
+    assert 'print_all' in config
+    assert log_has('Parameter --print-all detected: True', caplog.record_tuples)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
@@ -72,7 +181,6 @@ def test_start(mocker, default_conf, caplog) -> None:
 
     args = [
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
         'hyperopt',
         '--epochs', '5'
     ]
@@ -107,7 +215,7 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
     ]
     args = get_args(args)
     StrategyResolver({'strategy': 'DefaultStrategy'})
-    with pytest.raises(ValueError):
+    with pytest.raises(DependencyException):
         start(args)
     assert log_has(
         "Please don't use --strategy for hyperopt.",

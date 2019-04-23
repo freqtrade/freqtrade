@@ -516,6 +516,7 @@ def start(args: Namespace) -> None:
     """
     # Initialize configuration
     config = setup_configuration(args)
+
     logger.info('Starting freqtrade in Backtesting mode')
 
     # Initialize backtesting object
