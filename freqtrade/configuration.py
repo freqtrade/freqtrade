@@ -315,7 +315,8 @@ class Configuration(object):
 
         if 'hyperopt_random_state' in self.args and self.args.hyperopt_random_state is not None:
             config.update({'hyperopt_random_state': self.args.hyperopt_random_state})
-            logger.info("Parameter --random-state detected: %s", config.get('hyperopt_random_state'))
+            logger.info("Parameter --random-state detected: %s",
+                        config.get('hyperopt_random_state'))
 
         return config
 
