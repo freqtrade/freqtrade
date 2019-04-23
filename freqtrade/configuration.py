@@ -324,6 +324,11 @@ class Configuration(object):
             config.update({'print_all': self.args.print_all})
             logger.info('Parameter --print-all detected: %s', config.get('print_all'))
 
+        # If -r/--refresh-pairs-cached is used we add it to the configuration
+        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
+            config.update({'refresh_pairs': True})
+            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
