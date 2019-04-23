@@ -146,9 +146,11 @@ Backtesting also uses the config specified via `-c/--config`.
 
 ```
 usage: freqtrade backtesting [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
-                             [--eps] [--dmmp] [-l] [-r]
-                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                             [--export EXPORT] [--export-filename PATH]
+                           [--max_open_trades MAX_OPEN_TRADES]
+                           [--stake_amount STAKE_AMOUNT] [-r] [--eps] [--dmmp]
+                           [-l]
+                           [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                           [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -156,6 +158,14 @@ optional arguments:
                         Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --max_open_trades MAX_OPEN_TRADES
+                        Specify max_open_trades to use.
+  --stake_amount STAKE_AMOUNT
+                        Specify stake_amount.
+  -r, --refresh-pairs-cached
+                        Refresh the pairs files in tests/testdata with the
+                        latest data from the exchange. Use it if you want to
+                        run your optimization commands with up-to-date data.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
@@ -164,10 +174,6 @@ optional arguments:
                         (same as setting `max_open_trades` to a very high
                         number).
   -l, --live            Use live data.
-  -r, --refresh-pairs-cached
-                        Refresh the pairs files in tests/testdata with the
-                        latest data from the exchange. Use it if you want to
-                        run your backtesting with up-to-date data.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a commaseparated list of strategies to
                         backtest Please note that ticker-interval needs to be
@@ -207,8 +213,8 @@ to find optimal parameter values for your stategy.
 ```
 usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                         [--max_open_trades MAX_OPEN_TRADES]
-                        [--stake_amount STAKE_AMOUNT] [--customhyperopt NAME]
-                        [--eps] [--dmmp] [-e INT]
+                        [--stake_amount STAKE_AMOUNT] [-r]
+                        [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
                         [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
                         [--print-all] [-j JOBS]
 
@@ -222,6 +228,10 @@ optional arguments:
                         Specify max_open_trades to use.
   --stake_amount STAKE_AMOUNT
                         Specify stake_amount.
+  -r, --refresh-pairs-cached
+                        Refresh the pairs files in tests/testdata with the
+                        latest data from the exchange. Use it if you want to
+                        run your optimization commands with up-to-date data.
   --customhyperopt NAME
                         Specify hyperopt class name (default:
                         DefaultHyperOpts).
@@ -250,8 +260,10 @@ optional arguments:
 To know your trade expectacny and winrate against historical data, you can use Edge.
 
 ```
-usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE] [-r]
-                      [--stoplosses STOPLOSS_RANGE]
+usage: freqtrade edge [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                    [--max_open_trades MAX_OPEN_TRADES]
+                    [--stake_amount STAKE_AMOUNT] [-r]
+                    [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -259,10 +271,14 @@ optional arguments:
                         Specify ticker interval (1m, 5m, 30m, 1h, 1d).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --max_open_trades MAX_OPEN_TRADES
+                        Specify max_open_trades to use.
+  --stake_amount STAKE_AMOUNT
+                        Specify stake_amount.
   -r, --refresh-pairs-cached
                         Refresh the pairs files in tests/testdata with the
                         latest data from the exchange. Use it if you want to
-                        run your edge with up-to-date data.
+                        run your optimization commands with up-to-date data.
   --stoplosses STOPLOSS_RANGE
                         Defines a range of stoploss against which edge will
                         assess the strategy the format is "min,max,step"

@@ -314,6 +314,10 @@ class Configuration(object):
             config.update({'hyperopt_jobs': self.args.hyperopt_jobs})
             logger.info('Parameter -j/--job-workers detected: %s', config.get('hyperopt_jobs'))
 
+        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
+            config.update({'refresh_pairs': True})
+            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:

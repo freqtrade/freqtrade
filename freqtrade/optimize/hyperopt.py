@@ -19,6 +19,7 @@ from pandas import DataFrame
 from skopt import Optimizer
 from skopt.space import Dimension
 
+from freqtrade import DependencyException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data.history import load_data
@@ -257,6 +258,8 @@ class Hyperopt(Backtesting):
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.ticker_interval,
+            refresh_pairs=self.config.get('refresh_pairs', False),
+            exchange=self.exchange,
             timerange=timerange
         )
 
@@ -264,7 +267,10 @@ class Hyperopt(Backtesting):
             self.strategy.advise_indicators = \
                 self.custom_hyperopt.populate_indicators  # type: ignore
         dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
+
+        # We don't need exchange instance anymore while running hyperopt
         self.exchange = None  # type: ignore
+
         self.load_previous_results()
 
         cpus = cpu_count()
@@ -291,6 +297,9 @@ class Hyperopt(Backtesting):
                             'total_tries': self.total_tries,
                             'result': f_val[j]['result'],
                         })
+                        logger.debug(f"Optimizer params: {f_val[j]['params']}")
+                    for j in range(cpus):
+                        logger.debug(f"Opimizer state: Xi: {opt.Xi[-j-1]}, yi: {opt.yi[-j-1]}")
         except KeyboardInterrupt:
             print('User interrupted..')
 
@@ -298,22 +307,16 @@ class Hyperopt(Backtesting):
         self.log_trials_result()
 
 
-def start(args: Namespace) -> None:
+def setup_configuration(args: Namespace) -> Dict[str, Any]:
     """
-    Start Backtesting script
+    Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
-    :return: None
+    :return: Configuration
     """
-
-    # Remove noisy log messages
-    logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
-
-    # Initialize configuration
-    # Monkey patch the configuration with hyperopt_conf.py
     configuration = Configuration(args, RunMode.HYPEROPT)
-    logger.info('Starting freqtrade in Hyperopt mode')
     config = configuration.load_config()
 
+    # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 
@@ -323,7 +326,25 @@ def start(args: Namespace) -> None:
             "Read the documentation at "
             "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
             "to understand how to configure hyperopt.")
-        raise ValueError("--strategy configured but not supported for hyperopt")
+        raise DependencyException("--strategy configured but not supported for hyperopt")
+
+    return config
+
+
+def start(args: Namespace) -> None:
+    """
+    Start Backtesting script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    # Initialize configuration
+    config = setup_configuration(args)
+
+    logger.info('Starting freqtrade in Hyperopt mode')
+
+    # Remove noisy log messages
+    logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+
     # Initialize backtesting object
     hyperopt = Hyperopt(config)
     hyperopt.start()

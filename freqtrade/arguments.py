@@ -142,9 +142,52 @@ class Arguments(object):
         )
 
     @staticmethod
+    def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
+        """
+        Parses given common arguments for Backtesting, Edge and Hyperopt modules.
+        :param parser:
+        :return:
+        """
+        parser.add_argument(
+            '-i', '--ticker-interval',
+            help='Specify ticker interval (1m, 5m, 30m, 1h, 1d).',
+            dest='ticker_interval',
+            type=str,
+        )
+        parser.add_argument(
+            '--timerange',
+            help='Specify what timerange of data to use.',
+            default=None,
+            type=str,
+            dest='timerange',
+        )
+        parser.add_argument(
+            '--max_open_trades',
+            help='Specify max_open_trades to use.',
+            default=None,
+            type=int,
+            dest='max_open_trades',
+        )
+        parser.add_argument(
+            '--stake_amount',
+            help='Specify stake_amount.',
+            default=None,
+            type=float,
+            dest='stake_amount',
+        )
+        parser.add_argument(
+            '-r', '--refresh-pairs-cached',
+            help='Refresh the pairs files in tests/testdata with the latest data from the '
+                 'exchange. Use it if you want to run your optimization commands with '
+                 'up-to-date data.',
+            action='store_true',
+            dest='refresh_pairs',
+        )
+
+    @staticmethod
     def backtesting_options(parser: argparse.ArgumentParser) -> None:
         """
-        Parses given arguments for Backtesting scripts.
+        Parses given arguments for Backtesting module.
         """
         parser.add_argument(
             '--eps', '--enable-position-stacking',
@@ -166,13 +209,6 @@ class Arguments(object):
             help='Use live data.',
             action='store_true',
             dest='live',
-        )
-        parser.add_argument(
-            '-r', '--refresh-pairs-cached',
-            help='Refresh the pairs files in tests/testdata with the latest data from the '
-                 'exchange. Use it if you want to run your backtesting with up-to-date data.',
-            action='store_true',
-            dest='refresh_pairs',
         )
         parser.add_argument(
             '--strategy-list',
@@ -207,15 +243,8 @@ class Arguments(object):
     @staticmethod
     def edge_options(parser: argparse.ArgumentParser) -> None:
         """
-        Parses given arguments for Backtesting scripts.
+        Parses given arguments for Edge module.
         """
-        parser.add_argument(
-            '-r', '--refresh-pairs-cached',
-            help='Refresh the pairs files in tests/testdata with the latest data from the '
-                 'exchange. Use it if you want to run your edge with up-to-date data.',
-            action='store_true',
-            dest='refresh_pairs',
-        )
         parser.add_argument(
             '--stoplosses',
             help='Defines a range of stoploss against which edge will assess the strategy '
@@ -226,47 +255,9 @@ class Arguments(object):
         )
 
     @staticmethod
-    def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
-        """
-        Parses given common arguments for Backtesting and Hyperopt scripts.
-        :param parser:
-        :return:
-        """
-        parser.add_argument(
-            '-i', '--ticker-interval',
-            help='Specify ticker interval (1m, 5m, 30m, 1h, 1d).',
-            dest='ticker_interval',
-            type=str,
-        )
-
-        parser.add_argument(
-            '--timerange',
-            help='Specify what timerange of data to use.',
-            default=None,
-            type=str,
-            dest='timerange',
-        )
-
-        parser.add_argument(
-            '--max_open_trades',
-            help='Specify max_open_trades to use.',
-            default=None,
-            type=int,
-            dest='max_open_trades',
-        )
-
-        parser.add_argument(
-            '--stake_amount',
-            help='Specify stake_amount.',
-            default=None,
-            type=float,
-            dest='stake_amount',
-        )
-
-    @staticmethod
     def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         """
-        Parses given arguments for Hyperopt scripts.
+        Parses given arguments for Hyperopt module.
         """
         parser.add_argument(
             '--customhyperopt',
