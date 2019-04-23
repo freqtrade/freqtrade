@@ -324,6 +324,10 @@ class Configuration(object):
             config.update({'print_all': self.args.print_all})
             logger.info('Parameter --print-all detected: %s', config.get('print_all'))
 
+        if 'hyperopt_random_state' in self.args and self.args.hyperopt_random_state is not None:
+            config.update({'hyperopt_random_state': self.args.hyperopt_random_state})
+            logger.info("Parameter --random-state detected: %s", config.get('hyperopt_random_state'))
+
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
