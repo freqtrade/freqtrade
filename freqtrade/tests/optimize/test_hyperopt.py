@@ -14,7 +14,7 @@ from freqtrade.optimize.hyperopt import Hyperopt, start, setup_configuration
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.resolvers import StrategyResolver, HyperOptResolver
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
 from freqtrade.tests.optimize.test_backtesting import get_args
 
 
@@ -64,7 +64,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog.record_tuples)
 
     assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
@@ -114,11 +114,8 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'position_stacking' in config
     assert log_has('Parameter --enable-position-stacking detected ...', caplog.record_tuples)

@@ -237,10 +237,9 @@ class Configuration(object):
         """
 
         # This will override the strategy configuration
-        if 'ticker_interval' in self.args and self.args.ticker_interval:
-            config.update({'ticker_interval': self.args.ticker_interval})
-            logger.info('Parameter -i/--ticker-interval detected ...')
-            logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
+        self._args_to_config(config, argname='ticker_interval',
+                             logstring='Parameter -i/--ticker-interval detected ... '
+                             'Using ticker_interval: {} ...')
 
         self._args_to_config(config, argname='live',
                              logstring='Parameter -l/--live detected ...')
