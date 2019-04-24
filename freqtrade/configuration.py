@@ -216,13 +216,19 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _args_to_config(self, config, argname, configname, logstring) -> bool:
-
+    def _args_to_config(self, config, argname, configname, logstring, logfun=None) -> bool:
+        """
+        logfun is applied to the configuration entry before passing
+        that entry to the log string using .format().
+        sample: logfun=len (prints the length of the found configuration instead of the content)
+        """
         if argname in self.args and getattr(self.args, argname):
 
             config.update({configname: getattr(self.args, argname)})
-
-            logger.info(logstring.format(config[configname]))
+            if logfun:
+                logger.info(logstring.format(logfun(config[configname])))
+            else:
+                logger.info(logstring.format(config[configname]))
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
         """
@@ -236,12 +242,11 @@ class Configuration(object):
             logger.info('Parameter -i/--ticker-interval detected ...')
             logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
 
-        if 'live' in self.args and self.args.live:
-            config.update({'live': True})
-            logger.info('Parameter -l/--live detected ...')
+        self._args_to_config(config, argname='live', configname='live',
+                             logstring='Parameter -l/--live detected ...')
 
-        self._args_to_config(config, 'position_stacking', 'position_stacking',
-                             'Parameter --enable-position-stacking detected ...')
+        self._args_to_config(config, argname='position_stacking', configname='position_stacking',
+                             logstring='Parameter --enable-position-stacking detected ...')
 
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
@@ -254,14 +259,12 @@ class Configuration(object):
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
-        if 'stake_amount' in self.args and self.args.stake_amount:
-            config.update({'stake_amount': self.args.stake_amount})
-            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
-                        config.get('stake_amount'))
+        self._args_to_config(config, argname='stake_amount', configname='stake_amount',
+                             logstring='Parameter --stake_amount detected, '
+                             'overriding stake_amount to: {} ...')
 
-        if 'timerange' in self.args and self.args.timerange:
-            config.update({'timerange': self.args.timerange})
-            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+        self._args_to_config(config, argname='timerange', configname='timerange',
+                             logstring='Parameter --timerange detected: {} ...')
 
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self._create_datadir(config, self.args.datadir)})
@@ -269,25 +272,20 @@ class Configuration(object):
             config.update({'datadir': self._create_datadir(config, None)})
         logger.info('Using data folder: %s ...', config.get('datadir'))
 
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        self._args_to_config(config, argname='refresh_pairs', configname='refresh_pairs',
+                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
-        if 'strategy_list' in self.args and self.args.strategy_list:
-            config.update({'strategy_list': self.args.strategy_list})
-            logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
+        self._args_to_config(config, argname='strategy_list', configname='strategy_list',
+                             logstring='Using strategy list of {} Strategies', logfun=len)
 
-        if 'ticker_interval' in self.args and self.args.ticker_interval:
-            config.update({'ticker_interval': self.args.ticker_interval})
-            logger.info('Overriding ticker interval with Command line argument')
+        self._args_to_config(config, argname='ticker_interval', configname='ticker_interval',
+                             logstring='Overriding ticker interval with Command line argument')
 
-        if 'export' in self.args and self.args.export:
-            config.update({'export': self.args.export})
-            logger.info('Parameter --export detected: %s ...', self.args.export)
+        self._args_to_config(config, argname='export', configname='export',
+                             logstring='Parameter --export detected: {} ...')
 
-        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
-            config.update({'exportfilename': self.args.exportfilename})
-            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
+        self._args_to_config(config, argname='exportfilename', configname='exportfilename',
+                             logstring='Storing backtest results to {} ...')
 
         return config
 
