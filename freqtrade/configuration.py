@@ -95,14 +95,8 @@ class Configuration(object):
         # Load Common configuration
         config = self._load_common_config(config)
 
-        # Load Backtesting
-        config = self._load_backtesting_config(config)
-
-        # Load Edge
-        config = self._load_edge_config(config)
-
-        # Load Hyperopt
-        config = self._load_hyperopt_config(config)
+        # Load Optimize configurations
+        config = self._load_optimize_config(config)
 
         # Set runmode
         if not self.runmode:
@@ -230,9 +224,9 @@ class Configuration(object):
             else:
                 logger.info(logstring.format(config[argname]))
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract information for sys.argv and load Backtesting configuration
+        Extract information for sys.argv and load Optimize configuration
         :return: configuration as dictionary
         """
 
@@ -286,17 +280,7 @@ class Configuration(object):
         self._args_to_config(config, argname='exportfilename',
                              logstring='Storing backtest results to {} ...')
 
-        return config
-
-    def _load_edge_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load Edge configuration
-        :return: configuration as dictionary
-        """
-
-        self._args_to_config(config, argname='timerange',
-                             logstring='Parameter --timerange detected: {} ...')
-
+        # Edge section:
         if 'stoploss_range' in self.args and self.args.stoploss_range:
             txt_range = eval(self.args.stoploss_range)
             config['edge'].update({'stoploss_range_min': txt_range[0]})
@@ -304,17 +288,7 @@ class Configuration(object):
             config['edge'].update({'stoploss_range_step': txt_range[2]})
             logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
 
-        self._args_to_config(config, argname='refresh_pairs',
-                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
-
-        return config
-
-    def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load Hyperopt configuration
-        :return: configuration as dictionary
-        """
-
+        # Hyperopt section
         self._args_to_config(config, argname='hyperopt',
                              logstring='Using Hyperopt file {}')
 
@@ -332,12 +306,8 @@ class Configuration(object):
         self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 
-        self._args_to_config(config, argname='refresh_pairs',
-                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
-
         self._args_to_config(config, argname='hyperopt_random_state',
                              logstring='Parameter --random-state detected: {}')
-
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
