@@ -210,7 +210,7 @@ class Configuration(object):
         return datadir
 
     def _args_to_config(self, config: Dict[str, Any], argname: str,
-                        logstring: str, logfun=Optional[Callable]) -> None:
+                        logstring: str, logfun: Optional[Callable] = None) -> None:
         """
         :param config: Configuration dictionary
         :param argname: Argumentname in self.args - will be copied to config dict.
