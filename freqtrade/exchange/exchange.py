@@ -222,8 +222,11 @@ class Exchange(object):
                 > arrow.utcnow().timestamp):
             return None
         logger.debug("Performing scheduled market reload..")
-        self._api.load_markets(reload=True)
-        self._last_markets_refresh = arrow.utcnow().timestamp
+        try:
+            self._api.load_markets(reload=True)
+            self._last_markets_refresh = arrow.utcnow().timestamp
+        except ccxt.BaseError:
+            logger.exception("Could not reload markets.")
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """

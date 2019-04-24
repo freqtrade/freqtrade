@@ -301,6 +301,20 @@ def test__reload_markets(default_conf, mocker, caplog):
     assert log_has('Performing scheduled market reload..', caplog.record_tuples)
 
 
+def test__reload_markets_exception(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(side_effect=ccxt.NetworkError)
+    default_conf['exchange']['markets_refresh_interval'] = 10
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+
+    # less than 10 minutes have passed, no reload
+    exchange._reload_markets()
+    assert exchange._last_markets_refresh == 0
+    assert log_has_re(r"Could not reload markets.*", caplog.record_tuples)
+
+
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
