@@ -216,7 +216,7 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _args_to_config(self, config, argname, configname, logstring, logfun=None) -> None:
+    def _args_to_config(self, config, argname, logstring, logfun=None) -> None:
         """
         logfun is applied to the configuration entry before passing
         that entry to the log string using .format().
@@ -224,11 +224,11 @@ class Configuration(object):
         """
         if argname in self.args and getattr(self.args, argname):
 
-            config.update({configname: getattr(self.args, argname)})
+            config.update({argname: getattr(self.args, argname)})
             if logfun:
-                logger.info(logstring.format(logfun(config[configname])))
+                logger.info(logstring.format(logfun(config[argname])))
             else:
-                logger.info(logstring.format(config[configname]))
+                logger.info(logstring.format(config[argname]))
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -242,10 +242,10 @@ class Configuration(object):
             logger.info('Parameter -i/--ticker-interval detected ...')
             logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
 
-        self._args_to_config(config, argname='live', configname='live',
+        self._args_to_config(config, argname='live',
                              logstring='Parameter -l/--live detected ...')
 
-        self._args_to_config(config, argname='position_stacking', configname='position_stacking',
+        self._args_to_config(config, argname='position_stacking',
                              logstring='Parameter --enable-position-stacking detected ...')
 
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
@@ -259,11 +259,11 @@ class Configuration(object):
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
-        self._args_to_config(config, argname='stake_amount', configname='stake_amount',
+        self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake_amount detected, '
                              'overriding stake_amount to: {} ...')
 
-        self._args_to_config(config, argname='timerange', configname='timerange',
+        self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
         if 'datadir' in self.args and self.args.datadir:
@@ -272,19 +272,19 @@ class Configuration(object):
             config.update({'datadir': self._create_datadir(config, None)})
         logger.info('Using data folder: %s ...', config.get('datadir'))
 
-        self._args_to_config(config, argname='refresh_pairs', configname='refresh_pairs',
+        self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
-        self._args_to_config(config, argname='strategy_list', configname='strategy_list',
+        self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} Strategies', logfun=len)
 
-        self._args_to_config(config, argname='ticker_interval', configname='ticker_interval',
+        self._args_to_config(config, argname='ticker_interval',
                              logstring='Overriding ticker interval with Command line argument')
 
-        self._args_to_config(config, argname='export', configname='export',
+        self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
 
-        self._args_to_config(config, argname='exportfilename', configname='exportfilename',
+        self._args_to_config(config, argname='exportfilename',
                              logstring='Storing backtest results to {} ...')
 
         return config
@@ -295,7 +295,7 @@ class Configuration(object):
         :return: configuration as dictionary
         """
 
-        self._args_to_config(config, argname='timerange', configname='timerange',
+        self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
         if 'stoploss_range' in self.args and self.args.stoploss_range:
@@ -305,7 +305,7 @@ class Configuration(object):
             config['edge'].update({'stoploss_range_step': txt_range[2]})
             logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
 
-        self._args_to_config(config, argname='refresh_pairs', configname='refresh_pairs',
+        self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
         return config
@@ -316,28 +316,27 @@ class Configuration(object):
         :return: configuration as dictionary
         """
 
-        self._args_to_config(config, argname='hyperopt', configname='hyperopt',
+        self._args_to_config(config, argname='hyperopt',
                              logstring='Using Hyperopt file {}')
 
-        self._args_to_config(config, argname='epochs', configname='epochs',
+        self._args_to_config(config, argname='epochs',
                              logstring='Parameter --epochs detected ... '
                              'Will run Hyperopt with for {} epochs ...'
                              )
 
-        self._args_to_config(config, argname='spaces', configname='spaces',
+        self._args_to_config(config, argname='spaces',
                              logstring='Parameter -s/--spaces detected: {}')
 
-        self._args_to_config(config, argname='print_all', configname='print_all',
+        self._args_to_config(config, argname='print_all',
                              logstring='Parameter --print-all detected ...')
 
-        self._args_to_config(config, argname='hyperopt_jobs', configname='hyperopt_jobs',
+        self._args_to_config(config, argname='hyperopt_jobs',
                              logstring='Parameter -j/--job-workers detected: {}')
 
-        self._args_to_config(config, argname='refresh_pairs', configname='refresh_pairs',
+        self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
         self._args_to_config(config, argname='hyperopt_random_state',
-                             configname='hyperopt_random_state',
                              logstring='Parameter --random-state detected: {}')
 
         return config
