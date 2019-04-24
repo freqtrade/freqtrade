@@ -216,7 +216,7 @@ usage: freqtrade hyperopt [-h] [-i TICKER_INTERVAL] [--timerange TIMERANGE]
                         [--stake_amount STAKE_AMOUNT] [-r]
                         [--customhyperopt NAME] [--eps] [--dmmp] [-e INT]
                         [-s {all,buy,sell,roi,stoploss} [{all,buy,sell,roi,stoploss} ...]]
-                        [--print-all]
+                        [--print-all] [-j JOBS]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -247,6 +247,12 @@ optional arguments:
                         Specify which parameters to hyperopt. Space separate
                         list. Default: all.
   --print-all           Print all results, not only the best ones.
+  -j JOBS, --job-workers JOBS
+                        The number of concurrently running jobs for
+                        hyperoptimization (hyperopt worker processes). If -1
+                        (default), all CPUs are used, for -2, all CPUs but one
+                        are used, etc. If 1 is given, no parallel computing
+                        code is used at all.
 ```
 
 ## Edge commands

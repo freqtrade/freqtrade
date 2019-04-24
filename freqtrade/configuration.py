@@ -309,6 +309,10 @@ class Configuration(object):
             config.update({'print_all': self.args.print_all})
             logger.info('Parameter --print-all detected: %s', config.get('print_all'))
 
+        if 'hyperopt_jobs' in self.args and self.args.hyperopt_jobs:
+            config.update({'hyperopt_jobs': self.args.hyperopt_jobs})
+            logger.info('Parameter -j/--job-workers detected: %s', config.get('hyperopt_jobs'))
+
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
             config.update({'refresh_pairs': True})
             logger.info('Parameter -r/--refresh-pairs-cached detected ...')

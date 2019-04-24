@@ -314,7 +314,6 @@ def test_roi_table_generation(hyperopt) -> None:
 def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
-    mocker.patch('freqtrade.optimize.hyperopt.multiprocessing.cpu_count', MagicMock(return_value=1))
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{'loss': 1, 'result': 'foo result', 'params': {}}])
@@ -325,6 +324,7 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     default_conf.update({'epochs': 1})
     default_conf.update({'timerange': None})
     default_conf.update({'spaces': 'all'})
+    default_conf.update({'hyperopt_jobs': 1})
 
     hyperopt = Hyperopt(default_conf)
     hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
