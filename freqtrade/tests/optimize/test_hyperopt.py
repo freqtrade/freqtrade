@@ -137,7 +137,8 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     )
 
     assert 'epochs' in config
-    assert log_has('Parameter --epochs detected ...', caplog.record_tuples)
+    assert log_has('Parameter --epochs detected ... Will run Hyperopt with for 1000 epochs ...',
+                   caplog.record_tuples)
 
     assert 'spaces' in config
     assert log_has(
@@ -145,7 +146,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
         caplog.record_tuples
     )
     assert 'print_all' in config
-    assert log_has('Parameter --print-all detected: True', caplog.record_tuples)
+    assert log_has('Parameter --print-all detected ...', caplog.record_tuples)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
