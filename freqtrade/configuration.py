@@ -201,8 +201,7 @@ class Configuration(object):
         :return: configuration as dictionary
         """
 
-        # If -i/--ticker-interval is used we override the configuration parameter
-        # (that will override the strategy configuration)
+        # This will override the strategy configuration
         if 'ticker_interval' in self.args and self.args.ticker_interval:
             config.update({'ticker_interval': self.args.ticker_interval})
             logger.info('Parameter -i/--ticker-interval detected ...')
@@ -317,6 +316,11 @@ class Configuration(object):
         if 'refresh_pairs' in self.args and self.args.refresh_pairs:
             config.update({'refresh_pairs': True})
             logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+
+        if 'hyperopt_random_state' in self.args and self.args.hyperopt_random_state is not None:
+            config.update({'hyperopt_random_state': self.args.hyperopt_random_state})
+            logger.info("Parameter --random-state detected: %s",
+                        config.get('hyperopt_random_state'))
 
         return config
 
