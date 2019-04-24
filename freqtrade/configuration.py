@@ -216,6 +216,14 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
+    def _args_to_config(self, config, argname, configname, logstring) -> bool:
+
+        if argname in self.args and getattr(self.args, argname):
+
+            config.update({configname: getattr(self.args, argname)})
+
+            logger.info(logstring.format(config[configname]))
+
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
         """
         Extract information for sys.argv and load Backtesting configuration
@@ -232,9 +240,8 @@ class Configuration(object):
             config.update({'live': True})
             logger.info('Parameter -l/--live detected ...')
 
-        if 'position_stacking' in self.args and self.args.position_stacking:
-            config.update({'position_stacking': True})
-            logger.info('Parameter --enable-position-stacking detected ...')
+        self._args_to_config(config, 'position_stacking', 'position_stacking',
+                             'Parameter --enable-position-stacking detected ...')
 
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
