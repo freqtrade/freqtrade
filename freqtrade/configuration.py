@@ -7,7 +7,7 @@ import os
 import sys
 from argparse import Namespace
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
@@ -16,7 +16,6 @@ from freqtrade import OperationalException, constants
 from freqtrade.exchange import is_exchange_supported, supported_exchanges
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
-
 
 logger = logging.getLogger(__name__)
 
@@ -210,11 +209,16 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _args_to_config(self, config, argname, logstring, logfun=None) -> None:
+    def _args_to_config(self, config: Dict[str, Any], argname: str,
+                        logstring: str, logfun=Optional[Callable]) -> None:
         """
-        logfun is applied to the configuration entry before passing
-        that entry to the log string using .format().
-        sample: logfun=len (prints the length of the found configuration instead of the content)
+        :param config: Configuration dictionary
+        :param argname: Argumentname in self.args - will be copied to config dict.
+        :param logstring: Logging String
+        :param logfun: logfun is applied to the configuration entry before passing
+                        that entry to the log string using .format().
+                        sample: logfun=len (prints the length of the found
+                        configuration instead of the content)
         """
         if argname in self.args and getattr(self.args, argname):
 
