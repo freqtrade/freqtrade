@@ -299,7 +299,7 @@ class Hyperopt(Backtesting):
                             'result': f_val[j]['result'],
                         })
                         logger.debug(f"Optimizer params: {f_val[j]['params']}")
-                    for j in range(cpus):
+                    for j in range(jobs):
                         logger.debug(f"Opimizer state: Xi: {opt.Xi[-j-1]}, yi: {opt.yi[-j-1]}")
         except KeyboardInterrupt:
             print('User interrupted..')
