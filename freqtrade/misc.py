@@ -1,17 +1,16 @@
 """
 Various tool function for Freqtrade and scripts
 """
-
 import gzip
 import logging
 import re
 from datetime import datetime
 from typing import Dict
 
-from ccxt import Exchange
 import numpy as np
 from pandas import DataFrame
 import rapidjson
+
 
 logger = logging.getLogger(__name__)
 
@@ -132,26 +131,3 @@ def deep_merge_dicts(source, destination):
             destination[key] = value
 
     return destination
-
-
-def timeframe_to_seconds(ticker_interval: str) -> int:
-    """
-    Translates the timeframe interval value written in the human readable
-    form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
-    of seconds for one timeframe interval.
-    """
-    return Exchange.parse_timeframe(ticker_interval)
-
-
-def timeframe_to_minutes(ticker_interval: str) -> int:
-    """
-    Same as above, but returns minutes.
-    """
-    return Exchange.parse_timeframe(ticker_interval) // 60
-
-
-def timeframe_to_msecs(ticker_interval: str) -> int:
-    """
-    Same as above, but returns milliseconds.
-    """
-    return Exchange.parse_timeframe(ticker_interval) * 1000

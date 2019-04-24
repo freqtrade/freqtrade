@@ -37,23 +37,23 @@ class DataProvider(object):
     @property
     def available_pairs(self) -> List[Tuple[str, str]]:
         """
-        Return a list of tuples containing pair, tick_interval for which data is currently cached.
+        Return a list of tuples containing pair, ticker_interval for which data is currently cached.
         Should be whitelist + open trades.
         """
         return list(self._exchange._klines.keys())
 
-    def ohlcv(self, pair: str, tick_interval: str = None, copy: bool = True) -> DataFrame:
+    def ohlcv(self, pair: str, ticker_interval: str = None, copy: bool = True) -> DataFrame:
         """
         get ohlcv data for the given pair as DataFrame
         Please check `available_pairs` to verify which pairs are currently cached.
         :param pair: pair to get the data for
-        :param tick_interval: ticker_interval to get pair for
+        :param ticker_interval: ticker_interval to get pair for
         :param copy: copy dataframe before returning.
                      Use false only for RO operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            if tick_interval:
-                pairtick = (pair, tick_interval)
+            if ticker_interval:
+                pairtick = (pair, ticker_interval)
             else:
                 pairtick = (pair, self._config['ticker_interval'])
 
@@ -65,7 +65,7 @@ class DataProvider(object):
         """
         get stored historic ohlcv data
         :param pair: pair to get the data for
-        :param tick_interval: ticker_interval to get pair for
+        :param ticker_interval: ticker_interval to get pair for
         """
         return load_pair_history(pair=pair,
                                  ticker_interval=ticker_interval,

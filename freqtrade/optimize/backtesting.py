@@ -19,11 +19,13 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.misc import file_dump_json, timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType, IStrategy
+
 
 logger = logging.getLogger(__name__)
 

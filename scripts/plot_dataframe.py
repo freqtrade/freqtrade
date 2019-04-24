@@ -82,7 +82,7 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
     return trades
 
 
-def generate_plot_file(fig, pair, tick_interval, is_last) -> None:
+def generate_plot_file(fig, pair, ticker_interval, is_last) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :return: None
@@ -90,7 +90,7 @@ def generate_plot_file(fig, pair, tick_interval, is_last) -> None:
     logger.info('Generate plot file for %s', pair)
 
     pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + tick_interval + '.html'
+    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
 
     Path("user_data/plots").mkdir(parents=True, exist_ok=True)
 
@@ -135,20 +135,20 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
     :return: dictinnary of tickers. output format: {'pair': tickersdata}
     """
 
-    tick_interval = strategy.ticker_interval
+    ticker_interval = strategy.ticker_interval
     timerange = Arguments.parse_timerange(args.timerange)
 
     tickers = {}
     if args.live:
         logger.info('Downloading pairs.')
-        exchange.refresh_latest_ohlcv([(pair, tick_interval) for pair in pairs])
+        exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
         for pair in pairs:
-            tickers[pair] = exchange.klines((pair, tick_interval))
+            tickers[pair] = exchange.klines((pair, ticker_interval))
     else:
         tickers = history.load_data(
             datadir=Path(str(_CONF.get("datadir"))),
             pairs=pairs,
-            ticker_interval=tick_interval,
+            ticker_interval=ticker_interval,
             refresh_pairs=_CONF.get('refresh_pairs', False),
             timerange=timerange,
             exchange=Exchange(_CONF)
@@ -399,7 +399,7 @@ def analyse_and_plot_pairs(args: Namespace):
     strategy, exchange, pairs = get_trading_env(args)
     # Set timerange to use
     timerange = Arguments.parse_timerange(args.timerange)
-    tick_interval = strategy.ticker_interval
+    ticker_interval = strategy.ticker_interval
 
     tickers = get_tickers_data(strategy, exchange, pairs, args)
     pair_counter = 0
@@ -422,7 +422,7 @@ def analyse_and_plot_pairs(args: Namespace):
         )
 
         is_last = (False, True)[pair_counter == len(tickers)]
-        generate_plot_file(fig, pair, tick_interval, is_last)
+        generate_plot_file(fig, pair, ticker_interval, is_last)
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 

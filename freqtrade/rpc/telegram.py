@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.telegram ...')
 
 
+MAX_TELEGRAM_MESSAGE_LENGTH = 4096
+
+
 def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
     """
     Decorator to check if the message comes from the correct chat_id
@@ -266,7 +269,8 @@ class Telegram(RPC):
                                  headers=[
                                      'Day',
                                      f'Profit {stake_cur}',
-                                     f'Profit {fiat_disp_cur}'
+                                     f'Profit {fiat_disp_cur}',
+                                     f'Trades'
                                  ],
                                  tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
@@ -327,13 +331,20 @@ class Telegram(RPC):
             output = ''
             for currency in result['currencies']:
                 if currency['est_btc'] > 0.0001:
-                    output += "*{currency}:*\n" \
+                    curr_output = "*{currency}:*\n" \
                             "\t`Available: {available: .8f}`\n" \
                             "\t`Balance: {balance: .8f}`\n" \
                             "\t`Pending: {pending: .8f}`\n" \
                             "\t`Est. BTC: {est_btc: .8f}`\n".format(**currency)
                 else:
-                    output += "*{currency}:* not showing <1$ amount \n".format(**currency)
+                    curr_output = "*{currency}:* not showing <1$ amount \n".format(**currency)
+
+                # Handle overflowing messsage length
+                if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                    self._send_msg(output, bot=bot)
+                    output = curr_output
+                else:
+                    output += curr_output
 
             output += "\n*Estimated Value*:\n" \
                       "\t`BTC: {total: .8f}`\n" \

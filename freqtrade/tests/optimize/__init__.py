@@ -3,7 +3,7 @@ from typing import NamedTuple, List
 import arrow
 from pandas import DataFrame
 
-from freqtrade.misc import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.strategy.interface import SellType
 
 ticker_start_time = arrow.get(2018, 10, 3)

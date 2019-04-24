@@ -9,11 +9,11 @@ from argparse import Namespace
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, List, Optional
 
-import ccxt
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
+from freqtrade.exchange import is_exchange_supported, supported_exchanges
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
@@ -216,7 +216,7 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
         """
         Extract information for sys.argv and load Backtesting configuration
         :return: configuration as dictionary
@@ -239,13 +239,23 @@ class Configuration(object):
             config.update({'position_stacking': True})
             logger.info('Parameter --enable-position-stacking detected ...')
 
-        # If --disable-max-market-positions is used we add it to the configuration
+        # If --disable-max-market-positions or --max_open_trades is used we update configuration
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
             logger.info('max_open_trades set to unlimited ...')
+        elif 'max_open_trades' in self.args and self.args.max_open_trades:
+            config.update({'max_open_trades': self.args.max_open_trades})
+            logger.info('Parameter --max_open_trades detected, '
+                        'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+
+        # If --stake_amount is used we update configuration
+        if 'stake_amount' in self.args and self.args.stake_amount:
+            config.update({'stake_amount': self.args.stake_amount})
+            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
+                        config.get('stake_amount'))
 
         # If --timerange is used we add it to the configuration
         if 'timerange' in self.args and self.args.timerange:
@@ -331,6 +341,10 @@ class Configuration(object):
             config.update({'spaces': self.args.spaces})
             logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
 
+        if 'print_all' in self.args and self.args.print_all:
+            config.update({'print_all': self.args.print_all})
+            logger.info('Parameter --print-all detected: %s', config.get('print_all'))
+
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
@@ -396,20 +410,16 @@ class Configuration(object):
         :return: True or raised an exception if the exchange if not supported
         """
         exchange = config.get('exchange', {}).get('name').lower()
-        if exchange not in ccxt.exchanges:
+        if not is_exchange_supported(exchange):
 
             exception_msg = f'Exchange "{exchange}" not supported.\n' \
-                            f'The following exchanges are supported: {", ".join(ccxt.exchanges)}'
+                            f'The following exchanges are supported: ' \
+                            f'{", ".join(supported_exchanges())}'
 
             logger.critical(exception_msg)
             raise OperationalException(
                 exception_msg
             )
-        # Depreciation warning
-        if 'ccxt_rate_limit' in config.get('exchange', {}):
-            logger.warning("`ccxt_rate_limit` has been deprecated in favor of "
-                           "`ccxt_config` and `ccxt_async_config` and will be removed "
-                           "in a future version.")
 
         logger.debug('Exchange "%s" supported', exchange)
         return True

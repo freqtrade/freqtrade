@@ -2,7 +2,7 @@
 from freqtrade import optimize
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
-from freqtrade.misc import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, patch_exchange
 

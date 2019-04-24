@@ -247,6 +247,22 @@ class Arguments(object):
             dest='timerange',
         )
 
+        parser.add_argument(
+            '--max_open_trades',
+            help='Specify max_open_trades to use.',
+            default=None,
+            type=int,
+            dest='max_open_trades',
+        )
+
+        parser.add_argument(
+            '--stake_amount',
+            help='Specify stake_amount.',
+            default=None,
+            type=float,
+            dest='stake_amount',
+        )
+
     @staticmethod
     def hyperopt_options(parser: argparse.ArgumentParser) -> None:
         """
@@ -267,7 +283,6 @@ class Arguments(object):
             dest='position_stacking',
             default=False
         )
-
         parser.add_argument(
             '--dmmp', '--disable-max-market-positions',
             help='Disable applying `max_open_trades` during backtest '
@@ -292,6 +307,13 @@ class Arguments(object):
             default='all',
             nargs='+',
             dest='spaces',
+        )
+        parser.add_argument(
+            '--print-all',
+            help='Print all results, not only the best ones.',
+            action='store_true',
+            dest='print_all',
+            default=False
         )
 
     def _build_subcommands(self) -> None:
