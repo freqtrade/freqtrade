@@ -9,7 +9,7 @@ from argparse import Namespace
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, List, Optional
 
-from jsonschema import Draft4Validator, validate
+from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
@@ -32,6 +32,27 @@ def set_loggers(log_level: int = 0) -> None:
     logging.getLogger('ccxt.base.exchange').setLevel(
         logging.INFO if log_level <= 2 else logging.DEBUG)
     logging.getLogger('telegram').setLevel(logging.INFO)
+
+
+def _extend_with_default(validator_class):
+    validate_properties = validator_class.VALIDATORS["properties"]
+
+    def set_defaults(validator, properties, instance, schema):
+        for prop, subschema in properties.items():
+            if "default" in subschema:
+                instance.setdefault(prop, subschema["default"])
+
+        for error in validate_properties(
+            validator, properties, instance, schema,
+        ):
+            yield error
+
+    return validators.extend(
+        validator_class, {"properties": set_defaults},
+    )
+
+
+ValidatorWithDefaults = _extend_with_default(Draft4Validator)
 
 
 class Configuration(object):
@@ -331,7 +352,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, constants.CONF_SCHEMA, Draft4Validator)
+            ValidatorWithDefaults(constants.CONF_SCHEMA).validate(conf)
             return conf
         except ValidationError as exception:
             logger.critical(

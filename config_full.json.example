@@ -56,8 +56,10 @@
     },
     "exchange": {
         "name": "bittrex",
+        "sandbox": false,
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
+        "password": "",
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
             "enableRateLimit": false,

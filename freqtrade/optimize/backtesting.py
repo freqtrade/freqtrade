@@ -68,7 +68,7 @@ class Backtesting(object):
         self.config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
 
-        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
+        exchange_name = self.config.get('exchange', {}).get('name').title()
         self.exchange = ExchangeResolver(exchange_name, self.config).exchange
         self.fee = self.exchange.get_fee()
 

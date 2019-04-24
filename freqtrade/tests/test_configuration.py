@@ -18,6 +18,15 @@ from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has
 
 
+@pytest.fixture(scope="function")
+def all_conf():
+    config_file = Path(__file__).parents[2] / "config_full.json.example"
+    print(config_file)
+    configuration = Configuration(Namespace())
+    conf = configuration._load_config_file(str(config_file))
+    return conf
+
+
 def test_load_config_invalid_pair(default_conf) -> None:
     default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
@@ -608,3 +617,59 @@ def test_validate_tsl(default_conf):
     default_conf['trailing_stop_positive_offset'] = 0.015
     Configuration(Namespace())
     configuration._validate_config_consistency(default_conf)
+
+
+def test_load_config_default_exchange(all_conf) -> None:
+    """
+    config['exchange'] subtree has required options in it
+    so it cannot be omitted in the config
+    """
+    del all_conf['exchange']
+
+    assert 'exchange' not in all_conf
+
+    with pytest.raises(ValidationError,
+                       match=r'\'exchange\' is a required property'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_schema(all_conf)
+
+
+def test_load_config_default_exchange_name(all_conf) -> None:
+    """
+    config['exchange']['name'] option is required
+    so it cannot be omitted in the config
+    """
+    del all_conf['exchange']['name']
+
+    assert 'name' not in all_conf['exchange']
+
+    with pytest.raises(ValidationError,
+                       match=r'\'name\' is a required property'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_schema(all_conf)
+
+
+@pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
+                                  ("exchange", "key", ""),
+                                  ("exchange", "secret", ""),
+                                  ("exchange", "password", ""),
+                                  ])
+def test_load_config_default_subkeys(all_conf, keys) -> None:
+    """
+    Test for parameters with default values in sub-paths
+    so they can be omitted in the config and the default value
+    should is added to the config.
+    """
+    # Get first level key
+    key = keys[0]
+    # get second level key
+    subkey = keys[1]
+
+    del all_conf[key][subkey]
+
+    assert subkey not in all_conf[key]
+
+    configuration = Configuration(Namespace())
+    configuration._validate_config_schema(all_conf)
+    assert subkey in all_conf[key]
+    assert all_conf[key][subkey] == keys[2]

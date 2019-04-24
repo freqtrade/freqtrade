@@ -194,7 +194,7 @@ optional arguments:
 ### How to use **--refresh-pairs-cached** parameter?
 
 The first time your run Backtesting, it will take the pairs you have
-set in your config file and download data from Bittrex.
+set in your config file and download data from the Exchange.
 
 If for any reason you want to update your data set, you use
 `--refresh-pairs-cached` to force Backtesting to update the data it has.
