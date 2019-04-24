@@ -658,65 +658,27 @@ def test_load_config_default_exchange_name(all_conf) -> None:
         configuration._validate_config_schema(all_conf)
 
 
-def test_load_config_default_exchange_sandbox(all_conf) -> None:
+@pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
+                                  ("exchange", "key", ""),
+                                  ("exchange", "secret", ""),
+                                  ("exchange", "password", ""),
+                                  ])
+def test_load_config_default_subkeys(all_conf, keys) -> None:
     """
-    config['exchange']['sandbox'] option has default value: False
-    so it can be omitted in the config and the default value
+    Test for parameters with default values in sub-paths
+    so they can be omitted in the config and the default value
     should be present in the config as the option value
     """
-    del all_conf['exchange']['sandbox']
+    # Get first level key
+    key = keys[0]
+    # get second level key
+    subkey = keys[1]
 
-    assert 'sandbox' not in all_conf['exchange']
+    del all_conf[key][subkey]
+
+    assert subkey not in all_conf[key]
 
     configuration = Configuration(Namespace())
     configuration._validate_config_schema(all_conf)
-    assert 'sandbox' in all_conf['exchange']
-    assert all_conf['exchange']['sandbox'] is False
-
-
-def test_load_config_default_exchange_key(all_conf) -> None:
-    """
-    config['exchange']['key'] option has default value: ''
-    so it can be omitted in the config and the default value
-    should be present in the config as the option value
-    """
-    del all_conf['exchange']['key']
-
-    assert 'key' not in all_conf['exchange']
-
-    configuration = Configuration(Namespace())
-    configuration._validate_config_schema(all_conf)
-    assert 'key' in all_conf['exchange']
-    assert all_conf['exchange']['key'] == ''
-
-
-def test_load_config_default_exchange_secret(all_conf) -> None:
-    """
-    config['exchange']['secret'] option has default value: ''
-    so it can be omitted in the config and the default value
-    should be present in the config as the option value
-    """
-    del all_conf['exchange']['secret']
-
-    assert 'secret' not in all_conf['exchange']
-
-    configuration = Configuration(Namespace())
-    configuration._validate_config_schema(all_conf)
-    assert 'secret' in all_conf['exchange']
-    assert all_conf['exchange']['secret'] == ''
-
-
-def test_load_config_default_exchange_password(all_conf) -> None:
-    """
-    config['exchange']['password'] option has default value: ''
-    so it can be omitted in the config and the default value
-    should be present in the config as the option value
-    """
-    del all_conf['exchange']['password']
-
-    assert 'password' not in all_conf['exchange']
-
-    configuration = Configuration(Namespace())
-    configuration._validate_config_schema(all_conf)
-    assert 'password' in all_conf['exchange']
-    assert all_conf['exchange']['password'] == ''
+    assert subkey in all_conf[key]
+    assert all_conf[key][subkey] == keys[2]
