@@ -236,7 +236,8 @@ class Hyperopt(Backtesting):
             base_estimator="ET",
             acq_optimizer="auto",
             n_initial_points=30,
-            acq_optimizer_kwargs={'n_jobs': cpu_count}
+            acq_optimizer_kwargs={'n_jobs': cpu_count},
+            random_state=self.config.get('hyperopt_random_state', None)
         )
 
     def run_optimizer_parallel(self, parallel, asked) -> List:

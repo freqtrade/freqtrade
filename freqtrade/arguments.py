@@ -306,6 +306,14 @@ class Arguments(object):
             dest='print_all',
             default=False
         )
+        parser.add_argument(
+            '--random-state',
+            help='Set random state to some positive integer for reproducible hyperopt results.',
+            dest='hyperopt_random_state',
+            default=None,
+            type=Arguments.check_int_positive,
+            metavar='INT',
+        )
 
     def _build_subcommands(self) -> None:
         """
@@ -375,6 +383,18 @@ class Arguments(object):
                         stop = int(stops)
                 return TimeRange(stype[0], stype[1], start, stop)
         raise Exception('Incorrect syntax for timerange "%s"' % text)
+
+    @staticmethod
+    def check_int_positive(value) -> int:
+        try:
+            uint = int(value)
+            if uint <= 0:
+                raise ValueError
+        except ValueError:
+            raise argparse.ArgumentTypeError(
+                f"{value} is invalid for this parameter, should be a positive integer value"
+            )
+        return uint
 
     def scripts_options(self) -> None:
         """
