@@ -216,7 +216,7 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _args_to_config(self, config, argname, configname, logstring, logfun=None) -> bool:
+    def _args_to_config(self, config, argname, configname, logstring, logfun=None) -> None:
         """
         logfun is applied to the configuration entry before passing
         that entry to the log string using .format().
@@ -230,7 +230,7 @@ class Configuration(object):
             else:
                 logger.info(logstring.format(config[configname]))
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
+    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load Backtesting configuration
         :return: configuration as dictionary
@@ -295,9 +295,8 @@ class Configuration(object):
         :return: configuration as dictionary
         """
 
-        if 'timerange' in self.args and self.args.timerange:
-            config.update({'timerange': self.args.timerange})
-            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+        self._args_to_config(config, argname='timerange', configname='timerange',
+                             logstring='Parameter --timerange detected: {} ...')
 
         if 'stoploss_range' in self.args and self.args.stoploss_range:
             txt_range = eval(self.args.stoploss_range)
@@ -306,9 +305,8 @@ class Configuration(object):
             config['edge'].update({'stoploss_range_step': txt_range[2]})
             logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
 
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        self._args_to_config(config, argname='refresh_pairs', configname='refresh_pairs',
+                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
         return config
 
@@ -318,35 +316,29 @@ class Configuration(object):
         :return: configuration as dictionary
         """
 
-        if "hyperopt" in self.args:
-            # Add the hyperopt file to use
-            config.update({'hyperopt': self.args.hyperopt})
+        self._args_to_config(config, argname='hyperopt', configname='hyperopt',
+                             logstring='Using Hyperopt file {}')
 
-        if 'epochs' in self.args and self.args.epochs:
-            config.update({'epochs': self.args.epochs})
-            logger.info('Parameter --epochs detected ...')
-            logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
+        self._args_to_config(config, argname='epochs', configname='epochs',
+                             logstring='Parameter --epochs detected ... '
+                             'Will run Hyperopt with for {} epochs ...'
+                             )
 
-        if 'spaces' in self.args and self.args.spaces:
-            config.update({'spaces': self.args.spaces})
-            logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
+        self._args_to_config(config, argname='spaces', configname='spaces',
+                             logstring='Parameter -s/--spaces detected: {}')
 
-        if 'print_all' in self.args and self.args.print_all:
-            config.update({'print_all': self.args.print_all})
-            logger.info('Parameter --print-all detected: %s', config.get('print_all'))
+        self._args_to_config(config, argname='print_all', configname='print_all',
+                             logstring='Parameter --print-all detected ...')
 
-        if 'hyperopt_jobs' in self.args and self.args.hyperopt_jobs:
-            config.update({'hyperopt_jobs': self.args.hyperopt_jobs})
-            logger.info('Parameter -j/--job-workers detected: %s', config.get('hyperopt_jobs'))
+        self._args_to_config(config, argname='hyperopt_jobs', configname='hyperopt_jobs',
+                             logstring='Parameter -j/--job-workers detected: {}')
 
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        self._args_to_config(config, argname='refresh_pairs', configname='refresh_pairs',
+                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
-        if 'hyperopt_random_state' in self.args and self.args.hyperopt_random_state is not None:
-            config.update({'hyperopt_random_state': self.args.hyperopt_random_state})
-            logger.info("Parameter --random-state detected: %s",
-                        config.get('hyperopt_random_state'))
+        self._args_to_config(config, argname='hyperopt_random_state',
+                             configname='hyperopt_random_state',
+                             logstring='Parameter --random-state detected: {}')
 
         return config
 
