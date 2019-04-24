@@ -658,7 +658,7 @@ def test_load_config_default_subkeys(all_conf, keys) -> None:
     """
     Test for parameters with default values in sub-paths
     so they can be omitted in the config and the default value
-    should be present in the config as the option value
+    should is added to the config.
     """
     # Get first level key
     key = keys[0]
