@@ -225,7 +225,7 @@ class Exchange(object):
         try:
             self._api.load_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().timestamp
-        except ccxt.NetworkError:
+        except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
     def validate_pairs(self, pairs: List[str]) -> None:
