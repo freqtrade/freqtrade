@@ -18,6 +18,15 @@ from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has
 
 
+@pytest.fixture(scope="function")
+def all_conf():
+    config_file = Path(__file__).parents[2] / "config_full.json.example"
+    print(config_file)
+    configuration = Configuration(Namespace())
+    conf = configuration._load_config_file(str(config_file))
+    return conf
+
+
 def test_load_config_invalid_pair(default_conf) -> None:
     default_conf['exchange']['pair_whitelist'].append('ETH-BTC')
 
