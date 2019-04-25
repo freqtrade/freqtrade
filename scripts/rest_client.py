@@ -10,10 +10,10 @@ so it can be used as a standalone script.
 import argparse
 import json
 import logging
-from sys import argv
+from urllib.parse import urlencode, urlparse, urlunparse
 from pathlib import Path
 
-from requests import get
+import requests
 from requests.exceptions import ConnectionError
 
 logging.basicConfig(
@@ -35,6 +35,63 @@ INFO_COMMANDS = {"version": [],
                  "status": [],
                  "balance": []
                  }
+
+
+class FtRestClient():
+
+    def __init__(self, serverurl):
+        self.serverurl = serverurl
+
+        self.session = requests.Session()
+
+    def call(self, method, apipath, params: dict = None, data=None, files=None):
+
+        if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
+            raise ValueError('invalid method <{0}>'.format(method))
+        basepath = f"{self.serverurl}/{apipath}"
+
+        hd = {"Accept": "application/json",
+              "Content-Type": "application/json"
+              }
+
+        # Split url
+        schema, netloc, path, params, query, fragment = urlparse(basepath)
+        # URLEncode query string
+        query = urlencode(params)
+        # recombine url
+        url = urlunparse((schema, netloc, path, params, query, fragment))
+        print(url)
+        try:
+
+            req = requests.Request(method, url, headers=hd, data=data,
+                                   # auth=self.session.auth
+                                   )
+            reqp = req.prepare()
+            return self.session.send(reqp).json()
+            # return requests.get(url).json()
+        except ConnectionError:
+            logger.warning("Connection error")
+
+    def call_command_noargs(self, command):
+        logger.info(f"Running command `{command}` at {self.serverurl}")
+        r = self.call("GET", command)
+        logger.info(r)
+
+    def call_info(self, command, command_args):
+        logger.info(
+            f"Running command `{command}` with parameters `{command_args}` at {self.serverurl}")
+        args = INFO_COMMANDS[command]
+        if len(args) < len(command_args):
+            logger.error(f"Command {command} does only support {len(args)} arguments.")
+            return
+        params = {}
+        for idx, arg in enumerate(command_args):
+            params[args[idx]] = arg
+
+        logger.debug(params)
+        r = self.call("GET", command, params)
+
+        logger.info(r)
 
 
 def add_arguments():
@@ -74,48 +131,20 @@ def load_config(configfile):
     return {}
 
 
-def call_authorized(url):
-    try:
-        return get(url).json()
-    except ConnectionError:
-        logger.warning("Connection error")
-
-
-def call_command_noargs(server_url, command):
-    logger.info(f"Running command `{command}` at {server_url}")
-    r = call_authorized(f"{server_url}/{command}")
-    logger.info(r)
-
-
-def call_info(server_url, command, command_args):
-    logger.info(f"Running command `{command}` with parameters `{command_args}` at {server_url}")
-    call = f"{server_url}/{command}?"
-    args = INFO_COMMANDS[command]
-    if len(args) < len(command_args):
-        logger.error(f"Command {command} does only support {len(args)} arguments.")
-        return
-    for idx, arg in enumerate(command_args):
-
-        call += f"{args[idx]}={arg}"
-    logger.debug(call)
-    r = call_authorized(call)
-
-    logger.info(r)
-
-
 def main(args):
 
     config = load_config(args["config"])
     url = config.get("api_server", {}).get("server_url", "127.0.0.1")
     port = config.get("api_server", {}).get("listen_port", "8080")
     server_url = f"http://{url}:{port}"
+    client = FtRestClient(server_url)
 
     # Call commands without arguments
     if args["command"] in COMMANDS_NO_ARGS:
-        call_command_noargs(server_url, args["command"])
+        client.call_command_noargs(args["command"])
 
     if args["command"] in INFO_COMMANDS:
-        call_info(server_url, args["command"], args["command_arguments"])
+        client.call_info(args["command"], args["command_arguments"])
 
 
 if __name__ == "__main__":
