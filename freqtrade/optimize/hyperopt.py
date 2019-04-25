@@ -14,6 +14,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Any, Dict, List
 
+from filelock import Timeout, FileLock
 from joblib import Parallel, delayed, dump, load, wrap_non_picklable_objects, cpu_count
 from pandas import DataFrame
 from skopt import Optimizer
@@ -28,10 +29,14 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.resolvers import HyperOptResolver
 
+
 logger = logging.getLogger(__name__)
+
 
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
+TRIALSDATA_PICKLE = os.path.join('user_data', 'hyperopt_results.pickle')
+HYPEROPT_LOCKFILE = os.path.join('user_data', 'hyperopt.lock')
 
 
 class Hyperopt(Backtesting):
@@ -63,7 +68,7 @@ class Hyperopt(Backtesting):
         self.expected_max_profit = 3.0
 
         # Previous evaluations
-        self.trials_file = os.path.join('user_data', 'hyperopt_results.pickle')
+        self.trials_file = TRIALSDATA_PICKLE
         self.trials: List = []
 
     def get_args(self, params):
@@ -343,9 +348,25 @@ def start(args: Namespace) -> None:
 
     logger.info('Starting freqtrade in Hyperopt mode')
 
-    # Remove noisy log messages
-    logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+    lock = FileLock(HYPEROPT_LOCKFILE)
 
-    # Initialize backtesting object
-    hyperopt = Hyperopt(config)
-    hyperopt.start()
+    try:
+        with lock.acquire(timeout=1):
+
+            # Remove noisy log messages
+            logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+            logging.getLogger('filelock').setLevel(logging.WARNING)
+
+            # Initialize backtesting object
+            hyperopt = Hyperopt(config)
+            hyperopt.start()
+
+    except Timeout:
+        logger.info("Another running instance of freqtrade Hyperopt detected.")
+        logger.info("Simultaneous execution of multiple Hyperopt commands is not supported. "
+                    "Hyperopt module is resource hungry. Please run your Hyperopts sequentially "
+                    "or on separate machines.")
+        logger.info("Quitting now.")
+        # TODO: return False here in order to help freqtrade to exit
+        # with non-zero exit code...
+        # Same in Edge and Backtesting start() functions.
