@@ -109,16 +109,18 @@ class ApiServer(RPC):
         app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
                          methods=['POST'])
         # Info commands
-        app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
+        app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
         app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
-        app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
-        app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
-                         methods=['GET'])
+        app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
+
+        # Combined actions and infos
         app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist,
                          methods=['GET', 'POST'])
+        app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
+                         methods=['GET'])
         # TODO: Implement the following
         # performance
         # forcebuy
