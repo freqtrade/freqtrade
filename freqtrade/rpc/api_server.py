@@ -112,6 +112,7 @@ class ApiServer(RPC):
         app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
         app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
+        app.add_url_rule('/edge', 'edge', view_func=self._edge, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
         app.add_url_rule('/performance', 'performance', view_func=self._performance, 
                          methods=['GET'])
@@ -126,7 +127,6 @@ class ApiServer(RPC):
         # TODO: Implement the following
         # forcebuy
         # forcesell
-        # edge
         # help (?)
 
     def run(self):
@@ -247,6 +247,16 @@ class ApiServer(RPC):
                                        self._config['stake_currency'],
                                        self._config['fiat_display_currency']
                                        )
+
+        return self.rest_dump(stats)
+
+    @safe_rpc
+    def _edge(self):
+        """
+        Returns information related to Edge.
+        :return: edge stats
+        """
+        stats = self._rpc_edge()
 
         return self.rest_dump(stats)
 

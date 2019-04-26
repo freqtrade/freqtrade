@@ -85,6 +85,13 @@ class FtRestClient():
         """
         return self._get("daily", params={"timescale": days} if days else None)
 
+    def edge(self):
+        """
+        Returns information about edge
+        :returns: json object
+        """
+        return self._get("edge")
+
     def profit(self):
         """
         Returns the profit summary
@@ -106,6 +113,13 @@ class FtRestClient():
         """
         return self._get("status")
 
+    def version(self):
+        """
+        Returns the version of the bot
+        :returns: json object containing the version
+        """
+        return self._get("version")
+
     def whitelist(self):
         """
         Show the current whitelist
@@ -123,13 +137,6 @@ class FtRestClient():
             return self._get("blacklist")
         else:
             return self._post("blacklist", data={"blacklist": args})
-
-    def version(self):
-        """
-        Returns the version of the bot
-        :returns: json object containing the version
-        """
-        return self._get("version")
 
 
 def add_arguments():
