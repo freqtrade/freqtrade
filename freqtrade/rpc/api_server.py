@@ -103,11 +103,11 @@ class ApiServer(RPC):
         """
         # TODO: actions should not be GET...
         # Actions to control the bot
-        app.add_url_rule('/start', 'start', view_func=self._start, methods=['GET'])
-        app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['GET'])
-        app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['GET'])
+        app.add_url_rule('/start', 'start', view_func=self._start, methods=['POST'])
+        app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['POST'])
+        app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['POST'])
         app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
-                         methods=['GET'])
+                         methods=['POST'])
         # Info commands
         app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
         app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
