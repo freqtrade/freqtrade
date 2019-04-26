@@ -11,6 +11,7 @@ import argparse
 import json
 import logging
 import inspect
+from typing import List
 from urllib.parse import urlencode, urlparse, urlunparse
 from pathlib import Path
 
@@ -24,32 +25,18 @@ logging.basicConfig(
 logger = logging.getLogger("ft_rest_client")
 
 
-COMMANDS_NO_ARGS = ["start",
-                    "stop",
-                    "stopbuy",
-                    "reload_conf",
-                    ]
-INFO_COMMANDS = {"version": [],
-                 "count": [],
-                 "daily": ["timescale"],
-                 "profit": [],
-                 "status": [],
-                 "balance": []
-                 }
-
-
 class FtRestClient():
 
     def __init__(self, serverurl):
 
-        self.serverurl = serverurl
-        self.session = requests.Session()
+        self._serverurl = serverurl
+        self._session = requests.Session()
 
     def _call(self, method, apipath, params: dict = None, data=None, files=None):
 
         if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise ValueError('invalid method <{0}>'.format(method))
-        basepath = f"{self.serverurl}/{apipath}"
+        basepath = f"{self._serverurl}/{apipath}"
 
         hd = {"Accept": "application/json",
               "Content-Type": "application/json"
@@ -58,14 +45,14 @@ class FtRestClient():
         # Split url
         schema, netloc, path, par, query, fragment = urlparse(basepath)
         # URLEncode query string
-        query = urlencode(params)
+        query = urlencode(params) if params else None
         # recombine url
         url = urlunparse((schema, netloc, path, par, query, fragment))
-        print(url)
+
         try:
-            resp = self.session.request(method, url, headers=hd, data=data,
-                                        # auth=self.session.auth
-                                        )
+            resp = self._session.request(method, url, headers=hd, data=json.dumps(data),
+                                         # auth=self.session.auth
+                                         )
             # return resp.text
             return resp.json()
         except ConnectionError:
@@ -77,33 +64,12 @@ class FtRestClient():
     def _post(self, apipath, params: dict = None, data: dict = None):
         return self._call("POST", apipath, params=params, data=data)
 
-    def _call_command_noargs(self, command):
-        logger.info(f"Running command `{command}` at {self.serverurl}")
-        r = self._call("POST", command)
-        logger.info(r)
-
-    def _call_info(self, command, command_args):
-        logger.info(
-            f"Running command `{command}` with parameters `{command_args}` at {self.serverurl}")
-        args = INFO_COMMANDS[command]
-        if len(args) < len(command_args):
-            logger.error(f"Command {command} does only support {len(args)} arguments.")
-            return
-        params = {}
-        for idx, arg in enumerate(command_args):
-            params[args[idx]] = arg
-
-        logger.debug(params)
-        r = self._call("GET", command, params)
-
-        logger.info(r)
-
-    def version(self):
+    def balance(self):
         """
-        Returns the version of the bot
-        :returns: json object containing the version
+        get the account balance
+        :returns: json object
         """
-        return self._get("version")
+        return self._get("balance")
 
     def count(self):
         """
@@ -119,11 +85,57 @@ class FtRestClient():
         """
         return self._get("daily", params={"timescale": days} if days else None)
 
+    def profit(self):
+        """
+        Returns the profit summary
+        :returns: json object
+        """
+        return self._get("profit")
+
+    def status(self):
+        """
+        Get the status of open trades
+        :returns: json object
+        """
+        return self._get("status")
+
+    def whitelist(self):
+        """
+        Show the current whitelist
+        :returns: json object
+        """
+        return self._get("whitelist")
+
+    def blacklist(self, *args):
+        """
+        Show the current blacklist
+        :param add: List of coins to add (example: "BNB/BTC")
+        :returns: json object
+        """
+        if not args:
+            return self._get("blacklist")
+        else:
+            return self._post("blacklist", data={"blacklist": args})
+
+    def version(self):
+        """
+        Returns the version of the bot
+        :returns: json object containing the version
+        """
+        return self._get("version")
+
 
 def add_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("command",
                         help="Positional argument defining the command to execute.")
+
+    parser.add_argument('--show',
+                        help='Show possible methods with this client',
+                        dest='show',
+                        action='store_true',
+                        default=False
+                        )
 
     parser.add_argument('-c', '--config',
                         help='Specify configuration file (default: %(default)s). ',
@@ -160,6 +172,16 @@ def load_config(configfile):
 
 def main(args):
 
+    if args.get("show"):
+        # Print dynamic help for the different commands
+        client = FtRestClient(None)
+        print("Possible commands:")
+        for x, y in inspect.getmembers(client):
+            if not x.startswith('_'):
+                print(f"{x} {getattr(client, x).__doc__}")
+
+        return
+
     config = load_config(args["config"])
     url = config.get("api_server", {}).get("server_url", "127.0.0.1")
     port = config.get("api_server", {}).get("listen_port", "8080")
@@ -173,13 +195,6 @@ def main(args):
         return
 
     print(getattr(client, command)(*args["command_arguments"]))
-
-    # Call commands without arguments
-    # if args["command"] in COMMANDS_NO_ARGS:
-    #     client._call_command_noargs(args["command"])
-
-    # if args["command"] in INFO_COMMANDS:
-    #     client._call_info(args["command"], args["command_arguments"])
 
 
 if __name__ == "__main__":
