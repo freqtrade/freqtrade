@@ -95,7 +95,7 @@ class FtRestClient():
 
     def balance(self):
         """
-        get the account balance
+        Get the account balance
         :returns: json object
         """
         return self._get("balance")

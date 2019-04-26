@@ -101,7 +101,6 @@ class ApiServer(RPC):
         Label can be used as a shortcut when refactoring
         :return:
         """
-        # TODO: actions should not be GET...
         # Actions to control the bot
         app.add_url_rule('/start', 'start', view_func=self._start, methods=['POST'])
         app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['POST'])
@@ -114,7 +113,7 @@ class ApiServer(RPC):
         app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
         app.add_url_rule('/edge', 'edge', view_func=self._edge, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
-        app.add_url_rule('/performance', 'performance', view_func=self._performance, 
+        app.add_url_rule('/performance', 'performance', view_func=self._performance,
                          methods=['GET'])
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
         app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
@@ -141,8 +140,8 @@ class ApiServer(RPC):
 
         logger.info('Starting HTTP Server at {}:{}'.format(rest_ip, rest_port))
         if not IPv4Address(rest_ip).is_loopback:
-            logger.info("SECURITY WARNING - Local Rest Server listening to external connections")
-            logger.info("SECURITY WARNING - This is insecure please set to your loopback,"
+            logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
+            logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
                         "e.g 127.0.0.1 in config.json")
 
         # Run the Server
