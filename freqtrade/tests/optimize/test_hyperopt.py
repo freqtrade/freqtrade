@@ -11,8 +11,7 @@ from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
-from freqtrade.optimize.hyperopt import (HYPEROPT_LOCKFILE, Hyperopt,
-                                         setup_configuration, start)
+from freqtrade.optimize.hyperopt import Hyperopt, setup_configuration, start
 from freqtrade.resolvers import HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, patch_exchange
