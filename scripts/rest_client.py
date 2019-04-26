@@ -97,12 +97,6 @@ def add_arguments():
     parser.add_argument("command",
                         help="Positional argument defining the command to execute.")
 
-    parser.add_argument("command_arguments",
-                        help="Positional arguments for the parameters for [command]",
-                        nargs="*",
-                        default=[]
-                        )
-
     parser.add_argument('-c', '--config',
                         help='Specify configuration file (default: %(default)s). ',
                         dest='config',
@@ -110,6 +104,13 @@ def add_arguments():
                         metavar='PATH',
                         default='config.json'
                         )
+
+    parser.add_argument("command_arguments",
+                        help="Positional arguments for the parameters for [command]",
+                        nargs="*",
+                        default=[]
+                        )
+
     args = parser.parse_args()
     # if len(argv) == 1:
     #     print('\nThis script accepts the following arguments')
