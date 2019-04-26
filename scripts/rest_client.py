@@ -40,8 +40,8 @@ INFO_COMMANDS = {"version": [],
 class FtRestClient():
 
     def __init__(self, serverurl):
-        self.serverurl = serverurl
 
+        self.serverurl = serverurl
         self.session = requests.Session()
 
     def call(self, method, apipath, params: dict = None, data=None, files=None):
@@ -62,19 +62,17 @@ class FtRestClient():
         url = urlunparse((schema, netloc, path, params, query, fragment))
         print(url)
         try:
-
-            req = requests.Request(method, url, headers=hd, data=data,
-                                   # auth=self.session.auth
-                                   )
-            reqp = req.prepare()
-            return self.session.send(reqp).json()
-            # return requests.get(url).json()
+            resp = self.session.request(method, url, headers=hd, data=data,
+                                        # auth=self.session.auth
+                                        )
+            # return resp.text
+            return resp.json()
         except ConnectionError:
             logger.warning("Connection error")
 
     def call_command_noargs(self, command):
         logger.info(f"Running command `{command}` at {self.serverurl}")
-        r = self.call("GET", command)
+        r = self.call("POST", command)
         logger.info(r)
 
     def call_info(self, command, command_args):
