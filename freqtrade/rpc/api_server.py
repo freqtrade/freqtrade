@@ -115,14 +115,15 @@ class ApiServer(RPC):
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
         app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
-        app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist, methods=['GET'])
-        app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist, methods=['GET'])
+        app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
+                         methods=['GET'])
+        app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist,
+                         methods=['GET', 'POST'])
         # TODO: Implement the following
         # performance
         # forcebuy
         # forcesell
-        # whitelist param
-        # balacklist params
+        # blacklist params
         # edge
         # help (?)
 
@@ -296,5 +297,6 @@ class ApiServer(RPC):
         """
         Handler for /blacklist.
         """
-        results = self._rpc_blacklist()
+        add = request.json.get("blacklist", None) if request.method == 'POST' else None
+        results = self._rpc_blacklist(add)
         return self.rest_dump(results)
