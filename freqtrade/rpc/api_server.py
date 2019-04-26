@@ -113,6 +113,8 @@ class ApiServer(RPC):
         app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
         app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
         app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
+        app.add_url_rule('/performance', 'performance', view_func=self._performance, 
+                         methods=['GET'])
         app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
         app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
 
@@ -122,10 +124,8 @@ class ApiServer(RPC):
         app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
                          methods=['GET'])
         # TODO: Implement the following
-        # performance
         # forcebuy
         # forcesell
-        # blacklist params
         # edge
         # help (?)
 
@@ -263,6 +263,20 @@ class ApiServer(RPC):
         stats = self._rpc_trade_statistics(self._config['stake_currency'],
                                            self._config['fiat_display_currency']
                                            )
+
+        return self.rest_dump(stats)
+
+    @safe_rpc
+    def _performance(self):
+        """
+        Handler for /performance.
+
+        Returns a cumulative performance statistics
+        :return: stats
+        """
+        logger.info("LocalRPC - performance Command Called")
+
+        stats = self._rpc_performance()
 
         return self.rest_dump(stats)
 

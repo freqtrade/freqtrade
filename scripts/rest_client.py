@@ -45,7 +45,7 @@ class FtRestClient():
         # Split url
         schema, netloc, path, par, query, fragment = urlparse(basepath)
         # URLEncode query string
-        query = urlencode(params) if params else None
+        query = urlencode(params) if params else ""
         # recombine url
         url = urlunparse((schema, netloc, path, par, query, fragment))
 
@@ -91,6 +91,13 @@ class FtRestClient():
         :returns: json object
         """
         return self._get("profit")
+
+    def performance(self):
+        """
+        Returns the performance of the different coins
+        :returns: json object
+        """
+        return self._get("performance")
 
     def status(self):
         """
