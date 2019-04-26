@@ -123,9 +123,10 @@ class ApiServer(RPC):
                          methods=['GET', 'POST'])
         app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
                          methods=['GET'])
+        app.add_url_rule('/forcebuy', 'forcebuy', view_func=self._forcebuy, methods=['POST'])
+        app.add_url_rule('/forcesell', 'forcesell', view_func=self._forcesell, methods=['POST'])
+
         # TODO: Implement the following
-        # forcebuy
-        # forcesell
         # help (?)
 
     def run(self):
@@ -324,4 +325,24 @@ class ApiServer(RPC):
         """
         add = request.json.get("blacklist", None) if request.method == 'POST' else None
         results = self._rpc_blacklist(add)
+        return self.rest_dump(results)
+
+    @safe_rpc
+    def _forcebuy(self):
+        """
+        Handler for /forcebuy.
+        """
+        asset = request.json.get("pair")
+        price = request.json.get("price", None)
+        trade = self._rpc_forcebuy(asset, price)
+        # TODO: Returns a trade, we need to jsonify that.
+        return self.rest_dump(trade)
+
+    @safe_rpc
+    def _forcesell(self):
+        """
+        Handler for /forcesell.
+        """
+        tradeid = request.json.get("tradeid")
+        results = self._rpc_forcesell(tradeid)
         return self.rest_dump(results)

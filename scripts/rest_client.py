@@ -167,6 +167,27 @@ class FtRestClient():
         else:
             return self._post("blacklist", data={"blacklist": args})
 
+    def forcebuy(self, pair, price=None):
+        """
+        Buy an asset
+        :param pair: Pair to buy (ETH/BTC)
+        :param price: Optional - price to buy
+        :returns: json object of the trade
+        """
+        data = {"pair": pair,
+                "price": price
+                }
+        return self._post("forcebuy", data=data)
+
+    def forcesell(self, tradeid):
+        """
+        Force-sell a trade
+        :param tradeid: Id of the trade (can be received via status command)
+        :returns: json object
+        """
+
+        return self._post("forcesell", data={"tradeid": tradeid})
+
 
 def add_arguments():
     parser = argparse.ArgumentParser()
