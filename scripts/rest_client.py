@@ -44,7 +44,7 @@ class FtRestClient():
         self.serverurl = serverurl
         self.session = requests.Session()
 
-    def call(self, method, apipath, params: dict = None, data=None, files=None):
+    def _call(self, method, apipath, params: dict = None, data=None, files=None):
 
         if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise ValueError('invalid method <{0}>'.format(method))
@@ -70,12 +70,12 @@ class FtRestClient():
         except ConnectionError:
             logger.warning("Connection error")
 
-    def call_command_noargs(self, command):
+    def _call_command_noargs(self, command):
         logger.info(f"Running command `{command}` at {self.serverurl}")
-        r = self.call("POST", command)
+        r = self._call("POST", command)
         logger.info(r)
 
-    def call_info(self, command, command_args):
+    def _call_info(self, command, command_args):
         logger.info(
             f"Running command `{command}` with parameters `{command_args}` at {self.serverurl}")
         args = INFO_COMMANDS[command]
@@ -87,7 +87,7 @@ class FtRestClient():
             params[args[idx]] = arg
 
         logger.debug(params)
-        r = self.call("GET", command, params)
+        r = self._call("GET", command, params)
 
         logger.info(r)
 
@@ -139,10 +139,10 @@ def main(args):
 
     # Call commands without arguments
     if args["command"] in COMMANDS_NO_ARGS:
-        client.call_command_noargs(args["command"])
+        client._call_command_noargs(args["command"])
 
     if args["command"] in INFO_COMMANDS:
-        client.call_info(args["command"], args["command_arguments"])
+        client._call_info(args["command"], args["command_arguments"])
 
 
 if __name__ == "__main__":
