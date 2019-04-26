@@ -10,6 +10,7 @@ so it can be used as a standalone script.
 import argparse
 import json
 import logging
+import inspect
 from urllib.parse import urlencode, urlparse, urlunparse
 from pathlib import Path
 
@@ -55,11 +56,11 @@ class FtRestClient():
               }
 
         # Split url
-        schema, netloc, path, params, query, fragment = urlparse(basepath)
+        schema, netloc, path, par, query, fragment = urlparse(basepath)
         # URLEncode query string
         query = urlencode(params)
         # recombine url
-        url = urlunparse((schema, netloc, path, params, query, fragment))
+        url = urlunparse((schema, netloc, path, par, query, fragment))
         print(url)
         try:
             resp = self.session.request(method, url, headers=hd, data=data,
@@ -69,6 +70,12 @@ class FtRestClient():
             return resp.json()
         except ConnectionError:
             logger.warning("Connection error")
+
+    def _get(self, apipath, params: dict = None):
+        return self._call("GET", apipath, params=params)
+
+    def _post(self, apipath, params: dict = None, data: dict = None):
+        return self._call("POST", apipath, params=params, data=data)
 
     def _call_command_noargs(self, command):
         logger.info(f"Running command `{command}` at {self.serverurl}")
@@ -90,6 +97,27 @@ class FtRestClient():
         r = self._call("GET", command, params)
 
         logger.info(r)
+
+    def version(self):
+        """
+        Returns the version of the bot
+        :returns: json object containing the version
+        """
+        return self._get("version")
+
+    def count(self):
+        """
+        Returns the amount of open trades
+        :returns: json object
+        """
+        return self._get("count")
+
+    def daily(self, days=None):
+        """
+        Returns the amount of open trades
+        :returns: json object
+        """
+        return self._get("daily", params={"timescale": days} if days else None)
 
 
 def add_arguments():
@@ -138,12 +166,20 @@ def main(args):
     server_url = f"http://{url}:{port}"
     client = FtRestClient(server_url)
 
-    # Call commands without arguments
-    if args["command"] in COMMANDS_NO_ARGS:
-        client._call_command_noargs(args["command"])
+    m = [x for x, y in inspect.getmembers(client) if not x.startswith('_')]
+    command = args["command"]
+    if command not in m:
+        logger.error(f"Command {command} not defined")
+        return
 
-    if args["command"] in INFO_COMMANDS:
-        client._call_info(args["command"], args["command_arguments"])
+    print(getattr(client, command)(*args["command_arguments"]))
+
+    # Call commands without arguments
+    # if args["command"] in COMMANDS_NO_ARGS:
+    #     client._call_command_noargs(args["command"])
+
+    # if args["command"] in INFO_COMMANDS:
+    #     client._call_info(args["command"], args["command_arguments"])
 
 
 if __name__ == "__main__":
