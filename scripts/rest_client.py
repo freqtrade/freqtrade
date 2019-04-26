@@ -64,6 +64,35 @@ class FtRestClient():
     def _post(self, apipath, params: dict = None, data: dict = None):
         return self._call("POST", apipath, params=params, data=data)
 
+    def start(self):
+        """
+        Start the bot if it's in stopped state.
+        :returns: json object
+        """
+        return self._post("start")
+
+    def stop(self):
+        """
+        Stop the bot. Use start to restart
+        :returns: json object
+        """
+        return self._post("stop")
+
+    def stopbuy(self):
+        """
+        Stop buying (but handle sells gracefully).
+        use reload_conf to reset
+        :returns: json object
+        """
+        return self._post("stopbuy")
+
+    def reload_conf(self):
+        """
+        Reload configuration
+        :returns: json object
+        """
+        return self._post("reload_conf")
+
     def balance(self):
         """
         get the account balance
