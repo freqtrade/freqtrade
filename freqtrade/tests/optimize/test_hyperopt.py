@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-from datetime import datetime
 import json
 import os
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -10,9 +10,9 @@ import pytest
 from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
-from freqtrade.optimize.hyperopt import Hyperopt, start, setup_configuration
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
-from freqtrade.resolvers import StrategyResolver, HyperOptResolver
+from freqtrade.optimize.hyperopt import Hyperopt, setup_configuration, start
+from freqtrade.resolvers import HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, patch_exchange
 from freqtrade.tests.optimize.test_backtesting import get_args
@@ -185,7 +185,6 @@ def test_start(mocker, default_conf, caplog) -> None:
         '--epochs', '5'
     ]
     args = get_args(args)
-    StrategyResolver({'strategy': 'DefaultStrategy'})
     start(args)
 
     import pprint
@@ -214,7 +213,6 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
         '--epochs', '5'
     ]
     args = get_args(args)
-    StrategyResolver({'strategy': 'DefaultStrategy'})
     with pytest.raises(DependencyException):
         start(args)
     assert log_has(
@@ -224,7 +222,6 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
 
 
 def test_loss_calculation_prefer_correct_trade_count(hyperopt) -> None:
-    StrategyResolver({'strategy': 'DefaultStrategy'})
 
     correct = hyperopt.calculate_loss(1, hyperopt.target_trades, 20)
     over = hyperopt.calculate_loss(1, hyperopt.target_trades + 100, 20)
