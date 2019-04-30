@@ -360,11 +360,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
@@ -425,11 +422,8 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'strategy_list' in config
     assert log_has('Using strategy list of 2 Strategies', caplog.record_tuples)
@@ -463,8 +457,8 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
     assert 'epochs' in config
     assert int(config['epochs']) == 10
-    assert log_has('Parameter --epochs detected ...', caplog.record_tuples)
-    assert log_has('Will run Hyperopt with for 10 epochs ...', caplog.record_tuples)
+    assert log_has('Parameter --epochs detected ... Will run Hyperopt with for 10 epochs ...',
+                   caplog.record_tuples)
 
     assert 'spaces' in config
     assert config['spaces'] == ['all']
