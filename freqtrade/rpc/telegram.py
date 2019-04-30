@@ -413,7 +413,9 @@ class Telegram(RPC):
 
         trade_id = update.message.text.replace('/forcesell', '').strip()
         try:
-            self._rpc_forcesell(trade_id)
+            msg = self._rpc_forcesell(trade_id)
+            self._send_msg('Forcesell Result: `{result}`'.format(**msg), bot=bot)
+
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 
