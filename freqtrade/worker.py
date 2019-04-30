@@ -71,7 +71,7 @@ class Worker(object):
         while True:
             state = self._worker(old_state=state)
             if state == State.RELOAD_CONF:
-                self.freqtrade = self._reconfigure()
+                self._reconfigure()
 
     def _worker(self, old_state: State, throttle_secs: Optional[float] = None) -> State:
         """
