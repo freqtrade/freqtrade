@@ -463,12 +463,15 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     with pytest.raises(RPCException, match=r'.*invalid argument*'):
         rpc._rpc_forcesell(None)
 
-    rpc._rpc_forcesell('all')
+    msg = rpc._rpc_forcesell('all')
+    assert msg == {'result': 'Created sell orders for all open trades.'}
 
     freqtradebot.create_trade()
-    rpc._rpc_forcesell('all')
+    msg = rpc._rpc_forcesell('all')
+    assert msg == {'result': 'Created sell orders for all open trades.'}
 
-    rpc._rpc_forcesell('1')
+    msg = rpc._rpc_forcesell('1')
+    assert msg == {'result': 'Created sell order for trade 1.'}
 
     freqtradebot.state = State.STOPPED
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
@@ -511,7 +514,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
         }
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
-    rpc._rpc_forcesell('2')
+    msg = rpc._rpc_forcesell('2')
+    assert msg == {'result': 'Created sell order for trade 2.'}
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
@@ -525,7 +529,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
             'side': 'sell'
         }
     )
-    rpc._rpc_forcesell('3')
+    msg = rpc._rpc_forcesell('3')
+    assert msg == {'result': 'Created sell order for trade 3.'}
     # status quo, no exchange calls
     assert cancel_order_mock.call_count == 2
 

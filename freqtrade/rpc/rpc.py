@@ -346,7 +346,7 @@ class RPC(object):
 
         return {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
 
-    def _rpc_forcesell(self, trade_id) -> None:
+    def _rpc_forcesell(self, trade_id) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -386,7 +386,7 @@ class RPC(object):
             for trade in Trade.get_open_trades():
                 _exec_forcesell(trade)
             Trade.session.flush()
-            return
+            return {'result': 'Created sell orders for all open trades.'}
 
         # Query for trade
         trade = Trade.query.filter(
@@ -401,6 +401,7 @@ class RPC(object):
 
         _exec_forcesell(trade)
         Trade.session.flush()
+        return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
         """
