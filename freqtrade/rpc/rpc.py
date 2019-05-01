@@ -401,7 +401,7 @@ class RPC(object):
 
         _exec_forcesell(trade)
         Trade.session.flush()
-        return {'result': f'Created sell orders for trade {trade_id}.'}
+        return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
         """
