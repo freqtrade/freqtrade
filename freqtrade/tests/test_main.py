@@ -7,10 +7,11 @@ import pytest
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
-from freqtrade.worker import Worker
+from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
 from freqtrade.state import State
 from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.worker import Worker
 
 
 def test_parse_args_backtesting(mocker) -> None:
@@ -107,24 +108,30 @@ def test_main_operational_exception(mocker, default_conf, caplog) -> None:
 def test_main_reload_conf(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cleanup', MagicMock())
-    mocker.patch('freqtrade.worker.Worker._worker', MagicMock(return_value=State.RELOAD_CONF))
+    # Simulate Running, reload, running workflow
+    worker_mock = MagicMock(side_effect=[State.RUNNING,
+                                         State.RELOAD_CONF,
+                                         State.RUNNING,
+                                         OperationalException("Oh snap!")])
+    mocker.patch('freqtrade.worker.Worker._worker', worker_mock)
     mocker.patch(
         'freqtrade.configuration.Configuration._load_config_file',
         lambda *args, **kwargs: default_conf
     )
+    reconfigure_mock = mocker.patch('freqtrade.main.Worker._reconfigure', MagicMock())
+
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
 
-    # Raise exception as side effect to avoid endless loop
-    reconfigure_mock = mocker.patch(
-        'freqtrade.main.Worker._reconfigure', MagicMock(side_effect=Exception)
-    )
-
+    args = Arguments(['-c', 'config.json.example'], '').get_parsed_arg()
+    worker = Worker(args=args, config=default_conf)
     with pytest.raises(SystemExit):
         main(['-c', 'config.json.example'])
 
-    assert reconfigure_mock.call_count == 1
     assert log_has('Using config: config.json.example ...', caplog.record_tuples)
+    assert worker_mock.call_count == 4
+    assert reconfigure_mock.call_count == 1
+    assert isinstance(worker.freqtrade, FreqtradeBot)
 
 
 def test_reconfigure(mocker, default_conf) -> None:

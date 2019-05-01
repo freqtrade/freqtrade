@@ -7,7 +7,7 @@ import os
 import sys
 from argparse import Namespace
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
@@ -16,7 +16,6 @@ from freqtrade import OperationalException, constants
 from freqtrade.exchange import is_exchange_supported, supported_exchanges
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
-
 
 logger = logging.getLogger(__name__)
 
@@ -95,14 +94,8 @@ class Configuration(object):
         # Load Common configuration
         config = self._load_common_config(config)
 
-        # Load Backtesting
-        config = self._load_backtesting_config(config)
-
-        # Load Edge
-        config = self._load_edge_config(config)
-
-        # Load Hyperopt
-        config = self._load_hyperopt_config(config)
+        # Load Optimize configurations
+        config = self._load_optimize_config(config)
 
         # Set runmode
         if not self.runmode:
@@ -216,25 +209,41 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
+    def _args_to_config(self, config: Dict[str, Any], argname: str,
+                        logstring: str, logfun: Optional[Callable] = None) -> None:
         """
-        Extract information for sys.argv and load Backtesting configuration
+        :param config: Configuration dictionary
+        :param argname: Argumentname in self.args - will be copied to config dict.
+        :param logstring: Logging String
+        :param logfun: logfun is applied to the configuration entry before passing
+                        that entry to the log string using .format().
+                        sample: logfun=len (prints the length of the found
+                        configuration instead of the content)
+        """
+        if argname in self.args and getattr(self.args, argname):
+
+            config.update({argname: getattr(self.args, argname)})
+            if logfun:
+                logger.info(logstring.format(logfun(config[argname])))
+            else:
+                logger.info(logstring.format(config[argname]))
+
+    def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load Optimize configuration
         :return: configuration as dictionary
         """
 
         # This will override the strategy configuration
-        if 'ticker_interval' in self.args and self.args.ticker_interval:
-            config.update({'ticker_interval': self.args.ticker_interval})
-            logger.info('Parameter -i/--ticker-interval detected ...')
-            logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
+        self._args_to_config(config, argname='ticker_interval',
+                             logstring='Parameter -i/--ticker-interval detected ... '
+                             'Using ticker_interval: {} ...')
 
-        if 'live' in self.args and self.args.live:
-            config.update({'live': True})
-            logger.info('Parameter -l/--live detected ...')
+        self._args_to_config(config, argname='live',
+                             logstring='Parameter -l/--live detected ...')
 
-        if 'position_stacking' in self.args and self.args.position_stacking:
-            config.update({'position_stacking': True})
-            logger.info('Parameter --enable-position-stacking detected ...')
+        self._args_to_config(config, argname='position_stacking',
+                             logstring='Parameter --enable-position-stacking detected ...')
 
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
@@ -247,14 +256,12 @@ class Configuration(object):
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
-        if 'stake_amount' in self.args and self.args.stake_amount:
-            config.update({'stake_amount': self.args.stake_amount})
-            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
-                        config.get('stake_amount'))
+        self._args_to_config(config, argname='stake_amount',
+                             logstring='Parameter --stake_amount detected, '
+                             'overriding stake_amount to: {} ...')
 
-        if 'timerange' in self.args and self.args.timerange:
-            config.update({'timerange': self.args.timerange})
-            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+        self._args_to_config(config, argname='timerange',
+                             logstring='Parameter --timerange detected: {} ...')
 
         if 'datadir' in self.args and self.args.datadir:
             config.update({'datadir': self._create_datadir(config, self.args.datadir)})
@@ -262,38 +269,22 @@ class Configuration(object):
             config.update({'datadir': self._create_datadir(config, None)})
         logger.info('Using data folder: %s ...', config.get('datadir'))
 
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        self._args_to_config(config, argname='refresh_pairs',
+                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
-        if 'strategy_list' in self.args and self.args.strategy_list:
-            config.update({'strategy_list': self.args.strategy_list})
-            logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
+        self._args_to_config(config, argname='strategy_list',
+                             logstring='Using strategy list of {} Strategies', logfun=len)
 
-        if 'ticker_interval' in self.args and self.args.ticker_interval:
-            config.update({'ticker_interval': self.args.ticker_interval})
-            logger.info('Overriding ticker interval with Command line argument')
+        self._args_to_config(config, argname='ticker_interval',
+                             logstring='Overriding ticker interval with Command line argument')
 
-        if 'export' in self.args and self.args.export:
-            config.update({'export': self.args.export})
-            logger.info('Parameter --export detected: %s ...', self.args.export)
+        self._args_to_config(config, argname='export',
+                             logstring='Parameter --export detected: {} ...')
 
-        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
-            config.update({'exportfilename': self.args.exportfilename})
-            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
+        self._args_to_config(config, argname='exportfilename',
+                             logstring='Storing backtest results to {} ...')
 
-        return config
-
-    def _load_edge_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load Edge configuration
-        :return: configuration as dictionary
-        """
-
-        if 'timerange' in self.args and self.args.timerange:
-            config.update({'timerange': self.args.timerange})
-            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
-
+        # Edge section:
         if 'stoploss_range' in self.args and self.args.stoploss_range:
             txt_range = eval(self.args.stoploss_range)
             config['edge'].update({'stoploss_range_min': txt_range[0]})
@@ -301,48 +292,26 @@ class Configuration(object):
             config['edge'].update({'stoploss_range_step': txt_range[2]})
             logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
 
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        # Hyperopt section
+        self._args_to_config(config, argname='hyperopt',
+                             logstring='Using Hyperopt file {}')
 
-        return config
+        self._args_to_config(config, argname='epochs',
+                             logstring='Parameter --epochs detected ... '
+                             'Will run Hyperopt with for {} epochs ...'
+                             )
 
-    def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load Hyperopt configuration
-        :return: configuration as dictionary
-        """
+        self._args_to_config(config, argname='spaces',
+                             logstring='Parameter -s/--spaces detected: {}')
 
-        if "hyperopt" in self.args:
-            # Add the hyperopt file to use
-            config.update({'hyperopt': self.args.hyperopt})
+        self._args_to_config(config, argname='print_all',
+                             logstring='Parameter --print-all detected ...')
 
-        if 'epochs' in self.args and self.args.epochs:
-            config.update({'epochs': self.args.epochs})
-            logger.info('Parameter --epochs detected ...')
-            logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
+        self._args_to_config(config, argname='hyperopt_jobs',
+                             logstring='Parameter -j/--job-workers detected: {}')
 
-        if 'spaces' in self.args and self.args.spaces:
-            config.update({'spaces': self.args.spaces})
-            logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
-
-        if 'print_all' in self.args and self.args.print_all:
-            config.update({'print_all': self.args.print_all})
-            logger.info('Parameter --print-all detected: %s', config.get('print_all'))
-
-        if 'hyperopt_jobs' in self.args and self.args.hyperopt_jobs:
-            config.update({'hyperopt_jobs': self.args.hyperopt_jobs})
-            logger.info('Parameter -j/--job-workers detected: %s', config.get('hyperopt_jobs'))
-
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
-
-        if 'hyperopt_random_state' in self.args and self.args.hyperopt_random_state is not None:
-            config.update({'hyperopt_random_state': self.args.hyperopt_random_state})
-            logger.info("Parameter --random-state detected: %s",
-                        config.get('hyperopt_random_state'))
-
+        self._args_to_config(config, argname='hyperopt_random_state',
+                             logstring='Parameter --random-state detected: {}')
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:

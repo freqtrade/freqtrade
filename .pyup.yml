@@ -22,7 +22,7 @@ requirements:
   - requirements.txt
   - requirements-dev.txt
   - requirements-plot.txt
-  - requirements-pi.txt
+  - requirements-common.txt
 
 
 # configure the branch prefix the bot is using

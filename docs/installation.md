@@ -326,7 +326,7 @@ conda activate freqtrade
 conda install scipy pandas numpy
 
 sudo apt install libffi-dev
-python3 -m pip install -r requirements-pi.txt
+python3 -m pip install -r requirements-common.txt
 python3 -m pip install -e .
 ```
 

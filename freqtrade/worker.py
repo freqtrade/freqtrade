@@ -39,7 +39,7 @@ class Worker(object):
             logger.debug("sd_notify: READY=1")
             self._sd_notify.notify("READY=1")
 
-    def _init(self, reconfig: bool):
+    def _init(self, reconfig: bool) -> None:
         """
         Also called from the _reconfigure() method (with reconfig=True).
         """
@@ -63,17 +63,17 @@ class Worker(object):
         return self.freqtrade.state
 
     @state.setter
-    def state(self, value: State):
+    def state(self, value: State) -> None:
         self.freqtrade.state = value
 
-    def run(self):
+    def run(self) -> None:
         state = None
         while True:
             state = self._worker(old_state=state)
             if state == State.RELOAD_CONF:
-                self.freqtrade = self._reconfigure()
+                self._reconfigure()
 
-    def _worker(self, old_state: State, throttle_secs: Optional[float] = None) -> State:
+    def _worker(self, old_state: Optional[State], throttle_secs: Optional[float] = None) -> State:
         """
         Trading routine that must be run at each loop
         :param old_state: the previous service state from the previous call
@@ -148,7 +148,7 @@ class Worker(object):
 #            state_changed = True
         return state_changed
 
-    def _reconfigure(self):
+    def _reconfigure(self) -> None:
         """
         Cleans up current freqtradebot instance, reloads the configuration and
         replaces it with the new instance
@@ -174,7 +174,7 @@ class Worker(object):
             logger.debug("sd_notify: READY=1")
             self._sd_notify.notify("READY=1")
 
-    def exit(self):
+    def exit(self) -> None:
         # Tell systemd that we are exiting now
         if self._sd_notify:
             logger.debug("sd_notify: STOPPING=1")

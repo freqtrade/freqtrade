@@ -23,7 +23,7 @@ from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import log_has, patch_exchange
+from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
 
 
 def get_args(args) -> List[str]:
@@ -190,7 +190,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog.record_tuples)
 
     assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
@@ -242,11 +242,8 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
@@ -853,8 +850,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
     start(args)
     # check the logs, that will contain the backtest result
     exists = [
-        'Parameter -i/--ticker-interval detected ...',
-        'Using ticker_interval: 1m ...',
+        'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
@@ -912,8 +908,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
 
     # check the logs, that will contain the backtest result
     exists = [
-        'Parameter -i/--ticker-interval detected ...',
-        'Using ticker_interval: 1m ...',
+        'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
         'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
