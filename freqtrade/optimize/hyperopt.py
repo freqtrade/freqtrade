@@ -204,7 +204,11 @@ class Hyperopt(Backtesting):
         trade_count = len(results.index)
         trade_duration = results.trade_duration.mean()
 
-        if trade_count == 0:
+        # If this evaluation contains too short small amount of trades
+        # to be interesting -- consider it as 'bad' (assign max. loss value)
+        # in order to cast this hyperspace point away from optimization
+        # path. We do not want to optimize 'hodl' strategies.
+        if trade_count < self.config['hyperopt_min_trades']:
             return {
                 'loss': MAX_LOSS,
                 'params': params,

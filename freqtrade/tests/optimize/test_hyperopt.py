@@ -410,6 +410,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     default_conf.update({'config': 'config.json.example'})
     default_conf.update({'timerange': None})
     default_conf.update({'spaces': 'all'})
+    default_conf.update({'hyperopt_min_trades': 1})
 
     trades = [
         ('POWR/BTC', 0.023117, 0.000233, 100)

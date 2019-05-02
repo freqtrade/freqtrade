@@ -312,6 +312,10 @@ class Configuration(object):
 
         self._args_to_config(config, argname='hyperopt_random_state',
                              logstring='Parameter --random-state detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_min_trades',
+                             logstring='Parameter --min-trades detected: {}')
+
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:

@@ -325,6 +325,15 @@ class Arguments(object):
             type=Arguments.check_int_positive,
             metavar='INT',
         )
+        parser.add_argument(
+            '--min-trades',
+            help="Set minimal desired number of trades for evaluations in the hyperopt "
+                 "optimization path (default: 1).",
+            dest='hyperopt_min_trades',
+            default=1,
+            type=Arguments.check_int_positive,
+            metavar='INT',
+        )
 
     def _build_subcommands(self) -> None:
         """
