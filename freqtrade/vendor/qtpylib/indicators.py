@@ -260,7 +260,7 @@ def rolling_std(series, window=200, min_periods=None):
     else:
         try:
             return series.rolling(window=window, min_periods=min_periods).std()
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             return pd.Series(series).rolling(window=window, min_periods=min_periods).std()
 
 # ---------------------------------------------
@@ -273,7 +273,7 @@ def rolling_mean(series, window=200, min_periods=None):
     else:
         try:
             return series.rolling(window=window, min_periods=min_periods).mean()
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             return pd.Series(series).rolling(window=window, min_periods=min_periods).mean()
 
 # ---------------------------------------------
@@ -283,7 +283,7 @@ def rolling_min(series, window=14, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
         return series.rolling(window=window, min_periods=min_periods).min()
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
 
 
@@ -293,7 +293,7 @@ def rolling_max(series, window=14, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
         return series.rolling(window=window, min_periods=min_periods).min()
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         return pd.Series(series).rolling(window=window, min_periods=min_periods).min()
 
 
@@ -303,7 +303,7 @@ def rolling_weighted_mean(series, window=200, min_periods=None):
     min_periods = window if min_periods is None else min_periods
     try:
         return series.ewm(span=window, min_periods=min_periods).mean()
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         return pd.ewma(series, span=window, min_periods=min_periods)
 
 
@@ -366,7 +366,8 @@ def rolling_vwap(bars, window=200, min_periods=None):
                                       min_periods=min_periods).sum()
     right = volume.rolling(window=window, min_periods=min_periods).sum()
 
-    return pd.Series(index=bars.index, data=(left / right)).replace([np.inf, -np.inf], float('NaN')).ffill()
+    return pd.Series(index=bars.index, data=(left / right)
+                     ).replace([np.inf, -np.inf], float('NaN')).ffill()
 
 
 # ---------------------------------------------
@@ -460,7 +461,7 @@ def returns(series):
     try:
         res = (series / series.shift(1) -
                1).replace([np.inf, -np.inf], float('NaN'))
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         res = nans(len(series))
 
     return pd.Series(index=series.index, data=res)
@@ -471,8 +472,8 @@ def returns(series):
 def log_returns(series):
     try:
         res = np.log(series / series.shift(1)
-                    ).replace([np.inf, -np.inf], float('NaN'))
-    except Exception as e:
+                     ).replace([np.inf, -np.inf], float('NaN'))
+    except Exception as e:  # noqa: F841
         res = nans(len(series))
 
     return pd.Series(index=series.index, data=res)
@@ -483,9 +484,9 @@ def log_returns(series):
 def implied_volatility(series, window=252):
     try:
         logret = np.log(series / series.shift(1)
-                       ).replace([np.inf, -np.inf], float('NaN'))
+                        ).replace([np.inf, -np.inf], float('NaN'))
         res = numpy_rolling_std(logret, window) * np.sqrt(window)
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         res = nans(len(series))
 
     return pd.Series(index=series.index, data=res)
@@ -542,7 +543,10 @@ def stoch(df, window=14, d=3, k=3, fast=False):
     my_df['rolling_max'] = df['high'].rolling(window).max()
     my_df['rolling_min'] = df['low'].rolling(window).min()
 
-    my_df['fast_k'] = 100 * (df['close'] - my_df['rolling_min'])/(my_df['rolling_max'] - my_df['rolling_min'])
+    my_df['fast_k'] = (
+        100 * (df['close'] - my_df['rolling_min']) /
+        (my_df['rolling_max'] - my_df['rolling_min'])
+    )
     my_df['fast_d'] = my_df['fast_k'].rolling(d).mean()
 
     if fast:
