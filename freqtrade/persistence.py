@@ -213,6 +213,23 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
+    def to_json(self) -> Dict[str, Any]:
+
+        return {
+            'trade_id': self.id,
+            'pair': self.pair,
+            'date': arrow.get(self.open_date),
+            'open_rate': self.open_rate,
+            'close_rate': self.close_rate,
+            'amount': round(self.amount, 8),
+            'stake_amount': round(self.stake_amount, 8),
+            'stop_loss': self.stop_loss,
+            'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
+            'initial_stop_loss': self.initial_stop_loss,
+            'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100)
+            if self.initial_stop_loss_pct else None,
+        }
+
     def adjust_min_max_rates(self, current_price: float):
         """
         Adjust the max_rate and min_rate.
