@@ -47,12 +47,15 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
 
     freqtradebot.create_trade()
     results = rpc._rpc_trade_status()
-
+    print(results[0])
     assert {
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
-        'date': ANY,
+        'open_date': ANY,
+        'open_date_hum': ANY,
+        'close_date': None,
+        'close_date_hum': None,
         'open_rate': 1.099e-05,
         'close_rate': None,
         'current_rate': 1.098e-05,
@@ -78,7 +81,10 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
-        'date': ANY,
+        'open_date': ANY,
+        'open_date_hum': ANY,
+        'close_date': None,
+        'close_date_hum': None,
         'open_rate': 1.099e-05,
         'close_rate': None,
         'current_rate': ANY,
