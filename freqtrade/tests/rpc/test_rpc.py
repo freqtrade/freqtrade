@@ -47,7 +47,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
 
     freqtradebot.create_trade()
     results = rpc._rpc_trade_status()
-    print(results[0])
     assert {
         'trade_id': 1,
         'pair': 'ETH/BTC',
