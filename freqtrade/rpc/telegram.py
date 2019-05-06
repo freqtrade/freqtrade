@@ -193,14 +193,11 @@ class Telegram(RPC):
 
         try:
             results = self._rpc_trade_status()
-            # pre format data
-            for result in results:
-                result['date'] = result['date'].humanize()
 
             messages = []
             for r in results:
                 lines = [
-                    "*Trade ID:* `{trade_id}` `(since {date})`",
+                    "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Open Rate:* `{open_rate:.8f}`",
