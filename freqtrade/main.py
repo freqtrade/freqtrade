@@ -22,21 +22,28 @@ def main(sysargv: List[str]) -> None:
     This function will initiate the bot and start the trading loop.
     :return: None
     """
-    arguments = Arguments(
-        sysargv,
-        'Free, open source crypto trading bot'
-    )
-    args: Namespace = arguments.get_parsed_arg()
-
-    # A subcommand has been issued.
-    # Means if Backtesting or Hyperopt have been called we exit the bot
-    if hasattr(args, 'func'):
-        args.func(args)
-        return
-
-    worker = None
-    return_code = 1
     try:
+        worker = None
+        return_code = 1
+
+        # check min. python version
+        if sys.version_info < (3, 6):
+            raise SystemError("Freqtrade requires Python version >= 3.6")
+
+        arguments = Arguments(
+            sysargv,
+            'Free, open source crypto trading bot'
+        )
+        args: Namespace = arguments.get_parsed_arg()
+
+        # A subcommand has been issued.
+        # Means if Backtesting or Hyperopt have been called we exit the bot
+        if hasattr(args, 'func'):
+            args.func(args)
+            # TODO: fetch return_code as returned by the command function here
+            return_code = 0
+            return
+
         # Load and run worker
         worker = Worker(args)
         worker.run()
@@ -47,8 +54,8 @@ def main(sysargv: List[str]) -> None:
     except OperationalException as e:
         logger.error(str(e))
         return_code = 2
-    except BaseException:
-        logger.exception('Fatal exception!')
+    except BaseException as e:
+        logger.exception('Fatal exception! ' + str(e))
     finally:
         if worker:
             worker.exit()
