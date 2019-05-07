@@ -113,12 +113,11 @@ def heikinashi(bars):
                         bars['low'] + bars['close']) / 4
 
     # ha open
-    bars.loc[0:1, 'ha_open'] = (bars['open'].values[0] + bars['close'].values[0]) / 2
-    prev_open = bars[:1]['ha_open'].values[0]
-    for idx, _ in bars[1:][['ha_open', 'ha_close']].iterrows():
-        loc = bars.index.get_loc(idx)
-        prev_open = (prev_open + bars['ha_close'].values[loc - 1]) / 2
-        bars.loc[loc:loc + 1, 'ha_open'] = prev_open
+    for i in range(0, len(bars)):
+        bars.at[i, 'ha_open'] = (
+                (bars.at[0, 'open'] if i == 0 else bars.at[i - 1, 'ha_open']) +
+                (bars.at[0, 'close'] if i == 0 else bars.at[i - 1, 'ha_close'])
+            ) / 2
 
     bars['ha_high'] = bars.loc[:, ['high', 'ha_open', 'ha_close']].max(axis=1)
     bars['ha_low'] = bars.loc[:, ['low', 'ha_open', 'ha_close']].min(axis=1)
