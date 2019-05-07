@@ -237,13 +237,17 @@ docker run -d \
   --name freqtrade \
   -v /etc/localtime:/etc/localtime:ro \
   -v ~/.freqtrade/config.json:/freqtrade/config.json \
+  -v ~/.freqtrade/user_data/:/freqtrade/user_data \
   -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
-  freqtrade --db-url sqlite:///tradesv3.sqlite
+  freqtrade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
 ```
 
 !!! Note
     db-url defaults to `sqlite:///tradesv3.sqlite` but it defaults to `sqlite://` if `dry_run=True` is being used.
     To override this behaviour use a custom db-url value: i.e.: `--db-url sqlite:///tradesv3.dryrun.sqlite`
+
+!!! Note
+    All command line arguments can be added to the end of the `docker run` command.
 
 ### 6. Monitor your Docker instance
 
