@@ -100,28 +100,17 @@ class RPC(object):
                 current_profit = trade.calc_profit_percent(current_rate)
                 fmt_close_profit = (f'{round(trade.close_profit * 100, 2):.2f}%'
                                     if trade.close_profit else None)
-                results.append(dict(
-                    trade_id=trade.id,
-                    pair=trade.pair,
+                trade_dict = trade.to_json()
+                trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
-                    date=arrow.get(trade.open_date),
-                    open_rate=trade.open_rate,
-                    close_rate=trade.close_rate,
-                    current_rate=current_rate,
-                    amount=round(trade.amount, 8),
-                    stake_amount=round(trade.stake_amount, 8),
                     close_profit=fmt_close_profit,
+                    current_rate=current_rate,
                     current_profit=round(current_profit * 100, 2),
-                    stop_loss=trade.stop_loss,
-                    stop_loss_pct=(trade.stop_loss_pct * 100)
-                    if trade.stop_loss_pct else None,
-                    initial_stop_loss=trade.initial_stop_loss,
-                    initial_stop_loss_pct=(trade.initial_stop_loss_pct * 100)
-                    if trade.initial_stop_loss_pct else None,
                     open_order='({} {} rem={:.8f})'.format(
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
                 ))
+                results.append(trade_dict)
             return results
 
     def _rpc_status_table(self) -> DataFrame:
