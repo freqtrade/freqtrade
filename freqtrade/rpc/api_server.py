@@ -335,8 +335,7 @@ class ApiServer(RPC):
         asset = request.json.get("pair")
         price = request.json.get("price", None)
         trade = self._rpc_forcebuy(asset, price)
-        # TODO: Returns a trade, we need to jsonify that.
-        return self.rest_dump(trade)
+        return self.rest_dump(trade.to_json())
 
     @safe_rpc
     def _forcesell(self):
