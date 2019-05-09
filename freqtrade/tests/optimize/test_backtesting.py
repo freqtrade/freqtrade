@@ -33,7 +33,7 @@ def get_args(args) -> List[str]:
 def trim_dictlist(dict_list, num):
     new = {}
     for pair, pair_data in dict_list.items():
-        new[pair] = pair_data[num:]
+        new[pair] = pair_data[num:].reset_index()
     return new
 
 
@@ -708,7 +708,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
     data = trim_dictlist(data, -500)
 
     # Remove data for one pair from the beginning of the data
-    data[pair] = data[pair][tres:]
+    data[pair] = data[pair][tres:].reset_index()
     # We need to enable sell-signal - otherwise it sells on ROI!!
     default_conf['experimental'] = {"use_sell_signal": True}
     default_conf['ticker_interval'] = '5m'
