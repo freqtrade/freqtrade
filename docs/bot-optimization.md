@@ -345,6 +345,30 @@ if self.wallets:
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
 
+### Print created dataframe
+
+To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
+You may also want to print the pair so it's clear what data is currently shown.
+
+``` python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            #>> whatever condition<<<
+        ),
+        'buy'] = 1
+
+    # Print the Analyzed pair
+    print(f"result for {metadata['pair']}")
+
+    # Inspect the last 5 rows
+    print(dataframe.tail())
+
+    return dataframe
+```
+
+Printing more than a few rows is possible (don't use `.tail()`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
+
 ### Where is the default strategy?
 
 The default buy strategy is located in the file
