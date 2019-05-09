@@ -367,7 +367,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     return dataframe
 ```
 
-Printing more than a few rows is possible (don't use `.tail()`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
+Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
 ### Where is the default strategy?
 
