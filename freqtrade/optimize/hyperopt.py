@@ -33,6 +33,7 @@ from freqtrade.resolvers import HyperOptResolver
 logger = logging.getLogger(__name__)
 
 
+INITIAL_POINTS = 30
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
 TRIALSDATA_PICKLE = os.path.join('user_data', 'hyperopt_results.pickle')
@@ -120,14 +121,20 @@ class Hyperopt(Backtesting):
         """
         Log results if it is better than any previous evaluation
         """
-        if self.config.get('print_all', False) or results['loss'] < self.current_best_loss:
-            current = results['current_tries']
+        print_all = self.config.get('print_all', False)
+        if print_all or results['loss'] < self.current_best_loss:
+            # Output human-friendly index here (starting from 1)
+            current = results['current_tries'] + 1
             total = results['total_tries']
             res = results['result']
             loss = results['loss']
             self.current_best_loss = results['loss']
-            log_msg = f'\n{current:5d}/{total}: {res}. Loss {loss:.5f}'
-            print(log_msg)
+            log_msg = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
+            log_msg = f'*{log_msg}' if results['initial_point'] else f' {log_msg}'
+            if print_all:
+                print(log_msg)
+            else:
+                print('\n' + log_msg)
         else:
             print('.', end='')
             sys.stdout.flush()
@@ -228,13 +235,13 @@ class Hyperopt(Backtesting):
         Return the format result in a string
         """
         trades = len(results.index)
-        avg_profit = results.profit_percent.mean() * 100.0
+        avg_profit = results.profit_percent.mean()
         total_profit = results.profit_abs.sum()
         stake_cur = self.config['stake_currency']
         profit = results.profit_percent.sum()
         duration = results.trade_duration.mean()
 
-        return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
+        return (f'{trades:6d} trades. Avg profit {avg_profit: 9.6f}%. '
                 f'Total profit {total_profit: 11.8f} {stake_cur} '
                 f'({profit:.4f}Σ%). Avg duration {duration:5.1f} mins.')
 
@@ -243,7 +250,7 @@ class Hyperopt(Backtesting):
             self.hyperopt_space(),
             base_estimator="ET",
             acq_optimizer="auto",
-            n_initial_points=30,
+            n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.config.get('hyperopt_random_state', None)
         )
@@ -301,9 +308,11 @@ class Hyperopt(Backtesting):
 
                     self.trials += f_val
                     for j in range(jobs):
+                        current = i * jobs + j
                         self.log_results({
                             'loss': f_val[j]['loss'],
-                            'current_tries': i * jobs + j,
+                            'current_tries': current,
+                            'initial_point': current < INITIAL_POINTS,
                             'total_tries': self.total_tries,
                             'result': f_val[j]['result'],
                         })
