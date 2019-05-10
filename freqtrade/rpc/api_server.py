@@ -26,10 +26,6 @@ class ArrowJSONEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-app = Flask(__name__)
-app.json_encoder = ArrowJSONEncoder
-
-
 class ApiServer(RPC):
     """
     This class runs api server and provides rpc.rpc functionality to it
@@ -58,6 +54,9 @@ class ApiServer(RPC):
         super().__init__(freqtrade)
 
         self._config = freqtrade.config
+        self.app = Flask(__name__)
+
+        self.app.json_encoder = ArrowJSONEncoder
 
         # Register application handling
         self.register_rest_other()
@@ -90,8 +89,8 @@ class ApiServer(RPC):
         Registers flask app URLs that are not calls to functionality in rpc.rpc.
         :return:
         """
-        app.register_error_handler(404, self.page_not_found)
-        app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
+        self.app.register_error_handler(404, self.page_not_found)
+        self.app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
 
     def register_rest_rpc_urls(self):
         """
@@ -102,29 +101,30 @@ class ApiServer(RPC):
         :return:
         """
         # Actions to control the bot
-        app.add_url_rule('/start', 'start', view_func=self._start, methods=['POST'])
-        app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['POST'])
-        app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['POST'])
-        app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
-                         methods=['POST'])
+        self.app.add_url_rule('/start', 'start', view_func=self._start, methods=['POST'])
+        self.app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['POST'])
+        self.app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['POST'])
+        self.app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
+                              methods=['POST'])
         # Info commands
-        app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
-        app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
-        app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
-        app.add_url_rule('/edge', 'edge', view_func=self._edge, methods=['GET'])
-        app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
-        app.add_url_rule('/performance', 'performance', view_func=self._performance,
-                         methods=['GET'])
-        app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
-        app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
+        self.app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
+        self.app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
+        self.app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
+        self.app.add_url_rule('/edge', 'edge', view_func=self._edge, methods=['GET'])
+        self.app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
+        self.app.add_url_rule('/performance', 'performance', view_func=self._performance,
+                              methods=['GET'])
+        self.app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
+        self.app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
 
         # Combined actions and infos
-        app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist,
-                         methods=['GET', 'POST'])
-        app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
-                         methods=['GET'])
-        app.add_url_rule('/forcebuy', 'forcebuy', view_func=self._forcebuy, methods=['POST'])
-        app.add_url_rule('/forcesell', 'forcesell', view_func=self._forcesell, methods=['POST'])
+        self.app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist,
+                              methods=['GET', 'POST'])
+        self.app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
+                              methods=['GET'])
+        self.app.add_url_rule('/forcebuy', 'forcebuy', view_func=self._forcebuy, methods=['POST'])
+        self.app.add_url_rule('/forcesell', 'forcesell', view_func=self._forcesell,
+                              methods=['POST'])
 
         # TODO: Implement the following
         # help (?)
@@ -143,12 +143,12 @@ class ApiServer(RPC):
         if not IPv4Address(rest_ip).is_loopback:
             logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
             logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
-                        "e.g 127.0.0.1 in config.json")
+                           "e.g 127.0.0.1 in config.json")
 
         # Run the Server
         logger.info('Starting Local Rest Server')
         try:
-            app.run(host=rest_ip, port=rest_port)
+            self.app.run(host=rest_ip, port=rest_port)
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
         logger.info('Starting Local Rest Server_end')
