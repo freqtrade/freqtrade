@@ -90,7 +90,6 @@ class ApiServer(RPC):
         :return:
         """
         self.app.register_error_handler(404, self.page_not_found)
-        self.app.add_url_rule('/', 'hello', view_func=self.hello, methods=['GET'])
 
     def register_rest_rpc_urls(self):
         """
@@ -160,24 +159,6 @@ class ApiServer(RPC):
             'reason': '''There's no API call for %s''' % request.base_url,
             'code': 404
         }), 404
-
-    def hello(self):
-        """
-        None critical but helpful default index page.
-
-        That lists URLs added to the flask server.
-        This may be deprecated at any time.
-        :return: index.html
-        """
-        rest_cmds = ('Commands implemented: <br>'
-                     '<a href=/daily?timescale=7>Show 7 days of stats</a><br>'
-                     '<a href=/stop>Stop the Trade thread</a><br>'
-                     '<a href=/start>Start the Traded thread</a><br>'
-                     '<a href=/profit>Show profit summary</a><br>'
-                     '<a href=/status_table>Show status table - Open trades</a><br>'
-                     '<a href=/paypal> 404 page does not exist</a><br>'
-                     )
-        return rest_cmds
 
     def _start(self):
         """
