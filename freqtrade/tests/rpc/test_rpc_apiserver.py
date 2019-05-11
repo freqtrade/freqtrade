@@ -12,9 +12,10 @@ from freqtrade.tests.conftest import get_patched_freqtradebot, patch_apiserver
 
 
 @pytest.fixture
-def client(default_conf, mocker):
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
-    yield apiserver.app.test_client()
+def botclient(default_conf, mocker):
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    apiserver = ApiServer(ftbot)
+    yield ftbot, apiserver.app.test_client()
     # Cleanup ... ?
 
 
@@ -23,19 +24,32 @@ def response_success_assert(response):
     assert response.content_type == "application/json"
 
 
-def test_start(client):
+def test_api_stop_workflow(botclient):
+    ftbot, client = botclient
+    assert ftbot.state == State.RUNNING
+    rc = client.post("/stop")
+    response_success_assert(rc)
+    assert rc.json == {'status': 'stopping trader ...'}
+    assert ftbot.state == State.STOPPED
+
+    # Stop bot again
+    rc = client.post("/stop")
+    response_success_assert(rc)
+    assert rc.json == {'status': 'already stopped'}
+
+    # Start bot
+    rc = client.post("/start")
+    response_success_assert(rc)
+    assert rc.json == {'status': 'starting trader ...'}
+    assert ftbot.state == State.RUNNING
+
+    # Call start again
     rc = client.post("/start")
     response_success_assert(rc)
     assert rc.json == {'status': 'already running'}
 
 
-def test_stop(client):
-    rc = client.post("/stop")
-    response_success_assert(rc)
-    assert rc.json == {'status': 'stopping trader ...'}
-
-
-def test__init__(default_conf, mocker):
+def test_api__init__(default_conf, mocker):
     """
     Test __init__() method
     """
@@ -46,33 +60,20 @@ def test__init__(default_conf, mocker):
     assert apiserver._config == default_conf
 
 
-def test_start_endpoint(default_conf, mocker):
-    """Test /start endpoint"""
-    patch_apiserver(mocker)
-    bot = get_patched_freqtradebot(mocker, default_conf)
-    apiserver = ApiServer(bot)
+def test_api_reloadconf(botclient):
+    ftbot, client = botclient
 
-    bot.state = State.STOPPED
-    assert bot.state == State.STOPPED
-    result = apiserver.start()
-    assert result == '{"status": "starting trader ..."}'
-    assert bot.state == State.RUNNING
-
-    result = apiserver.start()
-    assert result == '{"status": "already running"}'
+    rc = client.post("/reload_conf")
+    response_success_assert(rc)
+    assert rc.json == {'status': 'reloading config ...'}
+    assert ftbot.state == State.RELOAD_CONF
 
 
-def test_stop_endpoint(default_conf, mocker):
-    """Test /stop endpoint"""
-    patch_apiserver(mocker)
-    bot = get_patched_freqtradebot(mocker, default_conf)
-    apiserver = ApiServer(bot)
+def test_api_stopbuy(botclient):
+    ftbot, client = botclient
+    assert ftbot.config['max_open_trades'] != 0
 
-    bot.state = State.RUNNING
-    assert bot.state == State.RUNNING
-    result = apiserver.stop()
-    assert result == '{"status": "stopping trader ..."}'
-    assert bot.state == State.STOPPED
-
-    result = apiserver.stop()
-    assert result == '{"status": "already stopped"}'
+    rc = client.post("/stopbuy")
+    response_success_assert(rc)
+    assert rc.json == {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
+    assert ftbot.config['max_open_trades'] == 0
