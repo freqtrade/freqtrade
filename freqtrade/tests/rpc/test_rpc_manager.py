@@ -135,3 +135,32 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
     rpc_manager.startup_messages(default_conf,  freqtradebot.pairlists)
     assert telegram_mock.call_count == 3
     assert "Dry run is enabled." in telegram_mock.call_args_list[0][0][0]['status']
+
+
+def test_init_apiserver_disabled(mocker, default_conf, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    run_mock = MagicMock()
+    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', run_mock)
+    default_conf['telegram']['enabled'] = False
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
+
+    assert not log_has('Enabling rpc.api_server', caplog.record_tuples)
+    assert rpc_manager.registered_modules == []
+    assert run_mock.call_count == 0
+
+
+def test_init_apiserver_enabled(mocker, default_conf, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    run_mock = MagicMock()
+    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', run_mock)
+
+    default_conf["telegram"]["enabled"] = False
+    default_conf["api_server"] = {"enabled": True,
+                                  "listen_ip_address": "127.0.0.1",
+                                  "listen_port": "8080"}
+    rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
+
+    assert log_has('Enabling rpc.api_server', caplog.record_tuples)
+    assert len(rpc_manager.registered_modules) == 1
+    assert 'apiserver' in [mod.name for mod in rpc_manager.registered_modules]
+    assert run_mock.call_count == 1

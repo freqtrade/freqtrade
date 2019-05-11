@@ -143,15 +143,6 @@ def patch_coinmarketcap(mocker) -> None:
     )
 
 
-def patch_apiserver(mocker) -> None:
-    mocker.patch.multiple(
-        'freqtrade.rpc.api_server.ApiServer',
-        run=MagicMock(),
-        register_rest_other=MagicMock(),
-        register_rest_rpc_urls=MagicMock(),
-    )
-
-
 @pytest.fixture(scope="function")
 def default_conf():
     """ Returns validated configuration suitable for most tests """

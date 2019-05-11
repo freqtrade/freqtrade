@@ -10,15 +10,14 @@ import pytest
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.state import State
-from freqtrade.tests.conftest import (get_patched_freqtradebot,
-                                      patch_apiserver, patch_get_signal)
+from freqtrade.tests.conftest import (get_patched_freqtradebot, patch_get_signal)
 
 
 @pytest.fixture
 def botclient(default_conf, mocker):
     default_conf.update({"api_server": {"enabled": True,
-                                       "listen_ip_address": "127.0.0.1",
-                                       "listen_port": "8080"}})
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": "8080"}})
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
     apiserver = ApiServer(ftbot)
