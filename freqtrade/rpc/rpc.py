@@ -276,11 +276,12 @@ class RPC(object):
                 rate = 1.0
             else:
                 try:
-                    if coin == 'USDT':
-                        rate = 1.0 / self._freqtrade.get_sell_rate('BTC/USDT', False)
+                    if coin in('USDT', 'USD', 'EUR'):
+                        rate = 1.0 / self._freqtrade.get_sell_rate('BTC/' + coin, False)
                     else:
                         rate = self._freqtrade.get_sell_rate(coin + '/BTC', False)
                 except (TemporaryError, DependencyException):
+                    logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             est_btc: float = rate * balance['total']
             total = total + est_btc
