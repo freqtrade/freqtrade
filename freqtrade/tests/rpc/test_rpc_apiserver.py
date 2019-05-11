@@ -2,18 +2,23 @@
 Unit test file for rpc/api_server.py
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
+from freqtrade.__init__ import __version__
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.state import State
-from freqtrade.tests.conftest import get_patched_freqtradebot, patch_apiserver
+from freqtrade.tests.conftest import get_patched_freqtradebot, patch_apiserver, patch_get_signal
 
 
 @pytest.fixture
 def botclient(default_conf, mocker):
+    default_conf.update({"api_server":{"enabled": True,
+                                       "listen_ip_address": "127.0.0.1",
+                                       "listen_port": "8080"}})
     ftbot = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
     apiserver = ApiServer(ftbot)
     yield ftbot, apiserver.app.test_client()
     # Cleanup ... ?
@@ -79,6 +84,14 @@ def test_api_stopbuy(botclient):
     assert ftbot.config['max_open_trades'] == 0
 
 
+def test_api_version(botclient):
+    ftbot, client = botclient
+
+    rc = client.get("/version")
+    response_success_assert(rc)
+    assert rc.json == {"version": __version__}
+
+
 def test_api_balance(botclient, mocker, rpc_balance):
     ftbot, client = botclient
 
@@ -114,3 +127,27 @@ def test_api_balance(botclient, mocker, rpc_balance):
         'pending': 0.0,
         'est_btc': 12.0,
     }
+
+
+def test_api_count(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client.get("/count")
+    response_success_assert(rc)
+
+    assert rc.json["current"] == 0
+    assert rc.json["max"] == 1.0
+
+    # Create some test data
+    ftbot.create_trade()
+    rc = client.get("/count")
+    response_success_assert(rc)
+    assert rc.json["current"] == 1.0
+    assert rc.json["max"] == 1.0
