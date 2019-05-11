@@ -10,7 +10,7 @@ import arrow
 import pytest
 from telegram import Chat, Message, Update
 
-from freqtrade import constants
+from freqtrade import constants, persistence
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
@@ -96,7 +96,7 @@ def patch_freqtradebot(mocker, config) -> None:
     :return: None
     """
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
+    persistence.init(config)
     patch_exchange(mocker, None)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
@@ -111,6 +111,15 @@ def get_patched_worker(mocker, config) -> Worker:
     patch_freqtradebot(mocker, config)
     return Worker(args=None, config=config)
 
+
+def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
+    """
+    :param mocker: mocker to patch IStrategy class
+    :param value: which value IStrategy.get_signal() must return
+    :return: None
+    """
+    freqtrade.strategy.get_signal = lambda e, s, t: value
+    freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 @pytest.fixture(autouse=True)
 def patch_coinmarketcap(mocker) -> None:

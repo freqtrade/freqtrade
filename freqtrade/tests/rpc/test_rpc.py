@@ -14,8 +14,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from freqtrade.tests.conftest import patch_exchange
-from freqtrade.tests.test_freqtradebot import patch_get_signal
+from freqtrade.tests.conftest import patch_exchange, patch_get_signal
 
 
 # Functions for recurrent object patching
