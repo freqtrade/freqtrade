@@ -191,14 +191,28 @@ If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
 `stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
+Syntax for Strategy:
+
 ```python
-"order_types": {
+order_types = {
     "buy": "limit",
     "sell": "limit",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60
-},
+}
+```
+
+Configuration:
+
+```json
+"order_types": {
+    "buy": "limit",
+    "sell": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": false,
+    "stoploss_on_exchange_interval": 60
+}
 ```
 
 !!! Note
