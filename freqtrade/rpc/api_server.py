@@ -130,9 +130,7 @@ class ApiServer(RPC):
         # help (?)
 
     def run(self):
-        """ Method that runs flask app in its own thread forever """
-
-        """
+        """ Method that runs flask app in its own thread forever.
         Section to handle configuration and running of the Rest server
         also to check and warn if not bound to a loopback, warn on security risk.
         """
@@ -152,11 +150,6 @@ class ApiServer(RPC):
         except Exception:
             logger.exception("Api server failed to start, exception message is:")
         logger.info('Starting Local Rest Server_end')
-
-    """
-    Define the application methods here, called by app.add_url_rule
-    each Telegram command should have a like local substitute
-    """
 
     def page_not_found(self, error):
         """
