@@ -1,5 +1,6 @@
 import logging
 import threading
+from datetime import datetime, date
 from ipaddress import IPv4Address
 from typing import Dict
 
@@ -18,6 +19,10 @@ class ArrowJSONEncoder(JSONEncoder):
         try:
             if isinstance(obj, Arrow):
                 return obj.for_json()
+            elif isinstance(obj, date):
+                return obj.strftime("%Y-%m-%d")
+            elif isinstance(obj, datetime):
+                return obj.strftime("%Y-%m-%d %H:%M:%S")
             iterable = iter(obj)
         except TypeError:
             pass

@@ -2,6 +2,7 @@
 Unit test file for rpc/api_server.py
 """
 
+from datetime import datetime
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -9,12 +10,13 @@ import pytest
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.state import State
-from freqtrade.tests.conftest import get_patched_freqtradebot, patch_apiserver, patch_get_signal
+from freqtrade.tests.conftest import (get_patched_freqtradebot,
+                                      patch_apiserver, patch_get_signal)
 
 
 @pytest.fixture
 def botclient(default_conf, mocker):
-    default_conf.update({"api_server":{"enabled": True,
+    default_conf.update({"api_server": {"enabled": True,
                                        "listen_ip_address": "127.0.0.1",
                                        "listen_port": "8080"}})
     ftbot = get_patched_freqtradebot(mocker, default_conf)
@@ -163,3 +165,19 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     response_success_assert(rc)
     assert rc.json["current"] == 1.0
     assert rc.json["max"] == 1.0
+
+
+def test_api_daily(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client.get("/daily")
+    response_success_assert(rc)
+    assert len(rc.json) == 7
+    assert rc.json[0][0] == str(datetime.utcnow().date())
