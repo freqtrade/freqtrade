@@ -970,3 +970,39 @@ def edge_conf(default_conf):
     }
 
     return default_conf
+
+
+@pytest.fixture
+def rpc_balance():
+    return {
+        'BTC': {
+            'total': 12.0,
+            'free': 12.0,
+            'used': 0.0
+        },
+        'ETH': {
+            'total': 0.0,
+            'free': 0.0,
+            'used': 0.0
+        },
+        'USDT': {
+            'total': 10000.0,
+            'free': 10000.0,
+            'used': 0.0
+        },
+        'LTC': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0
+        },
+        'XRP': {
+            'total': 1.0,
+            'free': 1.0,
+            'used': 0.0
+            },
+        'EUR': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0
+        },
+    }

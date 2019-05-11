@@ -77,3 +77,40 @@ def test_api_stopbuy(botclient):
     response_success_assert(rc)
     assert rc.json == {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
     assert ftbot.config['max_open_trades'] == 0
+
+
+def test_api_balance(botclient, mocker, rpc_balance):
+    ftbot, client = botclient
+
+    def mock_ticker(symbol, refresh):
+        if symbol == 'BTC/USDT':
+            return {
+                'bid': 10000.00,
+                'ask': 10000.00,
+                'last': 10000.00,
+            }
+        elif symbol == 'XRP/BTC':
+            return {
+                'bid': 0.00001,
+                'ask': 0.00001,
+                'last': 0.00001,
+            }
+        return {
+            'bid': 0.1,
+            'ask': 0.1,
+            'last': 0.1,
+        }
+    mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
+
+    rc = client.get("/balance")
+    response_success_assert(rc)
+    assert "currencies" in rc.json
+    assert len(rc.json["currencies"]) == 5
+    assert rc.json['currencies'][0] == {
+        'currency': 'BTC',
+        'available': 12.0,
+        'balance': 12.0,
+        'pending': 0.0,
+        'est_btc': 12.0,
+    }
