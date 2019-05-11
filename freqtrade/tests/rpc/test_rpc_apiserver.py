@@ -3,7 +3,7 @@ Unit test file for rpc/api_server.py
 """
 
 from datetime import datetime
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
 
@@ -11,6 +11,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.state import State
 from freqtrade.tests.conftest import (get_patched_freqtradebot, patch_get_signal)
+from freqtrade.persistence import Trade
 
 
 @pytest.fixture
@@ -25,8 +26,8 @@ def botclient(default_conf, mocker):
     # Cleanup ... ?
 
 
-def response_success_assert(response):
-    assert response.status_code == 200
+def assert_response(response, expected_code=200):
+    assert response.status_code == expected_code
     assert response.content_type == "application/json"
 
 
@@ -34,8 +35,7 @@ def test_api_not_found(botclient):
     ftbot, client = botclient
 
     rc = client.post("/invalid_url")
-    assert rc.status_code == 404
-    assert rc.content_type == "application/json"
+    assert_response(rc, 404)
     assert rc.json == {'status': 'error',
                        'reason': "There's no API call for http://localhost/invalid_url.",
                        'code': 404
@@ -46,24 +46,24 @@ def test_api_stop_workflow(botclient):
     ftbot, client = botclient
     assert ftbot.state == State.RUNNING
     rc = client.post("/stop")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json == {'status': 'stopping trader ...'}
     assert ftbot.state == State.STOPPED
 
     # Stop bot again
     rc = client.post("/stop")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json == {'status': 'already stopped'}
 
     # Start bot
     rc = client.post("/start")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json == {'status': 'starting trader ...'}
     assert ftbot.state == State.RUNNING
 
     # Call start again
     rc = client.post("/start")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json == {'status': 'already running'}
 
 
@@ -82,7 +82,7 @@ def test_api_reloadconf(botclient):
     ftbot, client = botclient
 
     rc = client.post("/reload_conf")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json == {'status': 'reloading config ...'}
     assert ftbot.state == State.RELOAD_CONF
 
@@ -92,17 +92,9 @@ def test_api_stopbuy(botclient):
     assert ftbot.config['max_open_trades'] != 0
 
     rc = client.post("/stopbuy")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json == {'status': 'No more buy will occur from now. Run /reload_conf to reset.'}
     assert ftbot.config['max_open_trades'] == 0
-
-
-def test_api_version(botclient):
-    ftbot, client = botclient
-
-    rc = client.get("/version")
-    response_success_assert(rc)
-    assert rc.json == {"version": __version__}
 
 
 def test_api_balance(botclient, mocker, rpc_balance):
@@ -130,7 +122,7 @@ def test_api_balance(botclient, mocker, rpc_balance):
     mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
 
     rc = client.get("/balance")
-    response_success_assert(rc)
+    assert_response(rc)
     assert "currencies" in rc.json
     assert len(rc.json["currencies"]) == 5
     assert rc.json['currencies'][0] == {
@@ -153,7 +145,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
         markets=PropertyMock(return_value=markets)
     )
     rc = client.get("/count")
-    response_success_assert(rc)
+    assert_response(rc)
 
     assert rc.json["current"] == 0
     assert rc.json["max"] == 1.0
@@ -161,7 +153,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     # Create some test data
     ftbot.create_trade()
     rc = client.get("/count")
-    response_success_assert(rc)
+    assert_response(rc)
     assert rc.json["current"] == 1.0
     assert rc.json["max"] == 1.0
 
@@ -177,6 +169,188 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
         markets=PropertyMock(return_value=markets)
     )
     rc = client.get("/daily")
-    response_success_assert(rc)
+    assert_response(rc)
     assert len(rc.json) == 7
     assert rc.json[0][0] == str(datetime.utcnow().date())
+
+
+def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    rc = client.get("/edge")
+    assert_response(rc, 502)
+    assert rc.json == {"error": "Error querying _edge: Edge is not enabled."}
+
+
+def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, limit_sell_order):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+
+    rc = client.get("/profit")
+    assert_response(rc, 502)
+    assert len(rc.json) == 1
+    assert rc.json == {"error": "Error querying _profit: no closed trade"}
+
+    ftbot.create_trade()
+    trade = Trade.query.first()
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+    rc = client.get("/profit")
+    assert_response(rc, 502)
+    assert rc.json == {"error": "Error querying _profit: no closed trade"}
+
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+
+    rc = client.get("/profit")
+    assert_response(rc)
+    assert rc.json == {'avg_duration': '0:00:00',
+                       'best_pair': 'ETH/BTC',
+                       'best_rate': 6.2,
+                       'first_trade_date': 'just now',
+                       'latest_trade_date': 'just now',
+                       'profit_all_coin': 6.217e-05,
+                       'profit_all_fiat': 0,
+                       'profit_all_percent': 6.2,
+                       'profit_closed_coin': 6.217e-05,
+                       'profit_closed_fiat': 0,
+                       'profit_closed_percent': 6.2,
+                       'trade_count': 1
+                       }
+
+
+def test_api_performance(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=1,
+        exchange='binance',
+        stake_amount=1,
+        open_rate=0.245441,
+        open_order_id="123456",
+        is_open=False,
+        fee_close=fee.return_value,
+        fee_open=fee.return_value,
+        close_rate=0.265441,
+
+    )
+    trade.close_profit = trade.calc_profit_percent()
+    Trade.session.add(trade)
+
+    trade = Trade(
+        pair='XRP/ETH',
+        amount=5,
+        stake_amount=1,
+        exchange='binance',
+        open_rate=0.412,
+        open_order_id="123456",
+        is_open=False,
+        fee_close=fee.return_value,
+        fee_open=fee.return_value,
+        close_rate=0.391
+    )
+    trade.close_profit = trade.calc_profit_percent()
+    Trade.session.add(trade)
+    Trade.session.flush()
+
+    rc = client.get("/performance")
+    assert_response(rc)
+    assert len(rc.json) == 2
+    assert rc.json == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61},
+                       {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57}]
+
+
+def test_api_status(botclient, mocker, ticker, fee, markets, limit_buy_order, limit_sell_order):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+
+    rc = client.get("/status")
+    assert_response(rc, 502)
+    assert rc.json == {'error': 'Error querying _status: no active trade'}
+
+    ftbot.create_trade()
+    rc = client.get("/status")
+    assert_response(rc)
+    assert len(rc.json) == 1
+    assert rc.json == [{'amount': 90.99181074,
+                        'base_currency': 'BTC',
+                        'close_date': None,
+                        'close_date_hum': None,
+                        'close_profit': None,
+                        'close_rate': None,
+                        'current_profit': -0.59,
+                        'current_rate': 1.098e-05,
+                        'initial_stop_loss': 0.0,
+                        'initial_stop_loss_pct': None,
+                        'open_date': ANY,
+                        'open_date_hum': 'just now',
+                        'open_order': '(limit buy rem=0.00000000)',
+                        'open_rate': 1.099e-05,
+                        'pair': 'ETH/BTC',
+                        'stake_amount': 0.001,
+                        'stop_loss': 0.0,
+                        'stop_loss_pct': None,
+                        'trade_id': 1}]
+
+
+def test_api_version(botclient):
+    ftbot, client = botclient
+
+    rc = client.get("/version")
+    assert_response(rc)
+    assert rc.json == {"version": __version__}
+
+
+def test_api_blacklist(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+
+    rc = client.get("/blacklist")
+    assert_response(rc)
+    assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC"],
+                       "length": 2,
+                       "method": "StaticPairList"}
+
+    # Add ETH/BTC to blacklist
+    rc = client.post("/blacklist", data='{"blacklist": ["ETH/BTC"]}',
+                     content_type='application/json')
+    assert_response(rc)
+    assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC"],
+                       "length": 3,
+                       "method": "StaticPairList"}
+
+
+def test_api_whitelist(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+
+    rc = client.get("/whitelist")
+    assert_response(rc)
+    assert rc.json == {"whitelist": ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC'],
+                       "length": 4,
+                       "method": "StaticPairList"}
+
