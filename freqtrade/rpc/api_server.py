@@ -156,7 +156,7 @@ class ApiServer(RPC):
         """
         return self.rest_dump({
             'status': 'error',
-            'reason': '''There's no API call for %s''' % request.base_url,
+            'reason': f"There's no API call for {request.base_url}.",
             'code': 404
         }), 404
 

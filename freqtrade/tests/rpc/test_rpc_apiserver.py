@@ -29,6 +29,18 @@ def response_success_assert(response):
     assert response.content_type == "application/json"
 
 
+def test_api_not_found(botclient):
+    ftbot, client = botclient
+
+    rc = client.post("/invalid_url")
+    assert rc.status_code == 404
+    assert rc.content_type == "application/json"
+    assert rc.json == {'status': 'error',
+                       'reason': "There's no API call for http://localhost/invalid_url.",
+                       'code': 404
+                       }
+
+
 def test_api_stop_workflow(botclient):
     ftbot, client = botclient
     assert ftbot.state == State.RUNNING
