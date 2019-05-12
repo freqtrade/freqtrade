@@ -5,15 +5,14 @@
     "fiat_display_currency": "EUR",
     "ticker_interval" : "5m",
     "dry_run": true,
-    "db_url": "sqlite:///tradesv3.dryrun.sqlite",
     "trailing_stop": false,
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30
     },
     "bid_strategy": {
-        "ask_last_balance": 0.0,
         "use_order_book": false,
+        "ask_last_balance": 0.0,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,
@@ -60,8 +59,8 @@
     },
     "telegram": {
         "enabled": false,
-        "token": "",
-        "chat_id": ""
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id"
     },
     "initial_state": "running",
     "forcebuy_enable": false,
