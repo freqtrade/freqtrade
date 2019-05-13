@@ -24,7 +24,8 @@ from freqtrade import DependencyException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data.history import load_data
-from freqtrade.optimize import get_timeframe
+from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.optimize import get_timeframe, validate_backtest_data
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.resolvers import HyperOptResolver
@@ -282,9 +283,25 @@ class Hyperopt(Backtesting):
             timerange=timerange
         )
 
+        if not data:
+            logger.critical("No data found. Terminating.")
+            return
+
+        min_date, max_date = get_timeframe(data)
+        # Validate dataframe for missing values (mainly at start and end, as fillup is called)
+        validate_backtest_data(data, min_date, max_date,
+                               timeframe_to_minutes(self.ticker_interval))
+        logger.info(
+            'Backtesting data from %s up to %s (%s days)..',
+            min_date.isoformat(),
+            max_date.isoformat(),
+            (max_date - min_date).days
+        )
+
         if self.has_space('buy') or self.has_space('sell'):
             self.strategy.advise_indicators = \
                 self.custom_hyperopt.populate_indicators  # type: ignore
+
         dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
 
         # We don't need exchange instance anymore while running hyperopt
