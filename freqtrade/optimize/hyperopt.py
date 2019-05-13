@@ -33,6 +33,7 @@ from freqtrade.resolvers import HyperOptResolver
 logger = logging.getLogger(__name__)
 
 
+INITIAL_POINTS = 30
 MAX_LOSS = 100000  # just a big enough number to be bad result in loss optimization
 TICKERDATA_PICKLE = os.path.join('user_data', 'hyperopt_tickerdata.pkl')
 TRIALSDATA_PICKLE = os.path.join('user_data', 'hyperopt_results.pickle')
@@ -62,9 +63,11 @@ class Hyperopt(Backtesting):
         # if eval ends with higher value, we consider it a failed eval
         self.max_accepted_trade_duration = 300
 
-        # this is expexted avg profit * expected trade count
-        # for example 3.5%, 1100 trades, self.expected_max_profit = 3.85
-        # check that the reported Σ% values do not exceed this!
+        # This is assumed to be expected avg profit * expected trade count.
+        # For example, for 0.35% avg per trade (or 0.0035 as ratio) and 1100 trades,
+        # self.expected_max_profit = 3.85
+        # Check that the reported Σ% values do not exceed this!
+        # Note, this is ratio. 3.85 stated above means 385Σ%.
         self.expected_max_profit = 3.0
 
         # Previous evaluations
@@ -120,14 +123,20 @@ class Hyperopt(Backtesting):
         """
         Log results if it is better than any previous evaluation
         """
-        if self.config.get('print_all', False) or results['loss'] < self.current_best_loss:
-            current = results['current_tries']
+        print_all = self.config.get('print_all', False)
+        if print_all or results['loss'] < self.current_best_loss:
+            # Output human-friendly index here (starting from 1)
+            current = results['current_tries'] + 1
             total = results['total_tries']
             res = results['result']
             loss = results['loss']
             self.current_best_loss = results['loss']
-            log_msg = f'\n{current:5d}/{total}: {res}. Loss {loss:.5f}'
-            print(log_msg)
+            log_msg = f'{current:5d}/{total}: {res} Objective: {loss:.5f}'
+            log_msg = f'*{log_msg}' if results['initial_point'] else f' {log_msg}'
+            if print_all:
+                print(log_msg)
+            else:
+                print('\n' + log_msg)
         else:
             print('.', end='')
             sys.stdout.flush()
@@ -204,8 +213,8 @@ class Hyperopt(Backtesting):
         trade_count = len(results.index)
         trade_duration = results.trade_duration.mean()
 
-        # If this evaluation contains too short small amount of trades
-        # to be interesting -- consider it as 'bad' (assign max. loss value)
+        # If this evaluation contains too short amount of trades to be
+        # interesting -- consider it as 'bad' (assigned max. loss value)
         # in order to cast this hyperspace point away from optimization
         # path. We do not want to optimize 'hodl' strategies.
         if trade_count < self.config['hyperopt_min_trades']:
@@ -231,19 +240,19 @@ class Hyperopt(Backtesting):
         avg_profit = results.profit_percent.mean() * 100.0
         total_profit = results.profit_abs.sum()
         stake_cur = self.config['stake_currency']
-        profit = results.profit_percent.sum()
+        profit = results.profit_percent.sum() * 100.0
         duration = results.trade_duration.mean()
 
         return (f'{trades:6d} trades. Avg profit {avg_profit: 5.2f}%. '
                 f'Total profit {total_profit: 11.8f} {stake_cur} '
-                f'({profit:.4f}Σ%). Avg duration {duration:5.1f} mins.')
+                f'({profit: 7.2f}Σ%). Avg duration {duration:5.1f} mins.')
 
     def get_optimizer(self, cpu_count) -> Optimizer:
         return Optimizer(
             self.hyperopt_space(),
             base_estimator="ET",
             acq_optimizer="auto",
-            n_initial_points=30,
+            n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.config.get('hyperopt_random_state', None)
         )
@@ -301,15 +310,17 @@ class Hyperopt(Backtesting):
 
                     self.trials += f_val
                     for j in range(jobs):
+                        current = i * jobs + j
                         self.log_results({
                             'loss': f_val[j]['loss'],
-                            'current_tries': i * jobs + j,
+                            'current_tries': current,
+                            'initial_point': current < INITIAL_POINTS,
                             'total_tries': self.total_tries,
                             'result': f_val[j]['result'],
                         })
                         logger.debug(f"Optimizer params: {f_val[j]['params']}")
                     for j in range(jobs):
-                        logger.debug(f"Opimizer state: Xi: {opt.Xi[-j-1]}, yi: {opt.yi[-j-1]}")
+                        logger.debug(f"Optimizer state: Xi: {opt.Xi[-j-1]}, yi: {opt.yi[-j-1]}")
         except KeyboardInterrupt:
             print('User interrupted..')
 

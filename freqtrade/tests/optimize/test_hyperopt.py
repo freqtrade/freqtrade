@@ -249,11 +249,12 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
             'loss': 1,
             'current_tries': 1,
             'total_tries': 2,
-            'result': 'foo'
+            'result': 'foo.',
+            'initial_point': False
         }
     )
     out, err = capsys.readouterr()
-    assert '    1/2: foo. Loss 1.00000' in out
+    assert '    2/2: foo. Objective: 1.00000' in out
 
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
@@ -459,7 +460,7 @@ def test_generate_optimizer(mocker, default_conf) -> None:
     response_expected = {
         'loss': 1.9840569076926293,
         'result': '     1 trades. Avg profit  2.31%. Total profit  0.00023300 BTC '
-                  '(0.0231Σ%). Avg duration 100.0 mins.',
+                  '(   2.31Σ%). Avg duration 100.0 mins.',
         'params': optimizer_param
     }
 
