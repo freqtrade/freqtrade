@@ -8,10 +8,11 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 import pytest
 
 from freqtrade.__init__ import __version__
+from freqtrade.persistence import Trade
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.state import State
-from freqtrade.tests.conftest import (get_patched_freqtradebot, patch_get_signal)
-from freqtrade.persistence import Trade
+from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
+                                      patch_get_signal)
 
 
 @pytest.fixture
@@ -76,6 +77,49 @@ def test_api__init__(default_conf, mocker):
 
     apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
     assert apiserver._config == default_conf
+
+
+def test_api_run(default_conf, mocker, caplog):
+    default_conf.update({"api_server": {"enabled": True,
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": "8080"}})
+    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
+
+    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+
+    # Monkey patch flask app
+    run_mock = MagicMock()
+    apiserver.app = MagicMock()
+    apiserver.app.run = run_mock
+
+    assert apiserver._config == default_conf
+    apiserver.run()
+    assert run_mock.call_count == 1
+    assert run_mock.call_args_list[0][1]["host"] == "127.0.0.1"
+    assert run_mock.call_args_list[0][1]["port"] == "8080"
+
+    assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog.record_tuples)
+    assert log_has("Starting Local Rest Server", caplog.record_tuples)
+
+    # Test binding to public
+    caplog.clear()
+    run_mock.reset_mock()
+    apiserver._config.update({"api_server": {"enabled": True,
+                                             "listen_ip_address": "0.0.0.0",
+                                             "listen_port": "8089"}})
+    apiserver.run()
+
+    assert run_mock.call_count == 1
+    assert run_mock.call_args_list[0][1]["host"] == "0.0.0.0"
+    assert run_mock.call_args_list[0][1]["port"] == "8089"
+    assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog.record_tuples)
+    assert log_has("Starting Local Rest Server", caplog.record_tuples)
+    assert log_has("SECURITY WARNING - Local Rest Server listening to external connections",
+                   caplog.record_tuples)
+    assert log_has("SECURITY WARNING - This is insecure please set to your loopback,"
+                   "e.g 127.0.0.1 in config.json",
+                   caplog.record_tuples)
 
 
 def test_api_reloadconf(botclient):
@@ -353,4 +397,3 @@ def test_api_whitelist(botclient, mocker, ticker, fee, markets):
     assert rc.json == {"whitelist": ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC'],
                        "length": 4,
                        "method": "StaticPairList"}
-

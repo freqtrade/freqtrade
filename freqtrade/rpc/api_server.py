@@ -141,7 +141,7 @@ class ApiServer(RPC):
         rest_ip = self._config['api_server']['listen_ip_address']
         rest_port = self._config['api_server']['listen_port']
 
-        logger.info('Starting HTTP Server at {}:{}'.format(rest_ip, rest_port))
+        logger.info(f'Starting HTTP Server at {rest_ip}:{rest_port}')
         if not IPv4Address(rest_ip).is_loopback:
             logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
             logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
