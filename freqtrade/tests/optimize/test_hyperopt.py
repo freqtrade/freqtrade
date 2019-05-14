@@ -195,6 +195,33 @@ def test_start(mocker, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
+def test_start_no_data(mocker, default_conf, caplog) -> None:
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock(return_value={}))
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+    )
+
+    patch_exchange(mocker)
+
+    args = [
+        '--config', 'config.json',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+    start(args)
+
+    import pprint
+    pprint.pprint(caplog.record_tuples)
+
+    assert log_has('No data found. Terminating.', caplog.record_tuples)
+
+
 def test_start_failure(mocker, default_conf, caplog) -> None:
     start_mock = MagicMock()
     mocker.patch(
@@ -310,6 +337,11 @@ def test_roi_table_generation(hyperopt) -> None:
 def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.load_data', MagicMock())
+    mocker.patch(
+        'freqtrade.optimize.hyperopt.get_timeframe',
+        MagicMock(return_value=(datetime(2017, 12, 10), datetime(2017, 12, 13)))
+    )
+
     parallel = mocker.patch(
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{'loss': 1, 'result': 'foo result', 'params': {}}])
