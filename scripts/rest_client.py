@@ -36,7 +36,7 @@ class FtRestClient():
 
         if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
             raise ValueError('invalid method <{0}>'.format(method))
-        basepath = f"{self._serverurl}/{apipath}"
+        basepath = f"{self._serverurl}/api/v1/{apipath}"
 
         hd = {"Accept": "application/json",
               "Content-Type": "application/json"

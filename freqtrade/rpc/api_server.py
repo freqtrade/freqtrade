@@ -7,11 +7,14 @@ from typing import Dict
 from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
+from werkzeug.wsgi import DispatcherMiddleware
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC, RPCException
 
 logger = logging.getLogger(__name__)
+
+BASE_URI = "/api/v1"
 
 
 class ArrowJSONEncoder(JSONEncoder):
@@ -60,7 +63,6 @@ class ApiServer(RPC):
 
         self._config = freqtrade.config
         self.app = Flask(__name__)
-
         self.app.json_encoder = ArrowJSONEncoder
 
         # Register application handling
@@ -105,29 +107,36 @@ class ApiServer(RPC):
         :return:
         """
         # Actions to control the bot
-        self.app.add_url_rule('/start', 'start', view_func=self._start, methods=['POST'])
-        self.app.add_url_rule('/stop', 'stop', view_func=self._stop, methods=['POST'])
-        self.app.add_url_rule('/stopbuy', 'stopbuy', view_func=self._stopbuy, methods=['POST'])
-        self.app.add_url_rule('/reload_conf', 'reload_conf', view_func=self._reload_conf,
-                              methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/start', 'start',
+                              view_func=self._start, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/stop', 'stop', view_func=self._stop, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/stopbuy', 'stopbuy',
+                              view_func=self._stopbuy, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/reload_conf', 'reload_conf',
+                              view_func=self._reload_conf, methods=['POST'])
         # Info commands
-        self.app.add_url_rule('/balance', 'balance', view_func=self._balance, methods=['GET'])
-        self.app.add_url_rule('/count', 'count', view_func=self._count, methods=['GET'])
-        self.app.add_url_rule('/daily', 'daily', view_func=self._daily, methods=['GET'])
-        self.app.add_url_rule('/edge', 'edge', view_func=self._edge, methods=['GET'])
-        self.app.add_url_rule('/profit', 'profit', view_func=self._profit, methods=['GET'])
-        self.app.add_url_rule('/performance', 'performance', view_func=self._performance,
-                              methods=['GET'])
-        self.app.add_url_rule('/status', 'status', view_func=self._status, methods=['GET'])
-        self.app.add_url_rule('/version', 'version', view_func=self._version, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/balance', 'balance',
+                              view_func=self._balance, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/count', 'count', view_func=self._count, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/daily', 'daily', view_func=self._daily, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/edge', 'edge', view_func=self._edge, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/profit', 'profit',
+                              view_func=self._profit, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/performance', 'performance',
+                              view_func=self._performance, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/status', 'status',
+                              view_func=self._status, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/version', 'version',
+                              view_func=self._version, methods=['GET'])
 
         # Combined actions and infos
-        self.app.add_url_rule('/blacklist', 'blacklist', view_func=self._blacklist,
+        self.app.add_url_rule(f'{BASE_URI}/blacklist', 'blacklist', view_func=self._blacklist,
                               methods=['GET', 'POST'])
-        self.app.add_url_rule('/whitelist', 'whitelist', view_func=self._whitelist,
+        self.app.add_url_rule(f'{BASE_URI}/whitelist', 'whitelist', view_func=self._whitelist,
                               methods=['GET'])
-        self.app.add_url_rule('/forcebuy', 'forcebuy', view_func=self._forcebuy, methods=['POST'])
-        self.app.add_url_rule('/forcesell', 'forcesell', view_func=self._forcesell,
+        self.app.add_url_rule(f'{BASE_URI}/forcebuy', 'forcebuy',
+                              view_func=self._forcebuy, methods=['POST'])
+        self.app.add_url_rule(f'{BASE_URI}/forcesell', 'forcesell', view_func=self._forcesell,
                               methods=['POST'])
 
         # TODO: Implement the following
