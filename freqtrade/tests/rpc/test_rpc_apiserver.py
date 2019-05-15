@@ -459,8 +459,25 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'trade_id': None}
 
 
-# def test_api_sellbuy(botclient):
-    # TODO
-#     ftbot, client = botclient
+def test_api_forcesell(botclient, mocker, ticker, fee, markets):
+    ftbot, client = botclient
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+    patch_get_signal(ftbot, (True, False))
 
-    # rc = client.get("/forcesell ")
+    rc = client.post("/forcesell", content_type="application/json",
+                     data='{"tradeid": "1"}')
+    assert_response(rc, 502)
+    assert rc.json == {"error": "Error querying _forcesell: invalid argument"}
+
+    ftbot.create_trade()
+
+    rc = client.post("/forcesell", content_type="application/json",
+                     data='{"tradeid": "1"}')
+    assert_response(rc)
+    assert rc.json == {'result': 'Created sell order for trade 1.'}
