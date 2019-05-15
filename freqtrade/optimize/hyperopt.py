@@ -292,7 +292,7 @@ class Hyperopt(Backtesting):
         validate_backtest_data(data, min_date, max_date,
                                timeframe_to_minutes(self.ticker_interval))
         logger.info(
-            'Backtesting data from %s up to %s (%s days)..',
+            'Hyperopting with data from %s up to %s (%s days)..',
             min_date.isoformat(),
             max_date.isoformat(),
             (max_date - min_date).days
