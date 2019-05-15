@@ -7,7 +7,35 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, List
 
 from pandas import DataFrame
-from skopt.space import Dimension
+
+#
+# Filter warnings from importing scikit-learn via skopt.
+# scikit-learn specifically forces warnings to be displayed, which we don't like.
+#
+# See:
+# https://github.com/scikit-learn/scikit-learn/issues/2531
+# https://github.com/ims-tcl/DeRE/commit/cb865fedddf6977cb7536b8c4334dc2325d09e53
+# https://stackoverflow.com/questions/32612180/eliminating-warnings-from-scikit-learn
+# for more details.
+#
+# Use
+# from freqtrade.optimize.hyperopt_interface import Categorical, Dimension, Integer, Real
+# instead of
+# from skopt.space import Categorical, Dimension, Integer, Real
+# in the custom HyperOpts to get rid of this deprecation warning
+# (refer to default_hyperopt.py for example) without implementing this ugly
+# workaround in every custom HyperOpts.
+#
+# Let's wait till scikit-learn v0.23 and skopt using it
+# where it will probably be eliminated...
+#
+import warnings
+def warn(*args, **kwargs):
+    pass
+old_warn = warnings.showwarning
+warnings.showwarning = warn
+from skopt.space import Categorical, Dimension, Integer, Real
+warnings.showwarning = old_warn
 
 
 class IHyperOpt(ABC):

@@ -5,10 +5,10 @@ from pandas import DataFrame
 from typing import Dict, Any, Callable, List
 from functools import reduce
 
-from skopt.space import Categorical, Dimension, Integer, Real
-
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
+from freqtrade.optimize.hyperopt_interface import Categorical, Dimension, Integer, Real
+
 
 class_name = 'DefaultHyperOpts'
 
