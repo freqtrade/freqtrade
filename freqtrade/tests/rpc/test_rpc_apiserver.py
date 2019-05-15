@@ -121,6 +121,13 @@ def test_api_run(default_conf, mocker, caplog):
                    "e.g 127.0.0.1 in config.json",
                    caplog.record_tuples)
 
+    # Test crashing flask
+    caplog.clear()
+    apiserver.app.run = MagicMock(side_effect=Exception)
+    apiserver.run()
+    assert log_has("Api server failed to start, exception message is:",
+                   caplog.record_tuples)
+
 
 def test_api_reloadconf(botclient):
     ftbot, client = botclient
