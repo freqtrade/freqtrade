@@ -2,7 +2,6 @@
 IHyperOpt interface
 This module defines the interface to apply for hyperopts
 """
-
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Callable, List
 
@@ -30,11 +29,15 @@ from pandas import DataFrame
 # where it will probably be eliminated...
 #
 import warnings
+
+
 def warn(*args, **kwargs):
     pass
+
+
 old_warn = warnings.showwarning
 warnings.showwarning = warn
-from skopt.space import Categorical, Dimension, Integer, Real
+from skopt.space import Categorical, Dimension, Integer, Real  # noqa: F401
 warnings.showwarning = old_warn
 
 
