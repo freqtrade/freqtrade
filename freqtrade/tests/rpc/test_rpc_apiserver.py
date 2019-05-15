@@ -287,7 +287,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        }
 
 
-def test_api_performance(botclient, mocker, ticker, fee, markets):
+def test_api_performance(botclient, mocker, ticker, fee):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
 
@@ -330,7 +330,7 @@ def test_api_performance(botclient, mocker, ticker, fee, markets):
                        {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57}]
 
 
-def test_api_status(botclient, mocker, ticker, fee, markets, limit_buy_order, limit_sell_order):
+def test_api_status(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
     mocker.patch.multiple(
@@ -378,7 +378,7 @@ def test_api_version(botclient):
     assert rc.json == {"version": __version__}
 
 
-def test_api_blacklist(botclient, mocker, ticker, fee, markets):
+def test_api_blacklist(botclient, mocker):
     ftbot, client = botclient
 
     rc = client.get("/blacklist")
@@ -396,7 +396,7 @@ def test_api_blacklist(botclient, mocker, ticker, fee, markets):
                        "method": "StaticPairList"}
 
 
-def test_api_whitelist(botclient, mocker, ticker, fee, markets):
+def test_api_whitelist(botclient):
     ftbot, client = botclient
 
     rc = client.get("/whitelist")
@@ -404,3 +404,63 @@ def test_api_whitelist(botclient, mocker, ticker, fee, markets):
     assert rc.json == {"whitelist": ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC'],
                        "length": 4,
                        "method": "StaticPairList"}
+
+
+def test_api_forcebuy(botclient, mocker, fee):
+    ftbot, client = botclient
+
+    rc = client.post("/forcebuy", content_type='application/json',
+                     data='{"pair": "ETH/BTC"}')
+    assert_response(rc, 502)
+    assert rc.json == {"error": "Error querying _forcebuy: Forcebuy not enabled."}
+
+    # enable forcebuy
+    ftbot.config["forcebuy_enable"] = True
+
+    fbuy_mock = MagicMock(return_value=None)
+    mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
+    rc = client.post("/forcebuy", content_type="application/json",
+                     data='{"pair": "ETH/BTC"}')
+    assert_response(rc)
+    assert rc.json == {"status": "Error buying pair ETH/BTC."}
+
+    # Test creating trae
+    fbuy_mock = MagicMock(return_value=Trade(
+        pair='ETH/ETH',
+        amount=1,
+        exchange='bittrex',
+        stake_amount=1,
+        open_rate=0.245441,
+        open_order_id="123456",
+        open_date=datetime.utcnow(),
+        is_open=False,
+        fee_close=fee.return_value,
+        fee_open=fee.return_value,
+        close_rate=0.265441,
+    ))
+    mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
+
+    rc = client.post("/forcebuy", content_type="application/json",
+                     data='{"pair": "ETH/BTC"}')
+    assert_response(rc)
+    assert rc.json == {'amount': 1,
+                       'close_date': None,
+                       'close_date_hum': None,
+                       'close_rate': 0.265441,
+                       'initial_stop_loss': None,
+                       'initial_stop_loss_pct': None,
+                       'open_date': ANY,
+                       'open_date_hum': 'just now',
+                       'open_rate': 0.245441,
+                       'pair': 'ETH/ETH',
+                       'stake_amount': 1,
+                       'stop_loss': None,
+                       'stop_loss_pct': None,
+                       'trade_id': None}
+
+
+# def test_api_sellbuy(botclient):
+    # TODO
+#     ftbot, client = botclient
+
+    # rc = client.get("/forcesell ")

@@ -314,7 +314,10 @@ class ApiServer(RPC):
         asset = request.json.get("pair")
         price = request.json.get("price", None)
         trade = self._rpc_forcebuy(asset, price)
-        return self.rest_dump(trade.to_json())
+        if trade:
+            return self.rest_dump(trade.to_json())
+        else:
+            return self.rest_dump({"status": f"Error buying pair {asset}."})
 
     @safe_rpc
     def _forcesell(self):
