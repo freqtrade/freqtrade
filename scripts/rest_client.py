@@ -216,12 +216,6 @@ def add_arguments():
                         )
 
     args = parser.parse_args()
-    # if len(argv) == 1:
-    #     print('\nThis script accepts the following arguments')
-    #     print('- daily (int) - Where int is the number of days to report back. daily 3')
-    #     print('- start  - this will start the trading thread')
-    #     print('- stop  - this will start the trading thread')
-    #     print('- there will be more....\n')
     return vars(args)
 
 
@@ -235,7 +229,7 @@ def load_config(configfile):
 
 
 def print_commands():
-    # Print dynamic help for the different commands
+    # Print dynamic help for the different commands using the commands doc-strings
     client = FtRestClient(None)
     print("Possible commands:")
     for x, y in inspect.getmembers(client):

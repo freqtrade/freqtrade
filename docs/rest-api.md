@@ -19,7 +19,6 @@ Sample configuration:
 
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/version` to check if the API is running correctly.
 
-
 ### Configuration with docker
 
 If you run your bot using docker, you'll need to have the bot listen to incomming connections. The security is then handled by docker.
@@ -179,6 +178,4 @@ version
 whitelist
         Show the current whitelist
         :returns: json object
-
-
 ```
