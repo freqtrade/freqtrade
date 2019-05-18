@@ -11,7 +11,6 @@ import argparse
 import json
 import logging
 import inspect
-from typing import List
 from urllib.parse import urlencode, urlparse, urlunparse
 from pathlib import Path
 
