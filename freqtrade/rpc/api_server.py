@@ -1,6 +1,6 @@
 import logging
 import threading
-from datetime import datetime, date
+from datetime import date, datetime
 from ipaddress import IPv4Address
 from typing import Dict
 
