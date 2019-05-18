@@ -234,17 +234,19 @@ def load_config(configfile):
     return {}
 
 
+def print_commands():
+    # Print dynamic help for the different commands
+    client = FtRestClient(None)
+    print("Possible commands:")
+    for x, y in inspect.getmembers(client):
+        if not x.startswith('_'):
+            print(f"{x} {getattr(client, x).__doc__}")
+
+
 def main(args):
 
-    if args.get("show"):
-        # Print dynamic help for the different commands
-        client = FtRestClient(None)
-        print("Possible commands:")
-        for x, y in inspect.getmembers(client):
-            if not x.startswith('_'):
-                print(f"{x} {getattr(client, x).__doc__}")
-
-        return
+    if args.get("help"):
+        print_commands()
 
     config = load_config(args["config"])
     url = config.get("api_server", {}).get("server_url", "127.0.0.1")
@@ -256,6 +258,7 @@ def main(args):
     command = args["command"]
     if command not in m:
         logger.error(f"Command {command} not defined")
+        print_commands()
         return
 
     print(getattr(client, command)(*args["command_arguments"]))
