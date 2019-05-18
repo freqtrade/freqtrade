@@ -87,33 +87,34 @@ def test_api_run(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
 
-    run_mock = MagicMock()
-    mocker.patch('freqtrade.rpc.api_server.make_server', run_mock)
+    server_mock = MagicMock()
+    mocker.patch('freqtrade.rpc.api_server.make_server', server_mock)
 
     apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
 
     assert apiserver._config == default_conf
     apiserver.run()
-    assert run_mock.call_count == 1
-    assert run_mock.call_args_list[0][0][0] == "127.0.0.1"
-    assert run_mock.call_args_list[0][0][1] == "8080"
-    assert isinstance(run_mock.call_args_list[0][0][2], Flask)
+    assert server_mock.call_count == 1
+    assert server_mock.call_args_list[0][0][0] == "127.0.0.1"
+    assert server_mock.call_args_list[0][0][1] == "8080"
+    assert isinstance(server_mock.call_args_list[0][0][2], Flask)
+    assert hasattr(apiserver, "srv")
 
     assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog.record_tuples)
     assert log_has("Starting Local Rest Server", caplog.record_tuples)
 
     # Test binding to public
     caplog.clear()
-    run_mock.reset_mock()
+    server_mock.reset_mock()
     apiserver._config.update({"api_server": {"enabled": True,
                                              "listen_ip_address": "0.0.0.0",
                                              "listen_port": "8089"}})
     apiserver.run()
 
-    assert run_mock.call_count == 1
-    assert run_mock.call_args_list[0][0][0] == "0.0.0.0"
-    assert run_mock.call_args_list[0][0][1] == "8089"
-    assert isinstance(run_mock.call_args_list[0][0][2], Flask)
+    assert server_mock.call_count == 1
+    assert server_mock.call_args_list[0][0][0] == "0.0.0.0"
+    assert server_mock.call_args_list[0][0][1] == "8089"
+    assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog.record_tuples)
     assert log_has("Starting Local Rest Server", caplog.record_tuples)
     assert log_has("SECURITY WARNING - Local Rest Server listening to external connections",
@@ -128,6 +129,25 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver.run()
     assert log_has("Api server failed to start, exception message is:",
                    caplog.record_tuples)
+
+
+def test_api_cleanup(default_conf, mocker, caplog):
+    default_conf.update({"api_server": {"enabled": True,
+                                        "listen_ip_address": "127.0.0.1",
+                                        "listen_port": "8080"}})
+    mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
+
+    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver.run()
+    stop_mock = MagicMock()
+    stop_mock.shutdown = MagicMock()
+    apiserver.srv = stop_mock
+
+    apiserver.cleanup()
+    assert stop_mock.shutdown.call_count == 1
+    assert log_has("Stopping API Server", caplog.record_tuples)
 
 
 def test_api_reloadconf(botclient):
