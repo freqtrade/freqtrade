@@ -6,10 +6,11 @@ from datetime import datetime
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
+from flask import Flask
 
 from freqtrade.__init__ import __version__
 from freqtrade.persistence import Trade
-from freqtrade.rpc.api_server import ApiServer, BASE_URI
+from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import State
 from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
                                       patch_get_signal)
@@ -86,18 +87,17 @@ def test_api_run(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
 
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
-
-    # Monkey patch flask app
     run_mock = MagicMock()
-    apiserver.app = MagicMock()
-    apiserver.app.run = run_mock
+    mocker.patch('freqtrade.rpc.api_server.make_server', run_mock)
+
+    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
 
     assert apiserver._config == default_conf
     apiserver.run()
     assert run_mock.call_count == 1
-    assert run_mock.call_args_list[0][1]["host"] == "127.0.0.1"
-    assert run_mock.call_args_list[0][1]["port"] == "8080"
+    assert run_mock.call_args_list[0][0][0] == "127.0.0.1"
+    assert run_mock.call_args_list[0][0][1] == "8080"
+    assert isinstance(run_mock.call_args_list[0][0][2], Flask)
 
     assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog.record_tuples)
     assert log_has("Starting Local Rest Server", caplog.record_tuples)
@@ -111,8 +111,9 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver.run()
 
     assert run_mock.call_count == 1
-    assert run_mock.call_args_list[0][1]["host"] == "0.0.0.0"
-    assert run_mock.call_args_list[0][1]["port"] == "8089"
+    assert run_mock.call_args_list[0][0][0] == "0.0.0.0"
+    assert run_mock.call_args_list[0][0][1] == "8089"
+    assert isinstance(run_mock.call_args_list[0][0][2], Flask)
     assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog.record_tuples)
     assert log_has("Starting Local Rest Server", caplog.record_tuples)
     assert log_has("SECURITY WARNING - Local Rest Server listening to external connections",
@@ -123,7 +124,7 @@ def test_api_run(default_conf, mocker, caplog):
 
     # Test crashing flask
     caplog.clear()
-    apiserver.app.run = MagicMock(side_effect=Exception)
+    mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock(side_effect=Exception))
     apiserver.run()
     assert log_has("Api server failed to start, exception message is:",
                    caplog.record_tuples)
