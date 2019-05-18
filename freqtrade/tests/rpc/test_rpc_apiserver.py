@@ -101,7 +101,7 @@ def test_api_run(default_conf, mocker, caplog):
     assert hasattr(apiserver, "srv")
 
     assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog.record_tuples)
-    assert log_has("Starting Local Rest Server", caplog.record_tuples)
+    assert log_has("Starting Local Rest Server.", caplog.record_tuples)
 
     # Test binding to public
     caplog.clear()
@@ -116,7 +116,7 @@ def test_api_run(default_conf, mocker, caplog):
     assert server_mock.call_args_list[0][0][1] == "8089"
     assert isinstance(server_mock.call_args_list[0][0][2], Flask)
     assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog.record_tuples)
-    assert log_has("Starting Local Rest Server", caplog.record_tuples)
+    assert log_has("Starting Local Rest Server.", caplog.record_tuples)
     assert log_has("SECURITY WARNING - Local Rest Server listening to external connections",
                    caplog.record_tuples)
     assert log_has("SECURITY WARNING - This is insecure please set to your loopback,"
@@ -127,7 +127,7 @@ def test_api_run(default_conf, mocker, caplog):
     caplog.clear()
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock(side_effect=Exception))
     apiserver.run()
-    assert log_has("Api server failed to start, exception message is:",
+    assert log_has("Api server failed to start.",
                    caplog.record_tuples)
 
 

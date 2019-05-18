@@ -66,7 +66,6 @@ class ApiServer(RPC):
         self.app.json_encoder = ArrowJSONEncoder
 
         # Register application handling
-        self.register_rest_other()
         self.register_rest_rpc_urls()
 
         thread = threading.Thread(target=self.run, daemon=True)
@@ -92,13 +91,13 @@ class ApiServer(RPC):
                            "e.g 127.0.0.1 in config.json")
 
         # Run the Server
-        logger.info('Starting Local Rest Server')
+        logger.info('Starting Local Rest Server.')
         try:
             self.srv = make_server(rest_ip, rest_port, self.app)
             self.srv.serve_forever()
         except Exception:
-            logger.exception("Api server failed to start, exception message is:")
-        logger.info('Starting Local Rest Server_end')
+            logger.exception("Api server failed to start.")
+        logger.info('Local Rest Server started.')
 
     def send_msg(self, msg: Dict[str, str]) -> None:
         """
@@ -114,13 +113,6 @@ class ApiServer(RPC):
     def rest_error(self, error_msg):
         return jsonify({"error": error_msg}), 502
 
-    def register_rest_other(self):
-        """
-        Registers flask app URLs that are not calls to functionality in rpc.rpc.
-        :return:
-        """
-        self.app.register_error_handler(404, self.page_not_found)
-
     def register_rest_rpc_urls(self):
         """
         Registers flask app URLs that are calls to functonality in rpc.rpc.
@@ -129,6 +121,8 @@ class ApiServer(RPC):
         Label can be used as a shortcut when refactoring
         :return:
         """
+        self.app.register_error_handler(404, self.page_not_found)
+
         # Actions to control the bot
         self.app.add_url_rule(f'{BASE_URI}/start', 'start',
                               view_func=self._start, methods=['POST'])
