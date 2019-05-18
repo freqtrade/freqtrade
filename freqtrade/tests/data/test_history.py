@@ -59,7 +59,11 @@ def _clean_test_file(file: str) -> None:
 def test_load_data_30min_ticker(mocker, caplog, default_conf) -> None:
     ld = history.load_pair_history(pair='UNITTEST/BTC', ticker_interval='30m', datadir=None)
     assert isinstance(ld, DataFrame)
-    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 30m', caplog.record_tuples)
+    assert not log_has(
+        'Download history data for pair: "UNITTEST/BTC", interval: 30m '
+        'and store in None.',
+        caplog.record_tuples
+    )
 
 
 def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
@@ -67,7 +71,7 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
     assert not isinstance(ld, DataFrame)
     assert ld is None
     assert log_has(
-        'No data for pair: "UNITTEST/BTC", Interval: 7m. '
+        'No history data for pair: "UNITTEST/BTC", interval: 7m. '
         'Use --refresh-pairs-cached option or download_backtest_data.py '
         'script to download the data',
         caplog.record_tuples
@@ -80,7 +84,11 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     _backup_file(file, copy_file=True)
     history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 1m', caplog.record_tuples)
+    assert not log_has(
+        'Download history data for pair: "UNITTEST/BTC", interval: 1m '
+        'and store in None.',
+        caplog.record_tuples
+    )
     _clean_test_file(file)
 
 
@@ -100,7 +108,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
                               pair='MEME/BTC')
     assert os.path.isfile(file) is False
     assert log_has(
-        'No data for pair: "MEME/BTC", Interval: 1m. '
+        'No history data for pair: "MEME/BTC", interval: 1m. '
         'Use --refresh-pairs-cached option or download_backtest_data.py '
         'script to download the data',
         caplog.record_tuples
@@ -113,7 +121,11 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
                               exchange=exchange,
                               pair='MEME/BTC')
     assert os.path.isfile(file) is True
-    assert log_has('Download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
+    assert log_has(
+        'Download history data for pair: "MEME/BTC", interval: 1m '
+        'and store in None.',
+        caplog.record_tuples
+    )
     with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
         history.load_pair_history(datadir=None,
                                   ticker_interval='1m',
@@ -293,7 +305,7 @@ def test_download_pair_history2(mocker, default_conf) -> None:
 
 def test_download_backtesting_data_exception(ticker_history, mocker, caplog, default_conf) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_history',
-                 side_effect=BaseException('File Error'))
+                 side_effect=Exception('File Error'))
 
     exchange = get_patched_exchange(mocker, default_conf)
 
@@ -308,7 +320,10 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog, def
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert log_has('Failed to download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
+    assert log_has(
+        'Failed to download history data for pair: "MEME/BTC", interval: 1m.',
+        caplog.record_tuples
+    )
 
 
 def test_load_tickerdata_file() -> None:

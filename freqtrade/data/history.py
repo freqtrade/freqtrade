@@ -90,13 +90,8 @@ def load_pair_history(pair: str,
     :return: DataFrame with ohlcv data
     """
 
-    # If the user force the refresh of pairs
+    # The user forced the refresh of pairs
     if refresh_pairs:
-        if not exchange:
-            raise OperationalException("Exchange needs to be initialized when "
-                                       "calling load_data with refresh_pairs=True")
-
-        logger.info('Download data for pair and store them in %s', datadir)
         download_pair_history(datadir=datadir,
                               exchange=exchange,
                               pair=pair,
@@ -115,10 +110,11 @@ def load_pair_history(pair: str,
                            arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
         return parse_ticker_dataframe(pairdata, ticker_interval, fill_up_missing)
     else:
-        logger.warning('No data for pair: "%s", Interval: %s. '
-                       'Use --refresh-pairs-cached option or download_backtest_data.py '
-                       'script to download the data',
-                       pair, ticker_interval)
+        logger.warning(
+            f'No history data for pair: "{pair}", interval: {ticker_interval}. '
+            'Use --refresh-pairs-cached option or download_backtest_data.py '
+            'script to download the data'
+        )
         return None
 
 
@@ -190,7 +186,7 @@ def load_cached_data_for_updating(filename: Path, ticker_interval: str,
 
 
 def download_pair_history(datadir: Optional[Path],
-                          exchange: Exchange,
+                          exchange: Optional[Exchange],
                           pair: str,
                           ticker_interval: str = '5m',
                           timerange: Optional[TimeRange] = None) -> bool:
@@ -201,18 +197,26 @@ def download_pair_history(datadir: Optional[Path],
     the full data will be redownloaded
 
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
+
     :param pair: pair to download
     :param ticker_interval: ticker interval
     :param timerange: range of time to download
     :return: bool with success state
-
     """
+    if not exchange:
+        raise OperationalException(
+            "Exchange needs to be initialized when downloading pair history data"
+        )
+
     try:
         path = make_testdata_path(datadir)
         filepair = pair.replace("/", "_")
         filename = path.joinpath(f'{filepair}-{ticker_interval}.json')
 
-        logger.info('Download the pair: "%s", Interval: %s', pair, ticker_interval)
+        logger.info(
+            f'Download history data for pair: "{pair}", interval: {ticker_interval} '
+            f'and store in {datadir}.'
+        )
 
         data, since_ms = load_cached_data_for_updating(filename, ticker_interval, timerange)
 
@@ -231,7 +235,9 @@ def download_pair_history(datadir: Optional[Path],
 
         misc.file_dump_json(filename, data)
         return True
-    except BaseException:
-        logger.info('Failed to download the pair: "%s", Interval: %s',
-                    pair, ticker_interval)
+
+    except Exception:
+        logger.error(
+            f'Failed to download history data for pair: "{pair}", interval: {ticker_interval}.'
+        )
         return False
