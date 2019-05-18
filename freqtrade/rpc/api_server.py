@@ -7,7 +7,7 @@ from typing import Dict
 from arrow import Arrow
 from flask import Flask, jsonify, request
 from flask.json import JSONEncoder
-from werkzeug.wsgi import DispatcherMiddleware
+from werkzeug.serving import make_server
 
 from freqtrade.__init__ import __version__
 from freqtrade.rpc.rpc import RPC, RPCException
@@ -74,8 +74,31 @@ class ApiServer(RPC):
 
     def cleanup(self) -> None:
         logger.info("Stopping API Server")
-        # TODO: Gracefully shutdown - right now it'll fail on /reload_conf
-        # since it's not terminated correctly.
+        self.srv.shutdown()
+
+    def run(self):
+        """
+        Method that runs flask app in its own thread forever.
+        Section to handle configuration and running of the Rest server
+        also to check and warn if not bound to a loopback, warn on security risk.
+        """
+        rest_ip = self._config['api_server']['listen_ip_address']
+        rest_port = self._config['api_server']['listen_port']
+
+        logger.info(f'Starting HTTP Server at {rest_ip}:{rest_port}')
+        if not IPv4Address(rest_ip).is_loopback:
+            logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
+            logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
+                           "e.g 127.0.0.1 in config.json")
+
+        # Run the Server
+        logger.info('Starting Local Rest Server')
+        try:
+            self.srv = make_server(rest_ip, rest_port, self.app)
+            self.srv.serve_forever()
+        except Exception:
+            logger.exception("Api server failed to start, exception message is:")
+        logger.info('Starting Local Rest Server_end')
 
     def send_msg(self, msg: Dict[str, str]) -> None:
         """
@@ -141,28 +164,6 @@ class ApiServer(RPC):
 
         # TODO: Implement the following
         # help (?)
-
-    def run(self):
-        """ Method that runs flask app in its own thread forever.
-        Section to handle configuration and running of the Rest server
-        also to check and warn if not bound to a loopback, warn on security risk.
-        """
-        rest_ip = self._config['api_server']['listen_ip_address']
-        rest_port = self._config['api_server']['listen_port']
-
-        logger.info(f'Starting HTTP Server at {rest_ip}:{rest_port}')
-        if not IPv4Address(rest_ip).is_loopback:
-            logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
-            logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
-                           "e.g 127.0.0.1 in config.json")
-
-        # Run the Server
-        logger.info('Starting Local Rest Server')
-        try:
-            self.app.run(host=rest_ip, port=rest_port)
-        except Exception:
-            logger.exception("Api server failed to start, exception message is:")
-        logger.info('Starting Local Rest Server_end')
 
     def page_not_found(self, error):
         """
