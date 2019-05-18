@@ -41,7 +41,7 @@ class ApiServer(RPC):
     This class starts a none blocking thread the api server runs within
     """
 
-    def safe_rpc(func):
+    def rpc_catch_errors(func):
 
         def func_wrapper(self, *args, **kwargs):
 
@@ -169,6 +169,7 @@ class ApiServer(RPC):
             'code': 404
         }), 404
 
+    @rpc_catch_errors
     def _start(self):
         """
         Handler for /start.
@@ -177,6 +178,7 @@ class ApiServer(RPC):
         msg = self._rpc_start()
         return self.rest_dump(msg)
 
+    @rpc_catch_errors
     def _stop(self):
         """
         Handler for /stop.
@@ -185,6 +187,7 @@ class ApiServer(RPC):
         msg = self._rpc_stop()
         return self.rest_dump(msg)
 
+    @rpc_catch_errors
     def _stopbuy(self):
         """
         Handler for /stopbuy.
@@ -193,12 +196,14 @@ class ApiServer(RPC):
         msg = self._rpc_stopbuy()
         return self.rest_dump(msg)
 
+    @rpc_catch_errors
     def _version(self):
         """
         Prints the bot's version
         """
         return self.rest_dump({"version": __version__})
 
+    @rpc_catch_errors
     def _reload_conf(self):
         """
         Handler for /reload_conf.
@@ -207,7 +212,7 @@ class ApiServer(RPC):
         msg = self._rpc_reload_conf()
         return self.rest_dump(msg)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _count(self):
         """
         Handler for /count.
@@ -216,7 +221,7 @@ class ApiServer(RPC):
         msg = self._rpc_count()
         return self.rest_dump(msg)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _daily(self):
         """
         Returns the last X days trading stats summary.
@@ -233,7 +238,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _edge(self):
         """
         Returns information related to Edge.
@@ -243,7 +248,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _profit(self):
         """
         Handler for /profit.
@@ -259,7 +264,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _performance(self):
         """
         Handler for /performance.
@@ -273,7 +278,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _status(self):
         """
         Handler for /status.
@@ -283,7 +288,7 @@ class ApiServer(RPC):
         results = self._rpc_trade_status()
         return self.rest_dump(results)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _balance(self):
         """
         Handler for /balance.
@@ -293,7 +298,7 @@ class ApiServer(RPC):
         results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
         return self.rest_dump(results)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _whitelist(self):
         """
         Handler for /whitelist.
@@ -301,7 +306,7 @@ class ApiServer(RPC):
         results = self._rpc_whitelist()
         return self.rest_dump(results)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _blacklist(self):
         """
         Handler for /blacklist.
@@ -310,7 +315,7 @@ class ApiServer(RPC):
         results = self._rpc_blacklist(add)
         return self.rest_dump(results)
 
-    @safe_rpc
+    @rpc_catch_errors
     def _forcebuy(self):
         """
         Handler for /forcebuy.
@@ -323,7 +328,7 @@ class ApiServer(RPC):
         else:
             return self.rest_dump({"status": f"Error buying pair {asset}."})
 
-    @safe_rpc
+    @rpc_catch_errors
     def _forcesell(self):
         """
         Handler for /forcesell.
