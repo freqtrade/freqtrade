@@ -57,7 +57,7 @@ file as reference.**
     Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
     Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
-    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly dry-run tests.
+    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
 
 ### Customize Indicators
 
