@@ -89,6 +89,14 @@ class FreqtradeBot(object):
         self.rpc.cleanup()
         persistence.cleanup()
 
+    def startup(self) -> None:
+        """
+        Called on startup and after reloading the bot - triggers notifications and
+        performs startup tasks
+        : return: None
+        """
+        self.rpc.startup_messages(self.config, self.pairlists)
+
     def process(self) -> bool:
         """
         Queries the persistence layer for open trades and handles them,
