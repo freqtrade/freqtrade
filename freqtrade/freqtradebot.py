@@ -96,6 +96,8 @@ class FreqtradeBot(object):
         : return: None
         """
         self.rpc.startup_messages(self.config, self.pairlists)
+        # Adjust stoploss if it was changed
+        Trade.stoploss_reinitialization(self.strategy.stoploss)
 
     def process(self) -> bool:
         """
