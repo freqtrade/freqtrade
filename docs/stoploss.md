@@ -7,7 +7,6 @@ Most of the strategy files already include the optimal `stoploss`
 value. This parameter is optional. If you use it in the configuration file, it will take over the
 `stoploss` value from the strategy file.
 
-
 ## Stop Loss support
 
 At this stage the bot contains the following stoploss support modes:

@@ -436,7 +436,6 @@ class Trade(_DECL_BASE):
                 # Stoploss value got changed
 
                 logger.info(f"Stoploss for {trade} needs adjustment.")
-                logger.info(f"Stoploss: {trade.initial_stop_loss_pct}: {desired_stoploss}")
                 # Force reset of stoploss
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)

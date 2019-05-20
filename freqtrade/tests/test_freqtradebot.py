@@ -114,7 +114,7 @@ def test_cleanup(mocker, default_conf, caplog) -> None:
 def test_worker_running(mocker, default_conf, caplog) -> None:
     mock_throttle = MagicMock()
     mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
-    mocker.patch('freqtrade.persistence.Trade.adjust_initial_stoploss', MagicMock())
+    mocker.patch('freqtrade.persistence.Trade.stoploss_reinitialization', MagicMock())
 
     worker = get_patched_worker(mocker, default_conf)
 

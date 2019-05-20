@@ -822,7 +822,6 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.initial_stop_loss == 0.96
     assert trade_adj.initial_stop_loss_pct == -0.04
 
-
     # Trailing stoploss (move stoplos up a bit)
     trade.adjust_stop_loss(1.02, 0.04)
     assert trade_adj.stop_loss == 0.9792

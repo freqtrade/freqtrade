@@ -93,7 +93,6 @@ class FreqtradeBot(object):
         """
         Called on startup and after reloading the bot - triggers notifications and
         performs startup tasks
-        : return: None
         """
         self.rpc.startup_messages(self.config, self.pairlists)
         if not self.edge:
