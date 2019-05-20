@@ -119,7 +119,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
 
     freqtradebot.create_trade()
     result = rpc._rpc_status_table()
-    assert 'just now' in result['Since'].all()
+    assert 'instantly' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
     assert '-0.59%' in result['Profit'].all()
 
@@ -128,7 +128,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
     # invalidate ticker cache
     rpc._freqtrade.exchange._cached_ticker = {}
     result = rpc._rpc_status_table()
-    assert 'just now' in result['Since'].all()
+    assert 'instantly' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
     assert 'nan%' in result['Profit'].all()
 
