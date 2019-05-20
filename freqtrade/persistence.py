@@ -238,7 +238,6 @@ class Trade(_DECL_BASE):
         """
         Adjust the max_rate and min_rate.
         """
-        logger.debug("Adjusting min/max rates")
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
