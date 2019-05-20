@@ -1,4 +1,14 @@
-# Stop Loss support
+# Stop Loss
+
+The `stoploss` configuration parameter is loss in percentage that should trigger a sale.
+For example, value `-0.10` will cause immediate sell if the profit dips below -10% for a given trade. This parameter is optional.
+
+Most of the strategy files already include the optimal `stoploss`
+value. This parameter is optional. If you use it in the configuration file, it will take over the
+`stoploss` value from the strategy file.
+
+
+## Stop Loss support
 
 At this stage the bot contains the following stoploss support modes:
 
@@ -16,13 +26,12 @@ In case of stoploss on exchange there is another parameter called `stoploss_on_e
 !!! Note
     Stoploss on exchange is only supported for Binance as of now.
 
-
 ## Static Stop Loss
 
 This is very simple, basically you define a stop loss of x in your strategy file or alternative in the configuration, which
 will overwrite the strategy definition. This will basically try to sell your asset, the second the loss exceeds the defined loss.
 
-## Trail Stop Loss
+## Trailing Stop Loss
 
 The initial value for this stop loss, is defined in your strategy or configuration. Just as you would define your Stop Loss normally.
 To enable this Feauture all you have to do is to define the configuration element:
