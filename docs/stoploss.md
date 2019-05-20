@@ -72,3 +72,13 @@ The 0.01 would translate to a 1% stop loss, once you hit 1.1% profit.
 You should also make sure to have this value (`trailing_stop_positive_offset`) lower than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.
 
 If `"trailing_only_offset_is_reached": true` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured`stoploss`.
+
+## Changing stoploss on open trades
+
+A stoploss on an open trade can be changed by changing the value in the configuration or strategy and use the `/reload_conf` command (alternatively, completely stopping and restarting the bot also works).
+
+The new stoploss value will be applied to open trades (and corresponding log-messages will be generated).
+
+### Limitations
+
+Stoploss values cannot be changed if `trailing_stop` is enabled and the stoploss has already been adjusted, or if [Edge](edge.md) is enabled (since Edge would recalculate stoploss based on the current market situation).
