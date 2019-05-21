@@ -16,7 +16,7 @@ from freqtrade.data import history
 from freqtrade.data.history import (download_pair_history,
                                     load_cached_data_for_updating,
                                     load_tickerdata_file,
-                                    make_testdata_path,
+                                    make_datadir_path,
                                     trim_tickerlist)
 from freqtrade.misc import file_dump_json
 from freqtrade.tests.conftest import get_patched_exchange, log_has
@@ -136,7 +136,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
 
 
 def test_testdata_path() -> None:
-    assert str(Path('freqtrade') / 'tests' / 'testdata') in str(make_testdata_path(None))
+    assert str(Path('freqtrade') / 'tests' / 'testdata') in str(make_datadir_path(None))
 
 
 def test_load_cached_data_for_updating(mocker) -> None:
@@ -321,7 +321,8 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog, def
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
     assert log_has(
-        'Failed to download history data for pair: "MEME/BTC", interval: 1m.',
+        'Failed to download history data for pair: "MEME/BTC", interval: 1m. '
+        'Error: File Error',
         caplog.record_tuples
     )
 
