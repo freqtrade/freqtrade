@@ -63,12 +63,8 @@ def load_tickerdata_file(
     Load a pair from file, either .json.gz or .json
     :return tickerlist or None if unsuccesful
     """
-    path = make_testdata_path(datadir)
-    pair_s = pair.replace('/', '_')
-    file = path.joinpath(f'{pair_s}-{ticker_interval}.json')
-
-    pairdata = misc.file_load_json(file)
-
+    filename = pair_data_filename(datadir, pair, ticker_interval)
+    pairdata = misc.file_load_json(filename)
     if not pairdata:
         return None
 
@@ -142,9 +138,16 @@ def load_data(datadir: Optional[Path],
     return result
 
 
-def make_testdata_path(datadir: Optional[Path]) -> Path:
+def make_datadir_path(datadir: Optional[Path]) -> Path:
     """Return the path where testdata files are stored"""
     return datadir or (Path(__file__).parent.parent / "tests" / "testdata").resolve()
+
+
+def pair_data_filename(datadir: Optional[Path], pair: str, ticker_interval: str) -> Path:
+    path = make_datadir_path(datadir)
+    pair_s = pair.replace("/", "_")
+    filename = path.joinpath(f'{pair_s}-{ticker_interval}.json')
+    return filename
 
 
 def load_cached_data_for_updating(filename: Path, ticker_interval: str,
@@ -209,9 +212,7 @@ def download_pair_history(datadir: Optional[Path],
         )
 
     try:
-        path = make_testdata_path(datadir)
-        filepair = pair.replace("/", "_")
-        filename = path.joinpath(f'{filepair}-{ticker_interval}.json')
+        filename = pair_data_filename(datadir, pair, ticker_interval)
 
         logger.info(
             f'Download history data for pair: "{pair}", interval: {ticker_interval} '
@@ -236,8 +237,9 @@ def download_pair_history(datadir: Optional[Path],
         misc.file_dump_json(filename, data)
         return True
 
-    except Exception:
+    except Exception as e:
         logger.error(
-            f'Failed to download history data for pair: "{pair}", interval: {ticker_interval}.'
+            f'Failed to download history data for pair: "{pair}", interval: {ticker_interval}. '
+            f'Error: {e}'
         )
         return False
