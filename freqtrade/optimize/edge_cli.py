@@ -73,9 +73,10 @@ class EdgeCli(object):
                         floatfmt=floatfmt, tablefmt="pipe")
 
     def start(self) -> None:
-        self.edge.calculate()
-        print('')  # blank like for readability
-        print(self._generate_edge_table(self.edge._cached_pairs))
+        result = self.edge.calculate()
+        if result:
+            print('')  # blank like for readability
+            print(self._generate_edge_table(self.edge._cached_pairs))
 
 
 def setup_configuration(args: Namespace) -> Dict[str, Any]:
