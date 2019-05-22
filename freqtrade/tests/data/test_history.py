@@ -16,7 +16,7 @@ from freqtrade.data import history
 from freqtrade.data.history import (download_pair_history,
                                     load_cached_data_for_updating,
                                     load_tickerdata_file,
-                                    make_datadir_path,
+                                    make_testdata_path,
                                     trim_tickerlist)
 from freqtrade.misc import file_dump_json
 from freqtrade.tests.conftest import get_patched_exchange, log_has
@@ -136,7 +136,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
 
 
 def test_testdata_path() -> None:
-    assert str(Path('freqtrade') / 'tests' / 'testdata') in str(make_datadir_path(None))
+    assert str(Path('freqtrade') / 'tests' / 'testdata') in str(make_testdata_path(None))
 
 
 def test_load_cached_data_for_updating(mocker) -> None:

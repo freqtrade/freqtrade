@@ -138,13 +138,13 @@ def load_data(datadir: Optional[Path],
     return result
 
 
-def make_datadir_path(datadir: Optional[Path]) -> Path:
+def make_testdata_path(datadir: Optional[Path]) -> Path:
     """Return the path where testdata files are stored"""
     return datadir or (Path(__file__).parent.parent / "tests" / "testdata").resolve()
 
 
 def pair_data_filename(datadir: Optional[Path], pair: str, ticker_interval: str) -> Path:
-    path = make_datadir_path(datadir)
+    path = make_testdata_path(datadir)
     pair_s = pair.replace("/", "_")
     filename = path.joinpath(f'{pair_s}-{ticker_interval}.json')
     return filename

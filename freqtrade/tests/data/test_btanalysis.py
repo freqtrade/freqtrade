@@ -2,12 +2,12 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
-from freqtrade.data.history import make_datadir_path
+from freqtrade.data.history import make_testdata_path
 
 
 def test_load_backtest_data():
 
-    filename = make_datadir_path(None) / "backtest-result_test.json"
+    filename = make_testdata_path(None) / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
     assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profitabs"]
