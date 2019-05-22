@@ -321,7 +321,8 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog, def
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
     assert log_has(
-        'Failed to download history data for pair: "MEME/BTC", interval: 1m.',
+        'Failed to download history data for pair: "MEME/BTC", interval: 1m. '
+        'Error: File Error',
         caplog.record_tuples
     )
 
