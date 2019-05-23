@@ -139,6 +139,7 @@ class Edge():
 
         # If no trade found then exit
         if len(trades) == 0:
+            logger.info("No trades found.")
             return False
 
         # Fill missing, calculable columns, profit, duration , abs etc.
