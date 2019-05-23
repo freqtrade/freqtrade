@@ -185,3 +185,12 @@ def test_testdata_dl_options() -> None:
     assert args.export == 'export/folder'
     assert args.days == 30
     assert args.exchange == 'binance'
+
+
+def test_check_int_positive() -> None:
+    assert Arguments.check_int_positive(2) == 2
+    assert Arguments.check_int_positive(6) == 6
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive(-6)
+
+    assert Arguments.check_int_positive(2.5) == 2
