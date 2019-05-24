@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-
 import argparse
 
 import pytest
@@ -194,3 +193,9 @@ def test_check_int_positive() -> None:
         Arguments.check_int_positive(-6)
 
     assert Arguments.check_int_positive(2.5) == 2
+    assert Arguments.check_int_positive("3") == 3
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("3.5")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("DeadBeef")
