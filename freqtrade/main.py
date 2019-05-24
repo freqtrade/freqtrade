@@ -54,8 +54,8 @@ def main(sysargv: List[str]) -> None:
     except OperationalException as e:
         logger.error(str(e))
         return_code = 2
-    except BaseException as e:
-        logger.exception('Fatal exception! ' + str(e))
+    except BaseException:
+        logger.exception('Fatal exception!')
     finally:
         if worker:
             worker.exit()
