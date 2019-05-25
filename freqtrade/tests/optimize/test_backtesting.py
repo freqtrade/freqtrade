@@ -17,7 +17,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.optimize import get_timeframe
+from freqtrade.data.history import get_timeframe
 from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
                                             start)
 from freqtrade.state import RunMode
@@ -472,7 +472,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
-    mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
+    mocker.patch('freqtrade.data.history.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -507,7 +507,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
-    mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
+    mocker.patch('freqtrade.data.history.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(

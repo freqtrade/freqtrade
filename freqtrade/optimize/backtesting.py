@@ -13,7 +13,6 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade import optimize
 from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
@@ -440,10 +439,10 @@ class Backtesting(object):
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
-            min_date, max_date = optimize.get_timeframe(data)
+            min_date, max_date = history.get_timeframe(data)
             # Validate dataframe for missing values (mainly at start and end, as fillup is called)
-            optimize.validate_backtest_data(data, min_date, max_date,
-                                            timeframe_to_minutes(self.ticker_interval))
+            history.validate_backtest_data(data, min_date, max_date,
+                                           timeframe_to_minutes(self.ticker_interval))
             logger.info(
                 'Backtesting with data from %s up to %s (%s days)..',
                 min_date.isoformat(),

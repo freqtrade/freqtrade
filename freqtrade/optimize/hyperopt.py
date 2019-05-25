@@ -23,9 +23,8 @@ from skopt.space import Dimension
 from freqtrade import DependencyException
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
-from freqtrade.data.history import load_data
+from freqtrade.data.history import load_data, get_timeframe, validate_backtest_data
 from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.optimize import get_timeframe, validate_backtest_data
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.resolvers import HyperOptResolver

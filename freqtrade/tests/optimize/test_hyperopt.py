@@ -12,7 +12,7 @@ from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
 from freqtrade.optimize.hyperopt import Hyperopt, setup_configuration, start
-from freqtrade.resolvers import HyperOptResolver
+from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
 from freqtrade.tests.optimize.test_backtesting import get_args
