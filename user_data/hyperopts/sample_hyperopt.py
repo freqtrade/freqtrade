@@ -79,9 +79,10 @@ class SampleHyperOpts(IHyperOpt):
                         dataframe['close'], dataframe['sar']
                     ))
 
-            dataframe.loc[
-                reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+            if conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, conditions),
+                    'buy'] = 1
 
             return dataframe
 
@@ -138,9 +139,10 @@ class SampleHyperOpts(IHyperOpt):
                         dataframe['sar'], dataframe['close']
                     ))
 
-            dataframe.loc[
-                reduce(lambda x, y: x & y, conditions),
-                'sell'] = 1
+            if conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, conditions),
+                    'sell'] = 1
 
             return dataframe
 
