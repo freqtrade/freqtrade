@@ -53,13 +53,16 @@ class ApiServer(RPC):
 
         return func_wrapper
 
+    def check_auth(self, username, password):
+        return (username == self._config['api_server'].get('username') and
+                password == self._config['api_server'].get('password'))
+
     def require_login(func):
 
         def func_wrapper(self, *args, **kwargs):
-            # Also accepts empty username/password if it's missing in both config and request
-            if (request.headers.get('username') == self._config['api_server'].get('username')
-               and request.headers.get('password') == self._config['api_server'].get('password')):
 
+            auth = request.authorization
+            if auth and self.check_auth(auth.username, auth.password):
                 return func(self, *args, **kwargs)
             else:
                 return jsonify({"error": "Unauthorized"}), 401
