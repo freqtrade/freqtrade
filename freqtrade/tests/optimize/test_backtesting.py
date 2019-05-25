@@ -18,8 +18,8 @@ from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timeframe
-from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
-                                            start)
+from freqtrade.optimize import setup_configuration, start_backtesting
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
@@ -178,7 +178,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         'backtesting'
     ]
 
-    config = setup_configuration(get_args(args))
+    config = setup_configuration(get_args(args), RunMode.BACKTEST)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -228,7 +228,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--export-filename', 'foo_bar.json'
     ]
 
-    config = setup_configuration(get_args(args))
+    config = setup_configuration(get_args(args), RunMode.BACKTEST)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -290,7 +290,7 @@ def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog
     ]
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        setup_configuration(get_args(args))
+        setup_configuration(get_args(args), RunMode.BACKTEST)
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:
@@ -307,7 +307,7 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
         'backtesting'
     ]
     args = get_args(args)
-    start(args)
+    start_backtesting(args)
     assert log_has(
         'Starting freqtrade in Backtesting mode',
         caplog.record_tuples
@@ -847,7 +847,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--disable-max-market-positions'
     ]
     args = get_args(args)
-    start(args)
+    start_backtesting(args)
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
@@ -901,7 +901,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'TestStrategy',
     ]
     args = get_args(args)
-    start(args)
+    start_backtesting(args)
     # 2 backtests, 4 tables
     assert backtestmock.call_count == 2
     assert gen_table_mock.call_count == 4
