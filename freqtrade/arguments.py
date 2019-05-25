@@ -340,7 +340,7 @@ class Arguments(object):
         Builds and attaches all subcommands
         :return: None
         """
-        from freqtrade.optimize import start_backtesting, start_hyperopt, edge_cli
+        from freqtrade.optimize import start_backtesting, start_hyperopt, start_edgecli
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -352,7 +352,7 @@ class Arguments(object):
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.')
-        edge_cmd.set_defaults(func=edge_cli.start)
+        edge_cmd.set_defaults(func=start_edgecli)
         self.optimizer_shared_options(edge_cmd)
         self.edge_options(edge_cmd)
 

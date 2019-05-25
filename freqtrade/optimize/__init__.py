@@ -97,3 +97,19 @@ def start_hyperopt(args: Namespace) -> None:
         # TODO: return False here in order to help freqtrade to exit
         # with non-zero exit code...
         # Same in Edge and Backtesting start() functions.
+
+
+def start_edgecli(args: Namespace) -> None:
+    """
+    Start Edge script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    from freqtrade.optimize.edge_cli import EdgeCli
+    # Initialize configuration
+    config = setup_configuration(args, RunMode.EDGECLI)
+    logger.info('Starting freqtrade in Edge mode')
+
+    # Initialize Edge object
+    edge_cli = EdgeCli(config)
+    edge_cli.start()
