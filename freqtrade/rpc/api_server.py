@@ -56,7 +56,7 @@ class ApiServer(RPC):
     def require_login(func):
 
         def func_wrapper(self, *args, **kwargs):
-            # Also works if no username/password is specified
+            # Also accepts empty username/password if it's missing in both config and request
             if (request.headers.get('username') == self._config['api_server'].get('username')
                and request.headers.get('password') == self._config['api_server'].get('password')):
 

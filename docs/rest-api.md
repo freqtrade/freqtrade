@@ -10,12 +10,17 @@ Sample configuration:
     "api_server": {
         "enabled": true,
         "listen_ip_address": "127.0.0.1",
-        "listen_port": 8080
+        "listen_port": 8080,
+        "username": "Freqtrader",
+        "password": "SuperSecret1!"
     },
 ```
 
 !!! Danger: Security warning
-  By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet, since others will potentially be able to control your bot.
+  By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
+
+!!! Danger: Password selection
+  Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
 
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/version` to check if the API is running correctly.
 
