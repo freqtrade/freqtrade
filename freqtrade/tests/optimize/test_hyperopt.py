@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime
 from unittest.mock import MagicMock
+from filelock import Timeout
 
 import pandas as pd
 import pytest
@@ -11,7 +12,7 @@ from freqtrade import DependencyException
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.history import load_tickerdata_file
 from freqtrade.optimize.default_hyperopt import DefaultHyperOpts
-from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
@@ -243,6 +244,28 @@ def test_start_failure(mocker, default_conf, caplog) -> None:
         start_hyperopt(args)
     assert log_has(
         "Please don't use --strategy for hyperopt.",
+        caplog.record_tuples
+    )
+
+
+def test_start_filelock(mocker, default_conf, caplog) -> None:
+    start_mock = MagicMock(side_effect=Timeout(HYPEROPT_LOCKFILE))
+    mocker.patch(
+        'freqtrade.configuration.Configuration._load_config_file',
+        lambda *args, **kwargs: default_conf
+    )
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    patch_exchange(mocker)
+
+    args = [
+        '--config', 'config.json',
+        'hyperopt',
+        '--epochs', '5'
+    ]
+    args = get_args(args)
+    start_hyperopt(args)
+    assert log_has(
+        "Another running instance of freqtrade Hyperopt detected.",
         caplog.record_tuples
     )
 
