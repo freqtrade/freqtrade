@@ -7,6 +7,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
 from flask import Flask
+from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.persistence import Trade
@@ -37,18 +38,14 @@ def botclient(default_conf, mocker):
 
 
 def client_post(client, url, data={}):
-    headers = {"username": _TEST_USER,
-               "password": _TEST_PASS}
     return client.post(url,
                        content_type="application/json",
                        data=data,
-                       headers=headers)
+                       headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS)})
 
 
 def client_get(client, url):
-    headers = {"username": _TEST_USER,
-               "password": _TEST_PASS}
-    return client.get(url, headers=headers)
+    return client.get(url, headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS)})
 
 
 def assert_response(response, expected_code=200):
@@ -93,8 +90,6 @@ def test_api_unauthorized(botclient):
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
     assert rc.json == {'error': 'Unauthorized'}
-
-
 
 
 def test_api_stop_workflow(botclient):

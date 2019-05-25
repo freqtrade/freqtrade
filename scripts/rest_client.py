@@ -30,8 +30,7 @@ class FtRestClient():
 
         self._serverurl = serverurl
         self._session = requests.Session()
-        self._username = username
-        self._password = password
+        self._session.auth = (username, password)
 
     def _call(self, method, apipath, params: dict = None, data=None, files=None):
 
@@ -43,12 +42,6 @@ class FtRestClient():
               "Content-Type": "application/json"
               }
 
-        if self._username:
-            hd.update({"username": self._username})
-
-        if self._password:
-            hd.update({"password": self._password})
-
         # Split url
         schema, netloc, path, par, query, fragment = urlparse(basepath)
         # URLEncode query string
@@ -57,9 +50,7 @@ class FtRestClient():
         url = urlunparse((schema, netloc, path, par, query, fragment))
 
         try:
-            resp = self._session.request(method, url, headers=hd, data=json.dumps(data),
-                                         # auth=self.session.auth
-                                         )
+            resp = self._session.request(method, url, headers=hd, data=json.dumps(data))
             # return resp.text
             return resp.json()
         except ConnectionError:
