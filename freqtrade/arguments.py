@@ -405,7 +405,7 @@ class Arguments(object):
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
     @staticmethod
-    def check_int_positive(value) -> int:
+    def check_int_positive(value: str) -> int:
         try:
             uint = int(value)
             if uint <= 0:
