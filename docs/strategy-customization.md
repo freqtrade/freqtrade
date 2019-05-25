@@ -53,6 +53,12 @@ file as reference.**
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
 
+!!! Warning Using future data
+    Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
+    needs to take care to avoid having the strategy utilize data from the future.
+    Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
+    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
+
 ### Customize Indicators
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.

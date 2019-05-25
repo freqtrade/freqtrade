@@ -122,9 +122,10 @@ So let's write the buy strategy using these values:
                         dataframe['macd'], dataframe['macdsignal']
                     ))
 
-            dataframe.loc[
-                reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+            if conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, conditions),
+                    'buy'] = 1
 
             return dataframe
 

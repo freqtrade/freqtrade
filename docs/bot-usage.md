@@ -103,7 +103,7 @@ If the bot does not find your strategy file, it will display in an error
 message the reason (File not found, or errors in your code).
 
 Learn more about strategy file in
-[optimize your bot](bot-optimization.md).
+[Strategy Customization](strategy-customization.md).
 
 ### How to use **--strategy-path**?
 
@@ -296,4 +296,4 @@ in [misc.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/misc.
 ## Next step
 
 The optimal strategy of the bot will change with time depending of the market trends. The next step is to
-[optimize your bot](bot-optimization.md).
+[Strategy Customization](strategy-customization.md).
