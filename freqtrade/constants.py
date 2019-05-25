@@ -166,8 +166,10 @@ CONF_SCHEMA = {
                     "minimum": 1024,
                     "maximum": 65535
                 },
+                'username': {'type': 'string'},
+                'password': {'type': 'string'},
             },
-            'required': ['enabled', 'listen_ip_address', 'listen_port']
+            'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
