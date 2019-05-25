@@ -28,7 +28,24 @@ def main(sysargv: List[str]) -> None:
     This function will initiate the bot and start the trading loop.
     :return: None
     """
+    set_loggers()
+    arguments = Arguments(
+        sysargv,
+        'Free, open source crypto trading bot'
+    )
+    args: Namespace = arguments.get_parsed_arg()
+
+    # A subcommand has been issued.
+    # Means if Backtesting or Hyperopt have been called we exit the bot
+    if hasattr(args, 'func'):
+        args.func(args)
+        return
+
+    worker = None
+    return_code = 1
     try:
+        set_loggers()
+
         worker = None
         return_code = 1
 
@@ -64,5 +81,4 @@ def main(sysargv: List[str]) -> None:
 
 
 if __name__ == '__main__':
-    set_loggers()
     main(sys.argv[1:])
