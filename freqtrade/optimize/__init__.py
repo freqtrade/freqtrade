@@ -1,1 +1,99 @@
-from freqtrade.optimize.default_hyperopt import DefaultHyperOpts  # noqa: F401
+import logging
+from argparse import Namespace
+from typing import Any, Dict
+
+from filelock import FileLock, Timeout
+
+from freqtrade import DependencyException, constants
+from freqtrade.configuration import Configuration
+from freqtrade.state import RunMode
+
+logger = logging.getLogger(__name__)
+
+
+def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+    """
+    Prepare the configuration for the Hyperopt module
+    :param args: Cli args from Arguments()
+    :return: Configuration
+    """
+    configuration = Configuration(args, method)
+    config = configuration.load_config()
+
+    # Ensure we do not use Exchange credentials
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
+
+    if method == RunMode.BACKTEST:
+        if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
+            raise DependencyException('stake amount could not be "%s" for backtesting' %
+                                      constants.UNLIMITED_STAKE_AMOUNT)
+
+    if method == RunMode.HYPEROPT:
+        # Special cases for Hyperopt
+        if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
+            logger.error("Please don't use --strategy for hyperopt.")
+            logger.error(
+                "Read the documentation at "
+                "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
+                "to understand how to configure hyperopt.")
+            raise DependencyException("--strategy configured but not supported for hyperopt")
+
+    return config
+
+
+def start_backtesting(args: Namespace) -> None:
+    """
+    Start Backtesting script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    # Import here to avoid loading backtesting module when it's not used
+    from freqtrade.optimize.backtesting import Backtesting
+
+    # Initialize configuration
+    config = setup_configuration(args, RunMode.BACKTEST)
+
+    logger.info('Starting freqtrade in Backtesting mode')
+
+    # Initialize backtesting object
+    backtesting = Backtesting(config)
+    backtesting.start()
+
+
+def start_hyperopt(args: Namespace) -> None:
+    """
+    Start hyperopt script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    # Import here to avoid loading hyperopt module when it's not used
+    from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
+
+    # Initialize configuration
+    config = setup_configuration(args, RunMode.HYPEROPT)
+
+    logger.info('Starting freqtrade in Hyperopt mode')
+
+    lock = FileLock(HYPEROPT_LOCKFILE)
+
+    try:
+        with lock.acquire(timeout=1):
+
+            # Remove noisy log messages
+            logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+            logging.getLogger('filelock').setLevel(logging.WARNING)
+
+            # Initialize backtesting object
+            hyperopt = Hyperopt(config)
+            hyperopt.start()
+
+    except Timeout:
+        logger.info("Another running instance of freqtrade Hyperopt detected.")
+        logger.info("Simultaneous execution of multiple Hyperopt commands is not supported. "
+                    "Hyperopt module is resource hungry. Please run your Hyperopts sequentially "
+                    "or on separate machines.")
+        logger.info("Quitting now.")
+        # TODO: return False here in order to help freqtrade to exit
+        # with non-zero exit code...
+        # Same in Edge and Backtesting start() functions.

@@ -4,7 +4,6 @@
 This module contains the backtesting logic
 """
 import logging
-from argparse import Namespace
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -13,9 +12,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exchange import timeframe_to_minutes
@@ -23,8 +20,7 @@ from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
-from freqtrade.strategy.interface import SellType, IStrategy
-
+from freqtrade.strategy.interface import IStrategy, SellType
 
 logger = logging.getLogger(__name__)
 
@@ -485,39 +481,3 @@ class Backtesting(object):
             print(' Strategy Summary '.center(133, '='))
             print(self._generate_text_table_strategy(all_results))
             print('\nFor more details, please look at the detail tables above')
-
-
-def setup_configuration(args: Namespace) -> Dict[str, Any]:
-    """
-    Prepare the configuration for the backtesting
-    :param args: Cli args from Arguments()
-    :return: Configuration
-    """
-    configuration = Configuration(args, RunMode.BACKTEST)
-    config = configuration.get_config()
-
-    # Ensure we do not use Exchange credentials
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
-
-    if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
-        raise DependencyException('stake amount could not be "%s" for backtesting' %
-                                  constants.UNLIMITED_STAKE_AMOUNT)
-
-    return config
-
-
-def start(args: Namespace) -> None:
-    """
-    Start Backtesting script
-    :param args: Cli args from Arguments()
-    :return: None
-    """
-    # Initialize configuration
-    config = setup_configuration(args)
-
-    logger.info('Starting freqtrade in Backtesting mode')
-
-    # Initialize backtesting object
-    backtesting = Backtesting(config)
-    backtesting.start()
