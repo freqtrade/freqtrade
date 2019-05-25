@@ -53,6 +53,19 @@ class ApiServer(RPC):
 
         return func_wrapper
 
+    def require_login(func):
+
+        def func_wrapper(self, *args, **kwargs):
+            # Also works if no username/password is specified
+            if (request.headers.get('username') == self._config['api_server'].get('username')
+               and request.headers.get('password') == self._config['api_server'].get('password')):
+
+                return func(self, *args, **kwargs)
+            else:
+                return jsonify({"error": "Unauthorized"}), 401
+
+        return func_wrapper
+
     def __init__(self, freqtrade) -> None:
         """
         Init the api server, and init the super class RPC
@@ -159,6 +172,7 @@ class ApiServer(RPC):
         # TODO: Implement the following
         # help (?)
 
+    @require_login
     def page_not_found(self, error):
         """
         Return "404 not found", 404.
@@ -169,6 +183,7 @@ class ApiServer(RPC):
             'code': 404
         }), 404
 
+    @require_login
     @rpc_catch_errors
     def _start(self):
         """
@@ -178,6 +193,7 @@ class ApiServer(RPC):
         msg = self._rpc_start()
         return self.rest_dump(msg)
 
+    @require_login
     @rpc_catch_errors
     def _stop(self):
         """
@@ -187,6 +203,7 @@ class ApiServer(RPC):
         msg = self._rpc_stop()
         return self.rest_dump(msg)
 
+    @require_login
     @rpc_catch_errors
     def _stopbuy(self):
         """
@@ -196,6 +213,7 @@ class ApiServer(RPC):
         msg = self._rpc_stopbuy()
         return self.rest_dump(msg)
 
+    @require_login
     @rpc_catch_errors
     def _version(self):
         """
@@ -203,6 +221,7 @@ class ApiServer(RPC):
         """
         return self.rest_dump({"version": __version__})
 
+    @require_login
     @rpc_catch_errors
     def _reload_conf(self):
         """
@@ -212,6 +231,7 @@ class ApiServer(RPC):
         msg = self._rpc_reload_conf()
         return self.rest_dump(msg)
 
+    @require_login
     @rpc_catch_errors
     def _count(self):
         """
@@ -221,6 +241,7 @@ class ApiServer(RPC):
         msg = self._rpc_count()
         return self.rest_dump(msg)
 
+    @require_login
     @rpc_catch_errors
     def _daily(self):
         """
@@ -238,6 +259,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
+    @require_login
     @rpc_catch_errors
     def _edge(self):
         """
@@ -248,6 +270,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
+    @require_login
     @rpc_catch_errors
     def _profit(self):
         """
@@ -264,6 +287,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
+    @require_login
     @rpc_catch_errors
     def _performance(self):
         """
@@ -278,6 +302,7 @@ class ApiServer(RPC):
 
         return self.rest_dump(stats)
 
+    @require_login
     @rpc_catch_errors
     def _status(self):
         """
@@ -288,6 +313,7 @@ class ApiServer(RPC):
         results = self._rpc_trade_status()
         return self.rest_dump(results)
 
+    @require_login
     @rpc_catch_errors
     def _balance(self):
         """
@@ -298,6 +324,7 @@ class ApiServer(RPC):
         results = self._rpc_balance(self._config.get('fiat_display_currency', ''))
         return self.rest_dump(results)
 
+    @require_login
     @rpc_catch_errors
     def _whitelist(self):
         """
@@ -306,6 +333,7 @@ class ApiServer(RPC):
         results = self._rpc_whitelist()
         return self.rest_dump(results)
 
+    @require_login
     @rpc_catch_errors
     def _blacklist(self):
         """
@@ -315,6 +343,7 @@ class ApiServer(RPC):
         results = self._rpc_blacklist(add)
         return self.rest_dump(results)
 
+    @require_login
     @rpc_catch_errors
     def _forcebuy(self):
         """
@@ -328,6 +357,7 @@ class ApiServer(RPC):
         else:
             return self.rest_dump({"status": f"Error buying pair {asset}."})
 
+    @require_login
     @rpc_catch_errors
     def _forcesell(self):
         """
