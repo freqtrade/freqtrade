@@ -187,13 +187,17 @@ def test_testdata_dl_options() -> None:
 
 
 def test_check_int_positive() -> None:
-    assert Arguments.check_int_positive(2) == 2
-    assert Arguments.check_int_positive(6) == 6
-    with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive(-6)
 
-    assert Arguments.check_int_positive(2.5) == 2
     assert Arguments.check_int_positive("3") == 3
+    assert Arguments.check_int_positive("1") == 1
+    assert Arguments.check_int_positive("100") == 100
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("-2")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("0")
+
     with pytest.raises(argparse.ArgumentTypeError):
         Arguments.check_int_positive("3.5")
 
