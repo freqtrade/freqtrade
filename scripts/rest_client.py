@@ -26,10 +26,12 @@ logger = logging.getLogger("ft_rest_client")
 
 class FtRestClient():
 
-    def __init__(self, serverurl):
+    def __init__(self, serverurl, username=None, password=None):
 
         self._serverurl = serverurl
         self._session = requests.Session()
+        self._username = username
+        self._password = password
 
     def _call(self, method, apipath, params: dict = None, data=None, files=None):
 
@@ -40,6 +42,12 @@ class FtRestClient():
         hd = {"Accept": "application/json",
               "Content-Type": "application/json"
               }
+
+        if self._username:
+            hd.update({"username": self._username})
+
+        if self._password:
+            hd.update({"password": self._password})
 
         # Split url
         schema, netloc, path, par, query, fragment = urlparse(basepath)
@@ -244,8 +252,11 @@ def main(args):
     config = load_config(args["config"])
     url = config.get("api_server", {}).get("server_url", "127.0.0.1")
     port = config.get("api_server", {}).get("listen_port", "8080")
+    username = config.get("api_server", {}).get("username")
+    password = config.get("api_server", {}).get("password")
+
     server_url = f"http://{url}:{port}"
-    client = FtRestClient(server_url)
+    client = FtRestClient(server_url, username, password)
 
     m = [x for x, y in inspect.getmembers(client) if not x.startswith('_')]
     command = args["command"]
