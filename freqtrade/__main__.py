@@ -6,9 +6,7 @@ To launch Freqtrade as a module
 > python -m freqtrade (with Python >= 3.6)
 """
 
-import sys
-
 from freqtrade import main
 
 if __name__ == '__main__':
-    main.main(sys.argv[1:])
+    main.main()
