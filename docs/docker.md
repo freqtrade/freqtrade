@@ -8,7 +8,7 @@ Start by downloading and installing Docker CE for your platform:
 * [Windows](https://docs.docker.com/docker-for-windows/install/)
 * [Linux](https://docs.docker.com/install/)
 
-Once you have Docker installed, simply create the config file (e.g. `config.json`) and run the image for `freqtrade` as explained below.
+Once you have Docker installed, simply prepare the config file (e.g. `config.json`) and run the image for `freqtrade` as explained below.
 
 ## Download the official FreqTrade docker image
 
@@ -74,7 +74,7 @@ touch tradesv3.dryrun.sqlite
 
 Best start by pulling the official docker image from dockerhub as explained [here](#download-the-official-docker-image) to speed up building.
 
-To add additional libaries to your docker image, best check out [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/Dockerfile.technical) which adds the [technical](https://github.com/freqtrade/technical) module to the image.
+To add additional libraries to your docker image, best check out [Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/Dockerfile.technical) which adds the [technical](https://github.com/freqtrade/technical) module to the image.
 
 ```bash
 docker build -t freqtrade -f Dockerfile.technical .
@@ -164,7 +164,7 @@ docker run -d \
     To override this behaviour use a custom db-url value: i.e.: `--db-url sqlite:///tradesv3.dryrun.sqlite`
 
 !!! Note
-    All available command line arguments can be added to the end of the `docker run` command.
+    All available bot command line parameters can be added to the end of the `docker run` command.
 
 ### Monitor your Docker instance
 
@@ -201,4 +201,4 @@ docker run -d \
 Head over to the [Backtesting Documentation](backtesting.md) for more details.
 
 !!! Note
-    Additional parameters can be appended after the image name (`freqtrade` in the above example).
+    Additional bot command line parameters can be appended after the image name (`freqtrade` in the above example).
