@@ -24,6 +24,13 @@ Sample configuration:
 
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/version` to check if the API is running correctly.
 
+To generate a secure password, either use a password manager, or use the below code snipped.
+
+``` python
+import secrets
+secrets.token_hex()
+```
+
 ### Configuration with docker
 
 If you run your bot using docker, you'll need to have the bot listen to incomming connections. The security is then handled by docker.

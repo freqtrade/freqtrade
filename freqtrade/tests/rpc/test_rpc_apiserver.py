@@ -156,7 +156,9 @@ def test_api_run(default_conf, mocker, caplog):
     server_mock.reset_mock()
     apiserver._config.update({"api_server": {"enabled": True,
                                              "listen_ip_address": "0.0.0.0",
-                                             "listen_port": "8089"}})
+                                             "listen_port": "8089",
+                                             "password": "",
+                                             }})
     apiserver.run()
 
     assert server_mock.call_count == 1
@@ -170,13 +172,15 @@ def test_api_run(default_conf, mocker, caplog):
     assert log_has("SECURITY WARNING - This is insecure please set to your loopback,"
                    "e.g 127.0.0.1 in config.json",
                    caplog.record_tuples)
+    assert log_has("SECURITY WARNING - No password for local REST Server defined. "
+                   "Please make sure that this is intentional!",
+                   caplog.record_tuples)
 
     # Test crashing flask
     caplog.clear()
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock(side_effect=Exception))
     apiserver.run()
-    assert log_has("Api server failed to start.",
-                   caplog.record_tuples)
+    assert log_has("Api server failed to start.", caplog.record_tuples)
 
 
 def test_api_cleanup(default_conf, mocker, caplog):
