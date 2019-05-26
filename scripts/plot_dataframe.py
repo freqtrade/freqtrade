@@ -74,7 +74,7 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
 
         file = Path(args.exportfilename)
         if file.exists():
-            load_backtest_data(file)
+            trades = load_backtest_data(file)
 
         else:
             trades = pd.DataFrame([], columns=BT_DATA_COLUMNS)
