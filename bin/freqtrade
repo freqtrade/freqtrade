@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import sys
+import warnings
+
+from freqtrade.main import main, set_loggers
+
+set_loggers()
+
+warnings.warn(
+    "Deprecated - To continue to run the bot like this, please run `pip install -e .` again.",
+    DeprecationWarning)
+main(sys.argv[1:])
