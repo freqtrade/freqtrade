@@ -25,8 +25,7 @@ def generate_row(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.m
     """
     for indicator in indicators:
         if indicator in data:
-            # TODO: Replace all Scatter with Scattergl for performance!!
-            scattergl = go.Scatter(
+            scattergl = go.Scattergl(
                 x=data['date'],
                 y=data[indicator],
                 mode='lines',
@@ -48,7 +47,7 @@ def plot_trades(fig, trades: pd.DataFrame):
     Plot trades to "fig"
     """
     # Trades can be empty
-    if trades is not None:
+    if trades is not None and len(trades) > 0:
         trade_buys = go.Scatter(
             x=trades["open_time"],
             y=trades["open_rate"],
@@ -123,44 +122,50 @@ def generate_graph(
 
     if 'buy' in data.columns:
         df_buy = data[data['buy'] == 1]
-        buys = go.Scatter(
-            x=df_buy.date,
-            y=df_buy.close,
-            mode='markers',
-            name='buy',
-            marker=dict(
-                symbol='triangle-up-dot',
-                size=9,
-                line=dict(width=1),
-                color='green',
+        if len(df_buy) > 0:
+            buys = go.Scattergl(
+                x=df_buy.date,
+                y=df_buy.close,
+                mode='markers',
+                name='buy',
+                marker=dict(
+                    symbol='triangle-up-dot',
+                    size=9,
+                    line=dict(width=1),
+                    color='green',
+                )
             )
-        )
-        fig.append_trace(buys, 1, 1)
+            fig.append_trace(buys, 1, 1)
+        else:
+            logger.warning("No buy-signals found.")
 
     if 'sell' in data.columns:
         df_sell = data[data['sell'] == 1]
-        sells = go.Scatter(
-            x=df_sell.date,
-            y=df_sell.close,
-            mode='markers',
-            name='sell',
-            marker=dict(
-                symbol='triangle-down-dot',
-                size=9,
-                line=dict(width=1),
-                color='red',
+        if len(df_sell) > 0:
+            sells = go.Scattergl(
+                x=df_sell.date,
+                y=df_sell.close,
+                mode='markers',
+                name='sell',
+                marker=dict(
+                    symbol='triangle-down-dot',
+                    size=9,
+                    line=dict(width=1),
+                    color='red',
+                )
             )
-        )
-        fig.append_trace(sells, 1, 1)
+            fig.append_trace(sells, 1, 1)
+        else:
+            logger.warning("No sell-signals found.")
 
     if 'bb_lowerband' in data and 'bb_upperband' in data:
-        bb_lower = go.Scatter(
+        bb_lower = go.Scattergl(
             x=data.date,
             y=data.bb_lowerband,
             name='BB lower',
             line={'color': 'rgba(255,255,255,0)'},
         )
-        bb_upper = go.Scatter(
+        bb_upper = go.Scattergl(
             x=data.date,
             y=data.bb_upperband,
             name='BB upper',

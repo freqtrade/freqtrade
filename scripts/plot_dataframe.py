@@ -51,11 +51,18 @@ _CONF: Dict[str, Any] = {}
 timeZone = pytz.UTC
 
 
-def load_trades(args: Namespace, pair: str) -> pd.DataFrame:
-    trades: pd.DataFrame = pd.DataFrame()
-    if args.db_url:
-        persistence.init(args.db_url, clean_open_orders=False)
+def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
+    """
+    Load trades, either from a DB (using dburl) or via a backtest export file.
+    :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
+    :param exportfilename: Path to a file exported from backtesting
+    :returns: Dataframe containing Trades
+    """
+    # TODO: Document and move to btanalysis
+    trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
 
+    if db_url:
+        persistence.init(db_url, clean_open_orders=False)
         columns = ["pair", "profit", "open_time", "close_time",
                    "open_rate", "close_rate", "duration"]
 
@@ -68,17 +75,14 @@ def load_trades(args: Namespace, pair: str) -> pd.DataFrame:
                                 t.open_rate, t.close_rate,
                                 t.close_date.timestamp() - t.open_date.timestamp()
                                 if t.close_date else None)
-                               for t in Trade.query.filter(Trade.pair.is_(pair)).all()],
+                               for t in Trade.query.all()],
                               columns=columns)
 
-    elif args.exportfilename:
+    elif exportfilename:
 
-        file = Path(args.exportfilename)
+        file = Path(exportfilename)
         if file.exists():
             trades = load_backtest_data(file)
-
-        else:
-            trades = pd.DataFrame([], columns=BT_DATA_COLUMNS)
 
     return trades
 
@@ -181,6 +185,7 @@ def extract_trades_of_period(dataframe, trades) -> pd.DataFrame:
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
     :return: the DataFrame of a trades of period
     """
+    # TODO: Document and move to btanalysis (?)
     trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
                         (trades['close_time'] <= dataframe.iloc[-1]['date'])]
     return trades
@@ -211,7 +216,9 @@ def analyse_and_plot_pairs(args: Namespace):
         tickers[pair] = data
         dataframe = generate_dataframe(strategy, tickers, pair)
 
-        trades = load_trades(args, pair)
+        trades = load_trades(pair, db_url=args.db_url,
+                             exportfilename=args.exportfilename)
+        trades = trades.loc[trades['pair'] == pair]
         trades = extract_trades_of_period(dataframe, trades)
 
         fig = generate_graph(
