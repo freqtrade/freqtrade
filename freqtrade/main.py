@@ -44,11 +44,10 @@ def main(sysargv: List[str]) -> None:
             args.func(args)
             # TODO: fetch return_code as returned by the command function here
             return_code = 0
-            return
-
-        # Load and run worker
-        worker = Worker(args)
-        worker.run()
+        else:
+            # Load and run worker
+            worker = Worker(args)
+            worker.run()
 
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
