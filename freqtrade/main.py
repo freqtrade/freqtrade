@@ -3,8 +3,14 @@
 Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
-import logging
+
 import sys
+# check min. python version
+if sys.version_info < (3, 6):
+    sys.exit("Freqtrade requires Python version >= 3.6")
+
+# flake8: noqa E402
+import logging
 from argparse import Namespace
 from typing import List
 
@@ -25,10 +31,6 @@ def main(sysargv: List[str]) -> None:
     try:
         worker = None
         return_code = 1
-
-        # check min. python version
-        if sys.version_info < (3, 6):
-            raise SystemError("Freqtrade requires Python version >= 3.6")
 
         arguments = Arguments(
             sysargv,
