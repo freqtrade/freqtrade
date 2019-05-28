@@ -87,7 +87,7 @@ The profit plotter shows a picture with three plots:
 The first graph is good to get a grip of how the overall market
 progresses.
 
-The second graph will show how you algorithm works or doesnt.
+The second graph will show how your algorithm works or doesn't.
 Perhaps you want an algorithm that steadily makes small profits,
 or one that acts less seldom, but makes big swings.
 
