@@ -1,6 +1,6 @@
 # Plotting
 
-This page explains how to plot prices, indicator, profits.
+This page explains how to plot prices, indicators and profits.
 
 ## Installation
 
@@ -9,8 +9,6 @@ Plotting scripts use Plotly library. Install/upgrade it with:
 ``` bash
 pip install -U -r requirements-plot.txt
 ```
-
-At least version 2.3.0 is required.
 
 ## Plot price and indicators
 
@@ -26,8 +24,14 @@ Example
 python3 scripts/plot_dataframe.py -p BTC/ETH
 ```
 
-The `-p` pairs argument, can be used to specify
-pairs you would like to plot.
+The `-p` pairs argument can be used to specify pairs you would like to plot.
+
+Specify custom indicators.
+Use `--indicators1` for the main plot and `--indicators2` for the subplot below (if values are in a different range than prices).
+
+``` bash
+python3 scripts/plot_dataframe.py -p BTC/ETH --indicators1 sma,ema --indicators2 macd
+```
 
 ### Advanced use
 
@@ -57,13 +61,13 @@ To plot trades stored in a database use `--db-url` argument:
 python3 scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH
 ```
 
-To polt trades from a backtesting result, use `--export-filename <filename>`
+To plot trades from a backtesting result, use `--export-filename <filename>`
 
 ``` bash
 python3 scripts/plot_dataframe.py --export-filename user_data/backtest_data/backtest-result.json -p BTC/ETH
 ```
 
-To plot a test strategy the strategy should have first be backtested.
+To plot a custom strategy the strategy should have first be backtested.
 The results may then be plotted with the -s argument:
 
 ``` bash
@@ -72,7 +76,7 @@ python3 scripts/plot_dataframe.py -s Strategy_Name -p BTC/ETH --datadir user_dat
 
 ## Plot profit
 
-The profit plotter show a picture with three plots:
+The profit plotter shows a picture with three plots:
 
 1) Average closing price for all pairs
 2) The summarized profit made by backtesting.
