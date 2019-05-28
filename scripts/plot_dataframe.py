@@ -51,7 +51,7 @@ _CONF: Dict[str, Any] = {}
 timeZone = pytz.UTC
 
 
-def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFrame:
+def load_trades(args: Namespace, pair: str) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame()
     if args.db_url:
         persistence.init(args.db_url, clean_open_orders=False)
@@ -96,9 +96,7 @@ def generate_plot_file(fig, pair, ticker_interval, is_last) -> None:
     Path("user_data/plots").mkdir(parents=True, exist_ok=True)
 
     plot(fig, filename=str(Path('user_data/plots').joinpath(file_name)),
-         auto_open=False,
-          include_plotlyjs='https://cdn.plot.ly/plotly-1.47.4.min.js'
-          )
+         auto_open=False)
     if is_last:
         plot(fig, filename=str(Path('user_data').joinpath('freqtrade-plot.html')), auto_open=False)
 
@@ -133,14 +131,13 @@ def get_trading_env(args: Namespace):
     return [strategy, exchange, pairs]
 
 
-def get_tickers_data(strategy, exchange, pairs: List[str], args):
+def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange, live: bool):
     """
     Get tickers data for each pairs on live or local, option defined in args
-    :return: dictinnary of tickers. output format: {'pair': tickersdata}
+    :return: dictionary of tickers. output format: {'pair': tickersdata}
     """
 
     ticker_interval = strategy.ticker_interval
-    timerange = Arguments.parse_timerange(args.timerange)
 
     tickers = history.load_data(
         datadir=Path(str(_CONF.get("datadir"))),
@@ -184,8 +181,51 @@ def extract_trades_of_period(dataframe, trades) -> pd.DataFrame:
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
     :return: the DataFrame of a trades of period
     """
-    trades = trades.loc[trades['open_time'] >= dataframe.iloc[0]['date']]
+    trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
+                        (trades['close_time'] <= dataframe.iloc[-1]['date'])]
     return trades
+
+
+def analyse_and_plot_pairs(args: Namespace):
+    """
+    From arguments provided in cli:
+    -Initialise backtest env
+    -Get tickers data
+    -Generate Dafaframes populated with indicators and signals
+    -Load trades excecuted on same periods
+    -Generate Plotly plot objects
+    -Generate plot files
+    :return: None
+    """
+    strategy, exchange, pairs = get_trading_env(args)
+    # Set timerange to use
+    timerange = Arguments.parse_timerange(args.timerange)
+    ticker_interval = strategy.ticker_interval
+
+    tickers = get_tickers_data(strategy, exchange, pairs, timerange, args.live)
+    pair_counter = 0
+    for pair, data in tickers.items():
+        pair_counter += 1
+        logger.info("analyse pair %s", pair)
+        tickers = {}
+        tickers[pair] = data
+        dataframe = generate_dataframe(strategy, tickers, pair)
+
+        trades = load_trades(args, pair)
+        trades = extract_trades_of_period(dataframe, trades)
+
+        fig = generate_graph(
+            pair=pair,
+            data=dataframe,
+            trades=trades,
+            indicators1=args.indicators1.split(","),
+            indicators2=args.indicators2.split(",")
+        )
+
+        is_last = (False, True)[pair_counter == len(tickers)]
+        generate_plot_file(fig, pair, ticker_interval, is_last)
+
+    logger.info('End of ploting process %s plots generated', pair_counter)
 
 
 def plot_parse_args(args: List[str]) -> Namespace:
@@ -225,49 +265,6 @@ def plot_parse_args(args: List[str]) -> Namespace:
     arguments.optimizer_shared_options(arguments.parser)
     arguments.backtesting_options(arguments.parser)
     return arguments.parse_args()
-
-
-def analyse_and_plot_pairs(args: Namespace):
-    """
-    From arguments provided in cli:
-    -Initialise backtest env
-    -Get tickers data
-    -Generate Dafaframes populated with indicators and signals
-    -Load trades excecuted on same periods
-    -Generate Plotly plot objects
-    -Generate plot files
-    :return: None
-    """
-    strategy, exchange, pairs = get_trading_env(args)
-    # Set timerange to use
-    timerange = Arguments.parse_timerange(args.timerange)
-    ticker_interval = strategy.ticker_interval
-
-    tickers = get_tickers_data(strategy, exchange, pairs, args)
-    pair_counter = 0
-    for pair, data in tickers.items():
-        pair_counter += 1
-        logger.info("analyse pair %s", pair)
-        tickers = {}
-        tickers[pair] = data
-        dataframe = generate_dataframe(strategy, tickers, pair)
-
-        trades = load_trades(args, pair, timerange)
-        trades = extract_trades_of_period(dataframe, trades)
-
-        fig = generate_graph(
-            pair=pair,
-            data=dataframe,
-            trades=trades,
-            indicators1=args.indicators1.split(","),
-            indicators2=args.indicators2.split(",")
-        )
-
-        is_last = (False, True)[pair_counter == len(tickers)]
-        generate_plot_file(fig, pair, ticker_interval, is_last)
-
-    logger.info('End of ploting process %s plots generated', pair_counter)
-
 
 def main(sysargv: List[str]) -> None:
     """
