@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 from freqtrade.arguments import Arguments
 from freqtrade.edge import PairInfo
-from freqtrade.optimize import start_edgecli, setup_configuration
+from freqtrade.optimize import start_edge, setup_configuration
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
@@ -28,8 +28,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         'edge'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.EDGECLI)
-    assert config['runmode'] == RunMode.EDGECLI
+    config = setup_configuration(get_args(args), RunMode.EDGE)
+    assert config['runmode'] == RunMode.EDGE
 
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
@@ -68,14 +68,14 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
         '--stoplosses=-0.01,-0.10,-0.001'
     ]
 
-    config = setup_configuration(get_args(args), RunMode.EDGECLI)
+    config = setup_configuration(get_args(args), RunMode.EDGE)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert config['runmode'] == RunMode.EDGECLI
+    assert config['runmode'] == RunMode.EDGE
     assert log_has(
         'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
@@ -107,7 +107,7 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
         'edge'
     ]
     args = get_args(args)
-    start_edgecli(args)
+    start_edge(args)
     assert log_has(
         'Starting freqtrade in Edge mode',
         caplog.record_tuples

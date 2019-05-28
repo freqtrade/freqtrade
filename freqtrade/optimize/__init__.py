@@ -99,7 +99,7 @@ def start_hyperopt(args: Namespace) -> None:
         # Same in Edge and Backtesting start() functions.
 
 
-def start_edgecli(args: Namespace) -> None:
+def start_edge(args: Namespace) -> None:
     """
     Start Edge script
     :param args: Cli args from Arguments()
@@ -107,7 +107,7 @@ def start_edgecli(args: Namespace) -> None:
     """
     from freqtrade.optimize.edge_cli import EdgeCli
     # Initialize configuration
-    config = setup_configuration(args, RunMode.EDGECLI)
+    config = setup_configuration(args, RunMode.EDGE)
     logger.info('Starting freqtrade in Edge mode')
 
     # Initialize Edge object
