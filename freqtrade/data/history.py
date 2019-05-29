@@ -129,11 +129,16 @@ def load_data(datadir: Optional[Path],
     Loads ticker history data for a list of pairs the given parameters
     :return: dict(<pair>:<tickerlist>)
     """
-    result = {}
+    result: Dict[str, DataFrame] = {}
     if live:
-        logger.info('Live: Downloading data for all defined pairs ...')
-        exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
-        result = {key[0]: value for key, value in exchange._klines.items() if value is not None}
+        if exchange:
+            logger.info('Live: Downloading data for all defined pairs ...')
+            exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
+            result = {key[0]: value for key, value in exchange._klines.items() if value is not None}
+        else:
+            raise OperationalException(
+                "Exchange needs to be initialized when using live data."
+            )
     else:
         logger.info('Using local backtesting data ...')
 

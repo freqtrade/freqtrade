@@ -139,21 +139,15 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
     ticker_interval = strategy.ticker_interval
     timerange = Arguments.parse_timerange(args.timerange)
 
-    tickers = {}
-    if args.live:
-        logger.info('Downloading pairs.')
-        exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
-        for pair in pairs:
-            tickers[pair] = exchange.klines((pair, ticker_interval))
-    else:
-        tickers = history.load_data(
-            datadir=Path(str(_CONF.get("datadir"))),
-            pairs=pairs,
-            ticker_interval=ticker_interval,
-            refresh_pairs=_CONF.get('refresh_pairs', False),
-            timerange=timerange,
-            exchange=Exchange(_CONF)
-        )
+    tickers = history.load_data(
+        datadir=Path(str(_CONF.get("datadir"))),
+        pairs=pairs,
+        ticker_interval=ticker_interval,
+        refresh_pairs=_CONF.get('refresh_pairs', False),
+        timerange=timerange,
+        exchange=Exchange(_CONF),
+        live=args.live,
+    )
 
     # No ticker found, impossible to download, len mismatch
     for pair, data in tickers.copy().items():
