@@ -20,7 +20,9 @@ def test_parse_args_backtesting(mocker) -> None:
     further argument parsing is done in test_arguments.py
     """
     backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
-    main(['backtesting'])
+    # it's sys.exit(0) at the end of backtesting
+    with pytest.raises(SystemExit):
+        main(['backtesting'])
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
     assert call_args.config == ['config.json']
@@ -33,7 +35,9 @@ def test_parse_args_backtesting(mocker) -> None:
 
 def test_main_start_hyperopt(mocker) -> None:
     hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
-    main(['hyperopt'])
+    # it's sys.exit(0) at the end of hyperopt
+    with pytest.raises(SystemExit):
+        main(['hyperopt'])
     assert hyperopt_mock.call_count == 1
     call_args = hyperopt_mock.call_args[0][0]
     assert call_args.config == ['config.json']
