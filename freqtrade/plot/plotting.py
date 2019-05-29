@@ -1,6 +1,7 @@
 import logging
-
 from typing import List
+
+import arrow
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ try:
     import plotly.graph_objs as go
 except ImportError:
     logger.exception("Module plotly not found \n Please install using `pip install plotly`")
-    exit()
+    exit(1)
 
 
 def generate_row(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.make_subplots:
@@ -25,9 +26,10 @@ def generate_row(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.m
     """
     for indicator in indicators:
         if indicator in data:
-            scattergl = go.Scattergl(
+            # TODO: Figure out why scattergl causes problems
+            scattergl = go.Scatter(
                 x=data['date'],
-                y=data[indicator],
+                y=data[indicator].values,
                 mode='lines',
                 name=indicator
             )
@@ -60,9 +62,14 @@ def plot_trades(fig, trades: pd.DataFrame):
                 color='green'
             )
         )
+        # Create description for sell summarizing the trade
+        desc = trades.apply(lambda row: f"{round(row['profitperc'], 3)}%, {row['sell_reason']}, "
+                                        f"{row['duration']}min",
+                            axis=1)
         trade_sells = go.Scatter(
             x=trades["close_time"],
             y=trades["close_rate"],
+            text=desc,
             mode='markers',
             name='trade_sell',
             marker=dict(
@@ -123,7 +130,7 @@ def generate_graph(
     if 'buy' in data.columns:
         df_buy = data[data['buy'] == 1]
         if len(df_buy) > 0:
-            buys = go.Scattergl(
+            buys = go.Scatter(
                 x=df_buy.date,
                 y=df_buy.close,
                 mode='markers',
@@ -142,7 +149,7 @@ def generate_graph(
     if 'sell' in data.columns:
         df_sell = data[data['sell'] == 1]
         if len(df_sell) > 0:
-            sells = go.Scattergl(
+            sells = go.Scatter(
                 x=df_sell.date,
                 y=df_sell.close,
                 mode='markers',
