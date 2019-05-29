@@ -27,7 +27,7 @@ class Arguments(object):
     Arguments Class. Manage the arguments received by the cli
     """
 
-    def __init__(self, args: List[str], description: str) -> None:
+    def __init__(self, args: Optional[List[str]], description: str) -> None:
         self.args = args
         self.parsed_arg: Optional[argparse.Namespace] = None
         self.parser = argparse.ArgumentParser(description=description)
