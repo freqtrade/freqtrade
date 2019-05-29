@@ -25,7 +25,7 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(config: Dict) -> None:
+def init(db_url: str, dry_run: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
@@ -33,7 +33,6 @@ def init(config: Dict) -> None:
     :param config: config to use
     :return: None
     """
-    db_url = config.get('db_url', None)
     kwargs = {}
 
     # Take care of thread ownership if in-memory db
@@ -57,7 +56,7 @@ def init(config: Dict) -> None:
     check_migrate(engine)
 
     # Clean dry_run DB if the db is not in-memory
-    if config.get('dry_run', False) and db_url != 'sqlite://':
+    if dry_run and db_url != 'sqlite://':
         clean_dry_run_db()
 
 
