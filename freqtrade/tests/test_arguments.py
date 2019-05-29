@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-
 import argparse
 
 import pytest
@@ -185,3 +184,22 @@ def test_testdata_dl_options() -> None:
     assert args.export == 'export/folder'
     assert args.days == 30
     assert args.exchange == 'binance'
+
+
+def test_check_int_positive() -> None:
+
+    assert Arguments.check_int_positive("3") == 3
+    assert Arguments.check_int_positive("1") == 1
+    assert Arguments.check_int_positive("100") == 100
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("-2")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("0")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("3.5")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        Arguments.check_int_positive("DeadBeef")

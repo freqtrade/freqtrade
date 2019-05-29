@@ -2,24 +2,25 @@
 
 import json
 import os
-from pathlib import Path
 import uuid
+from pathlib import Path
 from shutil import copyfile
 
 import arrow
-from pandas import DataFrame
 import pytest
+from pandas import DataFrame
 
 from freqtrade import OperationalException
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import (download_pair_history,
                                     load_cached_data_for_updating,
-                                    load_tickerdata_file,
-                                    make_testdata_path,
+                                    load_tickerdata_file, make_testdata_path,
                                     trim_tickerlist)
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
-from freqtrade.tests.conftest import get_patched_exchange, log_has
+from freqtrade.strategy.default_strategy import DefaultStrategy
+from freqtrade.tests.conftest import get_patched_exchange, log_has, patch_exchange
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -59,7 +60,11 @@ def _clean_test_file(file: str) -> None:
 def test_load_data_30min_ticker(mocker, caplog, default_conf) -> None:
     ld = history.load_pair_history(pair='UNITTEST/BTC', ticker_interval='30m', datadir=None)
     assert isinstance(ld, DataFrame)
-    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 30m', caplog.record_tuples)
+    assert not log_has(
+        'Download history data for pair: "UNITTEST/BTC", interval: 30m '
+        'and store in None.',
+        caplog.record_tuples
+    )
 
 
 def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
@@ -67,7 +72,7 @@ def test_load_data_7min_ticker(mocker, caplog, default_conf) -> None:
     assert not isinstance(ld, DataFrame)
     assert ld is None
     assert log_has(
-        'No data for pair: "UNITTEST/BTC", Interval: 7m. '
+        'No history data for pair: "UNITTEST/BTC", interval: 7m. '
         'Use --refresh-pairs-cached option or download_backtest_data.py '
         'script to download the data',
         caplog.record_tuples
@@ -80,7 +85,11 @@ def test_load_data_1min_ticker(ticker_history, mocker, caplog) -> None:
     _backup_file(file, copy_file=True)
     history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'])
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "UNITTEST/BTC", Interval: 1m', caplog.record_tuples)
+    assert not log_has(
+        'Download history data for pair: "UNITTEST/BTC", interval: 1m '
+        'and store in None.',
+        caplog.record_tuples
+    )
     _clean_test_file(file)
 
 
@@ -100,7 +109,7 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
                               pair='MEME/BTC')
     assert os.path.isfile(file) is False
     assert log_has(
-        'No data for pair: "MEME/BTC", Interval: 1m. '
+        'No history data for pair: "MEME/BTC", interval: 1m. '
         'Use --refresh-pairs-cached option or download_backtest_data.py '
         'script to download the data',
         caplog.record_tuples
@@ -113,7 +122,11 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
                               exchange=exchange,
                               pair='MEME/BTC')
     assert os.path.isfile(file) is True
-    assert log_has('Download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
+    assert log_has(
+        'Download history data for pair: "MEME/BTC", interval: 1m '
+        'and store in None.',
+        caplog.record_tuples
+    )
     with pytest.raises(OperationalException, match=r'Exchange needs to be initialized when.*'):
         history.load_pair_history(datadir=None,
                                   ticker_interval='1m',
@@ -293,7 +306,7 @@ def test_download_pair_history2(mocker, default_conf) -> None:
 
 def test_download_backtesting_data_exception(ticker_history, mocker, caplog, default_conf) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_history',
-                 side_effect=BaseException('File Error'))
+                 side_effect=Exception('File Error'))
 
     exchange = get_patched_exchange(mocker, default_conf)
 
@@ -308,7 +321,11 @@ def test_download_backtesting_data_exception(ticker_history, mocker, caplog, def
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert log_has('Failed to download the pair: "MEME/BTC", Interval: 1m', caplog.record_tuples)
+    assert log_has(
+        'Failed to download history data for pair: "MEME/BTC", interval: 1m. '
+        'Error: File Error',
+        caplog.record_tuples
+    )
 
 
 def test_load_tickerdata_file() -> None:
@@ -479,3 +496,62 @@ def test_file_dump_json_tofile() -> None:
 
     # Remove the file
     _clean_test_file(file)
+
+
+def test_get_timeframe(default_conf, mocker) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    data = strategy.tickerdata_to_dataframe(
+        history.load_data(
+            datadir=None,
+            ticker_interval='1m',
+            pairs=['UNITTEST/BTC']
+        )
+    )
+    min_date, max_date = history.get_timeframe(data)
+    assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
+
+
+def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    data = strategy.tickerdata_to_dataframe(
+        history.load_data(
+            datadir=None,
+            ticker_interval='1m',
+            pairs=['UNITTEST/BTC'],
+            fill_up_missing=False
+        )
+    )
+    min_date, max_date = history.get_timeframe(data)
+    caplog.clear()
+    assert history.validate_backtest_data(data, min_date, max_date,
+                                          timeframe_to_minutes('1m'))
+    assert len(caplog.record_tuples) == 1
+    assert log_has(
+        "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
+        caplog.record_tuples)
+
+
+def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
+    patch_exchange(mocker)
+    strategy = DefaultStrategy(default_conf)
+
+    timerange = TimeRange('index', 'index', 200, 250)
+    data = strategy.tickerdata_to_dataframe(
+        history.load_data(
+            datadir=None,
+            ticker_interval='5m',
+            pairs=['UNITTEST/BTC'],
+            timerange=timerange
+        )
+    )
+
+    min_date, max_date = history.get_timeframe(data)
+    caplog.clear()
+    assert not history.validate_backtest_data(data, min_date, max_date,
+                                              timeframe_to_minutes('5m'))
+    assert len(caplog.record_tuples) == 0

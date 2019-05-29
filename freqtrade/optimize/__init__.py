@@ -1,49 +1,115 @@
-# pragma pylint: disable=missing-docstring
-
 import logging
-from datetime import datetime
-from typing import Dict, Tuple
-import operator
+from argparse import Namespace
+from typing import Any, Dict
 
-import arrow
-from pandas import DataFrame
+from filelock import FileLock, Timeout
 
-from freqtrade.optimize.default_hyperopt import DefaultHyperOpts  # noqa: F401
+from freqtrade import DependencyException, constants
+from freqtrade.configuration import Configuration
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
 
-def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
+def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
     """
-    Get the maximum timeframe for the given backtest data
-    :param data: dictionary with preprocessed backtesting data
-    :return: tuple containing min_date, max_date
+    Prepare the configuration for the Hyperopt module
+    :param args: Cli args from Arguments()
+    :return: Configuration
     """
-    timeframe = [
-        (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
-        for frame in data.values()
-    ]
-    return min(timeframe, key=operator.itemgetter(0))[0], \
-        max(timeframe, key=operator.itemgetter(1))[1]
+    configuration = Configuration(args, method)
+    config = configuration.load_config()
+
+    # Ensure we do not use Exchange credentials
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
+
+    if method == RunMode.BACKTEST:
+        if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
+            raise DependencyException('stake amount could not be "%s" for backtesting' %
+                                      constants.UNLIMITED_STAKE_AMOUNT)
+
+    if method == RunMode.HYPEROPT:
+        # Special cases for Hyperopt
+        if config.get('strategy') and config.get('strategy') != 'DefaultStrategy':
+            logger.error("Please don't use --strategy for hyperopt.")
+            logger.error(
+                "Read the documentation at "
+                "https://github.com/freqtrade/freqtrade/blob/develop/docs/hyperopt.md "
+                "to understand how to configure hyperopt.")
+            raise DependencyException("--strategy configured but not supported for hyperopt")
+
+    return config
 
 
-def validate_backtest_data(data: Dict[str, DataFrame], min_date: datetime,
-                           max_date: datetime, ticker_interval_mins: int) -> bool:
+def start_backtesting(args: Namespace) -> None:
     """
-    Validates preprocessed backtesting data for missing values and shows warnings about it that.
+    Start Backtesting script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    # Import here to avoid loading backtesting module when it's not used
+    from freqtrade.optimize.backtesting import Backtesting
 
-    :param data: dictionary with preprocessed backtesting data
-    :param min_date: start-date of the data
-    :param max_date: end-date of the data
-    :param ticker_interval_mins: ticker interval in minutes
+    # Initialize configuration
+    config = setup_configuration(args, RunMode.BACKTEST)
+
+    logger.info('Starting freqtrade in Backtesting mode')
+
+    # Initialize backtesting object
+    backtesting = Backtesting(config)
+    backtesting.start()
+
+
+def start_hyperopt(args: Namespace) -> None:
     """
-    # total difference in minutes / interval-minutes
-    expected_frames = int((max_date - min_date).total_seconds() // 60 // ticker_interval_mins)
-    found_missing = False
-    for pair, df in data.items():
-        dflen = len(df)
-        if dflen < expected_frames:
-            found_missing = True
-            logger.warning("%s has missing frames: expected %s, got %s, that's %s missing values",
-                           pair, expected_frames, dflen, expected_frames - dflen)
-    return found_missing
+    Start hyperopt script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    # Import here to avoid loading hyperopt module when it's not used
+    from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
+
+    # Initialize configuration
+    config = setup_configuration(args, RunMode.HYPEROPT)
+
+    logger.info('Starting freqtrade in Hyperopt mode')
+
+    lock = FileLock(HYPEROPT_LOCKFILE)
+
+    try:
+        with lock.acquire(timeout=1):
+
+            # Remove noisy log messages
+            logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
+            logging.getLogger('filelock').setLevel(logging.WARNING)
+
+            # Initialize backtesting object
+            hyperopt = Hyperopt(config)
+            hyperopt.start()
+
+    except Timeout:
+        logger.info("Another running instance of freqtrade Hyperopt detected.")
+        logger.info("Simultaneous execution of multiple Hyperopt commands is not supported. "
+                    "Hyperopt module is resource hungry. Please run your Hyperopts sequentially "
+                    "or on separate machines.")
+        logger.info("Quitting now.")
+        # TODO: return False here in order to help freqtrade to exit
+        # with non-zero exit code...
+        # Same in Edge and Backtesting start() functions.
+
+
+def start_edge(args: Namespace) -> None:
+    """
+    Start Edge script
+    :param args: Cli args from Arguments()
+    :return: None
+    """
+    from freqtrade.optimize.edge_cli import EdgeCli
+    # Initialize configuration
+    config = setup_configuration(args, RunMode.EDGE)
+    logger.info('Starting freqtrade in Edge mode')
+
+    # Initialize Edge object
+    edge_cli = EdgeCli(config)
+    edge_cli.start()

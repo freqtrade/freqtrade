@@ -53,6 +53,12 @@ file as reference.**
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
 
+!!! Warning Using future data
+    Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
+    needs to take care to avoid having the strategy utilize data from the future.
+    Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
+    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
+
 ### Customize Indicators
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
@@ -344,6 +350,30 @@ if self.wallets:
 - `get_free(asset)` - currently available balance to trade
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
+
+### Print created dataframe
+
+To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
+You may also want to print the pair so it's clear what data is currently shown.
+
+``` python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            #>> whatever condition<<<
+        ),
+        'buy'] = 1
+
+    # Print the Analyzed pair
+    print(f"result for {metadata['pair']}")
+
+    # Inspect the last 5 rows
+    print(dataframe.tail())
+
+    return dataframe
+```
+
+Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
 ### Where is the default strategy?
 

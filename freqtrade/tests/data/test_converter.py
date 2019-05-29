@@ -2,8 +2,7 @@
 import logging
 
 from freqtrade.data.converter import parse_ticker_dataframe, ohlcv_fill_up_missing_data
-from freqtrade.data.history import load_pair_history
-from freqtrade.optimize import validate_backtest_data, get_timeframe
+from freqtrade.data.history import load_pair_history, validate_backtest_data, get_timeframe
 from freqtrade.tests.conftest import log_has
 
 

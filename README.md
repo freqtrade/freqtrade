@@ -129,7 +129,6 @@ The project is currently setup in two main branches:
 - `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
 
-
 ## A note on Binance
 
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.

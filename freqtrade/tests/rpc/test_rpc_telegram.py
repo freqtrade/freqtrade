@@ -192,7 +192,10 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
             'trade_id': 1,
             'pair': 'ETH/BTC',
             'base_currency': 'BTC',
-            'date': arrow.utcnow(),
+            'open_date': arrow.utcnow(),
+            'open_date_hum': arrow.utcnow().humanize,
+            'close_date': None,
+            'close_date_hum': None,
             'open_rate': 1.099e-05,
             'close_rate': None,
             'current_rate': 1.098e-05,
@@ -519,6 +522,11 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
             'total': 1.0,
             'free': 1.0,
             'used': 0.0
+            },
+        'EUR': {
+            'total': 10.0,
+            'free': 10.0,
+            'used': 0.0
             }
     }
 
@@ -562,6 +570,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     assert '*BTC:*' in result
     assert '*ETH:*' not in result
     assert '*USDT:*' in result
+    assert '*EUR:*' in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC:  12.00000000' in result

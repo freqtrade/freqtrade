@@ -1,7 +1,8 @@
 # pragma pylint: disable=missing-docstring, C0103
-from unittest.mock import MagicMock
 import logging
+from unittest.mock import MagicMock
 
+import arrow
 import pytest
 from sqlalchemy import create_engine
 
@@ -710,3 +711,69 @@ def test_get_open(default_conf, fee):
     Trade.session.add(trade)
 
     assert len(Trade.get_open_trades()) == 2
+
+
+def test_to_json(default_conf, fee):
+    init(default_conf)
+
+    # Simulate dry_run entries
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        open_rate=0.123,
+        exchange='bittrex',
+        open_order_id='dry_run_buy_12345'
+    )
+    result = trade.to_json()
+    assert isinstance(result, dict)
+    print(result)
+
+    assert result == {'trade_id': None,
+                      'pair': 'ETH/BTC',
+                      'open_date_hum': '2 hours ago',
+                      'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'close_date_hum': None,
+                      'close_date': None,
+                      'open_rate': 0.123,
+                      'close_rate': None,
+                      'amount': 123.0,
+                      'stake_amount': 0.001,
+                      'stop_loss': None,
+                      'stop_loss_pct': None,
+                      'initial_stop_loss': None,
+                      'initial_stop_loss_pct': None}
+
+    # Simulate dry_run entries
+    trade = Trade(
+        pair='XRP/BTC',
+        stake_amount=0.001,
+        amount=100.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        close_date=arrow.utcnow().shift(hours=-1).datetime,
+        open_rate=0.123,
+        close_rate=0.125,
+        exchange='bittrex',
+    )
+    result = trade.to_json()
+    assert isinstance(result, dict)
+
+    assert result == {'trade_id': None,
+                      'pair': 'XRP/BTC',
+                      'open_date_hum': '2 hours ago',
+                      'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'close_date_hum': 'an hour ago',
+                      'close_date': trade.close_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'open_rate': 0.123,
+                      'close_rate': 0.125,
+                      'amount': 100.0,
+                      'stake_amount': 0.001,
+                      'stop_loss': None,
+                      'stop_loss_pct': None,
+                      'initial_stop_loss': None,
+                      'initial_stop_loss_pct': None}

@@ -2,8 +2,9 @@ site_name: Freqtrade
 nav:
     - About: index.md
     - Installation: installation.md
+    - Installation Docker: docker.md
     - Configuration: configuration.md
-    - Custom Strategy: bot-optimization.md
+    - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md
     - Start the bot: bot-usage.md
     - Control the bot:
