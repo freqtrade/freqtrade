@@ -401,24 +401,17 @@ class Backtesting(object):
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
-        if self.config.get('live'):
-            logger.info('Downloading data for all pairs in whitelist ...')
-            self.exchange.refresh_latest_ohlcv([(pair, self.ticker_interval) for pair in pairs])
-            data = {key[0]: value for key, value in self.exchange._klines.items()}
-
-        else:
-            logger.info('Using local backtesting data (using whitelist in given config) ...')
-
-            timerange = Arguments.parse_timerange(None if self.config.get(
-                'timerange') is None else str(self.config.get('timerange')))
-            data = history.load_data(
-                datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
-                pairs=pairs,
-                ticker_interval=self.ticker_interval,
-                refresh_pairs=self.config.get('refresh_pairs', False),
-                exchange=self.exchange,
-                timerange=timerange
-            )
+        timerange = Arguments.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+        data = history.load_data(
+            datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
+            pairs=pairs,
+            ticker_interval=self.ticker_interval,
+            refresh_pairs=self.config.get('refresh_pairs', False),
+            exchange=self.exchange,
+            timerange=timerange,
+            live=self.config.get('live', False)
+        )
 
         if not data:
             logger.critical("No data found. Terminating.")
