@@ -19,7 +19,7 @@ def test_parse_args_backtesting(mocker) -> None:
     Test that main() can start backtesting and also ensure we can pass some specific arguments
     further argument parsing is done in test_arguments.py
     """
-    backtesting_mock = mocker.patch('freqtrade.optimize.backtesting.start', MagicMock())
+    backtesting_mock = mocker.patch('freqtrade.optimize.start_backtesting', MagicMock())
     main(['backtesting'])
     assert backtesting_mock.call_count == 1
     call_args = backtesting_mock.call_args[0][0]
@@ -32,7 +32,7 @@ def test_parse_args_backtesting(mocker) -> None:
 
 
 def test_main_start_hyperopt(mocker) -> None:
-    hyperopt_mock = mocker.patch('freqtrade.optimize.hyperopt.start', MagicMock())
+    hyperopt_mock = mocker.patch('freqtrade.optimize.start_hyperopt', MagicMock())
     main(['hyperopt'])
     assert hyperopt_mock.call_count == 1
     call_args = hyperopt_mock.call_args[0][0]

@@ -4,16 +4,13 @@
 This module contains the edge backtesting interface
 """
 import logging
-from argparse import Namespace
 from typing import Dict, Any
 from tabulate import tabulate
 from freqtrade.edge import Edge
 
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
 from freqtrade.exchange import Exchange
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
@@ -77,34 +74,3 @@ class EdgeCli(object):
         if result:
             print('')  # blank line for readability
             print(self._generate_edge_table(self.edge._cached_pairs))
-
-
-def setup_configuration(args: Namespace) -> Dict[str, Any]:
-    """
-    Prepare the configuration for edge backtesting
-    :param args: Cli args from Arguments()
-    :return: Configuration
-    """
-    configuration = Configuration(args, RunMode.EDGECLI)
-    config = configuration.get_config()
-
-    # Ensure we do not use Exchange credentials
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
-
-    return config
-
-
-def start(args: Namespace) -> None:
-    """
-    Start Edge script
-    :param args: Cli args from Arguments()
-    :return: None
-    """
-    # Initialize configuration
-    config = setup_configuration(args)
-    logger.info('Starting freqtrade in Edge mode')
-
-    # Initialize Edge object
-    edge_cli = EdgeCli(config)
-    edge_cli.start()

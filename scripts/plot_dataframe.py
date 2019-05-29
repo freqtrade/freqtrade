@@ -41,9 +41,10 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
 from freqtrade.exchange import Exchange
-from freqtrade.optimize.backtesting import setup_configuration
+from freqtrade.optimize import setup_configuration
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
@@ -107,7 +108,7 @@ def get_trading_env(args: Namespace):
     global _CONF
 
     # Load the configuration
-    _CONF.update(setup_configuration(args))
+    _CONF.update(setup_configuration(args, RunMode.BACKTEST))
     print(_CONF)
 
     pairs = args.pairs.split(',')
