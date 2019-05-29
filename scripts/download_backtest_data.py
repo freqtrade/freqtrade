@@ -1,39 +1,39 @@
 #!/usr/bin/env python3
 """
-This script generates json data
+This script generates json files with pairs history data
 """
+import arrow
 import json
 import sys
 from pathlib import Path
-import arrow
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from freqtrade.arguments import Arguments
-from freqtrade.arguments import TimeRange
-from freqtrade.exchange import Exchange
+from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.configuration import Configuration
 from freqtrade.data.history import download_pair_history
-from freqtrade.configuration import Configuration, set_loggers
+from freqtrade.exchange import Exchange
 from freqtrade.misc import deep_merge_dicts
 
 import logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-)
-set_loggers(0)
+
+logger = logging.getLogger('download_backtest_data')
 
 DEFAULT_DL_PATH = 'user_data/data'
 
 arguments = Arguments(sys.argv[1:], 'download utility')
-arguments.testdata_dl_options()
-args = arguments.parse_args()
+arguments.download_data_options()
+
+# Do not read the default config if config is not specified
+# in the command line options explicitely
+args = arguments.parse_args(no_default_config=True)
 
 timeframes = args.timeframes
+pairs: List = []
+
+configuration = Configuration(args)
+config: Dict[str, Any] = {}
 
 if args.config:
-    configuration = Configuration(args)
-
-    config: Dict[str, Any] = {}
     # Now expecting a list of config filenames here, not a string
     for path in args.config:
         print(f"Using config: {path}...")
@@ -42,9 +42,19 @@ if args.config:
 
     config['stake_currency'] = ''
     # Ensure we do not use Exchange credentials
+    config['exchange']['dry_run'] = True
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
+
+    if args.exchange:
+        config['exchange']['name'] = args.exchange
+
+    pairs = config['exchange']['pair_whitelist']
+    timeframes = [config['ticker_interval']]
+
 else:
+    if not args.exchange:
+        sys.exit("No exchange specified.")
     config = {
         'stake_currency': '',
         'dry_run': True,
@@ -60,55 +70,59 @@ else:
         }
     }
 
+configuration._load_logging_config(config)
+configuration._load_datadir_config(config)
 
-dl_path = Path(DEFAULT_DL_PATH).joinpath(config['exchange']['name'])
-if args.export:
-    dl_path = Path(args.export)
-
-if not dl_path.is_dir():
-    sys.exit(f'Directory {dl_path} does not exist.')
+dl_path = Path(config['datadir'])
 
 pairs_file = Path(args.pairs_file) if args.pairs_file else dl_path.joinpath('pairs.json')
-if not pairs_file.exists():
-    sys.exit(f'No pairs file found with path {pairs_file}.')
 
-with pairs_file.open() as file:
-    PAIRS = list(set(json.load(file)))
+if not pairs or args.pairs_file:
+    print(f'Reading pairs file "{pairs_file}".')
+    # Download pairs from the pairs file if no config is specified
+    # or if pairs file is specified explicitely
+    if not pairs_file.exists():
+        sys.exit(f'No pairs file found with path "{pairs_file}".')
 
-PAIRS.sort()
+    with pairs_file.open() as file:
+        pairs = list(set(json.load(file)))
 
+    pairs.sort()
 
 timerange = TimeRange()
 if args.days:
     time_since = arrow.utcnow().shift(days=-args.days).strftime("%Y%m%d")
     timerange = arguments.parse_timerange(f'{time_since}-')
 
+print(f'About to download pairs: {pairs}, intervals: {timeframes} to {dl_path}')
 
-print(f'About to download pairs: {PAIRS} to {dl_path}')
-
-# Init exchange
-exchange = Exchange(config)
 pairs_not_available = []
 
-for pair in PAIRS:
-    if pair not in exchange._api.markets:
-        pairs_not_available.append(pair)
-        print(f"skipping pair {pair}")
-        continue
-    for ticker_interval in timeframes:
-        pair_print = pair.replace('/', '_')
-        filename = f'{pair_print}-{ticker_interval}.json'
-        dl_file = dl_path.joinpath(filename)
-        if args.erase and dl_file.exists():
-            print(f'Deleting existing data for pair {pair}, interval {ticker_interval}')
-            dl_file.unlink()
+try:
+    # Init exchange
+    exchange = Exchange(config)
 
-        print(f'downloading pair {pair}, interval {ticker_interval}')
-        download_pair_history(datadir=dl_path, exchange=exchange,
-                              pair=pair,
-                              ticker_interval=ticker_interval,
-                              timerange=timerange)
+    for pair in pairs:
+        if pair not in exchange._api.markets:
+            pairs_not_available.append(pair)
+            print(f"skipping pair {pair}")
+            continue
+        for ticker_interval in timeframes:
+            pair_print = pair.replace('/', '_')
+            filename = f'{pair_print}-{ticker_interval}.json'
+            dl_file = dl_path.joinpath(filename)
+            if args.erase and dl_file.exists():
+                print(f'Deleting existing data for pair {pair}, interval {ticker_interval}')
+                dl_file.unlink()
 
+            print(f'downloading pair {pair}, interval {ticker_interval}')
+            download_pair_history(datadir=dl_path, exchange=exchange,
+                                  pair=pair, ticker_interval=ticker_interval,
+                                  timerange=timerange)
 
-if pairs_not_available:
-    print(f"Pairs [{','.join(pairs_not_available)}] not availble.")
+except KeyboardInterrupt:
+    sys.exit("SIGINT received, aborting ...")
+
+finally:
+    if pairs_not_available:
+        print(f"Pairs [{','.join(pairs_not_available)}] not availble.")

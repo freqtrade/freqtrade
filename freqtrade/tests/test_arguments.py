@@ -170,18 +170,18 @@ def test_parse_args_hyperopt_custom() -> None:
     assert call_args.func is not None
 
 
-def test_testdata_dl_options() -> None:
+def test_download_data_options() -> None:
     args = [
         '--pairs-file', 'file_with_pairs',
-        '--export', 'export/folder',
+        '--datadir', 'datadir/folder',
         '--days', '30',
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
-    arguments.testdata_dl_options()
+    arguments.download_data_options()
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'
-    assert args.export == 'export/folder'
+    assert args.datadir == 'datadir/folder'
     assert args.days == 30
     assert args.exchange == 'binance'
 
