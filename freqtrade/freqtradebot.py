@@ -73,7 +73,7 @@ class FreqtradeBot(object):
 
         self.active_pair_whitelist: List[str] = self.config['exchange']['pair_whitelist']
 
-        persistence.init(self.config.get('db_url', None), self.config.get('dry_run', False))
+        persistence.init(self.config.get('db_url', None), self.config.get('dry_run'))
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
