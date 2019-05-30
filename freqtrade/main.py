@@ -52,13 +52,15 @@ def main(sysargv: List[str] = None) -> None:
             worker = Worker(args)
             worker.run()
 
+    except SystemExit as e:
+        return_code = e
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
     except OperationalException as e:
         logger.error(str(e))
         return_code = 2
-    except BaseException:
+    except Exception:
         logger.exception('Fatal exception!')
     finally:
         if worker:
