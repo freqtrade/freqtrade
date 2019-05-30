@@ -125,4 +125,4 @@ except KeyboardInterrupt:
 
 finally:
     if pairs_not_available:
-        logger.info(f"Pairs [{','.join(pairs_not_available)}] not availble.")
+        logger.info(f"Pairs [{','.join(pairs_not_available)}] not available.")
