@@ -467,7 +467,7 @@ class Arguments(object):
             help='File containing a list of pairs to download.',
             dest='pairs_file',
             default=None,
-            metavar='PATH',
+            metavar='FILE',
         )
         self.parser.add_argument(
             '--days',
