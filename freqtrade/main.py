@@ -12,7 +12,7 @@ if sys.version_info < (3, 6):
 # flake8: noqa E402
 import logging
 from argparse import Namespace
-from typing import List
+from typing import Any, List
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
@@ -29,11 +29,10 @@ def main(sysargv: List[str] = None) -> None:
     :return: None
     """
 
+    return_code: Any = 1
+    worker = None
     try:
         set_loggers()
-
-        worker = None
-        return_code = 1
 
         arguments = Arguments(
             sysargv,
@@ -52,13 +51,15 @@ def main(sysargv: List[str] = None) -> None:
             worker = Worker(args)
             worker.run()
 
+    except SystemExit as e:
+        return_code = e
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
     except OperationalException as e:
         logger.error(str(e))
         return_code = 2
-    except BaseException:
+    except Exception:
         logger.exception('Fatal exception!')
     finally:
         if worker:
