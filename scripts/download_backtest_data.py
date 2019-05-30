@@ -105,17 +105,18 @@ try:
     for pair in pairs:
         if pair not in exchange._api.markets:
             pairs_not_available.append(pair)
-            logger.info(f"skipping pair {pair}")
+            logger.info(f"Skipping pair {pair}...")
             continue
         for ticker_interval in timeframes:
             pair_print = pair.replace('/', '_')
             filename = f'{pair_print}-{ticker_interval}.json'
             dl_file = dl_path.joinpath(filename)
             if args.erase and dl_file.exists():
-                logger.info(f'Deleting existing data for pair {pair}, interval {ticker_interval}')
+                logger.info(
+                    f'Deleting existing data for pair {pair}, interval {ticker_interval}.')
                 dl_file.unlink()
 
-            logger.info(f'downloading pair {pair}, interval {ticker_interval}')
+            logger.info(f'Downloading pair {pair}, interval {ticker_interval}.')
             download_pair_history(datadir=dl_path, exchange=exchange,
                                   pair=pair, ticker_interval=ticker_interval,
                                   timerange=timerange)
@@ -125,4 +126,6 @@ except KeyboardInterrupt:
 
 finally:
     if pairs_not_available:
-        logger.info(f"Pairs [{','.join(pairs_not_available)}] not available.")
+        logger.info(
+            f"Pairs [{','.join(pairs_not_available)}] not available "
+            f"on exchange {config['exchange']['name']}.")
