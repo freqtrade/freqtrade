@@ -67,7 +67,7 @@ def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
                    "open_rate", "close_rate", "duration"]
 
         for x in Trade.query.all():
-            print("date: {}".format(x.open_date))
+            logger.info("date: {}".format(x.open_date))
 
         trades = pd.DataFrame([(t.pair, t.calc_profit(),
                                 t.open_date.replace(tzinfo=timeZone),
@@ -114,7 +114,6 @@ def get_trading_env(args: Namespace):
 
     # Load the configuration
     _CONF.update(setup_configuration(args, RunMode.BACKTEST))
-    print(_CONF)
 
     pairs = args.pairs.split(',')
     if pairs is None:
@@ -161,7 +160,7 @@ def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange,
         if data.empty:
             del tickers[pair]
             logger.info(
-                'An issue occured while retreiving datas of %s pair, please retry '
+                'An issue occured while retreiving data of %s pair, please retry '
                 'using -l option for live or --refresh-pairs-cached', pair)
     return tickers
 
@@ -272,6 +271,7 @@ def plot_parse_args(args: List[str]) -> Namespace:
     arguments.optimizer_shared_options(arguments.parser)
     arguments.backtesting_options(arguments.parser)
     return arguments.parse_args()
+
 
 def main(sysargv: List[str]) -> None:
     """
