@@ -3,6 +3,7 @@ from typing import List
 
 import arrow
 import pandas as pd
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -200,3 +201,22 @@ def generate_graph(
     fig = generate_row(fig=fig, row=3, indicators=indicators2, data=data)
 
     return fig
+
+
+def generate_plot_file(fig, pair, ticker_interval) -> None:
+    """
+    Generate a plot html file from pre populated fig plotly object
+    :param fig: Plotly Figure to plot
+    :param pair: Pair to plot (used as filename and Plot title)
+    :param ticker_interval: Used as part of the filename
+    :return: None
+    """
+    logger.info('Generate plot file for %s', pair)
+
+    pair_name = pair.replace("/", "_")
+    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
+
+    Path("user_data/plots").mkdir(parents=True, exist_ok=True)
+
+    plot(fig, filename=str(Path('user_data/plots').joinpath(file_name)),
+         auto_open=False)

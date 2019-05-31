@@ -38,7 +38,7 @@ from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
-from freqtrade.plot.plotting import generate_graph
+from freqtrade.plot.plotting import generate_graph, generate_plot_file
 from freqtrade.exchange import Exchange
 from freqtrade.optimize import setup_configuration
 from freqtrade.persistence import Trade
@@ -86,23 +86,6 @@ def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
 
     return trades
 
-
-def generate_plot_file(fig, pair, ticker_interval, is_last) -> None:
-    """
-    Generate a plot html file from pre populated fig plotly object
-    :return: None
-    """
-    logger.info('Generate plot file for %s', pair)
-
-    pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
-
-    Path("user_data/plots").mkdir(parents=True, exist_ok=True)
-
-    plot(fig, filename=str(Path('user_data/plots').joinpath(file_name)),
-         auto_open=False)
-    if is_last:
-        plot(fig, filename=str(Path('user_data').joinpath('freqtrade-plot.html')), auto_open=False)
 
 
 def get_trading_env(args: Namespace):
@@ -228,8 +211,7 @@ def analyse_and_plot_pairs(args: Namespace):
             indicators2=args.indicators2.split(",")
         )
 
-        is_last = (False, True)[pair_counter == len(tickers)]
-        generate_plot_file(fig, pair, ticker_interval, is_last)
+        generate_plot_file(fig, pair, ticker_interval)
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 
