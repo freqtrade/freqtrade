@@ -5,6 +5,7 @@ import os
 import uuid
 from pathlib import Path
 from shutil import copyfile
+from unittest.mock import MagicMock
 
 import arrow
 import pytest
@@ -20,7 +21,8 @@ from freqtrade.data.history import (download_pair_history,
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.strategy.default_strategy import DefaultStrategy
-from freqtrade.tests.conftest import get_patched_exchange, log_has, patch_exchange
+from freqtrade.tests.conftest import (get_patched_exchange, log_has,
+                                      patch_exchange)
 
 # Change this if modifying UNITTEST/BTC testdatafile
 _BTC_UNITTEST_LENGTH = 13681
@@ -134,6 +136,31 @@ def test_load_data_with_new_pair_1min(ticker_history_list, mocker, caplog, defau
                                   exchange=None,
                                   pair='MEME/BTC')
     _clean_test_file(file)
+
+
+def test_load_data_live(default_conf, mocker, caplog) -> None:
+    refresh_mock = MagicMock()
+    mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    history.load_data(datadir=None, ticker_interval='5m',
+                      pairs=['UNITTEST/BTC', 'UNITTEST2/BTC'],
+                      live=True,
+                      exchange=exchange)
+    assert refresh_mock.call_count == 1
+    assert len(refresh_mock.call_args_list[0][0][0]) == 2
+    assert log_has('Live: Downloading data for all defined pairs ...', caplog.record_tuples)
+
+
+def test_load_data_live_noexchange(default_conf, mocker, caplog) -> None:
+
+    with pytest.raises(OperationalException,
+                       match=r'Exchange needs to be initialized when using live data.'):
+        history.load_data(datadir=None, ticker_interval='5m',
+                          pairs=['UNITTEST/BTC', 'UNITTEST2/BTC'],
+                          exchange=None,
+                          live=True,
+                          )
 
 
 def test_testdata_path() -> None:

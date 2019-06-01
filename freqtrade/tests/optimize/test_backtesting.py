@@ -105,7 +105,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
-                     timerange=None, exchange=None):
+                     timerange=None, exchange=None, live=False):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', fill_missing=True)}
     return pairdata
@@ -492,7 +492,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     backtesting.start()
     # check the logs, that will contain the backtest result
     exists = [
-        'Using local backtesting data (using whitelist in given config) ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Backtesting with data from 2017-11-14T21:17:00+00:00 '
@@ -857,7 +856,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Downloading data for all pairs in whitelist ...',
+        'Live: Downloading data for all defined pairs ...',
         'Backtesting with data from 2017-11-14T19:31:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
@@ -916,7 +915,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Downloading data for all pairs in whitelist ...',
+        'Live: Downloading data for all defined pairs ...',
         'Backtesting with data from 2017-11-14T19:31:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',
