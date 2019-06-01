@@ -55,7 +55,8 @@ timeZone = pytz.UTC
 def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame()
     if args.db_url:
-        persistence.init(args.db_url, False)
+        persistence.init(args.db_url, clean_open_orders=False)
+
         columns = ["pair", "profit", "open_time", "close_time",
                    "open_rate", "close_rate", "duration"]
 
