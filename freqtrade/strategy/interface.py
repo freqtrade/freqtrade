@@ -329,8 +329,9 @@ class IStrategy(ABC):
                 (not self.order_types.get('stoploss_on_exchange'))):
 
             selltype = SellType.STOP_LOSS
-            # If Trailing stop (and max-rate did move above open rate)
-            if trailing_stop and trade.open_rate != trade.max_rate:
+
+            # If initial stoploss is not the same as current one then it is trailing.
+            if trade.initial_stop_loss != trade.stop_loss:
                 selltype = SellType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"HIT STOP: current price at {current_rate:.6f}, "
