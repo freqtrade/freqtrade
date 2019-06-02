@@ -10,6 +10,7 @@ nav:
     - Control the bot:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
+        - REST API: rest-api.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md

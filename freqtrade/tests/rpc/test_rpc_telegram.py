@@ -22,8 +22,7 @@ from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
-                                      patch_exchange)
-from freqtrade.tests.test_freqtradebot import patch_get_signal
+                                      patch_exchange, patch_get_signal)
 
 
 class DummyCls(Telegram):
@@ -496,39 +495,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_telegram_balance_handle(default_conf, update, mocker) -> None:
-    mock_balance = {
-        'BTC': {
-            'total': 12.0,
-            'free': 12.0,
-            'used': 0.0
-        },
-        'ETH': {
-            'total': 0.0,
-            'free': 0.0,
-            'used': 0.0
-        },
-        'USDT': {
-            'total': 10000.0,
-            'free': 10000.0,
-            'used': 0.0
-        },
-        'LTC': {
-            'total': 10.0,
-            'free': 10.0,
-            'used': 0.0
-        },
-        'XRP': {
-            'total': 1.0,
-            'free': 1.0,
-            'used': 0.0
-            },
-        'EUR': {
-            'total': 10.0,
-            'free': 10.0,
-            'used': 0.0
-            }
-    }
+def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance) -> None:
 
     def mock_ticker(symbol, refresh):
         if symbol == 'BTC/USDT':
@@ -549,7 +516,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
             'last': 0.1,
         }
 
-    mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=mock_balance)
+    mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
 
     msg_mock = MagicMock()

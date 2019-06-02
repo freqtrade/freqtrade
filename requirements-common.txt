@@ -27,3 +27,6 @@ python-rapidjson==0.7.1
 
 # Notify systemd
 sdnotify==0.3.2
+
+# Api server
+flask==1.0.2

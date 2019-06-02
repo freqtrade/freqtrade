@@ -48,6 +48,11 @@ class RPCException(Exception):
     def __str__(self):
         return self.message
 
+    def __json__(self):
+        return {
+            'msg': self.message
+        }
+
 
 class RPC(object):
     """
@@ -465,7 +470,7 @@ class RPC(object):
                }
         return res
 
-    def _rpc_blacklist(self, add: List[str]) -> Dict:
+    def _rpc_blacklist(self, add: List[str] = None) -> Dict:
         """ Returns the currently active blacklist"""
         if add:
             stake_currency = self._freqtrade.config.get('stake_currency')
