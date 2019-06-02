@@ -85,8 +85,7 @@ class DataProvider(object):
         """
         return latest orderbook data
         """
-        # TODO: Implement me
-        pass
+        return self._exchange.get_order_book(pair, max)
 
     @property
     def runmode(self) -> RunMode:
