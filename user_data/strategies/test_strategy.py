@@ -253,6 +253,15 @@ class TestStrategy(IStrategy):
         dataframe['ha_low'] = heikinashi['low']
         """
 
+	# Retrieve best bid and best ask
+        # ------------------------------------
+        """
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        print(ob)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+        """
+
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
