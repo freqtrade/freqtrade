@@ -8,5 +8,5 @@ pytest==4.6.1
 pytest-mock==1.10.4
 pytest-asyncio==0.10.0
 pytest-cov==2.7.1
-coveralls==1.7.0
+coveralls==1.8.0
 mypy==0.701
