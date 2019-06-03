@@ -29,4 +29,4 @@ python-rapidjson==0.7.1
 sdnotify==0.3.2
 
 # Api server
-flask==1.0.2
+flask==1.0.3
