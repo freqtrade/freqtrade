@@ -4,7 +4,7 @@
 flake8==3.7.7
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==2.0.0
-pytest==4.5.0
+pytest==4.6.1
 pytest-mock==1.10.4
 pytest-asyncio==0.10.0
 pytest-cov==2.7.1
