@@ -24,6 +24,9 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 
+import numpy as np
+import datetime
+
 
 logger = logging.getLogger(__name__)
 
@@ -136,14 +139,38 @@ class Hyperopt(Backtesting):
             print('.', end='')
             sys.stdout.flush()
 
-    def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
+    # def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
+    #     """
+    #     Objective function, returns smaller number for more optimal results
+    #     """
+    #     trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
+    #     profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
+    #     duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
+    #     result = trade_loss + profit_loss + duration_loss
+    #     return result
+
+    def calculate_loss(self, total_profit: list, trade_count: int) -> float:
         """
         Objective function, returns smaller number for more optimal results
         """
-        trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
-        profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
-        duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
-        result = trade_loss + profit_loss + duration_loss
+        period = self.max_date - self.min_date
+        days_period = period.days
+
+        #adding slippage of 0.1% per trade
+        total_profit  = total_profit - 0.0005
+        expected_yearly_return = total_profit.sum()/days_period
+
+        if (np.std(total_profit) != 0.):
+            sharp_ratio = expected_yearly_return/np.std(total_profit)*np.sqrt(365)
+        else:
+            sharp_ratio = 1.
+
+        sharp_ratio = -sharp_ratio
+        # print(expected_yearly_return, np.std(total_profit), sharp_ratio)
+
+
+        result = sharp_ratio
+        self.resultloss = result
         return result
 
     def has_space(self, space: str) -> bool:
@@ -193,6 +220,8 @@ class Hyperopt(Backtesting):
 
         processed = load(TICKERDATA_PICKLE)
         min_date, max_date = get_timeframe(processed)
+        self.min_date = min_date
+        self.max_date = max_date
         results = self.backtest(
             {
                 'stake_amount': self.config['stake_amount'],
@@ -204,7 +233,8 @@ class Hyperopt(Backtesting):
         )
         result_explanation = self.format_results(results)
 
-        total_profit = results.profit_percent.sum()
+        # total_profit = results.profit_percent.sum()
+        total_profit = results.profit_percent
         trade_count = len(results.index)
         trade_duration = results.trade_duration.mean()
 
@@ -219,7 +249,7 @@ class Hyperopt(Backtesting):
                 'result': result_explanation,
             }
 
-        loss = self.calculate_loss(total_profit, trade_count, trade_duration)
+        loss = self.calculate_loss(total_profit, trade_count)
 
         return {
             'loss': loss,
