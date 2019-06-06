@@ -140,14 +140,14 @@ class Hyperopt(Backtesting):
             sys.stdout.flush()
 
     # def calculate_loss(self, total_profit: float, trade_count: int, trade_duration: float) -> float:
-    #     """
-    #     Objective function, returns smaller number for more optimal results
-    #     """
-    #     trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
-    #     profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
-    #     duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
-    #     result = trade_loss + profit_loss + duration_loss
-    #     return result
+    #         """
+    #         Objective function, returns smaller number for more optimal results
+    #         """
+    #         trade_loss = 1 - 0.25 * exp(-(trade_count - self.target_trades) ** 2 / 10 ** 5.8)
+    #         profit_loss = max(0, 1 - total_profit / self.expected_max_profit)
+    #         duration_loss = 0.4 * min(trade_duration / self.max_accepted_trade_duration, 1)
+    #         result = trade_loss + profit_loss + duration_loss
+    # return result
 
     def calculate_loss(self, total_profit: list, trade_count: int) -> float:
         """
@@ -163,7 +163,7 @@ class Hyperopt(Backtesting):
         if (np.std(total_profit) != 0.):
             sharp_ratio = expected_average_return/np.std(total_profit)*np.sqrt(365)
         else:
-            sharp_ratio = -20
+            sharp_ratio = -20.
 
         sharp_ratio = -sharp_ratio
         # print(expected_average_return, np.std(total_profit), sharp_ratio)
