@@ -258,9 +258,10 @@ class TestStrategy(IStrategy):
         """
         # first check if dataprovider is available 
         if self.dp:
-            ob = self.dp.orderbook(metadata['pair'], 1)
-            dataframe['best_bid'] = ob['bids'][0][0]
-            dataframe['best_ask'] = ob['asks'][0][0]
+            if self.dp.runmode in ('live', 'dry_run'):
+                ob = self.dp.orderbook(metadata['pair'], 1)
+                dataframe['best_bid'] = ob['bids'][0][0]
+                dataframe['best_ask'] = ob['asks'][0][0]
         """
         
         return dataframe
