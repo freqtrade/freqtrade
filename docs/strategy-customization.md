@@ -298,6 +298,18 @@ if self.dp:
 !!! Warning Warning in hyperopt
     This option cannot currently be used during hyperopt.
 
+#### Orderbook
+
+``` python
+if self.dp:
+    if self.dp.runmode in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+```
+!Warning The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+ method is used.
+
 #### Available Pairs
 
 ``` python
@@ -305,6 +317,7 @@ if self.dp:
     for pair, ticker in self.dp.available_pairs:
         print(f"available {pair}, {ticker}")
 ```
+
 
 #### Get data for non-tradeable pairs
 
