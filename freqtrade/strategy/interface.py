@@ -198,7 +198,7 @@ class IStrategy(ABC):
             return False, False
 
         try:
-            dataframe = self.analyze_ticker(dataframe, {'pair': pair})
+            dataframe = self.analyze_ticker(dataframe, {'pair': pair, 'timeframe': interval})
         except ValueError as error:
             logger.warning(
                 'Unable to analyze ticker for pair %s: %s',
@@ -362,11 +362,13 @@ class IStrategy(ABC):
 
         return False
 
-    def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
+    def tickerdata_to_dataframe(self, tickerdata: Dict[str, List],
+                                ticker_interval: str) -> Dict[str, DataFrame]:
         """
         Creates a dataframe and populates indicators for given ticker data
         """
-        return {pair: self.advise_indicators(pair_data, {'pair': pair})
+        return {pair: self.advise_indicators(pair_data,
+                {'pair': pair, 'timeframe': ticker_interval})
                 for pair, pair_data in tickerdata.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

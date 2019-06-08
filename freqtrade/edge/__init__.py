@@ -47,7 +47,6 @@ class Edge():
         self.exchange = exchange
         self.strategy = strategy
         self.ticker_interval = self.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
         self.advise_sell = self.strategy.advise_sell
         self.advise_buy = self.strategy.advise_buy
 
@@ -112,7 +111,7 @@ class Edge():
             logger.critical("No data found. Edge is stopped ...")
             return False
 
-        preprocessed = self.tickerdata_to_dataframe(data)
+        preprocessed = self.strategy.tickerdata_to_dataframe(data, self.ticker_interval)
 
         # Print timeframe
         min_date, max_date = history.get_timeframe(preprocessed)
@@ -130,8 +129,9 @@ class Edge():
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
+            metadata = {'pair': pair, 'timeframe': self.ticker_interval}
             ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+                self.advise_buy(pair_data, metadata), metadata)[headers].copy()
 
             trades += self._find_trades_for_stoploss_range(ticker_data, pair, self._stoploss_range)
 

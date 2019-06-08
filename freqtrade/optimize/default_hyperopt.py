@@ -105,7 +105,6 @@ class DefaultHyperOpts(IHyperOpt):
             """
             Sell strategy Hyperopt will build and use
             """
-            # print(params)
             conditions = []
             # GUARDS AND TRENDS
             if 'sell-mfi-enabled' in params and params['sell-mfi-enabled']:

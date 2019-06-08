@@ -296,7 +296,7 @@ class Hyperopt(Backtesting):
             self.strategy.advise_indicators = \
                 self.custom_hyperopt.populate_indicators  # type: ignore
 
-        dump(self.strategy.tickerdata_to_dataframe(data), TICKERDATA_PICKLE)
+        dump(self.strategy.tickerdata_to_dataframe(data, self.ticker_interval), TICKERDATA_PICKLE)
 
         # We don't need exchange instance anymore while running hyperopt
         self.exchange = None  # type: ignore

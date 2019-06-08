@@ -94,7 +94,6 @@ class Backtesting(object):
 
         self.ticker_interval = self.config.get('ticker_interval')
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
-        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
         # Set stoploss_on_exchange to false for backtesting,
@@ -219,8 +218,9 @@ class Backtesting(object):
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
+            metadata = {'pair': pair, 'timeframe': self.ticker_interval}
             ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+                self.advise_buy(pair_data, metadata), metadata)[headers].copy()
 
             # to avoid using data from future, we buy/sell with signal from previous candle
             ticker_data.loc[:, 'buy'] = ticker_data['buy'].shift(1)
@@ -439,7 +439,7 @@ class Backtesting(object):
                 (max_date - min_date).days
             )
             # need to reprocess data every time to populate signals
-            preprocessed = self.strategy.tickerdata_to_dataframe(data)
+            preprocessed = self.strategy.tickerdata_to_dataframe(data, self.ticker_interval)
 
             # Execute backtest and print results
             all_results[self.strategy.get_strategy_name()] = self.backtest(
