@@ -41,9 +41,10 @@ from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
 from freqtrade.exchange import Exchange
-from freqtrade.optimize.backtesting import setup_configuration
+from freqtrade.optimize import setup_configuration
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
@@ -54,7 +55,8 @@ timeZone = pytz.UTC
 def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame()
     if args.db_url:
-        persistence.init(_CONF)
+        persistence.init(args.db_url, clean_open_orders=False)
+
         columns = ["pair", "profit", "open_time", "close_time",
                    "open_rate", "close_rate", "duration"]
 
@@ -74,7 +76,7 @@ def load_trades(args: Namespace, pair: str, timerange: TimeRange) -> pd.DataFram
 
         file = Path(args.exportfilename)
         if file.exists():
-            load_backtest_data(file)
+            trades = load_backtest_data(file)
 
         else:
             trades = pd.DataFrame([], columns=BT_DATA_COLUMNS)
@@ -107,7 +109,7 @@ def get_trading_env(args: Namespace):
     global _CONF
 
     # Load the configuration
-    _CONF.update(setup_configuration(args))
+    _CONF.update(setup_configuration(args, RunMode.BACKTEST))
     print(_CONF)
 
     pairs = args.pairs.split(',')
@@ -138,21 +140,15 @@ def get_tickers_data(strategy, exchange, pairs: List[str], args):
     ticker_interval = strategy.ticker_interval
     timerange = Arguments.parse_timerange(args.timerange)
 
-    tickers = {}
-    if args.live:
-        logger.info('Downloading pairs.')
-        exchange.refresh_latest_ohlcv([(pair, ticker_interval) for pair in pairs])
-        for pair in pairs:
-            tickers[pair] = exchange.klines((pair, ticker_interval))
-    else:
-        tickers = history.load_data(
-            datadir=Path(str(_CONF.get("datadir"))),
-            pairs=pairs,
-            ticker_interval=ticker_interval,
-            refresh_pairs=_CONF.get('refresh_pairs', False),
-            timerange=timerange,
-            exchange=Exchange(_CONF)
-        )
+    tickers = history.load_data(
+        datadir=Path(str(_CONF.get("datadir"))),
+        pairs=pairs,
+        ticker_interval=ticker_interval,
+        refresh_pairs=_CONF.get('refresh_pairs', False),
+        timerange=timerange,
+        exchange=Exchange(_CONF),
+        live=args.live,
+    )
 
     # No ticker found, impossible to download, len mismatch
     for pair, data in tickers.copy().items():

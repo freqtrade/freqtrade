@@ -25,15 +25,16 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(config: Dict) -> None:
+def init(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
-    :param config: config to use
+    :param db_url: Database to use
+    :param clean_open_orders: Remove open orders from the database.
+        Useful for dry-run or if all orders have been reset on the exchange.
     :return: None
     """
-    db_url = config.get('db_url', None)
     kwargs = {}
 
     # Take care of thread ownership if in-memory db
@@ -57,7 +58,7 @@ def init(config: Dict) -> None:
     check_migrate(engine)
 
     # Clean dry_run DB if the db is not in-memory
-    if config.get('dry_run', False) and db_url != 'sqlite://':
+    if clean_open_orders and db_url != 'sqlite://':
         clean_dry_run_db()
 
 

@@ -2,6 +2,7 @@ site_name: Freqtrade
 nav:
     - About: index.md
     - Installation: installation.md
+    - Installation Docker: docker.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md
@@ -9,6 +10,7 @@ nav:
     - Control the bot:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
+        - REST API: rest-api.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md

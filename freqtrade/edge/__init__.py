@@ -13,7 +13,6 @@ from freqtrade import constants, OperationalException
 from freqtrade.arguments import Arguments
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
-from freqtrade.optimize import get_timeframe
 from freqtrade.strategy.interface import SellType
 
 
@@ -49,7 +48,6 @@ class Edge():
         self.strategy = strategy
         self.ticker_interval = self.strategy.ticker_interval
         self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.get_timeframe = get_timeframe
         self.advise_sell = self.strategy.advise_sell
         self.advise_buy = self.strategy.advise_buy
 
@@ -117,7 +115,7 @@ class Edge():
         preprocessed = self.tickerdata_to_dataframe(data)
 
         # Print timeframe
-        min_date, max_date = self.get_timeframe(preprocessed)
+        min_date, max_date = history.get_timeframe(preprocessed)
         logger.info(
             'Measuring data from %s up to %s (%s days) ...',
             min_date.isoformat(),
@@ -139,6 +137,7 @@ class Edge():
 
         # If no trade found then exit
         if len(trades) == 0:
+            logger.info("No trades found.")
             return False
 
         # Fill missing, calculable columns, profit, duration , abs etc.

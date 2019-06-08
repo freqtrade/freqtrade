@@ -11,8 +11,8 @@ import arrow
 import pytest
 import requests
 
-from freqtrade import (DependencyException, OperationalException,
-                       TemporaryError, InvalidOrderException, constants)
+from freqtrade import (DependencyException, InvalidOrderException,
+                       OperationalException, TemporaryError, constants)
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Trade
@@ -20,7 +20,8 @@ from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.tests.conftest import (log_has, log_has_re, patch_edge,
-                                      patch_exchange, patch_wallet)
+                                      patch_exchange, patch_get_signal,
+                                      patch_wallet)
 from freqtrade.worker import Worker
 
 
@@ -57,16 +58,6 @@ def get_patched_worker(mocker, config) -> Worker:
     """
     patch_freqtradebot(mocker, config)
     return Worker(args=None, config=config)
-
-
-def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
-    """
-    :param mocker: mocker to patch IStrategy class
-    :param value: which value IStrategy.get_signal() must return
-    :return: None
-    """
-    freqtrade.strategy.get_signal = lambda e, s, t: value
-    freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
 def patch_RPCManager(mocker) -> MagicMock:

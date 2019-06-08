@@ -17,7 +17,6 @@ setup(name='freqtrade',
       author_email='michael.egger@tsn.at',
       license='GPLv3',
       packages=['freqtrade'],
-      scripts=['bin/freqtrade'],
       setup_requires=['pytest-runner', 'numpy'],
       tests_require=['pytest', 'pytest-mock', 'pytest-cov'],
       install_requires=[
@@ -43,6 +42,11 @@ setup(name='freqtrade',
       ],
       include_package_data=True,
       zip_safe=False,
+      entry_points={
+          'console_scripts': [
+              'freqtrade = freqtrade.main:main',
+          ],
+      },
       classifiers=[
           'Programming Language :: Python :: 3.6',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

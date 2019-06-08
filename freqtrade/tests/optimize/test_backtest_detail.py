@@ -2,17 +2,17 @@
 import logging
 from unittest.mock import MagicMock
 
-from pandas import DataFrame
 import pytest
+from pandas import DataFrame
 
-
-from freqtrade.optimize import get_timeframe
+from freqtrade.data.history import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
-                                      _get_frame_time_from_offset, tests_ticker_interval)
 from freqtrade.tests.conftest import patch_exchange
-
+from freqtrade.tests.optimize import (BTContainer, BTrade,
+                                      _build_backtest_dataframe,
+                                      _get_frame_time_from_offset,
+                                      tests_ticker_interval)
 
 # Test 1 Minus 8% Close
 # Test with Stop-loss at 1%

@@ -51,7 +51,7 @@ class TestStrategy(IStrategy):
     ticker_interval = '5m'
 
     # run "populate_indicators" only for new candle
-    ta_on_candle = False
+    process_only_new_candles = False
 
     # Experimental settings (configuration will overide these if set)
     use_sell_signal = False

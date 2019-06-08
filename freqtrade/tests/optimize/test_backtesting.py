@@ -17,9 +17,9 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.optimize import get_timeframe
-from freqtrade.optimize.backtesting import (Backtesting, setup_configuration,
-                                            start)
+from freqtrade.data.history import get_timeframe
+from freqtrade.optimize import setup_configuration, start_backtesting
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
@@ -105,7 +105,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
-                     timerange=None, exchange=None):
+                     timerange=None, exchange=None, live=False):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
     pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', fill_missing=True)}
     return pairdata
@@ -178,7 +178,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         'backtesting'
     ]
 
-    config = setup_configuration(get_args(args))
+    config = setup_configuration(get_args(args), RunMode.BACKTEST)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -228,7 +228,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--export-filename', 'foo_bar.json'
     ]
 
-    config = setup_configuration(get_args(args))
+    config = setup_configuration(get_args(args), RunMode.BACKTEST)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
@@ -290,7 +290,7 @@ def test_setup_configuration_unlimited_stake_amount(mocker, default_conf, caplog
     ]
 
     with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        setup_configuration(get_args(args))
+        setup_configuration(get_args(args), RunMode.BACKTEST)
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:
@@ -307,7 +307,7 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
         'backtesting'
     ]
     args = get_args(args)
-    start(args)
+    start_backtesting(args)
     assert log_has(
         'Starting freqtrade in Backtesting mode',
         caplog.record_tuples
@@ -472,7 +472,7 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.load_data', mocked_load_data)
-    mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
+    mocker.patch('freqtrade.data.history.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -492,7 +492,6 @@ def test_backtesting_start(default_conf, mocker, caplog) -> None:
     backtesting.start()
     # check the logs, that will contain the backtest result
     exists = [
-        'Using local backtesting data (using whitelist in given config) ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Backtesting with data from 2017-11-14T21:17:00+00:00 '
@@ -507,7 +506,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog) -> None:
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
 
     mocker.patch('freqtrade.data.history.load_data', MagicMock(return_value={}))
-    mocker.patch('freqtrade.optimize.get_timeframe', get_timeframe)
+    mocker.patch('freqtrade.data.history.get_timeframe', get_timeframe)
     mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', MagicMock())
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -847,7 +846,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         '--disable-max-market-positions'
     ]
     args = get_args(args)
-    start(args)
+    start_backtesting(args)
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
@@ -857,7 +856,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Downloading data for all pairs in whitelist ...',
+        'Live: Downloading data for all defined pairs ...',
         'Backtesting with data from 2017-11-14T19:31:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...'
@@ -901,7 +900,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'TestStrategy',
     ]
     args = get_args(args)
-    start(args)
+    start_backtesting(args)
     # 2 backtests, 4 tables
     assert backtestmock.call_count == 2
     assert gen_table_mock.call_count == 4
@@ -916,7 +915,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'Using data folder: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
-        'Downloading data for all pairs in whitelist ...',
+        'Live: Downloading data for all defined pairs ...',
         'Backtesting with data from 2017-11-14T19:31:00+00:00 '
         'up to 2017-11-14T22:58:00+00:00 (0 days)..',
         'Parameter --enable-position-stacking detected ...',

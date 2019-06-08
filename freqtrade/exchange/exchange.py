@@ -510,7 +510,11 @@ class Exchange(object):
         _LIMIT = 500
 
         one_call = timeframe_to_msecs(ticker_interval) * _LIMIT
-        logger.debug("one_call: %s msecs", one_call)
+        logger.debug(
+            "one_call: %s msecs (%s)",
+            one_call,
+            arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
+        )
         input_coroutines = [self._async_get_candle_history(
             pair, ticker_interval, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
@@ -541,7 +545,10 @@ class Exchange(object):
                     or self._now_is_time_to_refresh(pair, ticker_interval)):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
-                logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)
+                logger.debug(
+                    "Using cached ohlcv data for pair %s, interval %s ...",
+                    pair, ticker_interval
+                )
 
         tickers = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
@@ -578,7 +585,11 @@ class Exchange(object):
         """
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s, %s since %s ...", pair, ticker_interval, since_ms)
+            s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
+            logger.debug(
+                "Fetching pair %s, interval %s, since %s %s...",
+                pair, ticker_interval, since_ms, s
+            )
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=ticker_interval,
                                                      since=since_ms)
@@ -593,7 +604,7 @@ class Exchange(object):
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
                 return pair, ticker_interval, []
-            logger.debug("done fetching %s, %s ...", pair, ticker_interval)
+            logger.debug("Done fetching pair %s, interval %s ...", pair, ticker_interval)
             return pair, ticker_interval, data
 
         except ccxt.NotSupported as e:
