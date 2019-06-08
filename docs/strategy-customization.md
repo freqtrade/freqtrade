@@ -230,12 +230,16 @@ Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported 
 Please note that the same buy/sell signals may work with one interval, but not the other.
 This setting is accessible within the strategy by using `self.ticker_interval`.
 
-### Metadata dict
+### Metadata dictionary
 
-The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
-Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
+The metadata dictionary (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
 
-The Metadata-dict should not be modified and does not persist information across multiple calls.
+Currently this is:
+
+- Currency pair in the format `XRP/BTC`, which can be accessed using `metadata['pair']`.
+- Timeframe used by the bot in its string form (`5m`, `1h`), which can be accessed as `metadata['timeframe']`.
+
+The metadata dictionary should not be modified and does not persist information across multiple calls.
 Instead, have a look at the section [Storing information](#Storing-information)
 
 ### Storing information
