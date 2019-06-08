@@ -780,7 +780,7 @@ def test_to_json(default_conf, fee):
 
 
 def test_stoploss_reinitialization(default_conf, fee):
-    init(default_conf)
+    init(default_conf['db_url'])
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
