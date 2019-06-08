@@ -534,7 +534,7 @@ def test_get_timeframe(default_conf, mocker) -> None:
             datadir=None,
             ticker_interval='1m',
             pairs=['UNITTEST/BTC']
-        )
+        ), '1m'
     )
     min_date, max_date = history.get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
@@ -551,7 +551,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
             ticker_interval='1m',
             pairs=['UNITTEST/BTC'],
             fill_up_missing=False
-        )
+        ), '1m'
     )
     min_date, max_date = history.get_timeframe(data)
     caplog.clear()
@@ -574,7 +574,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
             ticker_interval='5m',
             pairs=['UNITTEST/BTC'],
             timerange=timerange
-        )
+        ), '5m'
     )
 
     min_date, max_date = history.get_timeframe(data)

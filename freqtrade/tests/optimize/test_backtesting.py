@@ -87,7 +87,7 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
     backtesting = Backtesting(config)
 
     data = load_data_test(contour)
-    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data, '1m')
     min_date, max_date = get_timeframe(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
@@ -124,7 +124,7 @@ def _make_backtest_conf(mocker, conf=None, pair='UNITTEST/BTC', record=None):
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
-    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data, '1m')
     min_date, max_date = get_timeframe(processed)
     return {
         'stake_amount': conf['stake_amount'],
@@ -358,12 +358,12 @@ def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', fill_missing=True)}
 
     backtesting = Backtesting(default_conf)
-    data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)
+    data = backtesting.strategy.tickerdata_to_dataframe(tickerlist, '1m')
     assert len(data['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
     strategy = DefaultStrategy(default_conf)
-    data2 = strategy.tickerdata_to_dataframe(tickerlist)
+    data2 = strategy.tickerdata_to_dataframe(tickerlist, '1m')
     assert data['UNITTEST/BTC'].equals(data2['UNITTEST/BTC'])
 
 
@@ -537,7 +537,7 @@ def test_backtest(default_conf, fee, mocker) -> None:
     timerange = TimeRange(None, 'line', 0, -201)
     data = history.load_data(datadir=None, ticker_interval='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
-    data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    data_processed = backtesting.strategy.tickerdata_to_dataframe(data, '1m')
     min_date, max_date = get_timeframe(data_processed)
     results = backtesting.backtest(
         {
@@ -592,7 +592,7 @@ def test_backtest_1min_ticker_interval(default_conf, fee, mocker) -> None:
     timerange = TimeRange(None, 'line', 0, -200)
     data = history.load_data(datadir=None, ticker_interval='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
-    processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    processed = backtesting.strategy.tickerdata_to_dataframe(data, '1m')
     min_date, max_date = get_timeframe(processed)
     results = backtesting.backtest(
         {
@@ -613,7 +613,7 @@ def test_processed(default_conf, mocker) -> None:
     backtesting = Backtesting(default_conf)
 
     dict_of_tickerrows = load_data_test('raise')
-    dataframes = backtesting.strategy.tickerdata_to_dataframe(dict_of_tickerrows)
+    dataframes = backtesting.strategy.tickerdata_to_dataframe(dict_of_tickerrows, '1m')
     dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
@@ -716,7 +716,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair):
     backtesting.advise_buy = _trend_alternate_hold  # Override
     backtesting.advise_sell = _trend_alternate_hold  # Override
 
-    data_processed = backtesting.strategy.tickerdata_to_dataframe(data)
+    data_processed = backtesting.strategy.tickerdata_to_dataframe(data, '5m')
     min_date, max_date = get_timeframe(data_processed)
     backtest_conf = {
         'stake_amount': default_conf['stake_amount'],

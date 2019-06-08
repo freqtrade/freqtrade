@@ -63,7 +63,7 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    metadata = {'pair': 'ETH/BTC'}
+    metadata = {'pair': 'ETH/BTC', 'timeframe': '1m'}
     assert 'adx' in resolver.strategy.advise_indicators(result, metadata=metadata)
 
 
@@ -110,7 +110,7 @@ def test_strategy(result):
     config = {'strategy': 'DefaultStrategy'}
 
     resolver = StrategyResolver(config)
-    metadata = {'pair': 'ETH/BTC'}
+    metadata = {'pair': 'ETH/BTC', 'timeframe': '5m'}
     assert resolver.strategy.minimal_roi[0] == 0.04
     assert config["minimal_roi"]['0'] == 0.04
 
@@ -400,7 +400,7 @@ def test_call_deprecated_function(result, monkeypatch):
     default_location = path.join(path.dirname(path.realpath(__file__)))
     resolver = StrategyResolver({'strategy': 'TestStrategyLegacy',
                                  'strategy_path': default_location})
-    metadata = {'pair': 'ETH/BTC'}
+    metadata = {'pair': 'ETH/BTC', 'timeframe': '5m'}
 
     # Make sure we are using a legacy function
     assert resolver.strategy._populate_fun_len == 2

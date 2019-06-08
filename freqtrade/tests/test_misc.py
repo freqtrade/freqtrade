@@ -35,7 +35,7 @@ def test_common_datearray(default_conf) -> None:
     strategy = DefaultStrategy(default_conf)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, "1m", fill_missing=True)}
-    dataframes = strategy.tickerdata_to_dataframe(tickerlist)
+    dataframes = strategy.tickerdata_to_dataframe(tickerlist, '1m')
 
     dates = common_datearray(dataframes)
 

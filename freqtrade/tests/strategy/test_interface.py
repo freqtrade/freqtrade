@@ -112,7 +112,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     timerange = TimeRange(None, 'line', 0, -100)
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', True)}
-    data = strategy.tickerdata_to_dataframe(tickerlist)
+    data = strategy.tickerdata_to_dataframe(tickerlist, '1m')
     assert len(data['UNITTEST/BTC']) == 102       # partial candle was removed
 
 
