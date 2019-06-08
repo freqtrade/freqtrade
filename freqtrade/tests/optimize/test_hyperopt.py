@@ -372,20 +372,21 @@ def test_start_calls_optimizer(mocker, default_conf, caplog) -> None:
     )
     patch_exchange(mocker)
 
-    default_conf.update({'config': 'config.json.example'})
-    default_conf.update({'epochs': 1})
-    default_conf.update({'timerange': None})
-    default_conf.update({'spaces': 'all'})
-    default_conf.update({'hyperopt_jobs': 1})
+    default_conf.update({'config': 'config.json.example',
+                         'epochs': 1,
+                         'timerange': None,
+                         'spaces': 'all',
+                         'hyperopt_jobs': 1, })
 
     hyperopt = Hyperopt(default_conf)
     hyperopt.strategy.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
     parallel.assert_called_once()
-
-    assert 'Best result:\nfoo result\nwith values:\n\n' in caplog.text
+    assert log_has('Best result:\nfoo result\nwith values:\n', caplog.record_tuples)
     assert dumper.called
+    # Should be called twice, once for tickerdata, once to save evaluations
+    assert dumper.call_count == 2
 
 
 def test_format_results(hyperopt):
