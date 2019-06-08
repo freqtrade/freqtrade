@@ -2484,9 +2484,9 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_ticker=MagicMock(return_value={
-            'bid': 0.00000102,
-            'ask': 0.00000103,
-            'last': 0.00000102
+            'bid': 0.00001099,
+            'ask': 0.00001099,
+            'last': 0.00001099
         }),
         buy=MagicMock(return_value={'id': limit_buy_order['id']}),
         get_fee=fee,
@@ -2498,15 +2498,33 @@ def test_trailing_stop_loss(default_conf, limit_buy_order, fee, markets, caplog,
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.create_trade()
-
     trade = Trade.query.first()
-    trade.update(limit_buy_order)
-    trade.max_rate = trade.open_rate * 1.003
+    assert freqtrade.handle_trade(trade) is False
+
+    # Raise ticker above buy price
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': 0.00001099 * 1.5,
+                     'ask': 0.00001099 * 1.5,
+                     'last': 0.00001099 * 1.5
+                 }))
+
+    # Stoploss should be adjusted
+    assert freqtrade.handle_trade(trade) is False
+
+    # Price fell
+    mocker.patch('freqtrade.exchange.Exchange.get_ticker',
+                 MagicMock(return_value={
+                     'bid': 0.00001099 * 1.1,
+                     'ask': 0.00001099 * 1.1,
+                     'last': 0.00001099 * 1.1
+                 }))
+
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f'HIT STOP: current price at 0.000001, stop loss is {trade.stop_loss:.6f}, '
+        f'HIT STOP: current price at 0.000012, stop loss is 0.000015, '
         f'initial stop loss was at 0.000010, trade opened at 0.000011', caplog.record_tuples)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
