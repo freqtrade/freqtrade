@@ -108,6 +108,7 @@ from datetime import datetime
 from freqtrade.data.converter import parse_ticker_dataframe
 ct = ccxt.binance()
 timeframe = "1d"
+pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
