@@ -74,6 +74,7 @@ class Exchange(object):
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "ohlcv_partial_candle": True,
     }
     _ft_has: Dict = {}
 
@@ -108,7 +109,12 @@ class Exchange(object):
         if exchange_config.get("_ft_has_params"):
             self._ft_has = deep_merge_dicts(exchange_config.get("_ft_has_params"),
                                             self._ft_has)
+            logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
+        # Assign this directly for easy access
+        self._drop_incomplete = self._ft_has['ohlcv_partial_candle']
+
+        # Initialize ccxt objects
         self._api: ccxt.Exchange = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
         self._api_async: ccxt_async.Exchange = self._init_ccxt(
@@ -575,7 +581,7 @@ class Exchange(object):
                 self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
-                ticks, ticker_interval, fill_missing=True)
+                ticks, ticker_interval, fill_missing=True, drop_incomplete=self._drop_incomplete)
         return tickers
 
     def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
