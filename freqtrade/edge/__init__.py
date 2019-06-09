@@ -46,10 +46,6 @@ class Edge():
         self.config = config
         self.exchange = exchange
         self.strategy = strategy
-        self.ticker_interval = self.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.strategy.tickerdata_to_dataframe
-        self.advise_sell = self.strategy.advise_sell
-        self.advise_buy = self.strategy.advise_buy
 
         self.edge_config = self.config.get('edge', {})
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
@@ -100,7 +96,7 @@ class Edge():
         data = history.load_data(
             datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
             pairs=pairs,
-            ticker_interval=self.ticker_interval,
+            ticker_interval=self.strategy.ticker_interval,
             refresh_pairs=self._refresh_pairs,
             exchange=self.exchange,
             timerange=self._timerange
@@ -112,7 +108,7 @@ class Edge():
             logger.critical("No data found. Edge is stopped ...")
             return False
 
-        preprocessed = self.tickerdata_to_dataframe(data)
+        preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
         # Print timeframe
         min_date, max_date = history.get_timeframe(preprocessed)
@@ -130,8 +126,8 @@ class Edge():
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            ticker_data = self.advise_sell(
-                self.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+            ticker_data = self.strategy.advise_sell(
+                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
 
             trades += self._find_trades_for_stoploss_range(ticker_data, pair, self._stoploss_range)
 
