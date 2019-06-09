@@ -309,12 +309,15 @@ Advanced options can be configured using the `_ft_has_params` setting, which wil
 
 Available options are listed in the exchange-class as `_ft_has_default`.
 
-For example, to test the order type `FOK` with Kraken:
+For example, to test the order type `FOK` with Kraken, and modify candle_limit to 200 (so you only get 200 candles per call):
 
 ```json
 "exchange": {
     "name": "kraken",
-    "_ft_has_params": {"order_time_in_force": ["gtc", "fok"]}
+    "_ft_has_params": {
+        "order_time_in_force": ["gtc", "fok"],
+        "ohlcv_candle_limit": 200
+        }
 ```
 
 !!! Warning
