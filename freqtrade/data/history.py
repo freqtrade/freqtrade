@@ -81,10 +81,20 @@ def load_pair_history(pair: str,
                       timerange: TimeRange = TimeRange(None, None, 0, 0),
                       refresh_pairs: bool = False,
                       exchange: Optional[Exchange] = None,
-                      fill_up_missing: bool = True
+                      fill_up_missing: bool = True,
+                      drop_incomplete: bool = True
                       ) -> DataFrame:
     """
     Loads cached ticker history for the given pair.
+    :param pair: Pair to load data for
+    :param ticker_interval: Ticker-interval (e.g. "5m")
+    :param datadir: Path to the data storage location.
+    :param timerange: Limit data to be loaded to this timerange
+    :param refresh_pairs: Refresh pairs from exchange.
+        (Note: Requires exchange to be passed as well.)
+    :param exchange: Exchange object (needed when using "refresh_pairs")
+    :param fill_up_missing: Fill missing values with "No action"-candles
+    :param drop_incomplete: Drop last candle assuming it may be incomplete.
     :return: DataFrame with ohlcv data
     """
 
@@ -106,7 +116,9 @@ def load_pair_history(pair: str,
             logger.warning('Missing data at end for pair %s, data ends at %s',
                            pair,
                            arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        return parse_ticker_dataframe(pairdata, ticker_interval, fill_missing=fill_up_missing)
+        return parse_ticker_dataframe(pairdata, ticker_interval,
+                                      fill_missing=fill_up_missing,
+                                      drop_incomplete=drop_incomplete)
     else:
         logger.warning(
             f'No history data for pair: "{pair}", interval: {ticker_interval}. '
