@@ -32,7 +32,6 @@ from typing import Any, Dict, List
 
 import pandas as pd
 import pytz
-from plotly.offline import plot
 
 from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
@@ -87,7 +86,6 @@ def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
     return trades
 
 
-
 def get_trading_env(args: Namespace):
     """
     Initalize freqtrade Exchange and Strategy, split pairs recieved in parameter
@@ -132,7 +130,7 @@ def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange,
         refresh_pairs=_CONF.get('refresh_pairs', False),
         timerange=timerange,
         exchange=Exchange(_CONF),
-        live=args.live,
+        live=live,
     )
 
     # No ticker found, impossible to download, len mismatch
