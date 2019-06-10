@@ -72,18 +72,16 @@ class Backtesting(object):
             IStrategy.dp = self.dataprovider
 
         if self.config.get('strategy_list', None):
-            # Force one interval
-            self.ticker_interval = str(self.config.get('ticker_interval'))
-            self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
                 self.strategylist.append(StrategyResolver(stratconf).strategy)
 
         else:
-            # only one strategy
+            # No strategy list specified, only one strategy
             self.strategylist.append(StrategyResolver(self.config).strategy)
-        # Load one strategy
+
+        # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
     def _set_strategy(self, strategy):
@@ -94,7 +92,6 @@ class Backtesting(object):
 
         self.ticker_interval = self.config.get('ticker_interval')
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
-        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
         # Set stoploss_on_exchange to false for backtesting,
