@@ -232,10 +232,9 @@ class Backtesting(object):
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
+            partial_ticker: List, trade_count_lock: Dict,
+            stake_amount: float, max_open_trades: int) -> Optional[BacktestResult]:
 
-        stake_amount = args['stake_amount']
-        max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
             open_rate=buy_row.open,
             open_date=buy_row.date,
@@ -251,8 +250,7 @@ class Backtesting(object):
                 # Increase trade_count_lock for every iteration
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
-            buy_signal = sell_row.buy
-            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
+            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
                                              sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
 
@@ -325,6 +323,7 @@ class Backtesting(object):
         :return: DataFrame
         """
         processed = args['processed']
+        stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
         start_date = args['start_date']
@@ -375,7 +374,8 @@ class Backtesting(object):
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
                 trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
-                                                         trade_count_lock, args)
+                                                         trade_count_lock, stake_amount,
+                                                         max_open_trades)
 
                 if trade_entry:
                     lock_pair_until[pair] = trade_entry.close_time
