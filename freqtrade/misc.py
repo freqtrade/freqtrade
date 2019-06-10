@@ -117,6 +117,8 @@ def format_ms_time(date: int) -> str:
 
 def deep_merge_dicts(source, destination):
     """
+    Values from Source override destination, destination is returned (and modified!!)
+    Sample:
     >>> a = { 'first' : { 'rows' : { 'pass' : 'dog', 'number' : '1' } } }
     >>> b = { 'first' : { 'rows' : { 'fail' : 'cat', 'number' : '5' } } }
     >>> merge(b, a) == { 'first' : { 'rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }

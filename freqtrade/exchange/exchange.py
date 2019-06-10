@@ -2,23 +2,24 @@
 """
 Cryptocurrency Exchanges support
 """
-import logging
+import asyncio
 import inspect
-from random import randint
-from typing import List, Dict, Tuple, Any, Optional
+import logging
+from copy import deepcopy
 from datetime import datetime
-from math import floor, ceil
+from math import ceil, floor
+from random import randint
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-import asyncio
 import ccxt
 import ccxt.async_support as ccxt_async
 from pandas import DataFrame
 
-from freqtrade import (constants, DependencyException, OperationalException,
-                       TemporaryError, InvalidOrderException)
+from freqtrade import (DependencyException, InvalidOrderException,
+                       OperationalException, TemporaryError, constants)
 from freqtrade.data.converter import parse_ticker_dataframe
-
+from freqtrade.misc import deep_merge_dicts
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +69,15 @@ class Exchange(object):
     _params: Dict = {}
 
     # Dict to specify which options each exchange implements
-    # TODO: this should be merged with attributes from subclasses
-    # To avoid having to copy/paste this to all subclasses.
-    _ft_has: Dict = {
+    # This defines defaults, which can be selectively overridden by subclasses using _ft_has
+    # or by specifying them in the configuration.
+    _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "ohlcv_candle_limit": 500,
+        "ohlcv_partial_candle": True,
     }
+    _ft_has: Dict = {}
 
     def __init__(self, config: dict) -> None:
         """
@@ -100,6 +104,19 @@ class Exchange(object):
             logger.info('Instance is running with dry_run enabled')
 
         exchange_config = config['exchange']
+
+        # Deep merge ft_has with default ft_has options
+        self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
+        if exchange_config.get("_ft_has_params"):
+            self._ft_has = deep_merge_dicts(exchange_config.get("_ft_has_params"),
+                                            self._ft_has)
+            logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
+
+        # Assign this directly for easy access
+        self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
+        self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
+
+        # Initialize ccxt objects
         self._api: ccxt.Exchange = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
         self._api_async: ccxt_async.Exchange = self._init_ccxt(
@@ -506,10 +523,8 @@ class Exchange(object):
     async def _async_get_history(self, pair: str,
                                  ticker_interval: str,
                                  since_ms: int) -> List:
-        # Assume exchange returns 500 candles
-        _LIMIT = 500
 
-        one_call = timeframe_to_msecs(ticker_interval) * _LIMIT
+        one_call = timeframe_to_msecs(ticker_interval) * self._ohlcv_candle_limit
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
@@ -566,7 +581,8 @@ class Exchange(object):
                 self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
-                ticks, ticker_interval, fill_missing=True)
+                ticks, ticker_interval, fill_missing=True,
+                drop_incomplete=self._ohlcv_partial_candle)
         return tickers
 
     def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:

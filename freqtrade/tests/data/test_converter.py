@@ -96,3 +96,50 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 
     assert log_has(f"Missing data fillup: before: {len(data)} - after: {len(data2)}",
                    caplog.record_tuples)
+
+
+def test_ohlcv_drop_incomplete(caplog):
+    ticker_interval = '1d'
+    ticks = [[
+            1559750400000,  # 2019-06-04
+            8.794e-05,  # open
+            8.948e-05,  # high
+            8.794e-05,  # low
+            8.88e-05,  # close
+            2255,  # volume (in quote currency)
+        ],
+        [
+            1559836800000,  # 2019-06-05
+            8.88e-05,
+            8.942e-05,
+            8.88e-05,
+            8.893e-05,
+            9911,
+        ],
+        [
+            1559923200000,  # 2019-06-06
+            8.891e-05,
+            8.893e-05,
+            8.875e-05,
+            8.877e-05,
+            2251
+        ],
+        [
+            1560009600000,  # 2019-06-07
+            8.877e-05,
+            8.883e-05,
+            8.895e-05,
+            8.817e-05,
+            123551
+     ]
+    ]
+    caplog.set_level(logging.DEBUG)
+    data = parse_ticker_dataframe(ticks, ticker_interval, fill_missing=False, drop_incomplete=False)
+    assert len(data) == 4
+    assert not log_has("Dropping last candle", caplog.record_tuples)
+
+    # Drop last candle
+    data = parse_ticker_dataframe(ticks, ticker_interval, fill_missing=False, drop_incomplete=True)
+    assert len(data) == 3
+
+    assert log_has("Dropping last candle", caplog.record_tuples)
