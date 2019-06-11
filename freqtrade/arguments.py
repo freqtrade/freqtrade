@@ -470,7 +470,7 @@ class Arguments(object):
             '--days',
             help='Download data for given number of days.',
             dest='days',
-            type=int,
+            type=Arguments.check_int_positive,
             metavar='INT',
         )
         self.parser.add_argument(
