@@ -390,14 +390,11 @@ class Configuration(object):
 
         exchange = config.get('exchange', {}).get('name').lower()
         if not is_exchange_known(exchange):
-            exception_msg = f'Exchange "{exchange}" is not supported by ccxt ' \
-                            f'and not known for the bot.\n' \
-                            f'The following exchanges are supported by ccxt: ' \
-                            f'{", ".join(known_exchanges())}'
-
-            logger.critical(exception_msg)
             raise OperationalException(
-                exception_msg
+                    f'Exchange "{exchange}" is not supported by ccxt '
+                    f'and not known for the bot.\n'
+                    f'The following exchanges are supported by ccxt: '
+                    f'{", ".join(known_exchanges())}'
             )
 
         logger.info(f'Exchange "{exchange}" is supported by ccxt and known for the bot.')
