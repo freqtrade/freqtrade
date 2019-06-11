@@ -71,7 +71,8 @@ else:
 configuration._load_logging_config(config)
 
 if args.config and args.exchange:
-    logger.warning("The --exchange option is ignored, using exchange settings from the configuration file.")
+    logger.warning("The --exchange option is ignored, "
+                   "using exchange settings from the configuration file.")
 
 # Check if the exchange set by the user is supported
 configuration.check_exchange(config)
