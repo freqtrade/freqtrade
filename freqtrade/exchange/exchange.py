@@ -156,8 +156,8 @@ class Exchange(object):
         # Find matching class for the given exchange name
         name = exchange_config['name']
 
-#        if not is_exchange_supported(name, ccxt_module):
-#            raise OperationalException(f'Exchange {name} is not supported')
+        if not is_exchange_known(name, ccxt_module):
+            raise OperationalException(f'Exchange {name} is not supported by ccxt')
 
         ex_config = {
             'apiKey': exchange_config.get('key'),
