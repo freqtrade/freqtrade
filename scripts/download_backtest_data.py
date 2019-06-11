@@ -27,6 +27,9 @@ arguments.download_data_options()
 # in the command line options explicitely
 args = arguments.parse_args(no_default_config=True)
 
+# Use bittrex as default exchange
+exchange_name = args.exchange or 'bittrex'
+
 timeframes = args.timeframes
 pairs: List = []
 
@@ -46,20 +49,15 @@ if args.config:
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
 
-    if args.exchange:
-        config['exchange']['name'] = args.exchange
-
     pairs = config['exchange']['pair_whitelist']
     timeframes = [config['ticker_interval']]
 
 else:
-    if not args.exchange:
-        sys.exit("No exchange specified.")
     config = {
         'stake_currency': '',
         'dry_run': True,
         'exchange': {
-            'name': args.exchange,
+            'name': exchange_name,
             'key': '',
             'secret': '',
             'pair_whitelist': [],
@@ -71,6 +69,13 @@ else:
     }
 
 configuration._load_logging_config(config)
+
+if args.config and args.exchange:
+    logger.warning("The --exchange option is ignored, using exchange settings from the configuration file.")
+
+# Check if the exchange set by the user is supported
+configuration.check_exchange(config)
+
 configuration._load_datadir_config(config)
 
 dl_path = Path(config['datadir'])

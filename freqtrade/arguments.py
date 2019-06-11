@@ -443,7 +443,7 @@ class Arguments(object):
             help='Log to the file specified',
             dest='logfile',
             type=str,
-            metavar='FILE'
+            metavar='FILE',
         )
         self.parser.add_argument(
             '-c', '--config',
@@ -458,15 +458,12 @@ class Arguments(object):
             '-d', '--datadir',
             help='Path to backtest data.',
             dest='datadir',
-            default=None,
-            type=str,
             metavar='PATH',
         )
         self.parser.add_argument(
             '--pairs-file',
             help='File containing a list of pairs to download.',
             dest='pairs_file',
-            default=None,
             metavar='FILE',
         )
         self.parser.add_argument(
@@ -475,14 +472,11 @@ class Arguments(object):
             dest='days',
             type=int,
             metavar='INT',
-            default=None
         )
         self.parser.add_argument(
             '--exchange',
             help='Exchange name (default: %(default)s). Only valid if no config is provided.',
             dest='exchange',
-            type=str,
-            default='bittrex'
         )
         self.parser.add_argument(
             '-t', '--timeframes',
