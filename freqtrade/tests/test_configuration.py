@@ -484,7 +484,7 @@ def test_check_exchange(default_conf, caplog) -> None:
 
     with pytest.raises(
         OperationalException,
-        match=r'.*Exchange "unknown_exchange" not supported.*'
+        match=r'.*Exchange "unknown_exchange" is not supported by ccxt and not known for the bot.*'
     ):
         configuration.check_exchange(default_conf)
 

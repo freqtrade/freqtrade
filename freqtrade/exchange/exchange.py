@@ -156,8 +156,8 @@ class Exchange(object):
         # Find matching class for the given exchange name
         name = exchange_config['name']
 
-        if not is_exchange_supported(name, ccxt_module):
-            raise OperationalException(f'Exchange {name} is not supported')
+#        if not is_exchange_supported(name, ccxt_module):
+#            raise OperationalException(f'Exchange {name} is not supported')
 
         ex_config = {
             'apiKey': exchange_config.get('key'),
@@ -722,11 +722,19 @@ class Exchange(object):
             raise OperationalException(e)
 
 
-def is_exchange_supported(exchange: str, ccxt_module=None) -> bool:
-    return exchange in supported_exchanges(ccxt_module)
+def is_exchange_bad(exchange: str) -> bool:
+    return exchange in ['bitmex']
 
 
-def supported_exchanges(ccxt_module=None) -> List[str]:
+def is_exchange_known(exchange: str, ccxt_module=None) -> bool:
+    return exchange in known_exchanges(ccxt_module)
+
+
+def is_exchange_officially_supported(exchange: str) -> bool:
+    return exchange in ['bittrex', 'binance']
+
+
+def known_exchanges(ccxt_module=None) -> List[str]:
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
 
 

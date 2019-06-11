@@ -13,7 +13,8 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
-from freqtrade.exchange import is_exchange_supported, supported_exchanges
+from freqtrade.exchange import (is_exchange_bad, is_exchange_known,
+                                is_exchange_officially_supported, known_exchanges)
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
@@ -375,22 +376,44 @@ class Configuration(object):
 
         return self.config
 
-    def check_exchange(self, config: Dict[str, Any]) -> bool:
+    def check_exchange(self, config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         """
         Check if the exchange name in the config file is supported by Freqtrade
-        :return: True or raised an exception if the exchange if not supported
+        :param check_for_bad: if True, check the exchange against the list of known 'bad'
+                              exchanges
+        :return: False if exchange is 'bad', i.e. is known to work with the bot with
+                 critical issues or does not work at all, crashes, etc. True otherwise.
+                 raises an exception if the exchange if not supported by ccxt
+                 and thus is not known for the Freqtrade at all.
         """
-        exchange = config.get('exchange', {}).get('name').lower()
-        if not is_exchange_supported(exchange):
+        logger.info("Checking exchange...")
 
-            exception_msg = f'Exchange "{exchange}" not supported.\n' \
-                            f'The following exchanges are supported: ' \
-                            f'{", ".join(supported_exchanges())}'
+        exchange = config.get('exchange', {}).get('name').lower()
+        if not is_exchange_known(exchange):
+            exception_msg = f'Exchange "{exchange}" is not supported by ccxt ' \
+                            f'and not known for the bot.\n' \
+                            f'The following exchanges are supported by ccxt: ' \
+                            f'{", ".join(known_exchanges())}'
 
             logger.critical(exception_msg)
             raise OperationalException(
                 exception_msg
             )
 
-        logger.debug('Exchange "%s" supported', exchange)
+        logger.info(f'Exchange "{exchange}" is supported by ccxt and known for the bot.')
+
+        if is_exchange_officially_supported(exchange):
+            logger.info(f'Exchange "{exchange}" is officially supported '
+                        f'by the Freqtrade development team.')
+        else:
+            logger.warning(f'Exchange "{exchange}" is not officially supported '
+                           f'by the Freqtrade development team. '
+                           f'It may work with serious issues or not work at all. '
+                           f'Use it at your own discretion.')
+
+        if check_for_bad and is_exchange_bad(exchange):
+            logger.warning(f'Exchange "{exchange}" is known to not work with Freqtrade yet. '
+                           f'Use it only for development and testing purposes.')
+            return False
+
         return True
