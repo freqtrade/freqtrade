@@ -1,5 +1,6 @@
 # Include all requirements to run the bot.
 -r requirements.txt
+-r requirements-plot.txt
 
 flake8==3.7.7
 flake8-type-annotations==0.1.0
