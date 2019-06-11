@@ -378,6 +378,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -393,6 +394,7 @@ class IStrategy(ABC):
         :param pair: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
+        logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -408,6 +410,7 @@ class IStrategy(ABC):
         :param pair: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+        logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")
         if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
