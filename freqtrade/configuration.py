@@ -13,8 +13,8 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
-from freqtrade.exchange import (is_exchange_bad, is_exchange_known,
-                                is_exchange_officially_supported, known_exchanges)
+from freqtrade.exchange import (is_exchange_bad, is_exchange_available,
+                                is_exchange_officially_supported, available_exchanges)
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
@@ -389,27 +389,27 @@ class Configuration(object):
         logger.info("Checking exchange...")
 
         exchange = config.get('exchange', {}).get('name').lower()
-        if not is_exchange_known(exchange):
+        if not is_exchange_available(exchange):
             raise OperationalException(
                     f'Exchange "{exchange}" is not supported by ccxt '
-                    f'and not known for the bot.\n'
+                    f'and therefore not available for the bot.\n'
                     f'The following exchanges are supported by ccxt: '
-                    f'{", ".join(known_exchanges())}'
+                    f'{", ".join(available_exchanges())}'
             )
 
-        logger.info(f'Exchange "{exchange}" is supported by ccxt and known for the bot.')
+        logger.info(f'Exchange "{exchange}" is supported by ccxt '
+                    f'and therefore available for the bot.')
 
         if is_exchange_officially_supported(exchange):
             logger.info(f'Exchange "{exchange}" is officially supported '
                         f'by the Freqtrade development team.')
         else:
-            logger.warning(f'Exchange "{exchange}" is not officially supported '
-                           f'by the Freqtrade development team. '
-                           f'It may work with serious issues or not work at all. '
+            logger.warning(f'Exchange "{exchange}" is not officially supported. '
+                           f'It may work flawlessly (please report back) or have serious issues. '
                            f'Use it at your own discretion.')
 
         if check_for_bad and is_exchange_bad(exchange):
-            logger.warning(f'Exchange "{exchange}" is known to not work with Freqtrade yet. '
+            logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
                            f'Use it only for development and testing purposes.')
             return False
 
