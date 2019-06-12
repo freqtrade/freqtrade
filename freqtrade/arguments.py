@@ -335,12 +335,25 @@ class Arguments(object):
             metavar='INT',
         )
 
+    @staticmethod
+    def list_exchanges_options(parser: argparse.ArgumentParser) -> None:
+        """
+        Parses given arguments for the list-exchanges command.
+        """
+        parser.add_argument(
+            '-1',
+            help='Print exchanges in one column',
+            action='store_true',
+            dest='print_one_column',
+        )
+
     def _build_subcommands(self) -> None:
         """
         Builds and attaches all subcommands
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
+        from freqtrade.utils import start_list_exchanges
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -361,6 +374,11 @@ class Arguments(object):
         hyperopt_cmd.set_defaults(func=start_hyperopt)
         self.optimizer_shared_options(hyperopt_cmd)
         self.hyperopt_options(hyperopt_cmd)
+
+        # Add list-exchanges subcommand
+        list_exchanges_cmd = subparsers.add_parser('list-exchanges', help='List known exchanges.')
+        list_exchanges_cmd.set_defaults(func=start_list_exchanges)
+        self.list_exchanges_options(list_exchanges_cmd)
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
