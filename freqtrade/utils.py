@@ -34,7 +34,7 @@ def start_list_exchanges(args: Namespace) -> None:
     """
 
     # Initialize configuration
-    config = setup_configuration(args, RunMode.OTHER)
+    _ = setup_configuration(args, RunMode.OTHER)
 
     logger.debug('Starting freqtrade in cli-util mode')
 
