@@ -91,7 +91,7 @@ class Worker(object):
             })
             logger.info('Changing state to: %s', state.name)
             if state == State.RUNNING:
-                self.freqtrade.rpc.startup_messages(self._config, self.freqtrade.pairlists)
+                self.freqtrade.startup()
 
         if state == State.STOPPED:
             # Ping systemd watchdog before sleeping in the stopped state

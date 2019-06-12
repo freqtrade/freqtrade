@@ -105,6 +105,7 @@ def test_cleanup(mocker, default_conf, caplog) -> None:
 def test_worker_running(mocker, default_conf, caplog) -> None:
     mock_throttle = MagicMock()
     mocker.patch('freqtrade.worker.Worker._throttle', mock_throttle)
+    mocker.patch('freqtrade.persistence.Trade.stoploss_reinitialization', MagicMock())
 
     worker = get_patched_worker(mocker, default_conf)
 
@@ -3144,10 +3145,27 @@ def test_get_sell_rate(default_conf, mocker, ticker, order_book_l2) -> None:
     assert rate == 0.043936
 
 
-def test_startup_messages(default_conf, mocker):
+def test_startup_state(default_conf, mocker):
     default_conf['pairlist'] = {'method': 'VolumePairList',
                                 'config': {'number_assets': 20}
                                 }
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     worker = get_patched_worker(mocker, default_conf)
     assert worker.state is State.RUNNING
+
+
+def test_startup_trade_reinit(default_conf, edge_conf, mocker):
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    reinit_mock = MagicMock()
+    mocker.patch('freqtrade.persistence.Trade.stoploss_reinitialization', reinit_mock)
+
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    ftbot.startup()
+    assert reinit_mock.call_count == 1
+
+    reinit_mock.reset_mock()
+
+    ftbot = get_patched_freqtradebot(mocker, edge_conf)
+    ftbot.startup()
+    assert reinit_mock.call_count == 0

@@ -777,3 +777,63 @@ def test_to_json(default_conf, fee):
                       'stop_loss_pct': None,
                       'initial_stop_loss': None,
                       'initial_stop_loss_pct': None}
+
+
+def test_stoploss_reinitialization(default_conf, fee):
+    init(default_conf['db_url'])
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=10,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+        max_rate=1,
+    )
+
+    trade.adjust_stop_loss(trade.open_rate, 0.05, True)
+    assert trade.stop_loss == 0.95
+    assert trade.stop_loss_pct == -0.05
+    assert trade.initial_stop_loss == 0.95
+    assert trade.initial_stop_loss_pct == -0.05
+    Trade.session.add(trade)
+
+    # Lower stoploss
+    Trade.stoploss_reinitialization(0.06)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    assert trade_adj.stop_loss == 0.94
+    assert trade_adj.stop_loss_pct == -0.06
+    assert trade_adj.initial_stop_loss == 0.94
+    assert trade_adj.initial_stop_loss_pct == -0.06
+
+    # Raise stoploss
+    Trade.stoploss_reinitialization(0.04)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    assert trade_adj.stop_loss == 0.96
+    assert trade_adj.stop_loss_pct == -0.04
+    assert trade_adj.initial_stop_loss == 0.96
+    assert trade_adj.initial_stop_loss_pct == -0.04
+
+    # Trailing stoploss (move stoplos up a bit)
+    trade.adjust_stop_loss(1.02, 0.04)
+    assert trade_adj.stop_loss == 0.9792
+    assert trade_adj.initial_stop_loss == 0.96
+
+    Trade.stoploss_reinitialization(0.04)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    # Stoploss should not change in this case.
+    assert trade_adj.stop_loss == 0.9792
+    assert trade_adj.stop_loss_pct == -0.04
+    assert trade_adj.initial_stop_loss == 0.96
+    assert trade_adj.initial_stop_loss_pct == -0.04
