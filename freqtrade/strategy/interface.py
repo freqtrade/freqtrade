@@ -308,14 +308,16 @@ class IStrategy(ABC):
 
         if trailing_stop:
             # trailing stoploss handling
-
             sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
             tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
 
+            # Make sure current_profit is calculated using high for backtesting.
+            high_profit = current_profit if not high else trade.calc_profit_percent(high)
+
             # Don't update stoploss if trailing_only_offset_is_reached is true.
-            if not (tsl_only_offset and current_profit < sl_offset):
+            if not (tsl_only_offset and high_profit < sl_offset):
                 # Specific handling for trailing_stop_positive
-                if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
+                if 'trailing_stop_positive' in self.config and high_profit > sl_offset:
                     # Ignore mypy error check in configuration that this is a float
                     stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
                     logger.debug(f"using positive stop loss: {stop_loss_value} "
