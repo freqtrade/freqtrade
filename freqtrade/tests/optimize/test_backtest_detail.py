@@ -14,6 +14,21 @@ from freqtrade.tests.optimize import (BTContainer, BTrade,
                                       _get_frame_time_from_offset,
                                       tests_ticker_interval)
 
+# Test 0 Sell signal sell
+# Test with Stop-loss at 1%
+# TC0: Sell signal in candle 3
+tc0 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4986, 4600, 6172, 0, 0],  # exit with stoploss hit
+    [3, 5010, 5000, 4980, 5010, 6172, 0, 1],
+    [4, 5010, 4987, 4977, 4995, 6172, 0, 0],
+    [5, 4995, 4995, 4995, 4950, 6172, 0, 0]],
+    stop_loss=-0.01, roi=1, profit_perc=0.002, use_sell_signal=True,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+)
+
 # Test 1 Minus 8% Close
 # Test with Stop-loss at 1%
 # TC1: Stop-Loss Triggered 1% loss
@@ -146,7 +161,7 @@ tc8 = BTContainer(data=[
 # Test 9 - trailing_stop should raise - high and low in same candle.
 # Candle Data for test 9
 # Set stop-loss at 10%, ROI at 10% (should not apply)
-# TC9: Trailing stoploss - stoploss should be adjusted candle 2
+# TC9: Trailing stoploss - stoploss should be adjusted candle 3
 tc9 = BTContainer(data=[
     # D   O     H     L     C    V    B  S
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
@@ -159,6 +174,7 @@ tc9 = BTContainer(data=[
 )
 
 TESTS = [
+    tc0,
     tc1,
     tc2,
     tc3,
@@ -180,6 +196,13 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     default_conf["minimal_roi"] = {"0": data.roi}
     default_conf["ticker_interval"] = tests_ticker_interval
     default_conf["trailing_stop"] = data.trailing_stop
+    default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
+    # Only add this to configuration If it's necessary
+    if data.trailing_stop_positive:
+        default_conf["trailing_stop_positive"] = data.trailing_stop_positive
+    default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
+    default_conf["experimental"] = {"use_sell_signal": data.use_sell_signal}
+
     mocker.patch("freqtrade.exchange.Exchange.get_fee", MagicMock(return_value=0.0))
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
