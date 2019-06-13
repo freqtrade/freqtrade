@@ -30,7 +30,6 @@ args = arguments.parse_args(no_default_config=True)
 # Use bittrex as default exchange
 exchange_name = args.exchange or 'bittrex'
 
-timeframes = args.timeframes
 pairs: List = []
 
 configuration = Configuration(args)
@@ -50,7 +49,9 @@ if args.config:
     config['exchange']['secret'] = ''
 
     pairs = config['exchange']['pair_whitelist']
-    timeframes = [config['ticker_interval']]
+
+    # Don't fail if ticker_interval is not in the configuration
+    timeframes = [config.get('ticker_interval')]
 
 else:
     config = {
@@ -67,6 +68,8 @@ else:
             }
         }
     }
+
+timeframes = args.timeframes
 
 configuration._load_logging_config(config)
 
