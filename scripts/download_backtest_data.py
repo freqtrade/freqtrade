@@ -50,8 +50,10 @@ if args.config:
 
     pairs = config['exchange']['pair_whitelist']
 
-    # Don't fail if ticker_interval is not in the configuration
-    timeframes = [config.get('ticker_interval')]
+    if config.get('ticker_interval'):
+        timeframes = args.timeframes or [config.get('ticker_interval')]
+    else:
+        timeframes = args.timeframes or ['1m', '5m']
 
 else:
     config = {
@@ -68,8 +70,7 @@ else:
             }
         }
     }
-
-timeframes = args.timeframes
+    timeframes = args.timeframes or ['1m', '5m']
 
 configuration._load_logging_config(config)
 
