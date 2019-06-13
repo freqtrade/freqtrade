@@ -173,6 +173,57 @@ tc9 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
+# Test 10 - trailing_stop should raise so candle 3 causes a stoploss
+# without applying trailing_stop_positive since stoploss_offset is at 10%.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC10: Trailing stoploss - stoploss should be adjusted candle 2
+tc10 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=-0.1, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.10,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=4)]
+)
+
+# Test 11 - trailing_stop should raise so candle 3 causes a stoploss
+# applying a positive trailing stop of 3% since stop_positive_offset is reached.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC11: Trailing stoploss - stoploss should be adjusted candle 2,
+tc11 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=0.019, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
+# Test 12 - trailing_stop should raise in candle 2 and cause a stoploss in the same candle
+# applying a positive trailing stop of 3% since stop_positive_offset is reached.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC12: Trailing stoploss - stoploss should be adjusted candle 2,
+tc12 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=0.019, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -184,6 +235,9 @@ TESTS = [
     tc7,
     tc8,
     tc9,
+    tc10,
+    tc11,
+    tc12,
 ]
 
 
