@@ -127,7 +127,7 @@ try:
 
             logger.info(f'Downloading pair {pair}, interval {ticker_interval}.')
             download_pair_history(datadir=dl_path, exchange=exchange,
-                                  pair=pair, ticker_interval=ticker_interval,
+                                  pair=pair, ticker_interval=str(ticker_interval),
                                   timerange=timerange)
 
 except KeyboardInterrupt:
