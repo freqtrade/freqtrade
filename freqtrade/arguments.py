@@ -376,7 +376,10 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
         # Add list-exchanges subcommand
-        list_exchanges_cmd = subparsers.add_parser('list-exchanges', help='Print available exchanges.')
+        list_exchanges_cmd = subparsers.add_parser(
+            'list-exchanges',
+            help='Print available exchanges.'
+        )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self.list_exchanges_options(list_exchanges_cmd)
 
