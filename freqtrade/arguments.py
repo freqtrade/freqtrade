@@ -341,7 +341,7 @@ class Arguments(object):
         Parses given arguments for the list-exchanges command.
         """
         parser.add_argument(
-            '-1',
+            '-1', '--one-column',
             help='Print exchanges in one column',
             action='store_true',
             dest='print_one_column',
@@ -376,7 +376,7 @@ class Arguments(object):
         self.hyperopt_options(hyperopt_cmd)
 
         # Add list-exchanges subcommand
-        list_exchanges_cmd = subparsers.add_parser('list-exchanges', help='List known exchanges.')
+        list_exchanges_cmd = subparsers.add_parser('list-exchanges', help='Print available exchanges.')
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self.list_exchanges_options(list_exchanges_cmd)
 
