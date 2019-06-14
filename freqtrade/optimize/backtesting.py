@@ -421,20 +421,21 @@ class Backtesting(object):
             max_open_trades = 0
         all_results = {}
 
+        min_date, max_date = history.get_timeframe(data)
+        # Validate dataframe for missing values (mainly at start and end, as fillup is called)
+        history.validate_backtest_data(data, min_date, max_date,
+                                       timeframe_to_minutes(self.ticker_interval))
+        logger.info(
+            'Backtesting with data from %s up to %s (%s days)..',
+            min_date.isoformat(),
+            max_date.isoformat(),
+            (max_date - min_date).days
+        )
+
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
-            min_date, max_date = history.get_timeframe(data)
-            # Validate dataframe for missing values (mainly at start and end, as fillup is called)
-            history.validate_backtest_data(data, min_date, max_date,
-                                           timeframe_to_minutes(self.ticker_interval))
-            logger.info(
-                'Backtesting with data from %s up to %s (%s days)..',
-                min_date.isoformat(),
-                max_date.isoformat(),
-                (max_date - min_date).days
-            )
             # need to reprocess data every time to populate signals
             preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
