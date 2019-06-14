@@ -122,12 +122,11 @@ class Configuration(object):
 
         return conf
 
-    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_logging_config(self, config: Dict[str, Any]) -> None:
         """
-        Extract information for sys.argv and load common configuration
-        :return: configuration as dictionary
+        Extract information for sys.argv and load logging configuration:
+        the --loglevel, --logfile options
         """
-
         # Log level
         if 'loglevel' in self.args and self.args.loglevel:
             config.update({'verbosity': self.args.loglevel})
@@ -152,6 +151,13 @@ class Configuration(object):
         )
         set_loggers(config['verbosity'])
         logger.info('Verbosity set to %s', config['verbosity'])
+
+    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load common configuration
+        :return: configuration as dictionary
+        """
+        self._load_logging_config(config)
 
         # Support for sd_notify
         if self.args.sd_notify:
@@ -228,6 +234,17 @@ class Configuration(object):
             else:
                 logger.info(logstring.format(config[argname]))
 
+    def _load_datadir_config(self, config: Dict[str, Any]) -> None:
+        """
+        Extract information for sys.argv and load datadir configuration:
+        the --datadir option
+        """
+        if 'datadir' in self.args and self.args.datadir:
+            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
+        else:
+            config.update({'datadir': self._create_datadir(config, None)})
+        logger.info('Using data folder: %s ...', config.get('datadir'))
+
     def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load Optimize configuration
@@ -263,11 +280,7 @@ class Configuration(object):
         self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
-        if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
-        else:
-            config.update({'datadir': self._create_datadir(config, None)})
-        logger.info('Using data folder: %s ...', config.get('datadir'))
+        self._load_datadir_config(config)
 
         self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')

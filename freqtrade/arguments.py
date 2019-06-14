@@ -47,7 +47,7 @@ class Arguments(object):
 
         return self.parsed_arg
 
-    def parse_args(self) -> argparse.Namespace:
+    def parse_args(self, no_default_config: bool = False) -> argparse.Namespace:
         """
         Parses given arguments and returns an argparse Namespace instance.
         """
@@ -55,7 +55,7 @@ class Arguments(object):
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
-        if parsed_arg.config is None:
+        if parsed_arg.config is None and not no_default_config:
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -427,26 +427,24 @@ class Arguments(object):
             default=None
         )
 
-    def testdata_dl_options(self) -> None:
+    def download_data_options(self) -> None:
         """
         Parses given arguments for testdata download
         """
         self.parser.add_argument(
-            '--pairs-file',
-            help='File containing a list of pairs to download.',
-            dest='pairs_file',
-            default=None,
-            metavar='PATH',
+            '-v', '--verbose',
+            help='Verbose mode (-vv for more, -vvv to get all messages).',
+            action='count',
+            dest='loglevel',
+            default=0,
         )
-
         self.parser.add_argument(
-            '--export',
-            help='Export files to given dir.',
-            dest='export',
-            default=None,
-            metavar='PATH',
+            '--logfile',
+            help='Log to the file specified',
+            dest='logfile',
+            type=str,
+            metavar='FILE',
         )
-
         self.parser.add_argument(
             '-c', '--config',
             help='Specify configuration file (default: %(default)s). '
@@ -456,35 +454,39 @@ class Arguments(object):
             type=str,
             metavar='PATH',
         )
-
+        self.parser.add_argument(
+            '-d', '--datadir',
+            help='Path to backtest data.',
+            dest='datadir',
+            metavar='PATH',
+        )
+        self.parser.add_argument(
+            '--pairs-file',
+            help='File containing a list of pairs to download.',
+            dest='pairs_file',
+            metavar='FILE',
+        )
         self.parser.add_argument(
             '--days',
             help='Download data for given number of days.',
             dest='days',
-            type=int,
+            type=Arguments.check_int_positive,
             metavar='INT',
-            default=None
         )
-
         self.parser.add_argument(
             '--exchange',
             help='Exchange name (default: %(default)s). Only valid if no config is provided.',
             dest='exchange',
-            type=str,
-            default='bittrex'
         )
-
         self.parser.add_argument(
             '-t', '--timeframes',
             help='Specify which tickers to download. Space separated list. \
                   Default: %(default)s.',
             choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                      '6h', '8h', '12h', '1d', '3d', '1w'],
-            default=['1m', '5m'],
             nargs='+',
             dest='timeframes',
         )
-
         self.parser.add_argument(
             '--erase',
             help='Clean all existing data for the selected exchange/pairs/timeframes.',
