@@ -28,17 +28,13 @@ def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
 
 def start_list_exchanges(args: Namespace) -> None:
     """
-    Start listing known exchanges
+    Print available exchanges
     :param args: Cli args from Arguments()
     :return: None
     """
 
-    # Initialize configuration
-    _ = setup_configuration(args, RunMode.OTHER)
-
-    logger.debug('Starting freqtrade in cli-util mode')
-
     if args.print_one_column:
         print('\n'.join(supported_exchanges()))
     else:
-        print(f"Supported exchanges: {', '.join(supported_exchanges())}")
+        print(f"Exchanges supported by ccxt and available for Freqtrade: "
+              f"{', '.join(supported_exchanges())}")
