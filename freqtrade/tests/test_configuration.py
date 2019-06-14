@@ -470,15 +470,27 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 def test_check_exchange(default_conf, caplog) -> None:
     configuration = Configuration(Namespace())
 
-    # Test a valid exchange
+    # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'BITTREX'})
     assert configuration.check_exchange(default_conf)
 
-    # Test a valid exchange
+    # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'binance'})
     assert configuration.check_exchange(default_conf)
 
-    # Test a invalid exchange
+    # Test an available exchange, supported by ccxt
+    default_conf.get('exchange').update({'name': 'kraken'})
+    assert configuration.check_exchange(default_conf)
+
+    # Test a 'bad' exchange, which known to have serious problems
+    default_conf.get('exchange').update({'name': 'bitmex'})
+    assert not configuration.check_exchange(default_conf)
+
+    # Test a 'bad' exchange with check_for_bad=False
+    default_conf.get('exchange').update({'name': 'bitmex'})
+    assert configuration.check_exchange(default_conf, False)
+
+    # Test an invalid exchange
     default_conf.get('exchange').update({'name': 'unknown_exchange'})
     configuration.config = default_conf
 
