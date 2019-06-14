@@ -397,20 +397,19 @@ class Configuration(object):
                     f'{", ".join(available_exchanges())}'
             )
 
-        logger.info(f'Exchange "{exchange}" is supported by ccxt '
-                    f'and therefore available for the bot.')
+        if check_for_bad and is_exchange_bad(exchange):
+            logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
+                           f'Use it only for development and testing purposes.')
+            return False
 
         if is_exchange_officially_supported(exchange):
             logger.info(f'Exchange "{exchange}" is officially supported '
                         f'by the Freqtrade development team.')
         else:
-            logger.warning(f'Exchange "{exchange}" is not officially supported. '
+            logger.warning(f'Exchange "{exchange}" is supported by ccxt '
+                           f'and therefore available for the bot but not officially supported '
+                           f'by the Freqtrade development team. '
                            f'It may work flawlessly (please report back) or have serious issues. '
                            f'Use it at your own discretion.')
-
-        if check_for_bad and is_exchange_bad(exchange):
-            logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
-                           f'Use it only for development and testing purposes.')
-            return False
 
         return True
