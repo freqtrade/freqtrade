@@ -10,7 +10,7 @@ from pandas import DataFrame, to_datetime
 logger = logging.getLogger(__name__)
 
 
-def parse_ticker_dataframe(ticker: list, ticker_interval: str, *,
+def parse_ticker_dataframe(ticker: list, ticker_interval: str, pair: str, *,
                            fill_missing: bool = True,
                            drop_incomplete: bool = True) -> DataFrame:
     """
@@ -51,12 +51,12 @@ def parse_ticker_dataframe(ticker: list, ticker_interval: str, *,
         logger.debug('Dropping last candle')
 
     if fill_missing:
-        return ohlcv_fill_up_missing_data(frame, ticker_interval)
+        return ohlcv_fill_up_missing_data(frame, ticker_interval, pair)
     else:
         return frame
 
 
-def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str) -> DataFrame:
+def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str, pair: str) -> DataFrame:
     """
     Fills up missing data with 0 volume rows,
     using the previous close as price for "open", "high" "low" and "close", volume is set to 0
@@ -87,7 +87,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, ticker_interval: str) -> Da
     len_before = len(dataframe)
     len_after = len(df)
     if len_before != len_after:
-        logger.info(f"Missing data fillup: before: {len_before} - after: {len_after}")
+        logger.info(f"Missing data fillup for {pair}: before: {len_before} - after: {len_after}")
     return df
 
 

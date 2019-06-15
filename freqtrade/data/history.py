@@ -116,7 +116,7 @@ def load_pair_history(pair: str,
             logger.warning('Missing data at end for pair %s, data ends at %s',
                            pair,
                            arrow.get(pairdata[-1][0] // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        return parse_ticker_dataframe(pairdata, ticker_interval,
+        return parse_ticker_dataframe(pairdata, ticker_interval, pair=pair,
                                       fill_missing=fill_up_missing,
                                       drop_incomplete=drop_incomplete)
     else:
