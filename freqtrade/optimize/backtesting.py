@@ -350,7 +350,7 @@ class Backtesting(object):
                     row = ticker[pair][indexes[pair]]
                 except IndexError:
                     # missing Data for one pair at the end.
-                    # Warnings for this are shown by `validate_backtest_data`
+                    # Warnings for this are shown during data loading
                     continue
 
                 # Waits until the time-counter reaches the start of the data for this pair.
@@ -422,9 +422,7 @@ class Backtesting(object):
         all_results = {}
 
         min_date, max_date = history.get_timeframe(data)
-        # Validate dataframe for missing values (mainly at start and end, as fillup is called)
-        history.validate_backtest_data(data, min_date, max_date,
-                                       timeframe_to_minutes(self.ticker_interval))
+
         logger.info(
             'Backtesting with data from %s up to %s (%s days)..',
             min_date.isoformat(),
