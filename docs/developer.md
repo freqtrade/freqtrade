@@ -112,7 +112,7 @@ pair = "XLM/BTC"  # Make sure to use a pair that exists on that exchange!
 raw = ct.fetch_ohlcv(pair, timeframe=timeframe)
 
 # convert to dataframe
-df1 = parse_ticker_dataframe(raw, timeframe, drop_incomplete=False)
+df1 = parse_ticker_dataframe(raw, timeframe, pair=pair, drop_incomplete=False)
 
 print(df1["date"].tail(1))
 print(datetime.utcnow())

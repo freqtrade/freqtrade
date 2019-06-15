@@ -78,7 +78,8 @@ def load_data_test(what):
                 pair[x][5]  # Keep old volume
             ] for x in range(0, datalen)
         ]
-    return {'UNITTEST/BTC': parse_ticker_dataframe(data, '1m', fill_missing=True)}
+    return {'UNITTEST/BTC': parse_ticker_dataframe(data, '1m', pair="UNITTEST/BTC",
+                                                   fill_missing=True)}
 
 
 def simple_backtest(config, contour, num_results, mocker) -> None:
@@ -107,7 +108,8 @@ def simple_backtest(config, contour, num_results, mocker) -> None:
 def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=False,
                      timerange=None, exchange=None, live=False):
     tickerdata = history.load_tickerdata_file(datadir, 'UNITTEST/BTC', '1m', timerange=timerange)
-    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', fill_missing=True)}
+    pairdata = {'UNITTEST/BTC': parse_ticker_dataframe(tickerdata, '1m', pair="UNITTEST/BTC",
+                                                       fill_missing=True)}
     return pairdata
 
 
@@ -355,7 +357,8 @@ def test_tickerdata_to_dataframe_bt(default_conf, mocker) -> None:
     patch_exchange(mocker)
     timerange = TimeRange(None, 'line', 0, -100)
     tick = history.load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', fill_missing=True)}
+    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, '1m', pair="UNITTEST/BTC",
+                                                         fill_missing=True)}
 
     backtesting = Backtesting(default_conf)
     data = backtesting.strategy.tickerdata_to_dataframe(tickerlist)

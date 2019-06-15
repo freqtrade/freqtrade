@@ -17,6 +17,7 @@ def parse_ticker_dataframe(ticker: list, ticker_interval: str, pair: str, *,
     Converts a ticker-list (format ccxt.fetch_ohlcv) to a Dataframe
     :param ticker: ticker list, as returned by exchange.async_get_candle_history
     :param ticker_interval: ticker_interval (e.g. 5m). Used to fill up eventual missing data
+    :param pair: Pair this data is for (used to warn if fillup was necessary)
     :param fill_missing: fill up missing candles with 0 candles
                          (see ohlcv_fill_up_missing_data for details)
     :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
