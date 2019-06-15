@@ -286,12 +286,13 @@ def get_timeframe(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
         max(timeframe, key=operator.itemgetter(1))[1]
 
 
-def validate_backtest_data(data: Dict[str, DataFrame], min_date: datetime,
+def validate_backtest_data(data: DataFrame, pair: str, min_date: datetime,
                            max_date: datetime, ticker_interval_mins: int) -> bool:
     """
     Validates preprocessed backtesting data for missing values and shows warnings about it that.
 
-    :param data: dictionary with preprocessed backtesting data
+    :param data: preprocessed backtesting data (as DataFrame)
+    :param pair: pair used for log output.
     :param min_date: start-date of the data
     :param max_date: end-date of the data
     :param ticker_interval_mins: ticker interval in minutes
@@ -299,10 +300,9 @@ def validate_backtest_data(data: Dict[str, DataFrame], min_date: datetime,
     # total difference in minutes / interval-minutes
     expected_frames = int((max_date - min_date).total_seconds() // 60 // ticker_interval_mins)
     found_missing = False
-    for pair, df in data.items():
-        dflen = len(df)
-        if dflen < expected_frames:
-            found_missing = True
-            logger.warning("%s has missing frames: expected %s, got %s, that's %s missing values",
-                           pair, expected_frames, dflen, expected_frames - dflen)
+    dflen = len(data)
+    if dflen < expected_frames:
+        found_missing = True
+        logger.warning("%s has missing frames: expected %s, got %s, that's %s missing values",
+                       pair, expected_frames, dflen, expected_frames - dflen)
     return found_missing
