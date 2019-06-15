@@ -117,8 +117,10 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
 
 def test_edge_init(mocker, edge_conf) -> None:
     patch_exchange(mocker)
+    edge_conf['stake_amount'] = 20
     edge_cli = EdgeCli(edge_conf)
     assert edge_cli.config == edge_conf
+    assert edge_cli.config['stake_amount'] == 'unlimited'
     assert callable(edge_cli.edge.calculate)
 
 

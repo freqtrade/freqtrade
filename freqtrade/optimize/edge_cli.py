@@ -6,6 +6,7 @@ This module contains the edge backtesting interface
 import logging
 from typing import Dict, Any
 from tabulate import tabulate
+from freqtrade import constants
 from freqtrade.edge import Edge
 
 from freqtrade.arguments import Arguments
@@ -32,6 +33,7 @@ class EdgeCli(object):
         self.config['exchange']['secret'] = ''
         self.config['exchange']['password'] = ''
         self.config['exchange']['uid'] = ''
+        self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
         self.config['dry_run'] = True
         self.exchange = Exchange(self.config)
         self.strategy = StrategyResolver(self.config).strategy
