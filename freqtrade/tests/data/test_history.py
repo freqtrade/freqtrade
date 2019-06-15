@@ -555,8 +555,8 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog) -> None:
     )
     min_date, max_date = history.get_timeframe(data)
     caplog.clear()
-    assert history.validate_backtest_data(data, min_date, max_date,
-                                          timeframe_to_minutes('1m'))
+    assert history.validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
+                                          min_date, max_date, timeframe_to_minutes('1m'))
     assert len(caplog.record_tuples) == 1
     assert log_has(
         "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
@@ -579,6 +579,6 @@ def test_validate_backtest_data(default_conf, mocker, caplog) -> None:
 
     min_date, max_date = history.get_timeframe(data)
     caplog.clear()
-    assert not history.validate_backtest_data(data, min_date, max_date,
-                                              timeframe_to_minutes('5m'))
+    assert not history.validate_backtest_data(data['UNITTEST/BTC'], 'UNITTEST/BTC',
+                                              min_date, max_date, timeframe_to_minutes('5m'))
     assert len(caplog.record_tuples) == 0

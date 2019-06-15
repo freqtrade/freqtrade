@@ -37,8 +37,8 @@ def test_ohlcv_fill_up_missing_data(caplog):
 
     # Test fillup actually fixes invalid backtest data
     min_date, max_date = get_timeframe({'UNITTEST/BTC': data})
-    assert validate_backtest_data({'UNITTEST/BTC': data}, min_date, max_date, 1)
-    assert not validate_backtest_data({'UNITTEST/BTC': data2}, min_date, max_date, 1)
+    assert validate_backtest_data(data, 'UNITTEST/BTC', min_date, max_date, 1)
+    assert not validate_backtest_data(data2, 'UNITTEST/BTC', min_date, max_date, 1)
 
 
 def test_ohlcv_fill_up_missing_data2(caplog):
