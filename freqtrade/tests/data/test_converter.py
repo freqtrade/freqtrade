@@ -96,7 +96,8 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has(f"Missing data fillup for UNITTEST/BTC: before: {len(data)} - after: {len(data2)}",
+    assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
+                   f"{len(data)} - after: {len(data2)}",
                    caplog.record_tuples)
 
 
