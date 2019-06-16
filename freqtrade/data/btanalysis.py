@@ -103,9 +103,7 @@ def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
 
     elif exportfilename:
 
-        file = Path(exportfilename)
-        if file.exists():
-            trades = load_backtest_data(file)
+        trades = load_backtest_data(Path(exportfilename))
 
     return trades
 
