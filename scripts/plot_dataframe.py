@@ -31,59 +31,18 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-import pytz
 
-from freqtrade import persistence
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import BT_DATA_COLUMNS, load_backtest_data
+from freqtrade.data.btanalysis import load_trades
 from freqtrade.plot.plotting import generate_graph, generate_plot_file
 from freqtrade.exchange import Exchange
 from freqtrade.optimize import setup_configuration
-from freqtrade.persistence import Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 _CONF: Dict[str, Any] = {}
-
-timeZone = pytz.UTC
-
-
-def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
-    """
-    Load trades, either from a DB (using dburl) or via a backtest export file.
-    :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
-    :param exportfilename: Path to a file exported from backtesting
-    :returns: Dataframe containing Trades
-    """
-    # TODO: Document and move to btanalysis
-    trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
-
-    if db_url:
-        persistence.init(db_url, clean_open_orders=False)
-        columns = ["pair", "profit", "open_time", "close_time",
-                   "open_rate", "close_rate", "duration"]
-
-        for x in Trade.query.all():
-            logger.info("date: {}".format(x.open_date))
-
-        trades = pd.DataFrame([(t.pair, t.calc_profit(),
-                                t.open_date.replace(tzinfo=timeZone),
-                                t.close_date.replace(tzinfo=timeZone) if t.close_date else None,
-                                t.open_rate, t.close_rate,
-                                t.close_date.timestamp() - t.open_date.timestamp()
-                                if t.close_date else None)
-                               for t in Trade.query.all()],
-                              columns=columns)
-
-    elif exportfilename:
-
-        file = Path(exportfilename)
-        if file.exists():
-            trades = load_backtest_data(file)
-
-    return trades
 
 
 def get_trading_env(args: Namespace):
