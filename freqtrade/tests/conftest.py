@@ -4,6 +4,7 @@ import logging
 import re
 from datetime import datetime
 from functools import reduce
+from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -11,6 +12,7 @@ import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
+from freqtrade.arguments import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
@@ -33,6 +35,10 @@ def log_has_re(line, logs):
     return reduce(lambda a, b: a or b,
                   filter(lambda x: re.match(line, x[2]), logs),
                   False)
+
+
+def get_args(args) -> List[str]:
+    return Arguments(args, '').get_parsed_arg()
 
 
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
