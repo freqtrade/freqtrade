@@ -26,7 +26,6 @@ Example of usage:
 """
 import logging
 import sys
-from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, List
 
