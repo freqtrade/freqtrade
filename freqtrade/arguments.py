@@ -520,6 +520,13 @@ class Arguments(object):
         Parses given arguments for plot_dataframe
         """
         self.parser.add_argument(
+            '-p', '--pairs',
+            help='Show profits for only this pairs. Pairs are comma-separated.',
+            dest='pairs',
+            required=True,
+            default=None
+        )
+        self.parser.add_argument(
             '--indicators1',
             help='Set indicators from your strategy you want in the first row of the graph. Separate '
                  'them with a comma. E.g: ema3,ema5 (default: %(default)s)',

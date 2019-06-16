@@ -89,7 +89,7 @@ def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange,
         ticker_interval=ticker_interval,
         refresh_pairs=_CONF.get('refresh_pairs', False),
         timerange=timerange,
-        exchange=Exchange(_CONF),
+        exchange=exchange,
         live=live,
     )
 
@@ -132,6 +132,8 @@ def analyse_and_plot_pairs(args: Namespace):
     :return: None
     """
     strategy, exchange, pairs = get_trading_env(args)
+    pairs = args.pairs.split(',')
+
     # Set timerange to use
     timerange = Arguments.parse_timerange(args.timerange)
     ticker_interval = strategy.ticker_interval
@@ -170,7 +172,6 @@ def plot_parse_args(args: List[str]) -> Namespace:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph dataframe')
-    arguments.scripts_options()
     arguments.plot_dataframe_options()
     arguments.common_args_parser()
     arguments.optimizer_shared_options(arguments.parser)

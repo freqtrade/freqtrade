@@ -191,13 +191,22 @@ def test_plot_dataframe_options() -> None:
         '--indicators1', 'sma10,sma100',
         '--indicators2', 'macd,fastd,fastk',
         '--plot-limit', '30',
+        '-p', 'UNITTEST/BTC',
     ]
     arguments = Arguments(args, '')
     arguments.plot_dataframe_options()
-    args = arguments.parse_args(True)
-    assert args.indicators1 == "sma10,sma100"
-    assert args.indicators2 == "macd,fastd,fastk"
-    assert args.plot_limit == 30
+    pargs = arguments.parse_args(True)
+    assert pargs.indicators1 == "sma10,sma100"
+    assert pargs.indicators2 == "macd,fastd,fastk"
+    assert pargs.plot_limit == 30
+    assert pargs.pairs == "UNITTEST/BTC"
+
+    # Pop pairs argument
+    args = args[:-2]
+    arguments = Arguments(args, '')
+    arguments.plot_dataframe_options()
+    with pytest.raises(SystemExit, match=r'2'):
+        arguments.parse_args(True)
 
 
 def test_check_int_positive() -> None:
