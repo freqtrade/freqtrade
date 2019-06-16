@@ -205,19 +205,19 @@ class FreqtradeBot(object):
         else:
             stake_amount = self.config['stake_amount']
 
-        avaliable_amount = self.wallets.get_free(self.config['stake_currency'])
+        available_amount = self.wallets.get_free(self.config['stake_currency'])
 
         if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
             open_trades = len(Trade.get_open_trades())
             if open_trades >= self.config['max_open_trades']:
                 logger.warning('Can\'t open a new trade: max number of trades is reached')
                 return None
-            return avaliable_amount / (self.config['max_open_trades'] - open_trades)
+            return available_amount / (self.config['max_open_trades'] - open_trades)
 
         # Check if stake_amount is fulfilled
-        if avaliable_amount < stake_amount:
+        if available_amount < stake_amount:
             raise DependencyException(
-                f"Available balance({avaliable_amount} {self.config['stake_currency']}) is "
+                f"Available balance({available_amount} {self.config['stake_currency']}) is "
                 f"lower than stake amount({stake_amount} {self.config['stake_currency']})"
             )
 
