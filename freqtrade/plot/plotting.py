@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-import arrow
 import pandas as pd
 from pathlib import Path
 

@@ -32,6 +32,7 @@ def generage_empty_figure():
         vertical_spacing=0.0001,
     )
 
+
 def test_generate_row(default_conf, caplog):
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
@@ -155,3 +156,14 @@ def test_generate_graph_no_trades(default_conf, mocker):
 
     assert row_mock.call_count == 2
     assert trades_mock.call_count == 1
+
+
+def test_generate_plot_file(mocker, caplog):
+    fig = generage_empty_figure()
+    plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
+    generate_plot_file(fig, "UNITTEST/BTC", "5m")
+
+    assert plot_mock.call_count == 1
+    assert plot_mock.call_args[0][0] == fig
+    assert (plot_mock.call_args_list[0][1]['filename']
+            == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
