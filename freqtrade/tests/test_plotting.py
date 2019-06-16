@@ -5,8 +5,9 @@ from plotly import tools
 import plotly.graph_objs as go
 from copy import deepcopy
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import TimeRange
 from freqtrade.data import history
+from freqtrade.data.btanalysis import load_backtest_data
 from freqtrade.plot.plotting import (generate_graph, generate_plot_file,
                                      generate_row, plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -71,8 +72,26 @@ def test_plot_trades():
     # nothing happens when no trades are available
     fig = plot_trades(fig1, None)
     assert fig == fig1
+    pair = "ADA/BTC"
+    filename = history.make_testdata_path(None) / "backtest-result_test.json"
+    trades = load_backtest_data(filename)
+    trades = trades.loc[trades['pair'] == pair]
 
-    # TODO: implement tests that do something
+    fig = plot_trades(fig, trades)
+    figure = fig1.layout.figure
+
+    # Check buys - color, should be in first graph, ...
+    trade_buy = find_trace_in_fig_data(figure.data, "trade_buy")
+    assert isinstance(trade_buy, go.Scatter)
+    assert trade_buy.yaxis == 'y'
+    assert len(trades) == len(trade_buy.x)
+    assert trade_buy.marker.color == 'green'
+
+    trade_sell = find_trace_in_fig_data(figure.data, "trade_sell")
+    assert isinstance(trade_sell, go.Scatter)
+    assert trade_sell.yaxis == 'y'
+    assert len(trades) == len(trade_sell.x)
+    assert trade_sell.marker.color == 'red'
 
 
 def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):

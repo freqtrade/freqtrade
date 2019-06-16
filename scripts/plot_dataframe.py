@@ -141,7 +141,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     logger.info('End of ploting process %s plots generated', pair_counter)
 
 
-def plot_parse_args(args: List[str]) -> Namespace:
+def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     """
     Parse args passed to the script
     :param args: Cli arguments
