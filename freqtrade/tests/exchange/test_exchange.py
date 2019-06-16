@@ -1435,3 +1435,30 @@ def test_stoploss_limit_order_dry_run(default_conf, mocker):
     assert order['type'] == order_type
     assert order['price'] == 220
     assert order['amount'] == 1
+
+
+def test_merge_ft_has_dict(default_conf, mocker):
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=MagicMock()))
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    ex = Exchange(default_conf)
+    assert ex._ft_has == Exchange._ft_has_default
+
+    ex = Kraken(default_conf)
+    assert ex._ft_has == Exchange._ft_has_default
+
+    # Binance defines different values
+    ex = Binance(default_conf)
+    assert ex._ft_has != Exchange._ft_has_default
+    assert ex._ft_has['stoploss_on_exchange']
+    assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
+
+    conf = copy.deepcopy(default_conf)
+    conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
+                                          "stoploss_on_exchange": False}
+    # Use settings from configuration (overriding stoploss_on_exchange)
+    ex = Binance(conf)
+    assert ex._ft_has != Exchange._ft_has_default
+    assert not ex._ft_has['stoploss_on_exchange']
+    assert ex._ft_has['DeadBeef'] == 20

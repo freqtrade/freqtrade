@@ -218,9 +218,12 @@ stoploss = -0.10
 ```
 
 This would signify a stoploss of -10%.
+
+For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
+
 If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems).
 
-For more information on order_types please look [here](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md#understand-order_types).
+For more information on order_types please look [here](configuration.md#understand-order_types).
 
 ### Ticker interval
 
@@ -298,6 +301,18 @@ if self.dp:
 !!! Warning Warning in hyperopt
     This option cannot currently be used during hyperopt.
 
+#### Orderbook
+
+``` python
+if self.dp:
+    if self.dp.runmode in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+```
+!Warning The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+ method is used.
+
 #### Available Pairs
 
 ``` python
@@ -305,6 +320,7 @@ if self.dp:
     for pair, ticker in self.dp.available_pairs:
         print(f"available {pair}, {ticker}")
 ```
+
 
 #### Get data for non-tradeable pairs
 
@@ -394,7 +410,7 @@ To get additional Ideas for strategies, head over to our [strategy repository](h
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
-We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) which is a great place to get and/or share ideas.
+We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg) which is a great place to get and/or share ideas.
 
 ## Next step
 

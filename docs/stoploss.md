@@ -1,4 +1,13 @@
-# Stop Loss support
+# Stop Loss
+
+The `stoploss` configuration parameter is loss in percentage that should trigger a sale.
+For example, value `-0.10` will cause immediate sell if the profit dips below -10% for a given trade. This parameter is optional.
+
+Most of the strategy files already include the optimal `stoploss`
+value. This parameter is optional. If you use it in the configuration file, it will take over the
+`stoploss` value from the strategy file.
+
+## Stop Loss support
 
 At this stage the bot contains the following stoploss support modes:
 
@@ -16,13 +25,12 @@ In case of stoploss on exchange there is another parameter called `stoploss_on_e
 !!! Note
     Stoploss on exchange is only supported for Binance as of now.
 
-
 ## Static Stop Loss
 
 This is very simple, basically you define a stop loss of x in your strategy file or alternative in the configuration, which
 will overwrite the strategy definition. This will basically try to sell your asset, the second the loss exceeds the defined loss.
 
-## Trail Stop Loss
+## Trailing Stop Loss
 
 The initial value for this stop loss, is defined in your strategy or configuration. Just as you would define your Stop Loss normally.
 To enable this Feauture all you have to do is to define the configuration element:
@@ -63,3 +71,13 @@ The 0.01 would translate to a 1% stop loss, once you hit 1.1% profit.
 You should also make sure to have this value (`trailing_stop_positive_offset`) lower than your minimal ROI, otherwise minimal ROI will apply first and sell your trade.
 
 If `"trailing_only_offset_is_reached": true` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured`stoploss`.
+
+## Changing stoploss on open trades
+
+A stoploss on an open trade can be changed by changing the value in the configuration or strategy and use the `/reload_conf` command (alternatively, completely stopping and restarting the bot also works).
+
+The new stoploss value will be applied to open trades (and corresponding log-messages will be generated).
+
+### Limitations
+
+Stoploss values cannot be changed if `trailing_stop` is enabled and the stoploss has already been adjusted, or if [Edge](edge.md) is enabled (since Edge would recalculate stoploss based on the current market situation).

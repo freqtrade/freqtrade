@@ -2,6 +2,7 @@
 import json
 import logging
 import re
+from copy import deepcopy
 from datetime import datetime
 from functools import reduce
 from unittest.mock import MagicMock, PropertyMock
@@ -649,7 +650,7 @@ def ticker_history_list():
 
 @pytest.fixture
 def ticker_history(ticker_history_list):
-    return parse_ticker_dataframe(ticker_history_list, "5m", True)
+    return parse_ticker_dataframe(ticker_history_list, "5m", fill_missing=True)
 
 
 @pytest.fixture
@@ -854,7 +855,7 @@ def tickers():
 @pytest.fixture
 def result():
     with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file), '1m', True)
+        return parse_ticker_dataframe(json.load(data_file), '1m', fill_missing=True)
 
 # FIX:
 # Create an fixture/function
@@ -952,9 +953,10 @@ def buy_order_fee():
 
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
-    default_conf['max_open_trades'] = -1
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
-    default_conf['edge'] = {
+    conf = deepcopy(default_conf)
+    conf['max_open_trades'] = -1
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    conf['edge'] = {
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
@@ -970,7 +972,7 @@ def edge_conf(default_conf):
         "remove_pumps": False
     }
 
-    return default_conf
+    return conf
 
 
 @pytest.fixture

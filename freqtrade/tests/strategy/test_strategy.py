@@ -63,15 +63,14 @@ def test_search_strategy():
 
 def test_load_strategy(result):
     resolver = StrategyResolver({'strategy': 'TestStrategy'})
-    metadata = {'pair': 'ETH/BTC'}
-    assert 'adx' in resolver.strategy.advise_indicators(result, metadata=metadata)
+    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_byte64(result):
     with open("freqtrade/tests/strategy/test_strategy.py", "r") as file:
         encoded_string = urlsafe_b64encode(file.read().encode("utf-8")).decode("utf-8")
     resolver = StrategyResolver({'strategy': 'TestStrategy:{}'.format(encoded_string)})
-    assert 'adx' in resolver.strategy.advise_indicators(result, 'ETH/BTC')
+    assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
 def test_load_strategy_invalid_directory(result, caplog):
@@ -371,7 +370,7 @@ def test_deprecate_populate_indicators(result):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        indicators = resolver.strategy.advise_indicators(result, 'ETH/BTC')
+        indicators = resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -380,7 +379,7 @@ def test_deprecate_populate_indicators(result):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.advise_buy(indicators, 'ETH/BTC')
+        resolver.strategy.advise_buy(indicators, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -389,7 +388,7 @@ def test_deprecate_populate_indicators(result):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        resolver.strategy.advise_sell(indicators, 'ETH_BTC')
+        resolver.strategy.advise_sell(indicators, {'pair': 'ETH_BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \

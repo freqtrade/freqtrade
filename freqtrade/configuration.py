@@ -13,7 +13,8 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
-from freqtrade.exchange import is_exchange_supported, supported_exchanges
+from freqtrade.exchange import (is_exchange_bad, is_exchange_available,
+                                is_exchange_officially_supported, available_exchanges)
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
@@ -122,12 +123,11 @@ class Configuration(object):
 
         return conf
 
-    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_logging_config(self, config: Dict[str, Any]) -> None:
         """
-        Extract information for sys.argv and load common configuration
-        :return: configuration as dictionary
+        Extract information for sys.argv and load logging configuration:
+        the --loglevel, --logfile options
         """
-
         # Log level
         if 'loglevel' in self.args and self.args.loglevel:
             config.update({'verbosity': self.args.loglevel})
@@ -152,6 +152,13 @@ class Configuration(object):
         )
         set_loggers(config['verbosity'])
         logger.info('Verbosity set to %s', config['verbosity'])
+
+    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load common configuration
+        :return: configuration as dictionary
+        """
+        self._load_logging_config(config)
 
         # Support for sd_notify
         if self.args.sd_notify:
@@ -228,6 +235,17 @@ class Configuration(object):
             else:
                 logger.info(logstring.format(config[argname]))
 
+    def _load_datadir_config(self, config: Dict[str, Any]) -> None:
+        """
+        Extract information for sys.argv and load datadir configuration:
+        the --datadir option
+        """
+        if 'datadir' in self.args and self.args.datadir:
+            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
+        else:
+            config.update({'datadir': self._create_datadir(config, None)})
+        logger.info('Using data folder: %s ...', config.get('datadir'))
+
     def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract information for sys.argv and load Optimize configuration
@@ -263,11 +281,7 @@ class Configuration(object):
         self._args_to_config(config, argname='timerange',
                              logstring='Parameter --timerange detected: {} ...')
 
-        if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
-        else:
-            config.update({'datadir': self._create_datadir(config, None)})
-        logger.info('Using data folder: %s ...', config.get('datadir'))
+        self._load_datadir_config(config)
 
         self._args_to_config(config, argname='refresh_pairs',
                              logstring='Parameter -r/--refresh-pairs-cached detected ...')
@@ -375,22 +389,40 @@ class Configuration(object):
 
         return self.config
 
-    def check_exchange(self, config: Dict[str, Any]) -> bool:
+    def check_exchange(self, config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         """
         Check if the exchange name in the config file is supported by Freqtrade
-        :return: True or raised an exception if the exchange if not supported
+        :param check_for_bad: if True, check the exchange against the list of known 'bad'
+                              exchanges
+        :return: False if exchange is 'bad', i.e. is known to work with the bot with
+                 critical issues or does not work at all, crashes, etc. True otherwise.
+                 raises an exception if the exchange if not supported by ccxt
+                 and thus is not known for the Freqtrade at all.
         """
+        logger.info("Checking exchange...")
+
         exchange = config.get('exchange', {}).get('name').lower()
-        if not is_exchange_supported(exchange):
-
-            exception_msg = f'Exchange "{exchange}" not supported.\n' \
-                            f'The following exchanges are supported: ' \
-                            f'{", ".join(supported_exchanges())}'
-
-            logger.critical(exception_msg)
+        if not is_exchange_available(exchange):
             raise OperationalException(
-                exception_msg
+                    f'Exchange "{exchange}" is not supported by ccxt '
+                    f'and therefore not available for the bot.\n'
+                    f'The following exchanges are supported by ccxt: '
+                    f'{", ".join(available_exchanges())}'
             )
 
-        logger.debug('Exchange "%s" supported', exchange)
+        if check_for_bad and is_exchange_bad(exchange):
+            logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
+                           f'Use it only for development and testing purposes.')
+            return False
+
+        if is_exchange_officially_supported(exchange):
+            logger.info(f'Exchange "{exchange}" is officially supported '
+                        f'by the Freqtrade development team.')
+        else:
+            logger.warning(f'Exchange "{exchange}" is supported by ccxt '
+                           f'and therefore available for the bot but not officially supported '
+                           f'by the Freqtrade development team. '
+                           f'It may work flawlessly (please report back) or have serious issues. '
+                           f'Use it at your own discretion.')
+
         return True
