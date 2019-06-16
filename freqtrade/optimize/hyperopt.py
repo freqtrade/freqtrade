@@ -168,7 +168,6 @@ class Hyperopt(Backtesting):
         sharp_ratio = -sharp_ratio
         # print(expected_average_return, np.std(total_profit), sharp_ratio)
 
-
         result = sharp_ratio
         self.resultloss = result
         return result
