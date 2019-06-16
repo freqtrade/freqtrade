@@ -11,11 +11,6 @@ from freqtrade.persistence import Trade, clean_dry_run_db, init
 from freqtrade.tests.conftest import log_has
 
 
-@pytest.fixture(scope='function')
-def init_persistence(default_conf):
-    init(default_conf['db_url'], default_conf['dry_run'])
-
-
 def create_mock_trades(fee):
     """
     Create some fake trades ...

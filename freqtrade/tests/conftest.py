@@ -151,6 +151,11 @@ def patch_coinmarketcap(mocker) -> None:
     )
 
 
+@pytest.fixture(scope='function')
+def init_persistence(default_conf):
+    persistence.init(default_conf['db_url'], default_conf['dry_run'])
+
+
 @pytest.fixture(scope="function")
 def default_conf():
     """ Returns validated configuration suitable for most tests """

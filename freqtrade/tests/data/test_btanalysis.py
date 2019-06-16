@@ -4,15 +4,12 @@ from arrow import Arrow
 import pytest
 from pandas import DataFrame, to_datetime
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades)
 from freqtrade.data.history import load_pair_history, make_testdata_path
-from freqtrade.persistence import Trade, init
-from freqtrade.strategy.interface import SellType
-from freqtrade.tests.test_persistence import (create_mock_trades,
-                                              init_persistence)
+from freqtrade.tests.test_persistence import create_mock_trades
 
 
 def test_load_backtest_data():
@@ -85,4 +82,3 @@ def test_extract_trades_of_period():
     assert trades1.iloc[0].close_time == Arrow(2017, 11, 14, 10, 41, 0).datetime
     assert trades1.iloc[-1].open_time == Arrow(2017, 11, 14, 14, 20, 0).datetime
     assert trades1.iloc[-1].close_time == Arrow(2017, 11, 14, 15, 25, 0).datetime
-
