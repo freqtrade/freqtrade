@@ -35,47 +35,17 @@ import pandas as pd
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import load_trades, extract_trades_of_period
-from freqtrade.exchange import Exchange
 from freqtrade.optimize import setup_configuration
 from freqtrade.plot.plotting import (generate_graph,
                                      generate_plot_file)
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
-_CONF: Dict[str, Any] = {}
 
 
-def get_trading_env(args: Namespace):
-    """
-    Initalize freqtrade Exchange and Strategy, split pairs recieved in parameter
-    :return: Strategy
-    """
-    global _CONF
-
-    # Load the configuration
-    _CONF.update(setup_configuration(args, RunMode.BACKTEST))
-
-    pairs = args.pairs.split(',')
-    if pairs is None:
-        logger.critical('Parameter --pairs mandatory;. E.g --pairs ETH/BTC,XRP/BTC')
-        exit()
-
-    # Load the strategy
-    try:
-        strategy = StrategyResolver(_CONF).strategy
-        exchange = Exchange(_CONF)
-    except AttributeError:
-        logger.critical(
-            'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
-            args.strategy
-        )
-        exit()
-
-    return [strategy, exchange, pairs]
-
-
-def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange, live: bool):
+def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange,
+                     datadir: Path, refresh_pairs: bool, live: bool):
     """
     Get tickers data for each pairs on live or local, option defined in args
     :return: dictionary of tickers. output format: {'pair': tickersdata}
@@ -84,10 +54,10 @@ def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange,
     ticker_interval = strategy.ticker_interval
 
     tickers = history.load_data(
-        datadir=Path(str(_CONF.get("datadir"))),
+        datadir=datadir,
         pairs=pairs,
         ticker_interval=ticker_interval,
-        refresh_pairs=_CONF.get('refresh_pairs', False),
+        refresh_pairs=refresh_pairs,
         timerange=timerange,
         exchange=exchange,
         live=live,
@@ -120,7 +90,7 @@ def generate_dataframe(strategy, tickers, pair) -> pd.DataFrame:
     return dataframe
 
 
-def analyse_and_plot_pairs(args: Namespace):
+def analyse_and_plot_pairs(config: Dict[str, Any]):
     """
     From arguments provided in cli:
     -Initialise backtest env
@@ -131,14 +101,20 @@ def analyse_and_plot_pairs(args: Namespace):
     -Generate plot files
     :return: None
     """
-    strategy, exchange, pairs = get_trading_env(args)
-    pairs = args.pairs.split(',')
+    exchange_name = config.get('exchange', {}).get('name').title()
+    exchange = ExchangeResolver(exchange_name, config).exchange
+
+    strategy = StrategyResolver(config).strategy
+    pairs = config["pairs"].split(',')
 
     # Set timerange to use
-    timerange = Arguments.parse_timerange(args.timerange)
+    timerange = Arguments.parse_timerange(config["timerange"])
     ticker_interval = strategy.ticker_interval
 
-    tickers = get_tickers_data(strategy, exchange, pairs, timerange, args.live)
+    tickers = get_tickers_data(strategy, exchange, pairs, timerange,
+                               datadir=Path(str(config.get("datadir"))),
+                               refresh_pairs=config.get('refresh_pairs', False),
+                               live=config.get("live", False))
     pair_counter = 0
     for pair, data in tickers.items():
         pair_counter += 1
@@ -147,8 +123,8 @@ def analyse_and_plot_pairs(args: Namespace):
         tickers[pair] = data
         dataframe = generate_dataframe(strategy, tickers, pair)
 
-        trades = load_trades(db_url=args.db_url,
-                             exportfilename=args.exportfilename)
+        trades = load_trades(db_url=config["db_url"],
+                             exportfilename=config["exportfilename"])
         trades = trades.loc[trades['pair'] == pair]
         trades = extract_trades_of_period(dataframe, trades)
 
@@ -156,8 +132,8 @@ def analyse_and_plot_pairs(args: Namespace):
             pair=pair,
             data=dataframe,
             trades=trades,
-            indicators1=args.indicators1.split(","),
-            indicators2=args.indicators2.split(",")
+            indicators1=config["indicators1"].split(","),
+            indicators2=config["indicators2"].split(",")
         )
 
         generate_plot_file(fig, pair, ticker_interval)
@@ -176,7 +152,11 @@ def plot_parse_args(args: List[str]) -> Namespace:
     arguments.common_args_parser()
     arguments.optimizer_shared_options(arguments.parser)
     arguments.backtesting_options(arguments.parser)
-    return arguments.parse_args()
+    parsed_args = arguments.parse_args()
+
+    # Load the configuration
+    config = setup_configuration(parsed_args, RunMode.BACKTEST)
+    return config
 
 
 def main(sysargv: List[str]) -> None:
