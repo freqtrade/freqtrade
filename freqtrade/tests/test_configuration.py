@@ -15,7 +15,7 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has
+from freqtrade.tests.conftest import log_has, log_has_re
 
 
 @pytest.fixture(scope="function")
@@ -470,21 +470,52 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 def test_check_exchange(default_conf, caplog) -> None:
     configuration = Configuration(Namespace())
 
-    # Test a valid exchange
+    # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'BITTREX'})
     assert configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
+                      caplog.record_tuples)
+    caplog.clear()
 
-    # Test a valid exchange
+    # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'binance'})
     assert configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
+                      caplog.record_tuples)
+    caplog.clear()
 
-    # Test a invalid exchange
+    # Test an available exchange, supported by ccxt
+    default_conf.get('exchange').update({'name': 'kraken'})
+    assert configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+                      r"by the Freqtrade development team\. .*",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    # Test a 'bad' exchange, which known to have serious problems
+    default_conf.get('exchange').update({'name': 'bitmex'})
+    assert not configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is known to not work with the bot yet\. "
+                      r"Use it only for development and testing purposes\.",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    # Test a 'bad' exchange with check_for_bad=False
+    default_conf.get('exchange').update({'name': 'bitmex'})
+    assert configuration.check_exchange(default_conf, False)
+    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+                      r"by the Freqtrade development team\. .*",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    # Test an invalid exchange
     default_conf.get('exchange').update({'name': 'unknown_exchange'})
     configuration.config = default_conf
 
     with pytest.raises(
         OperationalException,
-        match=r'.*Exchange "unknown_exchange" not supported.*'
+        match=r'.*Exchange "unknown_exchange" is not supported by ccxt '
+              r'and therefore not available for the bot.*'
     ):
         configuration.check_exchange(default_conf)
 

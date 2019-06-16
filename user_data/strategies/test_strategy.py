@@ -44,8 +44,8 @@ class TestStrategy(IStrategy):
 
     # trailing stoploss
     trailing_stop = False
-    trailing_stop_positive = 0.01
-    trailing_stop_positive_offset = 0.0  # Disabled / not configured
+    # trailing_stop_positive = 0.01
+    # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
     # Optimal ticker interval for the strategy
     ticker_interval = '5m'

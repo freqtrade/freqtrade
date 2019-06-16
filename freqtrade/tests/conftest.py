@@ -2,6 +2,7 @@
 import json
 import logging
 import re
+from copy import deepcopy
 from datetime import datetime
 from functools import reduce
 from typing import List
@@ -958,9 +959,10 @@ def buy_order_fee():
 
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
-    default_conf['max_open_trades'] = -1
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
-    default_conf['edge'] = {
+    conf = deepcopy(default_conf)
+    conf['max_open_trades'] = -1
+    conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+    conf['edge'] = {
         "enabled": True,
         "process_throttle_secs": 1800,
         "calculate_since_number_of_days": 14,
@@ -976,7 +978,7 @@ def edge_conf(default_conf):
         "remove_pumps": False
     }
 
-    return default_conf
+    return conf
 
 
 @pytest.fixture
