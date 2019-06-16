@@ -3,7 +3,7 @@ from argparse import Namespace
 from typing import Any, Dict
 
 from freqtrade.configuration import Configuration
-from freqtrade.exchange import supported_exchanges
+from freqtrade.exchange import available_exchanges
 from freqtrade.state import RunMode
 
 
@@ -34,7 +34,7 @@ def start_list_exchanges(args: Namespace) -> None:
     """
 
     if args.print_one_column:
-        print('\n'.join(supported_exchanges()))
+        print('\n'.join(available_exchanges()))
     else:
         print(f"Exchanges supported by ccxt and available for Freqtrade: "
-              f"{', '.join(supported_exchanges())}")
+              f"{', '.join(available_exchanges())}")
