@@ -16,8 +16,7 @@ from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
-from freqtrade.tests.optimize.test_backtesting import get_args
+from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 @pytest.fixture(scope='function')
