@@ -35,9 +35,10 @@ import pandas as pd
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import load_trades
-from freqtrade.plot.plotting import generate_graph, generate_plot_file
 from freqtrade.exchange import Exchange
 from freqtrade.optimize import setup_configuration
+from freqtrade.plot.plotting import (extract_trades_of_period, generate_graph,
+                                     generate_plot_file)
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 
@@ -117,17 +118,6 @@ def generate_dataframe(strategy, tickers, pair) -> pd.DataFrame:
     dataframe = strategy.advise_sell(dataframe, {'pair': pair})
 
     return dataframe
-
-
-def extract_trades_of_period(dataframe, trades) -> pd.DataFrame:
-    """
-    Compare trades and backtested pair DataFrames to get trades performed on backtested period
-    :return: the DataFrame of a trades of period
-    """
-    # TODO: Document and move to btanalysis (?)
-    trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
-                        (trades['close_time'] <= dataframe.iloc[-1]['date'])]
-    return trades
 
 
 def analyse_and_plot_pairs(args: Namespace):

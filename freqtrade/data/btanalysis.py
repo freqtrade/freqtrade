@@ -108,3 +108,13 @@ def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
             trades = load_backtest_data(file)
 
     return trades
+
+
+def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compare trades and backtested pair DataFrames to get trades performed on backtested period
+    :return: the DataFrame of a trades of period
+    """
+    trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
+                        (trades['close_time'] <= dataframe.iloc[-1]['date'])]
+    return trades
