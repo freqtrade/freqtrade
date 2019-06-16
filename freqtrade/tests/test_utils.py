@@ -1,5 +1,5 @@
 from freqtrade.utils import setup_configuration, start_list_exchanges
-from freqtrade.tests.conftest import get_args, log_has, log_has_re
+from freqtrade.tests.conftest import get_args
 from freqtrade.state import RunMode
 
 import re
