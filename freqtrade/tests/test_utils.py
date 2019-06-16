@@ -1,17 +1,18 @@
-from freqtrade.utils import setup_configuration, start_list_exchanges
+from freqtrade.utils import setup_utils_configuration, start_list_exchanges
 from freqtrade.tests.conftest import get_args
 from freqtrade.state import RunMode
 
 import re
 
 
-def test_setup_configuration():
+def test_setup_utils_configuration():
     args = [
         '--config', 'config.json.example',
     ]
 
-    config = setup_configuration(get_args(args), RunMode.OTHER)
+    config = setup_utils_configuration(get_args(args), RunMode.OTHER)
     assert "exchange" in config
+    assert config['exchange']['dry_run'] is True
     assert config['exchange']['key'] == ''
     assert config['exchange']['secret'] == ''
 
