@@ -98,6 +98,9 @@ class Configuration(object):
         # Load Optimize configurations
         config = self._load_optimize_config(config)
 
+        # Add plotting options if available
+        config = self._load_plot_config(config)
+
         # Set runmode
         if not self.runmode:
             # Handle real mode, infer dry/live from config
@@ -329,6 +332,26 @@ class Configuration(object):
 
         self._args_to_config(config, argname='hyperopt_min_trades',
                              logstring='Parameter --min-trades detected: {}')
+
+        return config
+
+    def _load_plot_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv Plotting configuration
+        :return: configuration as dictionary
+        """
+
+        self._args_to_config(config, argname='pairs',
+                             logstring='Using pairs {}')
+
+        self._args_to_config(config, argname='indicators1',
+                             logstring='Using indicators1: {}')
+
+        self._args_to_config(config, argname='indicators2',
+                             logstring='Using indicators2: {}')
+
+        self._args_to_config(config, argname='plot_limit',
+                             logstring='Limiting plot to: {}')
 
         return config
 
