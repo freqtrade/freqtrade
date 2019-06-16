@@ -1,7 +1,9 @@
 
 from unittest.mock import MagicMock
 
+from plotly import tools
 import plotly.graph_objs as go
+from copy import deepcopy
 
 from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
@@ -9,6 +11,7 @@ from freqtrade.plot.plotting import (generate_graph, generate_plot_file,
                                      generate_row, plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
+
 
 def fig_generating_mock(fig, *args, **kwargs):
     """ Return Fig - used to mock generate_row and plot_trades"""
@@ -20,14 +23,55 @@ def find_trace_in_fig_data(data, search_string: str):
     return next(matches)
 
 
-def test_generate_row():
-    # TODO: implement me
-    pass
+def generage_empty_figure():
+    return tools.make_subplots(
+        rows=3,
+        cols=1,
+        shared_xaxes=True,
+        row_width=[1, 1, 4],
+        vertical_spacing=0.0001,
+    )
+
+def test_generate_row(default_conf, caplog):
+    pair = "UNITTEST/BTC"
+    timerange = TimeRange(None, 'line', 0, -1000)
+
+    data = history.load_pair_history(pair=pair, ticker_interval='1m',
+                                     datadir=None, timerange=timerange)
+    indicators1 = ["ema10"]
+    indicators2 = ["macd"]
+
+    # Generate buy/sell signals and indicators
+    strat = DefaultStrategy(default_conf)
+    data = strat.analyze_ticker(data, {'pair': pair})
+    fig = generage_empty_figure()
+
+    # Row 1
+    fig1 = generate_row(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
+    figure = fig1.layout.figure
+    ema10 = find_trace_in_fig_data(figure.data, "ema10")
+    assert isinstance(ema10, go.Scatter)
+    assert ema10.yaxis == "y"
+
+    fig2 = generate_row(fig=deepcopy(fig), row=3, indicators=indicators2, data=data)
+    figure = fig2.layout.figure
+    macd = find_trace_in_fig_data(figure.data, "macd")
+    assert isinstance(macd, go.Scatter)
+    assert macd.yaxis == "y3"
+
+    # No indicator found
+    fig3 = generate_row(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
+    assert fig == fig3
+    assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog.record_tuples)
 
 
 def test_plot_trades():
-    # TODO: implement me
-    pass
+    fig1 = generage_empty_figure()
+    # nothing happens when no trades are available
+    fig = plot_trades(fig1, None)
+    assert fig == fig1
+
+    # TODO: implement tests that do something
 
 
 def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
