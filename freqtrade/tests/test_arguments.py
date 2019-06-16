@@ -186,6 +186,20 @@ def test_download_data_options() -> None:
     assert args.exchange == 'binance'
 
 
+def test_plot_dataframe_options() -> None:
+    args = [
+        '--indicators1', 'sma10,sma100',
+        '--indicators2', 'macd,fastd,fastk',
+        '--plot-limit', '30',
+    ]
+    arguments = Arguments(args, '')
+    arguments.plot_dataframe_options()
+    args = arguments.parse_args(True)
+    assert args.indicators1 == "sma10,sma100"
+    assert args.indicators2 == "macd,fastd,fastk"
+    assert args.plot_limit == 30
+
+
 def test_check_int_positive() -> None:
 
     assert Arguments.check_int_positive("3") == 3

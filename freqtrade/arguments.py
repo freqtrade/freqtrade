@@ -55,7 +55,7 @@ class Arguments(object):
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
-        if parsed_arg.config is None and not no_default_config:
+        if not no_default_config and parsed_arg.config is None:
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
@@ -513,4 +513,34 @@ class Arguments(object):
             help='Clean all existing data for the selected exchange/pairs/timeframes.',
             dest='erase',
             action='store_true'
+        )
+
+    def plot_dataframe_options(self) -> None:
+        """
+        Parses given arguments for plot_dataframe
+        """
+        self.parser.add_argument(
+            '--indicators1',
+            help='Set indicators from your strategy you want in the first row of the graph. Separate '
+                 'them with a comma. E.g: ema3,ema5 (default: %(default)s)',
+            type=str,
+            default='sma,ema3,ema5',
+            dest='indicators1',
+        )
+
+        self.parser.add_argument(
+            '--indicators2',
+            help='Set indicators from your strategy you want in the third row of the graph. Separate '
+                 'them with a comma. E.g: macd,fastd,fastk (default: %(default)s)',
+            type=str,
+            default='macd,macdsignal',
+            dest='indicators2',
+        )
+        self.parser.add_argument(
+            '--plot-limit',
+            help='Specify tick limit for plotting - too high values cause huge files - '
+                 'Default: %(default)s',
+            dest='plot_limit',
+            default=750,
+            type=int,
         )
