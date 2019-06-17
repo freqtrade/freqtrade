@@ -5,6 +5,7 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from functools import reduce
+from pathlib import Path
 from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
@@ -860,7 +861,7 @@ def tickers():
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
+    with Path('freqtrade/tests/testdata/UNITTEST_BTC-1m.json').open('r') as data_file:
         return parse_ticker_dataframe(json.load(data_file), '1m', fill_missing=True)
 
 # FIX:
