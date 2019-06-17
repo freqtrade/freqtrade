@@ -144,7 +144,7 @@ class Telegram(RPC):
             msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
 
             message = ("*{exchange}:* Selling {pair}\n"
-                       "*Limit:* `{limit:.8f}`\n"
+                       "*Rate:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
