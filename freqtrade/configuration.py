@@ -34,13 +34,17 @@ def set_loggers(log_level: int = 0) -> None:
     logging.getLogger('telegram').setLevel(logging.INFO)
 
 
-def _extend_with_default(validator_class):
-    validate_properties = validator_class.VALIDATORS["properties"]
+def _extend_validator(validator_class):
+    """
+    Extended validator for the Freqtrade configuration JSON Schema.
+    Currently it only handles defaults for subschemas.
+    """
+    validate_properties = validator_class.VALIDATORS['properties']
 
     def set_defaults(validator, properties, instance, schema):
         for prop, subschema in properties.items():
-            if "default" in subschema:
-                instance.setdefault(prop, subschema["default"])
+            if 'default' in subschema:
+                instance.setdefault(prop, subschema['default'])
 
         for error in validate_properties(
             validator, properties, instance, schema,
@@ -48,11 +52,11 @@ def _extend_with_default(validator_class):
             yield error
 
     return validators.extend(
-        validator_class, {"properties": set_defaults},
+        validator_class, {'properties': set_defaults}
     )
 
 
-ValidatorWithDefaults = _extend_with_default(Draft4Validator)
+FreqtradeValidator = _extend_validator(Draft4Validator)
 
 
 class Configuration(object):
@@ -339,7 +343,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            ValidatorWithDefaults(constants.CONF_SCHEMA).validate(conf)
+            FreqtradeValidator(constants.CONF_SCHEMA).validate(conf)
             return conf
         except ValidationError as exception:
             logger.critical(
