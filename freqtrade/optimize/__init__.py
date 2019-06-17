@@ -5,8 +5,9 @@ from typing import Any, Dict
 from filelock import FileLock, Timeout
 
 from freqtrade import DependencyException, constants
-from freqtrade.configuration import Configuration
 from freqtrade.state import RunMode
+from freqtrade.utils import setup_utils_configuration
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,7 @@ def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
     :param args: Cli args from Arguments()
     :return: Configuration
     """
-    configuration = Configuration(args, method)
-    config = configuration.load_config()
-
-    # Ensure we do not use Exchange credentials
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
+    config = setup_utils_configuration(args, method)
 
     if method == RunMode.BACKTEST:
         if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
