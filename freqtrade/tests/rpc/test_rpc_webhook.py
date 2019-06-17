@@ -74,6 +74,7 @@ def test_send_msg(default_conf, mocker):
         'gain': "profit",
         'limit': 0.005,
         'amount': 0.8,
+        'order_type': 'limit',
         'open_rate': 0.004,
         'current_rate': 0.005,
         'profit_amount': 0.001,
