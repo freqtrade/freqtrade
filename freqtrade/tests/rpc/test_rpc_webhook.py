@@ -126,6 +126,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 0.005,
+        'order_type': 'limit',
         'stake_amount': 0.8,
         'stake_amount_fiat': 500,
         'stake_currency': 'BTC',

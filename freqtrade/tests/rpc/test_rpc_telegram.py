@@ -1188,6 +1188,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
+        'order_type': 'limit',
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -1195,7 +1196,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == '*Bittrex:* Buying ETH/BTC\n' \
-           'with limit `0.00001099\n' \
+           'at rate `0.00001099\n' \
            '(0.001000 BTC,0.000 USD)`'
 
 
@@ -1339,6 +1340,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
+        'order_type': 'limit',
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -1346,7 +1348,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == '*Bittrex:* Buying ETH/BTC\n' \
-           'with limit `0.00001099\n' \
+           'at rate `0.00001099\n' \
            '(0.001000 BTC)`'
 
 

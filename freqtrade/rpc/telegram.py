@@ -132,7 +132,7 @@ class Telegram(RPC):
                 msg['stake_amount_fiat'] = 0
 
             message = ("*{exchange}:* Buying {pair}\n"
-                       "with limit `{limit:.8f}\n"
+                       "at rate `{limit:.8f}\n"
                        "({stake_amount:.6f} {stake_currency}").format(**msg)
 
             if msg.get('fiat_currency', None):
