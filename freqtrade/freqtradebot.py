@@ -345,8 +345,8 @@ class FreqtradeBot(object):
             return False
 
         amount = stake_amount / buy_limit_requested
-
-        order = self.exchange.buy(pair=pair, ordertype=self.strategy.order_types['buy'],
+        order_type = self.strategy.order_types['buy']
+        order = self.exchange.buy(pair=pair, ordertype=order_type,
                                   amount=amount, rate=buy_limit_requested,
                                   time_in_force=time_in_force)
         order_id = order['id']
@@ -356,7 +356,6 @@ class FreqtradeBot(object):
         buy_limit_filled_price = buy_limit_requested
 
         if order_status == 'expired' or order_status == 'rejected':
-            order_type = self.strategy.order_types['buy']
             order_tif = self.strategy.order_time_in_force['buy']
 
             # return false if the order is not filled
@@ -390,6 +389,7 @@ class FreqtradeBot(object):
             'exchange': self.exchange.name.capitalize(),
             'pair': pair_s,
             'limit': buy_limit_filled_price,
+            'order_type': order_type,
             'stake_amount': stake_amount,
             'stake_currency': stake_currency,
             'fiat_currency': fiat_currency
@@ -875,6 +875,7 @@ class FreqtradeBot(object):
             'pair': trade.pair,
             'gain': gain,
             'limit': trade.close_rate_requested,
+            'order_type': self.strategy.order_types['sell'],
             'amount': trade.amount,
             'open_rate': trade.open_rate,
             'current_rate': current_rate,

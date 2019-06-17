@@ -43,6 +43,7 @@ Possible parameters are:
 * `stake_amount`
 * `stake_currency`
 * `fiat_currency`
+* `order_type`
 
 ### Webhooksell
 
@@ -61,6 +62,7 @@ Possible parameters are:
 * `stake_currency`
 * `fiat_currency`
 * `sell_reason`
+* `order_type`
 
 ### Webhookstatus
 
