@@ -178,6 +178,7 @@ def test_download_data_options() -> None:
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
+    arguments.common_options()
     arguments.download_data_options()
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'
