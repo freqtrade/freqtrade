@@ -493,16 +493,16 @@ class Arguments(object):
 
         parser.add_argument(
             '--indicators1',
-            help='Set indicators from your strategy you want in the first row of the graph. Separate '
-                 'them with a coma. E.g: ema3,ema5 (default: %(default)s)',
+            help='Set indicators from your strategy you want in the first row of the graph. '
+                 'Separate them with a coma. E.g: ema3,ema5 (default: %(default)s)',
             default='sma,ema3,ema5',
             dest='indicators1',
         )
 
         parser.add_argument(
             '--indicators2',
-            help='Set indicators from your strategy you want in the third row of the graph. Separate '
-                 'them with a coma. E.g: fastd,fastk (default: %(default)s)',
+            help='Set indicators from your strategy you want in the third row of the graph. '
+                 'Separate them with a coma. E.g: fastd,fastk (default: %(default)s)',
             default='macd,macdsignal',
             dest='indicators2',
         )
