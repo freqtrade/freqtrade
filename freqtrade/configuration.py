@@ -79,6 +79,7 @@ class Configuration(object):
         # Now expecting a list of config filenames here, not a string
         for path in self.args.config:
             logger.info('Using config: %s ...', path)
+
             # Merge config options, overwriting old values
             config = deep_merge_dicts(self._load_config_file(path), config)
 
@@ -118,7 +119,8 @@ class Configuration(object):
         :return: configuration as dictionary
         """
         try:
-            with open(path) as file:
+            # Read config from stdin if requested in the options
+            with open(path) if path != '-' else sys.stdin as file:
                 conf = json.load(file)
         except FileNotFoundError:
             raise OperationalException(
