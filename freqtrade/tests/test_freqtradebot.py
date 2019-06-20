@@ -19,45 +19,12 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellCheckTuple, SellType
-from freqtrade.tests.conftest import (log_has, log_has_re, patch_edge,
-                                      patch_exchange, patch_get_signal,
+from freqtrade.tests.conftest import (get_patched_freqtradebot,
+                                      get_patched_worker, log_has, log_has_re,
+                                      patch_edge, patch_exchange,
+                                      patch_freqtradebot, patch_get_signal,
                                       patch_wallet)
 from freqtrade.worker import Worker
-
-
-# Functions for recurrent object patching
-def patch_freqtradebot(mocker, config) -> None:
-    """
-    This function patches _init_modules() to not call dependencies
-    :param mocker: a Mocker object to apply patches
-    :param config: Config to pass to the bot
-    :return: None
-    """
-    mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    mocker.patch('freqtrade.freqtradebot.persistence.init', MagicMock())
-    patch_exchange(mocker)
-
-
-def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
-    """
-    This function patches _init_modules() to not call dependencies
-    :param mocker: a Mocker object to apply patches
-    :param config: Config to pass to the bot
-    :return: FreqtradeBot
-    """
-    patch_freqtradebot(mocker, config)
-    return FreqtradeBot(config)
-
-
-def get_patched_worker(mocker, config) -> Worker:
-    """
-    This function patches _init_modules() to not call dependencies
-    :param mocker: a Mocker object to apply patches
-    :param config: Config to pass to the bot
-    :return: Worker
-    """
-    patch_freqtradebot(mocker, config)
-    return Worker(args=None, config=config)
 
 
 def patch_RPCManager(mocker) -> MagicMock:
