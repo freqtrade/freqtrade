@@ -843,7 +843,10 @@ class FreqtradeBot(object):
 
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
-            self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+            try:
+                self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+            except InvalidOrderException:
+                logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),
