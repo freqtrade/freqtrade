@@ -185,6 +185,39 @@ def test_min_roi_reached2(default_conf, fee) -> None:
         assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
 
 
+def test_min_roi_reached3(default_conf, fee) -> None:
+
+    # test for issue #1948
+    min_roi = {20: 0.07,
+               30: 0.05,
+               55: 0.30,
+               }
+    strategy = DefaultStrategy(default_conf)
+    strategy.minimal_roi = min_roi
+    trade = Trade(
+            pair='ETH/BTC',
+            stake_amount=0.001,
+            open_date=arrow.utcnow().shift(hours=-1).datetime,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            exchange='bittrex',
+            open_rate=1,
+    )
+
+    assert not strategy.min_roi_reached(trade, 0.02, arrow.utcnow().shift(minutes=-56).datetime)
+    assert not strategy.min_roi_reached(trade, 0.12, arrow.utcnow().shift(minutes=-56).datetime)
+
+    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-39).datetime)
+    assert strategy.min_roi_reached(trade, 0.071, arrow.utcnow().shift(minutes=-39).datetime)
+
+    assert not strategy.min_roi_reached(trade, 0.04, arrow.utcnow().shift(minutes=-26).datetime)
+    assert strategy.min_roi_reached(trade, 0.06, arrow.utcnow().shift(minutes=-26).datetime)
+
+    # Should not trigger with 20% profit since after 55 minutes only 30% is active.
+    assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
+    assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+
+
 def test_analyze_ticker_default(ticker_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
