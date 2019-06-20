@@ -2075,6 +2075,35 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
     } == last_msg
 
 
+def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, markets, caplog) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
+    sellmock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        _load_markets=MagicMock(return_value={}),
+        get_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets),
+        sell=sellmock
+    )
+
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+    patch_get_signal(freqtrade)
+    freqtrade.create_trade()
+
+    trade = Trade.query.first()
+    Trade.session = MagicMock()
+
+    freqtrade.config['dry_run'] = False
+    trade.stoploss_order_id = "abcd"
+
+    freqtrade.execute_sell(trade=trade, limit=1234,
+                           sell_reason=SellType.STOP_LOSS)
+    assert sellmock.call_count == 1
+    assert log_has('Could not cancel stoploss order abcd', caplog.record_tuples)
+
+
 def test_execute_sell_with_stoploss_on_exchange(default_conf,
                                                 ticker, fee, ticker_sell_up,
                                                 markets, mocker) -> None:
