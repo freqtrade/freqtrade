@@ -104,7 +104,10 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     exchange = ExchangeResolver(exchange_name, config).exchange
 
     strategy = StrategyResolver(config).strategy
-    pairs = config["pairs"].split(',')
+    if "pairs" in config:
+        pairs = config["pairs"].split(',')
+    else:
+        pairs = config["exchange"]["pair_whitelist"]
 
     # Set timerange to use
     timerange = Arguments.parse_timerange(config["timerange"])

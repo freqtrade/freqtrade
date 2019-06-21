@@ -203,14 +203,6 @@ def test_plot_dataframe_options() -> None:
     assert pargs.plot_limit == 30
     assert pargs.pairs == "UNITTEST/BTC"
 
-    # Pop pairs argument
-    args = args[:-2]
-    arguments = Arguments(args, '')
-    arguments.common_scripts_options()
-    arguments.plot_dataframe_options()
-    with pytest.raises(SystemExit, match=r'2'):
-        arguments.parse_args(True)
-
 
 def test_check_int_positive() -> None:
 
