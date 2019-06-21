@@ -444,6 +444,7 @@ class Arguments(object):
             '-p', '--pairs',
             help='Show profits for only this pairs. Pairs are comma-separated.',
             dest='pairs',
+            required=True
         )
 
     def download_data_options(self) -> None:

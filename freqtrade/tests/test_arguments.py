@@ -195,6 +195,7 @@ def test_plot_dataframe_options() -> None:
         '-p', 'UNITTEST/BTC',
     ]
     arguments = Arguments(args, '')
+    arguments.common_scripts_options()
     arguments.plot_dataframe_options()
     pargs = arguments.parse_args(True)
     assert pargs.indicators1 == "sma10,sma100"
@@ -205,6 +206,7 @@ def test_plot_dataframe_options() -> None:
     # Pop pairs argument
     args = args[:-2]
     arguments = Arguments(args, '')
+    arguments.common_scripts_options()
     arguments.plot_dataframe_options()
     with pytest.raises(SystemExit, match=r'2'):
         arguments.parse_args(True)
