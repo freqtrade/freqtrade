@@ -47,9 +47,9 @@ def test_parse_args_verbose() -> None:
     assert args.loglevel == 1
 
 
-def test_scripts_options() -> None:
+def test_common_scripts_options() -> None:
     arguments = Arguments(['-p', 'ETH/BTC'], '')
-    arguments.scripts_options()
+    arguments.common_scripts_options()
     args = arguments.get_parsed_arg()
     assert args.pairs == 'ETH/BTC'
 
@@ -178,6 +178,7 @@ def test_download_data_options() -> None:
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
+    arguments.common_options()
     arguments.download_data_options()
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'

@@ -20,7 +20,8 @@ logger = logging.getLogger('download_backtest_data')
 
 DEFAULT_DL_PATH = 'user_data/data'
 
-arguments = Arguments(sys.argv[1:], 'download utility')
+arguments = Arguments(sys.argv[1:], 'Download backtest data')
+arguments.common_options()
 arguments.download_data_options()
 
 # Do not read the default config if config is not specified

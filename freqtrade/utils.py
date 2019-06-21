@@ -10,15 +10,16 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 
-def setup_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
+def setup_utils_configuration(args: Namespace, method: RunMode) -> Dict[str, Any]:
     """
-    Prepare the configuration for the Hyperopt module
+    Prepare the configuration for utils subcommands
     :param args: Cli args from Arguments()
     :return: Configuration
     """
     configuration = Configuration(args, method)
     config = configuration.load_config()
 
+    config['exchange']['dry_run'] = True
     # Ensure we do not use Exchange credentials
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''

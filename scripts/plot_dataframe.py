@@ -147,10 +147,12 @@ def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph dataframe')
+    arguments.common_options()
+    arguments.main_options()
+    arguments.common_optimize_options()
+    arguments.backtesting_options()
+    arguments.common_scripts_options()
     arguments.plot_dataframe_options()
-    arguments.common_args_parser()
-    arguments.optimizer_shared_options(arguments.parser)
-    arguments.backtesting_options(arguments.parser)
     parsed_args = arguments.parse_args()
 
     # Load the configuration
