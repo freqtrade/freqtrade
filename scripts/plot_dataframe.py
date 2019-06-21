@@ -349,35 +349,12 @@ def plot_parse_args(args: List[str]) -> Namespace:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph dataframe')
-    arguments.scripts_options()
-    arguments.parser.add_argument(
-        '--indicators1',
-        help='Set indicators from your strategy you want in the first row of the graph. Separate '
-             'them with a coma. E.g: ema3,ema5 (default: %(default)s)',
-        type=str,
-        default='sma,ema3,ema5',
-        dest='indicators1',
-    )
-
-    arguments.parser.add_argument(
-        '--indicators2',
-        help='Set indicators from your strategy you want in the third row of the graph. Separate '
-             'them with a coma. E.g: fastd,fastk (default: %(default)s)',
-        type=str,
-        default='macd,macdsignal',
-        dest='indicators2',
-    )
-    arguments.parser.add_argument(
-        '--plot-limit',
-        help='Specify tick limit for plotting - too high values cause huge files - '
-             'Default: %(default)s',
-        dest='plot_limit',
-        default=750,
-        type=int,
-    )
-    arguments.common_args_parser()
-    arguments.optimizer_shared_options(arguments.parser)
-    arguments.backtesting_options(arguments.parser)
+    arguments.common_options()
+    arguments.main_options()
+    arguments.common_optimize_options()
+    arguments.backtesting_options()
+    arguments.common_scripts_options()
+    arguments.plot_dataframe_options()
     return arguments.parse_args()
 
 

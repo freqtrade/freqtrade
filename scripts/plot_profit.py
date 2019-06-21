@@ -206,10 +206,11 @@ def plot_parse_args(args: List[str]) -> Namespace:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph profits')
-    arguments.scripts_options()
-    arguments.common_args_parser()
-    arguments.optimizer_shared_options(arguments.parser)
-    arguments.backtesting_options(arguments.parser)
+    arguments.common_options()
+    arguments.main_options()
+    arguments.common_optimize_options()
+    arguments.backtesting_options()
+    arguments.common_scripts_options()
 
     return arguments.parse_args()
 
