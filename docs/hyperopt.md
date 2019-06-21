@@ -12,7 +12,7 @@ and still take a long time.
 ## Prepare Hyperopting
 
 Before we start digging into Hyperopt, we recommend you to take a look at
-an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/test_hyperopt.py)
+an example hyperopt file located into [user_data/hyperopts/](https://github.com/freqtrade/freqtrade/blob/develop/user_data/hyperopts/sample_hyperopt.py)
 
 Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar and a lot of code can be copied across from the strategy.
 
@@ -70,6 +70,11 @@ Place the corresponding settings into the following methods
 
 The configuration and rules are the same than for buy signals.
 To avoid naming collisions in the search-space, please prefix all sell-spaces with `sell-`.
+
+#### Using ticker-interval as part of the Strategy
+
+The Strategy exposes the ticker-interval as `self.ticker_interval`. The same value is available as class-attribute `HyperoptName.ticker_interval`.
+In the case of the linked sample-value this would be `SampleHyperOpts.ticker_interval`.
 
 ## Solving a Mystery
 
