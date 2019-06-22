@@ -87,9 +87,9 @@ class Arguments(object):
         )
         parser.add_argument(
             '-c', '--config',
-            help="Specify configuration file (default: %(default)s). "
-                 "Multiple --config options may be used. "
-                 "Can be set to '-' to read config from stdin.",
+            help=f'Specify configuration file (default: {constants.DEFAULT_CONFIG}). '
+                 f'Multiple --config options may be used. '
+                 f'Can be set to `-` to read config from stdin.',
             dest='config',
             action='append',
             metavar='PATH',
@@ -122,9 +122,9 @@ class Arguments(object):
         )
         parser.add_argument(
             '--dynamic-whitelist',
-            help='Dynamically generate and update whitelist'
-                 ' based on 24h BaseVolume (default: %(const)s).'
-                 ' DEPRECATED.',
+            help='Dynamically generate and update whitelist '
+                 'based on 24h BaseVolume (default: %(const)s). '
+                 'DEPRECATED.',
             dest='dynamic_whitelist',
             const=constants.DYNAMIC_WHITELIST,
             type=int,
@@ -133,8 +133,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '--db-url',
-            help='Override trades database URL, this is useful if dry_run is enabled'
-                 ' or in custom deployments (default: %(default)s).',
+            help=f'Override trades database URL, this is useful if dry_run is enabled '
+                 f'or in custom deployments (default: {constants.DEFAULT_DB_DRYRUN_URL}.',
             dest='db_url',
             metavar='PATH',
         )
@@ -228,10 +228,10 @@ class Arguments(object):
         )
         parser.add_argument(
             '--export-filename',
-            help='Save backtest results to this filename \
-                  requires --export to be set as well\
-                  Example --export-filename=user_data/backtest_data/backtest_today.json\
-                  (default: %(default)s)',
+            help='Save backtest results to this filename '
+                 'requires --export to be set as well. '
+                 'Example --export-filename=user_data/backtest_data/backtest_today.json '
+                 '(default: %(default)s)',
             default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
             dest='exportfilename',
             metavar='PATH',
@@ -246,8 +246,8 @@ class Arguments(object):
         parser.add_argument(
             '--stoplosses',
             help='Defines a range of stoploss against which edge will assess the strategy '
-                 'the format is "min,max,step" (without any space).'
-                 'example: --stoplosses=-0.01,-0.1,-0.001',
+                 'the format is "min,max,step" (without any space). '
+                 'Example: --stoplosses=-0.01,-0.1,-0.001',
             dest='stoploss_range',
         )
 
@@ -289,8 +289,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '-s', '--spaces',
-            help='Specify which parameters to hyperopt. Space separate list. \
-                  Default: %(default)s.',
+            help='Specify which parameters to hyperopt. Space separate list. '
+                 'Default: %(default)s.',
             choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
             default='all',
             nargs='+',
@@ -467,13 +467,14 @@ class Arguments(object):
         )
         parser.add_argument(
             '--exchange',
-            help='Exchange name (default: %(default)s). Only valid if no config is provided.',
+            help=f'Exchange name (default: {constants.DEFAULT_EXCHANGE}). '
+                 f'Only valid if no config is provided.',
             dest='exchange',
         )
         parser.add_argument(
             '-t', '--timeframes',
-            help='Specify which tickers to download. Space separated list. \
-                  Default: %(default)s.',
+            help=f'Specify which tickers to download. Space separated list. '
+                 f'Default: {constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}.',
             choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                      '6h', '8h', '12h', '1d', '3d', '1w'],
             nargs='+',
