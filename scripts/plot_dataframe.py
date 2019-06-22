@@ -31,7 +31,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from freqtrade.arguments import Arguments
+from freqtrade.arguments import ARGS_PLOT_DATAFRAME, Arguments
 from freqtrade.data import history
 from freqtrade.data.btanalysis import (extract_trades_of_period,
                                        load_backtest_data, load_trades_from_db)
@@ -125,12 +125,8 @@ def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph dataframe')
-    arguments.common_options()
-    arguments.main_options()
-    arguments.common_optimize_options()
-    arguments.backtesting_options()
-    arguments.common_scripts_options()
-    arguments.plot_dataframe_options()
+    arguments.build_args(optionlist=ARGS_PLOT_DATAFRAME)
+
     parsed_args = arguments.parse_args()
 
     # Load the configuration

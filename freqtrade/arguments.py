@@ -354,8 +354,8 @@ ARGS_LIST_EXCHANGE = ["print_one_column"]
 ARGS_DOWNLOADER = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
 ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
-                       ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
-                        "export", "exportfilename", "trade_source"])
+                       ["pairs", "indicators1", "indicators2", "plot_limit", "db_url", "trade_source",
+                        "export", "exportfilename", "timerange", "refresh_pairs", "live"])
 
 
 class TimeRange(NamedTuple):
