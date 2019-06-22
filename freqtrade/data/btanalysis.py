@@ -82,36 +82,21 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
     persistence.init(db_url, clean_open_orders=False)
     columns = ["pair", "profit", "open_time", "close_time",
-               "open_rate", "close_rate", "duration"]
+               "open_rate", "close_rate", "duration", "sell_reason",
+               "max_rate", "min_rate"]
 
-    for x in Trade.query.all():
-        logger.info("date: {}".format(x.open_date))
-
-        trades = pd.DataFrame([(t.pair, t.calc_profit(),
-                                t.open_date.replace(tzinfo=pytz.UTC),
-                                t.close_date.replace(tzinfo=pytz.UTC) if t.close_date else None,
-                                t.open_rate, t.close_rate,
-                                t.close_date.timestamp() - t.open_date.timestamp()
-                                if t.close_date else None)
-                               for t in Trade.query.all()],
-                              columns=columns)
-
-    return trades
-
-
-def load_trades(exportfilename: str = None, db_url: str = None) -> pd.DataFrame:
-    """
-    Load trades, either from a DB (using dburl) or via a backtest export file.
-    :param exportfilename: Path to a file exported from backtesting
-    :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
-    :returns: Dataframe containing Trades
-    """
-
-    trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
-    if exportfilename:
-        trades = load_backtest_data(Path(exportfilename))
-    elif db_url:
-        trades = load_trades_from_db(db_url)
+    trades = pd.DataFrame([(t.pair, t.calc_profit(),
+                            t.open_date.replace(tzinfo=pytz.UTC),
+                            t.close_date.replace(tzinfo=pytz.UTC) if t.close_date else None,
+                            t.open_rate, t.close_rate,
+                            t.close_date.timestamp() - t.open_date.timestamp()
+                            if t.close_date else None,
+                            t.sell_reason,
+                            t.max_rate,
+                            t.min_rate,
+                            )
+                           for t in Trade.query.all()],
+                          columns=columns)
 
     return trades
 
