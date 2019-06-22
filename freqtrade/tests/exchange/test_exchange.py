@@ -124,14 +124,14 @@ def test_exchange_resolver(default_conf, mocker, caplog):
                       caplog.record_tuples)
     caplog.clear()
 
-    exchange = ExchangeResolver('Kraken', default_conf).exchange
+    exchange = ExchangeResolver('kraken', default_conf).exchange
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog.record_tuples)
 
-    exchange = ExchangeResolver('Binance', default_conf).exchange
+    exchange = ExchangeResolver('binance', default_conf).exchange
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)

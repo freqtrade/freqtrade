@@ -68,8 +68,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     -Generate plot files
     :return: None
     """
-    exchange_name = config.get('exchange', {}).get('name').title()
-    exchange = ExchangeResolver(exchange_name, config).exchange
+    exchange = ExchangeResolver(config.get('exchange', {}).get('name'), config).exchange
 
     strategy = StrategyResolver(config).strategy
     if "pairs" in config:

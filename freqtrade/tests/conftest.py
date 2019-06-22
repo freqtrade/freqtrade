@@ -60,7 +60,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchang
     patch_exchange(mocker, api_mock, id)
     config["exchange"]["name"] = id
     try:
-        exchange = ExchangeResolver(id.title(), config).exchange
+        exchange = ExchangeResolver(id, config).exchange
     except ImportError:
         exchange = Exchange(config)
     return exchange

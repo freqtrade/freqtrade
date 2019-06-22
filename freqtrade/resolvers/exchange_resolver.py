@@ -22,6 +22,7 @@ class ExchangeResolver(IResolver):
         Load the custom class from config parameter
         :param config: configuration dictionary
         """
+        exchange_name = exchange_name.title()
         try:
             self.exchange = self._load_exchange(exchange_name, kwargs={'config': config})
         except ImportError:
