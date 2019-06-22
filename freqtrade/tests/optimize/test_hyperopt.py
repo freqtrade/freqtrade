@@ -167,6 +167,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
                    "Using populate_sell_trend from DefaultStrategy.", caplog.record_tuples)
     assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
                    "Using populate_buy_trend from DefaultStrategy.", caplog.record_tuples)
+    assert hasattr(x, "ticker_interval")
 
 
 def test_start(mocker, default_conf, caplog) -> None:
