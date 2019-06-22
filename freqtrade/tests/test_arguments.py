@@ -3,7 +3,8 @@ import argparse
 
 import pytest
 
-from freqtrade.arguments import Arguments, TimeRange, check_int_positive, ARGS_DOWNLOADER
+from freqtrade.arguments import (ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME,
+                                 Arguments, TimeRange, check_int_positive)
 
 
 # Parse common command-line-arguments. Used for all tools
@@ -49,8 +50,8 @@ def test_parse_args_verbose() -> None:
 
 def test_common_scripts_options() -> None:
     arguments = Arguments(['-p', 'ETH/BTC'], '')
-    arguments.common_scripts_options()
-    args = arguments.get_parsed_arg()
+    arguments.build_args(ARGS_DOWNLOADER)
+    args = arguments.parse_args()
     assert args.pairs == 'ETH/BTC'
 
 
@@ -195,8 +196,7 @@ def test_plot_dataframe_options() -> None:
         '-p', 'UNITTEST/BTC',
     ]
     arguments = Arguments(args, '')
-    arguments.common_scripts_options()
-    arguments.plot_dataframe_options()
+    arguments.build_args(ARGS_PLOT_DATAFRAME)
     pargs = arguments.parse_args(True)
     assert pargs.indicators1 == "sma10,sma100"
     assert pargs.indicators2 == "macd,fastd,fastk"
