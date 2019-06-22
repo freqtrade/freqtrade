@@ -124,7 +124,6 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         tickers = {}
         tickers[pair] = data
         dataframe = generate_dataframe(strategy, tickers, pair)
-        trades = None
         if config["trade_source"] == "DB":
             trades = load_trades_from_db(config["db_url"])
         elif config["trade_source"] == "file":

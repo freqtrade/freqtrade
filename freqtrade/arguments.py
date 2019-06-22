@@ -517,7 +517,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '--trade-source',
-            help='Specify the source for trades (Can be DB or file (backtest file)) Default: %(default)s',
+            help='Specify the source for trades (Can be DB or file (backtest file)) '
+                 'Default: %(default)s',
             dest='trade_source',
             default="file",
             choices=["DB", "file"]
