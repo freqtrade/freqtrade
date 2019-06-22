@@ -381,9 +381,8 @@ class Arguments(object):
         self.parser = argparse.ArgumentParser(description=description)
 
     def _load_args(self) -> None:
-        # Common options
-        self.common_options()
-        self.main_options()
+        self.build_args(optionlist=ARGS_MAIN)
+
         self._build_subcommands()
 
     def get_parsed_arg(self) -> argparse.Namespace:
@@ -713,20 +712,17 @@ class Arguments(object):
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.')
         backtesting_cmd.set_defaults(func=start_backtesting)
-        self.common_optimize_options(backtesting_cmd)
-        self.backtesting_options(backtesting_cmd)
+        self.build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.')
         edge_cmd.set_defaults(func=start_edge)
-        self.common_optimize_options(edge_cmd)
-        self.edge_options(edge_cmd)
+        self.build_args(optionlist=ARGS_EDGE, parser=edge_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.')
         hyperopt_cmd.set_defaults(func=start_hyperopt)
-        self.common_optimize_options(hyperopt_cmd)
-        self.hyperopt_options(hyperopt_cmd)
+        self.build_args(optionlist=ARGS_HYPEROPT, parser=hyperopt_cmd)
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(
@@ -734,7 +730,7 @@ class Arguments(object):
             help='Print available exchanges.'
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
-        self.list_exchanges_options(list_exchanges_cmd)
+        self.build_args(optionlist=ARGS_LIST_EXCHANGE, parser=list_exchanges_cmd)
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
