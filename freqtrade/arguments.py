@@ -56,7 +56,7 @@ class Arguments(object):
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
-        if parsed_arg.config is None and not no_default_config:
+        if not no_default_config and parsed_arg.config is None:
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
