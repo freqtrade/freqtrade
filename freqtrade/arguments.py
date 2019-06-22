@@ -456,51 +456,6 @@ class Arguments(object):
             metavar='PATH',
         )
 
-    def main_options(self) -> None:
-        """
-        Parses arguments for the main Freqtrade.
-        """
-        parser = self.parser
-
-        parser.add_argument(
-            '-s', '--strategy',
-            help='Specify strategy class name (default: `%(default)s`).',
-            dest='strategy',
-            default='DefaultStrategy',
-            metavar='NAME',
-        )
-        parser.add_argument(
-            '--strategy-path',
-            help='Specify additional strategy lookup path.',
-            dest='strategy_path',
-            metavar='PATH',
-        )
-        parser.add_argument(
-            '--dynamic-whitelist',
-            help='Dynamically generate and update whitelist '
-                 'based on 24h BaseVolume (default: %(const)s). '
-                 'DEPRECATED.',
-            dest='dynamic_whitelist',
-            const=constants.DYNAMIC_WHITELIST,
-            type=int,
-            metavar='INT',
-            nargs='?',
-        )
-        parser.add_argument(
-            '--db-url',
-            help=f'Override trades database URL, this is useful in custom deployments '
-                 f'(default: `{constants.DEFAULT_DB_PROD_URL}` for Live Run mode, '
-                 f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
-            dest='db_url',
-            metavar='PATH',
-        )
-        parser.add_argument(
-            '--sd-notify',
-            help='Notify systemd service manager.',
-            action='store_true',
-            dest='sd_notify',
-        )
-
     def common_optimize_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
         Parses arguments common for Backtesting, Edge and Hyperopt modules.
