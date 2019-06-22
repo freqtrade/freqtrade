@@ -358,7 +358,8 @@ class Configuration(object):
 
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
-
+        self._args_to_config(config, argname='trade_source',
+                             logstring='Using trades from: {}')
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
