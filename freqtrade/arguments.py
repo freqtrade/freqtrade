@@ -22,6 +22,342 @@ def check_int_positive(value: str) -> int:
     return uint
 
 
+class Arg:
+    # Optional CLI arguments
+    def __init__(self, *args, **kwargs):
+        self.cli = args
+        self.kwargs = kwargs
+
+
+# List of available command line arguments
+AVAILABLE_CLI_OPTIONS = {
+    # Common arguments
+    "loglevel": Arg(
+        '-v', '--verbose',
+        help='Verbose mode (-vv for more, -vvv to get all messages).',
+        action='count',
+        dest='loglevel',
+        default=0,
+    ),
+    "logfile": Arg(
+        '--logfile',
+        help='Log to the file specified.',
+        dest='logfile',
+        metavar='FILE',
+    ),
+
+    "version": Arg(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}'
+    ),
+    "config": Arg(
+        '-c', '--config',
+        help=f'Specify configuration file (default: `{constants.DEFAULT_CONFIG}`). '
+        f'Multiple --config options may be used. '
+        f'Can be set to `-` to read config from stdin.',
+        dest='config',
+        action='append',
+        metavar='PATH',),
+    "datadir": Arg(
+        '-d', '--datadir',
+        help='Path to backtest data.',
+        dest='datadir',
+        metavar='PATH',),
+    # Main options
+    "strategy": Arg(
+        '-s', '--strategy',
+        help='Specify strategy class name (default: `%(default)s`).',
+        dest='strategy',
+        default='DefaultStrategy',
+        metavar='NAME',
+    ),
+    "strategy_path": Arg(
+        '--strategy-path',
+        help='Specify additional strategy lookup path.',
+        dest='strategy_path',
+        metavar='PATH',
+    ),
+    "dynamic_whitelist": Arg(
+        '--dynamic-whitelist',
+        help='Dynamically generate and update whitelist '
+        'based on 24h BaseVolume (default: %(const)s). '
+        'DEPRECATED.',
+        dest='dynamic_whitelist',
+        const=constants.DYNAMIC_WHITELIST,
+        type=int,
+        metavar='INT',
+        nargs='?',
+    ),
+    "db_url": Arg(
+        '--db-url',
+        help=f'Override trades database URL, this is useful in custom deployments '
+        f'(default: `{constants.DEFAULT_DB_PROD_URL}` for Live Run mode, '
+        f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
+        dest='db_url',
+        metavar='PATH',
+    ),
+    "sd_notify": Arg(
+        '--sd-notify',
+        help='Notify systemd service manager.',
+        action='store_true',
+        dest='sd_notify',
+    ),
+    # Optimize common
+    "ticker_interval": Arg(
+        '-i', '--ticker-interval',
+        help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
+        dest='ticker_interval',
+    ),
+    "timerange": Arg(
+        '--timerange',
+        help='Specify what timerange of data to use.',
+        dest='timerange',
+    ),
+    "max_open_trades": Arg(
+        '--max_open_trades',
+        help='Specify max_open_trades to use.',
+        type=int,
+        dest='max_open_trades',
+    ),
+    "stake_amount": Arg(
+        '--stake_amount',
+        help='Specify stake_amount.',
+        type=float,
+        dest='stake_amount',
+    ),
+    "refresh_pairs": Arg(
+        '-r', '--refresh-pairs-cached',
+        help='Refresh the pairs files in tests/testdata with the latest data from the '
+        'exchange. Use it if you want to run your optimization commands with '
+        'up-to-date data.',
+        action='store_true',
+        dest='refresh_pairs',
+    ),
+    # backtesting
+    "position_stacking": Arg(
+        '--eps', '--enable-position-stacking',
+        help='Allow buying the same pair multiple times (position stacking).',
+        action='store_true',
+        dest='position_stacking',
+        default=False
+    ),
+    "use_max_market_positions": Arg(
+        '--dmmp', '--disable-max-market-positions',
+        help='Disable applying `max_open_trades` during backtest '
+        '(same as setting `max_open_trades` to a very high number).',
+        action='store_false',
+        dest='use_max_market_positions',
+        default=True
+    ),
+    "live": Arg(
+        '-l', '--live',
+        help='Use live data.',
+        action='store_true',
+        dest='live',
+    ),
+    "strategy_list": Arg(
+        '--strategy-list',
+        help='Provide a comma-separated list of strategies to backtest. '
+        'Please note that ticker-interval needs to be set either in config '
+        'or via command line. When using this together with `--export trades`, '
+        'the strategy-name is injected into the filename '
+        '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
+        nargs='+',
+        dest='strategy_list',
+    ),
+    "export": Arg(
+        '--export',
+        help='Export backtest results, argument are: trades. '
+        'Example: `--export=trades`',
+        dest='export',
+    ),
+    "exportfilename": Arg(
+        '--export-filename',
+        help='Save backtest results to the file with this filename (default: `%(default)s`). '
+        'Requires `--export` to be set as well. '
+        'Example: `--export-filename=user_data/backtest_data/backtest_today.json`',
+        default=os.path.join('user_data', 'backtest_data',
+                             'backtest-result.json'),
+        dest='exportfilename',
+        metavar='PATH',
+    ),
+    # Edge
+    "stoploss_range": Arg(
+        '--stoplosses',
+        help='Defines a range of stoploss values against which edge will assess the strategy. '
+        'The format is "min,max,step" (without any space). '
+        'Example: `--stoplosses=-0.01,-0.1,-0.001`',
+        dest='stoploss_range',
+    ),
+    # hyperopt
+    "hyperopt": Arg(
+        '--customhyperopt',
+        help='Specify hyperopt class name (default: `%(default)s`).',
+        dest='hyperopt',
+        default=constants.DEFAULT_HYPEROPT,
+        metavar='NAME',
+    ),
+    "epochs": Arg(
+        '-e', '--epochs',
+        help='Specify number of epochs (default: %(default)d).',
+        dest='epochs',
+        default=constants.HYPEROPT_EPOCH,
+        type=int,
+        metavar='INT',
+    ),
+    "spaces": Arg(
+        '-s', '--spaces',
+        help='Specify which parameters to hyperopt. Space-separated list. '
+        'Default: `%(default)s`.',
+        choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
+        default='all',
+        nargs='+',
+        dest='spaces',
+    ),
+    "print_all": Arg(
+        '--print-all',
+        help='Print all results, not only the best ones.',
+        action='store_true',
+        dest='print_all',
+        default=False
+    ),
+    "hyperopt_jobs": Arg(
+        '-j', '--job-workers',
+        help='The number of concurrently running jobs for hyperoptimization '
+        '(hyperopt worker processes). '
+        'If -1 (default), all CPUs are used, for -2, all CPUs but one are used, etc. '
+        'If 1 is given, no parallel computing code is used at all.',
+        dest='hyperopt_jobs',
+        default=-1,
+        type=int,
+        metavar='JOBS',
+    ),
+    "hyperopt_random_state": Arg(
+        '--random-state',
+        help='Set random state to some positive integer for reproducible hyperopt results.',
+        dest='hyperopt_random_state',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "hyperopt_min_trades": Arg(
+        '--min-trades',
+        help="Set minimal desired number of trades for evaluations in the hyperopt "
+        "optimization path (default: 1).",
+        dest='hyperopt_min_trades',
+        default=1,
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    # List_exchange
+    "print_one_column": Arg(
+        '-1', '--one-column',
+        help='Print exchanges in one column.',
+        action='store_true',
+        dest='print_one_column',
+    ),
+    # script_options
+    "pairs": Arg(
+        '-p', '--pairs',
+        help='Show profits for only these pairs. Pairs are comma-separated.',
+        dest='pairs',
+    ),
+    # Download data
+
+    "pairs_file": Arg(
+        '--pairs-file',
+        help='File containing a list of pairs to download.',
+        dest='pairs_file',
+        metavar='FILE',
+    ),
+    "days": Arg(
+        '--days',
+        help='Download data for given number of days.',
+        dest='days',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "exchange": Arg(
+        '--exchange',
+        help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
+        f'Only valid if no config is provided.',
+        dest='exchange',
+    ),
+    "timeframes": Arg(
+        '-t', '--timeframes',
+        help=f'Specify which tickers to download. Space-separated list. '
+        f'Default: `{constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}`.',
+        choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
+                 '6h', '8h', '12h', '1d', '3d', '1w'],
+        nargs='+',
+        dest='timeframes',
+    ),
+    "erase": Arg(
+        '--erase',
+        help='Clean all existing data for the selected exchange/pairs/timeframes.',
+        dest='erase',
+        action='store_true',
+    ),
+    # Plot_df_options
+    "indicators1": Arg(
+        '--indicators1',
+        help='Set indicators from your strategy you want in the first row of the graph. '
+        'Comma-separated list. Example: `ema3,ema5`. Default: `%(default)s`.',
+        default='sma,ema3,ema5',
+        dest='indicators1',
+    ),
+    "indicators2": Arg(
+        '--indicators2',
+        help='Set indicators from your strategy you want in the third row of the graph. '
+        'Comma-separated list. Example: `fastd,fastk`. Default: `%(default)s`.',
+        default='macd,macdsignal',
+        dest='indicators2',
+    ),
+    "plot_limit": Arg(
+        '--plot-limit',
+        help='Specify tick limit for plotting. Notice: too high values cause huge files. '
+        'Default: %(default)s.',
+        dest='plot_limit',
+        default=750,
+        type=int,
+    ),
+    "trade_source": Arg(
+        '--trade-source',
+        help='Specify the source for trades (Can be DB or file (backtest file)) '
+        'Default: %(default)s',
+        dest='trade_source',
+        default="file",
+        choices=["DB", "file"]
+    )
+}
+
+ARGS_COMMON = ["loglevel", "logfile", "version", "config", "datadir"]
+ARGS_STRATEGY = ["strategy", "strategy_path"]
+
+ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["dynamic_whitelist", "db_url", "sd_notify"]
+
+ARGS_COMMON_OPTIMIZE = ["loglevel", "ticker_interval", "timerange",
+                        "max_open_trades", "stake_amount", "refresh_pairs"]
+
+ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
+                                        "live", "strategy_list", "export", "exportfilename"]
+
+ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "position_stacking", "epochs", "spaces",
+                                        "use_max_market_positions", "print_all", "hyperopt_jobs",
+                                        "hyperopt_random_state", "hyperopt_min_trades"]
+
+ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
+
+
+ARGS_LIST_EXCHANGE = ["print_one_column"]
+
+ARGS_DOWNLOADER = ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
+
+ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
+                       ["pairs", "indicators1", "indicators2", "plot_limit", "db_url",
+                        "export", "exportfilename", "trade_source"])
+
+
 class TimeRange(NamedTuple):
     """
     NamedTuple Defining timerange inputs.
@@ -73,6 +409,13 @@ class Arguments(object):
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
+
+    def build_args(self, optionlist, parser=None):
+        parser = parser or self.parser
+
+        for val in optionlist:
+            opt = AVAILABLE_CLI_OPTIONS[val]
+            parser.add_argument(*opt.cli, **opt.kwargs)
 
     def common_options(self) -> None:
         """
