@@ -67,11 +67,12 @@ def test_generate_row(default_conf, caplog):
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog.record_tuples)
 
 
-def test_plot_trades():
+def test_plot_trades(caplog):
     fig1 = generage_empty_figure()
     # nothing happens when no trades are available
     fig = plot_trades(fig1, None)
     assert fig == fig1
+    assert log_has("No trades found.", caplog.record_tuples)
     pair = "ADA/BTC"
     filename = history.make_testdata_path(None) / "backtest-result_test.json"
     trades = load_backtest_data(filename)

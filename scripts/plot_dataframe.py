@@ -125,8 +125,9 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         tickers[pair] = data
         dataframe = generate_dataframe(strategy, tickers, pair)
 
-        trades = load_trades(db_url=config["db_url"],
-                             exportfilename=config["exportfilename"])
+        trades = load_trades(exportfilename=config["exportfilename"],
+                             db_url=config["db_url"],
+                             )
         trades = trades.loc[trades['pair'] == pair]
         trades = extract_trades_of_period(dataframe, trades)
 
