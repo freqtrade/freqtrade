@@ -17,6 +17,7 @@ nav:
     - Plotting: plotting.md
     - Deprecated features: deprecated.md
     - FAQ: faq.md
+    - Data Analysis: data-analysis.md
     - SQL Cheatsheet: sql_cheatsheet.md
     - Sandbox testing: sandbox-testing.md
     - Contributors guide: developer.md
