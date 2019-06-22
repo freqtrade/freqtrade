@@ -10,6 +10,18 @@ import arrow
 from freqtrade import __version__, constants
 
 
+def check_int_positive(value: str) -> int:
+    try:
+        uint = int(value)
+        if uint <= 0:
+            raise ValueError
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"{value} is invalid for this parameter, should be a positive integer value"
+        )
+    return uint
+
+
 class TimeRange(NamedTuple):
     """
     NamedTuple Defining timerange inputs.
@@ -33,6 +45,7 @@ class Arguments(object):
         self.parser = argparse.ArgumentParser(description=description)
 
     def _load_args(self) -> None:
+        # Common options
         self.common_options()
         self.main_options()
         self._build_subcommands()
@@ -318,7 +331,7 @@ class Arguments(object):
             '--random-state',
             help='Set random state to some positive integer for reproducible hyperopt results.',
             dest='hyperopt_random_state',
-            type=Arguments.check_int_positive,
+            type=check_int_positive,
             metavar='INT',
         )
         parser.add_argument(
@@ -327,7 +340,7 @@ class Arguments(object):
                  "optimization path (default: 1).",
             dest='hyperopt_min_trades',
             default=1,
-            type=Arguments.check_int_positive,
+            type=check_int_positive,
             metavar='INT',
         )
 
@@ -422,18 +435,6 @@ class Arguments(object):
                 return TimeRange(stype[0], stype[1], start, stop)
         raise Exception('Incorrect syntax for timerange "%s"' % text)
 
-    @staticmethod
-    def check_int_positive(value: str) -> int:
-        try:
-            uint = int(value)
-            if uint <= 0:
-                raise ValueError
-        except ValueError:
-            raise argparse.ArgumentTypeError(
-                f"{value} is invalid for this parameter, should be a positive integer value"
-            )
-        return uint
-
     def common_scripts_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
         Parses arguments common for scripts.
@@ -462,7 +463,7 @@ class Arguments(object):
             '--days',
             help='Download data for given number of days.',
             dest='days',
-            type=Arguments.check_int_positive,
+            type=check_int_positive,
             metavar='INT',
         )
         parser.add_argument(

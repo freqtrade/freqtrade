@@ -3,7 +3,7 @@ import argparse
 
 import pytest
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import Arguments, TimeRange, check_int_positive
 
 
 # Parse common command-line-arguments. Used for all tools
@@ -206,18 +206,18 @@ def test_plot_dataframe_options() -> None:
 
 def test_check_int_positive() -> None:
 
-    assert Arguments.check_int_positive("3") == 3
-    assert Arguments.check_int_positive("1") == 1
-    assert Arguments.check_int_positive("100") == 100
+    assert check_int_positive("3") == 3
+    assert check_int_positive("1") == 1
+    assert check_int_positive("100") == 100
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("-2")
+        check_int_positive("-2")
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("0")
+        check_int_positive("0")
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("3.5")
+        check_int_positive("3.5")
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("DeadBeef")
+        check_int_positive("DeadBeef")
