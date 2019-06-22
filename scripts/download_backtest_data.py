@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import Arguments, TimeRange, ARGS_DOWNLOADER
 from freqtrade.configuration import Configuration
 from freqtrade.data.history import download_pair_history
 from freqtrade.exchange import Exchange
@@ -21,8 +21,7 @@ logger = logging.getLogger('download_backtest_data')
 DEFAULT_DL_PATH = 'user_data/data'
 
 arguments = Arguments(sys.argv[1:], 'Download backtest data')
-arguments.common_options()
-arguments.download_data_options()
+arguments.build_args(ARGS_DOWNLOADER)
 
 # Do not read the default config if config is not specified
 # in the command line options explicitely

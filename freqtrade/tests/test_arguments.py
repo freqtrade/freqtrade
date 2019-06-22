@@ -3,7 +3,7 @@ import argparse
 
 import pytest
 
-from freqtrade.arguments import Arguments, TimeRange, check_int_positive
+from freqtrade.arguments import Arguments, TimeRange, check_int_positive, ARGS_DOWNLOADER
 
 
 # Parse common command-line-arguments. Used for all tools
@@ -178,8 +178,8 @@ def test_download_data_options() -> None:
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
-    arguments.common_options()
-    arguments.download_data_options()
+    arguments.build_args(ARGS_DOWNLOADER)
+
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'
     assert args.datadir == 'datadir/folder'
