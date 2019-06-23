@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 import warnings
 
 import arrow
@@ -347,23 +347,32 @@ class IStrategy(ABC):
 
         return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
 
-    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
+    def min_roi_reached_entry(self, trade_dur: int) -> Optional[float]:
         """
-        Based an earlier trade and current price and ROI configuration, decides whether bot should
-        sell. Requires current_profit to be in percent!!
-        :return True if bot should sell at current rate
+        Based on trade duration defines the ROI entry that may have been reached.
+        :param trade_dur: trade duration in minutes
+        :return: minimal ROI entry value or None if none proper ROI entry was found.
         """
-
-        # Check if time matches and current rate is above threshold
-        trade_dur = (current_time.timestamp() - trade.open_date.timestamp()) / 60
-
         # Get highest entry in ROI dict where key <= trade-duration
         roi_list = list(filter(lambda x: x <= trade_dur, self.minimal_roi.keys()))
         if not roi_list:
-            return False
+            return None
         roi_entry = max(roi_list)
-        threshold = self.minimal_roi[roi_entry]
-        return current_profit > threshold
+        return self.minimal_roi[roi_entry]
+
+    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
+        """
+        Based on trade duration, current price and ROI configuration, decides whether bot should
+        sell. Requires current_profit to be in percent!!
+        :return: True if bot should sell at current rate
+        """
+        # Check if time matches and current rate is above threshold
+        trade_dur = int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
+        roi = self.min_roi_reached_entry(trade_dur)
+        if roi is None:
+            return False
+        else:
+            return current_profit > roi
 
     def tickerdata_to_dataframe(self, tickerdata: Dict[str, List]) -> Dict[str, DataFrame]:
         """
