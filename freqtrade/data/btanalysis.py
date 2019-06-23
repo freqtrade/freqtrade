@@ -23,7 +23,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
     """
     Load backtest data file.
     :param filename: pathlib.Path object, or string pointing to the file.
-    :return a dataframe with the analysis results
+    :return: a dataframe with the analysis results
     """
     if isinstance(filename, str):
         filename = Path(filename)
@@ -78,7 +78,7 @@ def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
     Load trades, either from a DB (using dburl) or via a backtest export file.
     :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
     :param exportfilename: Path to a file exported from backtesting
-    :returns: Dataframe containing Trades
+    :return: Dataframe containing Trades
     """
     timeZone = pytz.UTC
 
