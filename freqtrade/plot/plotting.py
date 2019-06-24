@@ -81,6 +81,8 @@ def plot_trades(fig, trades: pd.DataFrame):
         )
         fig.append_trace(trade_buys, 1, 1)
         fig.append_trace(trade_sells, 1, 1)
+    else:
+        logger.warning("No trades found.")
     return fig
 
 

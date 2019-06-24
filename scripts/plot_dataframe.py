@@ -33,10 +33,10 @@ import pandas as pd
 
 from freqtrade.arguments import Arguments
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_trades, extract_trades_of_period
+from freqtrade.data.btanalysis import (extract_trades_of_period,
+                                       load_backtest_data, load_trades_from_db)
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import (generate_graph,
-                                     generate_plot_file)
+from freqtrade.plot.plotting import generate_graph, generate_plot_file
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
@@ -97,9 +97,11 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         tickers = {}
         tickers[pair] = data
         dataframe = generate_dataframe(strategy, tickers, pair)
+        if config["trade_source"] == "DB":
+            trades = load_trades_from_db(config["db_url"])
+        elif config["trade_source"] == "file":
+            trades = load_backtest_data(Path(config["exportfilename"]))
 
-        trades = load_trades(db_url=config["db_url"],
-                             exportfilename=config["exportfilename"])
         trades = trades.loc[trades['pair'] == pair]
         trades = extract_trades_of_period(dataframe, trades)
 

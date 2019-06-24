@@ -58,7 +58,7 @@ Timerange doesn't work with live data.
 To plot trades stored in a database use `--db-url` argument:
 
 ``` bash
-python3 scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH
+python3 scripts/plot_dataframe.py --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH --trade-source DB
 ```
 
 To plot trades from a backtesting result, use `--export-filename <filename>`

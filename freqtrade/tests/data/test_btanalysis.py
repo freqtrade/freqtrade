@@ -7,7 +7,7 @@ from pandas import DataFrame, to_datetime
 from freqtrade.arguments import TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
                                        extract_trades_of_period,
-                                       load_backtest_data, load_trades)
+                                       load_backtest_data, load_trades_from_db)
 from freqtrade.data.history import load_pair_history, make_testdata_path
 from freqtrade.tests.test_persistence import create_mock_trades
 
@@ -28,14 +28,6 @@ def test_load_backtest_data():
         load_backtest_data(str("filename") + "nofile")
 
 
-def test_load_trades_file(default_conf, fee, mocker):
-    # Real testing of load_backtest_data is done in test_load_backtest_data
-    lbt = mocker.patch("freqtrade.data.btanalysis.load_backtest_data", MagicMock())
-    filename = make_testdata_path(None) / "backtest-result_test.json"
-    load_trades(db_url=None, exportfilename=filename)
-    assert lbt.call_count == 1
-
-
 @pytest.mark.usefixtures("init_persistence")
 def test_load_trades_db(default_conf, fee, mocker):
 
@@ -43,7 +35,7 @@ def test_load_trades_db(default_conf, fee, mocker):
     # remove init so it does not init again
     init_mock = mocker.patch('freqtrade.persistence.init', MagicMock())
 
-    trades = load_trades(db_url=default_conf['db_url'], exportfilename=None)
+    trades = load_trades_from_db(db_url=default_conf['db_url'])
     assert init_mock.call_count == 1
     assert len(trades) == 3
     assert isinstance(trades, DataFrame)

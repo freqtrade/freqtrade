@@ -221,24 +221,8 @@ strategies, your configuration, and the crypto-currency you have set up.
 ### Further backtest-result analysis
 
 To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
-You can then load the trades to perform further analysis.
+You can then load the trades to perform further analysis as shown in our [data analysis](data-analysis.md#backtesting) backtesting section.
 
-A good way for this is using Jupyter (notebook or lab) - which provides an interactive environment to analyze the data.
-
-Freqtrade provides an easy to load the backtest results, which is `load_backtest_data` - and takes a path to the backtest-results file.
-
-``` python
-from freqtrade.data.btanalysis import load_backtest_data
-df = load_backtest_data("user_data/backtest-result.json")
-
-# Show value-counts per pair
-df.groupby("pair")["sell_reason"].value_counts()
-
-```
-
-This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output unreadable.
-
-If you have some ideas for interesting / helpful backtest data analysis ideas, please submit a PR so the community can benefit from it.
 
 ## Backtesting multiple strategies
 
