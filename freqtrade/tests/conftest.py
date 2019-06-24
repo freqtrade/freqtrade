@@ -110,11 +110,23 @@ def patch_freqtradebot(mocker, config) -> None:
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: FreqtradeBot
+    """
     patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
 
 
 def get_patched_worker(mocker, config) -> Worker:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: Worker
+    """
     patch_freqtradebot(mocker, config)
     return Worker(args=None, config=config)
 
