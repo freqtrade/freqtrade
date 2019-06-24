@@ -130,7 +130,7 @@ If the day shows the same day, then the last candle can be assumed as incomplete
 
 This part of the documentation is aimed at maintainers, and shows how to create a release.
 
-### create release branch
+### Create release branch
 
 ``` bash
 # make sure you're in develop branch
@@ -144,7 +144,10 @@ git checkout -b new_release
 * Commit this part
 * push that branch to the remote and create a PR against the master branch
 
-### create changelog from git commits
+### Create changelog from git commits
+
+!!! Note
+    Make sure that both master and develop are up-todate!.
 
 ``` bash
 # Needs to be done before merging / pulling that branch.
