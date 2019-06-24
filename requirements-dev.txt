@@ -10,4 +10,4 @@ pytest-mock==1.10.4
 pytest-asyncio==0.10.0
 pytest-cov==2.7.1
 coveralls==1.8.1
-mypy==0.701
+mypy==0.710
