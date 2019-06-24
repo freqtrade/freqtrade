@@ -53,8 +53,7 @@ class FreqtradeBot(object):
 
         self.rpc: RPCManager = RPCManager(self)
 
-        exchange_name = self.config.get('exchange', {}).get('name').title()
-        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
+        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
 
         self.wallets = Wallets(self.config, self.exchange)
         self.dataprovider = DataProvider(self.config, self.exchange)
@@ -691,13 +690,22 @@ class FreqtradeBot(object):
                 # cancelling the current stoploss on exchange first
                 logger.info('Trailing stoploss: cancelling current stoploss on exchange (id:{%s})'
                             'in order to add another one ...', order['id'])
-                if self.exchange.cancel_order(order['id'], trade.pair):
+                try:
+                    self.exchange.cancel_order(order['id'], trade.pair)
+                except InvalidOrderException:
+                    logger.exception(f"Could not cancel stoploss order {order['id']} "
+                                     f"for pair {trade.pair}")
+
+                try:
                     # creating the new one
                     stoploss_order_id = self.exchange.stoploss_limit(
                         pair=trade.pair, amount=trade.amount,
                         stop_price=trade.stop_loss, rate=trade.stop_loss * 0.99
                     )['id']
                     trade.stoploss_order_id = str(stoploss_order_id)
+                except DependencyException:
+                    logger.exception(f"Could create trailing stoploss order "
+                                     f"for pair {trade.pair}.")
 
     def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
         if self.edge:
@@ -843,7 +851,10 @@ class FreqtradeBot(object):
 
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
-            self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+            try:
+                self.exchange.cancel_order(trade.stoploss_order_id, trade.pair)
+            except InvalidOrderException:
+                logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         # Execute sell and update trade record
         order_id = self.exchange.sell(pair=str(trade.pair),

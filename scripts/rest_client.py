@@ -65,14 +65,14 @@ class FtRestClient():
     def start(self):
         """
         Start the bot if it's in stopped state.
-        :returns: json object
+        :return: json object
         """
         return self._post("start")
 
     def stop(self):
         """
         Stop the bot. Use start to restart
-        :returns: json object
+        :return: json object
         """
         return self._post("stop")
 
@@ -80,77 +80,77 @@ class FtRestClient():
         """
         Stop buying (but handle sells gracefully).
         use reload_conf to reset
-        :returns: json object
+        :return: json object
         """
         return self._post("stopbuy")
 
     def reload_conf(self):
         """
         Reload configuration
-        :returns: json object
+        :return: json object
         """
         return self._post("reload_conf")
 
     def balance(self):
         """
         Get the account balance
-        :returns: json object
+        :return: json object
         """
         return self._get("balance")
 
     def count(self):
         """
         Returns the amount of open trades
-        :returns: json object
+        :return: json object
         """
         return self._get("count")
 
     def daily(self, days=None):
         """
         Returns the amount of open trades
-        :returns: json object
+        :return: json object
         """
         return self._get("daily", params={"timescale": days} if days else None)
 
     def edge(self):
         """
         Returns information about edge
-        :returns: json object
+        :return: json object
         """
         return self._get("edge")
 
     def profit(self):
         """
         Returns the profit summary
-        :returns: json object
+        :return: json object
         """
         return self._get("profit")
 
     def performance(self):
         """
         Returns the performance of the different coins
-        :returns: json object
+        :return: json object
         """
         return self._get("performance")
 
     def status(self):
         """
         Get the status of open trades
-        :returns: json object
+        :return: json object
         """
         return self._get("status")
 
     def version(self):
         """
         Returns the version of the bot
-        :returns: json object containing the version
+        :return: json object containing the version
         """
         return self._get("version")
 
     def whitelist(self):
         """
         Show the current whitelist
-        :returns: json object
+        :return: json object
         """
         return self._get("whitelist")
 
@@ -158,7 +158,7 @@ class FtRestClient():
         """
         Show the current blacklist
         :param add: List of coins to add (example: "BNB/BTC")
-        :returns: json object
+        :return: json object
         """
         if not args:
             return self._get("blacklist")
@@ -170,7 +170,7 @@ class FtRestClient():
         Buy an asset
         :param pair: Pair to buy (ETH/BTC)
         :param price: Optional - price to buy
-        :returns: json object of the trade
+        :return: json object of the trade
         """
         data = {"pair": pair,
                 "price": price
@@ -181,7 +181,7 @@ class FtRestClient():
         """
         Force-sell a trade
         :param tradeid: Id of the trade (can be received via status command)
-        :returns: json object
+        :return: json object
         """
 
         return self._post("forcesell", data={"tradeid": tradeid})

@@ -75,14 +75,10 @@ def test_load_strategy_byte64(result):
 
 def test_load_strategy_invalid_directory(result, caplog):
     resolver = StrategyResolver()
-    extra_dir = path.join('some', 'path')
+    extra_dir = Path.cwd() / 'some/path'
     resolver._load_strategy('TestStrategy', config={}, extra_dir=extra_dir)
 
-    assert (
-        'freqtrade.resolvers.strategy_resolver',
-        logging.WARNING,
-        'Path "{}" does not exist'.format(extra_dir),
-    ) in caplog.record_tuples
+    assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog.record_tuples)
 
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 

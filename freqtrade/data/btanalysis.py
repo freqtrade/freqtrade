@@ -23,7 +23,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
     """
     Load backtest data file.
     :param filename: pathlib.Path object, or string pointing to the file.
-    :return a dataframe with the analysis results
+    :return: a dataframe with the analysis results
     """
     if isinstance(filename, str):
         filename = Path(filename)
@@ -77,7 +77,7 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     """
     Load trades from a DB (using dburl)
     :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
-    :returns: Dataframe containing Trades
+    :return: Dataframe containing Trades
     """
     trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
     persistence.init(db_url, clean_open_orders=False)

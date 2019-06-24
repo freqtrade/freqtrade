@@ -5,6 +5,7 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from functools import reduce
+from pathlib import Path
 from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
@@ -60,7 +61,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchang
     patch_exchange(mocker, api_mock, id)
     config["exchange"]["name"] = id
     try:
-        exchange = ExchangeResolver(id.title(), config).exchange
+        exchange = ExchangeResolver(id, config).exchange
     except ImportError:
         exchange = Exchange(config)
     return exchange
@@ -110,11 +111,23 @@ def patch_freqtradebot(mocker, config) -> None:
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: FreqtradeBot
+    """
     patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
 
 
 def get_patched_worker(mocker, config) -> Worker:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: Worker
+    """
     patch_freqtradebot(mocker, config)
     return Worker(args=None, config=config)
 
@@ -865,7 +878,7 @@ def tickers():
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
+    with Path('freqtrade/tests/testdata/UNITTEST_BTC-1m.json').open('r') as data_file:
         return parse_ticker_dataframe(json.load(data_file), '1m', fill_missing=True)
 
 # FIX:
