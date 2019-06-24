@@ -7,7 +7,7 @@ arrow==0.14.2
 cachetools==3.1.1
 requests==2.22.0
 urllib3==1.24.2  # pyup: ignore
-wrapt==1.11.1
+wrapt==1.11.2
 scikit-learn==0.21.2
 joblib==0.13.2
 jsonschema==3.0.1
