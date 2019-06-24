@@ -56,4 +56,4 @@ notifications:
 cache:
   pip: True
   directories:
-    - /usr/local/lib
+    - /usr/local/lib/
