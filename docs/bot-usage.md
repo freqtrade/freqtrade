@@ -26,7 +26,8 @@ optional arguments:
   --version             show program's version number and exit
   -c PATH, --config PATH
                         Specify configuration file (default: None). Multiple
-                        --config options may be used.
+                        --config options may be used. Can be set to '-' to
+                        read config from stdin.
   -d PATH, --datadir PATH
                         Path to backtest data.
   -s NAME, --strategy NAME

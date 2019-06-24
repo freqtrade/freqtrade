@@ -2,19 +2,13 @@
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
 import json
-from typing import List
 from unittest.mock import MagicMock
 
-from freqtrade.arguments import Arguments
 from freqtrade.edge import PairInfo
-from freqtrade.optimize import start_edge, setup_configuration
+from freqtrade.optimize import setup_configuration, start_edge
 from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
-
-
-def get_args(args) -> List[str]:
-    return Arguments(args, '').get_parsed_arg()
+from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -117,8 +111,10 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
 
 def test_edge_init(mocker, edge_conf) -> None:
     patch_exchange(mocker)
+    edge_conf['stake_amount'] = 20
     edge_cli = EdgeCli(edge_conf)
     assert edge_cli.config == edge_conf
+    assert edge_cli.config['stake_amount'] == 'unlimited'
     assert callable(edge_cli.edge.calculate)
 
 

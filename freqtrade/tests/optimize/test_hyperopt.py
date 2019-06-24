@@ -16,8 +16,7 @@ from freqtrade.optimize.hyperopt import Hyperopt, HYPEROPT_LOCKFILE
 from freqtrade.optimize import setup_configuration, start_hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
-from freqtrade.tests.optimize.test_backtesting import get_args
+from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 @pytest.fixture(scope='function')
@@ -168,6 +167,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
                    "Using populate_sell_trend from DefaultStrategy.", caplog.record_tuples)
     assert log_has("Custom Hyperopt does not provide populate_buy_trend. "
                    "Using populate_buy_trend from DefaultStrategy.", caplog.record_tuples)
+    assert hasattr(x, "ticker_interval")
 
 
 def test_start(mocker, default_conf, caplog) -> None:

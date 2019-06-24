@@ -1,12 +1,18 @@
 """
 Helpers when analyzing backtest data
 """
+import logging
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytz
 
+from freqtrade import persistence
 from freqtrade.misc import json_load
+from freqtrade.persistence import Trade
+
+logger = logging.getLogger(__name__)
 
 # must align with columns in backtest.py
 BT_DATA_COLUMNS = ["pair", "profitperc", "open_time", "close_time", "index", "duration",
@@ -17,7 +23,7 @@ def load_backtest_data(filename) -> pd.DataFrame:
     """
     Load backtest data file.
     :param filename: pathlib.Path object, or string pointing to the file.
-    :return a dataframe with the analysis results
+    :return: a dataframe with the analysis results
     """
     if isinstance(filename, str):
         filename = Path(filename)
@@ -65,3 +71,48 @@ def evaluate_result_multi(results: pd.DataFrame, freq: str, max_open_trades: int
     df2 = df2.set_index('date')
     df_final = df2.resample(freq)[['pair']].count()
     return df_final[df_final['pair'] > max_open_trades]
+
+
+def load_trades(db_url: str = None, exportfilename: str = None) -> pd.DataFrame:
+    """
+    Load trades, either from a DB (using dburl) or via a backtest export file.
+    :param db_url: Sqlite url (default format sqlite:///tradesv3.dry-run.sqlite)
+    :param exportfilename: Path to a file exported from backtesting
+    :return: Dataframe containing Trades
+    """
+    timeZone = pytz.UTC
+
+    trades: pd.DataFrame = pd.DataFrame([], columns=BT_DATA_COLUMNS)
+
+    if db_url:
+        persistence.init(db_url, clean_open_orders=False)
+        columns = ["pair", "profit", "open_time", "close_time",
+                   "open_rate", "close_rate", "duration"]
+
+        for x in Trade.query.all():
+            logger.info("date: {}".format(x.open_date))
+
+        trades = pd.DataFrame([(t.pair, t.calc_profit(),
+                                t.open_date.replace(tzinfo=timeZone),
+                                t.close_date.replace(tzinfo=timeZone) if t.close_date else None,
+                                t.open_rate, t.close_rate,
+                                t.close_date.timestamp() - t.open_date.timestamp()
+                                if t.close_date else None)
+                               for t in Trade.query.all()],
+                              columns=columns)
+
+    elif exportfilename:
+
+        trades = load_backtest_data(Path(exportfilename))
+
+    return trades
+
+
+def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compare trades and backtested pair DataFrames to get trades performed on backtested period
+    :return: the DataFrame of a trades of period
+    """
+    trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
+                        (trades['close_time'] <= dataframe.iloc[-1]['date'])]
+    return trades

@@ -29,6 +29,10 @@ class BTContainer(NamedTuple):
     trades: List[BTrade]
     profit_perc: float
     trailing_stop: bool = False
+    trailing_only_offset_is_reached: bool = False
+    trailing_stop_positive: float = None
+    trailing_stop_positive_offset: float = 0.0
+    use_sell_signal: bool = False
 
 
 def _get_frame_time_from_offset(offset):

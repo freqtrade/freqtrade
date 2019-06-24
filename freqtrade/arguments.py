@@ -33,7 +33,8 @@ class Arguments(object):
         self.parser = argparse.ArgumentParser(description=description)
 
     def _load_args(self) -> None:
-        self.common_args_parser()
+        self.common_options()
+        self.main_options()
         self._build_subcommands()
 
     def get_parsed_arg(self) -> argparse.Namespace:
@@ -47,7 +48,7 @@ class Arguments(object):
 
         return self.parsed_arg
 
-    def parse_args(self) -> argparse.Namespace:
+    def parse_args(self, no_default_config: bool = False) -> argparse.Namespace:
         """
         Parses given arguments and returns an argparse Namespace instance.
         """
@@ -55,123 +56,121 @@ class Arguments(object):
 
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
-        if parsed_arg.config is None:
+        if not no_default_config and parsed_arg.config is None:
             parsed_arg.config = [constants.DEFAULT_CONFIG]
 
         return parsed_arg
 
-    def common_args_parser(self) -> None:
+    def common_options(self) -> None:
         """
-        Parses given common arguments and returns them as a parsed object.
+        Parses arguments that are common for the main Freqtrade, all subcommands and scripts.
         """
-        self.parser.add_argument(
+        parser = self.parser
+
+        parser.add_argument(
             '-v', '--verbose',
             help='Verbose mode (-vv for more, -vvv to get all messages).',
             action='count',
             dest='loglevel',
             default=0,
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '--logfile',
             help='Log to the file specified',
             dest='logfile',
-            type=str,
-            metavar='FILE'
+            metavar='FILE',
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '--version',
             action='version',
             version=f'%(prog)s {__version__}'
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '-c', '--config',
-            help='Specify configuration file (default: %(default)s). '
-                 'Multiple --config options may be used.',
+            help=f'Specify configuration file (default: {constants.DEFAULT_CONFIG}). '
+                 f'Multiple --config options may be used. '
+                 f'Can be set to `-` to read config from stdin.',
             dest='config',
             action='append',
-            type=str,
             metavar='PATH',
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '-d', '--datadir',
             help='Path to backtest data.',
             dest='datadir',
-            default=None,
-            type=str,
             metavar='PATH',
         )
-        self.parser.add_argument(
+
+    def main_options(self) -> None:
+        """
+        Parses arguments for the main Freqtrade.
+        """
+        parser = self.parser
+
+        parser.add_argument(
             '-s', '--strategy',
             help='Specify strategy class name (default: %(default)s).',
             dest='strategy',
             default='DefaultStrategy',
-            type=str,
             metavar='NAME',
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '--strategy-path',
             help='Specify additional strategy lookup path.',
             dest='strategy_path',
-            type=str,
             metavar='PATH',
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '--dynamic-whitelist',
-            help='Dynamically generate and update whitelist'
-                 ' based on 24h BaseVolume (default: %(const)s).'
-                 ' DEPRECATED.',
+            help='Dynamically generate and update whitelist '
+                 'based on 24h BaseVolume (default: %(const)s). '
+                 'DEPRECATED.',
             dest='dynamic_whitelist',
             const=constants.DYNAMIC_WHITELIST,
             type=int,
             metavar='INT',
             nargs='?',
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '--db-url',
-            help='Override trades database URL, this is useful if dry_run is enabled'
-                 ' or in custom deployments (default: %(default)s).',
+            help=f'Override trades database URL, this is useful if dry_run is enabled '
+                 f'or in custom deployments (default: {constants.DEFAULT_DB_DRYRUN_URL}.',
             dest='db_url',
-            type=str,
             metavar='PATH',
         )
-        self.parser.add_argument(
+        parser.add_argument(
             '--sd-notify',
             help='Notify systemd service manager.',
             action='store_true',
             dest='sd_notify',
         )
 
-    @staticmethod
-    def optimizer_shared_options(parser: argparse.ArgumentParser) -> None:
+    def common_optimize_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
-        Parses given common arguments for Backtesting, Edge and Hyperopt modules.
+        Parses arguments common for Backtesting, Edge and Hyperopt modules.
         :param parser:
-        :return:
         """
+        parser = subparser or self.parser
+
         parser.add_argument(
             '-i', '--ticker-interval',
             help='Specify ticker interval (1m, 5m, 30m, 1h, 1d).',
             dest='ticker_interval',
-            type=str,
         )
         parser.add_argument(
             '--timerange',
             help='Specify what timerange of data to use.',
-            default=None,
-            type=str,
             dest='timerange',
         )
         parser.add_argument(
             '--max_open_trades',
             help='Specify max_open_trades to use.',
-            default=None,
             type=int,
             dest='max_open_trades',
         )
         parser.add_argument(
             '--stake_amount',
             help='Specify stake_amount.',
-            default=None,
             type=float,
             dest='stake_amount',
         )
@@ -184,11 +183,12 @@ class Arguments(object):
             dest='refresh_pairs',
         )
 
-    @staticmethod
-    def backtesting_options(parser: argparse.ArgumentParser) -> None:
+    def backtesting_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
         Parses given arguments for Backtesting module.
         """
+        parser = subparser or self.parser
+
         parser.add_argument(
             '--eps', '--enable-position-stacking',
             help='Allow buying the same pair multiple times (position stacking).',
@@ -224,47 +224,44 @@ class Arguments(object):
             '--export',
             help='Export backtest results, argument are: trades. '
                  'Example --export=trades',
-            type=str,
-            default=None,
             dest='export',
         )
         parser.add_argument(
             '--export-filename',
-            help='Save backtest results to this filename \
-                  requires --export to be set as well\
-                  Example --export-filename=user_data/backtest_data/backtest_today.json\
-                  (default: %(default)s)',
-            type=str,
+            help='Save backtest results to this filename '
+                 'requires --export to be set as well. '
+                 'Example --export-filename=user_data/backtest_data/backtest_today.json '
+                 '(default: %(default)s)',
             default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
             dest='exportfilename',
             metavar='PATH',
         )
 
-    @staticmethod
-    def edge_options(parser: argparse.ArgumentParser) -> None:
+    def edge_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
         Parses given arguments for Edge module.
         """
+        parser = subparser or self.parser
+
         parser.add_argument(
             '--stoplosses',
             help='Defines a range of stoploss against which edge will assess the strategy '
-                 'the format is "min,max,step" (without any space).'
-                 'example: --stoplosses=-0.01,-0.1,-0.001',
-            type=str,
+                 'the format is "min,max,step" (without any space). '
+                 'Example: --stoplosses=-0.01,-0.1,-0.001',
             dest='stoploss_range',
         )
 
-    @staticmethod
-    def hyperopt_options(parser: argparse.ArgumentParser) -> None:
+    def hyperopt_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
         Parses given arguments for Hyperopt module.
         """
+        parser = subparser or self.parser
+
         parser.add_argument(
             '--customhyperopt',
             help='Specify hyperopt class name (default: %(default)s).',
             dest='hyperopt',
             default=constants.DEFAULT_HYPEROPT,
-            type=str,
             metavar='NAME',
         )
         parser.add_argument(
@@ -292,8 +289,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '-s', '--spaces',
-            help='Specify which parameters to hyperopt. Space separate list. \
-                  Default: %(default)s.',
+            help='Specify which parameters to hyperopt. Space separate list. '
+                 'Default: %(default)s.',
             choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
             default='all',
             nargs='+',
@@ -321,7 +318,6 @@ class Arguments(object):
             '--random-state',
             help='Set random state to some positive integer for reproducible hyperopt results.',
             dest='hyperopt_random_state',
-            default=None,
             type=Arguments.check_int_positive,
             metavar='INT',
         )
@@ -335,32 +331,54 @@ class Arguments(object):
             metavar='INT',
         )
 
+    def list_exchanges_options(self, subparser: argparse.ArgumentParser = None) -> None:
+        """
+        Parses given arguments for the list-exchanges command.
+        """
+        parser = subparser or self.parser
+
+        parser.add_argument(
+            '-1', '--one-column',
+            help='Print exchanges in one column',
+            action='store_true',
+            dest='print_one_column',
+        )
+
     def _build_subcommands(self) -> None:
         """
-        Builds and attaches all subcommands
+        Builds and attaches all subcommands.
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
+        from freqtrade.utils import start_list_exchanges
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.')
         backtesting_cmd.set_defaults(func=start_backtesting)
-        self.optimizer_shared_options(backtesting_cmd)
+        self.common_optimize_options(backtesting_cmd)
         self.backtesting_options(backtesting_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.')
         edge_cmd.set_defaults(func=start_edge)
-        self.optimizer_shared_options(edge_cmd)
+        self.common_optimize_options(edge_cmd)
         self.edge_options(edge_cmd)
 
         # Add hyperopt subcommand
         hyperopt_cmd = subparsers.add_parser('hyperopt', help='Hyperopt module.')
         hyperopt_cmd.set_defaults(func=start_hyperopt)
-        self.optimizer_shared_options(hyperopt_cmd)
+        self.common_optimize_options(hyperopt_cmd)
         self.hyperopt_options(hyperopt_cmd)
+
+        # Add list-exchanges subcommand
+        list_exchanges_cmd = subparsers.add_parser(
+            'list-exchanges',
+            help='Print available exchanges.'
+        )
+        list_exchanges_cmd.set_defaults(func=start_list_exchanges)
+        self.list_exchanges_options(list_exchanges_cmd)
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
@@ -416,78 +434,85 @@ class Arguments(object):
             )
         return uint
 
-    def scripts_options(self) -> None:
+    def common_scripts_options(self, subparser: argparse.ArgumentParser = None) -> None:
         """
-        Parses given arguments for scripts.
+        Parses arguments common for scripts.
         """
-        self.parser.add_argument(
+        parser = subparser or self.parser
+
+        parser.add_argument(
             '-p', '--pairs',
             help='Show profits for only this pairs. Pairs are comma-separated.',
             dest='pairs',
-            default=None
         )
 
-    def testdata_dl_options(self) -> None:
+    def download_data_options(self) -> None:
         """
-        Parses given arguments for testdata download
+        Parses given arguments for testdata download script
         """
-        self.parser.add_argument(
+        parser = self.parser
+
+        parser.add_argument(
             '--pairs-file',
             help='File containing a list of pairs to download.',
             dest='pairs_file',
-            default=None,
-            metavar='PATH',
+            metavar='FILE',
         )
-
-        self.parser.add_argument(
-            '--export',
-            help='Export files to given dir.',
-            dest='export',
-            default=None,
-            metavar='PATH',
-        )
-
-        self.parser.add_argument(
-            '-c', '--config',
-            help='Specify configuration file (default: %(default)s). '
-                 'Multiple --config options may be used.',
-            dest='config',
-            action='append',
-            type=str,
-            metavar='PATH',
-        )
-
-        self.parser.add_argument(
+        parser.add_argument(
             '--days',
             help='Download data for given number of days.',
             dest='days',
-            type=int,
+            type=Arguments.check_int_positive,
             metavar='INT',
-            default=None
         )
-
-        self.parser.add_argument(
+        parser.add_argument(
             '--exchange',
-            help='Exchange name (default: %(default)s). Only valid if no config is provided.',
+            help=f'Exchange name (default: {constants.DEFAULT_EXCHANGE}). '
+                 f'Only valid if no config is provided.',
             dest='exchange',
-            type=str,
-            default='bittrex'
         )
-
-        self.parser.add_argument(
+        parser.add_argument(
             '-t', '--timeframes',
-            help='Specify which tickers to download. Space separated list. \
-                  Default: %(default)s.',
+            help=f'Specify which tickers to download. Space separated list. '
+                 f'Default: {constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}.',
             choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                      '6h', '8h', '12h', '1d', '3d', '1w'],
-            default=['1m', '5m'],
             nargs='+',
             dest='timeframes',
         )
-
-        self.parser.add_argument(
+        parser.add_argument(
             '--erase',
             help='Clean all existing data for the selected exchange/pairs/timeframes.',
             dest='erase',
             action='store_true'
+        )
+
+    def plot_dataframe_options(self) -> None:
+        """
+        Parses given arguments for plot dataframe script
+        """
+        parser = self.parser
+
+        parser.add_argument(
+            '--indicators1',
+            help='Set indicators from your strategy you want in the first row of the graph. '
+                 'Separate them with a coma. E.g: ema3,ema5 (default: %(default)s)',
+            default='sma,ema3,ema5',
+            dest='indicators1',
+        )
+
+        parser.add_argument(
+            '--indicators2',
+            help='Set indicators from your strategy you want in the third row of the graph. '
+                 'Separate them with a coma. E.g: fastd,fastk (default: %(default)s)',
+            default='macd,macdsignal',
+            dest='indicators2',
+        )
+        parser.add_argument(
+            '--plot-limit',
+            help='Specify tick limit for plotting - too high values cause huge files - '
+                 'Default: %(default)s',
+            dest='plot_limit',
+            default=750,
+            type=int,
         )

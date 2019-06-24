@@ -6,7 +6,7 @@ This page explains how to prepare your environment for running the bot.
 
 Before running your bot in production you will need to setup few
 external API. In production mode, the bot will require valid Exchange API
-credentials. We also reccomend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot) (optional but recommended).
+credentials. We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot) (optional but recommended).
 
 - [Setup your exchange account](#setup-your-exchange-account)
 

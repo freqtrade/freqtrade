@@ -5,6 +5,8 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from functools import reduce
+from pathlib import Path
+from typing import List
 from unittest.mock import MagicMock, PropertyMock
 
 import arrow
@@ -12,6 +14,7 @@ import pytest
 from telegram import Chat, Message, Update
 
 from freqtrade import constants, persistence
+from freqtrade.arguments import Arguments
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
@@ -36,6 +39,10 @@ def log_has_re(line, logs):
                   False)
 
 
+def get_args(args) -> List[str]:
+    return Arguments(args, '').get_parsed_arg()
+
+
 def patch_exchange(mocker, api_mock=None, id='bittrex') -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
@@ -54,7 +61,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='bittrex') -> Exchang
     patch_exchange(mocker, api_mock, id)
     config["exchange"]["name"] = id
     try:
-        exchange = ExchangeResolver(id.title(), config).exchange
+        exchange = ExchangeResolver(id, config).exchange
     except ImportError:
         exchange = Exchange(config)
     return exchange
@@ -104,11 +111,23 @@ def patch_freqtradebot(mocker, config) -> None:
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: FreqtradeBot
+    """
     patch_freqtradebot(mocker, config)
     return FreqtradeBot(config)
 
 
 def get_patched_worker(mocker, config) -> Worker:
+    """
+    This function patches _init_modules() to not call dependencies
+    :param mocker: a Mocker object to apply patches
+    :param config: Config to pass to the bot
+    :return: Worker
+    """
     patch_freqtradebot(mocker, config)
     return Worker(args=None, config=config)
 
@@ -143,6 +162,11 @@ def patch_coinmarketcap(mocker) -> None:
         listings=listmock,
 
     )
+
+
+@pytest.fixture(scope='function')
+def init_persistence(default_conf):
+    persistence.init(default_conf['db_url'], default_conf['dry_run'])
 
 
 @pytest.fixture(scope="function")
@@ -854,9 +878,9 @@ def tickers():
 
 @pytest.fixture
 def result():
-    with open('freqtrade/tests/testdata/UNITTEST_BTC-1m.json') as data_file:
-        return parse_ticker_dataframe(json.load(data_file), '1m',
-                                      pair="UNITTEST/BTC", fill_missing=True)
+    with Path('freqtrade/tests/testdata/UNITTEST_BTC-1m.json').open('r') as data_file:
+        return parse_ticker_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
+                                      fill_missing=True)
 
 # FIX:
 # Create an fixture/function

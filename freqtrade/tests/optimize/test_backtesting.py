@@ -3,7 +3,6 @@
 import json
 import math
 import random
-from typing import List
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -12,7 +11,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade import DependencyException, constants
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import evaluate_result_multi
 from freqtrade.data.converter import parse_ticker_dataframe
@@ -23,11 +22,7 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.state import RunMode
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.conftest import log_has, log_has_re, patch_exchange
-
-
-def get_args(args) -> List[str]:
-    return Arguments(args, '').get_parsed_arg()
+from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 def trim_dictlist(dict_list, num):

@@ -11,9 +11,48 @@ from freqtrade.persistence import Trade, clean_dry_run_db, init
 from freqtrade.tests.conftest import log_has
 
 
-@pytest.fixture(scope='function')
-def init_persistence(default_conf):
-    init(default_conf['db_url'], default_conf['dry_run'])
+def create_mock_trades(fee):
+    """
+    Create some fake trades ...
+    """
+    # Simulate dry_run entries
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        exchange='bittrex',
+        open_order_id='dry_run_buy_12345'
+    )
+    Trade.session.add(trade)
+
+    trade = Trade(
+        pair='ETC/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        exchange='bittrex',
+        is_open=False,
+        open_order_id='dry_run_sell_12345'
+    )
+    Trade.session.add(trade)
+
+    # Simulate prod entry
+    trade = Trade(
+        pair='ETC/BTC',
+        stake_amount=0.001,
+        amount=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        exchange='bittrex',
+        open_order_id='prod_buy_12345'
+    )
+    Trade.session.add(trade)
 
 
 def test_init_create_session(default_conf):
@@ -671,45 +710,7 @@ def test_adjust_min_max_rates(fee):
 @pytest.mark.usefixtures("init_persistence")
 def test_get_open(default_conf, fee):
 
-    # Simulate dry_run entries
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        open_order_id='dry_run_buy_12345'
-    )
-    Trade.session.add(trade)
-
-    trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        is_open=False,
-        open_order_id='dry_run_sell_12345'
-    )
-    Trade.session.add(trade)
-
-    # Simulate prod entry
-    trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        open_order_id='prod_buy_12345'
-    )
-    Trade.session.add(trade)
-
+    create_mock_trades(fee)
     assert len(Trade.get_open_trades()) == 2
 
 

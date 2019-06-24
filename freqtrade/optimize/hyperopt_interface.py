@@ -20,6 +20,7 @@ class IHyperOpt(ABC):
         stoploss -> float: optimal stoploss designed for the strategy
         ticker_interval -> int: value of the ticker interval to use for the strategy
     """
+    ticker_interval: str
 
     @staticmethod
     @abstractmethod

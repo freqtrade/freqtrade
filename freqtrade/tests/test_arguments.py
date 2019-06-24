@@ -47,9 +47,9 @@ def test_parse_args_verbose() -> None:
     assert args.loglevel == 1
 
 
-def test_scripts_options() -> None:
+def test_common_scripts_options() -> None:
     arguments = Arguments(['-p', 'ETH/BTC'], '')
-    arguments.scripts_options()
+    arguments.common_scripts_options()
     args = arguments.get_parsed_arg()
     assert args.pairs == 'ETH/BTC'
 
@@ -170,20 +170,38 @@ def test_parse_args_hyperopt_custom() -> None:
     assert call_args.func is not None
 
 
-def test_testdata_dl_options() -> None:
+def test_download_data_options() -> None:
     args = [
         '--pairs-file', 'file_with_pairs',
-        '--export', 'export/folder',
+        '--datadir', 'datadir/folder',
         '--days', '30',
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
-    arguments.testdata_dl_options()
+    arguments.common_options()
+    arguments.download_data_options()
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'
-    assert args.export == 'export/folder'
+    assert args.datadir == 'datadir/folder'
     assert args.days == 30
     assert args.exchange == 'binance'
+
+
+def test_plot_dataframe_options() -> None:
+    args = [
+        '--indicators1', 'sma10,sma100',
+        '--indicators2', 'macd,fastd,fastk',
+        '--plot-limit', '30',
+        '-p', 'UNITTEST/BTC',
+    ]
+    arguments = Arguments(args, '')
+    arguments.common_scripts_options()
+    arguments.plot_dataframe_options()
+    pargs = arguments.parse_args(True)
+    assert pargs.indicators1 == "sma10,sma100"
+    assert pargs.indicators2 == "macd,fastd,fastk"
+    assert pargs.plot_limit == 30
+    assert pargs.pairs == "UNITTEST/BTC"
 
 
 def test_check_int_positive() -> None:
