@@ -158,7 +158,7 @@ class IStrategy(ABC):
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
-        :return DataFrame with ticker data and indicator data
+        :return: DataFrame with ticker data and indicator data
         """
 
         pair = str(metadata.get('pair'))
@@ -351,7 +351,7 @@ class IStrategy(ABC):
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
         sell. Requires current_profit to be in percent!!
-        :return True if bot should sell at current rate
+        :return: True if bot should sell at current rate
         """
 
         # Check if time matches and current rate is above threshold
