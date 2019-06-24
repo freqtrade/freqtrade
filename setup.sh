@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 #encoding=utf8
 
+function check_installed_pip() {
+   ${PYTHON} -m pip > /dev/null
+   if [ $? -ne 0 ]; then
+        echo "pip not found. Please make sure that pip is available for ${PYTHON}."
+        exit 1
+   fi
+}
+
 # Check which python version is installed
 function check_installed_python() {
     which python3.7
     if [ $? -eq 0 ]; then
         echo "using Python 3.7"
         PYTHON=python3.7
+        check_installed_pip
         return
     fi
 
@@ -14,6 +23,7 @@ function check_installed_python() {
     if [ $? -eq 0 ]; then
         echo "using Python 3.6"
         PYTHON=python3.6
+        check_installed_pip
         return
    fi
 
@@ -21,7 +31,6 @@ function check_installed_python() {
         echo "No usable python found. Please make sure to have python3.6 or python3.7 installed"
         exit 1
    fi
-
 }
 
 function updateenv() {
@@ -29,21 +38,21 @@ function updateenv() {
     echo "Updating your virtual env"
     echo "-------------------------"
     source .env/bin/activate
-    echo "pip3 install in-progress. Please wait..."
+    echo "pip install in-progress. Please wait..."
     # Install numpy first to have py_find_1st install clean
-    pip3 install --upgrade pip numpy
-    pip3 install --upgrade -r requirements.txt
+    ${PYTHON} -m pip install --upgrade pip numpy
+    ${PYTHON} -m pip install --upgrade -r requirements.txt
 
     read -p "Do you want to install dependencies for dev [y/N]? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-        pip3 install --upgrade -r requirements-dev.txt
+        ${PYTHON} -m pip install --upgrade -r requirements-dev.txt
     else
         echo "Dev dependencies ignored."
     fi
 
-    pip3 install --quiet -e .
-    echo "pip3 install completed"
+    ${PYTHON} -m pip install -e .
+    echo "pip install completed"
     echo
 }
 
@@ -74,16 +83,14 @@ function install_macos() {
         echo "-------------------------"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
-    brew install python3 wget
     install_talib
     test_and_fix_python_on_mac
 }
 
 # Install bot Debian_ubuntu
 function install_debian() {
-    sudo add-apt-repository ppa:jonathonf/python-3.6
     sudo apt-get update
-    sudo apt-get install python3.6 python3.6-venv python3.6-dev build-essential autoconf libtool pkg-config make wget git
+    sudo apt-get install build-essential autoconf libtool pkg-config make wget git
     install_talib
 }
 
@@ -244,7 +251,7 @@ echo "
 Installing dependencies for Plotting scripts
 -----------------------------------------
 "
-pip install plotly --upgrade
+${PYTHON} -m pip install plotly --upgrade
 }
 
 function help() {
