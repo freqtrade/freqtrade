@@ -31,7 +31,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import Arguments
 from freqtrade.data import history
 from freqtrade.data.btanalysis import load_trades, extract_trades_of_period
 from freqtrade.optimize import setup_configuration
@@ -41,38 +41,6 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
-
-
-def get_tickers_data(strategy, exchange, pairs: List[str], timerange: TimeRange,
-                     datadir: Path, refresh_pairs: bool, live: bool):
-    """
-    Get tickers data for each pairs on live or local, option defined in args
-    :return: dictionary of tickers. output format: {'pair': tickersdata}
-    """
-
-    ticker_interval = strategy.ticker_interval
-
-    tickers = history.load_data(
-        datadir=datadir,
-        pairs=pairs,
-        ticker_interval=ticker_interval,
-        refresh_pairs=refresh_pairs,
-        timerange=timerange,
-        exchange=exchange,
-        live=live,
-    )
-
-    # No ticker found, impossible to download, len mismatch
-    for pair, data in tickers.copy().items():
-        logger.debug("checking tickers data of pair: %s", pair)
-        logger.debug("data.empty: %s", data.empty)
-        logger.debug("len(data): %s", len(data))
-        if data.empty:
-            del tickers[pair]
-            logger.info(
-                'An issue occured while retreiving data of %s pair, please retry '
-                'using -l option for live or --refresh-pairs-cached', pair)
-    return tickers
 
 
 def generate_dataframe(strategy, tickers, pair) -> pd.DataFrame:
@@ -100,8 +68,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     -Generate plot files
     :return: None
     """
-    exchange_name = config.get('exchange', {}).get('name').title()
-    exchange = ExchangeResolver(exchange_name, config).exchange
+    exchange = ExchangeResolver(config.get('exchange', {}).get('name'), config).exchange
 
     strategy = StrategyResolver(config).strategy
     if "pairs" in config:
@@ -113,10 +80,16 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     timerange = Arguments.parse_timerange(config["timerange"])
     ticker_interval = strategy.ticker_interval
 
-    tickers = get_tickers_data(strategy, exchange, pairs, timerange,
-                               datadir=Path(str(config.get("datadir"))),
-                               refresh_pairs=config.get('refresh_pairs', False),
-                               live=config.get("live", False))
+    tickers = history.load_data(
+        datadir=Path(str(config.get("datadir"))),
+        pairs=pairs,
+        ticker_interval=config['ticker_interval'],
+        refresh_pairs=config.get('refresh_pairs', False),
+        timerange=timerange,
+        exchange=exchange,
+        live=config.get("live", False),
+    )
+
     pair_counter = 0
     for pair, data in tickers.items():
         pair_counter += 1
