@@ -263,7 +263,7 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
     hz = 0.1
     base = 0.001
 
-    ETHBTC = [
+    NEOBTC = [
         [
             ticker_start_time.shift(minutes=(x * ticker_interval_in_minute)).timestamp * 1000,
             math.sin(x * hz) / 1000 + base,
@@ -285,8 +285,8 @@ def mocked_load_data(datadir, pairs=[], ticker_interval='0m', refresh_pairs=Fals
             123.45
         ] for x in range(0, 500)]
 
-    pairdata = {'NEO/BTC': parse_ticker_dataframe(ETHBTC, '1h', fill_missing=True),
-                'LTC/BTC': parse_ticker_dataframe(LTCBTC, '1h', fill_missing=True)}
+    pairdata = {'NEO/BTC': parse_ticker_dataframe(NEOBTC, '1h', pair="NEO/BTC", fill_missing=True),
+                'LTC/BTC': parse_ticker_dataframe(LTCBTC, '1h', pair="LTC/BTC", fill_missing=True)}
     return pairdata
 
 

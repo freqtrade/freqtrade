@@ -581,7 +581,7 @@ class Exchange(object):
                 self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
-                ticks, ticker_interval, fill_missing=True,
+                ticks, ticker_interval, pair=pair, fill_missing=True,
                 drop_incomplete=self._ohlcv_partial_candle)
         return tickers
 

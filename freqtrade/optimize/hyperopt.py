@@ -19,8 +19,7 @@ from skopt import Optimizer
 from skopt.space import Dimension
 
 from freqtrade.arguments import Arguments
-from freqtrade.data.history import load_data, get_timeframe, validate_backtest_data
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.data.history import load_data, get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 
@@ -281,9 +280,7 @@ class Hyperopt(Backtesting):
             return
 
         min_date, max_date = get_timeframe(data)
-        # Validate dataframe for missing values (mainly at start and end, as fillup is called)
-        validate_backtest_data(data, min_date, max_date,
-                               timeframe_to_minutes(self.ticker_interval))
+
         logger.info(
             'Hyperopting with data from %s up to %s (%s days)..',
             min_date.isoformat(),
