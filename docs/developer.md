@@ -140,7 +140,7 @@ git checkout develop
 git checkout -b new_release
 ```
 
-* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for June 2019). Minor versions can be `2019.7-1` should we need to do a second release that month.
+* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7-1` should we need to do a second release that month.
 * Commit this part
 * push that branch to the remote and create a PR against the master branch
 
