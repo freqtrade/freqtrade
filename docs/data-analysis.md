@@ -22,7 +22,7 @@ df.groupby("pair")["sell_reason"].value_counts()
 
 ```
 
-This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output very difficult to digest due to information overload.
+This will allow you to drill deeper into your backtest results, and perform analysis which otherwise would make the regular backtest-output very difficult to digest due to information overload.
 
 If you have some ideas for interesting / helpful backtest data analysis ideas, please submit a Pull Request so the community can benefit from it.
 
