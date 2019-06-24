@@ -76,7 +76,7 @@ class Arguments(object):
         )
         parser.add_argument(
             '--logfile',
-            help='Log to the file specified',
+            help='Log to the file specified.',
             dest='logfile',
             metavar='FILE',
         )
@@ -87,7 +87,7 @@ class Arguments(object):
         )
         parser.add_argument(
             '-c', '--config',
-            help=f'Specify configuration file (default: {constants.DEFAULT_CONFIG}). '
+            help=f'Specify configuration file (default: `{constants.DEFAULT_CONFIG}`). '
                  f'Multiple --config options may be used. '
                  f'Can be set to `-` to read config from stdin.',
             dest='config',
@@ -109,7 +109,7 @@ class Arguments(object):
 
         parser.add_argument(
             '-s', '--strategy',
-            help='Specify strategy class name (default: %(default)s).',
+            help='Specify strategy class name (default: `%(default)s`).',
             dest='strategy',
             default='DefaultStrategy',
             metavar='NAME',
@@ -133,8 +133,9 @@ class Arguments(object):
         )
         parser.add_argument(
             '--db-url',
-            help=f'Override trades database URL, this is useful if dry_run is enabled '
-                 f'or in custom deployments (default: {constants.DEFAULT_DB_DRYRUN_URL}.',
+            help=f'Override trades database URL, this is useful in custom deployments '
+                 f'(default: `{constants.DEFAULT_DB_PROD_URL}` for Live Run mode, '
+                 f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
             dest='db_url',
             metavar='PATH',
         )
@@ -154,7 +155,7 @@ class Arguments(object):
 
         parser.add_argument(
             '-i', '--ticker-interval',
-            help='Specify ticker interval (1m, 5m, 30m, 1h, 1d).',
+            help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
             dest='ticker_interval',
         )
         parser.add_argument(
@@ -212,26 +213,25 @@ class Arguments(object):
         )
         parser.add_argument(
             '--strategy-list',
-            help='Provide a commaseparated list of strategies to backtest '
+            help='Provide a comma-separated list of strategies to backtest. '
                  'Please note that ticker-interval needs to be set either in config '
-                 'or via command line. When using this together with --export trades, '
+                 'or via command line. When using this together with `--export trades`, '
                  'the strategy-name is injected into the filename '
-                 '(so backtest-data.json becomes backtest-data-DefaultStrategy.json',
+                 '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
             nargs='+',
             dest='strategy_list',
         )
         parser.add_argument(
             '--export',
             help='Export backtest results, argument are: trades. '
-                 'Example --export=trades',
+                 'Example: `--export=trades`',
             dest='export',
         )
         parser.add_argument(
             '--export-filename',
-            help='Save backtest results to this filename '
-                 'requires --export to be set as well. '
-                 'Example --export-filename=user_data/backtest_data/backtest_today.json '
-                 '(default: %(default)s)',
+            help='Save backtest results to the file with this filename (default: `%(default)s`). '
+                 'Requires `--export` to be set as well. '
+                 'Example: `--export-filename=user_data/backtest_data/backtest_today.json`',
             default=os.path.join('user_data', 'backtest_data', 'backtest-result.json'),
             dest='exportfilename',
             metavar='PATH',
@@ -245,9 +245,9 @@ class Arguments(object):
 
         parser.add_argument(
             '--stoplosses',
-            help='Defines a range of stoploss against which edge will assess the strategy '
-                 'the format is "min,max,step" (without any space). '
-                 'Example: --stoplosses=-0.01,-0.1,-0.001',
+            help='Defines a range of stoploss values against which edge will assess the strategy. '
+                 'The format is "min,max,step" (without any space). '
+                 'Example: `--stoplosses=-0.01,-0.1,-0.001`',
             dest='stoploss_range',
         )
 
@@ -259,7 +259,7 @@ class Arguments(object):
 
         parser.add_argument(
             '--customhyperopt',
-            help='Specify hyperopt class name (default: %(default)s).',
+            help='Specify hyperopt class name (default: `%(default)s`).',
             dest='hyperopt',
             default=constants.DEFAULT_HYPEROPT,
             metavar='NAME',
@@ -289,8 +289,8 @@ class Arguments(object):
         )
         parser.add_argument(
             '-s', '--spaces',
-            help='Specify which parameters to hyperopt. Space separate list. '
-                 'Default: %(default)s.',
+            help='Specify which parameters to hyperopt. Space-separated list. '
+                 'Default: `%(default)s`.',
             choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
             default='all',
             nargs='+',
@@ -339,7 +339,7 @@ class Arguments(object):
 
         parser.add_argument(
             '-1', '--one-column',
-            help='Print exchanges in one column',
+            help='Print exchanges in one column.',
             action='store_true',
             dest='print_one_column',
         )
@@ -442,7 +442,7 @@ class Arguments(object):
 
         parser.add_argument(
             '-p', '--pairs',
-            help='Show profits for only this pairs. Pairs are comma-separated.',
+            help='Show profits for only these pairs. Pairs are comma-separated.',
             dest='pairs',
         )
 
@@ -467,14 +467,14 @@ class Arguments(object):
         )
         parser.add_argument(
             '--exchange',
-            help=f'Exchange name (default: {constants.DEFAULT_EXCHANGE}). '
+            help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
                  f'Only valid if no config is provided.',
             dest='exchange',
         )
         parser.add_argument(
             '-t', '--timeframes',
-            help=f'Specify which tickers to download. Space separated list. '
-                 f'Default: {constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}.',
+            help=f'Specify which tickers to download. Space-separated list. '
+                 f'Default: `{constants.DEFAULT_DOWNLOAD_TICKER_INTERVALS}`.',
             choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                      '6h', '8h', '12h', '1d', '3d', '1w'],
             nargs='+',
@@ -496,7 +496,7 @@ class Arguments(object):
         parser.add_argument(
             '--indicators1',
             help='Set indicators from your strategy you want in the first row of the graph. '
-                 'Separate them with a coma. E.g: ema3,ema5 (default: %(default)s)',
+                 'Comma-separated list. Example: `ema3,ema5`. Default: `%(default)s`.',
             default='sma,ema3,ema5',
             dest='indicators1',
         )
@@ -504,14 +504,14 @@ class Arguments(object):
         parser.add_argument(
             '--indicators2',
             help='Set indicators from your strategy you want in the third row of the graph. '
-                 'Separate them with a coma. E.g: fastd,fastk (default: %(default)s)',
+                 'Comma-separated list. Example: `fastd,fastk`. Default: `%(default)s`.',
             default='macd,macdsignal',
             dest='indicators2',
         )
         parser.add_argument(
             '--plot-limit',
-            help='Specify tick limit for plotting - too high values cause huge files - '
-                 'Default: %(default)s',
+            help='Specify tick limit for plotting. Notice: too high values cause huge files. '
+                 'Default: %(default)s.',
             dest='plot_limit',
             default=750,
             type=int,
