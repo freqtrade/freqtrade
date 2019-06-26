@@ -1,10 +1,45 @@
 # Telegram usage
 
-## Prerequisite
+## Setup your Telegram bot
 
-To control your bot with Telegram, you need first to
-[set up a Telegram bot](installation.md)
-and add your Telegram API keys into your config file.
+Below we explain how to create your Telegram Bot, and how to get your
+Telegram user id.
+
+### 1. Create your Telegram bot
+
+Start a chat with the [Telegram BotFather](https://telegram.me/BotFather)
+
+Send the message `/newbot`. 
+
+*BotFather response:*
+
+> Alright, a new bot. How are we going to call it? Please choose a name for your bot.
+
+Choose the public name of your bot (e.x. `Freqtrade bot`)
+
+*BotFather response:*
+
+> Good. Now let's choose a username for your bot. It must end in `bot`. Like this, for example: TetrisBot or tetris_bot.
+
+Choose the name id of your bot and send it to the BotFather (e.g. "`My_own_freqtrade_bot`")
+
+*BotFather response:*
+
+> Done! Congratulations on your new bot. You will find it at `t.me/yourbots_name_bot`. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+
+> Use this token to access the HTTP API: `22222222:APITOKEN`
+
+> For a description of the Bot API, see this page: https://core.telegram.org/bots/api Father bot will return you the token (API key)
+
+Copy the API Token (`22222222:APITOKEN` in the above example) and keep use it for the config parameter `token`.
+
+Don't forget to start the conversation with your bot, by clicking `/START` button
+
+### 2. Get your user id
+
+Talk to the [userinfobot](https://telegram.me/userinfobot)
+
+Get your "Id", you will use it for the config parameter `chat_id`.
 
 ## Telegram commands
 
@@ -116,7 +151,7 @@ Return a summary of your profit/loss and performance.
 
 ### /forcebuy <pair>
 
-> **BITTREX**: Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+> **BITTREX:** Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
 
 Note that for this to work, `forcebuy_enable` needs to be set to true.
 

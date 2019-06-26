@@ -22,8 +22,7 @@ from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
 from freqtrade.tests.conftest import (get_patched_freqtradebot, log_has,
-                                      patch_exchange)
-from freqtrade.tests.test_freqtradebot import patch_get_signal
+                                      patch_exchange, patch_get_signal)
 
 
 class DummyCls(Telegram):
@@ -192,7 +191,10 @@ def test_status(default_conf, update, mocker, fee, ticker, markets) -> None:
             'trade_id': 1,
             'pair': 'ETH/BTC',
             'base_currency': 'BTC',
-            'date': arrow.utcnow(),
+            'open_date': arrow.utcnow(),
+            'open_date_hum': arrow.utcnow().humanize,
+            'close_date': None,
+            'close_date_hum': None,
             'open_rate': 1.099e-05,
             'close_rate': None,
             'current_rate': 1.098e-05,
@@ -493,34 +495,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
-def test_telegram_balance_handle(default_conf, update, mocker) -> None:
-    mock_balance = {
-        'BTC': {
-            'total': 12.0,
-            'free': 12.0,
-            'used': 0.0
-        },
-        'ETH': {
-            'total': 0.0,
-            'free': 0.0,
-            'used': 0.0
-        },
-        'USDT': {
-            'total': 10000.0,
-            'free': 10000.0,
-            'used': 0.0
-        },
-        'LTC': {
-            'total': 10.0,
-            'free': 10.0,
-            'used': 0.0
-        },
-        'XRP': {
-            'total': 1.0,
-            'free': 1.0,
-            'used': 0.0
-            }
-    }
+def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance) -> None:
 
     def mock_ticker(symbol, refresh):
         if symbol == 'BTC/USDT':
@@ -541,7 +516,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
             'last': 0.1,
         }
 
-    mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=mock_balance)
+    mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_ticker', side_effect=mock_ticker)
 
     msg_mock = MagicMock()
@@ -562,6 +537,7 @@ def test_telegram_balance_handle(default_conf, update, mocker) -> None:
     assert '*BTC:*' in result
     assert '*ETH:*' not in result
     assert '*USDT:*' in result
+    assert '*EUR:*' in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC:  12.00000000' in result
@@ -780,6 +756,7 @@ def test_forcesell_handle(default_conf, update, ticker, fee,
         'gain': 'profit',
         'limit': 1.172e-05,
         'amount': 90.99181073703367,
+        'order_type': 'limit',
         'open_rate': 1.099e-05,
         'current_rate': 1.172e-05,
         'profit_amount': 6.126e-05,
@@ -834,6 +811,7 @@ def test_forcesell_down_handle(default_conf, update, ticker, fee,
         'gain': 'loss',
         'limit': 1.044e-05,
         'amount': 90.99181073703367,
+        'order_type': 'limit',
         'open_rate': 1.099e-05,
         'current_rate': 1.044e-05,
         'profit_amount': -5.492e-05,
@@ -879,6 +857,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, markets, mocker
         'gain': 'loss',
         'limit': 1.098e-05,
         'amount': 90.99181073703367,
+        'order_type': 'limit',
         'open_rate': 1.099e-05,
         'current_rate': 1.098e-05,
         'profit_amount': -5.91e-06,
@@ -1212,6 +1191,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
+        'order_type': 'limit',
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -1219,7 +1199,7 @@ def test_send_msg_buy_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == '*Bittrex:* Buying ETH/BTC\n' \
-           'with limit `0.00001099\n' \
+           'at rate `0.00001099\n' \
            '(0.001000 BTC,0.000 USD)`'
 
 
@@ -1241,6 +1221,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'gain': 'loss',
         'limit': 3.201e-05,
         'amount': 1333.3333333333335,
+        'order_type': 'market',
         'open_rate': 7.5e-05,
         'current_rate': 3.201e-05,
         'profit_amount': -0.05746268,
@@ -1251,7 +1232,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('*Binance:* Selling KEY/ETH\n'
-            '*Limit:* `0.00003201`\n'
+            '*Rate:* `0.00003201`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -1266,6 +1247,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'gain': 'loss',
         'limit': 3.201e-05,
         'amount': 1333.3333333333335,
+        'order_type': 'market',
         'open_rate': 7.5e-05,
         'current_rate': 3.201e-05,
         'profit_amount': -0.05746268,
@@ -1275,7 +1257,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('*Binance:* Selling KEY/ETH\n'
-            '*Limit:* `0.00003201`\n'
+            '*Rate:* `0.00003201`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -1363,6 +1345,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
+        'order_type': 'limit',
         'stake_amount': 0.001,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -1370,7 +1353,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == '*Bittrex:* Buying ETH/BTC\n' \
-           'with limit `0.00001099\n' \
+           'at rate `0.00001099\n' \
            '(0.001000 BTC)`'
 
 
@@ -1391,6 +1374,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'gain': 'loss',
         'limit': 3.201e-05,
         'amount': 1333.3333333333335,
+        'order_type': 'limit',
         'open_rate': 7.5e-05,
         'current_rate': 3.201e-05,
         'profit_amount': -0.05746268,
@@ -1401,7 +1385,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == '*Binance:* Selling KEY/ETH\n' \
-           '*Limit:* `0.00003201`\n' \
+           '*Rate:* `0.00003201`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00007500`\n' \
            '*Current Rate:* `0.00003201`\n' \

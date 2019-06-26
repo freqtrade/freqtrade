@@ -4,7 +4,6 @@
 This module contains the backtesting logic
 """
 import logging
-from argparse import Namespace
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -13,17 +12,15 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade import optimize
-from freqtrade import DependencyException, constants
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration
 from freqtrade.data import history
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.misc import file_dump_json, timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.misc import file_dump_json
 from freqtrade.persistence import Trade
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
-from freqtrade.strategy.interface import SellType, IStrategy
+from freqtrade.strategy.interface import IStrategy, SellType
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +63,7 @@ class Backtesting(object):
         self.config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
 
-        exchange_name = self.config.get('exchange', {}).get('name', 'bittrex').title()
-        self.exchange = ExchangeResolver(exchange_name, self.config).exchange
+        self.exchange = ExchangeResolver(self.config['exchange']['name'], self.config).exchange
         self.fee = self.exchange.get_fee()
 
         if self.config.get('runmode') != RunMode.HYPEROPT:
@@ -75,18 +71,16 @@ class Backtesting(object):
             IStrategy.dp = self.dataprovider
 
         if self.config.get('strategy_list', None):
-            # Force one interval
-            self.ticker_interval = str(self.config.get('ticker_interval'))
-            self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
                 self.strategylist.append(StrategyResolver(stratconf).strategy)
 
         else:
-            # only one strategy
+            # No strategy list specified, only one strategy
             self.strategylist.append(StrategyResolver(self.config).strategy)
-        # Load one strategy
+
+        # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
 
     def _set_strategy(self, strategy):
@@ -97,7 +91,6 @@ class Backtesting(object):
 
         self.ticker_interval = self.config.get('ticker_interval')
         self.ticker_interval_mins = timeframe_to_minutes(self.ticker_interval)
-        self.tickerdata_to_dataframe = strategy.tickerdata_to_dataframe
         self.advise_buy = strategy.advise_buy
         self.advise_sell = strategy.advise_sell
         # Set stoploss_on_exchange to false for backtesting,
@@ -238,10 +231,9 @@ class Backtesting(object):
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[BacktestResult]:
+            partial_ticker: List, trade_count_lock: Dict,
+            stake_amount: float, max_open_trades: int) -> Optional[BacktestResult]:
 
-        stake_amount = args['stake_amount']
-        max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
             open_rate=buy_row.open,
             open_date=buy_row.date,
@@ -257,8 +249,7 @@ class Backtesting(object):
                 # Increase trade_count_lock for every iteration
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
-            buy_signal = sell_row.buy
-            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, buy_signal,
+            sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
                                              sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
 
@@ -331,6 +322,7 @@ class Backtesting(object):
         :return: DataFrame
         """
         processed = args['processed']
+        stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         position_stacking = args.get('position_stacking', False)
         start_date = args['start_date']
@@ -357,7 +349,7 @@ class Backtesting(object):
                     row = ticker[pair][indexes[pair]]
                 except IndexError:
                     # missing Data for one pair at the end.
-                    # Warnings for this are shown by `validate_backtest_data`
+                    # Warnings for this are shown during data loading
                     continue
 
                 # Waits until the time-counter reaches the start of the data for this pair.
@@ -381,7 +373,8 @@ class Backtesting(object):
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
                 trade_entry = self._get_sell_trade_entry(pair, row, ticker[pair][indexes[pair]:],
-                                                         trade_count_lock, args)
+                                                         trade_count_lock, stake_amount,
+                                                         max_open_trades)
 
                 if trade_entry:
                     lock_pair_until[pair] = trade_entry.close_time
@@ -404,24 +397,17 @@ class Backtesting(object):
         logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
         logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
 
-        if self.config.get('live'):
-            logger.info('Downloading data for all pairs in whitelist ...')
-            self.exchange.refresh_latest_ohlcv([(pair, self.ticker_interval) for pair in pairs])
-            data = {key[0]: value for key, value in self.exchange._klines.items()}
-
-        else:
-            logger.info('Using local backtesting data (using whitelist in given config) ...')
-
-            timerange = Arguments.parse_timerange(None if self.config.get(
-                'timerange') is None else str(self.config.get('timerange')))
-            data = history.load_data(
-                datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
-                pairs=pairs,
-                ticker_interval=self.ticker_interval,
-                refresh_pairs=self.config.get('refresh_pairs', False),
-                exchange=self.exchange,
-                timerange=timerange
-            )
+        timerange = Arguments.parse_timerange(None if self.config.get(
+            'timerange') is None else str(self.config.get('timerange')))
+        data = history.load_data(
+            datadir=Path(self.config['datadir']) if self.config.get('datadir') else None,
+            pairs=pairs,
+            ticker_interval=self.ticker_interval,
+            refresh_pairs=self.config.get('refresh_pairs', False),
+            exchange=self.exchange,
+            timerange=timerange,
+            live=self.config.get('live', False)
+        )
 
         if not data:
             logger.critical("No data found. Terminating.")
@@ -434,20 +420,19 @@ class Backtesting(object):
             max_open_trades = 0
         all_results = {}
 
+        min_date, max_date = history.get_timeframe(data)
+
+        logger.info(
+            'Backtesting with data from %s up to %s (%s days)..',
+            min_date.isoformat(),
+            max_date.isoformat(),
+            (max_date - min_date).days
+        )
+
         for strat in self.strategylist:
             logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
             self._set_strategy(strat)
 
-            min_date, max_date = optimize.get_timeframe(data)
-            # Validate dataframe for missing values (mainly at start and end, as fillup is called)
-            optimize.validate_backtest_data(data, min_date, max_date,
-                                            timeframe_to_minutes(self.ticker_interval))
-            logger.info(
-                'Measuring data from %s up to %s (%s days)..',
-                min_date.isoformat(),
-                max_date.isoformat(),
-                (max_date - min_date).days
-            )
             # need to reprocess data every time to populate signals
             preprocessed = self.strategy.tickerdata_to_dataframe(data)
 
@@ -484,38 +469,3 @@ class Backtesting(object):
             print(' Strategy Summary '.center(133, '='))
             print(self._generate_text_table_strategy(all_results))
             print('\nFor more details, please look at the detail tables above')
-
-
-def setup_configuration(args: Namespace) -> Dict[str, Any]:
-    """
-    Prepare the configuration for the backtesting
-    :param args: Cli args from Arguments()
-    :return: Configuration
-    """
-    configuration = Configuration(args, RunMode.BACKTEST)
-    config = configuration.get_config()
-
-    # Ensure we do not use Exchange credentials
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
-
-    if config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT:
-        raise DependencyException('stake amount could not be "%s" for backtesting' %
-                                  constants.UNLIMITED_STAKE_AMOUNT)
-
-    return config
-
-
-def start(args: Namespace) -> None:
-    """
-    Start Backtesting script
-    :param args: Cli args from Arguments()
-    :return: None
-    """
-    # Initialize configuration
-    config = setup_configuration(args)
-    logger.info('Starting freqtrade in Backtesting mode')
-
-    # Initialize backtesting object
-    backtesting = Backtesting(config)
-    backtesting.start()

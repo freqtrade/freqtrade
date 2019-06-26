@@ -7,13 +7,14 @@ import os
 import sys
 from argparse import Namespace
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
-import ccxt
-from jsonschema import Draft4Validator, validate
+from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import OperationalException, constants
+from freqtrade.exchange import (is_exchange_bad, is_exchange_available,
+                                is_exchange_officially_supported, available_exchanges)
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import RunMode
 
@@ -31,6 +32,31 @@ def set_loggers(log_level: int = 0) -> None:
     logging.getLogger('ccxt.base.exchange').setLevel(
         logging.INFO if log_level <= 2 else logging.DEBUG)
     logging.getLogger('telegram').setLevel(logging.INFO)
+
+
+def _extend_validator(validator_class):
+    """
+    Extended validator for the Freqtrade configuration JSON Schema.
+    Currently it only handles defaults for subschemas.
+    """
+    validate_properties = validator_class.VALIDATORS['properties']
+
+    def set_defaults(validator, properties, instance, schema):
+        for prop, subschema in properties.items():
+            if 'default' in subschema:
+                instance.setdefault(prop, subschema['default'])
+
+        for error in validate_properties(
+            validator, properties, instance, schema,
+        ):
+            yield error
+
+    return validators.extend(
+        validator_class, {'properties': set_defaults}
+    )
+
+
+FreqtradeValidator = _extend_validator(Draft4Validator)
 
 
 class Configuration(object):
@@ -53,6 +79,7 @@ class Configuration(object):
         # Now expecting a list of config filenames here, not a string
         for path in self.args.config:
             logger.info('Using config: %s ...', path)
+
             # Merge config options, overwriting old values
             config = deep_merge_dicts(self._load_config_file(path), config)
 
@@ -73,14 +100,11 @@ class Configuration(object):
         # Load Common configuration
         config = self._load_common_config(config)
 
-        # Load Backtesting
-        config = self._load_backtesting_config(config)
+        # Load Optimize configurations
+        config = self._load_optimize_config(config)
 
-        # Load Edge
-        config = self._load_edge_config(config)
-
-        # Load Hyperopt
-        config = self._load_hyperopt_config(config)
+        # Add plotting options if available
+        config = self._load_plot_config(config)
 
         # Set runmode
         if not self.runmode:
@@ -98,7 +122,8 @@ class Configuration(object):
         :return: configuration as dictionary
         """
         try:
-            with open(path) as file:
+            # Read config from stdin if requested in the options
+            with open(path) if path != '-' else sys.stdin as file:
                 conf = json.load(file)
         except FileNotFoundError:
             raise OperationalException(
@@ -107,12 +132,11 @@ class Configuration(object):
 
         return conf
 
-    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_logging_config(self, config: Dict[str, Any]) -> None:
         """
-        Extract information for sys.argv and load common configuration
-        :return: configuration as dictionary
+        Extract information for sys.argv and load logging configuration:
+        the --loglevel, --logfile options
         """
-
         # Log level
         if 'loglevel' in self.args and self.args.loglevel:
             config.update({'verbosity': self.args.loglevel})
@@ -137,6 +161,13 @@ class Configuration(object):
         )
         set_loggers(config['verbosity'])
         logger.info('Verbosity set to %s', config['verbosity'])
+
+    def _load_common_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load common configuration
+        :return: configuration as dictionary
+        """
+        self._load_logging_config(config)
 
         # Support for sd_notify
         if self.args.sd_notify:
@@ -194,30 +225,53 @@ class Configuration(object):
             logger.info(f'Created data directory: {datadir}')
         return datadir
 
-    def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:  # noqa: C901
+    def _args_to_config(self, config: Dict[str, Any], argname: str,
+                        logstring: str, logfun: Optional[Callable] = None) -> None:
         """
-        Extract information for sys.argv and load Backtesting configuration
+        :param config: Configuration dictionary
+        :param argname: Argumentname in self.args - will be copied to config dict.
+        :param logstring: Logging String
+        :param logfun: logfun is applied to the configuration entry before passing
+                        that entry to the log string using .format().
+                        sample: logfun=len (prints the length of the found
+                        configuration instead of the content)
+        """
+        if argname in self.args and getattr(self.args, argname):
+
+            config.update({argname: getattr(self.args, argname)})
+            if logfun:
+                logger.info(logstring.format(logfun(config[argname])))
+            else:
+                logger.info(logstring.format(config[argname]))
+
+    def _load_datadir_config(self, config: Dict[str, Any]) -> None:
+        """
+        Extract information for sys.argv and load datadir configuration:
+        the --datadir option
+        """
+        if 'datadir' in self.args and self.args.datadir:
+            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
+        else:
+            config.update({'datadir': self._create_datadir(config, None)})
+        logger.info('Using data folder: %s ...', config.get('datadir'))
+
+    def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract information for sys.argv and load Optimize configuration
         :return: configuration as dictionary
         """
 
-        # If -i/--ticker-interval is used we override the configuration parameter
-        # (that will override the strategy configuration)
-        if 'ticker_interval' in self.args and self.args.ticker_interval:
-            config.update({'ticker_interval': self.args.ticker_interval})
-            logger.info('Parameter -i/--ticker-interval detected ...')
-            logger.info('Using ticker_interval: %s ...', config.get('ticker_interval'))
+        # This will override the strategy configuration
+        self._args_to_config(config, argname='ticker_interval',
+                             logstring='Parameter -i/--ticker-interval detected ... '
+                             'Using ticker_interval: {} ...')
 
-        # If -l/--live is used we add it to the configuration
-        if 'live' in self.args and self.args.live:
-            config.update({'live': True})
-            logger.info('Parameter -l/--live detected ...')
+        self._args_to_config(config, argname='live',
+                             logstring='Parameter -l/--live detected ...')
 
-        # If --enable-position-stacking is used we add it to the configuration
-        if 'position_stacking' in self.args and self.args.position_stacking:
-            config.update({'position_stacking': True})
-            logger.info('Parameter --enable-position-stacking detected ...')
+        self._args_to_config(config, argname='position_stacking',
+                             logstring='Parameter --enable-position-stacking detected ...')
 
-        # If --disable-max-market-positions or --max_open_trades is used we update configuration
         if 'use_max_market_positions' in self.args and not self.args.use_max_market_positions:
             config.update({'use_max_market_positions': False})
             logger.info('Parameter --disable-max-market-positions detected ...')
@@ -229,61 +283,31 @@ class Configuration(object):
         else:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
-        # If --stake_amount is used we update configuration
-        if 'stake_amount' in self.args and self.args.stake_amount:
-            config.update({'stake_amount': self.args.stake_amount})
-            logger.info('Parameter --stake_amount detected, overriding stake_amount to: %s ...',
-                        config.get('stake_amount'))
+        self._args_to_config(config, argname='stake_amount',
+                             logstring='Parameter --stake_amount detected, '
+                             'overriding stake_amount to: {} ...')
 
-        # If --timerange is used we add it to the configuration
-        if 'timerange' in self.args and self.args.timerange:
-            config.update({'timerange': self.args.timerange})
-            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
+        self._args_to_config(config, argname='timerange',
+                             logstring='Parameter --timerange detected: {} ...')
 
-        # If --datadir is used we add it to the configuration
-        if 'datadir' in self.args and self.args.datadir:
-            config.update({'datadir': self._create_datadir(config, self.args.datadir)})
-        else:
-            config.update({'datadir': self._create_datadir(config, None)})
-        logger.info('Using data folder: %s ...', config.get('datadir'))
+        self._load_datadir_config(config)
 
-        # If -r/--refresh-pairs-cached is used we add it to the configuration
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        self._args_to_config(config, argname='refresh_pairs',
+                             logstring='Parameter -r/--refresh-pairs-cached detected ...')
 
-        if 'strategy_list' in self.args and self.args.strategy_list:
-            config.update({'strategy_list': self.args.strategy_list})
-            logger.info('Using strategy list of %s Strategies', len(self.args.strategy_list))
+        self._args_to_config(config, argname='strategy_list',
+                             logstring='Using strategy list of {} Strategies', logfun=len)
 
-        if 'ticker_interval' in self.args and self.args.ticker_interval:
-            config.update({'ticker_interval': self.args.ticker_interval})
-            logger.info('Overriding ticker interval with Command line argument')
+        self._args_to_config(config, argname='ticker_interval',
+                             logstring='Overriding ticker interval with Command line argument')
 
-        # If --export is used we add it to the configuration
-        if 'export' in self.args and self.args.export:
-            config.update({'export': self.args.export})
-            logger.info('Parameter --export detected: %s ...', self.args.export)
+        self._args_to_config(config, argname='export',
+                             logstring='Parameter --export detected: {} ...')
 
-        # If --export-filename is used we add it to the configuration
-        if 'export' in config and 'exportfilename' in self.args and self.args.exportfilename:
-            config.update({'exportfilename': self.args.exportfilename})
-            logger.info('Storing backtest results to %s ...', self.args.exportfilename)
+        self._args_to_config(config, argname='exportfilename',
+                             logstring='Storing backtest results to {} ...')
 
-        return config
-
-    def _load_edge_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract information for sys.argv and load Edge configuration
-        :return: configuration as dictionary
-        """
-
-        # If --timerange is used we add it to the configuration
-        if 'timerange' in self.args and self.args.timerange:
-            config.update({'timerange': self.args.timerange})
-            logger.info('Parameter --timerange detected: %s ...', self.args.timerange)
-
-        # If --timerange is used we add it to the configuration
+        # Edge section:
         if 'stoploss_range' in self.args and self.args.stoploss_range:
             txt_range = eval(self.args.stoploss_range)
             config['edge'].update({'stoploss_range_min': txt_range[0]})
@@ -291,34 +315,51 @@ class Configuration(object):
             config['edge'].update({'stoploss_range_step': txt_range[2]})
             logger.info('Parameter --stoplosses detected: %s ...', self.args.stoploss_range)
 
-        # If -r/--refresh-pairs-cached is used we add it to the configuration
-        if 'refresh_pairs' in self.args and self.args.refresh_pairs:
-            config.update({'refresh_pairs': True})
-            logger.info('Parameter -r/--refresh-pairs-cached detected ...')
+        # Hyperopt section
+        self._args_to_config(config, argname='hyperopt',
+                             logstring='Using Hyperopt file {}')
+
+        self._args_to_config(config, argname='epochs',
+                             logstring='Parameter --epochs detected ... '
+                             'Will run Hyperopt with for {} epochs ...'
+                             )
+
+        self._args_to_config(config, argname='spaces',
+                             logstring='Parameter -s/--spaces detected: {}')
+
+        self._args_to_config(config, argname='print_all',
+                             logstring='Parameter --print-all detected ...')
+
+        self._args_to_config(config, argname='hyperopt_jobs',
+                             logstring='Parameter -j/--job-workers detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_random_state',
+                             logstring='Parameter --random-state detected: {}')
+
+        self._args_to_config(config, argname='hyperopt_min_trades',
+                             logstring='Parameter --min-trades detected: {}')
 
         return config
 
-    def _load_hyperopt_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _load_plot_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract information for sys.argv and load Hyperopt configuration
+        Extract information for sys.argv Plotting configuration
         :return: configuration as dictionary
         """
 
-        if "hyperopt" in self.args:
-            # Add the hyperopt file to use
-            config.update({'hyperopt': self.args.hyperopt})
+        self._args_to_config(config, argname='pairs',
+                             logstring='Using pairs {}')
 
-        # If --epochs is used we add it to the configuration
-        if 'epochs' in self.args and self.args.epochs:
-            config.update({'epochs': self.args.epochs})
-            logger.info('Parameter --epochs detected ...')
-            logger.info('Will run Hyperopt with for %s epochs ...', config.get('epochs'))
+        self._args_to_config(config, argname='indicators1',
+                             logstring='Using indicators1: {}')
 
-        # If --spaces is used we add it to the configuration
-        if 'spaces' in self.args and self.args.spaces:
-            config.update({'spaces': self.args.spaces})
-            logger.info('Parameter -s/--spaces detected: %s', config.get('spaces'))
+        self._args_to_config(config, argname='indicators2',
+                             logstring='Using indicators2: {}')
 
+        self._args_to_config(config, argname='plot_limit',
+                             logstring='Limiting plot to: {}')
+        self._args_to_config(config, argname='trade_source',
+                             logstring='Using trades from: {}')
         return config
 
     def _validate_config_schema(self, conf: Dict[str, Any]) -> Dict[str, Any]:
@@ -328,7 +369,7 @@ class Configuration(object):
         :return: Returns the config if valid, otherwise throw an exception
         """
         try:
-            validate(conf, constants.CONF_SCHEMA, Draft4Validator)
+            FreqtradeValidator(constants.CONF_SCHEMA).validate(conf)
             return conf
         except ValidationError as exception:
             logger.critical(
@@ -378,21 +419,40 @@ class Configuration(object):
 
         return self.config
 
-    def check_exchange(self, config: Dict[str, Any]) -> bool:
+    def check_exchange(self, config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         """
         Check if the exchange name in the config file is supported by Freqtrade
-        :return: True or raised an exception if the exchange if not supported
+        :param check_for_bad: if True, check the exchange against the list of known 'bad'
+                              exchanges
+        :return: False if exchange is 'bad', i.e. is known to work with the bot with
+                 critical issues or does not work at all, crashes, etc. True otherwise.
+                 raises an exception if the exchange if not supported by ccxt
+                 and thus is not known for the Freqtrade at all.
         """
+        logger.info("Checking exchange...")
+
         exchange = config.get('exchange', {}).get('name').lower()
-        if exchange not in ccxt.exchanges:
-
-            exception_msg = f'Exchange "{exchange}" not supported.\n' \
-                            f'The following exchanges are supported: {", ".join(ccxt.exchanges)}'
-
-            logger.critical(exception_msg)
+        if not is_exchange_available(exchange):
             raise OperationalException(
-                exception_msg
+                    f'Exchange "{exchange}" is not supported by ccxt '
+                    f'and therefore not available for the bot.\n'
+                    f'The following exchanges are supported by ccxt: '
+                    f'{", ".join(available_exchanges())}'
             )
 
-        logger.debug('Exchange "%s" supported', exchange)
+        if check_for_bad and is_exchange_bad(exchange):
+            logger.warning(f'Exchange "{exchange}" is known to not work with the bot yet. '
+                           f'Use it only for development and testing purposes.')
+            return False
+
+        if is_exchange_officially_supported(exchange):
+            logger.info(f'Exchange "{exchange}" is officially supported '
+                        f'by the Freqtrade development team.')
+        else:
+            logger.warning(f'Exchange "{exchange}" is supported by ccxt '
+                           f'and therefore available for the bot but not officially supported '
+                           f'by the Freqtrade development team. '
+                           f'It may work flawlessly (please report back) or have serious issues. '
+                           f'Use it at your own discretion.')
+
         return True

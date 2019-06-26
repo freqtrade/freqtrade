@@ -53,6 +53,12 @@ file as reference.**
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
 
+!!! Warning Using future data
+    Since backtesting passes the full time interval to the `populate_*()` methods, the strategy author
+    needs to take care to avoid having the strategy utilize data from the future.
+    Samples for usage of future data are `dataframe.shift(-1)`, `dataframe.resample("1h")` (this uses the left border of the interval, so moves data from an hour to the start of the hour).
+    They all use data which is not available during regular operations, so these strategies will perform well during backtesting, but will fail / perform badly in dry-runs.
+
 ### Customize Indicators
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
@@ -212,9 +218,12 @@ stoploss = -0.10
 ```
 
 This would signify a stoploss of -10%.
+
+For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
+
 If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order dict, so your stoploss is on the exchange and cannot be missed for network-problems (or other problems).
 
-For more information on order_types please look [here](https://github.com/freqtrade/freqtrade/blob/develop/docs/configuration.md#understand-order_types).
+For more information on order_types please look [here](configuration.md#understand-order_types).
 
 ### Ticker interval
 
@@ -292,6 +301,18 @@ if self.dp:
 !!! Warning Warning in hyperopt
     This option cannot currently be used during hyperopt.
 
+#### Orderbook
+
+``` python
+if self.dp:
+    if self.dp.runmode in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+```
+!Warning The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+ method is used.
+
 #### Available Pairs
 
 ``` python
@@ -299,6 +320,7 @@ if self.dp:
     for pair, ticker in self.dp.available_pairs:
         print(f"available {pair}, {ticker}")
 ```
+
 
 #### Get data for non-tradeable pairs
 
@@ -345,6 +367,30 @@ if self.wallets:
 - `get_used(asset)` - currently tied up balance (open orders)
 - `get_total(asset)` - total available balance - sum of the 2 above
 
+### Print created dataframe
+
+To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
+You may also want to print the pair so it's clear what data is currently shown.
+
+``` python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            #>> whatever condition<<<
+        ),
+        'buy'] = 1
+
+    # Print the Analyzed pair
+    print(f"result for {metadata['pair']}")
+
+    # Inspect the last 5 rows
+    print(dataframe.tail())
+
+    return dataframe
+```
+
+Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
+
 ### Where is the default strategy?
 
 The default buy strategy is located in the file
@@ -364,7 +410,7 @@ To get additional Ideas for strategies, head over to our [strategy repository](h
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
-We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) which is a great place to get and/or share ideas.
+We also got a *strategy-sharing* channel in our [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg) which is a great place to get and/or share ideas.
 
 ## Next step
 

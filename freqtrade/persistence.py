@@ -25,15 +25,16 @@ _DECL_BASE: Any = declarative_base()
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init(config: Dict) -> None:
+def init(db_url: str, clean_open_orders: bool = False) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
-    :param config: config to use
+    :param db_url: Database to use
+    :param clean_open_orders: Remove open orders from the database.
+        Useful for dry-run or if all orders have been reset on the exchange.
     :return: None
     """
-    db_url = config.get('db_url', None)
     kwargs = {}
 
     # Take care of thread ownership if in-memory db
@@ -57,7 +58,7 @@ def init(config: Dict) -> None:
     check_migrate(engine)
 
     # Clean dry_run DB if the db is not in-memory
-    if config.get('dry_run', False) and db_url != 'sqlite://':
+    if clean_open_orders and db_url != 'sqlite://':
         clean_dry_run_db()
 
 
@@ -213,11 +214,31 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'trade_id': self.id,
+            'pair': self.pair,
+            'open_date_hum': arrow.get(self.open_date).humanize(),
+            'open_date': self.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+            'close_date_hum': (arrow.get(self.close_date).humanize()
+                               if self.close_date else None),
+            'close_date': (self.close_date.strftime("%Y-%m-%d %H:%M:%S")
+                           if self.close_date else None),
+            'open_rate': self.open_rate,
+            'close_rate': self.close_rate,
+            'amount': round(self.amount, 8),
+            'stake_amount': round(self.stake_amount, 8),
+            'stop_loss': self.stop_loss,
+            'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
+            'initial_stop_loss': self.initial_stop_loss,
+            'initial_stop_loss_pct': (self.initial_stop_loss_pct * 100
+                                      if self.initial_stop_loss_pct else None),
+        }
+
     def adjust_min_max_rates(self, current_price: float):
         """
         Adjust the max_rate and min_rate.
         """
-        logger.debug("Adjusting min/max rates")
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
@@ -401,3 +422,22 @@ class Trade(_DECL_BASE):
         Query trades from persistence layer
         """
         return Trade.query.filter(Trade.is_open.is_(True)).all()
+
+    @staticmethod
+    def stoploss_reinitialization(desired_stoploss):
+        """
+        Adjust initial Stoploss to desired stoploss for all open trades.
+        """
+        for trade in Trade.get_open_trades():
+            logger.info("Found open trade: %s", trade)
+
+            # skip case if trailing-stop changed the stoploss already.
+            if (trade.stop_loss == trade.initial_stop_loss
+               and trade.initial_stop_loss_pct != desired_stoploss):
+                # Stoploss value got changed
+
+                logger.info(f"Stoploss for {trade} needs adjustment.")
+                # Force reset of stoploss
+                trade.stop_loss = None
+                trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
+                logger.info(f"new stoploss: {trade.stop_loss}, ")

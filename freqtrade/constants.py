@@ -4,6 +4,7 @@
 bot constants
 """
 DEFAULT_CONFIG = 'config.json'
+DEFAULT_EXCHANGE = 'bittrex'
 DYNAMIC_WHITELIST = 20  # pairs
 PROCESS_THROTTLE_SECS = 5  # sec
 DEFAULT_TICKER_INTERVAL = 5  # min
@@ -21,6 +22,7 @@ ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList']
 DRY_RUN_WALLET = 999.9
+DEFAULT_DOWNLOAD_TICKER_INTERVALS = '1m 5m'
 
 TICKER_INTERVALS = [
     '1m', '3m', '5m', '15m', '30m',
@@ -156,6 +158,21 @@ CONF_SCHEMA = {
                 'webhookstatus': {'type': 'object'},
             },
         },
+        'api_server': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'listen_ip_address': {'format': 'ipv4'},
+                'listen_port': {
+                    'type': 'integer',
+                    "minimum": 1024,
+                    "maximum": 65535
+                },
+                'username': {'type': 'string'},
+                'password': {'type': 'string'},
+            },
+            'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
+        },
         'db_url': {'type': 'string'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
@@ -173,10 +190,10 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'name': {'type': 'string'},
-                'sandbox': {'type': 'boolean'},
-                'key': {'type': 'string'},
-                'secret': {'type': 'string'},
-                'password': {'type': 'string'},
+                'sandbox': {'type': 'boolean', 'default': False},
+                'key': {'type': 'string', 'default': ''},
+                'secret': {'type': 'string', 'default': ''},
+                'password': {'type': 'string', 'default': ''},
                 'uid': {'type': 'string'},
                 'pair_whitelist': {
                     'type': 'array',
@@ -199,7 +216,7 @@ CONF_SCHEMA = {
                 'ccxt_config': {'type': 'object'},
                 'ccxt_async_config': {'type': 'object'}
             },
-            'required': ['name', 'key', 'secret', 'pair_whitelist']
+            'required': ['name', 'pair_whitelist']
         },
         'edge': {
             'type': 'object',

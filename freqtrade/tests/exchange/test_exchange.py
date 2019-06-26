@@ -124,14 +124,14 @@ def test_exchange_resolver(default_conf, mocker, caplog):
                       caplog.record_tuples)
     caplog.clear()
 
-    exchange = ExchangeResolver('Kraken', default_conf).exchange
+    exchange = ExchangeResolver('kraken', default_conf).exchange
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog.record_tuples)
 
-    exchange = ExchangeResolver('Binance', default_conf).exchange
+    exchange = ExchangeResolver('binance', default_conf).exchange
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
@@ -299,6 +299,20 @@ def test__reload_markets(default_conf, mocker, caplog):
     exchange._reload_markets()
     assert exchange.markets == updated_markets
     assert log_has('Performing scheduled market reload..', caplog.record_tuples)
+
+
+def test__reload_markets_exception(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(side_effect=ccxt.NetworkError)
+    default_conf['exchange']['markets_refresh_interval'] = 10
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+
+    # less than 10 minutes have passed, no reload
+    exchange._reload_markets()
+    assert exchange._last_markets_refresh == 0
+    assert log_has_re(r"Could not reload markets.*", caplog.record_tuples)
 
 
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
@@ -1002,7 +1016,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
-    assert log_has(f"Using cached ohlcv data for {pairs[0][0]}, {pairs[0][1]} ...",
+    assert log_has(f"Using cached ohlcv data for pair {pairs[0][0]}, interval {pairs[0][1]} ...",
                    caplog.record_tuples)
 
 
@@ -1421,3 +1435,30 @@ def test_stoploss_limit_order_dry_run(default_conf, mocker):
     assert order['type'] == order_type
     assert order['price'] == 220
     assert order['amount'] == 1
+
+
+def test_merge_ft_has_dict(default_conf, mocker):
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=MagicMock()))
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    ex = Exchange(default_conf)
+    assert ex._ft_has == Exchange._ft_has_default
+
+    ex = Kraken(default_conf)
+    assert ex._ft_has == Exchange._ft_has_default
+
+    # Binance defines different values
+    ex = Binance(default_conf)
+    assert ex._ft_has != Exchange._ft_has_default
+    assert ex._ft_has['stoploss_on_exchange']
+    assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
+
+    conf = copy.deepcopy(default_conf)
+    conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
+                                          "stoploss_on_exchange": False}
+    # Use settings from configuration (overriding stoploss_on_exchange)
+    ex = Binance(conf)
+    assert ex._ft_has != Exchange._ft_has_default
+    assert not ex._ft_has['stoploss_on_exchange']
+    assert ex._ft_has['DeadBeef'] == 20

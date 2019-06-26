@@ -27,9 +27,11 @@ from plotly.offline import plot
 from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
-from freqtrade.misc import common_datearray, timeframe_to_seconds
+from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.misc import common_datearray
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -204,10 +206,11 @@ def plot_parse_args(args: List[str]) -> Namespace:
     :return: args: Array with all arguments
     """
     arguments = Arguments(args, 'Graph profits')
-    arguments.scripts_options()
-    arguments.common_args_parser()
-    arguments.optimizer_shared_options(arguments.parser)
-    arguments.backtesting_options(arguments.parser)
+    arguments.common_options()
+    arguments.main_options()
+    arguments.common_optimize_options()
+    arguments.backtesting_options()
+    arguments.common_scripts_options()
 
     return arguments.parse_args()
 

@@ -123,11 +123,12 @@ python scripts/download_backtest_data.py --exchange binance
 
 This will download ticker data for all the currency pairs you defined in `pairs.json`.
 
-- To use a different folder than the exchange specific default, use `--export user_data/data/some_directory`.
+- To use a different folder than the exchange specific default, use `--datadir user_data/data/some_directory`.
 - To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
 - To use `pairs.json` from some other folder, use `--pairs-file some_other_dir/pairs.json`.
 - To download ticker data for only 10 days, use `--days 10`.
 - Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
+- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with other options.
 
 For help about backtesting usage, please refer to [Backtesting commands](#backtesting-commands).
 
@@ -220,24 +221,8 @@ strategies, your configuration, and the crypto-currency you have set up.
 ### Further backtest-result analysis
 
 To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
-You can then load the trades to perform further analysis.
+You can then load the trades to perform further analysis as shown in our [data analysis](data-analysis.md#backtesting) backtesting section.
 
-A good way for this is using Jupyter (notebook or lab) - which provides an interactive environment to analyze the data.
-
-Freqtrade provides an easy to load the backtest results, which is `load_backtest_data` - and takes a path to the backtest-results file.
-
-``` python
-from freqtrade.data.btanalysis import load_backtest_data
-df = load_backtest_data("user_data/backtest-result.json")
-
-# Show value-counts per pair
-df.groupby("pair")["sell_reason"].value_counts()
-
-```
-
-This will allow you to drill deeper into your backtest results, and perform analysis which would make the regular backtest-output unreadable.
-
-If you have some ideas for interesting / helpful backtest data analysis ideas, please submit a PR so the community can benefit from it.
 
 ## Backtesting multiple strategies
 

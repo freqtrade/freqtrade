@@ -2,19 +2,22 @@ site_name: Freqtrade
 nav:
     - About: index.md
     - Installation: installation.md
+    - Installation Docker: docker.md
     - Configuration: configuration.md
-    - Custom Strategy: bot-optimization.md
+    - Strategy Customization: strategy-customization.md
     - Stoploss: stoploss.md
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
+        - REST API: rest-api.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge positioning: edge.md
     - Plotting: plotting.md
     - Deprecated features: deprecated.md
     - FAQ: faq.md
+    - Data Analysis: data-analysis.md
     - SQL Cheatsheet: sql_cheatsheet.md
     - Sandbox testing: sandbox-testing.md
     - Contributors guide: developer.md

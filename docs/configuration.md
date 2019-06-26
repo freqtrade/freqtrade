@@ -40,10 +40,10 @@ Mandatory Parameters are marked as **Required**.
 | `ask_strategy.order_book_max` | 0 | Bot will scan from the top min to max Order Book Asks searching for a profitable rate.
 | `order_types` | None | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).
 | `order_time_in_force` | None | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy).
-| `exchange.name` | bittrex | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
+| `exchange.name` |  | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename).
 | `exchange.sandbox` | false | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.
-| `exchange.key` | key | API key to use for the exchange. Only required when you are in production mode.
-| `exchange.secret` | secret | API secret to use for the exchange. Only required when you are in production mode.
+| `exchange.key` | '' | API key to use for the exchange. Only required when you are in production mode.
+| `exchange.secret` | '' | API secret to use for the exchange. Only required when you are in production mode.
 | `exchange.pair_whitelist` | [] | List of currency to use by the bot. Can be overrided with `--dynamic-whitelist` param.
 | `exchange.pair_blacklist` | [] | List of currency the bot must avoid. Useful when using `--dynamic-whitelist` param.
 | `exchange.ccxt_config` | None | Additional CCXT parameters passed to the regular ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation)
@@ -131,17 +131,11 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 
 ### Understand stoploss
 
-The `stoploss` configuration parameter is loss in percentage that should trigger a sale.
-For example, value `-0.10` will cause immediate sell if the
-profit dips below -10% for a given trade. This parameter is optional.
-
-Most of the strategy files already include the optimal `stoploss`
-value. This parameter is optional. If you use it in the configuration file, it will take over the
-`stoploss` value from the strategy file.
+Go to the [stoploss documentation](stoploss.md) for more details.
 
 ### Understand trailing stoploss
 
-Go to the [trailing stoploss Documentation](stoploss.md) for details on trailing stoploss.
+Go to the [trailing stoploss Documentation](stoploss.md#trailing-stop-loss) for details on trailing stoploss.
 
 ### Understand initial_state
 
@@ -191,14 +185,28 @@ If this is configured, all 4 values (`buy`, `sell`, `stoploss` and
 `stoploss_on_exchange`) need to be present, otherwise the bot will warn about it and fail to start.
 The below is the default which is used if this is not configured in either strategy or configuration file.
 
+Syntax for Strategy:
+
 ```python
-"order_types": {
+order_types = {
     "buy": "limit",
     "sell": "limit",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60
-},
+}
+```
+
+Configuration:
+
+```json
+"order_types": {
+    "buy": "limit",
+    "sell": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": false,
+    "stoploss_on_exchange_interval": 60
+}
 ```
 
 !!! Note
@@ -287,8 +295,27 @@ This configuration enables binance, as well as rate limiting to avoid bans from 
 
 !!! Note
     Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
-    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step. 
+    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
+#### Advanced FreqTrade Exchange configuration
+
+Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
+
+Available options are listed in the exchange-class as `_ft_has_default`.
+
+For example, to test the order type `FOK` with Kraken, and modify candle_limit to 200 (so you only get 200 candles per call):
+
+```json
+"exchange": {
+    "name": "kraken",
+    "_ft_has_params": {
+        "order_time_in_force": ["gtc", "fok"],
+        "ohlcv_candle_limit": 200
+        }
+```
+
+!!! Warning
+    Please make sure to fully understand the impacts of these settings before modifying them.
 
 ### What values can be used for fiat_display_currency?
 

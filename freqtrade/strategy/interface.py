@@ -13,9 +13,10 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.misc import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.persistence import Trade
 from freqtrade.wallets import Wallets
+
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +158,7 @@ class IStrategy(ABC):
         """
         Parses the given ticker history and returns a populated DataFrame
         add several TA indicators and buy signal to it
-        :return DataFrame with ticker data and indicator data
+        :return: DataFrame with ticker data and indicator data
         """
 
         pair = str(metadata.get('pair'))
@@ -307,14 +308,16 @@ class IStrategy(ABC):
 
         if trailing_stop:
             # trailing stoploss handling
-
             sl_offset = self.config.get('trailing_stop_positive_offset') or 0.0
             tsl_only_offset = self.config.get('trailing_only_offset_is_reached', False)
 
+            # Make sure current_profit is calculated using high for backtesting.
+            high_profit = current_profit if not high else trade.calc_profit_percent(high)
+
             # Don't update stoploss if trailing_only_offset_is_reached is true.
-            if not (tsl_only_offset and current_profit < sl_offset):
+            if not (tsl_only_offset and high_profit < sl_offset):
                 # Specific handling for trailing_stop_positive
-                if 'trailing_stop_positive' in self.config and current_profit > sl_offset:
+                if 'trailing_stop_positive' in self.config and high_profit > sl_offset:
                     # Ignore mypy error check in configuration that this is a float
                     stop_loss_value = self.config.get('trailing_stop_positive')  # type: ignore
                     logger.debug(f"using positive stop loss: {stop_loss_value} "
@@ -328,8 +331,9 @@ class IStrategy(ABC):
                 (not self.order_types.get('stoploss_on_exchange'))):
 
             selltype = SellType.STOP_LOSS
-            # If Trailing stop (and max-rate did move above open rate)
-            if trailing_stop and trade.open_rate != trade.max_rate:
+
+            # If initial stoploss is not the same as current one then it is trailing.
+            if trade.initial_stop_loss != trade.stop_loss:
                 selltype = SellType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"HIT STOP: current price at {current_rate:.6f}, "
@@ -347,7 +351,7 @@ class IStrategy(ABC):
         """
         Based an earlier trade and current price and ROI configuration, decides whether bot should
         sell. Requires current_profit to be in percent!!
-        :return True if bot should sell at current rate
+        :return: True if bot should sell at current rate
         """
 
         # Check if time matches and current rate is above threshold
@@ -376,6 +380,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -391,6 +396,7 @@ class IStrategy(ABC):
         :param pair: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
+        logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -406,6 +412,7 @@ class IStrategy(ABC):
         :param pair: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+        logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")
         if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)

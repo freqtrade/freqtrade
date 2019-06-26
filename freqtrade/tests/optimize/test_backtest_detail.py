@@ -2,17 +2,32 @@
 import logging
 from unittest.mock import MagicMock
 
-from pandas import DataFrame
 import pytest
+from pandas import DataFrame
 
-
-from freqtrade.optimize import get_timeframe
+from freqtrade.data.history import get_timeframe
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.strategy.interface import SellType
-from freqtrade.tests.optimize import (BTrade, BTContainer, _build_backtest_dataframe,
-                                      _get_frame_time_from_offset, tests_ticker_interval)
 from freqtrade.tests.conftest import patch_exchange
+from freqtrade.tests.optimize import (BTContainer, BTrade,
+                                      _build_backtest_dataframe,
+                                      _get_frame_time_from_offset,
+                                      tests_ticker_interval)
 
+# Test 0 Sell signal sell
+# Test with Stop-loss at 1%
+# TC0: Sell signal in candle 3
+tc0 = BTContainer(data=[
+    # D  O     H     L     C     V    B  S
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4986, 4600, 6172, 0, 0],  # exit with stoploss hit
+    [3, 5010, 5000, 4980, 5010, 6172, 0, 1],
+    [4, 5010, 4987, 4977, 4995, 6172, 0, 0],
+    [5, 4995, 4995, 4995, 4950, 6172, 0, 0]],
+    stop_loss=-0.01, roi=1, profit_perc=0.002, use_sell_signal=True,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+)
 
 # Test 1 Minus 8% Close
 # Test with Stop-loss at 1%
@@ -146,7 +161,7 @@ tc8 = BTContainer(data=[
 # Test 9 - trailing_stop should raise - high and low in same candle.
 # Candle Data for test 9
 # Set stop-loss at 10%, ROI at 10% (should not apply)
-# TC9: Trailing stoploss - stoploss should be adjusted candle 2
+# TC9: Trailing stoploss - stoploss should be adjusted candle 3
 tc9 = BTContainer(data=[
     # D   O     H     L     C    V    B  S
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
@@ -158,7 +173,59 @@ tc9 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
+# Test 10 - trailing_stop should raise so candle 3 causes a stoploss
+# without applying trailing_stop_positive since stoploss_offset is at 10%.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC10: Trailing stoploss - stoploss should be adjusted candle 2
+tc10 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=-0.1, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.10,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=4)]
+)
+
+# Test 11 - trailing_stop should raise so candle 3 causes a stoploss
+# applying a positive trailing stop of 3% since stop_positive_offset is reached.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC11: Trailing stoploss - stoploss should be adjusted candle 2,
+tc11 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=0.019, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
+# Test 12 - trailing_stop should raise in candle 2 and cause a stoploss in the same candle
+# applying a positive trailing stop of 3% since stop_positive_offset is reached.
+# Set stop-loss at 10%, ROI at 10% (should not apply)
+# TC12: Trailing stoploss - stoploss should be adjusted candle 2,
+tc12 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi=0.10, profit_perc=0.019, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
+)
+
 TESTS = [
+    tc0,
     tc1,
     tc2,
     tc3,
@@ -168,6 +235,9 @@ TESTS = [
     tc7,
     tc8,
     tc9,
+    tc10,
+    tc11,
+    tc12,
 ]
 
 
@@ -180,6 +250,13 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     default_conf["minimal_roi"] = {"0": data.roi}
     default_conf["ticker_interval"] = tests_ticker_interval
     default_conf["trailing_stop"] = data.trailing_stop
+    default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
+    # Only add this to configuration If it's necessary
+    if data.trailing_stop_positive:
+        default_conf["trailing_stop_positive"] = data.trailing_stop_positive
+    default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
+    default_conf["experimental"] = {"use_sell_signal": data.use_sell_signal}
+
     mocker.patch("freqtrade.exchange.Exchange.get_fee", MagicMock(return_value=0.0))
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)

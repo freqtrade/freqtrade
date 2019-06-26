@@ -21,8 +21,8 @@ Freqtrade is a cryptocurrency trading bot written in Python.
 
     We strongly recommend you to have basic coding skills and Python knowledge. Do not hesitate to read the source code and understand the mechanisms of this bot, algorithms and techniques implemented in it.
 
-
 ## Features
+
  - Based on Python 3.6+: For botting on any operating system — Windows, macOS and Linux.
  - Persistence: Persistence is achieved through sqlite database.
  - Dry-run mode: Run the bot without playing money.
@@ -31,17 +31,19 @@ Freqtrade is a cryptocurrency trading bot written in Python.
  - Edge position sizing: Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market.
  - Whitelist crypto-currencies: Select which crypto-currency you want to trade or use dynamic whitelists based on market (pair) trade volume.
  - Blacklist crypto-currencies: Select which crypto-currency you want to avoid.
- - Manageable via Telegram: Manage the bot with Telegram.
+ - Manageable via Telegram or REST APi: Manage the bot with Telegram or via the builtin REST API.
  - Display profit/loss in fiat: Display your profit/loss in any of 33 fiat currencies supported.
  - Daily summary of profit/loss: Receive the daily summary of your profit/loss.
  - Performance status report: Receive the performance status of your current trades.
 
-
 ## Requirements
+
 ### Up to date clock
+
 The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
 ### Hardware requirements
+
 To run this bot we recommend you a cloud instance with a minimum of:
 
 - 2GB RAM
@@ -49,6 +51,7 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - 2vCPU
 
 ### Software requirements
+
 - Python 3.6.x
 - pip (pip3)
 - git
@@ -56,12 +59,13 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - virtualenv (Recommended)
 - Docker (Recommended)
 
-
 ## Support
+
 Help / Slack
 For any questions not covered by the documentation or for further information about the bot, we encourage you to join our Slack channel.
 
-Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtMjQ5NTM0OTYzMzY3LWMxYzE3M2MxNDdjMGM3ZTYwNzFjMGIwZGRjNTc3ZGU3MGE3NzdmZGMwNmU3NDM5ZTNmM2Y3NjRiNzk4NmM4OGE) to join Slack channel.
+Click [here](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LWEyODBiNzkzNzcyNzU0MWYyYzE5NjIyOTQxMzBmMGUxOTIzM2YyN2Y4NWY1YTEwZDgwYTRmMzE2NmM5ZmY2MTg) to join Slack channel.
 
 ## Ready to try?
+
 Begin by reading our installation guide [here](installation).

@@ -1,23 +1,25 @@
 # pragma pylint: disable=W0603
-""" Cryptocurrency Exchanges support """
-import logging
+"""
+Cryptocurrency Exchanges support
+"""
+import asyncio
 import inspect
-from random import randint
-from typing import List, Dict, Tuple, Any, Optional
+import logging
+from copy import deepcopy
 from datetime import datetime
-from math import floor, ceil
+from math import ceil, floor
+from random import randint
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
-import asyncio
 import ccxt
 import ccxt.async_support as ccxt_async
 from pandas import DataFrame
 
-from freqtrade import (constants, DependencyException, OperationalException,
-                       TemporaryError, InvalidOrderException)
+from freqtrade import (DependencyException, InvalidOrderException,
+                       OperationalException, TemporaryError, constants)
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.misc import timeframe_to_seconds, timeframe_to_msecs
-
+from freqtrade.misc import deep_merge_dicts
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +69,15 @@ class Exchange(object):
     _params: Dict = {}
 
     # Dict to specify which options each exchange implements
-    # TODO: this should be merged with attributes from subclasses
-    # To avoid having to copy/paste this to all subclasses.
-    _ft_has: Dict = {
+    # This defines defaults, which can be selectively overridden by subclasses using _ft_has
+    # or by specifying them in the configuration.
+    _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "ohlcv_candle_limit": 500,
+        "ohlcv_partial_candle": True,
     }
+    _ft_has: Dict = {}
 
     def __init__(self, config: dict) -> None:
         """
@@ -99,6 +104,19 @@ class Exchange(object):
             logger.info('Instance is running with dry_run enabled')
 
         exchange_config = config['exchange']
+
+        # Deep merge ft_has with default ft_has options
+        self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
+        if exchange_config.get("_ft_has_params"):
+            self._ft_has = deep_merge_dicts(exchange_config.get("_ft_has_params"),
+                                            self._ft_has)
+            logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
+
+        # Assign this directly for easy access
+        self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
+        self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
+
+        # Initialize ccxt objects
         self._api: ccxt.Exchange = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
         self._api_async: ccxt_async.Exchange = self._init_ccxt(
@@ -138,8 +156,8 @@ class Exchange(object):
         # Find matching class for the given exchange name
         name = exchange_config['name']
 
-        if name not in ccxt_module.exchanges:
-            raise OperationalException(f'Exchange {name} is not supported')
+        if not is_exchange_available(name, ccxt_module):
+            raise OperationalException(f'Exchange {name} is not supported by ccxt')
 
         ex_config = {
             'apiKey': exchange_config.get('key'),
@@ -221,8 +239,11 @@ class Exchange(object):
                 > arrow.utcnow().timestamp):
             return None
         logger.debug("Performing scheduled market reload..")
-        self._api.load_markets(reload=True)
-        self._last_markets_refresh = arrow.utcnow().timestamp
+        try:
+            self._api.load_markets(reload=True)
+            self._last_markets_refresh = arrow.utcnow().timestamp
+        except ccxt.BaseError:
+            logger.exception("Could not reload markets.")
 
     def validate_pairs(self, pairs: List[str]) -> None:
         """
@@ -502,11 +523,13 @@ class Exchange(object):
     async def _async_get_history(self, pair: str,
                                  ticker_interval: str,
                                  since_ms: int) -> List:
-        # Assume exchange returns 500 candles
-        _LIMIT = 500
 
-        one_call = timeframe_to_msecs(ticker_interval) * _LIMIT
-        logger.debug("one_call: %s msecs", one_call)
+        one_call = timeframe_to_msecs(ticker_interval) * self._ohlcv_candle_limit
+        logger.debug(
+            "one_call: %s msecs (%s)",
+            one_call,
+            arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
+        )
         input_coroutines = [self._async_get_candle_history(
             pair, ticker_interval, since) for since in
             range(since_ms, arrow.utcnow().timestamp * 1000, one_call)]
@@ -537,7 +560,10 @@ class Exchange(object):
                     or self._now_is_time_to_refresh(pair, ticker_interval)):
                 input_coroutines.append(self._async_get_candle_history(pair, ticker_interval))
             else:
-                logger.debug("Using cached ohlcv data for %s, %s ...", pair, ticker_interval)
+                logger.debug(
+                    "Using cached ohlcv data for pair %s, interval %s ...",
+                    pair, ticker_interval
+                )
 
         tickers = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
@@ -555,7 +581,8 @@ class Exchange(object):
                 self._pairs_last_refresh_time[(pair, ticker_interval)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             self._klines[(pair, ticker_interval)] = parse_ticker_dataframe(
-                ticks, ticker_interval, fill_missing=True)
+                ticks, ticker_interval, pair=pair, fill_missing=True,
+                drop_incomplete=self._ohlcv_partial_candle)
         return tickers
 
     def _now_is_time_to_refresh(self, pair: str, ticker_interval: str) -> bool:
@@ -574,7 +601,11 @@ class Exchange(object):
         """
         try:
             # fetch ohlcv asynchronously
-            logger.debug("fetching %s, %s since %s ...", pair, ticker_interval, since_ms)
+            s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
+            logger.debug(
+                "Fetching pair %s, interval %s, since %s %s...",
+                pair, ticker_interval, since_ms, s
+            )
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=ticker_interval,
                                                      since=since_ms)
@@ -589,7 +620,7 @@ class Exchange(object):
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
                 return pair, ticker_interval, []
-            logger.debug("done fetching %s, %s ...", pair, ticker_interval)
+            logger.debug("Done fetching pair %s, interval %s ...", pair, ticker_interval)
             return pair, ticker_interval, data
 
         except ccxt.NotSupported as e:
@@ -689,3 +720,42 @@ class Exchange(object):
                 f'Could not get fee info due to {e.__class__.__name__}. Message: {e}')
         except ccxt.BaseError as e:
             raise OperationalException(e)
+
+
+def is_exchange_bad(exchange: str) -> bool:
+    return exchange in ['bitmex']
+
+
+def is_exchange_available(exchange: str, ccxt_module=None) -> bool:
+    return exchange in available_exchanges(ccxt_module)
+
+
+def is_exchange_officially_supported(exchange: str) -> bool:
+    return exchange in ['bittrex', 'binance']
+
+
+def available_exchanges(ccxt_module=None) -> List[str]:
+    return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
+
+
+def timeframe_to_seconds(ticker_interval: str) -> int:
+    """
+    Translates the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) to the number
+    of seconds for one timeframe interval.
+    """
+    return ccxt.Exchange.parse_timeframe(ticker_interval)
+
+
+def timeframe_to_minutes(ticker_interval: str) -> int:
+    """
+    Same as above, but returns minutes.
+    """
+    return ccxt.Exchange.parse_timeframe(ticker_interval) // 60
+
+
+def timeframe_to_msecs(ticker_interval: str) -> int:
+    """
+    Same as above, but returns milliseconds.
+    """
+    return ccxt.Exchange.parse_timeframe(ticker_interval) * 1000

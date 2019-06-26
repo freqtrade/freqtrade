@@ -14,8 +14,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from freqtrade.tests.conftest import patch_exchange
-from freqtrade.tests.test_freqtradebot import patch_get_signal
+from freqtrade.tests.conftest import patch_exchange, patch_get_signal
 
 
 # Functions for recurrent object patching
@@ -47,12 +46,14 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
 
     freqtradebot.create_trade()
     results = rpc._rpc_trade_status()
-
     assert {
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
-        'date': ANY,
+        'open_date': ANY,
+        'open_date_hum': ANY,
+        'close_date': None,
+        'close_date_hum': None,
         'open_rate': 1.099e-05,
         'close_rate': None,
         'current_rate': 1.098e-05,
@@ -78,7 +79,10 @@ def test_rpc_trade_status(default_conf, ticker, fee, markets, mocker) -> None:
         'trade_id': 1,
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
-        'date': ANY,
+        'open_date': ANY,
+        'open_date_hum': ANY,
+        'close_date': None,
+        'close_date_hum': None,
         'open_rate': 1.099e-05,
         'close_rate': None,
         'current_rate': ANY,
@@ -114,7 +118,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
 
     freqtradebot.create_trade()
     result = rpc._rpc_status_table()
-    assert 'just now' in result['Since'].all()
+    assert 'instantly' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
     assert '-0.59%' in result['Profit'].all()
 
@@ -123,7 +127,7 @@ def test_rpc_status_table(default_conf, ticker, fee, markets, mocker) -> None:
     # invalidate ticker cache
     rpc._freqtrade.exchange._cached_ticker = {}
     result = rpc._rpc_status_table()
-    assert 'just now' in result['Since'].all()
+    assert 'instantly' in result['Since'].all()
     assert 'ETH/BTC' in result['Pair'].all()
     assert 'nan%' in result['Profit'].all()
 
@@ -463,12 +467,15 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
     with pytest.raises(RPCException, match=r'.*invalid argument*'):
         rpc._rpc_forcesell(None)
 
-    rpc._rpc_forcesell('all')
+    msg = rpc._rpc_forcesell('all')
+    assert msg == {'result': 'Created sell orders for all open trades.'}
 
     freqtradebot.create_trade()
-    rpc._rpc_forcesell('all')
+    msg = rpc._rpc_forcesell('all')
+    assert msg == {'result': 'Created sell orders for all open trades.'}
 
-    rpc._rpc_forcesell('1')
+    msg = rpc._rpc_forcesell('1')
+    assert msg == {'result': 'Created sell order for trade 1.'}
 
     freqtradebot.state = State.STOPPED
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
@@ -511,7 +518,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
         }
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
-    rpc._rpc_forcesell('2')
+    msg = rpc._rpc_forcesell('2')
+    assert msg == {'result': 'Created sell order for trade 2.'}
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
@@ -525,7 +533,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker, markets) -> None:
             'side': 'sell'
         }
     )
-    rpc._rpc_forcesell('3')
+    msg = rpc._rpc_forcesell('3')
+    assert msg == {'result': 'Created sell order for trade 3.'}
     # status quo, no exchange calls
     assert cancel_order_mock.call_count == 2
 

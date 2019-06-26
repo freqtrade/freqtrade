@@ -1,15 +1,15 @@
 """ FreqTrade bot """
-__version__ = '0.18.5'
+__version__ = '2019.6'
 
 
-class DependencyException(BaseException):
+class DependencyException(Exception):
     """
-    Indicates that a assumed dependency is not met.
+    Indicates that an assumed dependency is not met.
     This could happen when there is currently not enough money on the account.
     """
 
 
-class OperationalException(BaseException):
+class OperationalException(Exception):
     """
     Requires manual intervention.
     This happens when an exchange returns an unexpected error during runtime
@@ -17,7 +17,7 @@ class OperationalException(BaseException):
     """
 
 
-class InvalidOrderException(BaseException):
+class InvalidOrderException(Exception):
     """
     This is returned when the order is not valid. Example:
     If stoploss on exchange order is hit, then trying to cancel the order
@@ -25,7 +25,7 @@ class InvalidOrderException(BaseException):
     """
 
 
-class TemporaryError(BaseException):
+class TemporaryError(Exception):
     """
     Temporary network or exchange related error.
     This could happen when an exchange is congested, unavailable, or the user

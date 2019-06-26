@@ -1,18 +1,14 @@
 # pragma pylint: disable=missing-docstring, C0103, C0330
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
 
-from unittest.mock import MagicMock
 import json
-from typing import List
+from unittest.mock import MagicMock
+
 from freqtrade.edge import PairInfo
-from freqtrade.arguments import Arguments
-from freqtrade.optimize.edge_cli import (EdgeCli, setup_configuration, start)
+from freqtrade.optimize import setup_configuration, start_edge
+from freqtrade.optimize.edge_cli import EdgeCli
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has, patch_exchange
-
-
-def get_args(args) -> List[str]:
-    return Arguments(args, '').get_parsed_arg()
+from freqtrade.tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
 
 def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -26,8 +22,8 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         'edge'
     ]
 
-    config = setup_configuration(get_args(args))
-    assert config['runmode'] == RunMode.EDGECLI
+    config = setup_configuration(get_args(args), RunMode.EDGE)
+    assert config['runmode'] == RunMode.EDGE
 
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
@@ -40,7 +36,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
+    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog.record_tuples)
 
     assert 'refresh_pairs' not in config
     assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -66,24 +62,21 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
         '--stoplosses=-0.01,-0.10,-0.001'
     ]
 
-    config = setup_configuration(get_args(args))
+    config = setup_configuration(get_args(args), RunMode.EDGE)
     assert 'max_open_trades' in config
     assert 'stake_currency' in config
     assert 'stake_amount' in config
     assert 'exchange' in config
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
-    assert config['runmode'] == RunMode.EDGECLI
+    assert config['runmode'] == RunMode.EDGE
     assert log_has(
         'Using data folder: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'refresh_pairs' in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
@@ -108,7 +101,7 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
         'edge'
     ]
     args = get_args(args)
-    start(args)
+    start_edge(args)
     assert log_has(
         'Starting freqtrade in Edge mode',
         caplog.record_tuples
@@ -118,8 +111,10 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
 
 def test_edge_init(mocker, edge_conf) -> None:
     patch_exchange(mocker)
+    edge_conf['stake_amount'] = 20
     edge_cli = EdgeCli(edge_conf)
     assert edge_cli.config == edge_conf
+    assert edge_cli.config['stake_amount'] == 'unlimited'
     assert callable(edge_cli.edge.calculate)
 
 

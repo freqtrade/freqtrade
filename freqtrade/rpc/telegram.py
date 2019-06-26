@@ -132,7 +132,7 @@ class Telegram(RPC):
                 msg['stake_amount_fiat'] = 0
 
             message = ("*{exchange}:* Buying {pair}\n"
-                       "with limit `{limit:.8f}\n"
+                       "at rate `{limit:.8f}\n"
                        "({stake_amount:.6f} {stake_currency}").format(**msg)
 
             if msg.get('fiat_currency', None):
@@ -144,7 +144,7 @@ class Telegram(RPC):
             msg['profit_percent'] = round(msg['profit_percent'] * 100, 2)
 
             message = ("*{exchange}:* Selling {pair}\n"
-                       "*Limit:* `{limit:.8f}`\n"
+                       "*Rate:* `{limit:.8f}`\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
@@ -193,14 +193,11 @@ class Telegram(RPC):
 
         try:
             results = self._rpc_trade_status()
-            # pre format data
-            for result in results:
-                result['date'] = result['date'].humanize()
 
             messages = []
             for r in results:
                 lines = [
-                    "*Trade ID:* `{trade_id}` `(since {date})`",
+                    "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Open Rate:* `{open_rate:.8f}`",
@@ -413,7 +410,9 @@ class Telegram(RPC):
 
         trade_id = update.message.text.replace('/forcesell', '').strip()
         try:
-            self._rpc_forcesell(trade_id)
+            msg = self._rpc_forcesell(trade_id)
+            self._send_msg('Forcesell Result: `{result}`'.format(**msg), bot=bot)
+
         except RPCException as e:
             self._send_msg(str(e), bot=bot)
 

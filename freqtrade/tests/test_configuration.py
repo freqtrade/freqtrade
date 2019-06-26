@@ -15,7 +15,16 @@ from freqtrade.arguments import Arguments
 from freqtrade.configuration import Configuration, set_loggers
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.state import RunMode
-from freqtrade.tests.conftest import log_has
+from freqtrade.tests.conftest import log_has, log_has_re
+
+
+@pytest.fixture(scope="function")
+def all_conf():
+    config_file = Path(__file__).parents[2] / "config_full.json.example"
+    print(config_file)
+    configuration = Configuration(Namespace())
+    conf = configuration._load_config_file(str(config_file))
+    return conf
 
 
 def test_load_config_invalid_pair(default_conf) -> None:
@@ -351,11 +360,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'live' in config
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
@@ -416,11 +422,8 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
-    assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1m ...',
-        caplog.record_tuples
-    )
+    assert log_has('Parameter -i/--ticker-interval detected ... Using ticker_interval: 1m ...',
+                   caplog.record_tuples)
 
     assert 'strategy_list' in config
     assert log_has('Using strategy list of 2 Strategies', caplog.record_tuples)
@@ -454,8 +457,8 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 
     assert 'epochs' in config
     assert int(config['epochs']) == 10
-    assert log_has('Parameter --epochs detected ...', caplog.record_tuples)
-    assert log_has('Will run Hyperopt with for 10 epochs ...', caplog.record_tuples)
+    assert log_has('Parameter --epochs detected ... Will run Hyperopt with for 10 epochs ...',
+                   caplog.record_tuples)
 
     assert 'spaces' in config
     assert config['spaces'] == ['all']
@@ -467,21 +470,52 @@ def test_hyperopt_with_arguments(mocker, default_conf, caplog) -> None:
 def test_check_exchange(default_conf, caplog) -> None:
     configuration = Configuration(Namespace())
 
-    # Test a valid exchange
+    # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'BITTREX'})
     assert configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
+                      caplog.record_tuples)
+    caplog.clear()
 
-    # Test a valid exchange
+    # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'binance'})
     assert configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
+                      caplog.record_tuples)
+    caplog.clear()
 
-    # Test a invalid exchange
+    # Test an available exchange, supported by ccxt
+    default_conf.get('exchange').update({'name': 'kraken'})
+    assert configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+                      r"by the Freqtrade development team\. .*",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    # Test a 'bad' exchange, which known to have serious problems
+    default_conf.get('exchange').update({'name': 'bitmex'})
+    assert not configuration.check_exchange(default_conf)
+    assert log_has_re(r"Exchange .* is known to not work with the bot yet\. "
+                      r"Use it only for development and testing purposes\.",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    # Test a 'bad' exchange with check_for_bad=False
+    default_conf.get('exchange').update({'name': 'bitmex'})
+    assert configuration.check_exchange(default_conf, False)
+    assert log_has_re(r"Exchange .* is supported by ccxt and .* not officially supported "
+                      r"by the Freqtrade development team\. .*",
+                      caplog.record_tuples)
+    caplog.clear()
+
+    # Test an invalid exchange
     default_conf.get('exchange').update({'name': 'unknown_exchange'})
     configuration.config = default_conf
 
     with pytest.raises(
         OperationalException,
-        match=r'.*Exchange "unknown_exchange" not supported.*'
+        match=r'.*Exchange "unknown_exchange" is not supported by ccxt '
+              r'and therefore not available for the bot.*'
     ):
         configuration.check_exchange(default_conf)
 
@@ -608,3 +642,59 @@ def test_validate_tsl(default_conf):
     default_conf['trailing_stop_positive_offset'] = 0.015
     Configuration(Namespace())
     configuration._validate_config_consistency(default_conf)
+
+
+def test_load_config_default_exchange(all_conf) -> None:
+    """
+    config['exchange'] subtree has required options in it
+    so it cannot be omitted in the config
+    """
+    del all_conf['exchange']
+
+    assert 'exchange' not in all_conf
+
+    with pytest.raises(ValidationError,
+                       match=r'\'exchange\' is a required property'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_schema(all_conf)
+
+
+def test_load_config_default_exchange_name(all_conf) -> None:
+    """
+    config['exchange']['name'] option is required
+    so it cannot be omitted in the config
+    """
+    del all_conf['exchange']['name']
+
+    assert 'name' not in all_conf['exchange']
+
+    with pytest.raises(ValidationError,
+                       match=r'\'name\' is a required property'):
+        configuration = Configuration(Namespace())
+        configuration._validate_config_schema(all_conf)
+
+
+@pytest.mark.parametrize("keys", [("exchange", "sandbox", False),
+                                  ("exchange", "key", ""),
+                                  ("exchange", "secret", ""),
+                                  ("exchange", "password", ""),
+                                  ])
+def test_load_config_default_subkeys(all_conf, keys) -> None:
+    """
+    Test for parameters with default values in sub-paths
+    so they can be omitted in the config and the default value
+    should is added to the config.
+    """
+    # Get first level key
+    key = keys[0]
+    # get second level key
+    subkey = keys[1]
+
+    del all_conf[key][subkey]
+
+    assert subkey not in all_conf[key]
+
+    configuration = Configuration(Namespace())
+    configuration._validate_config_schema(all_conf)
+    assert subkey in all_conf[key]
+    assert all_conf[key][subkey] == keys[2]

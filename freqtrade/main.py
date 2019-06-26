@@ -3,10 +3,16 @@
 Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
-import logging
+
 import sys
+# check min. python version
+if sys.version_info < (3, 6):
+    sys.exit("Freqtrade requires Python version >= 3.6")
+
+# flake8: noqa E402
+import logging
 from argparse import Namespace
-from typing import List
+from typing import Any, List
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
@@ -17,37 +23,43 @@ from freqtrade.worker import Worker
 logger = logging.getLogger('freqtrade')
 
 
-def main(sysargv: List[str]) -> None:
+def main(sysargv: List[str] = None) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None
     """
-    arguments = Arguments(
-        sysargv,
-        'Free, open source crypto trading bot'
-    )
-    args: Namespace = arguments.get_parsed_arg()
 
-    # A subcommand has been issued.
-    # Means if Backtesting or Hyperopt have been called we exit the bot
-    if hasattr(args, 'func'):
-        args.func(args)
-        return
-
+    return_code: Any = 1
     worker = None
-    return_code = 1
     try:
-        # Load and run worker
-        worker = Worker(args)
-        worker.run()
+        set_loggers()
 
+        arguments = Arguments(
+            sysargv,
+            'Free, open source crypto trading bot'
+        )
+        args: Namespace = arguments.get_parsed_arg()
+
+        # A subcommand has been issued.
+        # Means if Backtesting or Hyperopt have been called we exit the bot
+        if hasattr(args, 'func'):
+            args.func(args)
+            # TODO: fetch return_code as returned by the command function here
+            return_code = 0
+        else:
+            # Load and run worker
+            worker = Worker(args)
+            worker.run()
+
+    except SystemExit as e:
+        return_code = e
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
         return_code = 0
     except OperationalException as e:
         logger.error(str(e))
         return_code = 2
-    except BaseException:
+    except Exception:
         logger.exception('Fatal exception!')
     finally:
         if worker:
@@ -56,5 +68,4 @@ def main(sysargv: List[str]) -> None:
 
 
 if __name__ == '__main__':
-    set_loggers()
-    main(sys.argv[1:])
+    main()
