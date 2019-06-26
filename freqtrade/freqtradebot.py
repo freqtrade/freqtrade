@@ -478,8 +478,11 @@ class FreqtradeBot(object):
             return order_amount
 
         # use fee from order-dict if possible
-        if 'fee' in order and order['fee'] and (order['fee'].keys() >= {'currency', 'cost'}):
-            if trade.pair.startswith(order['fee']['currency']):
+        if 'fee' in order and order['fee'] is not None and \
+                (order['fee'].keys() >= {'currency', 'cost'}):
+            if order['fee']['currency'] is not None and \
+                    order['fee']['cost'] is not None and \
+                    trade.pair.startswith(order['fee']['currency']):
                 new_amount = order_amount - order['fee']['cost']
                 logger.info("Applying fee on amount for %s (from %s to %s) from Order",
                             trade, order['amount'], new_amount)
@@ -496,9 +499,12 @@ class FreqtradeBot(object):
         fee_abs = 0
         for exectrade in trades:
             amount += exectrade['amount']
-            if "fee" in exectrade and (exectrade['fee'].keys() >= {'currency', 'cost'}):
+            if "fee" in exectrade and exectrade['fee'] is not None and \
+                    (exectrade['fee'].keys() >= {'currency', 'cost'}):
                 # only applies if fee is in quote currency!
-                if trade.pair.startswith(exectrade['fee']['currency']):
+                if exectrade['fee']['currency'] is not None and \
+                        exectrade['fee']['cost'] is not None and \
+                        trade.pair.startswith(exectrade['fee']['currency']):
                     fee_abs += exectrade['fee']['cost']
 
         if amount != order_amount:
