@@ -559,10 +559,32 @@ def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
 
     telegram = Telegram(freqtradebot)
 
+    freqtradebot.config['dry_run'] = False
     telegram._balance(bot=MagicMock(), update=update)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert 'all balances are zero' in result
+    assert 'All balances are zero.' in result
+
+
+def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value={})
+
+    msg_mock = MagicMock()
+    mocker.patch.multiple(
+        'freqtrade.rpc.telegram.Telegram',
+        _init=MagicMock(),
+        _send_msg=msg_mock
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
+    telegram = Telegram(freqtradebot)
+
+    telegram._balance(bot=MagicMock(), update=update)
+    result = msg_mock.call_args_list[0][0][0]
+    assert msg_mock.call_count == 1
+    assert "Running in Dry Run, balances are not available." in result
 
 
 def test_balance_handle_too_large_response(default_conf, update, mocker) -> None:
