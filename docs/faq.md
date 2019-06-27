@@ -2,6 +2,27 @@
 
 ### Freqtrade commons
 
+#### I'm trying to run the bot, but it says "No module named 'freqtrade'"
+
+When you run the bot on a Linux system and obtain something similar to the 
+following error:
+``` bash
+$ python3 freqtrade -c config.json
+Traceback (most recent call last):
+ File "/usr/lib/python3.6/runpy.py", line 193, in _run_module_as_main
+   "__main__", mod_spec)
+ File "/usr/lib/python3.6/runpy.py", line 85, in _run_code
+   exec(code, run_globals)
+ File "freqtrade/__main__.py", line 9, in <module>
+   from freqtrade import main
+ModuleNotFoundError: No module named 'freqtrade'
+```
+try to setup properly the PYTHONPATH environment variable. So simply run
+``` bash
+export PYTHONPATH=.:$PYTHONPATH
+```
+in the terminal (command line) before starting the bot.
+
 #### I have waited 5 minutes, why hasn't the bot made any trades yet?!
 
 Depending on the buy strategy, the amount of whitelisted coins, the
