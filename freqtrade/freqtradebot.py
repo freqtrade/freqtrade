@@ -592,13 +592,13 @@ class FreqtradeBot(object):
                 logger.info('  order book asks top %s: %0.8f', i, order_book_rate)
                 sell_rate = order_book_rate
 
-                if self.check_sell(trade, sell_rate, buy, sell):
+                if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
             sell_rate = self.get_sell_rate(trade.pair, True)
-            if self.check_sell(trade, sell_rate, buy, sell):
+            if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                 return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -668,7 +668,7 @@ class FreqtradeBot(object):
         if stoploss_order and stoploss_order['status'] == 'closed':
             trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             trade.update(stoploss_order)
-            self.notify_sell(trade)
+            self._notify_sell(trade)
             return True
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
@@ -713,13 +713,15 @@ class FreqtradeBot(object):
                     logger.exception(f"Could create trailing stoploss order "
                                      f"for pair {trade.pair}.")
 
-    def check_sell(self, trade: Trade, sell_rate: float, buy: bool, sell: bool) -> bool:
-        if self.edge:
-            stoploss = self.edge.stoploss(trade.pair)
-            should_sell = self.strategy.should_sell(
-                trade, sell_rate, datetime.utcnow(), buy, sell, force_stoploss=stoploss)
-        else:
-            should_sell = self.strategy.should_sell(trade, sell_rate, datetime.utcnow(), buy, sell)
+    def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
+                                buy: bool, sell: bool) -> bool:
+        """
+        Check and execute sell
+        """
+        should_sell = self.strategy.should_sell(
+                trade, sell_rate, datetime.utcnow(), buy, sell,
+                force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+        )
 
         if should_sell.sell_flag:
             self.execute_sell(trade, sell_rate, should_sell.sell_type)
@@ -873,9 +875,9 @@ class FreqtradeBot(object):
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
         Trade.session.flush()
-        self.notify_sell(trade)
+        self._notify_sell(trade)
 
-    def notify_sell(self, trade: Trade):
+    def _notify_sell(self, trade: Trade):
         """
         Sends rpc notification when a sell occured.
         """
