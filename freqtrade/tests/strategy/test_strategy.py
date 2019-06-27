@@ -66,7 +66,7 @@ def test_load_strategy(result):
     assert 'adx' in resolver.strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
-def test_load_strategy_byte64(result):
+def test_load_strategy_base64(result):
     with open("freqtrade/tests/strategy/test_strategy.py", "r") as file:
         encoded_string = urlsafe_b64encode(file.read().encode("utf-8")).decode("utf-8")
     resolver = StrategyResolver({'strategy': 'TestStrategy:{}'.format(encoded_string)})
