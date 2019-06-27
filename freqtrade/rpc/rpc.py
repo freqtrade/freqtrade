@@ -298,7 +298,10 @@ class RPC(object):
                 'est_btc': est_btc,
             })
         if total == 0.0:
-            raise RPCException('all balances are zero')
+            if self._freqtrade.config.get('dry_run', False):
+                raise RPCException('Running in Dry Run, balances are not available.')
+            else:
+                raise RPCException('All balances are zero.')
 
         symbol = fiat_display_currency
         value = self._fiat_converter.convert_amount(total, 'BTC',
