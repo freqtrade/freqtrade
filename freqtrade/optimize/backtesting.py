@@ -265,6 +265,7 @@ class Backtesting(object):
                         closerate = - (trade.open_rate * roi + trade.open_rate *
                                        (1 + trade.fee_open)) / (trade.fee_close - 1)
                     else:
+                        # This should not be reached...
                         closerate = sell_row.open
                 else:
                     closerate = sell_row.open
