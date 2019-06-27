@@ -2886,6 +2886,30 @@ def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, mo
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
 
 
+def test_get_real_amount_no_currency_in_fee(default_conf, trades_for_order, buy_order_fee, mocker):
+
+    limit_buy_order = deepcopy(buy_order_fee)
+    limit_buy_order['fee'] = {'cost': 0.004, 'currency': None}
+    trades_for_order[0]['fee']['currency'] = None
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
+    amount = sum(x['amount'] for x in trades_for_order)
+    trade = Trade(
+        pair='LTC/ETH',
+        amount=amount,
+        exchange='binance',
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+
+    # Amount does not change
+    assert freqtrade.get_real_amount(trade, limit_buy_order) == amount
+
+
 def test_get_real_amount_BNB(default_conf, trades_for_order, buy_order_fee, mocker):
     trades_for_order[0]['fee']['currency'] = 'BNB'
     trades_for_order[0]['fee']['cost'] = 0.00094518
