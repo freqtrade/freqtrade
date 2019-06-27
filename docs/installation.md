@@ -18,6 +18,9 @@ You will need to create API Keys (Usually you get `key` and `secret`) from the E
 
 Freqtrade provides a Linux/MacOS script to install all dependencies and help you to configure the bot.
 
+!!! Note
+    Python3.6 or higher and the corresponding pip are assumed to be available. The install-script will warn and stop if that's not the case.
+
 ```bash
 git clone git@github.com:freqtrade/freqtrade.git
 cd freqtrade

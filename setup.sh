@@ -4,7 +4,7 @@
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
-        echo "pip not found. Please make sure that pip is available for ${PYTHON}."
+        echo "pip not found (called as '${PYTHON} -m pip'). Please make sure that pip is available for ${PYTHON}."
         exit 1
    fi
 }
