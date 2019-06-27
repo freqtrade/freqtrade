@@ -3,7 +3,8 @@ import argparse
 
 import pytest
 
-from freqtrade.arguments import Arguments, TimeRange
+from freqtrade.arguments import (ARGS_DOWNLOADER, ARGS_PLOT_DATAFRAME,
+                                 Arguments, TimeRange, check_int_positive)
 
 
 # Parse common command-line-arguments. Used for all tools
@@ -49,8 +50,8 @@ def test_parse_args_verbose() -> None:
 
 def test_common_scripts_options() -> None:
     arguments = Arguments(['-p', 'ETH/BTC'], '')
-    arguments.common_scripts_options()
-    args = arguments.get_parsed_arg()
+    arguments.build_args(ARGS_DOWNLOADER)
+    args = arguments.parse_args()
     assert args.pairs == 'ETH/BTC'
 
 
@@ -178,8 +179,8 @@ def test_download_data_options() -> None:
         '--exchange', 'binance'
     ]
     arguments = Arguments(args, '')
-    arguments.common_options()
-    arguments.download_data_options()
+    arguments.build_args(ARGS_DOWNLOADER)
+
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'
     assert args.datadir == 'datadir/folder'
@@ -195,8 +196,7 @@ def test_plot_dataframe_options() -> None:
         '-p', 'UNITTEST/BTC',
     ]
     arguments = Arguments(args, '')
-    arguments.common_scripts_options()
-    arguments.plot_dataframe_options()
+    arguments.build_args(ARGS_PLOT_DATAFRAME)
     pargs = arguments.parse_args(True)
     assert pargs.indicators1 == "sma10,sma100"
     assert pargs.indicators2 == "macd,fastd,fastk"
@@ -206,18 +206,18 @@ def test_plot_dataframe_options() -> None:
 
 def test_check_int_positive() -> None:
 
-    assert Arguments.check_int_positive("3") == 3
-    assert Arguments.check_int_positive("1") == 1
-    assert Arguments.check_int_positive("100") == 100
+    assert check_int_positive("3") == 3
+    assert check_int_positive("1") == 1
+    assert check_int_positive("100") == 100
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("-2")
+        check_int_positive("-2")
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("0")
+        check_int_positive("0")
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("3.5")
+        check_int_positive("3.5")
 
     with pytest.raises(argparse.ArgumentTypeError):
-        Arguments.check_int_positive("DeadBeef")
+        check_int_positive("DeadBeef")
