@@ -252,22 +252,20 @@ class Backtesting(object):
             sell = self.strategy.should_sell(trade, sell_row.open, sell_row.date, sell_row.buy,
                                              sell_row.sell, low=sell_row.low, high=sell_row.high)
             if sell.sell_flag:
-
                 trade_dur = int((sell_row.date - buy_row.date).total_seconds() // 60)
                 # Special handling if high or low hit STOP_LOSS or ROI
                 if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
                     # Set close_rate to stoploss
                     closerate = trade.stop_loss
                 elif sell.sell_type == (SellType.ROI):
-                    # get next entry in min_roi > to trade duration
-                    # Interface.py skips on trade_duration <= duration
-                    roi_entry = max(list(filter(lambda x: trade_dur >= x,
-                                                self.strategy.minimal_roi.keys())))
-                    roi = self.strategy.minimal_roi[roi_entry]
-
-                    # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
-                    closerate = - (trade.open_rate * roi + trade.open_rate *
-                                   (1 + trade.fee_open)) / (trade.fee_close - 1)
+                    roi = self.strategy.min_roi_reached_entry(trade_dur)
+                    if roi is not None:
+                        # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
+                        closerate = - (trade.open_rate * roi + trade.open_rate *
+                                       (1 + trade.fee_open)) / (trade.fee_close - 1)
+                    else:
+                        # This should not be reached...
+                        closerate = sell_row.open
                 else:
                     closerate = sell_row.open
 
