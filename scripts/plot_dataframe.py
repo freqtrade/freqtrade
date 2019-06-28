@@ -130,7 +130,7 @@ def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     parsed_args = arguments.parse_args()
 
     # Load the configuration
-    config = setup_configuration(parsed_args, RunMode.BACKTEST)
+    config = setup_configuration(parsed_args, RunMode.OTHER)
     return config
 
 
