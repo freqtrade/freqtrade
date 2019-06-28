@@ -170,7 +170,7 @@ class Configuration(object):
         self._load_logging_config(config)
 
         # Support for sd_notify
-        if self.args.sd_notify:
+        if 'sd_notify' in self.args and self.args.sd_notify:
             config['internals'].update({'sd_notify': True})
 
         # Add dynamic_whitelist if found
@@ -186,7 +186,8 @@ class Configuration(object):
                 '(not applicable with Backtesting and Hyperopt)'
             )
 
-        if self.args.db_url and self.args.db_url != constants.DEFAULT_DB_PROD_URL:
+        if ('db_url' in self.args and self.args.db_url and
+                self.args.db_url != constants.DEFAULT_DB_PROD_URL):
             config.update({'db_url': self.args.db_url})
             logger.info('Parameter --db-url detected ...')
 
