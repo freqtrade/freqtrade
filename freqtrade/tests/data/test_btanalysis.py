@@ -4,10 +4,11 @@ import pytest
 from arrow import Arrow
 from pandas import DataFrame, to_datetime
 
-from freqtrade.arguments import TimeRange, Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, create_cum_profit,
                                        extract_trades_of_period,
-                                       load_backtest_data, load_trades_from_db)
+                                       load_backtest_data, load_trades,
+                                       load_trades_from_db)
 from freqtrade.data.history import load_pair_history, make_testdata_path
 from freqtrade.tests.test_persistence import create_mock_trades
 
@@ -74,6 +75,26 @@ def test_extract_trades_of_period():
     assert trades1.iloc[0].close_time == Arrow(2017, 11, 14, 10, 41, 0).datetime
     assert trades1.iloc[-1].open_time == Arrow(2017, 11, 14, 14, 20, 0).datetime
     assert trades1.iloc[-1].close_time == Arrow(2017, 11, 14, 15, 25, 0).datetime
+
+
+def test_load_trades(default_conf, mocker):
+    db_mock = mocker.patch("freqtrade.data.btanalysis.load_trades_from_db", MagicMock())
+    bt_mock = mocker.patch("freqtrade.data.btanalysis.load_backtest_data", MagicMock())
+
+    default_conf['trade_source'] = "DB"
+    load_trades(default_conf)
+
+    assert db_mock.call_count == 1
+    assert bt_mock.call_count == 0
+
+    db_mock.reset_mock()
+    bt_mock.reset_mock()
+    default_conf['trade_source'] = "file"
+    default_conf['exportfilename'] = "testfile.json"
+    load_trades(default_conf)
+
+    assert db_mock.call_count == 0
+    assert bt_mock.call_count == 1
 
 
 def test_create_cum_profit():

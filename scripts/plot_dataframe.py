@@ -21,8 +21,7 @@ import pandas as pd
 
 from freqtrade.arguments import ARGS_PLOT_DATAFRAME, Arguments
 from freqtrade.data import history
-from freqtrade.data.btanalysis import (extract_trades_of_period,
-                                       load_backtest_data, load_trades_from_db)
+from freqtrade.data.btanalysis import extract_trades_of_period, load_trades
 from freqtrade.optimize import setup_configuration
 from freqtrade.plot.plotting import (generate_candlestick_graph,
                                      generate_plot_file,
@@ -80,10 +79,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         live=config.get("live", False),
     )
 
-    if config["trade_source"] == "DB":
-        trades = load_trades_from_db(config["db_url"])
-    elif config["trade_source"] == "file":
-        trades = load_backtest_data(Path(config["exportfilename"]))
+    trades = load_trades(config)
 
     pair_counter = 0
     for pair, data in tickers.items():

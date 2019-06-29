@@ -101,6 +101,20 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     return trades
 
 
+def load_trades(config) -> pd.DataFrame:
+    """
+    Based on configuration option "trade_source":
+    * loads data from DB (using `db_url`)
+    * loads data from backtestfile (`using exportfilename`)
+    """
+    if config["trade_source"] == "DB":
+        return load_trades_from_db(config["db_url"])
+    elif config["trade_source"] == "file":
+        return load_backtest_data(Path(config["exportfilename"]))
+    else:
+        return None
+
+
 def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
     """
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
