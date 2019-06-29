@@ -8,7 +8,7 @@ from copy import deepcopy
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import load_backtest_data
-from freqtrade.plot.plotting import (generate_graph, generate_plot_file,
+from freqtrade.plot.plotting import (generate_candlestick_graph, generate_plot_file,
                                      generate_row, plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
@@ -95,7 +95,7 @@ def test_plot_trades(caplog):
     assert trade_sell.marker.color == 'red'
 
 
-def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
+def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, caplog):
     row_mock = mocker.patch('freqtrade.plot.plotting.generate_row',
                             MagicMock(side_effect=fig_generating_mock))
     trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
@@ -110,8 +110,8 @@ def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
 
     indicators1 = []
     indicators2 = []
-    fig = generate_graph(pair=pair, data=data, trades=None,
-                         indicators1=indicators1, indicators2=indicators2)
+    fig = generate_candlestick_graph(pair=pair, data=data, trades=None,
+                                     indicators1=indicators1, indicators2=indicators2)
     assert isinstance(fig, go.Figure)
     assert fig.layout.title.text == pair
     figure = fig.layout.figure
@@ -131,7 +131,7 @@ def test_generate_graph_no_signals_no_trades(default_conf, mocker, caplog):
     assert log_has("No sell-signals found.", caplog.record_tuples)
 
 
-def test_generate_graph_no_trades(default_conf, mocker):
+def test_generate_candlestick_graph_no_trades(default_conf, mocker):
     row_mock = mocker.patch('freqtrade.plot.plotting.generate_row',
                             MagicMock(side_effect=fig_generating_mock))
     trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
@@ -147,8 +147,8 @@ def test_generate_graph_no_trades(default_conf, mocker):
 
     indicators1 = []
     indicators2 = []
-    fig = generate_graph(pair=pair, data=data, trades=None,
-                         indicators1=indicators1, indicators2=indicators2)
+    fig = generate_candlestick_graph(pair=pair, data=data, trades=None,
+                                     indicators1=indicators1, indicators2=indicators2)
     assert isinstance(fig, go.Figure)
     assert fig.layout.title.text == pair
     figure = fig.layout.figure

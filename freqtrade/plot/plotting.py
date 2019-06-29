@@ -86,7 +86,7 @@ def plot_trades(fig, trades: pd.DataFrame):
     return fig
 
 
-def generate_graph(
+def generate_candlestick_graph(
     pair: str,
     data: pd.DataFrame,
     trades: pd.DataFrame = None,

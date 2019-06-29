@@ -36,7 +36,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import (extract_trades_of_period,
                                        load_backtest_data, load_trades_from_db)
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import generate_graph, generate_plot_file
+from freqtrade.plot.plotting import generate_candlestick_graph, generate_plot_file
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
@@ -105,7 +105,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         trades = trades.loc[trades['pair'] == pair]
         trades = extract_trades_of_period(dataframe, trades)
 
-        fig = generate_graph(
+        fig = generate_candlestick_graph(
             pair=pair,
             data=dataframe,
             trades=trades,
