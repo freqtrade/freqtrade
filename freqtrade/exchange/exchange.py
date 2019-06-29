@@ -723,7 +723,7 @@ class Exchange(object):
 
 
 def is_exchange_bad(exchange: str) -> bool:
-    return exchange in ['bitmex']
+    return exchange in ['bitmex', 'bitstamp']
 
 
 def is_exchange_available(exchange: str, ccxt_module=None) -> bool:
