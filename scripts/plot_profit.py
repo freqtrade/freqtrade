@@ -2,15 +2,7 @@
 """
 Script to display profits
 
-Mandatory Cli parameters:
--p / --pair: pair to examine
-
-Optional Cli parameters
--c / --config: specify configuration file
--s / --strategy: strategy to use
--d / --datadir: path to pair backtest data
---timerange: specify what timerange of data to use
---export-filename: Specify where the backtest export is located.
+Use `python plot_profit.py --help` to display the command line arguments
 """
 import json
 import logging

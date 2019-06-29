@@ -2,19 +2,7 @@
 """
 Script to display when the bot will buy on specific pair(s)
 
-Mandatory Cli parameters:
--p / --pairs: pair(s) to examine
-
-Option but recommended
--s / --strategy: strategy to use
-
-
-Optional Cli parameters
--d / --datadir: path to pair(s) backtest data
---timerange: specify what timerange of data to use.
--l / --live: Live, to download the latest ticker for the pair(s)
--db / --db-url: Show trades stored in database
-
+Use `python plot_dataframe.py --help` to display the command line arguments
 
 Indicators recommended
 Row 1: sma, ema3, ema5, ema10, ema50
