@@ -109,3 +109,15 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> p
     trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
                         (trades['close_time'] <= dataframe.iloc[-1]['date'])]
     return trades
+
+
+def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str):
+    """
+    Adds a column `col_name` with the cumulative profit for the given trades array.
+    """
+    df[col_name] = trades.set_index('close_time')['profitperc'].cumsum()
+    # Set first value to 0
+    df.loc[df.iloc[0].name, col_name] = 0
+    # FFill to get continuous
+    df[col_name] = df[col_name].ffill()
+    return df
