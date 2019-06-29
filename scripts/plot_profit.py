@@ -4,62 +4,26 @@ Script to display profits
 
 Use `python plot_profit.py --help` to display the command line arguments
 """
-import json
 import logging
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-import numpy as np
+import pandas as pd
 import plotly.graph_objs as go
 from plotly import tools
 from plotly.offline import plot
 
-from freqtrade.arguments import Arguments, ARGS_PLOT_PROFIT
+from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
 from freqtrade.configuration import Configuration
 from freqtrade.data import history
-from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.misc import common_datearray
+from freqtrade.data.btanalysis import create_cum_profit, load_trades
+from freqtrade.plot.plotting import generate_plot_file
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 
-
 logger = logging.getLogger(__name__)
-
-
-# data:: [ pair,      profit-%,  enter,         exit,        time, duration]
-# data:: ["ETH/BTC", 0.0023975, "1515598200", "1515602100", "2018-01-10 07:30:00+00:00", 65]
-def make_profit_array(data: List, px: int, min_date: int,
-                      interval: str,
-                      filter_pairs: Optional[List] = None) -> np.ndarray:
-    pg = np.zeros(px)
-    filter_pairs = filter_pairs or []
-    # Go through the trades
-    # and make an total profit
-    # array
-    for trade in data:
-        pair = trade[0]
-        if filter_pairs and pair not in filter_pairs:
-            continue
-        profit = trade[1]
-        trade_sell_time = int(trade[3])
-
-        ix = define_index(min_date, trade_sell_time, interval)
-        if ix < px:
-            logger.debug('[%s]: Add profit %s on %s', pair, profit, trade[4])
-            pg[ix] += profit
-
-    # rewrite the pg array to go from
-    # total profits at each timeframe
-    # to accumulated profits
-    pa = 0
-    for x in range(0, len(pg)):
-        p = pg[x]  # Get current total percent
-        pa += p  # Add to the accumulated percent
-        pg[x] = pa  # write back to save memory
-
-    return pg
 
 
 def plot_profit(args: Namespace) -> None:
@@ -70,34 +34,15 @@ def plot_profit(args: Namespace) -> None:
     in helping out to find a good algorithm.
     """
 
-    # We need to use the same pairs, same ticker_interval
-    # and same timeperiod as used in backtesting
-    # to match the tickerdata against the profits-results
+    # We need to use the same pairs and the same ticker_interval
+    # as used in backtesting / trading
+    # to match the tickerdata against the results
     timerange = Arguments.parse_timerange(args.timerange)
 
     config = Configuration(args, RunMode.OTHER).get_config()
 
     # Init strategy
-    try:
-        strategy = StrategyResolver({'strategy': config.get('strategy')}).strategy
-
-    except AttributeError:
-        logger.critical(
-            'Impossible to load the strategy. Please check the file "user_data/strategies/%s.py"',
-            config.get('strategy')
-        )
-        exit(1)
-
-    # Load the profits results
-    try:
-        filename = args.exportfilename
-        with open(filename) as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        logger.critical(
-            'File "backtest-result.json" not found. This script require backtesting '
-            'results to run.\nPlease run a backtesting with the parameter --export.')
-        exit(1)
+    strategy = StrategyResolver(config).strategy
 
     # Take pairs from the cli otherwise switch to the pair in the config file
     if args.pairs:
@@ -105,6 +50,11 @@ def plot_profit(args: Namespace) -> None:
         filter_pairs = filter_pairs.split(',')
     else:
         filter_pairs = config['exchange']['pair_whitelist']
+
+    # Load the profits results
+    trades = load_trades(config)
+
+    trades = trades[trades['pair'].isin(filter_pairs)]
 
     ticker_interval = strategy.ticker_interval
     pairs = config['exchange']['pair_whitelist']
@@ -120,49 +70,28 @@ def plot_profit(args: Namespace) -> None:
         refresh_pairs=False,
         timerange=timerange
     )
-    dataframes = strategy.tickerdata_to_dataframe(tickers)
 
-    # NOTE: the dataframes are of unequal length,
-    # 'dates' is an merged date array of them all.
-
-    dates = common_datearray(dataframes)
-    min_date = int(min(dates).timestamp())
-    max_date = int(max(dates).timestamp())
-    num_iterations = define_index(min_date, max_date, ticker_interval) + 1
-
-    # Make an average close price of all the pairs that was involved.
+    # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    # We are essentially saying:
-    #  array <- sum dataframes[*]['close'] / num_items dataframes
-    #  FIX: there should be some onliner numpy/panda for this
-    avgclose = np.zeros(num_iterations)
-    num = 0
-    for pair, pair_data in dataframes.items():
-        close = pair_data['close']
-        maxprice = max(close)  # Normalize price to [0,1]
-        logger.info('Pair %s has length %s' % (pair, len(close)))
-        for x in range(0, len(close)):
-            avgclose[x] += close[x] / maxprice
-        # avgclose += close
-        num += 1
-    avgclose /= num
 
-    # make an profits-growth array
-    pg = make_profit_array(data, num_iterations, min_date, ticker_interval, filter_pairs)
+    # Combine close-values for all pairs, rename columns to "pair"
+    df_comb = pd.concat([tickers[pair].set_index('date').rename(
+        {'close': pair}, axis=1)[pair] for pair in tickers], axis=1)
+    df_comb['mean'] = df_comb.mean(axis=1)
 
-    #
+    # Add combined cumulative profit
+    df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
+
     # Plot the pairs average close prices, and total profit growth
-    #
-
     avgclose = go.Scattergl(
-        x=dates,
-        y=avgclose,
+        x=df_comb.index,
+        y=df_comb['mean'],
         name='Avg close price',
     )
 
     profit = go.Scattergl(
-        x=dates,
-        y=pg,
+        x=df_comb.index,
+        y=df_comb['cum_profit'],
         name='Profit',
     )
 
@@ -172,23 +101,19 @@ def plot_profit(args: Namespace) -> None:
     fig.append_trace(profit, 2, 1)
 
     for pair in pairs:
-        pg = make_profit_array(data, num_iterations, min_date, ticker_interval, [pair])
+        profit_col = f'cum_profit_{pair}'
+        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
+
         pair_profit = go.Scattergl(
-            x=dates,
-            y=pg,
-            name=pair,
+            x=df_comb.index,
+            y=df_comb[profit_col],
+            name=f"Profit {pair}",
         )
         fig.append_trace(pair_profit, 3, 1)
 
-    plot(fig, filename=str(Path('user_data').joinpath('freqtrade-profit-plot.html')))
-
-
-def define_index(min_date: int, max_date: int, ticker_interval: str) -> int:
-    """
-    Return the index of a specific date
-    """
-    interval_seconds = timeframe_to_seconds(ticker_interval)
-    return int((max_date - min_date) / interval_seconds)
+    generate_plot_file(fig,
+                       filename='freqtrade-profit-plot.html',
+                       auto_open=True)
 
 
 def plot_parse_args(args: List[str]) -> Namespace:
