@@ -80,6 +80,11 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         live=config.get("live", False),
     )
 
+    if config["trade_source"] == "DB":
+        trades = load_trades_from_db(config["db_url"])
+    elif config["trade_source"] == "file":
+        trades = load_backtest_data(Path(config["exportfilename"]))
+
     pair_counter = 0
     for pair, data in tickers.items():
         pair_counter += 1
@@ -87,18 +92,14 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
         tickers = {}
         tickers[pair] = data
         dataframe = generate_dataframe(strategy, tickers, pair)
-        if config["trade_source"] == "DB":
-            trades = load_trades_from_db(config["db_url"])
-        elif config["trade_source"] == "file":
-            trades = load_backtest_data(Path(config["exportfilename"]))
 
-        trades = trades.loc[trades['pair'] == pair]
-        trades = extract_trades_of_period(dataframe, trades)
+        trades_pair = trades.loc[trades['pair'] == pair]
+        trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
         fig = generate_candlestick_graph(
             pair=pair,
             data=dataframe,
-            trades=trades,
+            trades=trades_pair,
             indicators1=config["indicators1"].split(","),
             indicators2=config["indicators2"].split(",")
         )
