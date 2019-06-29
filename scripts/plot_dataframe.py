@@ -24,7 +24,9 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import (extract_trades_of_period,
                                        load_backtest_data, load_trades_from_db)
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import generate_candlestick_graph, generate_plot_file
+from freqtrade.plot.plotting import (generate_candlestick_graph,
+                                     generate_plot_file,
+                                     generate_plot_filename)
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
@@ -101,7 +103,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
             indicators2=config["indicators2"].split(",")
         )
 
-        generate_plot_file(fig, pair, ticker_interval)
+        generate_plot_file(fig, generate_plot_filename(pair, ticker_interval))
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 

@@ -1,15 +1,17 @@
 
+from copy import deepcopy
 from unittest.mock import MagicMock
 
-from plotly import tools
 import plotly.graph_objs as go
-from copy import deepcopy
+from plotly import tools
 
 from freqtrade.arguments import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import load_backtest_data
-from freqtrade.plot.plotting import (generate_candlestick_graph, generate_plot_file,
-                                     generate_row, plot_trades)
+from freqtrade.plot.plotting import (generate_candlestick_graph,
+                                     generate_plot_file,
+                                     generate_plot_filename, generate_row,
+                                     plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
 
@@ -178,10 +180,15 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker):
     assert trades_mock.call_count == 1
 
 
+def test_generate_Plot_filename():
+    fn = generate_plot_filename("UNITTEST/BTC", "5m")
+    assert fn == "freqtrade-plot-UNITTEST_BTC-5m.html"
+
+
 def test_generate_plot_file(mocker, caplog):
     fig = generage_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
-    generate_plot_file(fig, "UNITTEST/BTC", "5m")
+    generate_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html")
 
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig

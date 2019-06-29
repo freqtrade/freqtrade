@@ -204,7 +204,16 @@ def generate_candlestick_graph(
     return fig
 
 
-def generate_plot_file(fig, pair, ticker_interval) -> None:
+def generate_plot_filename(pair, ticker_interval) -> str:
+    pair_name = pair.replace("/", "_")
+    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
+
+    logger.info('Generate plot file for %s', pair)
+
+    return file_name
+
+
+def generate_plot_file(fig, filename: str, auto_open: bool = False) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot
@@ -212,12 +221,8 @@ def generate_plot_file(fig, pair, ticker_interval) -> None:
     :param ticker_interval: Used as part of the filename
     :return: None
     """
-    logger.info('Generate plot file for %s', pair)
-
-    pair_name = pair.replace("/", "_")
-    file_name = 'freqtrade-plot-' + pair_name + '-' + ticker_interval + '.html'
 
     Path("user_data/plots").mkdir(parents=True, exist_ok=True)
 
-    plot(fig, filename=str(Path('user_data/plots').joinpath(file_name)),
-         auto_open=False)
+    plot(fig, filename=str(Path('user_data/plots').joinpath(filename)),
+         auto_open=auto_open)
