@@ -114,6 +114,9 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> p
 def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str):
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
+    :param df: DataFrame with date index
+    :param trades: DataFrame containing trades (requires columns close_time and profitperc)
+    :return: Returns df with one additional column, col_name, containing the cumulative profit.
     """
     df[col_name] = trades.set_index('close_time')['profitperc'].cumsum()
     # Set first value to 0
