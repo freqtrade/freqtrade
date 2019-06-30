@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from freqtrade.arguments import Arguments
-from frqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_trades
+from freqtrade.data.btanalysis import load_trades, create_cum_profit
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,27 @@ def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> tools
     return fig
 
 
-def plot_trades(fig, trades: pd.DataFrame):
+def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> tools.make_subplots:
+    """
+    Add profit-plot
+    :param fig: Plot figure to append to
+    :param row: row number for this plot
+    :param data: candlestick DataFrame
+    :param column: Column to use for plot
+    :param name: Name to use
+    :return: fig with added profit plot
+    """
+    profit = go.Scattergl(
+        x=data.index,
+        y=data[column],
+        name=name,
+    )
+    fig.append_trace(profit, row, 1)
+
+    return fig
+
+
+def plot_trades(fig, trades: pd.DataFrame) -> tools.make_subplots:
     """
     Add trades to "fig"
     """
