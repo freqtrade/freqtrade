@@ -10,7 +10,8 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      generate_candlestick_graph,
-                                     generate_plot_filename, plot_trades,
+                                     generate_plot_filename,
+                                     generate_profit_graph, plot_trades,
                                      store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
@@ -214,3 +215,34 @@ def test_add_profit():
     profits = find_trace_in_fig_data(figure.data, "Profits")
     assert isinstance(profits, go.Scattergl)
     assert profits.yaxis == "y2"
+
+
+def test_generate_profit_graph():
+    filename = history.make_testdata_path(None) / "backtest-result_test.json"
+    trades = load_backtest_data(filename)
+    timerange = Arguments.parse_timerange("20180110-20180112")
+    pairs = ["POWR/BTC", "XLM/BTC"]
+
+    tickers = history.load_data(datadir=None,
+                                pairs=pairs,
+                                ticker_interval='5m',
+                                timerange=timerange
+                                )
+    trades = trades[trades['pair'].isin(pairs)]
+
+    fig = generate_profit_graph(pairs, tickers, trades)
+    assert isinstance(fig, go.Figure)
+
+    assert fig.layout.title.text == "Profit plot"
+    figure = fig.layout.figure
+    assert len(figure.data) == 4
+
+    avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
+    assert isinstance(avgclose, go.Scattergl)
+
+    profit = find_trace_in_fig_data(figure.data, "Profit")
+    assert isinstance(profit, go.Scattergl)
+
+    for pair in pairs:
+        profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
+        assert isinstance(profit_pair, go.Scattergl)

@@ -276,6 +276,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame], trades: 
     )
 
     fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
+    fig['layout'].update(title="Profit plot")
 
     fig.append_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
@@ -286,7 +287,7 @@ def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame], trades: 
 
         fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
 
-    store_plot_file(fig, filename='freqtrade-profit-plot.html', auto_open=True)
+    return fig
 
 
 def generate_plot_filename(pair, ticker_interval) -> str:
