@@ -213,7 +213,7 @@ def generate_plot_filename(pair, ticker_interval) -> str:
     return file_name
 
 
-def generate_plot_file(fig, filename: str, auto_open: bool = False) -> None:
+def store_plot_file(fig, filename: str, auto_open: bool = False) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot

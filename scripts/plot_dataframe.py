@@ -24,7 +24,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import extract_trades_of_period, load_trades
 from freqtrade.optimize import setup_configuration
 from freqtrade.plot.plotting import (generate_candlestick_graph,
-                                     generate_plot_file,
+                                     store_plot_file,
                                      generate_plot_filename)
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -67,7 +67,6 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
 
     # Set timerange to use
     timerange = Arguments.parse_timerange(config["timerange"])
-    ticker_interval = strategy.ticker_interval
 
     tickers = history.load_data(
         datadir=Path(str(config.get("datadir"))),
@@ -100,7 +99,7 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
             indicators2=config["indicators2"].split(",")
         )
 
-        generate_plot_file(fig, generate_plot_filename(pair, ticker_interval))
+        store_plot_file(fig, generate_plot_filename(pair, config['ticker_interval']))
 
     logger.info('End of ploting process %s plots generated', pair_counter)
 

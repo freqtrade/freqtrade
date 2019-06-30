@@ -9,7 +9,7 @@ from freqtrade.arguments import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import load_backtest_data
 from freqtrade.plot.plotting import (generate_candlestick_graph,
-                                     generate_plot_file,
+                                     store_plot_file,
                                      generate_plot_filename, generate_row,
                                      plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -188,7 +188,7 @@ def test_generate_Plot_filename():
 def test_generate_plot_file(mocker, caplog):
     fig = generage_empty_figure()
     plot_mock = mocker.patch("freqtrade.plot.plotting.plot", MagicMock())
-    generate_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html")
+    store_plot_file(fig, filename="freqtrade-plot-UNITTEST_BTC-5m.html")
 
     assert plot_mock.call_count == 1
     assert plot_mock.call_args[0][0] == fig
