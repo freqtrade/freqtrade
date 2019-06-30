@@ -14,19 +14,16 @@ Example of usage:
 """
 import logging
 import sys
-from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 
 from freqtrade.arguments import ARGS_PLOT_DATAFRAME, Arguments
-from freqtrade.data import history
-from freqtrade.data.btanalysis import extract_trades_of_period, load_trades
+from freqtrade.data.btanalysis import extract_trades_of_period
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import (generate_candlestick_graph,
+from freqtrade.plot.plotting import (FTPlots, generate_candlestick_graph,
                                      store_plot_file,
                                      generate_plot_filename)
-from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -57,38 +54,17 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     -Generate plot files
     :return: None
     """
-    exchange = ExchangeResolver(config.get('exchange', {}).get('name'), config).exchange
-
-    strategy = StrategyResolver(config).strategy
-    if "pairs" in config:
-        pairs = config["pairs"].split(',')
-    else:
-        pairs = config["exchange"]["pair_whitelist"]
-
-    # Set timerange to use
-    timerange = Arguments.parse_timerange(config["timerange"])
-
-    tickers = history.load_data(
-        datadir=Path(str(config.get("datadir"))),
-        pairs=pairs,
-        ticker_interval=config['ticker_interval'],
-        refresh_pairs=config.get('refresh_pairs', False),
-        timerange=timerange,
-        exchange=exchange,
-        live=config.get("live", False),
-    )
-
-    trades = load_trades(config)
+    plot = FTPlots(config)
 
     pair_counter = 0
-    for pair, data in tickers.items():
+    for pair, data in plot.tickers.items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
         tickers = {}
         tickers[pair] = data
-        dataframe = generate_dataframe(strategy, tickers, pair)
+        dataframe = generate_dataframe(plot.strategy, tickers, pair)
 
-        trades_pair = trades.loc[trades['pair'] == pair]
+        trades_pair = plot.trades.loc[plot.trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
         fig = generate_candlestick_graph(

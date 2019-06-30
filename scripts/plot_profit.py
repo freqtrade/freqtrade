@@ -6,7 +6,6 @@ Use `python plot_profit.py --help` to display the command line arguments
 """
 import logging
 import sys
-from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
@@ -14,11 +13,9 @@ import plotly.graph_objs as go
 from plotly import tools
 
 from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
-from freqtrade.data import history
-from freqtrade.data.btanalysis import create_cum_profit, load_trades
+from freqtrade.data.btanalysis import create_cum_profit
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import store_plot_file
-from freqtrade.resolvers import ExchangeResolver
+from freqtrade.plot.plotting import FTPlots, store_plot_file
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -31,41 +28,16 @@ def plot_profit(config: Dict[str, Any]) -> None:
     But should be somewhat proportional, and therefor useful
     in helping out to find a good algorithm.
     """
+    plot = FTPlots(config)
 
-    exchange = ExchangeResolver(config.get('exchange', {}).get('name'), config).exchange
-
-    # Take pairs from the cli otherwise switch to the pair in the config file
-    if "pairs" in config:
-        pairs = config["pairs"].split(',')
-    else:
-        pairs = config["exchange"]["pair_whitelist"]
-
-    # We need to use the same pairs and the same ticker_interval
-    # as used in backtesting / trading
-    # to match the tickerdata against the results
-    timerange = Arguments.parse_timerange(config["timerange"])
-
-    tickers = history.load_data(
-        datadir=Path(str(config.get("datadir"))),
-        pairs=pairs,
-        ticker_interval=config['ticker_interval'],
-        refresh_pairs=config.get('refresh_pairs', False),
-        timerange=timerange,
-        exchange=exchange,
-        live=config.get("live", False),
-    )
-
-    # Load the profits results
-    trades = load_trades(config)
-
-    trades = trades[trades['pair'].isin(pairs)]
+    trades = plot.trades[plot.trades['pair'].isin(plot.pairs)]
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
 
     # Combine close-values for all pairs, rename columns to "pair"
-    df_comb = pd.concat([tickers[pair].set_index('date').rename(
-        {'close': pair}, axis=1)[pair] for pair in tickers], axis=1)
+    df_comb = pd.concat([plot.tickers[pair].set_index('date').rename(
+        {'close': pair}, axis=1)[pair] for pair in plot.tickers], axis=1)
     df_comb['mean'] = df_comb.mean(axis=1)
 
     # Add combined cumulative profit
@@ -89,7 +61,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     fig.append_trace(avgclose, 1, 1)
     fig.append_trace(profit, 2, 1)
 
-    for pair in pairs:
+    for pair in plot.pairs:
         profit_col = f'cum_profit_{pair}'
         df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
 
@@ -100,9 +72,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
         )
         fig.append_trace(pair_profit, 3, 1)
 
-    store_plot_file(fig,
-                       filename='freqtrade-profit-plot.html',
-                       auto_open=True)
+    store_plot_file(fig, filename='freqtrade-profit-plot.html', auto_open=True)
 
 
 def plot_parse_args(args: List[str]) -> Dict[str, Any]:
