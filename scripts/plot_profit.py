@@ -6,27 +6,25 @@ Use `python plot_profit.py --help` to display the command line arguments
 """
 import logging
 import sys
-from argparse import Namespace
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
 
 import pandas as pd
 import plotly.graph_objs as go
 from plotly import tools
-from plotly.offline import plot
 
 from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
-from freqtrade.configuration import Configuration
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_trades
-from freqtrade.plot.plotting import generate_plot_file
-from freqtrade.resolvers import StrategyResolver
+from freqtrade.optimize import setup_configuration
+from freqtrade.plot.plotting import store_plot_file
+from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
 
-def plot_profit(args: Namespace) -> None:
+def plot_profit(config: Dict[str, Any]) -> None:
     """
     Plots the total profit for all pairs.
     Note, the profit calculation isn't realistic.
@@ -34,42 +32,33 @@ def plot_profit(args: Namespace) -> None:
     in helping out to find a good algorithm.
     """
 
+    exchange = ExchangeResolver(config.get('exchange', {}).get('name'), config).exchange
+
+    # Take pairs from the cli otherwise switch to the pair in the config file
+    if "pairs" in config:
+        pairs = config["pairs"].split(',')
+    else:
+        pairs = config["exchange"]["pair_whitelist"]
+
     # We need to use the same pairs and the same ticker_interval
     # as used in backtesting / trading
     # to match the tickerdata against the results
-    timerange = Arguments.parse_timerange(args.timerange)
+    timerange = Arguments.parse_timerange(config["timerange"])
 
-    config = Configuration(args, RunMode.OTHER).get_config()
-
-    # Init strategy
-    strategy = StrategyResolver(config).strategy
-
-    # Take pairs from the cli otherwise switch to the pair in the config file
-    if args.pairs:
-        filter_pairs = args.pairs
-        filter_pairs = filter_pairs.split(',')
-    else:
-        filter_pairs = config['exchange']['pair_whitelist']
+    tickers = history.load_data(
+        datadir=Path(str(config.get("datadir"))),
+        pairs=pairs,
+        ticker_interval=config['ticker_interval'],
+        refresh_pairs=config.get('refresh_pairs', False),
+        timerange=timerange,
+        exchange=exchange,
+        live=config.get("live", False),
+    )
 
     # Load the profits results
     trades = load_trades(config)
 
-    trades = trades[trades['pair'].isin(filter_pairs)]
-
-    ticker_interval = strategy.ticker_interval
-    pairs = config['exchange']['pair_whitelist']
-
-    if filter_pairs:
-        pairs = list(set(pairs) & set(filter_pairs))
-        logger.info('Filter, keep pairs %s' % pairs)
-
-    tickers = history.load_data(
-        datadir=Path(str(config.get('datadir'))),
-        pairs=pairs,
-        ticker_interval=ticker_interval,
-        refresh_pairs=False,
-        timerange=timerange
-    )
+    trades = trades[trades['pair'].isin(pairs)]
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
@@ -111,12 +100,12 @@ def plot_profit(args: Namespace) -> None:
         )
         fig.append_trace(pair_profit, 3, 1)
 
-    generate_plot_file(fig,
+    store_plot_file(fig,
                        filename='freqtrade-profit-plot.html',
                        auto_open=True)
 
 
-def plot_parse_args(args: List[str]) -> Namespace:
+def plot_parse_args(args: List[str]) -> Dict[str, Any]:
     """
     Parse args passed to the script
     :param args: Cli arguments
@@ -125,7 +114,11 @@ def plot_parse_args(args: List[str]) -> Namespace:
     arguments = Arguments(args, 'Graph profits')
     arguments.build_args(optionlist=ARGS_PLOT_PROFIT)
 
-    return arguments.parse_args()
+    parsed_args = arguments.parse_args()
+
+    # Load the configuration
+    config = setup_configuration(parsed_args, RunMode.OTHER)
+    return config
 
 
 def main(sysargv: List[str]) -> None:
