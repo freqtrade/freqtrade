@@ -7,7 +7,7 @@ import pandas as pd
 from freqtrade.arguments import Arguments
 from freqtrade.exchange import Exchange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_trades, create_cum_profit
+from freqtrade.data.btanalysis import load_trades
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
 logger = logging.getLogger(__name__)

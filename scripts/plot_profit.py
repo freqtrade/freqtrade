@@ -8,14 +8,13 @@ import logging
 import sys
 from typing import Any, Dict, List
 
-import pandas as pd
 import plotly.graph_objs as go
 from plotly import tools
 
 from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
 from freqtrade.data.btanalysis import create_cum_profit, combine_tickers_with_mean
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import FTPlots, store_plot_file
+from freqtrade.plot.plotting import FTPlots, store_plot_file, add_profit
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -48,27 +47,16 @@ def plot_profit(config: Dict[str, Any]) -> None:
         name='Avg close price',
     )
 
-    profit = go.Scattergl(
-        x=df_comb.index,
-        y=df_comb['cum_profit'],
-        name='Profit',
-    )
-
     fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
 
     fig.append_trace(avgclose, 1, 1)
-    fig.append_trace(profit, 2, 1)
+    fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
 
     for pair in plot.pairs:
         profit_col = f'cum_profit_{pair}'
         df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
 
-        pair_profit = go.Scattergl(
-            x=df_comb.index,
-            y=df_comb[profit_col],
-            name=f"Profit {pair}",
-        )
-        fig.append_trace(pair_profit, 3, 1)
+        fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
 
     store_plot_file(fig, filename='freqtrade-profit-plot.html', auto_open=True)
 

@@ -5,13 +5,13 @@ from unittest.mock import MagicMock
 import plotly.graph_objs as go
 from plotly import tools
 
-from freqtrade.arguments import TimeRange, Arguments
+from freqtrade.arguments import Arguments, TimeRange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_backtest_data, create_cum_profit
-from freqtrade.plot.plotting import (generate_candlestick_graph,
-                                     store_plot_file, add_profit,
-                                     generate_plot_filename, add_indicators,
-                                     plot_trades)
+from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
+from freqtrade.plot.plotting import (add_indicators, add_profit,
+                                     generate_candlestick_graph,
+                                     generate_plot_filename, plot_trades,
+                                     store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
 
