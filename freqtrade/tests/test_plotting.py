@@ -5,11 +5,11 @@ from unittest.mock import MagicMock
 import plotly.graph_objs as go
 from plotly import tools
 
-from freqtrade.arguments import TimeRange
+from freqtrade.arguments import TimeRange, Arguments
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_backtest_data
+from freqtrade.data.btanalysis import load_backtest_data, create_cum_profit
 from freqtrade.plot.plotting import (generate_candlestick_graph,
-                                     store_plot_file,
+                                     store_plot_file, add_profit,
                                      generate_plot_filename, add_indicators,
                                      plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
@@ -194,3 +194,23 @@ def test_generate_plot_file(mocker, caplog):
     assert plot_mock.call_args[0][0] == fig
     assert (plot_mock.call_args_list[0][1]['filename']
             == "user_data/plots/freqtrade-plot-UNITTEST_BTC-5m.html")
+
+
+def test_add_profit():
+    filename = history.make_testdata_path(None) / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    timerange = Arguments.parse_timerange("20180110-20180112")
+
+    df = history.load_pair_history(pair="POWR/BTC", ticker_interval='5m',
+                                   datadir=None, timerange=timerange)
+    fig = generage_empty_figure()
+
+    cum_profits = create_cum_profit(df.set_index('date'),
+                                    bt_data[bt_data["pair"] == 'POWR/BTC'],
+                                    "cum_profits")
+
+    fig1 = add_profit(fig, row=2, data=cum_profits, column='cum_profits', name='Profits')
+    figure = fig1.layout.figure
+    profits = find_trace_in_fig_data(figure.data, "Profits")
+    assert isinstance(profits, go.Scattergl)
+    assert profits.yaxis == "y2"

@@ -112,8 +112,6 @@ def load_trades(config) -> pd.DataFrame:
         return load_trades_from_db(config["db_url"])
     elif config["trade_source"] == "file":
         return load_backtest_data(Path(config["exportfilename"]))
-    else:
-        return None
 
 
 def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
