@@ -5,11 +5,14 @@ from arrow import Arrow
 from pandas import DataFrame, to_datetime
 
 from freqtrade.arguments import Arguments, TimeRange
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, create_cum_profit,
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS,
+                                       combine_tickers_with_mean,
+                                       create_cum_profit,
                                        extract_trades_of_period,
                                        load_backtest_data, load_trades,
                                        load_trades_from_db)
-from freqtrade.data.history import load_pair_history, make_testdata_path
+from freqtrade.data.history import (load_data, load_pair_history,
+                                    make_testdata_path)
 from freqtrade.tests.test_persistence import create_mock_trades
 
 
@@ -95,6 +98,19 @@ def test_load_trades(default_conf, mocker):
 
     assert db_mock.call_count == 0
     assert bt_mock.call_count == 1
+
+
+def test_combine_tickers_with_mean():
+    pairs = ["ETH/BTC", "XLM/BTC"]
+    tickers = load_data(datadir=None,
+                        pairs=pairs,
+                        ticker_interval='5m'
+                        )
+    df = combine_tickers_with_mean(tickers)
+    assert isinstance(df, DataFrame)
+    assert "ETH/BTC" in df.columns
+    assert "XLM/BTC" in df.columns
+    assert "mean" in df.columns
 
 
 def test_create_cum_profit():

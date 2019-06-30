@@ -3,6 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -125,7 +126,23 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> p
     return trades
 
 
-def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str):
+def combine_tickers_with_mean(tickers: Dict[str, pd.DataFrame], column: str = "close"):
+    """
+    Combine multiple dataframes "column"
+    :param tickers: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key, and a column
+        named mean, containing the mean of all pairs.
+    """
+    df_comb = pd.concat([tickers[pair].set_index('date').rename(
+        {column: pair}, axis=1)[pair] for pair in tickers], axis=1)
+
+    df_comb['mean'] = df_comb.mean(axis=1)
+
+    return df_comb
+
+
+def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str) -> pd.DataFrame:
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index

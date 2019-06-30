@@ -13,7 +13,7 @@ import plotly.graph_objs as go
 from plotly import tools
 
 from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
-from freqtrade.data.btanalysis import create_cum_profit
+from freqtrade.data.btanalysis import create_cum_profit, combine_tickers_with_mean
 from freqtrade.optimize import setup_configuration
 from freqtrade.plot.plotting import FTPlots, store_plot_file
 from freqtrade.state import RunMode
@@ -36,9 +36,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # this could be useful to gauge the overall market trend
 
     # Combine close-values for all pairs, rename columns to "pair"
-    df_comb = pd.concat([plot.tickers[pair].set_index('date').rename(
-        {'close': pair}, axis=1)[pair] for pair in plot.tickers], axis=1)
-    df_comb['mean'] = df_comb.mean(axis=1)
+    df_comb = combine_tickers_with_mean(plot.tickers, "close")
 
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
