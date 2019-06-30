@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 from freqtrade.arguments import ARGS_PLOT_PROFIT, Arguments
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import FTPlots, generate_profit_graph, store_plot_file
+from freqtrade.plot.plotting import init_plotscript, generate_profit_graph, store_plot_file
 from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
@@ -23,13 +23,14 @@ def plot_profit(config: Dict[str, Any]) -> None:
     But should be somewhat proportional, and therefor useful
     in helping out to find a good algorithm.
     """
-    plot = FTPlots(config)
-
-    trades = plot.trades[plot.trades['pair'].isin(plot.pairs)]
+    plot_elements = init_plotscript(config)
+    trades = plot_elements['trades']
+    # Filter trades to relevant pairs
+    trades = trades[trades['pair'].isin(plot_elements["pairs"])]
 
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
-    fig = generate_profit_graph(plot.pairs, plot.tickers, trades)
+    fig = generate_profit_graph(plot_elements["pairs"], plot_elements["tickers"], trades)
     store_plot_file(fig, filename='freqtrade-profit-plot.html', auto_open=True)
 
 

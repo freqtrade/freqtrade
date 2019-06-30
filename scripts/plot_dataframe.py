@@ -21,7 +21,7 @@ import pandas as pd
 from freqtrade.arguments import ARGS_PLOT_DATAFRAME, Arguments
 from freqtrade.data.btanalysis import extract_trades_of_period
 from freqtrade.optimize import setup_configuration
-from freqtrade.plot.plotting import (FTPlots, generate_candlestick_graph,
+from freqtrade.plot.plotting import (init_plotscript, generate_candlestick_graph,
                                      store_plot_file,
                                      generate_plot_filename)
 from freqtrade.state import RunMode
@@ -54,17 +54,18 @@ def analyse_and_plot_pairs(config: Dict[str, Any]):
     -Generate plot files
     :return: None
     """
-    plot = FTPlots(config)
+    plot_elements = init_plotscript(config)
+    trades = plot_elements['trades']
 
     pair_counter = 0
-    for pair, data in plot.tickers.items():
+    for pair, data in plot_elements["tickers"].items():
         pair_counter += 1
         logger.info("analyse pair %s", pair)
         tickers = {}
         tickers[pair] = data
-        dataframe = generate_dataframe(plot.strategy, tickers, pair)
+        dataframe = generate_dataframe(plot_elements["strategy"], tickers, pair)
 
-        trades_pair = plot.trades.loc[plot.trades['pair'] == pair]
+        trades_pair = trades.loc[trades['pair'] == pair]
         trades_pair = extract_trades_of_period(dataframe, trades_pair)
 
         fig = generate_candlestick_graph(

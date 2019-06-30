@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -23,37 +23,43 @@ except ImportError:
     exit(1)
 
 
-class FTPlots():
+def init_plotscript(config):
+    """
+    Initialize objects needed for plotting
+    :return: Dict with tickers, trades, pairs and strategy
+    """
+    exchange: Optional[Exchange] = None
 
-    def __init__(self, config: Dict[str, Any]):
-        self._config = config
-        self.exchange: Optional[Exchange] = None
+    # Exchange is only needed when downloading data!
+    if config.get("live", False) or config.get("refresh_pairs", False):
+        exchange = ExchangeResolver(config.get('exchange', {}).get('name'),
+                                    config).exchange
 
-        # Exchange is only needed when downloading data!
-        if self._config.get("live", False) or self._config.get("refresh_pairs", False):
-            self.exchange = ExchangeResolver(self._config.get('exchange', {}).get('name'),
-                                             self._config).exchange
+    strategy = StrategyResolver(config).strategy
+    if "pairs" in config:
+        pairs = config["pairs"].split(',')
+    else:
+        pairs = config["exchange"]["pair_whitelist"]
 
-        self.strategy = StrategyResolver(self._config).strategy
-        if "pairs" in self._config:
-            self.pairs = self._config["pairs"].split(',')
-        else:
-            self.pairs = self._config["exchange"]["pair_whitelist"]
+    # Set timerange to use
+    timerange = Arguments.parse_timerange(config["timerange"])
 
-        # Set timerange to use
-        self.timerange = Arguments.parse_timerange(self._config["timerange"])
+    tickers = history.load_data(
+        datadir=Path(str(config.get("datadir"))),
+        pairs=pairs,
+        ticker_interval=config['ticker_interval'],
+        refresh_pairs=config.get('refresh_pairs', False),
+        timerange=timerange,
+        exchange=exchange,
+        live=config.get("live", False),
+    )
 
-        self.tickers = history.load_data(
-            datadir=Path(str(self._config.get("datadir"))),
-            pairs=self.pairs,
-            ticker_interval=self._config['ticker_interval'],
-            refresh_pairs=self._config.get('refresh_pairs', False),
-            timerange=self.timerange,
-            exchange=self.exchange,
-            live=self._config.get("live", False),
-        )
-
-        self.trades = load_trades(self._config)
+    trades = load_trades(config)
+    return {"tickers": tickers,
+            "trades": trades,
+            "pairs": pairs,
+            "strategy": strategy,
+            }
 
 
 def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.make_subplots:
