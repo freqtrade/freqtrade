@@ -10,14 +10,14 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import load_backtest_data
 from freqtrade.plot.plotting import (generate_candlestick_graph,
                                      store_plot_file,
-                                     generate_plot_filename, generate_row,
+                                     generate_plot_filename, add_indicators,
                                      plot_trades)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
 
 
 def fig_generating_mock(fig, *args, **kwargs):
-    """ Return Fig - used to mock generate_row and plot_trades"""
+    """ Return Fig - used to mock add_indicators and plot_trades"""
     return fig
 
 
@@ -36,7 +36,7 @@ def generage_empty_figure():
     )
 
 
-def test_generate_row(default_conf, caplog):
+def test_add_indicators(default_conf, caplog):
     pair = "UNITTEST/BTC"
     timerange = TimeRange(None, 'line', 0, -1000)
 
@@ -51,20 +51,20 @@ def test_generate_row(default_conf, caplog):
     fig = generage_empty_figure()
 
     # Row 1
-    fig1 = generate_row(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
+    fig1 = add_indicators(fig=deepcopy(fig), row=1, indicators=indicators1, data=data)
     figure = fig1.layout.figure
     ema10 = find_trace_in_fig_data(figure.data, "ema10")
     assert isinstance(ema10, go.Scatter)
     assert ema10.yaxis == "y"
 
-    fig2 = generate_row(fig=deepcopy(fig), row=3, indicators=indicators2, data=data)
+    fig2 = add_indicators(fig=deepcopy(fig), row=3, indicators=indicators2, data=data)
     figure = fig2.layout.figure
     macd = find_trace_in_fig_data(figure.data, "macd")
     assert isinstance(macd, go.Scatter)
     assert macd.yaxis == "y3"
 
     # No indicator found
-    fig3 = generate_row(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
+    fig3 = add_indicators(fig=deepcopy(fig), row=3, indicators=['no_indicator'], data=data)
     assert fig == fig3
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog.record_tuples)
 
@@ -98,7 +98,7 @@ def test_plot_trades(caplog):
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, caplog):
-    row_mock = mocker.patch('freqtrade.plot.plotting.generate_row',
+    row_mock = mocker.patch('freqtrade.plot.plotting.add_indicators',
                             MagicMock(side_effect=fig_generating_mock))
     trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
                                MagicMock(side_effect=fig_generating_mock))
@@ -134,7 +134,7 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, c
 
 
 def test_generate_candlestick_graph_no_trades(default_conf, mocker):
-    row_mock = mocker.patch('freqtrade.plot.plotting.generate_row',
+    row_mock = mocker.patch('freqtrade.plot.plotting.add_indicators',
                             MagicMock(side_effect=fig_generating_mock))
     trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
                                MagicMock(side_effect=fig_generating_mock))

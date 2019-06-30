@@ -54,7 +54,7 @@ class FTPlots():
         self.trades = load_trades(self._config)
 
 
-def generate_row(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.make_subplots:
+def add_indicators(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.make_subplots:
     """
     Generator all the indicator selected by the user for a specific row
     :param fig: Plot figure to append to
@@ -224,7 +224,7 @@ def generate_candlestick_graph(
         fig.append_trace(bb_upper, 1, 1)
 
     # Add indicators to main plot
-    fig = generate_row(fig=fig, row=1, indicators=indicators1, data=data)
+    fig = add_indicators(fig=fig, row=1, indicators=indicators1, data=data)
 
     fig = plot_trades(fig, trades)
 
@@ -237,7 +237,7 @@ def generate_candlestick_graph(
     fig.append_trace(volume, 2, 1)
 
     # Add indicators to seperate row
-    fig = generate_row(fig=fig, row=3, indicators=indicators2, data=data)
+    fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
 
     return fig
 
