@@ -5,9 +5,10 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from freqtrade.arguments import Arguments
-from freqtrade.exchange import Exchange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import load_trades
+from freqtrade.data.btanalysis import (combine_tickers_with_mean,
+                                       create_cum_profit, load_trades)
+from freqtrade.exchange import Exchange
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class FTPlots():
         self._config = config
         self.exchange: Optional[Exchange] = None
 
+        # Exchange is only needed when downloading data!
         if self._config.get("live", False) or self._config.get("refresh_pairs", False):
             self.exchange = ExchangeResolver(self._config.get('exchange', {}).get('name'),
                                              self._config).exchange
@@ -256,6 +258,35 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     fig = add_indicators(fig=fig, row=3, indicators=indicators2, data=data)
 
     return fig
+
+
+def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame], trades: pd.DataFrame = None,
+                          ) -> go.Figure:
+    # Combine close-values for all pairs, rename columns to "pair"
+    df_comb = combine_tickers_with_mean(tickers, "close")
+
+    # Add combined cumulative profit
+    df_comb = create_cum_profit(df_comb, trades, 'cum_profit')
+
+    # Plot the pairs average close prices, and total profit growth
+    avgclose = go.Scattergl(
+        x=df_comb.index,
+        y=df_comb['mean'],
+        name='Avg close price',
+    )
+
+    fig = tools.make_subplots(rows=3, cols=1, shared_xaxes=True, row_width=[1, 1, 1])
+
+    fig.append_trace(avgclose, 1, 1)
+    fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
+
+    for pair in pairs:
+        profit_col = f'cum_profit_{pair}'
+        df_comb = create_cum_profit(df_comb, trades[trades['pair'] == pair], profit_col)
+
+        fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
+
+    store_plot_file(fig, filename='freqtrade-profit-plot.html', auto_open=True)
 
 
 def generate_plot_filename(pair, ticker_interval) -> str:
