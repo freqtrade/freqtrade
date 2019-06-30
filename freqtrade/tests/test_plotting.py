@@ -11,8 +11,8 @@ from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.plot.plotting import (add_indicators, add_profit,
                                      generate_candlestick_graph,
                                      generate_plot_filename,
-                                     generate_profit_graph, plot_trades,
-                                     store_plot_file)
+                                     generate_profit_graph, init_plotscript,
+                                     plot_trades, store_plot_file)
 from freqtrade.strategy.default_strategy import DefaultStrategy
 from freqtrade.tests.conftest import log_has, log_has_re
 
@@ -35,6 +35,26 @@ def generage_empty_figure():
         row_width=[1, 1, 4],
         vertical_spacing=0.0001,
     )
+
+
+def test_init_plotscript(default_conf, mocker):
+    default_conf['timerange'] = "20180110-20180112"
+    default_conf['trade_source'] = "file"
+    default_conf['ticker_interval'] = "5m"
+    default_conf["datadir"] = history.make_testdata_path(None)
+    default_conf['exportfilename'] = str(
+        history.make_testdata_path(None) / "backtest-result_test.json")
+    ret = init_plotscript(default_conf)
+    assert "tickers" in ret
+    assert "trades" in ret
+    assert "pairs" in ret
+    assert "strategy" in ret
+
+    default_conf['pairs'] = "POWR/BTC,XLM/BTC"
+    ret = init_plotscript(default_conf)
+    assert "tickers" in ret
+    assert "POWR/BTC" in ret["tickers"]
+    assert "XLM/BTC" in ret["tickers"]
 
 
 def test_add_indicators(default_conf, caplog):
