@@ -1,8 +1,14 @@
 import logging
-from typing import List
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from pathlib import Path
+
+from freqtrade.arguments import Arguments
+from frqtrade.exchange import Exchange
+from freqtrade.data import history
+from freqtrade.data.btanalysis import load_trades
+from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +20,38 @@ try:
 except ImportError:
     logger.exception("Module plotly not found \n Please install using `pip install plotly`")
     exit(1)
+
+
+class FTPlots():
+
+    def __init__(self, config: Dict[str, Any]):
+        self._config = config
+        self.exchange: Optional[Exchange] = None
+
+        if self._config.get("live", False) or self._config.get("refresh_pairs", False):
+            self.exchange = ExchangeResolver(self._config.get('exchange', {}).get('name'),
+                                             self._config).exchange
+
+        self.strategy = StrategyResolver(self._config).strategy
+        if "pairs" in self._config:
+            self.pairs = self._config["pairs"].split(',')
+        else:
+            self.pairs = self._config["exchange"]["pair_whitelist"]
+
+        # Set timerange to use
+        self.timerange = Arguments.parse_timerange(self._config["timerange"])
+
+        self.tickers = history.load_data(
+            datadir=Path(str(self._config.get("datadir"))),
+            pairs=self.pairs,
+            ticker_interval=self._config['ticker_interval'],
+            refresh_pairs=self._config.get('refresh_pairs', False),
+            timerange=self.timerange,
+            exchange=self.exchange,
+            live=self._config.get("live", False),
+        )
+
+        self.trades = load_trades(self._config)
 
 
 def generate_row(fig, row, indicators: List[str], data: pd.DataFrame) -> tools.make_subplots:
