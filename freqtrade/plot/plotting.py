@@ -266,8 +266,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     return fig
 
 
-def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame], trades: pd.DataFrame = None,
-                          ) -> go.Figure:
+def generate_profit_graph(pairs: str, tickers: Dict[str, pd.DataFrame],
+                          trades: pd.DataFrame) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_tickers_with_mean(tickers, "close")
 
