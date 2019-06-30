@@ -28,6 +28,7 @@ class ExchangeResolver(IResolver):
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
+        if not hasattr(self, "exchange"):
             self.exchange = Exchange(config)
 
     def _load_exchange(
