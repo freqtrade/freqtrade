@@ -31,7 +31,7 @@ class Arg:
 
 # List of available command line arguments
 AVAILABLE_CLI_OPTIONS = {
-    # Common arguments
+    # Common options
     "loglevel": Arg(
         '-v', '--verbose',
         help='Verbose mode (-vv for more, -vvv to get all messages).',
@@ -45,7 +45,6 @@ AVAILABLE_CLI_OPTIONS = {
         dest='logfile',
         metavar='FILE',
     ),
-
     "version": Arg(
         '--version',
         action='version',
@@ -64,7 +63,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to backtest data.',
         dest='datadir',
         metavar='PATH',),
-    # Main options
+    # Main (Live Run/Dry Run) options
     "strategy": Arg(
         '-s', '--strategy',
         help='Specify strategy class name (default: `%(default)s`).',
@@ -103,7 +102,7 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         dest='sd_notify',
     ),
-    # Optimize common
+    # Common Optimize options
     "ticker_interval": Arg(
         '-i', '--ticker-interval',
         help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
@@ -134,7 +133,7 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         dest='refresh_pairs',
     ),
-    # backtesting
+    # Backtesting
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
@@ -190,7 +189,7 @@ AVAILABLE_CLI_OPTIONS = {
         'Example: `--stoplosses=-0.01,-0.1,-0.001`',
         dest='stoploss_range',
     ),
-    # hyperopt
+    # Hyperopt
     "hyperopt": Arg(
         '--customhyperopt',
         help='Specify hyperopt class name (default: `%(default)s`).',
@@ -249,21 +248,20 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
     ),
-    # List_exchange
+    # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
         help='Print exchanges in one column.',
         action='store_true',
         dest='print_one_column',
     ),
-    # script_options
+    # Common script options
     "pairs": Arg(
         '-p', '--pairs',
         help='Show profits for only these pairs. Pairs are comma-separated.',
         dest='pairs',
     ),
     # Download data
-
     "pairs_file": Arg(
         '--pairs-file',
         help='File containing a list of pairs to download.',
@@ -298,7 +296,7 @@ AVAILABLE_CLI_OPTIONS = {
         dest='erase',
         action='store_true',
     ),
-    # Plot_df_options
+    # Plot Dataframe options
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
