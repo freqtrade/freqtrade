@@ -5,7 +5,9 @@ This module contains the argument manager class
 import argparse
 import os
 import re
+from functools import partial
 from typing import List, NamedTuple, Optional
+
 import arrow
 from freqtrade import __version__, constants
 
@@ -255,6 +257,26 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
         dest='print_one_column',
     ),
+    # List pairs / markets
+    "print_list": Arg(
+        '--print-list',
+        help='Print list of pairs or market symbols. By default data is'
+             'printed in the tabular format.',
+        action='store_true',
+    ),
+    "quote_currency": Arg(
+        '--quote-currency',
+        help='Select quote currency.',
+    ),
+    "base_currency": Arg(
+        '--base-currency',
+        help='Select base currency.',
+    ),
+    "active_only": Arg(
+        '--active-only',
+        help='Print only active pairs or markets.',
+        action='store_true',
+    ),
     # Common script options
     "pairs": Arg(
         '-p', '--pairs',
@@ -346,8 +368,10 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "position_stacking", "epochs
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-
 ARGS_LIST_EXCHANGE = ["print_one_column"]
+
+ARGS_LIST_PAIRS = ARGS_COMMON + ["exchange", "print_list", "base_currency", "quote_currency",
+                                 "active_only"]
 
 ARGS_DOWNLOADER = ARGS_COMMON + ["pairs", "pairs_file", "days", "exchange", "timeframes", "erase"]
 
@@ -422,7 +446,7 @@ class Arguments(object):
         :return: None
         """
         from freqtrade.optimize import start_backtesting, start_hyperopt, start_edge
-        from freqtrade.utils import start_list_exchanges
+        from freqtrade.utils import start_list_exchanges, start_list_pairs
 
         subparsers = self.parser.add_subparsers(dest='subparser')
 
@@ -443,11 +467,28 @@ class Arguments(object):
 
         # Add list-exchanges subcommand
         list_exchanges_cmd = subparsers.add_parser(
-            'list-exchanges',
-            help='Print available exchanges.'
+                'list-exchanges',
+                help='Print available exchanges.'
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self.build_args(optionlist=ARGS_LIST_EXCHANGE, parser=list_exchanges_cmd)
+
+        # Add list-markets subcommand
+        list_markets_cmd = subparsers.add_parser(
+                'list-markets',
+                help='Print markets on exchange.'
+        )
+        list_markets_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=False))
+        self.build_args(optionlist=ARGS_LIST_PAIRS, parser=list_markets_cmd)
+
+        # Add list-pairs subcommand
+        list_pairs_cmd = subparsers.add_parser(
+                'list-pairs',
+                help='Print pairs on exchange.'
+        )
+        list_pairs_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=True))
+        self.build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)
+
 
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
