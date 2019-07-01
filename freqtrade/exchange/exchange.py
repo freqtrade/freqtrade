@@ -269,7 +269,6 @@ class Exchange(object):
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
-        logger.warning("validate_timerames")
         if not hasattr(self._api, "timeframes"):
             # If timeframes is missing, the exchange probably has no fetchOHLCV method.
             # Therefore we also show that.
