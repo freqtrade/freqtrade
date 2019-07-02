@@ -19,7 +19,7 @@ from pandas import DataFrame
 from freqtrade import (DependencyException, InvalidOrderException,
                        OperationalException, TemporaryError, constants)
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, symbol_is_pair
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ class Exchange(object):
         if quote_currency:
             markets = {k: v for k, v in markets.items() if v['quote'] == quote_currency}
         if pairs_only:
-            markets = {k: v for k, v in markets.items() if '/' in v['symbol']}
+            markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
         if active_only:
             markets = {k: v for k, v in markets.items() if v['active']}
         return markets
