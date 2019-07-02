@@ -76,11 +76,6 @@ def start_list_pairs(args: Namespace, pairs_only: bool = False) -> None:
               (f" with {args.quote_currency} as quote currency" if args.quote_currency else "") +
               (f": {sorted(pairs.keys())}" if len(pairs) else "") + ".")
     else:
-#        # print a table of pairs (markets)
-#        print('{:<15} {:<15} {:<15} {:<15} {:<15}'.format('id', 'symbol', 'base', 'quote', 'active'))
-#
-#        for (k, v) in pairs.items():
-#            print('{:<15} {:<15} {:<15} {:<15} {:<15}'.format(v['id'], v['symbol'], v['base'], v['quote'], "Yes" if v['active'] else "No"))
         tabular_data = []
         for _, v in pairs.items():
             tabular_data.append([v['id'], v['symbol'], v['base'], v['quote'],
