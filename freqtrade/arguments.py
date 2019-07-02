@@ -36,13 +36,11 @@ AVAILABLE_CLI_OPTIONS = {
         '-v', '--verbose',
         help='Verbose mode (-vv for more, -vvv to get all messages).',
         action='count',
-        dest='loglevel',
         default=0,
     ),
     "logfile": Arg(
         '--logfile',
         help='Log to the file specified.',
-        dest='logfile',
         metavar='FILE',
     ),
 
@@ -56,26 +54,22 @@ AVAILABLE_CLI_OPTIONS = {
         help=f'Specify configuration file (default: `{constants.DEFAULT_CONFIG}`). '
         f'Multiple --config options may be used. '
         f'Can be set to `-` to read config from stdin.',
-        dest='config',
         action='append',
         metavar='PATH',),
     "datadir": Arg(
         '-d', '--datadir',
         help='Path to backtest data.',
-        dest='datadir',
         metavar='PATH',),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
         help='Specify strategy class name (default: `%(default)s`).',
-        dest='strategy',
         default='DefaultStrategy',
         metavar='NAME',
     ),
     "strategy_path": Arg(
         '--strategy-path',
         help='Specify additional strategy lookup path.',
-        dest='strategy_path',
         metavar='PATH',
     ),
     "dynamic_whitelist": Arg(
@@ -83,7 +77,6 @@ AVAILABLE_CLI_OPTIONS = {
         help='Dynamically generate and update whitelist '
         'based on 24h BaseVolume (default: %(const)s). '
         'DEPRECATED.',
-        dest='dynamic_whitelist',
         const=constants.DYNAMIC_WHITELIST,
         type=int,
         metavar='INT',
@@ -94,37 +87,31 @@ AVAILABLE_CLI_OPTIONS = {
         help=f'Override trades database URL, this is useful in custom deployments '
         f'(default: `{constants.DEFAULT_DB_PROD_URL}` for Live Run mode, '
         f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
-        dest='db_url',
         metavar='PATH',
     ),
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
         action='store_true',
-        dest='sd_notify',
     ),
     # Optimize common
     "ticker_interval": Arg(
         '-i', '--ticker-interval',
         help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
-        dest='ticker_interval',
     ),
     "timerange": Arg(
         '--timerange',
         help='Specify what timerange of data to use.',
-        dest='timerange',
     ),
     "max_open_trades": Arg(
         '--max_open_trades',
         help='Specify max_open_trades to use.',
         type=int,
-        dest='max_open_trades',
     ),
     "stake_amount": Arg(
         '--stake_amount',
         help='Specify stake_amount.',
         type=float,
-        dest='stake_amount',
     ),
     "refresh_pairs": Arg(
         '-r', '--refresh-pairs-cached',
@@ -132,14 +119,12 @@ AVAILABLE_CLI_OPTIONS = {
         'exchange. Use it if you want to run your optimization commands with '
         'up-to-date data.',
         action='store_true',
-        dest='refresh_pairs',
     ),
     # backtesting
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
         action='store_true',
-        dest='position_stacking',
         default=False
     ),
     "use_max_market_positions": Arg(
@@ -147,14 +132,12 @@ AVAILABLE_CLI_OPTIONS = {
         help='Disable applying `max_open_trades` during backtest '
         '(same as setting `max_open_trades` to a very high number).',
         action='store_false',
-        dest='use_max_market_positions',
         default=True
     ),
     "live": Arg(
         '-l', '--live',
         help='Use live data.',
         action='store_true',
-        dest='live',
     ),
     "strategy_list": Arg(
         '--strategy-list',
@@ -164,13 +147,11 @@ AVAILABLE_CLI_OPTIONS = {
         'the strategy-name is injected into the filename '
         '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
         nargs='+',
-        dest='strategy_list',
     ),
     "export": Arg(
         '--export',
         help='Export backtest results, argument are: trades. '
         'Example: `--export=trades`',
-        dest='export',
     ),
     "exportfilename": Arg(
         '--export-filename',
@@ -179,7 +160,6 @@ AVAILABLE_CLI_OPTIONS = {
         'Example: `--export-filename=user_data/backtest_data/backtest_today.json`',
         default=os.path.join('user_data', 'backtest_data',
                              'backtest-result.json'),
-        dest='exportfilename',
         metavar='PATH',
     ),
     # Edge
@@ -188,20 +168,17 @@ AVAILABLE_CLI_OPTIONS = {
         help='Defines a range of stoploss values against which edge will assess the strategy. '
         'The format is "min,max,step" (without any space). '
         'Example: `--stoplosses=-0.01,-0.1,-0.001`',
-        dest='stoploss_range',
     ),
     # hyperopt
     "hyperopt": Arg(
         '--customhyperopt',
         help='Specify hyperopt class name (default: `%(default)s`).',
-        dest='hyperopt',
         default=constants.DEFAULT_HYPEROPT,
         metavar='NAME',
     ),
     "epochs": Arg(
         '-e', '--epochs',
         help='Specify number of epochs (default: %(default)d).',
-        dest='epochs',
         default=constants.HYPEROPT_EPOCH,
         type=int,
         metavar='INT',
@@ -213,13 +190,11 @@ AVAILABLE_CLI_OPTIONS = {
         choices=['all', 'buy', 'sell', 'roi', 'stoploss'],
         default='all',
         nargs='+',
-        dest='spaces',
     ),
     "print_all": Arg(
         '--print-all',
         help='Print all results, not only the best ones.',
         action='store_true',
-        dest='print_all',
         default=False
     ),
     "hyperopt_jobs": Arg(
@@ -228,7 +203,6 @@ AVAILABLE_CLI_OPTIONS = {
         '(hyperopt worker processes). '
         'If -1 (default), all CPUs are used, for -2, all CPUs but one are used, etc. '
         'If 1 is given, no parallel computing code is used at all.',
-        dest='hyperopt_jobs',
         default=-1,
         type=int,
         metavar='JOBS',
@@ -236,7 +210,6 @@ AVAILABLE_CLI_OPTIONS = {
     "hyperopt_random_state": Arg(
         '--random-state',
         help='Set random state to some positive integer for reproducible hyperopt results.',
-        dest='hyperopt_random_state',
         type=check_int_positive,
         metavar='INT',
     ),
@@ -244,7 +217,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--min-trades',
         help="Set minimal desired number of trades for evaluations in the hyperopt "
         "optimization path (default: 1).",
-        dest='hyperopt_min_trades',
         default=1,
         type=check_int_positive,
         metavar='INT',
@@ -254,26 +226,22 @@ AVAILABLE_CLI_OPTIONS = {
         '-1', '--one-column',
         help='Print exchanges in one column.',
         action='store_true',
-        dest='print_one_column',
     ),
     # script_options
     "pairs": Arg(
         '-p', '--pairs',
         help='Show profits for only these pairs. Pairs are comma-separated.',
-        dest='pairs',
     ),
     # Download data
 
     "pairs_file": Arg(
         '--pairs-file',
         help='File containing a list of pairs to download.',
-        dest='pairs_file',
         metavar='FILE',
     ),
     "days": Arg(
         '--days',
         help='Download data for given number of days.',
-        dest='days',
         type=check_int_positive,
         metavar='INT',
     ),
@@ -281,7 +249,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
         f'Only valid if no config is provided.',
-        dest='exchange',
     ),
     "timeframes": Arg(
         '-t', '--timeframes',
@@ -290,12 +257,10 @@ AVAILABLE_CLI_OPTIONS = {
         choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
                  '6h', '8h', '12h', '1d', '3d', '1w'],
         nargs='+',
-        dest='timeframes',
     ),
     "erase": Arg(
         '--erase',
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
-        dest='erase',
         action='store_true',
     ),
     # Plot_df_options
@@ -304,20 +269,17 @@ AVAILABLE_CLI_OPTIONS = {
         help='Set indicators from your strategy you want in the first row of the graph. '
         'Comma-separated list. Example: `ema3,ema5`. Default: `%(default)s`.',
         default='sma,ema3,ema5',
-        dest='indicators1',
     ),
     "indicators2": Arg(
         '--indicators2',
         help='Set indicators from your strategy you want in the third row of the graph. '
         'Comma-separated list. Example: `fastd,fastk`. Default: `%(default)s`.',
         default='macd,macdsignal',
-        dest='indicators2',
     ),
     "plot_limit": Arg(
         '--plot-limit',
         help='Specify tick limit for plotting. Notice: too high values cause huge files. '
         'Default: %(default)s.',
-        dest='plot_limit',
         default=750,
         type=int,
     ),
@@ -325,7 +287,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--trade-source',
         help='Specify the source for trades (Can be DB or file (backtest file)) '
         'Default: %(default)s',
-        dest='trade_source',
         default="file",
         choices=["DB", "file"]
     )
@@ -418,7 +379,7 @@ class Arguments(object):
 
         for val in optionlist:
             opt = AVAILABLE_CLI_OPTIONS[val]
-            parser.add_argument(*opt.cli, **opt.kwargs)
+            parser.add_argument(*opt.cli, dest=val, **opt.kwargs)
 
     def _build_subcommands(self) -> None:
         """
