@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 
 from freqtrade.data.converter import parse_ticker_dataframe
 from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
-                            file_dump_json, file_load_json, format_ms_time, shorten_date)
+                            file_dump_json, file_load_json, format_ms_time, shorten_date,
+                            plural)
 from freqtrade.data.history import load_tickerdata_file, pair_data_filename
 from freqtrade.strategy.default_strategy import DefaultStrategy
 
@@ -83,3 +84,35 @@ def test_format_ms_time() -> None:
     # Date 2017-12-13 08:02:01
     date_in_epoch_ms = 1513152121000
     assert format_ms_time(date_in_epoch_ms) == res.astimezone(None).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def test_plural() -> None:
+    assert plural(0, "page") == "pages"
+    assert plural(0.0, "page") == "pages"
+    assert plural(1, "page") == "page"
+    assert plural(1.0, "page") == "page"
+    assert plural(2, "page") == "pages"
+    assert plural(2.0, "page") == "pages"
+    assert plural(-1, "page") == "page"
+    assert plural(-1.0, "page") == "page"
+    assert plural(-2, "page") == "pages"
+    assert plural(-2.0, "page") == "pages"
+    assert plural(0.5, "page") == "pages"
+    assert plural(1.5, "page") == "pages"
+    assert plural(-0.5, "page") == "pages"
+    assert plural(-1.5, "page") == "pages"
+
+    assert plural(0, "ox", "oxen") == "oxen"
+    assert plural(0.0, "ox", "oxen") == "oxen"
+    assert plural(1, "ox", "oxen") == "ox"
+    assert plural(1.0, "ox", "oxen") == "ox"
+    assert plural(2, "ox", "oxen") == "oxen"
+    assert plural(2.0, "ox", "oxen") == "oxen"
+    assert plural(-1, "ox", "oxen") == "ox"
+    assert plural(-1.0, "ox", "oxen") == "ox"
+    assert plural(-2, "ox", "oxen") == "oxen"
+    assert plural(-2.0, "ox", "oxen") == "oxen"
+    assert plural(0.5, "ox", "oxen") == "oxen"
+    assert plural(1.5, "ox", "oxen") == "oxen"
+    assert plural(-0.5, "ox", "oxen") == "oxen"
+    assert plural(-1.5, "ox", "oxen") == "oxen"
