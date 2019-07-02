@@ -396,6 +396,23 @@ def test_validate_timeframes_failed(default_conf, mocker):
         Exchange(default_conf)
 
 
+def test_validate_timeframes_emulated_ohlcv(default_conf, mocker):
+    default_conf["ticker_interval"] = "3m"
+    api_mock = MagicMock()
+    id_mock = PropertyMock(return_value='test_exchange')
+    type(api_mock).id = id_mock
+
+    # delete timeframes so magicmock does not autocreate it
+    del api_mock.timeframes
+
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    with pytest.raises(OperationalException,
+                       match=r'This exchange (.*) does not have a `timeframes` attribute and*'):
+        Exchange(default_conf)
+
+
 def test_validate_timeframes_not_in_config(default_conf, mocker):
     del default_conf["ticker_interval"]
     api_mock = MagicMock()
