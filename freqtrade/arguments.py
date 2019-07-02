@@ -489,7 +489,6 @@ class Arguments(object):
         list_pairs_cmd.set_defaults(func=partial(start_list_pairs, pairs_only=True))
         self.build_args(optionlist=ARGS_LIST_PAIRS, parser=list_pairs_cmd)
 
-
     @staticmethod
     def parse_timerange(text: Optional[str]) -> TimeRange:
         """
