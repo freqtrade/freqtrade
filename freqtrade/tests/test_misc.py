@@ -4,12 +4,10 @@ import datetime
 from unittest.mock import MagicMock
 
 from freqtrade.data.converter import parse_ticker_dataframe
-from freqtrade.misc import (common_datearray, datesarray_to_datetimearray,
-                            file_dump_json, file_load_json, format_ms_time, shorten_date,
-                            plural)
-from freqtrade.data.history import load_tickerdata_file, pair_data_filename
-from freqtrade.strategy.default_strategy import DefaultStrategy
-
+from freqtrade.data.history import pair_data_filename
+from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
+                            file_load_json, format_ms_time, plural,
+                            shorten_date)
 
 def test_shorten_date() -> None:
     str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
@@ -31,20 +29,6 @@ def test_datesarray_to_datetimearray(ticker_history_list):
 
     date_len = len(dates)
     assert date_len == 2
-
-
-def test_common_datearray(default_conf) -> None:
-    strategy = DefaultStrategy(default_conf)
-    tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m')
-    tickerlist = {'UNITTEST/BTC': parse_ticker_dataframe(tick, "1m", pair="UNITTEST/BTC",
-                                                         fill_missing=True)}
-    dataframes = strategy.tickerdata_to_dataframe(tickerlist)
-
-    dates = common_datearray(dataframes)
-
-    assert dates.size == dataframes['UNITTEST/BTC']['date'].size
-    assert dates[0] == dataframes['UNITTEST/BTC']['date'][0]
-    assert dates[-1] == dataframes['UNITTEST/BTC']['date'].iloc[-1]
 
 
 def test_file_dump_json(mocker) -> None:

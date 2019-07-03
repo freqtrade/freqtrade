@@ -85,6 +85,9 @@ class Exchange(object):
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
+        self._api: ccxt.Exchange = None
+        self._api_async: ccxt_async.Exchange = None
+
         self._config.update(config)
 
         self._cached_ticker: Dict[str, Any] = {}
@@ -117,9 +120,9 @@ class Exchange(object):
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
         # Initialize ccxt objects
-        self._api: ccxt.Exchange = self._init_ccxt(
+        self._api = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
-        self._api_async: ccxt_async.Exchange = self._init_ccxt(
+        self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
 
         logger.info('Using Exchange "%s"', self.name)
@@ -173,6 +176,8 @@ class Exchange(object):
             api = getattr(ccxt_module, name.lower())(ex_config)
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
+        except ccxt.BaseError as e:
+            raise OperationalException(f"Initialization of ccxt failed. Reason: {e}")
 
         self.set_sandbox(api, exchange_config, name)
 
@@ -286,12 +291,15 @@ class Exchange(object):
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
-        if not hasattr(self._api, "timeframes"):
-            # If timeframes is missing, the exchange probably has no fetchOHLCV method.
+        if not hasattr(self._api, "timeframes") or self._api.timeframes is None:
+            # If timeframes attribute is missing (or is None), the exchange probably
+            # has no fetchOHLCV method.
             # Therefore we also show that.
             raise OperationalException(
-                f"This exchange ({self.name}) does not have a `timeframes` attribute and "
-                f"is therefore not supported. fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
+                f"The ccxt library does not provide the list of timeframes "
+                f"for the exchange \"{self.name}\" and this exchange "
+                f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
+
         timeframes = self._api.timeframes
         if timeframe not in timeframes:
             raise OperationalException(
