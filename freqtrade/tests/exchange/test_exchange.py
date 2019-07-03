@@ -910,7 +910,7 @@ def test_get_ticker(default_conf, mocker, exchange_name):
         'last': 0.0001,
     }
     api_mock.fetch_ticker = MagicMock(return_value=tick)
-    api_mock.markets = {'ETH/BTC': {}}
+    api_mock.markets = {'ETH/BTC': {'active': True}}
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # retrieve original ticker
     ticker = exchange.get_ticker(pair='ETH/BTC')
