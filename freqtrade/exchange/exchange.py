@@ -176,7 +176,7 @@ class Exchange(object):
             api = getattr(ccxt_module, name.lower())(ex_config)
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
-        except ccxt.NotSupported as e:
+        except ccxt.BaseError as e:
             raise OperationalException(f"Initialization of ccxt failed. Reason: {e}")
 
         self.set_sandbox(api, exchange_config, name)
