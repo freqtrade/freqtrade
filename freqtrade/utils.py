@@ -2,6 +2,7 @@ import logging
 from argparse import Namespace
 from typing import Any, Dict
 
+from freqtrade import OperationalException
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import available_exchanges, Exchange
 from freqtrade.misc import plural
@@ -66,6 +67,9 @@ def start_list_pairs(args: Namespace, pairs_only: bool = False) -> None:
                                  quote_currency=args.quote_currency,
                                  pairs_only=pairs_only,
                                  active_only=args.active_only)
+
+    if pairs is None:
+        raise OperationalException(f"No markets info available for exchange \"{exchange.name}\"")
 
     if args.print_list:
         # print data as a list

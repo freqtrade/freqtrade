@@ -208,14 +208,16 @@ class Exchange(object):
         if this was requested in parameters.
         """
         markets = self.markets
-        if base_currency:
-            markets = {k: v for k, v in markets.items() if v['base'] == base_currency}
-        if quote_currency:
-            markets = {k: v for k, v in markets.items() if v['quote'] == quote_currency}
-        if pairs_only:
-            markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
-        if active_only:
-            markets = {k: v for k, v in markets.items() if v['active']}
+        if markets is not None:
+            if base_currency:
+                markets = {k: v for k, v in markets.items() if v['base'] == base_currency}
+            if quote_currency:
+                markets = {k: v for k, v in markets.items() if v['quote'] == quote_currency}
+            if pairs_only:
+                markets = {k: v for k, v in markets.items() if symbol_is_pair(v['symbol'])}
+            if active_only:
+                markets = {k: v for k, v in markets.items() if v['active']}
+
         return markets
 
     def klines(self, pair_interval: Tuple[str, str], copy=True) -> DataFrame:
