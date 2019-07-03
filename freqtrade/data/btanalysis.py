@@ -106,7 +106,7 @@ def load_trades(config) -> pd.DataFrame:
     """
     Based on configuration option "trade_source":
     * loads data from DB (using `db_url`)
-    * loads data from backtestfile (`using exportfilename`)
+    * loads data from backtestfile (using `exportfilename`)
     """
     if config["trade_source"] == "DB":
         return load_trades_from_db(config["db_url"])
