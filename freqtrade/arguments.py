@@ -359,7 +359,7 @@ ARGS_PLOT_DATAFRAME = (ARGS_COMMON + ARGS_STRATEGY +
                         "refresh_pairs", "live"])
 
 ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
-                    ["pairs", "timerange", "export", "exportfilename"])
+                    ["pairs", "timerange", "export", "exportfilename", "db_url", "trade_source"])
 
 
 class TimeRange(NamedTuple):

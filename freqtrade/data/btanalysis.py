@@ -3,6 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -101,6 +102,18 @@ def load_trades_from_db(db_url: str) -> pd.DataFrame:
     return trades
 
 
+def load_trades(config) -> pd.DataFrame:
+    """
+    Based on configuration option "trade_source":
+    * loads data from DB (using `db_url`)
+    * loads data from backtestfile (using `exportfilename`)
+    """
+    if config["trade_source"] == "DB":
+        return load_trades_from_db(config["db_url"])
+    elif config["trade_source"] == "file":
+        return load_backtest_data(Path(config["exportfilename"]))
+
+
 def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
     """
     Compare trades and backtested pair DataFrames to get trades performed on backtested period
@@ -109,3 +122,34 @@ def extract_trades_of_period(dataframe: pd.DataFrame, trades: pd.DataFrame) -> p
     trades = trades.loc[(trades['open_time'] >= dataframe.iloc[0]['date']) &
                         (trades['close_time'] <= dataframe.iloc[-1]['date'])]
     return trades
+
+
+def combine_tickers_with_mean(tickers: Dict[str, pd.DataFrame], column: str = "close"):
+    """
+    Combine multiple dataframes "column"
+    :param tickers: Dict of Dataframes, dict key should be pair.
+    :param column: Column in the original dataframes to use
+    :return: DataFrame with the column renamed to the dict key, and a column
+        named mean, containing the mean of all pairs.
+    """
+    df_comb = pd.concat([tickers[pair].set_index('date').rename(
+        {column: pair}, axis=1)[pair] for pair in tickers], axis=1)
+
+    df_comb['mean'] = df_comb.mean(axis=1)
+
+    return df_comb
+
+
+def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str) -> pd.DataFrame:
+    """
+    Adds a column `col_name` with the cumulative profit for the given trades array.
+    :param df: DataFrame with date index
+    :param trades: DataFrame containing trades (requires columns close_time and profitperc)
+    :return: Returns df with one additional column, col_name, containing the cumulative profit.
+    """
+    df[col_name] = trades.set_index('close_time')['profitperc'].cumsum()
+    # Set first value to 0
+    df.loc[df.iloc[0].name, col_name] = 0
+    # FFill to get continuous
+    df[col_name] = df[col_name].ffill()
+    return df
