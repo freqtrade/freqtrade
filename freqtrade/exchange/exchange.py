@@ -85,6 +85,9 @@ class Exchange(object):
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
+        self._api: ccxt.Exchange = None
+        self._api_async: ccxt_async.Exchange = None
+
         self._config.update(config)
 
         self._cached_ticker: Dict[str, Any] = {}
@@ -117,9 +120,9 @@ class Exchange(object):
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
         # Initialize ccxt objects
-        self._api: ccxt.Exchange = self._init_ccxt(
+        self._api = self._init_ccxt(
             exchange_config, ccxt_kwargs=exchange_config.get('ccxt_config'))
-        self._api_async: ccxt_async.Exchange = self._init_ccxt(
+        self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=exchange_config.get('ccxt_async_config'))
 
         logger.info('Using Exchange "%s"', self.name)
@@ -173,6 +176,8 @@ class Exchange(object):
             api = getattr(ccxt_module, name.lower())(ex_config)
         except (KeyError, AttributeError):
             raise OperationalException(f'Exchange {name} is not supported')
+        except ccxt.BaseError as e:
+            raise OperationalException(f"Initialization of ccxt failed. Reason: {e}")
 
         self.set_sandbox(api, exchange_config, name)
 
