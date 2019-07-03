@@ -68,9 +68,6 @@ def start_list_pairs(args: Namespace, pairs_only: bool = False) -> None:
                                  pairs_only=pairs_only,
                                  active_only=args.active_only)
 
-    if pairs is None:
-        raise OperationalException(f"No markets info available for exchange \"{exchange.name}\"")
-
     if args.print_list:
         # print data as a list
         print(f"Exchange {exchange.name} has {len(pairs)} " +

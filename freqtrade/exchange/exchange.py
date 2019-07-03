@@ -208,7 +208,9 @@ class Exchange(object):
         if this was requested in parameters.
         """
         markets = self.markets
-        if markets is not None:
+        if markets is None:
+            raise OperationalException(f"No markets data available for exchange \"{self.name}\"")
+        else:
             if base_currency:
                 markets = {k: v for k, v in markets.items() if v['base'] == base_currency}
             if quote_currency:
