@@ -2,7 +2,6 @@ import logging
 from argparse import Namespace
 from typing import Any, Dict
 
-from freqtrade import OperationalException
 from freqtrade.configuration import Configuration
 from freqtrade.exchange import available_exchanges, Exchange
 from freqtrade.misc import plural

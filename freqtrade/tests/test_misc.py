@@ -9,6 +9,7 @@ from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
                             file_load_json, format_ms_time, plural,
                             shorten_date)
 
+
 def test_shorten_date() -> None:
     str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
     str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
