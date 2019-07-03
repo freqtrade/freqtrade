@@ -275,7 +275,7 @@ class Exchange(object):
         Get valid combination of paira and pairb by trying both combinations.
         """
         for pair in [f"{paira}/{pairb}", f"{pairb}/{paira}"]:
-            if pair in self._api.markets and self._api.markets[pair].get('active'):
+            if pair in self.markets and self.markets[pair].get('active'):
                 return pair
         raise DependencyException(f"Could not combine {paira} and {pairb} to get a valid pair.")
 

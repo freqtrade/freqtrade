@@ -1455,10 +1455,11 @@ def test_stoploss_limit_order_dry_run(default_conf, mocker):
 
 
 def test_merge_ft_has_dict(default_conf, mocker):
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=MagicMock()))
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          _init_ccxt=MagicMock(return_value=MagicMock()),
+                          _load_async_markets=MagicMock(),
+                          validate_pairs=MagicMock(),
+                          validate_timeframes=MagicMock())
     ex = Exchange(default_conf)
     assert ex._ft_has == Exchange._ft_has_default
 
@@ -1479,3 +1480,18 @@ def test_merge_ft_has_dict(default_conf, mocker):
     assert ex._ft_has != Exchange._ft_has_default
     assert not ex._ft_has['stoploss_on_exchange']
     assert ex._ft_has['DeadBeef'] == 20
+
+
+def test_get_valid_pair_combination(default_conf, mocker, markets):
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          _init_ccxt=MagicMock(return_value=MagicMock()),
+                          _load_async_markets=MagicMock(),
+                          validate_pairs=MagicMock(),
+                          validate_timeframes=MagicMock(),
+                          markets=PropertyMock(return_value=markets))
+    ex = Exchange(default_conf)
+
+    assert ex.get_valid_pair_combination("ETH", "BTC") == "ETH/BTC"
+    assert ex.get_valid_pair_combination("BTC", "ETH") == "ETH/BTC"
+    with pytest.raises(DependencyException, match=r"Could not combine.* to get a valid pair."):
+        ex.get_valid_pair_combination("NOPAIR", "ETH")
