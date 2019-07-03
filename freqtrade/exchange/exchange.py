@@ -270,6 +270,15 @@ class Exchange(object):
                     f'Pair {pair} is not available on {self.name}. '
                     f'Please remove {pair} from your whitelist.')
 
+    def get_valid_pair_combination(self, paira, pairb) -> str:
+        """
+        Get valid combination of paira and pairb by trying both combinations.
+        """
+        for pair in [f"{paira}/{pairb}", f"{pairb}/{paira}"]:
+            if pair in self._api.markets and self._api.markets[pair].get('active'):
+                return pair
+        raise DependencyException(f"Could not combine {paira} and {pairb} to get a valid pair.")
+
     def validate_timeframes(self, timeframe: List[str]) -> None:
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
@@ -501,7 +510,7 @@ class Exchange(object):
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:
         if refresh or pair not in self._cached_ticker.keys():
             try:
-                if pair not in self._api.markets:
+                if pair not in self._api.markets or not self._api.markets[pair].get('active'):
                     raise DependencyException(f"Pair {pair} not available")
                 data = self._api.fetch_ticker(pair)
                 try:

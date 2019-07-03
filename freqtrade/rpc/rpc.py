@@ -281,10 +281,11 @@ class RPC(object):
                 rate = 1.0
             else:
                 try:
-                    if coin in('USDT', 'USD', 'EUR'):
-                        rate = 1.0 / self._freqtrade.get_sell_rate('BTC/' + coin, False)
+                    pair = self._freqtrade.exchange.get_valid_pair_combination(coin, "BTC")
+                    if pair.startswith("BTC"):
+                        rate = 1.0 / self._freqtrade.get_sell_rate(pair, False)
                     else:
-                        rate = self._freqtrade.get_sell_rate(coin + '/BTC', False)
+                        rate = self._freqtrade.get_sell_rate(pair, False)
                 except (TemporaryError, DependencyException):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
