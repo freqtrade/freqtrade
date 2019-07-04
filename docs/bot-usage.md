@@ -109,14 +109,14 @@ Learn more about strategy file in
 ### How to use **--strategy-path**?
 
 This parameter allows you to add an additional strategy lookup path, which gets
-checked before the default locations (The passed path must be a folder!):
+checked before the default locations (The passed path must be a directory!):
 ```bash
-python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/folder
+python3 freqtrade --strategy AwesomeStrategy --strategy-path /some/directory
 ```
 
 #### How to install a strategy?
 
-This is very simple. Copy paste your strategy file into the folder
+This is very simple. Copy paste your strategy file into the directory
 `user_data/strategies` or use `--strategy-path`. And voila, the bot is ready to use it.
 
 ### How to use **--dynamic-whitelist**?

@@ -140,7 +140,7 @@ To run a restartable instance in the background (feel free to place your configu
 
 #### Move your config file and database
 
-The following will assume that you place your configuration / database files to `~/.freqtrade`, which is a hidden folder in your home directory. Feel free to use a different folder and replace the folder in the upcomming commands.
+The following will assume that you place your configuration / database files to `~/.freqtrade`, which is a hidden directory in your home directory. Feel free to use a different directory and replace the directory in the upcomming commands.
 
 ```bash
 mkdir ~/.freqtrade
