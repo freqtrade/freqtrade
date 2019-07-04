@@ -32,7 +32,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -71,7 +71,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     assert 'datadir' in config
     assert config['runmode'] == RunMode.EDGE
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
