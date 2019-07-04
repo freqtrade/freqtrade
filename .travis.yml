@@ -10,15 +10,11 @@ services:
 env:
   global:
     - IMAGE_NAME=freqtradeorg/freqtrade
-addons:
-  apt:
-    packages:
-    - libelf-dev
-    - libdw-dev
-    - binutils-dev
 install:
-- cd build_helpers && ./install_ta-lib.sh; cd ..
-- export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+- cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
+- export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
+- export TA_LIBRARY_PATH=${HOME}/dependencies/lib
+- export TA_INCLUDE_PATH=${HOME}/dependencies/lib/include
 - pip install -r requirements-dev.txt
 - pip install -e .
 jobs:
@@ -55,4 +51,4 @@ notifications:
 cache:
   pip: True
   directories:
-    - /usr/local/lib/
+    - $HOME/dependencies
