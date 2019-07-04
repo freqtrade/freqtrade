@@ -174,7 +174,7 @@ def test_parse_args_hyperopt_custom() -> None:
 def test_download_data_options() -> None:
     args = [
         '--pairs-file', 'file_with_pairs',
-        '--datadir', 'datadir/folder',
+        '--datadir', 'datadir/directory',
         '--days', '30',
         '--exchange', 'binance'
     ]
@@ -183,7 +183,7 @@ def test_download_data_options() -> None:
 
     args = arguments.parse_args()
     assert args.pairs_file == 'file_with_pairs'
-    assert args.datadir == 'datadir/folder'
+    assert args.datadir == 'datadir/directory'
     assert args.days == 30
     assert args.exchange == 'binance'
 

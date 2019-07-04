@@ -306,7 +306,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -356,7 +356,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -418,7 +418,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config

@@ -61,7 +61,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -111,7 +111,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert config['runmode'] == RunMode.HYPEROPT
 
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config

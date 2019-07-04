@@ -183,7 +183,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert 'pair_whitelist' in config['exchange']
     assert 'datadir' in config
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -235,7 +235,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert config['runmode'] == RunMode.BACKTEST
 
     assert log_has(
-        'Using data folder: {} ...'.format(config['datadir']),
+        'Using data directory: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
     assert 'ticker_interval' in config
@@ -851,7 +851,7 @@ def test_backtest_start_live(default_conf, mocker, caplog):
         'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
-        'Using data folder: freqtrade/tests/testdata ...',
+        'Using data directory: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Live: Downloading data for all defined pairs ...',
@@ -910,7 +910,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog):
         'Parameter -l/--live detected ...',
         'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: -100 ...',
-        'Using data folder: freqtrade/tests/testdata ...',
+        'Using data directory: freqtrade/tests/testdata ...',
         'Using stake_currency: BTC ...',
         'Using stake_amount: 0.001 ...',
         'Live: Downloading data for all defined pairs ...',

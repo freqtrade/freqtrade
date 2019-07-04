@@ -13,7 +13,7 @@ Backtesting will use the crypto-currencies (pair) from your config file
 and load static tickers located in
 [/freqtrade/tests/testdata](https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata).
 If the 5 min and 1 min ticker for the crypto-currencies to test is not
-already in the `testdata` folder, backtesting will download them
+already in the `testdata` directory, backtesting will download them
 automatically. Testdata files will not be updated until you specify it.
 
 The result of backtesting will confirm you if your bot has better odds of making a profit than a loss.
@@ -65,7 +65,7 @@ Where `-s TestStrategy` refers to the class name within the strategy file `test_
 python3 freqtrade backtesting --export trades
 ```
 
-The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts folder.
+The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
 
 #### Exporting trades to file specifying a custom filename
 
@@ -107,7 +107,7 @@ To download new set of backtesting ticker data, you can use a download script.
 
 If you are using Binance for example:
 
-- create a folder `user_data/data/binance` and copy `pairs.json` in that folder.
+- create a directory `user_data/data/binance` and copy `pairs.json` in that directory.
 - update the `pairs.json` to contain the currency pairs you are interested in.
 
 ```bash
@@ -123,9 +123,9 @@ python scripts/download_backtest_data.py --exchange binance
 
 This will download ticker data for all the currency pairs you defined in `pairs.json`.
 
-- To use a different folder than the exchange specific default, use `--datadir user_data/data/some_directory`.
+- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
 - To change the exchange used to download the tickers, use `--exchange`. Default is `bittrex`.
-- To use `pairs.json` from some other folder, use `--pairs-file some_other_dir/pairs.json`.
+- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
 - To download ticker data for only 10 days, use `--days 10`.
 - Use `--timeframes` to specify which tickers to download. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute tickers.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with other options.
@@ -231,7 +231,7 @@ To backtest multiple strategies, a list of Strategies can be provided.
 This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this should give a nice runtime boost.
 
-All listed Strategies need to be in the same folder.
+All listed Strategies need to be in the same directory.
 
 ``` bash
 freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades

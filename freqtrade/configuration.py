@@ -254,7 +254,7 @@ class Configuration(object):
             config.update({'datadir': self._create_datadir(config, self.args.datadir)})
         else:
             config.update({'datadir': self._create_datadir(config, None)})
-        logger.info('Using data folder: %s ...', config.get('datadir'))
+        logger.info('Using data directory: %s ...', config.get('datadir'))
 
     def _load_optimize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """

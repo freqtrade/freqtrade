@@ -34,7 +34,7 @@ Depending on the space you want to optimize, only some of the below are required
 
 ### 1. Install a Custom Hyperopt File
 
-Put your hyperopt file into the folder`user_data/hyperopts`.
+Put your hyperopt file into the directory `user_data/hyperopts`.
 
 Let assume you want a hyperopt file `awesome_hyperopt.py`:  
 Copy the file `user_data/hyperopts/sample_hyperopt.py` into `user_data/hyperopts/awesome_hyperopt.py`
