@@ -57,6 +57,12 @@ def start_list_pairs(args: Namespace, pairs_only: bool = False) -> None:
     # Fetch exchange name from args, use bittrex as default exchange
     config['exchange']['name'] = args.exchange or 'bittrex'
 
+    # We don't need ticker interval and pairs whitelist
+    # for this subcommand,
+    # avoid validating it by the Exchange object
+    config['exchange']['pairs_whitelist'] = None
+    config['ticker_interval'] = None
+
     # Init exchange
     exchange = Exchange(config)
 

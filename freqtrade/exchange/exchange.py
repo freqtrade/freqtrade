@@ -135,12 +135,12 @@ class Exchange(object):
 
         # Check if all pairs are available
         self.validate_pairs(config['exchange']['pair_whitelist'])
+
         self.validate_ordertypes(config.get('order_types', {}))
         self.validate_order_time_in_force(config.get('order_time_in_force', {}))
 
-        if config.get('ticker_interval'):
-            # Check if timeframe is available
-            self.validate_timeframes(config['ticker_interval'])
+        # Check if timeframe is available
+        self.validate_timeframes(config['ticker_interval'])
 
     def __del__(self):
         """
@@ -295,6 +295,9 @@ class Exchange(object):
         """
         Checks if ticker interval from config is a supported timeframe on the exchange
         """
+        if not timeframe:
+            return
+
         if not hasattr(self._api, "timeframes") or self._api.timeframes is None:
             # If timeframes attribute is missing (or is None), the exchange probably
             # has no fetchOHLCV method.
