@@ -16,7 +16,6 @@ from typing import Any, List
 
 from freqtrade import OperationalException
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import set_loggers
 from freqtrade.worker import Worker
 
 
@@ -32,8 +31,6 @@ def main(sysargv: List[str] = None) -> None:
     return_code: Any = 1
     worker = None
     try:
-        set_loggers()
-
         arguments = Arguments(
             sysargv,
             'Free, open source crypto trading bot'

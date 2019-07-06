@@ -12,8 +12,9 @@ from jsonschema import Draft4Validator, ValidationError, validate
 
 from freqtrade import OperationalException, constants
 from freqtrade.arguments import Arguments
-from freqtrade.configuration import Configuration, set_loggers
+from freqtrade.configuration import Configuration
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.loggers import _set_loggers
 from freqtrade.state import RunMode
 from freqtrade.tests.conftest import log_has, log_has_re
 
@@ -524,7 +525,7 @@ def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.configuration.open', mocker.mock_open(
         read_data=json.dumps(default_conf)))
     # Prevent setting loggers
-    mocker.patch('freqtrade.configuration.set_loggers', MagicMock)
+    mocker.patch('freqtrade.loggers._set_loggers', MagicMock)
     arglist = ['-vvv']
     args = Arguments(arglist, '').get_parsed_arg()
 
@@ -546,7 +547,7 @@ def test_set_loggers() -> None:
     previous_value2 = logging.getLogger('ccxt.base.exchange').level
     previous_value3 = logging.getLogger('telegram').level
 
-    set_loggers()
+    _set_loggers()
 
     value1 = logging.getLogger('requests').level
     assert previous_value1 is not value1
@@ -560,13 +561,13 @@ def test_set_loggers() -> None:
     assert previous_value3 is not value3
     assert value3 is logging.INFO
 
-    set_loggers(log_level=2)
+    _set_loggers(verbosity=2)
 
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.INFO
     assert logging.getLogger('telegram').level is logging.INFO
 
-    set_loggers(log_level=3)
+    _set_loggers(verbosity=3)
 
     assert logging.getLogger('requests').level is logging.DEBUG
     assert logging.getLogger('ccxt.base.exchange').level is logging.DEBUG
