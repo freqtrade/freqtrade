@@ -107,7 +107,8 @@ AVAILABLE_CLI_OPTIONS = {
     "max_open_trades": Arg(
         '--max_open_trades',
         help='Specify max_open_trades to use.',
-        type=int,
+        type=check_int_positive,
+        metavar='INT',
     ),
     "stake_amount": Arg(
         '--stake_amount',
@@ -180,7 +181,7 @@ AVAILABLE_CLI_OPTIONS = {
     "epochs": Arg(
         '-e', '--epochs',
         help='Specify number of epochs (default: %(default)d).',
-        type=int,
+        type=check_int_positive,
         metavar='INT',
         default=constants.HYPEROPT_EPOCH,
     ),
@@ -280,7 +281,7 @@ AVAILABLE_CLI_OPTIONS = {
         '--plot-limit',
         help='Specify tick limit for plotting. Notice: too high values cause huge files. '
         'Default: %(default)s.',
-        type=int,
+        type=check_int_positive,
         metavar='INT',
         default=750,
     ),
