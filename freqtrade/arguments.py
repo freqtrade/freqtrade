@@ -1,7 +1,6 @@
 """
 This module contains the argument manager class
 """
-
 import argparse
 import os
 import re
@@ -29,9 +28,9 @@ class Arg:
         self.kwargs = kwargs
 
 
-# List of available command line arguments
+# List of available command line options
 AVAILABLE_CLI_OPTIONS = {
-    # Common arguments
+    # Common options
     "loglevel": Arg(
         '-v', '--verbose',
         help='Verbose mode (-vv for more, -vvv to get all messages).',
@@ -122,7 +121,7 @@ AVAILABLE_CLI_OPTIONS = {
         'up-to-date data.',
         action='store_true',
     ),
-    # backtesting
+    # Backtesting
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
@@ -223,13 +222,13 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=1,
     ),
-    # List_exchange
+    # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
         help='Print exchanges in one column.',
         action='store_true',
     ),
-    # script_options
+    # Script options
     "pairs": Arg(
         '-p', '--pairs',
         help='Show profits for only these pairs. Pairs are comma-separated.',
@@ -264,7 +263,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
     ),
-    # Plot dataframe options
+    # Plot dataframe
     "indicators1": Arg(
         '--indicators1',
         help='Set indicators from your strategy you want in the first row of the graph. '
@@ -294,7 +293,9 @@ AVAILABLE_CLI_OPTIONS = {
     ),
 }
 
+
 ARGS_COMMON = ["loglevel", "logfile", "version", "config", "datadir"]
+
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["dynamic_whitelist", "db_url", "sd_notify"]
@@ -326,9 +327,9 @@ ARGS_PLOT_PROFIT = (ARGS_COMMON + ARGS_STRATEGY +
 
 class TimeRange(NamedTuple):
     """
-    NamedTuple Defining timerange inputs.
+    NamedTuple defining timerange inputs.
     [start/stop]type defines if [start/stop]ts shall be used.
-    if *type is none, don't use corresponding startvalue.
+    if *type is None, don't use corresponding startvalue.
     """
     starttype: Optional[str] = None
     stoptype: Optional[str] = None
