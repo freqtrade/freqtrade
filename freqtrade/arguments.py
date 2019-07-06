@@ -298,7 +298,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_MAIN = ARGS_COMMON + ARGS_STRATEGY + ["dynamic_whitelist", "db_url", "sd_notify"]
 
-ARGS_COMMON_OPTIMIZE = ["loglevel", "ticker_interval", "timerange",
+ARGS_COMMON_OPTIMIZE = ["ticker_interval", "timerange",
                         "max_open_trades", "stake_amount", "refresh_pairs"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
