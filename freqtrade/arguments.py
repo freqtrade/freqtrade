@@ -31,7 +31,7 @@ class Arg:
 # List of available command line options
 AVAILABLE_CLI_OPTIONS = {
     # Common options
-    "loglevel": Arg(
+    "verbosity": Arg(
         '-v', '--verbose',
         help='Verbose mode (-vv for more, -vvv to get all messages).',
         action='count',
@@ -294,7 +294,7 @@ AVAILABLE_CLI_OPTIONS = {
 }
 
 
-ARGS_COMMON = ["loglevel", "logfile", "version", "config", "datadir"]
+ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 

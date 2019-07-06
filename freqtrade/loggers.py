@@ -28,7 +28,7 @@ def _set_loggers(verbosity: int = 0) -> None:
 
 def setup_logging(config: Dict[str, Any]) -> None:
     """
-    Process --loglevel, --logfile options
+    Process -v/--verbose, --logfile options
     """
     # Log level
     verbosity = config['verbosity']

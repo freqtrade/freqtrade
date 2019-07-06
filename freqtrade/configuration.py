@@ -123,11 +123,11 @@ class Configuration(object):
     def _load_logging_config(self, config: Dict[str, Any]) -> None:
         """
         Extract information for sys.argv and load logging configuration:
-        the --loglevel, --logfile options
+        the -v/--verbose, --logfile options
         """
         # Log level
-        if 'loglevel' in self.args and self.args.loglevel:
-            config.update({'verbosity': self.args.loglevel})
+        if 'verbosity' in self.args and self.args.verbosity:
+            config.update({'verbosity': self.args.verbosity})
         else:
             config.update({'verbosity': 0})
 

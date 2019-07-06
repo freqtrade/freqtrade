@@ -227,7 +227,7 @@ def default_conf():
         },
         "initial_state": "running",
         "db_url": "sqlite://",
-        "loglevel": 3,
+        "verbosity": 3,
     }
     return configuration
 
