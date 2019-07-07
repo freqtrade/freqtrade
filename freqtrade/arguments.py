@@ -106,7 +106,7 @@ AVAILABLE_CLI_OPTIONS = {
     "max_open_trades": Arg(
         '--max_open_trades',
         help='Specify max_open_trades to use.',
-        type=check_int_positive,
+        type=int,
         metavar='INT',
     ),
     "stake_amount": Arg(
