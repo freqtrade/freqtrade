@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def _set_loggers(verbosity: int = 0) -> None:
     """
-    Set the logging level for Third party libs
+    Set the logging level for third party libraries
     :return: None
     """
 
