@@ -47,13 +47,13 @@ compute.
 We recommend you to run it at least 10.000 epochs:
 
 ```bash
-python3 freqtrade hyperopt -e 10000
+freqtrade hyperopt -e 10000
 ```
 
 or if you want intermediate result to see
 
 ```bash
-for i in {1..100}; do python3 freqtrade hyperopt -e 100; done
+for i in {1..100}; do freqtrade hyperopt -e 100; done
 ```
 
 #### Why it is so long to run hyperopt?

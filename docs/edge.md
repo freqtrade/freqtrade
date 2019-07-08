@@ -209,7 +209,7 @@ Edge will remove sudden pumps in a given market while going through historical d
 You can run Edge independently in order to see in details the result. Here is an example:
 
 ```bash
-python3 freqtrade edge
+freqtrade edge
 ```
 
 An example of its output:
@@ -235,19 +235,19 @@ An example of its output:
 ### Update cached pairs with the latest data
 
 ```bash
-python3 freqtrade edge --refresh-pairs-cached
+freqtrade edge --refresh-pairs-cached
 ```
 
 ### Precising stoploss range
 
 ```bash
-python3 freqtrade edge --stoplosses=-0.01,-0.1,-0.001 #min,max,step
+freqtrade edge --stoplosses=-0.01,-0.1,-0.001 #min,max,step
 ```
 
 ### Advanced use of timerange
 
 ```bash
-python3 freqtrade edge --timerange=20181110-20181113
+freqtrade edge --timerange=20181110-20181113
 ```
 
 Doing `--timerange=-200` will get the last 200 timeframes from your inputdata. You can also specify specific dates, or a range span indexed by start and stop.

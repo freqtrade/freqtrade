@@ -13,14 +13,14 @@ on BaseVolume. This value can be changed when you run the script.
 Get the 20 currencies based on BaseVolume.
 
 ```bash
-python3 freqtrade --dynamic-whitelist
+freqtrade --dynamic-whitelist
 ```
 
 **Customize the number of currencies to retrieve**
 Get the 30 currencies based on BaseVolume.
 
 ```bash
-python3 freqtrade --dynamic-whitelist 30
+freqtrade --dynamic-whitelist 30
 ```
 
 **Exception**
